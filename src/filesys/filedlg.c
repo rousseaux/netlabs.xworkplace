@@ -237,14 +237,14 @@ STATIC ULONG ParseFileString(PFILEDLGDATA pWinData,
     ULONG   ulDriveSpecLen = 0;
     APIRET  arc2;
 
-    _PmpfF(("entering"));
+    PMPF_POPULATESPLITVIEW(("entering"));
 
     if (    (!pcszFullFile)
          || (!*pcszFullFile)
        )
         return 0;
 
-    _PmpfF(("parsing %s", pcszFullFile));
+    PMPF_POPULATESPLITVIEW(("parsing %s", pcszFullFile));
 
     if (!(arc2 = doshGetDriveSpec(pcszFullFile,
                                   pWinData->szDrive,
@@ -256,7 +256,7 @@ STATIC ULONG ParseFileString(PFILEDLGDATA pWinData,
         flChanged |= FFL_DRIVE;
     }
 
-    _PmpfF(("  doshGetDriveSpec returned %d, len: %d",
+    PMPF_POPULATESPLITVIEW(("  doshGetDriveSpec returned %d, len: %d",
             arc2, ulDriveSpecLen));
 
     if (    (arc2)
@@ -280,13 +280,13 @@ STATIC ULONG ParseFileString(PFILEDLGDATA pWinData,
             // @@todo handle relative paths here
             ULONG cb = p3 - p;
 
-            _PmpfF(("  checking if path \"%s\" is dir", p));
+            PMPF_POPULATESPLITVIEW(("  checking if path \"%s\" is dir", p));
 
             // check if the last character is a '\';
             // the spec _must_ be a directory then
             if (p[cb] == '\0')      // fixed V0.9.19 (2002-06-15) [umoeller]
             {
-                _PmpfF(("  ends in \\, must be dir"));
+                PMPF_POPULATESPLITVIEW(("  ends in \\, must be dir"));
                 fMustBeDir = TRUE;
                 // p2++;           // points to null char now --> no file spec
             }
@@ -294,7 +294,7 @@ STATIC ULONG ParseFileString(PFILEDLGDATA pWinData,
             strhncpy0(pWinData->szDir,
                       p,        // start: either first char or after drive
                       cb);
-            _PmpfF(("  got path %s", pWinData->szDir));
+            PMPF_POPULATESPLITVIEW(("  got path %s", pWinData->szDir));
             flChanged |= FFL_PATH;
             pStartOfFile = p3 + 1;      // after the last backslash
         }
@@ -302,7 +302,7 @@ STATIC ULONG ParseFileString(PFILEDLGDATA pWinData,
             // no path specified:
             pStartOfFile = p;
 
-        _PmpfF(("  pStartOfFile is \"%s\"", pStartOfFile));
+        PMPF_POPULATESPLITVIEW(("  pStartOfFile is \"%s\"", pStartOfFile));
 
         // check if the following is a file mask
         // or a real file name
@@ -314,7 +314,7 @@ STATIC ULONG ParseFileString(PFILEDLGDATA pWinData,
             strcpy(pWinData->szFileMask,
                    pStartOfFile);
 
-            _PmpfF(("  new mask is %s", pWinData->szFileMask));
+            PMPF_POPULATESPLITVIEW(("  new mask is %s", pWinData->szFileMask));
             flChanged |= FFL_FILEMASK;
         }
         else
@@ -337,7 +337,7 @@ STATIC ULONG ParseFileString(PFILEDLGDATA pWinData,
                                    "\\%s",
                                    pStartOfFile);        // entry
 
-            _PmpfF(("   checking %s", szFull));
+            PMPF_POPULATESPLITVIEW(("   checking %s", szFull));
             if (!(arc2 = DosQueryPathInfo(szFull,
                                           FIL_STANDARD,
                                           &fs3,
@@ -349,7 +349,7 @@ STATIC ULONG ParseFileString(PFILEDLGDATA pWinData,
                     fIsDir = TRUE;
             }
 
-            _PmpfF(("   DosQueryPathInfo returned %d, fIsDir is %d",
+            PMPF_POPULATESPLITVIEW(("   DosQueryPathInfo returned %d, fIsDir is %d",
                         arc2, fIsDir));
 
             if (fIsDir)
@@ -361,7 +361,7 @@ STATIC ULONG ParseFileString(PFILEDLGDATA pWinData,
                     strcat(pWinData->szDir, "\\");
                     strcat(pWinData->szDir, pStartOfFile);
                 }
-                _PmpfF(("  new path is %s", pWinData->szDir));
+                PMPF_POPULATESPLITVIEW(("  new path is %s", pWinData->szDir));
                 flChanged |= FFL_PATH;
             }
             else
@@ -369,7 +369,7 @@ STATIC ULONG ParseFileString(PFILEDLGDATA pWinData,
                 // this is not a directory:
                 if (fMustBeDir)
                     // but it must be (because user termianted string with "\"):
-                    _PmpfF(("  not dir, but must be!"));
+                    PMPF_POPULATESPLITVIEW(("  not dir, but must be!"));
                 else
                 {
                     // this doesn't exist, or it is a file:
@@ -378,7 +378,7 @@ STATIC ULONG ParseFileString(PFILEDLGDATA pWinData,
                         // and it has a length: V0.9.18 (2002-02-06) [umoeller]
                         strcpy(pWinData->szFileName,
                                pStartOfFile);
-                        _PmpfF(("  new filename is %s", pWinData->szFileName));
+                        PMPF_POPULATESPLITVIEW(("  new filename is %s", pWinData->szFileName));
                         flChanged |= FFL_FILENAME;
                     }
                 }
@@ -386,7 +386,7 @@ STATIC ULONG ParseFileString(PFILEDLGDATA pWinData,
         }
     }
 
-    _PmpfF(("leaving, returning 0x%lX", flChanged));
+    PMPF_POPULATESPLITVIEW(("leaving, returning 0x%lX", flChanged));
 
     return flChanged;
 }
@@ -420,7 +420,7 @@ STATIC BOOL UpdateDlgWithFullFile(PFILEDLGDATA pWinData)
         // which matches the current logical drive
         PLISTNODE pNode = lstQueryFirstNode(&pWinData->llDisks);
 
-        _PmpfF(("pWinData->szDrive = %s",
+        PMPF_POPULATESPLITVIEW(("pWinData->szDrive = %s",
                pWinData->szDrive));
 
         while (pNode)
@@ -437,7 +437,7 @@ STATIC BOOL UpdateDlgWithFullFile(PFILEDLGDATA pWinData)
             pNode = pNode->pNext;
         }
 
-        _PmpfF(("    precDisk = 0x%lX", precDiskSelect));
+        PMPF_POPULATESPLITVIEW(("    precDisk = 0x%lX", precDiskSelect));
     }
 
     if ((precDiskSelect) && (pRootFolder))
@@ -469,7 +469,7 @@ STATIC BOOL UpdateDlgWithFullFile(PFILEDLGDATA pWinData)
             WPFolder *pFdrThis = pRootFolder;
             const char *pcThis = &pWinData->szDir[1];   // start after root '\'
 
-            _PmpfF(("    got folder %s for %s",
+            PMPF_POPULATESPLITVIEW(("    got folder %s for %s",
                     _wpQueryTitle(pFullFolder),
                     szFull));
 
@@ -480,7 +480,7 @@ STATIC BOOL UpdateDlgWithFullFile(PFILEDLGDATA pWinData)
                 const char *pBacksl = strchr(pcThis, '\\');
                 WPFileSystem *pobj;
 
-                _PmpfF(("       remaining: %s", pcThis));
+                PMPF_POPULATESPLITVIEW(("       remaining: %s", pcThis));
 
                 if (!pBacksl)
                     strcpy(szComponent, pcThis);
@@ -497,7 +497,7 @@ STATIC BOOL UpdateDlgWithFullFile(PFILEDLGDATA pWinData)
                 // path component;
                 // e.g. if szDir was "F:\OS2\BOOK", we now have "OS2"
 
-                _PmpfF(("       checking component %s", szComponent));
+                PMPF_POPULATESPLITVIEW(("       checking component %s", szComponent));
 
                 // find this component in pFdrThis
                 if (    (pobj = fdrSafeFindFSFromName(pFdrThis,
@@ -510,7 +510,7 @@ STATIC BOOL UpdateDlgWithFullFile(PFILEDLGDATA pWinData)
                     PMINIRECORDCORE pNew;
                     ULONG fl;
 
-                    _PmpfF(("        -> got %s", _wpQueryTitle(pobj)));
+                    PMPF_POPULATESPLITVIEW(("        -> got %s", _wpQueryTitle(pobj)));
 
                     pNew = _wpCnrInsertObject(pobj,
                                               pWinData->sv.hwndTreeCnr,
@@ -574,7 +574,7 @@ STATIC BOOL UpdateDlgWithFullFile(PFILEDLGDATA pWinData)
         brc = TRUE;
     }
 
-    _PmpfF(("exiting"));
+    PMPF_POPULATESPLITVIEW(("exiting"));
 
     return brc;
 }
@@ -811,7 +811,7 @@ STATIC MRESULT MainControlChar(HWND hwnd, MPARAM mp1, MPARAM mp2)
         // key down msg?
         if ((usFlags & KC_KEYUP) == 0)
         {
-            _PmpfF(("usFlags = 0x%lX, usch = %d, usvk = %d",
+            PMPF_POPULATESPLITVIEW(("usFlags = 0x%lX, usch = %d, usvk = %d",
                         usFlags, usch, usvk));
 
             if (usFlags & KC_VIRTUALKEY)
@@ -1222,7 +1222,7 @@ HWND fdlgFileDlg(HWND hwndOwner,
         ParseFileString(&WinData,
                         szCurDir);
 
-        _PmpfF(("pfd->szFullFile is %s", pfd->szFullFile));
+        PMPF_POPULATESPLITVIEW(("pfd->szFullFile is %s", pfd->szFullFile));
 
         flInitialParse = ParseFileString(&WinData,
                                          pfd->szFullFile);
@@ -1241,7 +1241,7 @@ HWND fdlgFileDlg(HWND hwndOwner,
         else
             flSplit = SPLIT_MULTIPLESEL;
 
-        _PmpfF(("getting drives folder"));
+        PMPF_POPULATESPLITVIEW(("getting drives folder"));
 
         // find the folder whose contents to
         // display in the left tree
@@ -1254,12 +1254,12 @@ HWND fdlgFileDlg(HWND hwndOwner,
                    "Cannot get drives folder.");
         else
         {
-            _PmpfF(("building disks list"));
+            PMPF_POPULATESPLITVIEW(("building disks list"));
 
             BuildDisksList(pDrivesFolder,
                            &WinData.llDisks);
 
-            _PmpfF(("calling fdrSplitCreateFrame"));
+            PMPF_POPULATESPLITVIEW(("calling fdrSplitCreateFrame"));
 
             if (fdrSplitCreateFrame(pDrivesFolder,
                                     pDrivesFolder,
@@ -1278,7 +1278,7 @@ HWND fdlgFileDlg(HWND hwndOwner,
                 BOOL    fExit = FALSE;
                 QMSG    qmsg;
 
-                _PmpfF(("subclassing hwndMainFrame"));
+                PMPF_POPULATESPLITVIEW(("subclassing hwndMainFrame"));
 
                 WinSetWindowPtr(WinData.sv.hwndMainFrame,
                                 QWL_USER,
@@ -1294,7 +1294,7 @@ HWND fdlgFileDlg(HWND hwndOwner,
                     {
                         PSZ     *ppszTypeThis = pfd->papszITypeList[ul];
 
-                        _PmpfF(("pszTypeThis[%d] = %s", ul,
+                        PMPF_POPULATESPLITVIEW(("pszTypeThis[%d] = %s", ul,
                                             (*ppszTypeThis) ? *ppszTypeThis : "NULL"));
 
                         if (!*ppszTypeThis)
@@ -1426,9 +1426,9 @@ HWND fdlgFileDlg(HWND hwndOwner,
     lstClear(&WinData.llDisks);
     lstClear(&WinData.llDialogControls);
 
-    _PmpfF(("exiting, pfd->lReturn is %d", pfd->lReturn));
-    _PmpfF(("  pfd->szFullFile is %s", pfd->szFullFile));
-    _PmpfF(("  returning 0x%lX", hwndReturn));
+    PMPF_POPULATESPLITVIEW(("exiting, pfd->lReturn is %d", pfd->lReturn));
+    PMPF_POPULATESPLITVIEW(("  pfd->szFullFile is %s", pfd->szFullFile));
+    PMPF_POPULATESPLITVIEW(("  returning 0x%lX", hwndReturn));
 
     return (hwndReturn);
 }

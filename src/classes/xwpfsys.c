@@ -199,16 +199,16 @@ SOM_Scope void  SOMLINK xfs_wpUnInitData(XWPFileSystem *somSelf)
 
 SOM_Scope HOBJECT  SOMLINK xfs_wpQueryHandle(XWPFileSystem *somSelf)
 {
-#ifdef DEBUG_PROGRAMSTART
+#ifdef __DEBUG__
     CHAR    szFilename[CCHMAXPATH];
 #endif
 
     // XWPFileSystemData *somThis = XWPFileSystemGetData(somSelf);
     XWPFileSystemMethodDebug("XWPFileSystem","xfs_wpQueryHandle");
 
-#ifdef DEBUG_PROGRAMSTART
+#ifdef __DEBUG__
     if (_wpQueryFilename(somSelf, szFilename, TRUE))
-        _PmpfF(("[%s]", szFilename));
+        PMPF_PROGRAMSTART(("[%s]", szFilename));
 #endif
 
     return XWPFileSystem_parent_WPFileSystem_wpQueryHandle(somSelf);
@@ -457,9 +457,7 @@ SOM_Scope BOOL  SOMLINK xfs_wpSetTitleAndRenameFile(XWPFileSystem *somSelf,
 
     XWPFileSystemMethodDebug("XWPFileSystem","xfs_wpSetTitleAndRenameFile");
 
-    #ifdef DEBUG_TURBOFOLDERS
-    _PmpfF(("new title is \"%s\"", STRINGORNULL(pszNewTitle)));
-    #endif
+    PMPF_TURBOFOLDERS(("new title is \"%s\"", STRINGORNULL(pszNewTitle)));
 
 /*
 #ifndef __NOTURBOFOLDERS__
@@ -505,9 +503,7 @@ SOM_Scope BOOL  SOMLINK xfs_wpSetTitleAndRenameFile(XWPFileSystem *somSelf,
                                                                     pszNewTitle,
                                                                     fConfirmations);
 
-    #ifdef DEBUG_TURBOFOLDERS
-    _PmpfF(("exiting, rc = %d", brc));
-    #endif
+    PMPF_TURBOFOLDERS(("exiting, rc = %d", brc));
 
     return brc;
 }
@@ -563,9 +559,7 @@ SOM_Scope BOOL  SOMLINK xfs_wpSetRealName(XWPFileSystem *somSelf,
     // XWPFileSystemData *somThis = XWPFileSystemGetData(somSelf);
     XWPFileSystemMethodDebug("XWPFileSystem","xfs_wpSetRealName");
 
-    #ifdef DEBUG_TURBOFOLDERS
-    _PmpfF(("new real name is \"%s\"", STRINGORNULL(pszName)));
-    #endif
+    PMPF_TURBOFOLDERS(("new real name is \"%s\"", STRINGORNULL(pszName)));
 
 #ifndef __NOTURBOFOLDERS__
     if (    (cmnQuerySetting(sfTurboFolders))
@@ -583,9 +577,7 @@ SOM_Scope BOOL  SOMLINK xfs_wpSetRealName(XWPFileSystem *somSelf,
          && (szFolder[1] != '\\')
        )
     {
-        #ifdef DEBUG_TURBOFOLDERS
-        _Pmpf(("    obj is inited, calling fdrRealNameChanged"));
-        #endif
+        PMPF_TURBOFOLDERS(("    obj is inited, calling fdrRealNameChanged"));
 
         TRY_LOUD(excpt1)
         {
@@ -615,9 +607,7 @@ SOM_Scope BOOL  SOMLINK xfs_wpSetRealName(XWPFileSystem *somSelf,
     brc = XWPFileSystem_parent_WPFileSystem_wpSetRealName(somSelf,
                                                           pszName);
 
-    #ifdef DEBUG_TURBOFOLDERS
-    _PmpfF(("exiting, rc = %d", brc));
-    #endif
+    PMPF_TURBOFOLDERS(("exiting, rc = %d", brc));
 
     return brc;
 }
@@ -837,7 +827,7 @@ SOM_Scope WPObject*  SOMLINK xfsM_wpclsObjectFromHandle(M_XWPFileSystem *somSelf
     /* M_XWPFileSystemData *somThis = M_XWPFileSystemGetData(somSelf); */
     M_XWPFileSystemMethodDebug("M_XWPFileSystem","xfsM_wpclsObjectFromHandle");
 
-    _PmpfF(("HOBJECT 0x%lX", hObject));
+    // _PmpfF(("HOBJECT 0x%lX", hObject));
 
     return (M_XWPFileSystem_parent_M_WPFileSystem_wpclsObjectFromHandle(somSelf,
                                                                         hObject));

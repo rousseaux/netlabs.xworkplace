@@ -213,10 +213,6 @@ APIRET fopsLoopSneaky(WPFolder *pFolder,       // in: folder
                 (*pulFilesCount)++;
                 *pulSizeContents += ffb3.cbFile;
             }
-            /* else
-            {
-                _Pmpf(("        --> already instantiated"));
-            } */
 
             ulFindCount = 1;
             frc = DosFindNext(hdirFindHandle,
@@ -262,9 +258,7 @@ PLINKLIST fopsFolder2ExpandedList(WPFolder *pFolder,
 
     BOOL        fFolderLocked = FALSE;
 
-    #ifdef DEBUG_TRASHCAN
-        _Pmpf(("Object \"%s\" is a folder, creating SFL", _wpQueryTitle(pFolder) ));
-    #endif
+    PMPF_TRASHCAN(("Object \"%s\" is a folder, creating SFL", _wpQueryTitle(pFolder) ));
 
     // lock folder for querying content
     TRY_LOUD(excpt1)
@@ -289,11 +283,9 @@ PLINKLIST fopsFolder2ExpandedList(WPFolder *pFolder,
                 {
                     PEXPANDEDOBJECT fSOI = NULL;
 
-                    #ifdef DEBUG_TRASHCAN
-                        _Pmpf(("creating SOI for \"%s\" in folder \"%d\"",
+                    PMPF_TRASHCAN(("creating SOI for \"%s\" in folder \"%d\"",
                                 _wpQueryTitle(pObject),
                                 _wpQueryTitle(pFolder) ));
-                    #endif
 
                     // create a list item for this object;
                     // if pObject is a folder, that function will
@@ -369,9 +361,7 @@ PEXPANDEDOBJECT fopsExpandObjectDeep(WPObject *pObject,
         // create object item
         if (pSOI = (PEXPANDEDOBJECT)malloc(sizeof(EXPANDEDOBJECT)))
         {
-            #ifdef DEBUG_TRASHCAN
-                _Pmpf(("SOI for object %s", _wpQueryTitle(pObject) ));
-            #endif
+            PMPF_TRASHCAN(("SOI for object %s", _wpQueryTitle(pObject) ));
 
             pSOI->pObject = pObject;
             if (_somIsA(pObject, _WPFolder))
@@ -395,9 +385,7 @@ PEXPANDEDOBJECT fopsExpandObjectDeep(WPObject *pObject,
                     pSOI->ulSizeThis = 0;
             }
 
-            #ifdef DEBUG_TRASHCAN
-                _Pmpf(("End of SOI for object %s", _wpQueryTitle(pObject) ));
-            #endif
+            PMPF_TRASHCAN(("End of SOI for object %s", _wpQueryTitle(pObject) ));
         }
     }
 
@@ -755,7 +743,7 @@ WPFileSystem* fopsFindObjectWithSameTitle(WPFolder *pFolder,    // in: folder to
     if (!pszFind)
         return NULL;
 
-    _PmpfF(("checking %s for %s",
+    PMPF_TITLECLASH(("checking %s for %s",
             _wpQueryTitle(pFolder),
             pszFind));
 
@@ -777,7 +765,7 @@ WPFileSystem* fopsFindObjectWithSameTitle(WPFolder *pFolder,    // in: folder to
                          && (pobj == pIgnore)
                        )
                     {
-                        _Pmpf(("    found, but is self, so continue"));
+                        PMPF_TITLECLASH(("    found, but is self, so continue"));
                         continue;
                     }
 
@@ -785,7 +773,7 @@ WPFileSystem* fopsFindObjectWithSameTitle(WPFolder *pFolder,    // in: folder to
                          && (!stricmp(pszThis, pszFind))
                        )
                     {
-                        _Pmpf(("    returning 0x%lX", pobj));
+                        PMPF_TITLECLASH(("    returning 0x%lX", pobj));
                         pFSReturn = pobj;
                         break;
                     }
@@ -1245,7 +1233,7 @@ STATIC ULONG ConfirmObjectTitle(WPFolder *Folder,          // in: target folder 
     CHAR            szTemp[CCHMAXPATH];
 
     _wpQueryFilename(Folder, szTemp, TRUE);
-    _PmpfF(("entering for folder %s, pszTitle %s",
+    PMPF_TITLECLASH(("entering for folder %s, pszTitle %s",
                 szTemp, pszTitle));
 
     TRY_LOUD(excpt1)
@@ -1289,7 +1277,7 @@ STATIC ULONG ConfirmObjectTitle(WPFolder *Folder,          // in: target folder 
                                           sizeof(szOpt)))
                     ulrc = atoi(szOpt);
 
-                _Pmpf(("_xwpQueryDeletion(pFSExisting) returned FALSE, ulrc is %d (%s)",
+                PMPF_TITLECLASH(("_xwpQueryDeletion(pFSExisting) returned FALSE, ulrc is %d (%s)",
                             ulrc,
                             (ulrc == NAMECLASH_PROMPT) ? "NAMECLASH_PROMPT"
                             : (ulrc == NAMECLASH_RENAME) ? "NAMECLASH_RENAME"
@@ -1308,7 +1296,7 @@ STATIC ULONG ConfirmObjectTitle(WPFolder *Folder,          // in: target folder 
                 flOptions |= NO_NAMECLASH_REPLACE | NO_NAMECLASH_RENAMEOLD;
             }
 
-            _Pmpf(("  options: %s%s%s%s%s",
+            PMPF_TITLECLASH(("  options: %s%s%s%s%s",
                         (flOptions & NO_NAMECLASH_RENAME) ? "NO_NAMECLASH_RENAME " : "",
                         (flOptions & NO_NAMECLASH_RENAMEOLD) ? "NO_NAMECLASH_RENAMEOLD " : "",
                         (flOptions & NO_NAMECLASH_APPEND) ? "NO_NAMECLASH_APPEND " : "",
@@ -1349,7 +1337,7 @@ STATIC ULONG ConfirmObjectTitle(WPFolder *Folder,          // in: target folder 
                 strhncpy0(pszTitle,
                           szTemp,
                           cbTitle);
-                _Pmpf(("  performed auto-rename to %s", pszTitle));
+                PMPF_TITLECLASH(("  performed auto-rename to %s", pszTitle));
             }
             else if (ulrc == NAMECLASH_PROMPT)
             {
@@ -1403,7 +1391,7 @@ STATIC ULONG ConfirmObjectTitle(WPFolder *Folder,          // in: target folder 
     }
     CATCH(excpt1)
     {
-        _PmpfF(("crash"));
+        PMPF_TITLECLASH(("crash"));
         ulrc = NAMECLASH_CANCEL;
     }
     END_CATCH();
@@ -1448,7 +1436,7 @@ ULONG fopsConfirmObjectTitle(WPObject *somSelf,
     TRY_LOUD(excpt1)
     {
 
-        _PmpfF(("menuID is 0x%lX", menuID));
+        PMPF_TITLECLASH(("menuID is 0x%lX", menuID));
 
         if (    (!Folder)
              || (!_somIsA(Folder, _WPFolder))
@@ -1457,31 +1445,31 @@ ULONG fopsConfirmObjectTitle(WPObject *somSelf,
              || (!cbTitle)
            )
         {
-            _Pmpf(("   error, returning NAMECLASH_CANCEL"));
+            PMPF_TITLECLASH(("   error, returning NAMECLASH_CANCEL"));
             ulrc = NAMECLASH_CANCEL;
         }
         else switch (menuID)
         {
             case WPMENUID_CREATESHADOW:
-                _Pmpf(("   WPMENUID_CREATESHADOW"));
+                PMPF_TITLECLASH(("   WPMENUID_CREATESHADOW"));
                 // return NAMECLASH_NONE always
                 flOptions = NOTHING_TO_DO;      // V0.9.19 (2002-04-02) [umoeller]
             break;
 
             case 110:           // comes in when objects are renamed
-                _Pmpf(("   rename"));
+                PMPF_TITLECLASH(("   rename"));
                 flOptions =    NAMECLASH_RENAMING
                              | NO_NAMECLASH_REPLACE
                              | NO_NAMECLASH_APPEND;
             break;
 
             case 183:           // comes in for "create from template"
-                _Pmpf(("   create from template"));
+                PMPF_TITLECLASH(("   create from template"));
                 flOptions = NO_NAMECLASH_DIALOG;
             break;
 
             default:
-                _Pmpf(("   calling _wpQueryNameClashOptions"));
+                PMPF_TITLECLASH(("   calling _wpQueryNameClashOptions"));
                 flOptions = _wpQueryNameClashOptions(somSelf, menuID);
             break;
         }
@@ -1498,7 +1486,7 @@ ULONG fopsConfirmObjectTitle(WPObject *somSelf,
                                       cbTitle,
                                       flOptions);
 
-            _Pmpf(("   ConfirmObjectTitle returned %s",
+            PMPF_TITLECLASH(("   ConfirmObjectTitle returned %s",
                         (ulrc == NAMECLASH_CANCEL) ? "NAMECLASH_CANCEL"
                         : (ulrc == NAMECLASH_NONE) ? "NAMECLASH_NONE"
                         : (ulrc == NAMECLASH_RENAME) ? "NAMECLASH_RENAME"
@@ -1512,7 +1500,7 @@ ULONG fopsConfirmObjectTitle(WPObject *somSelf,
     }
     CATCH(excpt1)
     {
-        _PmpfF(("crash"));
+        PMPF_TITLECLASH(("crash"));
         ulrc = NAMECLASH_CANCEL;
     } END_CATCH();
 
@@ -1683,7 +1671,7 @@ BOOL fopsMoveObjectConfirmed(WPObject *pObject,
                                      sizeof(szNewTitle),
                                      WPMENUID_MOVE);
 
-    // _Pmpf(("    _wpConfirmObjectTitle returned %d", ulAction));
+    PMPF_TITLECLASH(("    _wpConfirmObjectTitle returned %d", ulAction));
 
     switch (ulAction)
     {
@@ -1753,7 +1741,7 @@ BOOL fopsRenameObjectConfirmed(WPObject *pObject,
                                      sizeof(szNewTitle),
                                      110);          // rename code, not in toolkit
 
-    // _Pmpf(("    _wpConfirmObjectTitle returned %d", ulAction));
+    PMPF_TITLECLASH(("    _wpConfirmObjectTitle returned %d", ulAction));
 
     switch (ulAction)
     {

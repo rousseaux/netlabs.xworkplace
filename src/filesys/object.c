@@ -2336,11 +2336,9 @@ BOOL objSetObjectHotkey(WPObject *somSelf,
             PGLOBALHOTKEY   pHotkeys;
             ULONG           cHotkeys = 0;
 
-            #ifdef DEBUG_KEYS
-                _Pmpf(("Entering xwpSetObjectHotkey usFlags = 0x%lX, usKeyCode = 0x%lX",
+            PMPF_KEYS(("entering, usFlags = 0x%lX, usKeyCode = 0x%lX",
                         pHotkey->usFlags,
                         pHotkey->usKeyCode));
-            #endif
 
             if (pHotkeys = hifQueryObjectHotkeys(&cHotkeys))
             {
@@ -2348,24 +2346,19 @@ BOOL objSetObjectHotkey(WPObject *somSelf,
 
                 PGLOBALHOTKEY pHotkeyThis = NULL;
 
-                #ifdef DEBUG_KEYS
-                    _Pmpf(("  Checking for existence hobj 0x%lX", hobjSelf));
-                #endif
+                PMPF_KEYS(("  Checking for existence hobj 0x%lX", hobjSelf));
+
                 // check if we have a hotkey for this object already
                 pHotkeyThis = objFindHotkey(pHotkeys,
                                             cHotkeys,
                                             hobjSelf);
 
-                #ifdef DEBUG_KEYS
-                    _Pmpf(("  objFindHotkey returned PGLOBALHOTKEY 0x%lX", pHotkeyThis));
-                #endif
+                PMPF_KEYS(("  objFindHotkey returned PGLOBALHOTKEY 0x%lX", pHotkeyThis));
 
                 // what does the caller want?
                 if (!pHotkey)
                 {
-                    #ifdef DEBUG_KEYS
-                        _Pmpf(("  'delete hotkey' mode:"));
-                    #endif
+                    PMPF_KEYS(("  'delete hotkey' mode:"));
 
                     // "delete hotkey" mode:
                     if (pHotkeyThis)
@@ -2377,16 +2370,12 @@ BOOL objSetObjectHotkey(WPObject *somSelf,
                                 uliofs = 0;
                         ulpofs = ((PBYTE)pHotkeyThis - (PBYTE)pHotkeys);
 
-                        #ifdef DEBUG_KEYS
-                            _Pmpf(("  pHotkeyThis - pHotkeys: 0x%lX", ulpofs));
-                        #endif
+                        PMPF_KEYS(("  pHotkeyThis - pHotkeys: 0x%lX", ulpofs));
 
                         uliofs = (ulpofs / sizeof(GLOBALHOTKEY));
                                     // 0 for first, 1 for second, ...
 
-                        #ifdef DEBUG_KEYS
-                            _Pmpf(("  Deleting existing hotkey @ ofs %d", uliofs));
-                        #endif
+                        PMPF_KEYS(("  Deleting existing hotkey @ ofs %d", uliofs));
 
                         if (uliofs < (cHotkeys - 1))
                         {
@@ -2394,11 +2383,9 @@ BOOL objSetObjectHotkey(WPObject *somSelf,
 
                             ULONG cb = (cHotkeys - uliofs - 1) * sizeof(GLOBALHOTKEY);
 
-                            #ifdef DEBUG_KEYS
-                                _Pmpf(("  Copying 0x%lX to 0x%lX, %d bytes (%d per item)",
+                            PMPF_KEYS(("  Copying 0x%lX to 0x%lX, %d bytes (%d per item)",
                                         pHotkeyThis + 1, pHotkeyThis,
                                         cb, sizeof(GLOBALHOTKEY)));
-                            #endif
 
                             memcpy(pHotkeyThis,
                                    pHotkeyThis + 1,
@@ -2413,16 +2400,12 @@ BOOL objSetObjectHotkey(WPObject *somSelf,
                 {
                     // "set hotkey" mode:
 
-                    #ifdef DEBUG_KEYS
-                        _Pmpf(("  'set hotkey' mode:"));
-                    #endif
+                    PMPF_KEYS(("  'set hotkey' mode:"));
 
                     if (pHotkeyThis)
                     {
                         // found (already exists): overwrite
-                        #ifdef DEBUG_KEYS
-                            _Pmpf(("  Overwriting existing hotkey"));
-                        #endif
+                        PMPF_KEYS(("  Overwriting existing hotkey"));
 
                         if (    (pHotkeyThis->usFlags != pHotkey->usFlags)
                              || (pHotkeyThis->usKeyCode != pHotkey->usKeyCode)
@@ -2443,9 +2426,7 @@ BOOL objSetObjectHotkey(WPObject *somSelf,
                         // the entire list
                         PGLOBALHOTKEY pHotkeysNew = (PGLOBALHOTKEY)malloc(sizeof(GLOBALHOTKEY)
                                                                             * (cHotkeys+1));
-                        #ifdef DEBUG_KEYS
-                            _Pmpf(("  Appending new hotkey"));
-                        #endif
+                        PMPF_KEYS(("  Appending new hotkey"));
 
                         if (pHotkeysNew)
                         {
@@ -2473,9 +2454,7 @@ BOOL objSetObjectHotkey(WPObject *somSelf,
                     // "set hotkey" mode:
                     GLOBALHOTKEY HotkeyNew = {0};
 
-                    #ifdef DEBUG_KEYS
-                        _Pmpf(("  Creating single new hotkey"));
-                    #endif
+                    PMPF_KEYS(("  Creating single new hotkey"));
 
                     HotkeyNew.usFlags = pHotkey->usFlags;
                     HotkeyNew.ucScanCode = pHotkey->ucScanCode; // V0.9.5 (2000-08-20) [umoeller]
@@ -2499,9 +2478,7 @@ BOOL objSetObjectHotkey(WPObject *somSelf,
                                  SP_KEYB_OBJHOTKEYS);
     } // end if (hobjSelf)
 
-    #ifdef DEBUG_KEYS
-        _Pmpf(("Leaving xwpSetObjectHotkey"));
-    #endif
+    PMPF_KEYS(("leaving"));
 
     return brc;
 }

@@ -1728,10 +1728,8 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                         pData->fPartitionsLoaded = TRUE;
                     }
 
-                    #ifdef DEBUG_SHUTDOWN
-                        _PmpfF(("pData->pPartitionsList is 0x%lX",
+                    PMPF_SHUTDOWN(("pData->pPartitionsList is 0x%lX",
                                 pData->pPartitionsList));
-                    #endif
 
                     if (pData->pPartitionsList)
                     {
@@ -2145,7 +2143,8 @@ BOOL xsdInitiateShutdown(VOID)
                           && (apmPowerOffSupported())
                          );
         psdp->optAPMDelay = ((flShutdown & XSD_APM_DELAY) != 0);
-        #ifdef DEBUG_SHUTDOWN
+
+        #ifdef __DEBUG__
             psdp->optDebug = doshQueryShiftState();
         #else
             psdp->optDebug = FALSE;
@@ -2242,7 +2241,7 @@ BOOL xsdInitiateRestartWPS(BOOL fLogoff)        // in: if TRUE, perform logoff a
         psdp->optAutoCloseVIO = ((flShutdown & XSD_AUTOCLOSEVIO) != 0);
         psdp->optWarpCenterFirst = ((flShutdown & XSD_WARPCENTERFIRST) != 0);
         psdp->optLog =  ((flShutdown & XSD_LOG) != 0);
-        #ifdef DEBUG_SHUTDOWN
+        #ifdef __DEBUG__
             psdp->optDebug = doshQueryShiftState();
         #else
             psdp->optDebug = FALSE;
@@ -2522,9 +2521,8 @@ VOID xsdShutdownInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
         sprintf(szAPMSysFile,
                 "%c:\\OS2\\BOOT\\APM.SYS",
                 doshQueryBootDrive());
-        #ifdef DEBUG_SHUTDOWN
-            _Pmpf(("Opening %s", szAPMSysFile));
-        #endif
+
+        PMPF_SHUTDOWN(("Opening %s", szAPMSysFile));
 
         WinSetDlgItemText(pnbp->hwndDlgPage, ID_SDDI_APMSYS,
                           "Error");
@@ -3901,12 +3899,11 @@ BOOL _Optlink fncbSaveImmediate(WPObject *pobjThis,
         else
         {
             brc = _wpSaveImmediate(pobjThis);
-            #ifdef DEBUG_SHUTDOWN
-                _PmpfF(("saved obj 0x%lX (%s, class %s)",
+
+            PMPF_SHUTDOWN(("saved obj 0x%lX (%s, class %s)",
                                 pobjThis,
                                 _wpQueryTitle(pobjThis),
                                 _somGetClassName(pobjThis)));
-            #endif
         }
     }
     CATCH(excpt1)
@@ -3935,9 +3932,8 @@ BOOL _Optlink fncbSaveImmediate(WPObject *pobjThis,
  *      must set ulData to point to a SHUTDOWNPARAMS structure.
  *
  *      Note: if you're trying to understand what's going on here,
- *      I recommend rebuilding XFolder with DEBUG_SHUTDOWN
- *      #define'd (see include/setup.h for that). This will allow you
- *      to switch XShutdown into "Debug" mode by holding down
+ *      I recommend rebuilding XWorkplace in debug mode. That will
+ *      allow you to switch XShutdown into "Debug" mode by holding down
  *      the "Shift" key while selecting "Shutdown" from the
  *      Desktop's context menu.
  *
@@ -4391,10 +4387,6 @@ STATIC void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
         // with what we're doing now
         if (thrQueryID(&G_tiUpdateThread))
         {
-            #ifdef DEBUG_SHUTDOWN
-                WinSetDlgItemText(G_hwndShutdownStatus, ID_SDDI_STATUS,
-                                  "Waiting for the Update thread to end...");
-            #endif
             doshWriteLogEntry(LogFile,
                    __FUNCTION__ ": Closing Update thread, tid: 0x%lX...",
                    thrQueryID(&G_tiUpdateThread));
@@ -5256,9 +5248,7 @@ STATIC MRESULT EXPENTRY fnwpShutdownThread(HWND hwndFrame, ULONG msg, MPARAM mp1
 
                     XFolder         *pShutdownFolder;
 
-                    #ifdef DEBUG_SHUTDOWN
-                        _Pmpf((" ---> ID_SDDI_BEGINSHUTDOWN"));
-                    #endif
+                    PMPF_SHUTDOWN((" ---> ID_SDDI_BEGINSHUTDOWN"));
 
                     doshWriteLogEntry(pShutdownData->ShutdownLogFile, "  ID_SDDI_BEGINSHUTDOWN, hwnd: 0x%lX", hwndFrame);
 
@@ -5508,11 +5498,6 @@ STATIC MRESULT EXPENTRY fnwpShutdownThread(HWND hwndFrame, ULONG msg, MPARAM mp1
 
                 case ID_SDMI_UPDATESHUTLIST:
                 {
-                    // SHUTDOWNCONSTS  SDConsts;
-                    #ifdef DEBUG_SHUTDOWN
-                        DosBeep(10000, 50);
-                    #endif
-
                     doshWriteLogEntry(pShutdownData->ShutdownLogFile,
                            "  ID_SDMI_UPDATESHUTLIST, hwnd: 0x%lX",
                            hwndFrame);
@@ -6297,9 +6282,7 @@ STATIC void _Optlink fntUpdateThread(PTHREADINFO ptiMyself)
 
             // this is the first loop: we arrive here every time
             // the task list has changed */
-            #ifdef DEBUG_SHUTDOWN
-                _Pmpf(( "UT: Waiting for update..." ));
-            #endif
+            PMPF_SHUTDOWN(("UT: Waiting for update..." ));
 
             DosResetEventSem(pShutdownData->hevUpdated, &ulDummy);
                         // V0.9.9 (2001-04-04) [umoeller]
@@ -6324,9 +6307,7 @@ STATIC void _Optlink fntUpdateThread(PTHREADINFO ptiMyself)
                 {
                     // we're supposed to exit:
                     fUpdated = TRUE;
-                    #ifdef DEBUG_SHUTDOWN
-                        _Pmpf(( "UT: Exit recognized" ));
-                    #endif
+                    PMPF_SHUTDOWN(("UT: Exit recognized" ));
                 }
                 else
                 {
@@ -6334,9 +6315,8 @@ STATIC void _Optlink fntUpdateThread(PTHREADINFO ptiMyself)
                     // query event semaphore post count
                     DosQueryEventSem(pShutdownData->hevUpdated, &ulUpdate);
                     fUpdated = (ulUpdate > 0);
-                    #ifdef DEBUG_SHUTDOWN
-                        _Pmpf(( "UT: update recognized" ));
-                    #endif
+                    PMPF_SHUTDOWN(("UT: update recognized" ));
+
                     DosSleep(100);
                 }
             } // while (!fUpdated);
@@ -6344,9 +6324,7 @@ STATIC void _Optlink fntUpdateThread(PTHREADINFO ptiMyself)
             ulTestItemCount = 0;
             ulShutItemCount = 0;
 
-            #ifdef DEBUG_SHUTDOWN
-                _Pmpf(( "UT: Waiting for task list change, loop 2..." ));
-            #endif
+            PMPF_SHUTDOWN(("UT: Waiting for task list change, loop 2..." ));
 
             while (     (ulTestItemCount == ulShutItemCount)
                      && (!G_tiUpdateThread.fExit)
@@ -6387,9 +6365,8 @@ STATIC void _Optlink fntUpdateThread(PTHREADINFO ptiMyself)
             } // end while; loop until either the Shutdown thread has set the
               // Exit flag or the list has changed
 
-            #ifdef DEBUG_SHUTDOWN
-                _Pmpf(( "UT: Change or exit recognized" ));
-            #endif
+            PMPF_SHUTDOWN(("UT: Change or exit recognized" ));
+
         }  // end while; loop until exit flag set
     } // end TRY_LOUD(excpt1)
     CATCH(excpt1)
@@ -6424,9 +6401,7 @@ STATIC void _Optlink fntUpdateThread(PTHREADINFO ptiMyself)
     } END_CATCH();
 
     // clean up
-    #ifdef DEBUG_SHUTDOWN
-        _Pmpf(( "UT: Exiting..." ));
-    #endif
+    PMPF_SHUTDOWN(("UT: Exiting..." ));
 
     if (fLocked)
     {
@@ -6436,10 +6411,6 @@ STATIC void _Optlink fntUpdateThread(PTHREADINFO ptiMyself)
     }
 
     lstClear(&llTestList);
-
-    #ifdef DEBUG_SHUTDOWN
-        DosBeep(100, 100);
-    #endif
 }
 
 

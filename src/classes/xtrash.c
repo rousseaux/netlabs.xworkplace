@@ -1172,12 +1172,10 @@ SOM_Scope BOOL  SOMLINK xtrc_wpPopulate(XWPTrashCan *somSelf,
                                                        pszPath,
                                                        fFoldersOnly))
             {
-                #ifdef DEBUG_TRASHCAN
-                    _Pmpf(("%s -> wpPopulate, fFoldersOnly: %d, Flags: 0x%lX",
+                PMPF_TRASHCAN(("%s -> wpPopulate, fFoldersOnly: %d, Flags: 0x%lX",
                                 _wpQueryTitle(somSelf),
                                 fFoldersOnly,
                                 ulFldrFlags));
-                #endif
 
                 if (!fFoldersOnly)
                 {
@@ -1201,11 +1199,9 @@ SOM_Scope BOOL  SOMLINK xtrc_wpPopulate(XWPTrashCan *somSelf,
                     }
                 }
 
-                #ifdef DEBUG_TRASHCAN
-                    _Pmpf(("End of %s -> wpPopulate, fFoldersOnly: %d",
+                PMPF_TRASHCAN(("End of %s -> wpPopulate, fFoldersOnly: %d",
                                 _wpQueryTitle(somSelf),
                                 fFoldersOnly));
-                #endif
             }
         }
     }
@@ -1423,14 +1419,12 @@ SOM_Scope MRESULT  SOMLINK xtrc_wpDrop(XWPTrashCan *somSelf,
     /* XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf); */
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_wpDrop");
 
-    #ifdef DEBUG_TRASHCAN
-        _Pmpf(("wpDrop: pdrgInfo->hwndSource: 0x%lX", pdrgInfo->hwndSource));
+    PMPF_TRASHCAN(("pdrgInfo->hwndSource: 0x%lX", pdrgInfo->hwndSource));
             // this always has the HWND of
             // the source container
-        _Pmpf(("wpDrop: pdrgInfo->cditem:     0x%lX", pdrgInfo->cditem));
+    PMPF_TRASHCAN(("pdrgInfo->cditem:     0x%lX", pdrgInfo->cditem));
             // this has the number of items that
             // are dropped; always >= 1
-    #endif
 
     mrc = trshMoveDropped2TrashCan(somSelf, pdrgInfo);
 

@@ -259,11 +259,9 @@ SOM_Scope BOOL  SOMLINK xf_xwpSetFldrSort(XFolder *somSelf,
 
     WPObject *pobjLock = NULL;
 
-    #ifdef DEBUG_SORT
-        _PmpfF(("[%s]{%s}",_wpQueryTitle(somSelf),
+    PMPF_SORT(("[%s]{%s}",_wpQueryTitle(somSelf),
                             _somGetClassName(somSelf)));
-        _Pmpf(("  Old: Default %d, Always %d", _lDefSortCrit, _lAlwaysSort));
-    #endif
+    PMPF_SORT(("  Old: Default %d, Always %d", _lDefSortCrit, _lAlwaysSort));
 
     TRY_LOUD(excpt1)
     {
@@ -295,9 +293,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpSetFldrSort(XFolder *somSelf,
                 fUpdate = TRUE;
             }
 
-            #ifdef DEBUG_SORT
-            _Pmpf(("  New: Default %d, Always %d", _lDefSortCrit, _lAlwaysSort));
-            #endif
+            PMPF_SORT(("  New: Default %d, Always %d", _lDefSortCrit, _lAlwaysSort));
 
         } // end if (fFolderLocked)
     }
@@ -1001,9 +997,8 @@ SOM_Scope BOOL  SOMLINK xf_xwpSetStatusBarVisibility(XFolder *somSelf,
 
     if (_bStatusBarInstance != ulVisibility)
     {
-        #ifdef DEBUG_STATUSBARS
-            _Pmpf(( "xwpSetStatusBarVisibility: %d", ulVisibility));
-        #endif
+        PMPF_STATUSBARS(("%d", ulVisibility));
+
         _bStatusBarInstance = ulVisibility;
 
         _wpSaveDeferred(somSelf);       // was missing V0.9.11 (2001-04-22) [umoeller]
@@ -1309,14 +1304,12 @@ SOM_Scope void  SOMLINK xf_wpInitData(XFolder *somSelf)
                 // got it:
                 s_pWPFolder = pClass;
 
-                #ifdef DEBUG_RESTOREDATA
-                    _PmpfF(("somGetInstanceSize %d",
+                PMPF_RESTOREDATA(("somGetInstanceSize %d",
                                 _somGetInstanceSize(pClass)));
-                    _PmpfF(("somGetInstancePartSize %d",
+                PMPF_RESTOREDATA(("somGetInstancePartSize %d",
                                 _somGetInstancePartSize(pClass)));
-                    _PmpfF(("sizeof(IBMOBJECTDATA) %d",
+                PMPF_RESTOREDATA(("sizeof(IBMOBJECTDATA) %d",
                                 sizeof(IBMOBJECTDATA)));
-                #endif
 
                 break;
             }
@@ -1709,9 +1702,7 @@ SOM_Scope BOOL  SOMLINK xf_wpSaveState(XFolder *somSelf)
     XFolderData *somThis = XFolderGetData(somSelf);
     // XFolderMethodDebug("XFolder","xf_wpSaveState");
 
-    #if defined DEBUG_RESTOREDATA || defined DEBUG_SOMMETHODS
-        _Pmpf(("XFolder::wpSaveState (%s)", _wpQueryTitle(somSelf)));
-    #endif
+    PMPF_RESTOREDATA(("[%s]", _wpQueryTitle(somSelf)));
 
     // we will now save all our instance data; in order
     // not to blow up the EA size too much, we will only
@@ -1748,9 +1739,7 @@ SOM_Scope BOOL  SOMLINK xf_wpSaveState(XFolder *somSelf)
 
     brc = XFolder_parent_WPFolder_wpSaveState(somSelf);
 
-    #if defined DEBUG_RESTOREDATA || defined DEBUG_SOMMETHODS
-        _Pmpf(("%s: End of wpSaveState", _wpQueryTitle(somSelf)));
-    #endif
+    PMPF_RESTOREDATA(("%s: End of wpSaveState", _wpQueryTitle(somSelf)));
 
     return brc;
 }
@@ -1794,9 +1783,7 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreState(XFolder *somSelf,
     XFolderData *somThis = XFolderGetData(somSelf);
     // XFolderMethodDebug("XFolder","xf_wpRestoreState");
 
-    #if defined DEBUG_RESTOREDATA || defined DEBUG_SOMMETHODS
-        _Pmpf(("XFolder::wpRestoreState for %s", _wpQueryTitle(somSelf) ));
-    #endif
+    PMPF_RESTOREDATA(("[%s]", _wpQueryTitle(somSelf) ));
 
 #ifndef __NOTURBOFOLDERS__
     // new icon handling code follows
@@ -1880,19 +1867,15 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreState(XFolder *somSelf,
             // not really what we want!
             _lAlwaysSort = FALSE;
 
-    #ifdef DEBUG_SORT
-        _PmpfF(("[%s] _bAlwaysSortInstance is %d",
+    PMPF_SORT(("[%s] _bAlwaysSortInstance is %d",
                 _wpQueryTitle(somSelf), _lAlwaysSort));
-    #endif
 
     // in this case, we MUST call the parent LAST because
     // wpRestoreData checks for whether an XFolder sort setting
     // has been restored!!
     brc = (XFolder_parent_WPFolder_wpRestoreState(somSelf, ulReserved));
 
-    #if defined DEBUG_RESTOREDATA || defined DEBUG_SOMMETHODS
-        _Pmpf(("  End of XFolder::wpRestoreState"));
-    #endif
+    PMPF_RESTOREDATA(("  End of XFolder::wpRestoreState"));
 
     return brc;
 }
@@ -1922,7 +1905,7 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreData(XFolder *somSelf,
 {
     BOOL        brc;
 
-#ifdef DEBUG_RESTOREDATA
+#ifdef __DEBUG__
     ULONG       cbOrigValue = 0;
     // XFolderMethodDebug("XFolder","xf_wpRestoreData");
 
@@ -1939,7 +1922,7 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreData(XFolder *somSelf,
                                                 pszClass, ulKey,
                                                 pValue, pcbValue);
 
-#ifdef DEBUG_RESTOREDATA
+#ifdef __DEBUG__
     // after we have restored the setting by calling the
     // default WPFolder method, we check for a few flags
     // which we might be interested in; we can then store
@@ -1957,12 +1940,12 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreData(XFolder *somSelf,
                     // _cbFolderBackground = *pcbValue;
                     // _pFolderBackground = (PVOID)pValue;
                     PIBMFOLDERDATA pData = (PIBMFOLDERDATA)_pvWPFolderData;
-                    _PmpfF(("0x%lX <-- pValue of IDKEY_FDRBACKGROUND (%d bytes)",
+                    PMPF_RESTOREDATA(("0x%lX <-- pValue of IDKEY_FDRBACKGROUND (%d bytes)",
                                 pValue,
                                 *pcbValue));
-                    _PmpfF(("0x%lX <-- we calculated (%d bytes)",
+                    PMPF_RESTOREDATA(("0x%lX <-- we calculated (%d bytes)",
                                 &pData->Background.BkgndStore,
-                                sizeof(FDRBKGNDSTORE)));
+                                sizeof(IBMFDRBKGNDSTORE)));
                 }
             break;
 
@@ -1975,20 +1958,14 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreData(XFolder *somSelf,
                 if (pValue)
                 {
                     PIBMFOLDERDATA pData = (PIBMFOLDERDATA)_pvWPFolderData;
-                    _PmpfF(("0x%lX <-- pValue of IDKEY_FDRSORTINFO (%d bytes)",
+                    PMPF_RESTOREDATA(("0x%lX <-- pValue of IDKEY_FDRSORTINFO (%d bytes)",
                                 pValue,
                                 *pcbValue));
-                    _PmpfF(("0x%lX <-- we calculated (%d bytes)",
+                    PMPF_RESTOREDATA(("0x%lX <-- we calculated (%d bytes)",
                                 &pData->SortInfo,
                                 sizeof(IBMSORTINFO)));
                 }
 
-/*
-                if (cbOrigValue == sizeof(FDRSORTINFO))
-                    if (pValue)
-                        _pFolderSortInfo = (PFDRSORTINFO)pValue;
-                // _Pmpf(("IDKEY_FDRSORTINFO size %d -> %d", cbOrigValue, *pcbValue));
-*/
             break;
 
             /* case IDKEY_FDRCNRBACKGROUND:
@@ -2011,10 +1988,10 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreData(XFolder *somSelf,
                 if (pValue)
                 {
                     PIBMFOLDERDATA pData = (PIBMFOLDERDATA)_pvWPFolderData;
-                    _PmpfF(("0x%lX <-- pValue of IDKEY_FDRLONGARRAY (%d bytes)",
+                    PMPF_RESTOREDATA(("0x%lX <-- pValue of IDKEY_FDRLONGARRAY (%d bytes)",
                                 pValue,
                                 *pcbValue));
-                    _PmpfF(("0x%lX <-- we calculated (%d bytes)",
+                    PMPF_RESTOREDATA(("0x%lX <-- we calculated (%d bytes)",
                                 &pData->LongArray,
                                 sizeof(FDRLONGARRAY)));
                     // _pFolderLongArray = (PFDRLONGARRAY)pValue;
@@ -2149,7 +2126,7 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreData(XFolder *somSelf,
     }
 
     if ((pValue) && (brc))
-        _Pmpf(("Data %s (%s %d) size_in %d -> out %d",
+        PMPF_RESTOREDATA(("Data %s (%s %d) size_in %d -> out %d",
                 wpshIdentifyRestoreID(pszClass, ulKey),
                 pszClass, ulKey,
                 cbOrigValue,    // size in or 0 if size queried
@@ -2404,10 +2381,8 @@ SOM_Scope ULONG  SOMLINK xf_wpFilterPopupMenu(XFolder *somSelf,
                                                              ulFlags,
                                                              hwndCnr,
                                                              fMultiSelect);
-    #ifdef DEBUG_MENUS
-        _Pmpf(("XFolder::wpFilterPopupMenu parent flags:"));
-        _Pmpf(("  CTXT_CRANOTHER %d", flMenuFilter & CTXT_CRANOTHER));
-    #endif
+    PMPF_MENUS(("parent flags:"));
+    PMPF_MENUS(("  CTXT_CRANOTHER %d", flMenuFilter & CTXT_CRANOTHER));
 
     // if object has been deleted already (ie. is in trashcan),
     // remove delete
@@ -2486,12 +2461,11 @@ SOM_Scope BOOL  SOMLINK xf_wpModifyMenu(XFolder *somSelf,
     // XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_wpModifyMenu");
 
-    #ifdef DEBUG_MENUS
-        _PmpfF(("[%s] hwndMenu 0x%lX hwndCnr 0x%lX",
+    PMPF_MENUS(("[%s] hwndMenu 0x%lX hwndCnr 0x%lX",
                 _wpQueryTitle(somSelf),
                 hwndMenu,
                 hwndCnr));
-        _Pmpf(("   type = 0x%lX (%s), view = 0x%lX (%s)",
+    PMPF_MENUS(("   type = 0x%lX (%s), view = 0x%lX (%s)",
                 ulMenuType,
                 (ulMenuType == MENU_OBJECTPOPUP) ? "MENU_OBJECTPOPUP"
                 : (ulMenuType == MENU_OPENVIEWPOPUP) ? "MENU_OPENVIEWPOPUP"
@@ -2509,8 +2483,6 @@ SOM_Scope BOOL  SOMLINK xf_wpModifyMenu(XFolder *somSelf,
                 mnuQueryViewName(ulView)
                 ));
 
-    #endif
-
     if (brc = XFolder_parent_WPFolder_wpModifyMenu(somSelf,
                                                    hwndMenu,
                                                    hwndCnr,
@@ -2526,7 +2498,7 @@ SOM_Scope BOOL  SOMLINK xf_wpModifyMenu(XFolder *somSelf,
                                   ulView);
     }
 
-    _PmpfF(("returning %d", brc));
+    PMPF_MENUS(("returning %d", brc));
 
     return brc;
 }
@@ -2621,14 +2593,7 @@ SOM_Scope HWND  SOMLINK xf_wpOpen(XFolder *somSelf,
     HWND        hwndNewFrame; // return HWND
     BOOL        fOpenDefaultDoc = FALSE;
 
-    // XFolderMethodDebug("XFolder","xf_wpOpen");
-    #ifdef DEBUG_SOMMETHODS
-        _Pmpf(("XFolder::wpOpen for 0x%lX (%s): ulView = 0x%lX, param = 0x%lX",
-                    somSelf,
-                    _wpQueryTitle(somSelf),
-                    ulView,
-                    param));
-    #endif
+    XFolderMethodDebug("XFolder","xf_wpOpen");
 
 #ifndef __NOFDRDEFAULTDOCS__
     // default document support
@@ -2700,12 +2665,6 @@ SOM_Scope HWND  SOMLINK xf_wpOpen(XFolder *somSelf,
         }
     }
 
-    #ifdef DEBUG_SOMMETHODS
-        _Pmpf(("End of XFolder::wpOpen for %s: hwndFrame = 0x%lX",
-                    _wpQueryTitle(somSelf),
-                    hwndNewFrame));
-    #endif
-
     return hwndNewFrame;
 }
 
@@ -2737,10 +2696,7 @@ SOM_Scope BOOL  SOMLINK xf_wpPopulate(XFolder *somSelf,
     CHAR    szFolderFullPath[CCHMAXPATH];
 
     // XFolderData *somThis = XFolderGetData(somSelf);
-    // XFolderMethodDebug("XFolder","xf_wpPopulate");
-    #ifdef DEBUG_SOMMETHODS
-        _Pmpf(("XFolder::wpPopulate for %s", _wpQueryTitle(somSelf) ));
-    #endif
+    XFolderMethodDebug("XFolder","xf_wpPopulate");
 
 #ifndef __NOTURBOFOLDERS__
     if (    // turbo folders enabled?
@@ -2766,11 +2722,6 @@ SOM_Scope BOOL  SOMLINK xf_wpPopulate(XFolder *somSelf,
                                                  pszPath,
                                                  fFoldersOnly);
 
-    #ifdef DEBUG_SOMMETHODS
-        _Pmpf(("End of wpPopulate for %s --> %d",
-                    _wpQueryTitle(somSelf),
-                    brc));
-    #endif
     return brc;
 }
 
@@ -3170,11 +3121,9 @@ SOM_Scope BOOL  SOMLINK xf_wpAddToContent(XFolder *somSelf,
             fFdrWriteLocked = FALSE,
             fFdrObjLocked = FALSE;
 
-    #ifdef DEBUG_SOMMETHODS
-         _Pmpf(("wpAddToContent, folder: %s, object: %s",
+    PMPF_CNRCONTENT(("wpAddToContent, folder: %s, object: %s",
              _wpQueryTitle(somSelf),
              _wpQueryTitle(Object)));
-    #endif
 
     if (
             (_fDisableAutoCnrAdd)
@@ -3266,11 +3215,9 @@ SOM_Scope BOOL  SOMLINK xf_wpDeleteFromContent(XFolder *somSelf,
     // XFolderData *somThis = XFolderGetData(somSelf);
     // XFolderMethodDebug("XFolder","xf_wpDeleteFromContent");
 
-    #ifdef DEBUG_SOMMETHODS
-         _Pmpf(("wpDeleteFromContent, folder: %s, object: %s",
+    PMPF_CNRCONTENT(("wpDeleteFromContent, folder: %s, object: %s",
              _wpQueryTitle(somSelf),
              _wpQueryTitle(Object)));
-    #endif
 
 #ifndef __NOTURBOFOLDERS__
     if (cmnQuerySetting(sfTurboFolders))
@@ -3997,9 +3944,7 @@ SOM_Scope HPOINTER  SOMLINK xfM_wpclsQueryIconN(M_XFolder *somSelf,
                             switch (pbData->fFormat)
                             {
                                 case ICON_FILE:
-                                    #ifdef DEBUG_ICONREPLACEMENTS
-                                        _Pmpf(("        pIconInfo->pszFileName %s", pbData->pszFileName));
-                                    #endif
+                                    PMPF_ICONREPLACEMENTS(("        pIconInfo->pszFileName %s", pbData->pszFileName));
 
                                     icoLoadICOFile(pbData->pszFileName,
                                                    &_hptrAni1,

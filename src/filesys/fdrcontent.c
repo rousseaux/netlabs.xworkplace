@@ -776,9 +776,7 @@ BOOL fdrRealNameChanged(WPFolder *somSelf,          // in: folder of pFSObject
         _wpQueryFilename(pFSObject, szNewUpperRealName, FALSE);
         nlsUpper(szNewUpperRealName);
 
-        #ifdef DEBUG_TURBOFOLDERS
-        _PmpfF(("old %s, new %s", pszOldRealName, szNewUpperRealName));
-        #endif
+        PMPF_TURBOFOLDERS(("old %s, new %s", pszOldRealName, szNewUpperRealName));
 
         if (strcmp(pszOldRealName, szNewUpperRealName))
         {
@@ -1859,9 +1857,7 @@ BOOL fdrPopulate(WPFolder *somSelf,
 
     TRY_LOUD(excpt1)
     {
-        #ifdef DEBUG_TURBOFOLDERS
-        _PmpfF(("POPULATING %s", pcszFolderFullPath));
-        #endif
+        PMPF_TURBOFOLDERS(("POPULATING %s", pcszFolderFullPath));
 
         // there can only be one populate at a time
         if (fFindLocked = !_wpRequestFindMutexSem(somSelf, SEM_INDEFINITE_WAIT))
@@ -1964,9 +1960,7 @@ BOOL fdrPopulate(WPFolder *somSelf,
     if (fFindLocked)
         _wpReleaseFindMutexSem(somSelf);
 
-    #ifdef DEBUG_TURBOFOLDERS
-    _PmpfF(("returning %d", fSuccess));
-    #endif
+    PMPF_TURBOFOLDERS(("returning %d", fSuccess));
 
     return (fSuccess);
 }

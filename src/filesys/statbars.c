@@ -369,17 +369,13 @@ HWND stbCreate(PSUBCLFOLDERVIEW psli2)
 
     // XFolderData *somThis = XFolderGetData(somSelf);
 
-    #ifdef DEBUG_STATUSBARS
-        _PmpfF(("[%s] fShow = %d", _wpQueryTitle(somSelf), fShow));
-    #endif
+    PMPF_STATUSBARS(("[%s]", _wpQueryTitle(psli2->somSelf)));
 
     if (psli2)
     {
         if (psli2->hwndStatusBar) // already activated: update only
         {
-            #ifdef DEBUG_STATUSBARS
-                _Pmpf(("    status bar already exists, posting STBM_UPDATESTATUSBAR"));
-            #endif
+            PMPF_STATUSBARS(("    status bar already exists, posting STBM_UPDATESTATUSBAR"));
 
             WinPostMsg(psli2->hwndStatusBar, STBM_UPDATESTATUSBAR, MPNULL, MPNULL);
             // and quit
@@ -400,10 +396,10 @@ HWND stbCreate(PSUBCLFOLDERVIEW psli2)
             ULONG   ulView = wpshQueryView(psli2->somSelf,
                                            psli2->hwndFrame);
 
-            #ifdef DEBUG_STATUSBARS
+            #ifdef __DEBUG__
                 PCSZ pcszView;
                 CHAR szView[100];
-                _Pmpf(("    created new status bar hwnd 0x%lX", psli2->hwndStatusBar));
+                PMPF_STATUSBARS(("    created new status bar hwnd 0x%lX", psli2->hwndStatusBar));
                 switch (ulView)
                 {
                     case OPEN_TREE: pcszView = "Tree"; break;
@@ -413,7 +409,7 @@ HWND stbCreate(PSUBCLFOLDERVIEW psli2)
                         sprintf(szView, "unknown %d", ulView);
                         pcszView = szView;
                 }
-                _Pmpf(( "    View: %s", pcszView));
+                PMPF_STATUSBARS(("    View: %s", pcszView));
             #endif
 
             // inflate only for standard folder views,
@@ -459,9 +455,7 @@ HWND stbCreate(PSUBCLFOLDERVIEW psli2)
                     else
                         fInflate = TRUE;
 
-                    #ifdef DEBUG_STATUSBARS
-                        _Pmpf(("   fInflate = %d, ulView = %d", fInflate, ulView));
-                    #endif
+                    PMPF_STATUSBARS(("   fInflate = %d, ulView = %d", fInflate, ulView));
 
                     // set a flag for the subclassed folder frame
                     // window proc that this folder view needs no additional scrolling
@@ -503,10 +497,8 @@ HWND stbCreate(PSUBCLFOLDERVIEW psli2)
                        )
                         psli2->fNeedCnrScroll = TRUE;
 
-                    #ifdef DEBUG_STATUSBARS
-                        _Pmpf(("    set psli2->fNeedCnrScroll: %d", psli2->fNeedCnrScroll));
-                        _Pmpf(("    sending WM_UPDATEFRAME"));
-                    #endif
+                    PMPF_STATUSBARS(("    set psli2->fNeedCnrScroll: %d", psli2->fNeedCnrScroll));
+                    PMPF_STATUSBARS(("    sending WM_UPDATEFRAME"));
 
             } // end switch (ulView)
 
@@ -622,9 +614,7 @@ BOOL _Optlink stb_UpdateCallback(WPFolder *somSelf,
 {
     PSUBCLFOLDERVIEW    psfv;
 
-    #ifdef DEBUG_STATUSBARS
-        _Pmpf(("stb_UpdateCallback ulActivate = %d", ulActivate));
-    #endif
+    PMPF_STATUSBARS((" ulActivate = %d", ulActivate));
 
     if (psfv = fdrQuerySFV(hwndView, NULL))
     {
@@ -882,7 +872,7 @@ STATIC VOID StatusTimer(HWND hwndBar,
                                            // root folders, holds the disk object
                                            psbd->pRealObject,
                                            psbd->hwndFrame);
-            #ifdef DEBUG_STATUSBARS
+            #ifdef __DEBUG__
                 PCSZ pcszView;
                 CHAR szView[100];
                 switch (ulView)
@@ -894,7 +884,7 @@ STATIC VOID StatusTimer(HWND hwndBar,
                         sprintf(szView, "unknown %d", ulView);
                         pcszView = szView;
                 }
-                _PmpfF((" View is %s", pcszView));
+                PMPF_STATUSBARS((" View is %s", pcszView));
                 fdrDebugDumpFolderFlags(psbd->somSelf);
             #endif
 
@@ -1157,9 +1147,7 @@ STATIC VOID StatusPresParamChanged(HWND hwndBar,
     }
 
     // else: it was us that the presparam has been set for
-    #ifdef DEBUG_STATUSBARS
-        _Pmpf(( "WM_PRESPARAMCHANGED: %lX", mp1 ));
-    #endif
+    PMPF_STATUSBARS(("WM_PRESPARAMCHANGED: %lX", mp1 ));
 
     // now check what has changed
     switch ((ULONG)mp1)
@@ -1371,9 +1359,6 @@ STATIC MRESULT EXPENTRY fnwpStatusBar(HWND hwndBar, ULONG msg, MPARAM mp1, MPARA
              * WM_BUTTON1DBLCLK:
              *      on double-click on the status bar,
              *      open the folder's settings notebook.
-             *      If DEBUG_RESTOREDATA is on (common.h),
-             *      dump some internal folder data to
-             *      PMPRINTF instead.
              */
 
             case WM_BUTTON1DBLCLK:
@@ -1986,7 +1971,7 @@ STATIC BOOL CheckLogicalDrive(PULONG pulLogicalDrive,
                 *pulLogicalDrive = 0;
         }
 
-        _PmpfF(("*pulLogicalDrive = %d", *pulLogicalDrive));
+        PMPF_DISK(("*pulLogicalDrive = %d", *pulLogicalDrive));
     }
 
     return (*pulLogicalDrive != 0);
@@ -2989,7 +2974,7 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
                          pcs);
 
     // prepend icon position in debug mode
-    #ifdef DEBUG_STATUSBARS
+    #ifdef __DEBUG__
     if (    (cSelectedRecords == 1)
          && (pobjSelected)
          && (prec = _wpQueryCoreRecord(pobjSelected))
@@ -3005,26 +2990,24 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
         xstrcpys(&strText, &strNew);
         xstrClear(&strNew);
     }
-    #endif
 
     // prepend class name in debug mode
     // V0.9.19 (2002-06-15) [umoeller]
-    #ifdef __DEBUG__
-        if (cSelectedRecords == 1)
-        {
-            XSTRING strNew;
-            CHAR sz[300];
-            sprintf(sz,
-                    "%d {%s} ",
-                    _xwpQueryLocks(pobjSelected),
-                    _somGetClassName(pobjSelected));
-            xstrInitCopy(&strNew,
-                         sz,
-                         0);
-            xstrcats(&strNew, &strText);
-            xstrcpys(&strText, &strNew);
-            xstrClear(&strNew);
-        }
+    if (cSelectedRecords == 1)
+    {
+        XSTRING strNew;
+        CHAR sz[300];
+        sprintf(sz,
+                "%d {%s} ",
+                _xwpQueryLocks(pobjSelected),
+                _somGetClassName(pobjSelected));
+        xstrInitCopy(&strNew,
+                     sz,
+                     0);
+        xstrcats(&strNew, &strText);
+        xstrcpys(&strText, &strNew);
+        xstrClear(&strNew);
+    }
     #endif
 
     if (strText.ulLength)
@@ -3110,9 +3093,7 @@ STATIC MRESULT EXPENTRY fncbWPSStatusBarReturnClassAttr(HWND hwndCnr,
 
     if (pwps)
     {
-        #ifdef DEBUG_SETTINGS
-            _Pmpf(("Checking %s", pwps->pszClassName));
-        #endif
+
         if (pwps->pClassObject)
         {
             // now check if the class supports new sort mnemonics

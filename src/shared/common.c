@@ -206,6 +206,12 @@ extern BOOL             G_fIsWarp4 = FALSE;     // V0.9.19 (2002-04-24) [umoelle
 extern ULONG            G_cxIconSys = 0;        // V0.9.20 (2002-08-04) [umoeller]
 extern ULONG            G_cyIconSys = 0;        // V0.9.20 (2002-08-04) [umoeller]
 
+#ifdef __DEBUG__
+    // here's the debug settings array referenced by the
+    // PMPF_* macros in setup.h
+    extern char G_aDebugs[__LAST_DBGSET] = {0};
+#endif
+
 // Declare C runtime prototypes, because there are no headers
 // for these:
 
@@ -483,9 +489,8 @@ PCSZ cmnQueryLanguageCode(VOID)
                                       sizeof(G_szLanguageCode));
 
             G_szLanguageCode[3] = '\0';
-            #ifdef DEBUG_LANGCODES
-                _Pmpf(( "cmnQueryLanguageCode: %s", szLanguageCode ));
-            #endif
+
+            PMPF_LANGCODES(( "%s", G_szLanguageCode));
         }
     }
     CATCH(excpt1) { } END_CATCH();
@@ -563,9 +568,9 @@ PCSZ cmnQueryHelpLibrary(VOID)
                 sprintf(G_szHelpLibrary + strlen(G_szHelpLibrary),
                         "\\help\\xfldr%s.hlp",
                         cmnQueryLanguageCode());
-                #ifdef DEBUG_LANGCODES
-                    _Pmpf(( "cmnQueryHelpLibrary: %s", szHelpLibrary ));
-                #endif
+
+                PMPF_LANGCODES(("%s", G_szHelpLibrary ));
+
                 rc = G_szHelpLibrary;
             }
         }
@@ -656,9 +661,9 @@ PCSZ cmnQueryMessageFile(VOID)
                 sprintf(G_szMessageFile + strlen(G_szMessageFile),
                         "\\help\\xfldr%s.tmf",
                         cmnQueryLanguageCode());
-                #ifdef DEBUG_LANGCODES
-                    _Pmpf(( "cmnQueryMessageFile: %s", szMessageFile));
-                #endif
+
+                PMPF_LANGCODES(("%s", G_szMessageFile));
+
                 rc = G_szMessageFile;
             }
         }
@@ -808,9 +813,8 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
                                             hmodLoaded, // bullshit G_hmodNLS,
                                             ID_XSSI_XFOLDERVERSION,
                                             sizeof(szTest), szTest);
-                    #ifdef DEBUG_LANGCODES
-                        _Pmpf(("%s version: %s", szResourceModuleName, szTest));
-                    #endif
+
+                    PMPF_LANGCODES(("%s", szResourceModuleName, szTest));
 
                     if (lLength == 0)
                     {
@@ -3319,10 +3323,13 @@ VOID cmnLoadGlobalSettings(VOID)
     ULONG cb, ul2;
     POLDGLOBALSETTINGS pSettings;
 
+    #ifdef __DEBUG__
+        memset(G_aDebugs, 0, sizeof(G_aDebugs));
+    #endif
+
     // first set all settings to safe defaults
     // according to the table
 
-    // _PmpfF(("Initializing defaults"));
     // we can't use cmnSetDefaultSettings here
     // because that would modify the INI entries
     for (ul2 = 0;
@@ -4877,9 +4884,8 @@ BOOL cmnAddProductInfoMenuItem(WPFolder *somSelf,
 
     MENUITEM mi;
 
-    #ifdef DEBUG_MENUS
-        _Pmpf(("  Inserting 'Product info'"));
-    #endif
+    PMPF_MENUS(("  Inserting 'Product info'"));
+
     // get handle to the WPObject's "Help" submenu in the
     // the folder's popup menu
     if (winhQueryMenuItem(hwndMenu,
@@ -5436,9 +5442,7 @@ BOOL cmnDescribeKey(PSZ pszBuf,
     if (pcszCopy)
         strcat(pszBuf, pcszCopy);
 
-    #ifdef DEBUG_KEYS
-        _Pmpf(("Key: %s, usKeyCode: 0x%lX, usFlags: 0x%lX", pszBuf, usKeyCode, usFlags));
-    #endif
+    PMPF_KEYS(("Key: %s, usKeyCode: 0x%lX, usFlags: 0x%lX", pszBuf, usKeyCode, usFlags));
 
     return brc;
 }
@@ -6527,9 +6531,7 @@ APIRET cmnGetMessageExt(PCSZ *pTable,     // in: replacement PSZ table or NULL
 
     TRY_LOUD(excpt1)
     {
-        #ifdef DEBUG_LANGCODES
-            _Pmpf(("cmnGetMessage %s %s", pszMessageFile, pszMsgId));
-        #endif
+        PMPF_LANGCODES(("%s", pcszMsgID));
 
         if (fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__))
         {
@@ -6549,9 +6551,7 @@ APIRET cmnGetMessageExt(PCSZ *pTable,     // in: replacement PSZ table or NULL
                                     pTable,
                                     ulTable);
 
-                #ifdef DEBUG_LANGCODES
-                    _Pmpf(("  tmfGetMessage rc: %d", arc));
-                #endif
+                PMPF_LANGCODES(("tmfGetMessage rc: %d", arc));
 
                 if (!arc)
                     ReplaceEntities(pstr);

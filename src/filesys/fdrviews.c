@@ -233,10 +233,8 @@ VOID DrawBitmapClipped(HPS hps,             // in: presentation space
     RECTL   rclSubBitmap;
     POINTL  ptl;
 
-    #ifdef DEBUG_CNRBITMAPS
-        _PmpfF(("pptlOrigin->x: %d, pptlOrigin->y: %d",
+    PMPF_CNRBITMAPS(("pptlOrigin->x: %d, pptlOrigin->y: %d",
             pptlOrigin->x, pptlOrigin->y));
-    #endif
 
     /*
        -- pathological case:
@@ -273,9 +271,7 @@ VOID DrawBitmapClipped(HPS hps,             // in: presentation space
          || (prclClip->yTop <= pptlOrigin->y)
        )
     {
-        #ifdef DEBUG_CNRBITMAPS
-            _Pmpf(("  pathological case, returning"));
-        #endif
+        PMPF_CNRBITMAPS(("  pathological case, returning"));
 
         return;
     }
@@ -520,13 +516,11 @@ MRESULT PaintCnrBackground(HWND hwndCnr,
                 RECTL   rclClip;
                 memcpy(&rclClip, &pob->rclBackground, sizeof(RECTL));
 
-                #ifdef DEBUG_CNRBITMAPS
-                    _PmpfF(("BKGND_SCALED"));
-                    _Pmpf(("    szlCnr.cx %d, cy %d",
+                PMPF_CNRBITMAPS(("BKGND_SCALED"));
+                PMPF_CNRBITMAPS(("    szlCnr.cx %d, cy %d",
                         pSubCnr->szlCnr.cx, pSubCnr->szlCnr.cy));
-                    _Pmpf(("    rclClip.xLeft %d, yBottom %d, xRight %d, yTop %d",
+                PMPF_CNRBITMAPS(("    rclClip.xLeft %d, yBottom %d, xRight %d, yTop %d",
                         rclClip.xLeft, rclClip.yBottom, rclClip.xRight, rclClip.yTop));
-                #endif
 
                 // reset clip region to "all" to quickly
                 // get the old clip region; we must save
@@ -729,7 +723,7 @@ LONG ResolveColor(LONG lcol)         // in: explicit color or SYSCLR_* index
     // SYSCLR_WINDOW, so check this
     else if (lcol & 0xFF000000)
     {
-#ifdef DEBUG_CNRBITMAPS
+#ifdef __DEBUG__
         #define DUMPCOL(i) case i: pcsz = # i; break
         PCSZ pcsz = "unknown index";
         switch (lcol)
@@ -777,9 +771,9 @@ LONG ResolveColor(LONG lcol)         // in: explicit color or SYSCLR_* index
             DUMPCOL(SYSCLR_HELPHILITE);
         }
 
-        _Pmpf(("  --> %d (%s)", lcol, pcsz));
+        PMPF_CNRBITMAPS(("  --> %d (%s)", lcol, pcsz));
 
-#endif  // DEBUG_CNRBITMAPS
+#endif
 
         lcol = WinQuerySysColor(HWND_DESKTOP,
                                 lcol,

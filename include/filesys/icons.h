@@ -51,6 +51,11 @@
                               PULONG pcbIconInfo,
                               PICONINFO pIconInfo);
 
+    PSZ icoGetWinResourceTypeName(PSZ pszBuf,
+                                   ULONG ulTypeThis);
+
+    PCSZ icoGetOS2ResourceTypeName(ULONG ulResourceType);
+
     #ifdef EXEH_HEADER_INCLUDED
         APIRET icoLoadExeIcon(PEXECUTABLE pExec,
                               ULONG idResource,

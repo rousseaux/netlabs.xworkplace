@@ -38,6 +38,7 @@
     // later, I now define STATIC to do nothing, but this could
     // be switched back eventually.
 
+    // #define STATIC static
     #define STATIC
 
     // XWPENTRY defines the standard linkage for the
@@ -250,140 +251,280 @@
         // once, and you'll get no error message, so be warned.
             #define _PMPRINTF_
 
-/* general debugging */
+        typedef enum _DEBUGGINGFLAGS
+        {
+    #endif
 
-        // The following replaces the SOMMethodDebug macros with
-        // a PMPRINTF version. This leads to a LOT of output for
-        // each SOM method called from all the XWorkplace files and
-        // slows down the system _very_ much if the PMPRINTF output
-        // wnd is open.
-            // #define DEBUG_SOMMETHODS
+/* general debugging */
 
         // the following will printf language code queries and
         // NLS DLL evaluation
-            // #define DEBUG_LANGCODES
+    #ifndef DONTDEBUGATALL
+            DBGSET_LANGCODES,
+                #define PMPF_LANGCODES(b) \
+                    if (G_aDebugs[DBGSET_LANGCODES]) \
+                        PmpfF(b)
+    #else
+                #define PMPF_LANGCODES(b)
+    #endif
 
-        // the following will show a dumb message box when XWPSetup
-        // is opened to check whether all classes have properly
-        // registered themselves in THREADGLOBALS
-            // #define DEBUG_XWPSETUP_CLASSES
-
-        // the following writes xfldtrap.log even for "quiet"
-        // exceptions, i.e. those handled by excHandlerQuiet
-            // #define DEBUG_WRITEQUIETEXCPT
-
-        // the following beeps when thread priorities change
-            // #define DEBUG_PRIORITY
-
-        // the following printf's each added awake object
-            // #define DEBUG_AWAKEOBJECTS
-
-        // the following will printf all kinds of settings
-        // notebook information
-            // #define DEBUG_SETTINGS
-
-        // the following displays XWorkplace memory usage in the
-        // "Object internals" of the Desktop settings; this
-        // will produce additional debug code for malloc(),
-        // so this better only be used for debugging
-            // #define DEBUG_MEMORY
-
-        // the following beeps when the Worker thread cleans up
-        // the default heap
-            // #define DEBUG_MEMORYBEEP
-
+    #ifndef DONTDEBUGATALL
         // debug notebook.c callbacks
-            // #define DEBUG_NOTEBOOKS
+            DBGSET_NOTEBOOKS,
+                #define PMPF_NOTEBOOKS(b) \
+                    if (G_aDebugs[DBGSET_NOTEBOOKS]) \
+                        PmpfF(b)
+    #else
+                #define PMPF_NOTEBOOKS(b)
+    #endif
+
+    #ifndef DONTDEBUGATALL
 
 /* object handling */
 
         // debug wpRestoreData and such
         // WARNING: this produces LOTS of output
-            // #define DEBUG_RESTOREDATA
+            DBGSET_RESTOREDATA,
+                #define PMPF_RESTOREDATA(b) \
+                    if (G_aDebugs[DBGSET_RESTOREDATA]) \
+                        PmpfF(b)
+    #else
+                #define PMPF_RESTOREDATA(b)
+    #endif
 
+    #ifndef DONTDEBUGATALL
         // debug icon replacements
-            // #define DEBUG_ICONREPLACEMENTS
+            DBGSET_ICONREPLACEMENTS,
+                #define PMPF_ICONREPLACEMENTS(b) \
+                    if (G_aDebugs[DBGSET_ICONREPLACEMENTS]) \
+                        PmpfF(b)
+    #else
+                #define PMPF_ICONREPLACEMENTS(b)
+    #endif
+
+    #ifndef DONTDEBUGATALL
 
 /* startup, shutdown */
 
         // debug startup (folder, archives) processing
-            // #define DEBUG_STARTUP
+            DBGSET_STARTUP,
+                #define PMPF_STARTUP(b) \
+                    if (G_aDebugs[DBGSET_STARTUP]) \
+                        PmpfF(b)
+    #else
+                #define PMPF_STARTUP(b)
+    #endif
 
+    #ifndef DONTDEBUGATALL
         // the following allows debug mode for XShutdown, which
         // will be enabled by holding down SHIFT while selecting
         // "Shutdown..." from the desktop context menu. In addition,
         // you'll get some PMPRINTF info and beeps
-            // #define DEBUG_SHUTDOWN
+            DBGSET_SHUTDOWN,
+                #define PMPF_SHUTDOWN(b) \
+                    if (G_aDebugs[DBGSET_SHUTDOWN]) \
+                        PmpfF(b)
+    #else
+                #define PMPF_SHUTDOWN(b)
+    #endif
+
+    #ifndef DONTDEBUGATALL
 
 /* folder debugging */
 
-        // The following printfs about folder context menus.
-            // #define DEBUG_CONTEXT
-
         // the following gives information on ordered folder content
         // (sorting by .ICONPOS etc.)
-            // #define DEBUG_ORDEREDLIST
+            DBGSET_ORDEREDLIST,
+                #define PMPF_ORDEREDLIST(b) \
+                    if (G_aDebugs[DBGSET_ORDEREDLIST]) \
+                        PmpfF(b)
+    #else
+                #define PMPF_ORDEREDLIST(b)
+    #endif
 
-        // the following will printf WM_CONTROL for WPS cnrs
-            // #define DEBUG_CNRCNTRL
-
+    #ifndef DONTDEBUGATALL
         // the following will printf wpAddToContent
-            // #define DEBUG_CNRCONTENT
+            DBGSET_CNRCONTENT,
+                #define PMPF_CNRCONTENT(b) \
+                    if (G_aDebugs[DBGSET_CNRCONTENT]) \
+                        PmpfF(b)
+    #else
+                #define PMPF_CNRCONTENT(b)
+    #endif
 
+    #ifndef DONTDEBUGATALL
         // the following displays internal status bar data
-            // #define DEBUG_STATUSBARS
+            DBGSET_STATUSBARS,
+                #define PMPF_STATUSBARS(b) \
+                    if (G_aDebugs[DBGSET_STATUSBARS]) \
+                        PmpfF(b)
+    #else
+                #define PMPF_STATUSBARS(b)
+    #endif
 
+    #ifndef DONTDEBUGATALL
         // the following will printf lots of sort info
-            // #define DEBUG_SORT
+            DBGSET_SORT,
+                #define PMPF_SORT(b) \
+                    if (G_aDebugs[DBGSET_SORT]) \
+                        PmpfF(b)
+    #else
+                #define PMPF_SORT(b)
+    #endif
 
+    #ifndef DONTDEBUGATALL
         // the following will printf folder/global hotkey info
-            // #define DEBUG_KEYS
+            DBGSET_KEYS,
+                #define PMPF_KEYS(b) \
+                    if (G_aDebugs[DBGSET_KEYS]) \
+                        PmpfF(b)
+    #else
+                #define PMPF_KEYS(b)
+    #endif
 
+    #ifndef DONTDEBUGATALL
         // the following displays a lot of infos about menu
         // processing (msgs), esp. for folder content menus
-            #define DEBUG_MENUS
+            DBGSET_MENUS,
+                #define PMPF_MENUS(b) \
+                    if (G_aDebugs[DBGSET_MENUS]) \
+                        PmpfF(b)
+    #else
+                #define PMPF_MENUS(b)
+    #endif
 
+    #ifndef DONTDEBUGATALL
         // the following debugs turbo folders and fast
         // content trees
-            // #define DEBUG_TURBOFOLDERS
+            DBGSET_TURBOFOLDERS,
+                #define PMPF_TURBOFOLDERS(b) \
+                    if (G_aDebugs[DBGSET_TURBOFOLDERS]) \
+                        PmpfF(b)
+    #else
+                #define PMPF_TURBOFOLDERS(b)
+    #endif
 
+    #ifndef DONTDEBUGATALL
         // the following debugs painting cnr backgrounds
         // (split view only presently)
-            // #define DEBUG_CNRBITMAPS
+            DBGSET_CNRBITMAPS,
+                #define PMPF_CNRBITMAPS(b) \
+                    if (G_aDebugs[DBGSET_CNRBITMAPS]) \
+                        PmpfF(b)
+    #else
+                #define PMPF_CNRBITMAPS(b)
+    #endif
 
+    #ifndef DONTDEBUGATALL
         // this debugs the split view populate thread
-            #define DEBUG_POPULATESPLITVIEW
+            DBGSET_POPULATESPLITVIEW,
+                #define PMPF_POPULATESPLITVIEW(b) \
+                    if (G_aDebugs[DBGSET_POPULATESPLITVIEW]) \
+                        PmpfF(b)
+    #else
+                #define PMPF_POPULATESPLITVIEW(b)
+    #endif
+
+    #ifndef DONTDEBUGATALL
+        // this debugs rootfolders/disks
+            DBGSET_DISK,
+                #define PMPF_DISK(b) \
+                    if (G_aDebugs[DBGSET_DISK]) \
+                        PmpfF(b)
+    #else
+                #define PMPF_DISK(b)
+    #endif
+
+    #ifndef DONTDEBUGATALL
 
 /* file ops debugging */
 
         // debug title clash dialog
-            // #define DEBUG_TITLECLASH
+            DBGSET_TITLECLASH,
+                #define PMPF_TITLECLASH(b) \
+                    if (G_aDebugs[DBGSET_TITLECLASH]) \
+                        PmpfF(b)
+    #else
+                #define PMPF_TITLECLASH(b)
+    #endif
 
+    #ifndef DONTDEBUGATALL
         // debug data/program file associations/icons
-            // #define DEBUG_ASSOCS
+            DBGSET_ASSOCS,
+                #define PMPF_ASSOCS(b) \
+                    if (G_aDebugs[DBGSET_ASSOCS]) \
+                        PmpfF(b)
+    #else
+                #define PMPF_ASSOCS(b)
+    #endif
 
+    #ifndef DONTDEBUGATALL
         // debug file operations engine
-            // #define DEBUG_FOPS
+            DBGSET_FOPS,
+                #define PMPF_FOPS(b) \
+                    if (G_aDebugs[DBGSET_FOPS]) \
+                        PmpfF(b)
+    #else
+                #define PMPF_FOPS(b)
+    #endif
 
+    #ifndef DONTDEBUGATALL
         // debug trashcan
-            // #define DEBUG_TRASHCAN
+            DBGSET_TRASHCAN,
+                #define PMPF_TRASHCAN(b) \
+                    if (G_aDebugs[DBGSET_TRASHCAN]) \
+                        PmpfF(b)
+    #else
+                #define PMPF_TRASHCAN(b)
+    #endif
+
+    #ifndef DONTDEBUGATALL
 
 /* program objects */
         // debug program startup data
-            // #define DEBUG_PROGRAMSTART
+            DBGSET_PROGRAMSTART,
+                #define PMPF_PROGRAMSTART(b) \
+                    if (G_aDebugs[DBGSET_PROGRAMSTART]) \
+                        PmpfF(b)
+    #else
+                #define PMPF_PROGRAMSTART(b)
+    #endif
+
+    #ifndef DONTDEBUGATALL
 
 /* daemon and hook */
 
         // debug window list (adds debug container to daemon)
             // #define DEBUG_WINDOWLIST
+            DBGSET_WINDOWLIST,
+                #define PMPF_WINDOWLIST(b) \
+                    if (G_aDebugs[DBGSET_WINDOWLIST]) \
+                        PmpfF(b)
+    #else
+                #define PMPF_WINDOWLIST(b)
+    #endif
+
+    #ifndef DONTDEBUGATALL
 
 /* misc */
 
         // debug new system sounds
-            // #define DEBUG_SOUNDS
+            DBGSET_SOUNDS,
+                #define PMPF_SOUNDS(b) \
+                    if (G_aDebugs[DBGSET_SOUNDS]) \
+                        PmpfF(b)
+    #else
+                #define PMPF_SOUNDS(b)
+    #endif
 
-        // debug Xtimers
-            // #define DEBUG_XTIMERS
+    #ifndef DONTDEBUGATALL
+
+            __LAST_DBGSET
+
+        } DEBUGGINGFLAGS;
+
+        extern char G_aDebugs[__LAST_DBGSET];
+
     #endif
 
     /********************************************************************

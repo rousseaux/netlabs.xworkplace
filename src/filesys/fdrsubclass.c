@@ -543,9 +543,8 @@ VOID fdrManipulateNewView(WPFolder *somSelf,        // in: folder with new view
 #endif
             if (hwndCnr)
             {
-                #ifdef DEBUG_SORT
-                    _PmpfF(("setting folder sort"));
-                #endif
+                PMPF_SORT(("setting folder sort"));
+
                 fdrSetFldrCnrSort(somSelf,
                                   hwndCnr,
                                   TRUE);        // force
@@ -645,19 +644,18 @@ VOID fdrFormatFrame(HWND hwndFrame,
             // now we need to adjust the workspace origin of the cnr
             // accordingly, or otherwise the folder icons will appear
             // outside the visible cnr workspace and scroll bars will
-            // show up.                s
+            // show up.
             // We only do this the first time we're arriving here
             // (which should be before the WPS is populating the folder);
             // psfv->fNeedCnrScroll has been initially set to TRUE
             // by stbCreate.
-            #ifdef DEBUG_STATUSBARS
+            #if 0 // #ifdef __DEBUG__
             {
-                _PmpfF(("psfv->fNeedCnrScroll: %d", psfv->fNeedCnrScroll));
+                PMPF_STATUSBARS(("psfv->fNeedCnrScroll: %d", psfv->fNeedCnrScroll));
+
                 cnrhQueryCnrInfo(hwndThis, &CnrInfo);
 
-                #ifdef DEBUG_STATUSBARS
-                    _Pmpf(( "Old CnrInfo.ptlOrigin.y: %lX", CnrInfo.ptlOrigin.y ));
-                #endif
+                PMPF_STATUSBARS(("Old CnrInfo.ptlOrigin.y: %lX", CnrInfo.ptlOrigin.y ));
             }
             #endif
 
@@ -687,9 +685,7 @@ MRESULT FormatFrame2(PSUBCLFOLDERVIEW psfv,     // in: frame information
     //  query the number of standard frame controls
     ULONG ulCount = (ULONG)pfnwpOriginal(psfv->hwndFrame, WM_FORMATFRAME, mp1, mp2);
 
-    #ifdef DEBUG_STATUSBARS
-        _Pmpf(( "WM_FORMATFRAME ulCount = %d", ulCount ));
-    #endif
+    PMPF_STATUSBARS(("WM_FORMATFRAME ulCount = %d", ulCount ));
 
     if (psfv->hwndStatusBar)
     {
@@ -716,9 +712,7 @@ MRESULT FormatFrame2(PSUBCLFOLDERVIEW psfv,     // in: frame information
 
                 CnrInfo.ptlOrigin.y -= ulStatusBarHeight;
 
-                #ifdef DEBUG_STATUSBARS
-                    _Pmpf(( "New CnrInfo.ptlOrigin.y: %lX", CnrInfo.ptlOrigin.y ));
-                #endif
+                PMPF_STATUSBARS(("New CnrInfo.ptlOrigin.y: %lX", CnrInfo.ptlOrigin.y ));
 
                 WinSendMsg(hwndClient,
                            CM_SETCNRINFO,
@@ -772,9 +766,7 @@ VOID fdrManipulatePulldown(PSUBCLFOLDERVIEW psfv,     // in: frame information
     {
         case 0x2CF: // "Folder" pulldown
         case ID_XFM_BAR_FOLDER:     // in split view V0.9.21 (2002-08-28) [umoeller]
-            #ifdef DEBUG_MENUS
-                _Pmpf(("  'Folder' pulldown found"));
-            #endif
+            PMPF_MENUS(("  'Folder' pulldown found"));
 
             // set the "source" object for menu item
             // selections to the folder
@@ -796,9 +788,7 @@ VOID fdrManipulatePulldown(PSUBCLFOLDERVIEW psfv,     // in: frame information
         case 0x2D1: // "View" submenu
         case ID_XFM_BAR_VIEW:       // in split view V0.9.21 (2002-08-28) [umoeller]
         {
-            #ifdef DEBUG_MENUS
-                _Pmpf(("  'View' pulldown found"));
-            #endif
+            PMPF_MENUS(("  'View' pulldown found"));
 
             // set the "source" object for menu item
             // selections to the folder
@@ -813,9 +803,7 @@ VOID fdrManipulatePulldown(PSUBCLFOLDERVIEW psfv,     // in: frame information
 
         case 0x2D3: // "Help" submenu: add XFolder product info
         case ID_XFM_BAR_HELP:
-            #ifdef DEBUG_MENUS
-                _Pmpf(("  'Help' pulldown found"));
-            #endif
+            PMPF_MENUS(("  'Help' pulldown found"));
 
             // set the "source" object for menu item
             // selections to the folder
@@ -887,12 +875,10 @@ VOID fdrInitMenu(PSUBCLFOLDERVIEW psfv,     // in: frame information
     // get XFolder instance data
     XFolderData     *somThis = XFolderGetData(psfv->somSelf);
 
-    #ifdef DEBUG_MENUS
-        _Pmpf(( "WM_INITMENU: sMenuIDMsg = %lX, hwndMenuMsg = %lX",
+    PMPF_MENUS(("WM_INITMENU: sMenuIDMsg = %lX, hwndMenuMsg = %lX",
                 (ULONG)sMenuIDMsg,
                 hwndMenuMsg ));
-        _Pmpf(( "  psfv->hwndCnr: 0x%lX", psfv->hwndCnr));
-    #endif
+    PMPF_MENUS(("  psfv->hwndCnr: 0x%lX", psfv->hwndCnr));
 
     // store object with source emphasis for later use
     // (this gets lost before WM_COMMAND otherwise),
@@ -907,9 +893,7 @@ VOID fdrInitMenu(PSUBCLFOLDERVIEW psfv,     // in: frame information
                                                     FALSE,      // menu mode
                                                     &psfv->ulSelection);
 
-        #ifdef DEBUG_MENUS
-            _Pmpf(("  main context menu"));
-        #endif
+        PMPF_MENUS(("  main context menu"));
     }
 
     // play system sound
@@ -936,9 +920,7 @@ VOID fdrInitMenu(PSUBCLFOLDERVIEW psfv,     // in: frame information
         {
             // show folder content icons ON:
 
-            #ifdef DEBUG_MENUS
-                _Pmpf(( "  content menu, preparing owner draw"));
-            #endif
+            PMPF_MENUS(("  content menu, preparing owner draw"));
 
             cmnuPrepareOwnerDraw(hwndMenuMsg);
         }
@@ -955,10 +937,8 @@ VOID fdrInitMenu(PSUBCLFOLDERVIEW psfv,     // in: frame information
              && (sMenuIDMsg == 0x8005)
            )
         {
-            #ifdef DEBUG_MENUS
-                _Pmpf(( "  seems to be menu bar, ulLastSelMenuItem is %lX",
+            PMPF_MENUS(("  seems to be menu bar, ulLastSelMenuItem is %lX",
                     psfv->ulLastSelMenuItem));
-            #endif
 
             // seems to be some WPS menu item;
             // since the WPS seems to be using this
@@ -972,13 +952,12 @@ VOID fdrInitMenu(PSUBCLFOLDERVIEW psfv,     // in: frame information
         } // end if (SHORT1FROMMP(mp1) == 0x8005)
     }
 
-    #ifdef DEBUG_MENUS
-        _Pmpf(("    pSourceObject is 0x%lX [%s]",
+    PMPF_MENUS(("    pSourceObject is 0x%lX [%s]",
             psfv->pSourceObject,
             (psfv->pSourceObject)
                 ? _wpQueryTitle(psfv->pSourceObject)
                 : "NULL"));
-        _Pmpf(("  ulSelection is %d (%s)",
+    PMPF_MENUS(("  ulSelection is %d (%s)",
             psfv->ulSelection,
             (psfv->ulSelection == SEL_WHITESPACE) ? "SEL_WHITESPACE"
             : (psfv->ulSelection == SEL_SINGLESEL) ? "SEL_SINGLESEL"
@@ -986,7 +965,6 @@ VOID fdrInitMenu(PSUBCLFOLDERVIEW psfv,     // in: frame information
             : (psfv->ulSelection == SEL_SINGLEOTHER) ? "SEL_SINGLEOTHER"
             : (psfv->ulSelection == SEL_NONEATALL) ? "SEL_NONEATALL"
             : "unknown"));
-    #endif
 }
 
 /*
@@ -1065,9 +1043,7 @@ STATIC BOOL MenuSelect(PSUBCLFOLDERVIEW psfv,   // in: frame information
             WPObject *pObject = psfv->pSourceObject;
                                 // set with WM_INITMENU
 
-            #ifdef DEBUG_MENUS
-                _Pmpf(( "  Object selections: %d", psfv->ulSelection));
-            #endif
+            PMPF_MENUS(("  Object selections: %d", psfv->ulSelection));
 
             if (pObject = objResolveIfShadow(pObject))
             {
@@ -1223,10 +1199,8 @@ STATIC VOID WMChar_Delete(PSUBCLFOLDERVIEW psfv,
                                       psfv->hwndCnr,
                                       TRUE,       // keyboard mode
                                       &ulSelection);
-    #if (defined DEBUG_MENUD || defined DEBUG_TRASHCAN)
-        _Pmpf(("WM_CHAR delete: first obj is %s",
+    PMPF_TRASHCAN(("WM_CHAR delete: first obj is %s",
                 (pSelected) ? _wpQueryTitle(pSelected) : "NULL"));
-    #endif
 
     if (    (pSelected)
          && (ulSelection != SEL_NONEATALL)
@@ -1240,9 +1214,7 @@ STATIC VOID WMChar_Delete(PSUBCLFOLDERVIEW psfv,
                                                           // or SEL_MULTISEL
                                             psfv->hwndCnr,
                                             fTrueDelete);  // V0.9.19 (2002-04-02) [umoeller]
-        #ifdef DEBUG_TRASHCAN
-            _Pmpf(("    got APIRET %d", frc));
-        #endif
+        PMPF_TRASHCAN(("    got APIRET %d", frc));
     }
 }
 
@@ -1483,9 +1455,7 @@ STATIC BOOL CnrDrawIcon(HWND hwndCnr,               // in: container HWND (we ca
         // case hptrIcon might be NULLHANDLE still
         if (!(hptrPaint = pmrc->hptrIcon))
         {
-            #ifdef DEBUG_ICONREPLACEMENTS
-            _Pmpf(("    CMA_ICON, pmrc->hptrIcon is NULLHANDLE"));
-            #endif
+            PMPF_ICONREPLACEMENTS(("    CMA_ICON, pmrc->hptrIcon is NULLHANDLE"));
 
             // this object does not have an icon yet:
             // lazy icons enabled?
@@ -1538,9 +1508,7 @@ STATIC BOOL CnrDrawIcon(HWND hwndCnr,               // in: container HWND (we ca
         cx = poi->rclItem.xRight - poi->rclItem.xLeft;
         cy = poi->rclItem.yTop - poi->rclItem.yBottom;
 
-        #ifdef DEBUG_ICONREPLACEMENTS
-        _Pmpf(("    cx = %d, cy = %d", cx, cy));
-        #endif
+        PMPF_ICONREPLACEMENTS(("    cx = %d, cy = %d", cx, cy));
 
         if (    (flOwnerDraw & 0x80000000)      // force mini-icon (Details view)?
              || (cx < G_cxIconSys)
@@ -1593,9 +1561,7 @@ STATIC BOOL CnrDrawIcon(HWND hwndCnr,               // in: container HWND (we ca
             LONG    lcolHiliteBgnd;
             POINTL  ptl;
 
-            #ifdef DEBUG_ICONREPLACEMENTS
-            _PmpfF(("[%s] CRA_SELECTED", pmrc->pszIcon));
-            #endif
+            PMPF_ICONREPLACEMENTS(("[%s] CRA_SELECTED", pmrc->pszIcon));
 
             // switch the HPS to RGB mode, or the below won't work
             fSwitched = GpiCreateLogColorTable(poi->hps,
@@ -2019,12 +1985,10 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
             {
                 BOOL fDismiss = TRUE;
 
-                #if 0 // DEBUG_MENUS
-                    _Pmpf(( "WM_MENUSELECT: mp1 = %lX/%lX, mp2 = %lX",
+                PMPF_MENUS(("WM_MENUSELECT: mp1 = %lX/%lX, mp2 = %lX",
                             SHORT1FROMMP(mp1),
                             SHORT2FROMMP(mp1),
                             mp2 ));
-                #endif
 
                 // always call the default, in case someone else
                 // is subclassing folders (ObjectDesktop?!?)
@@ -2050,10 +2014,8 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
              */
 
             case WM_MENUEND:
-                #ifdef DEBUG_MENUS
-                    _Pmpf(( "WM_MENUEND: mp1 = %lX, mp2 = %lX",
+                PMPF_MENUS(("WM_MENUEND: mp1 = %lX, mp2 = %lX",
                             mp1, mp2 ));
-                #endif
 
                 // added V0.9.3 (2000-03-28) [umoeller]
 
@@ -2239,36 +2201,8 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
 
             case WM_CONTROL:
             {
-                if (SHORT1FROMMP(mp1) /* id */ == 0x8008) // container!!
+                if (SHORT1FROMMP(mp1) == 0x8008) // container!!
                 {
-                    #ifdef DEBUG_CNRCNTRL
-                        CHAR szTemp2[30];
-                        sprintf(szTemp2, "unknown: %d", SHORT2FROMMP(mp1));
-                        _Pmpf(("Cnr cntrl msg: %s, mp2: %lX",
-                            (SHORT2FROMMP(mp1) == CN_BEGINEDIT) ? "CN_BEGINEDIT"
-                                : (SHORT2FROMMP(mp1) == CN_COLLAPSETREE) ? "CN_COLLAPSETREE"
-                                : (SHORT2FROMMP(mp1) == CN_CONTEXTMENU) ? "CN_CONTEXTMENU"
-                                : (SHORT2FROMMP(mp1) == CN_DRAGAFTER) ? "CN_DRAGAFTER"
-                                : (SHORT2FROMMP(mp1) == CN_DRAGLEAVE) ? "CN_DRAGLEAVE"
-                                : (SHORT2FROMMP(mp1) == CN_DRAGOVER) ? "CN_DRAGOVER"
-                                : (SHORT2FROMMP(mp1) == CN_DROP) ? "CN_DROP"
-                                : (SHORT2FROMMP(mp1) == CN_DROPNOTIFY) ? "CN_DROPNOTIFY"
-                                : (SHORT2FROMMP(mp1) == CN_DROPHELP) ? "CN_DROPHELP"
-                                : (SHORT2FROMMP(mp1) == CN_EMPHASIS) ? "CN_EMPHASIS"
-                                : (SHORT2FROMMP(mp1) == CN_ENDEDIT) ? "CN_ENDEDIT"
-                                : (SHORT2FROMMP(mp1) == CN_ENTER) ? "CN_ENTER"
-                                : (SHORT2FROMMP(mp1) == CN_EXPANDTREE) ? "CN_EXPANDTREE"
-                                : (SHORT2FROMMP(mp1) == CN_HELP) ? "CN_HELP"
-                                : (SHORT2FROMMP(mp1) == CN_INITDRAG) ? "CN_INITDRAG"
-                                : (SHORT2FROMMP(mp1) == CN_KILLFOCUS) ? "CN_KILLFOCUS"
-                                : (SHORT2FROMMP(mp1) == CN_PICKUP) ? "CN_PICKUP"
-                                : (SHORT2FROMMP(mp1) == CN_QUERYDELTA) ? "CN_QUERYDELTA"
-                                : (SHORT2FROMMP(mp1) == CN_REALLOCPSZ) ? "CN_REALLOCPSZ"
-                                : (SHORT2FROMMP(mp1) == CN_SCROLL) ? "CN_SCROLL"
-                                : (SHORT2FROMMP(mp1) == CN_SETFOCUS) ? "CN_SETFOCUS"
-                                : szTemp2,
-                            mp2));
-                    #endif
 
                     switch (SHORT2FROMMP(mp1))      // usNotifyCode
                     {
@@ -2345,10 +2279,8 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
 
                             if (psfv->hwndStatusBar)
                             {
-                                #ifdef DEBUG_STATUSBARS
-                                    _Pmpf(( "CN_EMPHASIS: posting STBM_UPDATESTATUSBAR to hwnd %lX",
+                                PMPF_STATUSBARS(("CN_EMPHASIS: posting STBM_UPDATESTATUSBAR to hwnd %lX",
                                             psfv->hwndStatusBar ));
-                                #endif
 
                                 WinPostMsg(psfv->hwndStatusBar,
                                            STBM_UPDATESTATUSBAR,
@@ -2572,9 +2504,8 @@ MRESULT EXPENTRY fdr_fnwpSupplFolderObject(HWND hwndObject, ULONG msg, MPARAM mp
         case SOM_ACTIVATESTATUSBAR:
         {
             HWND hwndFrame = (HWND)mp2;
-            #ifdef DEBUG_STATUSBARS
-                _Pmpf(( "SOM_ACTIVATESTATUSBAR, mp1: %lX, psfv: %lX", mp1, psfv));
-            #endif
+
+            PMPF_STATUSBARS(("SOM_ACTIVATESTATUSBAR, mp1: %lX, psfv: %lX", mp1, psfv));
 
             if (psfv)
                 switch ((ULONG)mp1)

@@ -863,10 +863,6 @@ STATIC MRESULT EXPENTRY fncbReturnWPSClassAttr(HWND hwndCnr,
 
     if (pwps = (PWPSLISTITEM)mpwps)
     {
-        // #ifdef DEBUG_SETTINGS
-            _Pmpf(("Checking %s", pwps->pszClassName));
-        // #endif
-
         // if the class is one of the following,
         // expand all the parent records of the new record
         // so that these classes are initially visible

@@ -232,9 +232,7 @@ BOOL fcmdSelectingFsysMenuItem(WPObject *somSelf,
     WPObject        *pObject = somSelf;
     WPFileSystem    *pFileSystem = objResolveIfShadow(pObject);
 
-    #ifdef DEBUG_MENUS
-        _Pmpf(("fcmdSelectingFsysMenuItem"));
-    #endif
+    PMPF_MENUS(("entering"));
 
     switch (ulMenuId2)
     {
@@ -280,9 +278,7 @@ BOOL fcmdSelectingFsysMenuItem(WPObject *somSelf,
             {
                 if (pFileSystem)
                 {
-                    #ifdef DEBUG_MENUS
-                        _Pmpf(("  Settings attrs for %s", _wpQueryTitle(pFileSystem)));
-                    #endif
+                    PMPF_MENUS(("  Settings attrs for %s", _wpQueryTitle(pFileSystem)));
 
                     _wpSetAttr(pFileSystem, ulFileAttr);
 
@@ -346,6 +342,8 @@ BOOL fcmdSelectingFsysMenuItem(WPObject *somSelf,
             fHandled = FALSE;
     }
 
+    PMPF_MENUS(("leaving"));
+
     return (fHandled);
 }
 
@@ -376,9 +374,7 @@ BOOL fcmdSelectingFdrMenuItem(WPFolder *somSelf,
     BOOL        fHandled;
     HWND        hwndFrame = WinQueryWindow(hwndCnr, QW_PARENT);
 
-    #ifdef DEBUG_MENUS
-        _Pmpf(("fcmdSelectingFdrMenuItem"));
-    #endif
+    PMPF_MENUS(("entering"));
 
     // first check if it's one of the "Sort" menu items
     if (!(fHandled = fdrSortMenuItemSelected(somSelf,
@@ -586,15 +582,13 @@ BOOL fcmdProcessViewCommand(WPFolder *somSelf,
 {
     BOOL brc = FALSE;       // default: not processed, call parent
 
-    #ifdef DEBUG_MENUS
-        _PmpfF(("[%s] entering, usCommand 0x%lX, pFirstObject 0x%lX [%s]",
+    PMPF_MENUS(("[%s] entering, usCommand 0x%lX, pFirstObject 0x%lX [%s]",
                 _wpQueryTitle(somSelf),
                 usCommand,
                 pFirstObject,
                 (pFirstObject)
                     ? _wpQueryTitle(pFirstObject)
                     : NULL));
-    #endif
 
     switch (usCommand)
     {
@@ -634,9 +628,8 @@ BOOL fcmdProcessViewCommand(WPFolder *somSelf,
                                              ulSelectionFlags,
                                              hwndCnr,
                                              fTrueDelete);
-                #if (defined DEBUG_TRASHCAN || defined DEBUG_MENUS)
-                    _PmpfF(("WPMENUID_DELETE: got APIRET %d", frc));
-                #endif
+
+                PMPF_MENUS(("WPMENUID_DELETE: got APIRET %d", frc));
 
                 // return "processed", skip default processing
                 brc = TRUE;

@@ -161,9 +161,7 @@ STATIC BOOL LockNotebooks(VOID)
         lstInit(&G_llOpenPages, TRUE); // NOTEBOOKPAGELISTITEMs are freeable
         lstInit(&G_llSubclNotebooks, TRUE); // SUBCLNOTEBOOKLISTITEM are freeable
 
-        #ifdef DEBUG_NOTEBOOKS
-            _Pmpf(("Created NOTEBOOKPAGELISTITEM list and mutex"));
-        #endif
+        PMPF_NOTEBOOKS(("Created NOTEBOOKPAGELISTITEM list and mutex"));
 
         return TRUE;
     }
@@ -199,9 +197,7 @@ STATIC VOID UnlockNotebooks(VOID)
 STATIC VOID PageInit(PNOTEBOOKPAGE pnbp,
                      HWND hwndDlg)
 {
-    #ifdef DEBUG_NOTEBOOKS
-        _Pmpf(("fnwpPageCommon: WM_INITDLG"));
-    #endif
+    PMPF_NOTEBOOKS(("WM_INITDLG"));
 
     if (!(pnbp->flPage & NBFL_PAGE_INITED))        // V0.9.19 (2002-04-17) [umoeller]
     {
@@ -284,22 +280,17 @@ STATIC VOID PageInit(PNOTEBOOKPAGE pnbp,
 
 STATIC VOID PageDestroy(PNOTEBOOKPAGE pnbp)
 {
-    #ifdef DEBUG_NOTEBOOKS
-        _Pmpf(("fnwpPageCommon: WM_DESTROY"));
-    #endif
+    PMPF_NOTEBOOKS(("WM_DESTROY"));
 
     if (pnbp)
     {
-        #ifdef DEBUG_NOTEBOOKS
-            _Pmpf(("  found pcnbp"));
-        #endif
+        PMPF_NOTEBOOKS(("  found pcnbp"));
 
         // stop timer, if started
         if (pnbp->inbp.ulTimer)
         {
-            #ifdef DEBUG_NOTEBOOKS
-                _Pmpf(("  stopping timer"));
-            #endif
+            PMPF_NOTEBOOKS(("  stopping timer"));
+
             WinStopTimer(WinQueryAnchorBlock(pnbp->hwndDlgPage),
                          pnbp->hwndDlgPage,
                          1);
@@ -330,10 +321,9 @@ STATIC VOID PageDestroy(PNOTEBOOKPAGE pnbp)
         // linked list of open notebook pages
         // V0.9.7 (2000-12-09) [umoeller]: more mutex protection
 
-        #ifdef DEBUG_NOTEBOOKS
-            _Pmpf(("  trying to remove page ID %d from list",
-                    inbp.ulPageID));
-        #endif
+        PMPF_NOTEBOOKS(("  trying to remove page ID %d from list",
+                         pnbp->inbp.ulPageID));
+
         if (pnbp->pnbli)
         {
             BOOL fLocked = FALSE;
@@ -394,9 +384,7 @@ STATIC MRESULT EXPENTRY PageWmControl(PNOTEBOOKPAGE pnbp,
     ULONG   ulClassCode = 0;
     ULONG   ulExtra = -1;
 
-    #ifdef DEBUG_NOTEBOOKS
-        _Pmpf(("fnwpPageCommon: WM_CONTROL"));
-    #endif
+    PMPF_NOTEBOOKS(("WM_CONTROL"));
 
     // "item changed" callback defined?
     if (    (pnbp->inbp.pfncbItemChanged)
@@ -701,9 +689,7 @@ STATIC VOID PageWindowPosChanged(PNOTEBOOKPAGE pnbp,
 {
     PSWP pswp = (PSWP)mp1;
 
-    #ifdef DEBUG_NOTEBOOKS
-        _Pmpf(("fnwpPageCommon: WM_WINDOWPOSCHANGED"));
-    #endif
+    PMPF_NOTEBOOKS(("WM_WINDOWPOSCHANGED"));
 
     if (!pnbp)
         return;
@@ -758,9 +744,7 @@ STATIC VOID PageWindowPosChanged(PNOTEBOOKPAGE pnbp,
 STATIC VOID PageTimer(PNOTEBOOKPAGE pnbp,
                       MPARAM mp1)
 {
-    #ifdef DEBUG_NOTEBOOKS
-        _Pmpf(("fnwpPageCommon: WM_TIMER"));
-    #endif
+    PMPF_NOTEBOOKS(("WM_TIMER"));
 
     switch ((USHORT)mp1)    // timer ID
     {
@@ -951,9 +935,7 @@ STATIC MRESULT EXPENTRY fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
 
                 case WM_MENUEND:
                 {
-                    #ifdef DEBUG_NOTEBOOKS
-                        _Pmpf(("fnwpPageCommon: WM_MENUEND"));
-                    #endif
+                    PMPF_NOTEBOOKS(("WM_MENUEND"));
 
                     if (    (pnbp->preccSource != (PRECORDCORE)-1)
                          && (pnbp->hwndSourceCnr)
@@ -984,9 +966,7 @@ STATIC MRESULT EXPENTRY fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                  */
 
                 case WM_COMMAND:
-                    #ifdef DEBUG_NOTEBOOKS
-                        _Pmpf(("fnwpPageCommon: WM_COMMAND"));
-                    #endif
+                    PMPF_NOTEBOOKS(("WM_COMMAND"));
 
                     // call "item changed" callback
                     if (    (pnbp)
@@ -1178,9 +1158,8 @@ STATIC PNOTEBOOKPAGELISTITEM CreateNBLI(PNOTEBOOKPAGE pnbp) // in: new struct fr
 
             lstAppendItem(&G_llOpenPages,
                           pnbliNew);
-            #ifdef DEBUG_NOTEBOOKS
-                _Pmpf(("Appended NOTEBOOKPAGELISTITEM to pages list"));
-            #endif
+
+            PMPF_NOTEBOOKS(("appended NOTEBOOKPAGELISTITEM to pages list"));
 
             // now search the list of notebook list items
             // for whether a page has already been inserted
@@ -1297,9 +1276,8 @@ STATIC VOID DestroyNBLI(HWND hwndNotebook,
         {
             PLISTNODE pPageNode = lstQueryFirstNode(&G_llOpenPages);
 
-            #ifdef DEBUG_NOTEBOOKS
-                _Pmpf(("fnwpSubclNotebook: WM_DESTROY"));
-            #endif
+
+            PMPF_NOTEBOOKS(("WM_DESTROY"));
 
             while (pPageNode)
             {
@@ -1315,9 +1293,8 @@ STATIC VOID DestroyNBLI(HWND hwndNotebook,
                    )
                 {
                     // remove it from list
-                    #ifdef DEBUG_NOTEBOOKS
-                        _Pmpf(("  removed page ID %d", pPageLI->inbp.ulPageID));
-                    #endif
+                    PMPF_NOTEBOOKS(("  removed page ID %d", pnbp->inbp.ulPageID));
+
                     _wpFreeMem(pnbp->inbp.somSelf,
                                (PBYTE)pnbp);
                     lstRemoveNode(&G_llOpenPages,
@@ -1330,9 +1307,9 @@ STATIC VOID DestroyNBLI(HWND hwndNotebook,
             // remove notebook control from list
             lstRemoveItem(&G_llSubclNotebooks,
                           pSubclNBLI);      // this frees the pSubclNBLI
-            #ifdef DEBUG_NOTEBOOKS
-                _Pmpf(("  removed pSubclNBLI"));
-            #endif
+
+            PMPF_NOTEBOOKS(("  removed pSubclNBLI"));
+
         } // end if (fLocked)
     }
     CATCH(excpt1) {} END_CATCH();
@@ -2132,9 +2109,7 @@ BOOL ntbOpenSettingsPage(PCSZ pcszObjectID,         // in: object ID
 
         if (fOpenPagePanel)
         {
-            #ifdef DEBUG_NOTEBOOKS
-                _Pmpf(( "ntbDisplayFocusHelp: not found, displaying superpanel %d", ulPanelIfNotFound ));
-            #endif
+            PMPF_NOTEBOOKS(("not found, displaying superpanel %d", ulPanelIfNotFound ));
 
             // didn't work: display page panel
             if (!_wpDisplayHelp(somSelf,

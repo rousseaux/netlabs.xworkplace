@@ -344,9 +344,7 @@ ULONG xmmOpenWaveDevice(HWND hwndObject,       // in: Media thread object wnd
         // no device yet:
         // open one then
 
-        #ifdef DEBUG_SOUNDS
-            _PmpfF(("Opening new device"));
-        #endif
+        PMPF_SOUNDS(("Opening new device"));
 
         // now we open the default sound device;
         // note, we DO NOT CLOSE the device any more,
@@ -377,9 +375,7 @@ ULONG xmmOpenWaveDevice(HWND hwndObject,       // in: Media thread object wnd
                                 MCI_WAIT,
                                 &mgp,
                                 0);
-        #ifdef DEBUG_SOUNDS
-            _PmpfF(("MCI_STOP returned 0x%lX", ulrc));
-        #endif
+        PMPF_SOUNDS(("MCI_STOP returned 0x%lX", ulrc));
     }
 
     return (ulrc);

@@ -651,13 +651,6 @@ PBYTE fsysFindEAValue(PFEA2LIST pFEA2List2,      // in: file EA list
 
         while (ulOfsThis < pFEA2List2->cbList)
         {
-            /*
-            _Pmpf(("   " __FUNCTION__ ": checking EA %d [byte %d/%d]",
-                    ul,
-                    ulOfsThis, pFEA2List2->cbList));
-            _Pmpf(("        name: \"%s\" (%d bytes)", pThis->szName, pThis->cbName));
-            */
-
             if (    (ulEANameLen == pThis->cbName)
                  && (!memcmp(pThis->szName,
                              pcszEAName,
@@ -1192,9 +1185,9 @@ STATIC WPFileSystem* RefreshOrAwake(WPFolder *pFolder,
                                                  pFolder,           // folder
                                                  (ULONG)&awfs))
                     {
-                        #ifdef DEBUG_TURBOFOLDERS
+                        #ifdef __DEBUG__
                             ULONG fl = _wpQueryRefreshFlags(pAwake);
-                            _Pmpf(("refresh flags for new \"%s\": 0x%lX (%s%s)",
+                            PMPF_TURBOFOLDERS(("refresh flags for new \"%s\": 0x%lX (%s%s)",
                                 pszRealName,
                                 fl,
                                 (fl & FOUNDBIT) ? "FOUNDBIT" : "",

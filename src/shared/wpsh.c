@@ -545,10 +545,9 @@ BOOL wpshCheckObject(WPObject *pObject)
             // the thread exception handler puts us here if an exception
             // occured, i.e. the object was not valid:
             brc = FALSE;
-            #ifdef DEBUG_ORDEREDLIST
-                DosBeep(10000, 10);
-                _Pmpf(("wpshCheckObject: Invalid object found."));
-            #endif
+
+            PMPF_ORDEREDLIST(("Invalid object found."));
+
         } END_CATCH();
     }
 
@@ -1363,9 +1362,7 @@ WPObject* wpshCreateFromTemplate(WPObject *pTemplate,
             CNRINFO         CnrInfo;
             POINTL          ptlMoveTo;
 
-            #ifdef DEBUG_MENUS
-                _PmpfF(("[%s] entering", _wpQueryTitle(pTemplate)));
-            #endif
+            PMPF_MENUS(("[%s] entering", _wpQueryTitle(pTemplate)));
 
             cnrhQueryCnrInfo(hwndCnr, &CnrInfo);
 

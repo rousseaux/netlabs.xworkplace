@@ -755,9 +755,7 @@ APIRET fopsStartTaskFromCnr(ULONG ulOperation,       // in: operation; see fopsC
                 {
                     APIRET      frc2;
                     WPObject    *pAddObject = pObject;
-                    #ifdef DEBUG_FOPS
-                        _PmpfF(("got object %s", _wpQueryTitle(pObject)));
-                    #endif
+                    PMPF_FOPS(("got object %s", _wpQueryTitle(pObject)));
 
                     if (fRelatedObjects)
                         // collect related objects instead:
@@ -849,9 +847,7 @@ APIRET fopsStartTaskFromCnr(ULONG ulOperation,       // in: operation; see fopsC
     else
         frc = FOPSERR_INVALID_OBJECT;
 
-    #ifdef DEBUG_FOPS
-        _PmpfF(("returning APIRET %d", frc));
-    #endif
+    PMPF_FOPS(("returning APIRET %d", frc));
 
     return (frc);
 }
@@ -888,13 +884,11 @@ APIRET fopsStartTaskFromList(ULONG ulOperation,
     // this is passed to fopsCreateFileTaskList as ulUser
     PGENERICPROGRESSWINDATA ppwd;
 
-    #ifdef DEBUG_FOPS
-        _PmpfF(("op: %d, source: %s, target: %s",
+    PMPF_FOPS(("op: %d, source: %s, target: %s",
                 ulOperation,
                 (pSourceFolder) ? _wpQueryTitle(pSourceFolder) : "NULL",
                 (pTargetFolder) ? _wpQueryTitle(pTargetFolder) : "NULL"
                 ));
-    #endif
 
     if (ppwd = malloc(sizeof(GENERICPROGRESSWINDATA)))
     {
@@ -919,14 +913,10 @@ APIRET fopsStartTaskFromList(ULONG ulOperation,
                 WPObject *pObject = (WPObject*)pNode->pItemData;
                 APIRET frc2;
 
-                #ifdef DEBUG_FOPS
-                    _PmpfF(("got object %s", _wpQueryTitle(pObject) ));
-                #endif
+                PMPF_FOPS(("got object %s", _wpQueryTitle(pObject) ));
 
                 frc2 = fopsAddObjectToTask(hftl, pObject);
-                #ifdef DEBUG_FOPS
-                    _Pmpf(("    fopsAddObjectToTask returned %d for that", frc2));
-                #endif
+                PMPF_FOPS(("    fopsAddObjectToTask returned %d for that", frc2));
                 if (frc2)
                 {
                     frc = frc2;
@@ -943,7 +933,7 @@ APIRET fopsStartTaskFromList(ULONG ulOperation,
             if (!frc)
             {
                 // *** go!!!
-                _PmpfF(("calling StartWithGenericProgress with %d objects",
+                PMPF_TRASHCAN(("calling StartWithGenericProgress with %d objects",
                             cObjects));
                 frc = StartWithGenericProgress(hftl,
                                                ulOperation,
@@ -964,9 +954,7 @@ APIRET fopsStartTaskFromList(ULONG ulOperation,
     else
         frc = ERROR_NOT_ENOUGH_MEMORY;
 
-    #ifdef DEBUG_FOPS
-        _PmpfF(("APIRET %d", frc));
-    #endif
+    PMPF_FOPS(("APIRET %d", frc));
 
     return (frc);
 }
@@ -1038,10 +1026,8 @@ APIRET fopsStartDeleteFromCnr(HAB hab,                 // in: as with fopsStartT
         {
             ulConfirmations = _wpQueryConfirmations(pSourceObject);
 
-            #ifdef DEBUG_FOPS
-                _PmpfF(("first obj is %s", _wpQueryTitle(pSourceObject)));
-                _Pmpf(("  ulConfirmations: 0x%lX", ulConfirmations));
-            #endif
+            PMPF_FOPS(("first obj is %s", _wpQueryTitle(pSourceObject)));
+            PMPF_FOPS(("  ulConfirmations: 0x%lX", ulConfirmations));
 
             // specify owner for confirmations in any case...
             // we might need this below!

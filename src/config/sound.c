@@ -612,10 +612,6 @@ STATIC VOID DrawTargetEmphasis(HWND hwnd, BOOL fEmphasis)
 
     WinQueryWindowRect(hwnd, &rcl);
 
-    #ifdef DEBUG_SETTINGS
-        _Pmpf(("rcl.right: %d", rcl.xRight));
-    #endif
-
     hps = DrgGetPS(hwnd);
 
     ptl.x = ptl.y = 5;
@@ -684,7 +680,8 @@ STATIC MRESULT EXPENTRY fnwpSubclassedSoundFile(HWND hwndEntryField,
                 // modifier keys are pressed)
                 if (pdrgInfo->usOperation == DO_DEFAULT)
                 {
-                    // _Pmpf(("DM_DRAGOVER: cditem == %d", pdrgInfo->cditem));
+                    PMPF_SOUNDS(("DM_DRAGOVER: cditem == %d", pdrgInfo->cditem));
+
                     // accept only one item at a time
                     if (pdrgInfo->cditem == 1)
                     {
@@ -705,7 +702,7 @@ STATIC MRESULT EXPENTRY fnwpSubclassedSoundFile(HWND hwndEntryField,
                             CHAR szRMF[200];
                             DrgQueryStrName(pdrgItem->hstrRMF,
                                         sizeof(szRMF), szRMF);
-                            // _Pmpf(("   hstrRMF: %s", szRMF));
+                            PMPF_SOUNDS(("   hstrRMF: %s", szRMF));
                         }
 
                         if (DrgVerifyRMF(pdrgItem, "DRM_OS2FILE", "DRF_WAVE"))
@@ -961,7 +958,7 @@ VOID sndSoundsInitPage(PNOTEBOOKPAGE pnbp,           // notebook info struct
                                                                LIT_SORTASCENDING,
                                                                szDescription);
 
-                            // _Pmpf(("  Descr: %s", szDescription));
+                            PMPF_SOUNDS(("  Descr: %s", szDescription));
 
                             // store the sound index as an item "handle"
                             // with the list box item, so we can retrieve
@@ -1111,8 +1108,8 @@ MRESULT sndSoundsItemChanged(PNOTEBOOKPAGE pnbp,  // notebook info
                 // ULONG   ulSchemeHandle = 0;
                 CHAR    szSchemeSelected[200];
 
-                // _Pmpf(("Entering ID_XSDI_SOUND_SCHEMES_DROPDOWN"));
-                // _Pmpf(("  sNewSchemeSelected: %d", sNewSchemeSelected));
+                PMPF_SOUNDS(("Entering ID_XSDI_SOUND_SCHEMES_DROPDOWN"));
+                PMPF_SOUNDS(("  sNewSchemeSelected: %d", sNewSchemeSelected));
 
                 // filter out the very first call
                 if (!pspd->fDontConfirmSchemeSelection) // pspd->sSchemeSelected != LIT_NONE)
@@ -1159,11 +1156,11 @@ MRESULT sndSoundsItemChanged(PNOTEBOOKPAGE pnbp,  // notebook info
                             }
                         }
 
-                        // _Pmpf(("  fOverwrite: %d", fOverwrite));
+                        PMPF_SOUNDS(("  fOverwrite: %d", fOverwrite));
 
                         if (fOverwrite)
                         {
-                            // _Pmpf(("  Calling LoadSoundSchemeFrom"));
+                            PMPF_SOUNDS(("  Calling LoadSoundSchemeFrom"));
                             LoadSoundSchemeFrom(pnbp);
 
                             // now update the whole damn page
@@ -1175,7 +1172,7 @@ MRESULT sndSoundsItemChanged(PNOTEBOOKPAGE pnbp,  // notebook info
                             // re-select LIT_NONE, which we had
                             // before
 
-                            // _Pmpf(("  Calling SelectSoundScheme LIT_NONE"));
+                            PMPF_SOUNDS(("  Calling SelectSoundScheme LIT_NONE"));
                             SelectSoundScheme(pspd, LIT_NONE);
                             sNewSchemeSelected = LIT_NONE;
                                 // for the following
@@ -1203,8 +1200,8 @@ MRESULT sndSoundsItemChanged(PNOTEBOOKPAGE pnbp,  // notebook info
                                           (PSZ)INIKEY_XWPSOUNDSCHEME,  // "XWPSound:Scheme"
                                           szSchemeSelected);
                 }
-                // _Pmpf(("End of ID_XSDI_SOUND_SCHEMES_DROPDOWN"));
-                // _Pmpf(("  pspd->sSchemeSelected: %d", pspd->sSchemeSelected));
+                PMPF_SOUNDS(("End of ID_XSDI_SOUND_SCHEMES_DROPDOWN"));
+                PMPF_SOUNDS(("  pspd->sSchemeSelected: %d", pspd->sSchemeSelected));
             }
         }
         break;

@@ -249,13 +249,11 @@ HPOINTER icomShareIcon(WPObject *somSelf,       // in: server object
                      && (somClient->pobjIconServer != somSelf)
                    )
                 {
-                    #ifdef DEBUG_ICONREPLACEMENTS
-                    _Pmpf(("Un-sharing pobjClient 0x%lX [%s] from previous server 0x%lX [%s]",
+                    PMPF_ICONREPLACEMENTS(("Un-sharing pobjClient 0x%lX [%s] from previous server 0x%lX [%s]",
                            pobjClient,
                            (p1 = _wpQueryTitle(pobjClient)) ? p1 : "NULL",
                            somSelf,
                            (p2 = _wpQueryTitle(somSelf)) ? p2 : "NULL"));
-                    #endif
 
                     icomUnShareIcon(somClient->pobjIconServer,
                                     pobjClient);
@@ -509,10 +507,10 @@ STATIC void _Optlink fntLazyIcons(PTHREADINFO ptiMyself)
                     {
                         HPOINTER hptr;
 
-                        #ifdef DEBUG_ICONREPLACEMENTS
+                        #ifdef __DEBUG__
                         {
                             PMINIRECORDCORE pmrc = _wpQueryCoreRecord(pDataFile);
-                            _PmpfF(("[%s] calling _wpQueryIcon, hptrIcon is 0x%lX",
+                            PMPF_ICONREPLACEMENTS(("[%s] calling _wpQueryIcon, hptrIcon is 0x%lX",
                                     _wpQueryTitle(pDataFile),
                                     pmrc->hptrIcon
                                   ));
@@ -525,9 +523,7 @@ STATIC void _Optlink fntLazyIcons(PTHREADINFO ptiMyself)
                             _wpSetIcon(pDataFile, hptr);
                         }
 
-                        #ifdef DEBUG_ICONREPLACEMENTS
-                        _Pmpf(("    loaded hptr 0x%lX", hptr));
-                        #endif
+                        PMPF_ICONREPLACEMENTS(("    loaded hptr 0x%lX", hptr));
 
                         /*
 
@@ -583,9 +579,7 @@ BOOL icomQueueLazyIcon(WPDataFile *somSelf)
     BOOL fLocked = FALSE,
          brc = FALSE;
 
-    #ifdef DEBUG_ICONREPLACEMENTS
-    _PmpfF(("[%s]", _wpQueryTitle(somSelf)));
-    #endif
+    PMPF_ICONREPLACEMENTS(("[%s]", _wpQueryTitle(somSelf)));
 
     if (fLocked = LockLazyIcons())
     {
@@ -888,18 +882,14 @@ APIRET icomLoadIconData(WPObject *pobj,             // in: object whose icon to 
          && (pData = doshMalloc(cbIconInfo, &arc))
        )
     {
-#ifdef DEBUG_ICONREPLACEMENTS
-        _PmpfF(("allocated %d bytes", cbIconInfo));
-#endif
+        PMPF_ICONREPLACEMENTS(("allocated %d bytes", cbIconInfo));
 
         // ask the object again
         if (icomQueryIconDataN(pobj,
                                ulIndex,
                                pData))
         {
-#ifdef DEBUG_ICONREPLACEMENTS
-            _Pmpf(("   got %d bytes data", cbIconInfo));
-#endif
+            PMPF_ICONREPLACEMENTS(("   got %d bytes data", cbIconInfo));
 
             // get the icon data depending on the format
             switch (pData->fFormat)
@@ -908,9 +898,8 @@ APIRET icomLoadIconData(WPObject *pobj,             // in: object whose icon to 
                 {
                     ULONG   cbResource;
                     PVOID   pvResourceTemp;
-#ifdef DEBUG_ICONREPLACEMENTS
-                    _Pmpf(("   ICON_RESOURCE 0x%lX, %d", pData->hmod, pData->resid));
-#endif
+
+                    PMPF_ICONREPLACEMENTS(("   ICON_RESOURCE 0x%lX, %d", pData->hmod, pData->resid));
 
                     // object has specified icon resource:
                     // load resource data...
@@ -957,9 +946,8 @@ APIRET icomLoadIconData(WPObject *pobj,             // in: object whose icon to 
                 break;
 
                 case ICON_DATA:
-#ifdef DEBUG_ICONREPLACEMENTS
-                    _Pmpf(("   ICON_DATA"));
-#endif
+
+                    PMPF_ICONREPLACEMENTS(("   ICON_DATA"));
 
                     // this is OK, no conversion needed
                     *ppIconInfo = pData;
@@ -969,9 +957,8 @@ APIRET icomLoadIconData(WPObject *pobj,             // in: object whose icon to 
                 case ICON_FILE:
                 {
                     WPFileSystem *pfs;
-#ifdef DEBUG_ICONREPLACEMENTS
-                    _Pmpf(("   ICON_FILE \"%s\"", pData->pszFileName));
-#endif
+
+                    PMPF_ICONREPLACEMENTS(("   ICON_FILE \"%s\"", pData->pszFileName));
 
                     if (    (pData->pszFileName)
                          && (pfs = _wpclsQueryObjectFromPath(_WPFileSystem,
@@ -1009,9 +996,7 @@ APIRET icomLoadIconData(WPObject *pobj,             // in: object whose icon to 
 
                 default:
                     // any other format:
-#ifdef DEBUG_ICONREPLACEMENTS
-                    _Pmpf(("    invalid format %d", pData->fFormat));
-#endif
+                    PMPF_ICONREPLACEMENTS(("    invalid format %d", pData->fFormat));
 
                     arc = ERROR_INVALID_DATA;
             } // end switch (pData->Format)
@@ -1023,9 +1008,7 @@ APIRET icomLoadIconData(WPObject *pobj,             // in: object whose icon to 
             free(pData);
     }
 
-#ifdef DEBUG_ICONREPLACEMENTS
-    _PmpfF(("returning %d", arc));
-#endif
+    PMPF_ICONREPLACEMENTS(("returning %d", arc));
 
     return arc;
 }

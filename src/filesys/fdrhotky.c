@@ -363,12 +363,10 @@ BOOL fdrProcessFldrHotkey(WPFolder *somSelf,
         usAllFlags = usFlags;
         usFlags &= (KC_VIRTUALKEY | KC_CTRL | KC_ALT | KC_SHIFT);
 
-        #ifdef DEBUG_KEYS
-            _PmpfF(("hwndFrame: 0x%lX, usKeyCode: 0x%lX, usFlags: 0x%lX",
+        PMPF_KEYS(("hwndFrame: 0x%lX, usKeyCode: 0x%lX, usFlags: 0x%lX",
                     hwndFrame,
                     usKeyCode,
                     usFlags));
-        #endif
 
         // now go through the global accelerator list and check
         // if the pressed key was assigned an action to;
@@ -451,9 +449,7 @@ BOOL fdrProcessFldrHotkey(WPFolder *somSelf,
                                                 FALSE)  // results from keyboard operation
                                   );
 
-                        #ifdef DEBUG_KEYS
-                            _Pmpf(("  Posting command 0x%lX", usCommand));
-                        #endif
+                        PMPF_KEYS(("  posting command 0x%lX", usCommand));
                     }
                 }
 
@@ -761,12 +757,9 @@ VOID fdrAddHotkeysToMenu(WPObject *somSelf,
         CHAR    szDescription[100];
         ULONG   flMenuXWP = cmnQuerySetting(mnuQueryMenuXWPSetting(somSelf));
 
-        #ifdef DEBUG_MENUS
-            USHORT  idMenu = WinQueryWindowUShort(hwndMenu, QWS_ID);
-            _PmpfF(("hwndMenu 0x%lX, id 0x%lX",
+        PMPF_MENUS(("hwndMenu 0x%lX, id 0x%lX",
                     hwndMenu,
-                    idMenu));
-        #endif
+                    WinQueryWindowUShort(hwndMenu, QWS_ID)));
 
         switch (ulMenuType)
         {
@@ -1185,11 +1178,9 @@ MRESULT fdrHotkeysItemChanged(PNOTEBOOKPAGE pnbp,
                 pHotkeyFound->usFlags      = pshef->usFlags;
                 pHotkeyFound->usKeyCode    = pshef->usKeyCode;
 
-                #ifdef DEBUG_KEYS
-                    _Pmpf(("Stored usFlags = 0x%lX, usKeyCode = 0x%lX",
+                PMPF_KEYS(("Stored usFlags = 0x%lX, usKeyCode = 0x%lX",
                             pshef->usFlags,
                             pshef->usKeyCode));
-                #endif
 
                 // show description
                 cmnDescribeKey(szKeyName, pshef->usFlags, pshef->usKeyCode);

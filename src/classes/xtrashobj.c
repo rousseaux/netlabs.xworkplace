@@ -277,9 +277,7 @@ SOM_Scope PSZ SOMLINK xtro_xwpQueryRelatedPath(XWPTrashObject *somSelf)
     XWPTrashObjectData *somThis = XWPTrashObjectGetData(somSelf);
     XWPTrashObjectMethodDebug("XWPTrashObject","xtro_xwpQueryRelatedPath");
 
-    #ifdef DEBUG_TRASHCAN
-        _Pmpf(("  Entering xwpQueryRelatedPath for %s", _wpQueryTitle(somSelf)));
-    #endif
+    PMPF_TRASHCAN(("[%s]", _wpQueryTitle(somSelf)));
 
     if (_pszSourcePath == NULL)
         // source path not queried yet:

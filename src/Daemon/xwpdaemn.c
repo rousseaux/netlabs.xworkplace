@@ -2040,10 +2040,6 @@ STATIC MRESULT ProcessStartApp(MPARAM mp1, MPARAM mp2)
             // return HAPP in PROGDETAILS
             ((PPROGDETAILS)mp2)->Length = happ;
 
-            #ifdef DEBUG_PROGRAMSTART
-                _PmpfF(("got happ 0x%lX", happ));
-            #endif
-
             // VIO and fullscreen sessions keep ending up in the
             // background here, so bring these to the front
             if (    (((PPROGDETAILS)mp2)->progt.progc != PROG_PM)
@@ -2066,22 +2062,12 @@ STATIC MRESULT ProcessStartApp(MPARAM mp1, MPARAM mp2)
             // error: try to find out what happened
             PERRINFO pei;
 
-            #ifdef DEBUG_PROGRAMSTART
-                _PmpfF(("WinStartApp failed"));
-            #endif
-
             // unfortunately WinStartApp doesn't
             // return meaningful codes like DosStartSession, so
             // try to see what happened
 
             if (pei = WinGetErrorInfo(G_habDaemon))
             {
-                #ifdef DEBUG_PROGRAMSTART
-                    _Pmpf(("  WinGetErrorInfo returned 0x%lX, errorid 0x%lX, %d",
-                                pei,
-                                pei->idError,
-                                ERRORIDERROR(pei->idError)));
-                #endif
 
                 switch (ERRORIDERROR(pei->idError))
                 {
@@ -2205,9 +2191,6 @@ STATIC VOID ProcessWindowChange(MPARAM mp1, MPARAM mp2)
     {
         case WM_CREATE:
             fPost = pgrCreateWinInfo((HWND)mp1);
-            #ifdef DEBUG_WINDOWLIST
-            _PmpfF(("pgrCreateWinInfo 0x%lX", mp1));
-            #endif
         break;
 
         case WM_DESTROY:
@@ -2243,11 +2226,6 @@ STATIC VOID ProcessIconChange(MPARAM mp1, MPARAM mp2)
     if (pgrIconChange((HWND)mp1, (HPOINTER)mp2))
     {
         // process notifies
-        #ifdef DEBUG_WINDOWLIST
-        _PmpfF(("posting iconchange for hwnd 0x%lX",
-                mp1));
-        #endif
-
         ProcessNotifies(PN_ICONCHANGE,
                         mp1,
                         mp2);

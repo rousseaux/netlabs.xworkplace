@@ -159,9 +159,7 @@ STATIC WPObject* AddFirstChild(WPFolder *pFolder,
         BOOL    fFolderLocked = FALSE,
                 fFindLocked = FALSE;
 
-        #ifdef DEBUG_POPULATESPLITVIEW
-            _Pmpf(("  "__FUNCTION__": CM_QUERYRECORD returned NULL"));
-        #endif
+        PMPF_POPULATESPLITVIEW(("CM_QUERYRECORD returned NULL"));
 
         TRY_LOUD(excpt1)
         {
@@ -190,9 +188,7 @@ STATIC WPObject* AddFirstChild(WPFolder *pFolder,
                     fFolderLocked = FALSE;
                 }
 
-                #ifdef DEBUG_POPULATESPLITVIEW
-                    _Pmpf(("  "__FUNCTION__": pFirstChildFolder pop is 0x%lX", pFirstChildFolder));
-                #endif
+                PMPF_POPULATESPLITVIEW(("pFirstChildFolder pop is 0x%lX", pFirstChildFolder));
 
                 if (!pFirstChildFolder)
                 {
@@ -210,9 +206,7 @@ STATIC WPObject* AddFirstChild(WPFolder *pFolder,
                     _wpQueryFilename(pFolder, szFolder, TRUE);
                     sprintf(szSearchMask, "%s\\*", szFolder);
 
-                    #ifdef DEBUG_POPULATESPLITVIEW
-                        _Pmpf(("  "__FUNCTION__": searching %s", szSearchMask));
-                    #endif
+                    PMPF_POPULATESPLITVIEW(("searching %s", szSearchMask));
 
                     ulFindCount = 1;
                     arc = DosFindFirst(szSearchMask,
@@ -226,9 +220,7 @@ STATIC WPObject* AddFirstChild(WPFolder *pFolder,
 
                     while ((arc == NO_ERROR))
                     {
-                        #ifdef DEBUG_POPULATESPLITVIEW
-                            _Pmpf(("      "__FUNCTION__": got %s", ffb3.achName));
-                        #endif
+                        PMPF_POPULATESPLITVIEW(("got %s", ffb3.achName));
 
                         // do not use "." and ".."
                         if (    (strcmp(ffb3.achName, ".") != 0)
@@ -239,9 +231,7 @@ STATIC WPObject* AddFirstChild(WPFolder *pFolder,
                             CHAR szFolder2[CCHMAXPATH];
                             sprintf(szFolder2, "%s\\%s", szFolder, ffb3.achName);
 
-                            #ifdef DEBUG_POPULATESPLITVIEW
-                                _Pmpf(("      "__FUNCTION__": awaking %s", szFolder2));
-                            #endif
+                            PMPF_POPULATESPLITVIEW(("awaking %s", szFolder2));
 
                             pObject = _wpclsQueryFolder(_WPFolder,
                                                         szFolder2,
@@ -362,9 +352,7 @@ STATIC MRESULT EXPENTRY fnwpSplitPopulate(HWND hwnd, ULONG msg, MPARAM mp1, MPAR
                            0,
                            0);
 
-                #ifdef DEBUG_POPULATESPLITVIEW
-                    _PmpfF(("populating %s", _wpQueryTitle(pFolder)));
-                #endif
+                PMPF_POPULATESPLITVIEW(("populating %s", _wpQueryTitle(pFolder)));
 
                 if (fdrCheckIfPopulated(pFolder,
                                         fFoldersOnly))
@@ -442,9 +430,7 @@ STATIC MRESULT EXPENTRY fnwpSplitPopulate(HWND hwnd, ULONG msg, MPARAM mp1, MPAR
                 WPFolder            *pFolder = (WPObject*)mp1;
                 PMINIRECORDCORE     precParent = _wpQueryCoreRecord(pFolder);
 
-                #ifdef DEBUG_POPULATESPLITVIEW
-                    _PmpfF(("CM_ADDFIRSTCHILD %s", _wpQueryTitle(mp1)));
-                #endif
+                PMPF_POPULATESPLITVIEW(("CM_ADDFIRSTCHILD %s", _wpQueryTitle(mp1)));
 
                 AddFirstChild(pFolder,
                               precParent,
@@ -506,9 +492,7 @@ STATIC VOID _Optlink fntSplitPopulate(PTHREADINFO ptiMyself)
         QMSG qmsg;
         PFDRSPLITVIEW psv = (PFDRSPLITVIEW)ptiMyself->ulData;
 
-        #ifdef DEBUG_POPULATESPLITVIEW
-            _PmpfF(("thread starting"));
-        #endif
+        PMPF_POPULATESPLITVIEW(("thread starting"));
 
         WinRegisterClass(ptiMyself->hab,
                          (PSZ)WC_SPLITPOPULATE,
@@ -528,9 +512,7 @@ STATIC VOID _Optlink fntSplitPopulate(PTHREADINFO ptiMyself)
 
         WinDestroyWindow(psv->hwndSplitPopulate);
 
-        #ifdef DEBUG_POPULATESPLITVIEW
-            _PmpfF(("thread ending"));
-        #endif
+        PMPF_POPULATESPLITVIEW(("thread ending"));
 
     }
     CATCH(excpt1) {} END_CATCH();
@@ -574,9 +556,7 @@ VOID fdrSplitPopulate(PFDRSPLITVIEW psv,
                       PMINIRECORDCORE prec,
                       ULONG fl)
 {
-    #ifdef DEBUG_POPULATESPLITVIEW
-        _PmpfF(("psv->hwndSplitPopulate: 0x%lX", psv->hwndSplitPopulate));
-    #endif
+    PMPF_POPULATESPLITVIEW(("psv->hwndSplitPopulate: 0x%lX", psv->hwndSplitPopulate));
 
     WinPostMsg(psv->hwndSplitPopulate,
                FM2_POPULATE,
@@ -584,7 +564,7 @@ VOID fdrSplitPopulate(PFDRSPLITVIEW psv,
                (MPARAM)fl);
 }
 
-#ifdef DEBUG_POPULATESPLITVIEW
+#ifdef __DEBUG__
 VOID DumpFlags(ULONG fl)
 {
     _Pmpf(("  fl %s %s %s",
@@ -746,10 +726,8 @@ VOID fdrInsertContents(WPFolder *pFolder,              // in: populated folder
                 }
             }
 
-            #ifdef DEBUG_POPULATESPLITVIEW
-                _PmpfF(("--> got %d objects to insert, %d to add first child",
+            PMPF_POPULATESPLITVIEW(("--> got %d objects to insert, %d to add first child",
                         cObjects, cAddFirstChilds));
-            #endif
 
             if (cObjects)
                 _wpclsInsertMultipleObjects(_somGetClass(pFolder),
@@ -1149,9 +1127,7 @@ MRESULT EXPENTRY fnwpSplitController(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
                 {
                     PMINIRECORDCORE prec = (PMINIRECORDCORE)mp1;
 
-                    #ifdef DEBUG_POPULATESPLITVIEW
-                        _PmpfF(("FM_FILLFOLDER %s", prec->pszIcon));
-                    #endif
+                    PMPF_POPULATESPLITVIEW(("FM_FILLFOLDER %s", prec->pszIcon));
 
                     DumpFlags((ULONG)mp2);
 
@@ -1255,12 +1231,10 @@ MRESULT EXPENTRY fnwpSplitController(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
                 PFDRSPLITVIEW  psv;
                 PMINIRECORDCORE prec;
 
-                #ifdef DEBUG_POPULATESPLITVIEW
-                    _PmpfF(("FM_POPULATED_FILLTREE %s",
+                PMPF_POPULATESPLITVIEW(("FM_POPULATED_FILLTREE %s",
                             mp1
                                 ? ((PMINIRECORDCORE)mp1)->pszIcon
                                 : "NULL"));
-                #endif
 
                 if (    (psv = WinQueryWindowPtr(hwndClient, QWL_USER))
                      && (prec = (PMINIRECORDCORE)mp1)
@@ -1319,12 +1293,10 @@ MRESULT EXPENTRY fnwpSplitController(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
                     BOOL    fOld = psv->fSplitViewReady;
                     ULONG   ul;
 
-                    #ifdef DEBUG_POPULATESPLITVIEW
-                        _PmpfF(("FM_POPULATED_SCROLLTO %s",
+                    PMPF_POPULATESPLITVIEW(("FM_POPULATED_SCROLLTO %s",
                                 mp1
                                     ? ((PMINIRECORDCORE)mp1)->pszIcon
                                     : "NULL"));
-                    #endif
 
                     // stop control notifications from messing with this
                     psv->fSplitViewReady = FALSE;
@@ -1370,12 +1342,10 @@ MRESULT EXPENTRY fnwpSplitController(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
                 if (psv = WinQueryWindowPtr(hwndClient, QWL_USER))
                 {
 
-                    #ifdef DEBUG_POPULATESPLITVIEW
-                        _PmpfF(("FM_POPULATED_FILLFILES %s",
+                    PMPF_POPULATESPLITVIEW(("FM_POPULATED_FILLFILES %s",
                                 mp1
                                     ? ((PMINIRECORDCORE)mp1)->pszIcon
                                     : "NULL"));
-                    #endif
 
                     if ((mp1) && (mp2))
                     {
@@ -1467,9 +1437,7 @@ MRESULT EXPENTRY fnwpSplitController(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
             case WM_CLOSE:
             {
                 PFDRSPLITVIEW  psv;
-                #ifdef DEBUG_POPULATESPLITVIEW
-                    _PmpfF(("WM_CLOSE"));
-                #endif
+                PMPF_POPULATESPLITVIEW(("WM_CLOSE"));
 
                 if (psv = WinQueryWindowPtr(hwndClient, QWL_USER))
                 {
@@ -1541,10 +1509,8 @@ MRESULT TreeFrameControl(HWND hwndFrame,
                  && (psv->fSplitViewReady)
                )
             {
-                #ifdef DEBUG_POPULATESPLITVIEW
-                    _PmpfF(("CN_EMPHASIS %s",
+                PMPF_POPULATESPLITVIEW(("CN_EMPHASIS %s",
                         prec->pszIcon));
-                #endif
 
                 // record changed?
                 if (prec != psv->precTreeSelected)
@@ -1564,10 +1530,8 @@ MRESULT TreeFrameControl(HWND hwndFrame,
 
                 if (psv->hwndStatusBar)
                 {
-                    #ifdef DEBUG_POPULATESPLITVIEW
-                        _Pmpf(( "CN_EMPHASIS: posting STBM_UPDATESTATUSBAR to hwnd %lX",
+                    PMPF_POPULATESPLITVIEW(("CN_EMPHASIS: posting STBM_UPDATESTATUSBAR to hwnd %lX",
                                 psv->hwndStatusBar ));
-                    #endif
 
                     // have the status bar updated and make
                     // sure the status bar retrieves its info
@@ -1596,10 +1560,8 @@ MRESULT TreeFrameControl(HWND hwndFrame,
                  && (prec = (PMINIRECORDCORE)mp2)
                )
             {
-                #ifdef DEBUG_POPULATESPLITVIEW
-                    _PmpfF(("CN_EXPANDTREE %s",
+                PMPF_POPULATESPLITVIEW(("CN_EXPANDTREE %s",
                         prec->pszIcon));
-                #endif
 
                 fdrPostFillFolder(psv,
                                   prec,
@@ -1741,13 +1703,11 @@ MRESULT EXPENTRY fnwpSubclassedTreeFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, 
                     // sets psv->precFolderToPopulate and starts this
                     // timer.
 
-                    #ifdef DEBUG_POPULATESPLITVIEW
-                        _PmpfF(("WM_TIMER 1, precFolderPopulating is 0x%lX (%s)",
+                    PMPF_POPULATESPLITVIEW(("WM_TIMER 1, precFolderPopulating is 0x%lX (%s)",
                                 psv->precFolderPopulating,
                                 (psv->precFolderPopulating)
                                     ? psv->precFolderPopulating->pszIcon
                                     : "NULL"));
-                    #endif
 
                     // If we're still busy populating something,
                     // keep the timer running and do nothing.
@@ -1759,9 +1719,7 @@ MRESULT EXPENTRY fnwpSubclassedTreeFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, 
                                      hwndFrame,
                                      1);
 
-                        #ifdef DEBUG_POPULATESPLITVIEW
-                            _PmpfF(("posting FM_FILLFOLDER"));
-                        #endif
+                        PMPF_POPULATESPLITVIEW(("posting FM_FILLFOLDER"));
 
                         // and fire populate
                         fdrPostFillFolder(psv,
@@ -1798,7 +1756,7 @@ MRESULT EXPENTRY fnwpSubclassedTreeFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, 
              */
 
             case WM_QUERYOBJECTPTR:
-                _PmpfF(("WM_QUERYOBJECTPTR"));
+                PMPF_POPULATESPLITVIEW(("WM_QUERYOBJECTPTR"));
                 if (    (hwndMainControl = WinQueryWindow(hwndFrame, QW_OWNER))
                      && (psv = WinQueryWindowPtr(hwndMainControl, QWL_USER))
                    )
@@ -1885,10 +1843,8 @@ MRESULT FilesFrameControl(HWND hwndFrame,
             {
                 if (psv->hwndStatusBar)
                 {
-                    #ifdef DEBUG_POPULATESPLITVIEW
-                        _Pmpf(( "CN_EMPHASIS: posting STBM_UPDATESTATUSBAR to hwnd %lX",
+                    PMPF_POPULATESPLITVIEW(("CN_EMPHASIS: posting STBM_UPDATESTATUSBAR to hwnd %lX",
                                 psv->hwndStatusBar ));
-                    #endif
 
                     // have the status bar updated and make
                     // sure the status bar retrieves its info
@@ -2043,7 +1999,7 @@ STATIC MRESULT EXPENTRY fnwpSubclassedFilesFrame(HWND hwndFrame, ULONG msg, MPAR
              */
 
             case WM_QUERYOBJECTPTR:
-                _PmpfF(("WM_QUERYOBJECTPTR"));
+                PMPF_POPULATESPLITVIEW(("WM_QUERYOBJECTPTR"));
                 if (    (hwndMainControl = WinQueryWindow(hwndFrame, QW_OWNER))
                      && (psv = WinQueryWindowPtr(hwndMainControl, QWL_USER))
                      // return the showing folder only if it is done
@@ -2081,7 +2037,7 @@ STATIC MRESULT EXPENTRY fnwpSubclassedFilesFrame(HWND hwndFrame, ULONG msg, MPAR
              */
 
             case FM_DELETINGFDR:
-                _PmpfF(("FM_DELETINGFDR"));
+                PMPF_POPULATESPLITVIEW(("FM_DELETINGFDR"));
                 if (    (hwndMainControl = WinQueryWindow(hwndFrame, QW_OWNER))
                      && (psv = WinQueryWindowPtr(hwndMainControl, QWL_USER))
                    )
@@ -2445,7 +2401,7 @@ MRESULT EXPENTRY fnwpSplitViewFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARA
                 switch (SHORT1FROMMP(mp1))
                 {
                     case ID_XFM_BAR_FOLDER:
-                        _PmpfF(("ID_XFM_BAR_FOLDER, (HWND)mp2 is 0x%lX", mp2));
+                        PMPF_POPULATESPLITVIEW(("ID_XFM_BAR_FOLDER, (HWND)mp2 is 0x%lX", mp2));
                         ulMenuType = MENU_FOLDERPULLDOWN;
 
                         // this operates on the root folder
@@ -2453,7 +2409,7 @@ MRESULT EXPENTRY fnwpSplitViewFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARA
                     break;
 
                     case ID_XFM_BAR_EDIT:
-                        _PmpfF(("ID_XFM_BAR_EDIT, (HWND)mp2 is 0x%lX", mp2));
+                        PMPF_POPULATESPLITVIEW(("ID_XFM_BAR_EDIT, (HWND)mp2 is 0x%lX", mp2));
                         ulMenuType = MENU_EDITPULLDOWN;
 
                         // this operates on the folder whose
@@ -2462,7 +2418,7 @@ MRESULT EXPENTRY fnwpSplitViewFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARA
                     break;
 
                     case ID_XFM_BAR_VIEW:
-                        _PmpfF(("ID_XFM_BAR_VIEW, (HWND)mp2 is 0x%lX", mp2));
+                        PMPF_POPULATESPLITVIEW(("ID_XFM_BAR_VIEW, (HWND)mp2 is 0x%lX", mp2));
                         ulMenuType = MENU_VIEWPULLDOWN;
 
                         // this operates on the folder whose
@@ -2471,7 +2427,7 @@ MRESULT EXPENTRY fnwpSplitViewFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARA
                     break;
 
                     case ID_XFM_BAR_SELECTED:
-                        _PmpfF(("ID_XFM_BAR_SELECTED, (HWND)mp2 is 0x%lX", mp2));
+                        PMPF_POPULATESPLITVIEW(("ID_XFM_BAR_SELECTED, (HWND)mp2 is 0x%lX", mp2));
                         ulMenuType = MENU_SELECTEDPULLDOWN;
 
                         // this operates on the folder whose
@@ -2480,7 +2436,7 @@ MRESULT EXPENTRY fnwpSplitViewFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARA
                     break;
 
                     case ID_XFM_BAR_HELP:
-                        _PmpfF(("ID_XFM_BAR_HELP, (HWND)mp2 is 0x%lX", mp2));
+                        PMPF_POPULATESPLITVIEW(("ID_XFM_BAR_HELP, (HWND)mp2 is 0x%lX", mp2));
                         ulMenuType = MENU_HELPPULLDOWN;
 
                         // this operates on the folder whose
@@ -2519,7 +2475,7 @@ MRESULT EXPENTRY fnwpSplitViewFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARA
                         WinDestroyWindow(hwndMenu);
                     }
 
-                    _Pmpf(("    _wpDisplayMenu returned 0x%lX", hwndMenu));
+                    PMPF_POPULATESPLITVIEW(("    _wpDisplayMenu returned 0x%lX", hwndMenu));
                 }
 
                 // rare case, but if the user clicked on the title
@@ -2605,9 +2561,7 @@ MRESULT EXPENTRY fnwpSplitViewFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARA
             if (psvd = (PSPLITVIEWDATA)WinQueryWindowPtr(hwndFrame,
                                                          QWL_USER))
             {
-                #ifdef DEBUG_POPULATESPLITVIEW
-                    _PmpfF(("PSPLITVIEWDATA is 0x%lX", psvd));
-                #endif
+                PMPF_POPULATESPLITVIEW(("PSPLITVIEWDATA is 0x%lX", psvd));
 
                 _wpDeleteFromObjUseList(psvd->sv.pRootObject,
                                         &psvd->ui);

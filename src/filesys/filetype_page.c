@@ -613,9 +613,7 @@ STATIC PASSOCRECORD AddAssocObject2Cnr(HWND hwndAssocsCnr,
         // store object handle for later
         preccNew->hobj = _wpQueryHandle(pObject);
 
-        #ifdef DEBUG_ASSOCS
-            _Pmpf(("AddAssoc: flRecordAttr %lX", flRecordAttr));
-        #endif
+        PMPF_ASSOCS(("flRecordAttr %lX", flRecordAttr));
 
         // add icon V0.9.16 (2001-09-29) [umoeller]
         if (pobj = objFindObjFromHandle(preccNew->hobj))
@@ -776,9 +774,7 @@ STATIC VOID UpdateAssocsCnr(HWND hwndAssocsCnr,    // in: container to update
                 pobjAssoc = objFindObjFromHandle(hobjAssoc);   // V0.9.9 (2001-04-02) [umoeller]
                 if (pobjAssoc)
                 {
-                    #ifdef DEBUG_ASSOCS
-                        _Pmpf(("UpdateAssocsCnr: Adding record, fEnable: %d", fEnableRecords));
-                    #endif
+                    PMPF_ASSOCS(("Adding record, fEnable: %d", fEnableRecords));
 
                     AddAssocObject2Cnr(hwndAssocsCnr,
                                        pobjAssoc,
@@ -1067,9 +1063,7 @@ STATIC BOOL CheckFileTypeDrag(PFILETYPESPAGEDATA pftpd,
     {
         if (pusIndicator)
             *pusIndicator = DOR_NEVERDROP;
-        #ifdef DEBUG_ASSOCS
-            _Pmpf(("   invalid items or invalid target"));
-        #endif
+        PMPF_ASSOCS(("   invalid items or invalid target"));
     }
     else
     {
@@ -1102,25 +1096,17 @@ STATIC BOOL CheckFileTypeDrag(PFILETYPESPAGEDATA pftpd,
                             *pusOperation = DO_MOVE;
                         brc = TRUE;
                     }
-                    #ifdef DEBUG_ASSOCS
                     else
-                        _Pmpf(("   target is child of source"));
-                    #endif
+                        PMPF_ASSOCS(("   target is child of source"));
                 }
-                #ifdef DEBUG_ASSOCS
                 else
-                    _Pmpf(("   invalid RMF"));
-                #endif
+                    PMPF_ASSOCS(("   invalid RMF"));
             }
-            #ifdef DEBUG_ASSOCS
             else
-                _Pmpf(("   cannot get drag item"));
-            #endif
+                PMPF_ASSOCS(("   cannot get drag item"));
         }
-        #ifdef DEBUG_ASSOCS
         else
-            _Pmpf(("   invalid operation 0x%lX", pDragInfo->usOperation));
-        #endif
+            PMPF_ASSOCS(("   invalid operation 0x%lX", pDragInfo->usOperation));
     }
 
     return brc;
@@ -1619,9 +1605,7 @@ MRESULT ftypFileTypesItemChanged(PNOTEBOOKPAGE pnbp,
                                     // user operation (we don't want
                                     // the WPS to copy anything)
 
-                    #ifdef DEBUG_ASSOCS
-                        _Pmpf(("CN_DRAGOVER: entering"));
-                    #endif
+                    PMPF_ASSOCS(("CN_DRAGOVER: entering"));
 
                     // get access to the drag'n'drop structures
                     if (DrgAccessDraginfo(pcdi->pDragInfo))
@@ -1634,9 +1618,7 @@ MRESULT ftypFileTypesItemChanged(PNOTEBOOKPAGE pnbp,
                         DrgFreeDraginfo(pcdi->pDragInfo);
                     }
 
-                    #ifdef DEBUG_ASSOCS
-                        _Pmpf(("CN_DRAGOVER: returning ind 0x%lX, op 0x%lX", usIndicator, usOp));
-                    #endif
+                    PMPF_ASSOCS(("CN_DRAGOVER: returning ind 0x%lX, op 0x%lX", usIndicator, usOp));
 
                     // and return the drop flags
                     mrc = (MRFROM2SHORT(usIndicator, usOp));
@@ -1655,9 +1637,7 @@ MRESULT ftypFileTypesItemChanged(PNOTEBOOKPAGE pnbp,
                 {
                     PCNRDRAGINFO pcdi = (PCNRDRAGINFO)ulExtra;
 
-                    #ifdef DEBUG_ASSOCS
-                        _Pmpf(("CN_DROP: entering"));
-                    #endif
+                    PMPF_ASSOCS(("CN_DROP: entering"));
 
                     // check global valid recc, which was set above
                     // get access to the drag'n'drop structures
@@ -1706,19 +1686,15 @@ MRESULT ftypFileTypesItemChanged(PNOTEBOOKPAGE pnbp,
                                             // aaarrgh
                                 }
                             }
-                            #ifdef DEBUG_ASSOCS
                             else
-                                _Pmpf(("  Cannot get drag item"));
-                            #endif
+                                PMPF_ASSOCS(("  Cannot get drag item"));
                         }
 
                         DrgFreeDraginfo(pcdi->pDragInfo);
                                     // V0.9.7 (2000-12-10) [umoeller]
                     }
-                    #ifdef DEBUG_ASSOCS
                     else
-                        _Pmpf(("  Cannot get draginfo"));
-                    #endif
+                        PMPF_ASSOCS(("  Cannot get draginfo"));
 
                     // If CN_DROP was the result of a "real" (modal) d'n'd,
                     // the DrgDrag function in CN_INITDRAG (above)
@@ -1730,9 +1706,7 @@ MRESULT ftypFileTypesItemChanged(PNOTEBOOKPAGE pnbp,
                     // In both cases, we clean up the resources: either in
                     // CN_INITDRAG or in CN_DROPNOTIFY.
 
-                    #ifdef DEBUG_ASSOCS
-                    _Pmpf(("CN_DROP: returning"));
-                    #endif
+                    PMPF_ASSOCS(("CN_DROP: returning"));
 
                 }
                 break; // case CN_DROP
@@ -3600,22 +3574,18 @@ MRESULT ftypAssociationsItemChanged(PNOTEBOOKPAGE pnbp,
                 XSTRING str;
                 xstrInitCopy(&str, pszTypes, 0);
 
-                #ifdef DEBUG_ASSOCS
-                _PmpfF(("pre: str.psz is %s (ulLength: %u)",
+                PMPF_ASSOCS(("pre: str.psz is %s (ulLength: %u)",
                             (str.psz) ? str.psz : "NULL",
                             str.ulLength));
-                #endif
 
                 // modify the types according to record click
                 HandleRecordChecked(ulExtra,         // from "item changed" callback
                                     &str,
                                     ",");      // types separator
 
-                #ifdef DEBUG_ASSOCS
-                _PmpfF(("post: str.psz is %s (ulLength: %u)",
+                PMPF_ASSOCS(("post: str.psz is %s (ulLength: %u)",
                             (str.psz) ? str.psz : "NULL",
                             str.ulLength));
-                #endif
 
                 // set new types
                 _wpSetAssociationType(pnbp->inbp.somSelf,

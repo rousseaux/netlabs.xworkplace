@@ -518,11 +518,6 @@ BOOL fdrQuerySetup(WPObject *somSelf,
             // the folder has instance background data
             // if the pCurrentBackground member points
             // to the instance data
-            _PmpfF(("[%s] pCurrentBackground 0x%lX, &Background 0x%lX",
-                    _wpQueryTitle(somSelf),
-                    pData->pCurrentBackground,
-                    &pData->Background));
-
             if (pData->pCurrentBackground == &pData->Background)
             {
                 CHAR    cType = 'S';
@@ -1276,8 +1271,6 @@ BOOL fdrForceRefresh(WPFolder *pFolder)
 {
     ULONG   fl = _wpQueryFldrFlags(pFolder);
 
-    _PmpfF(("entering [%s]", _wpQueryTitle(pFolder)));
-
     // refresh the folder if it's not currently refreshing
     if (0 == (fl & (FOI_POPULATEINPROGRESS | FOI_REFRESHINPROGRESS)))
     {
@@ -1442,12 +1435,6 @@ BOOL fdrSnapToGrid(WPFolder *somSelf,
             // use the WPS method (wpQueryContent) because this is too
             // slow. Instead, we query the container directly.
 
-            _PmpfF(("x= %d, y = %d, cx = %d, cy = %d",
-                        cmnQuerySetting(sulGridX),
-                        cmnQuerySetting(sulGridY),
-                        cmnQuerySetting(sulGridCX),
-                        cmnQuerySetting(sulGridCY)));
-
             pmrc = NULL;
             do
             {
@@ -1562,9 +1549,7 @@ STATIC PICONPOS GetICONPOS(PORDEREDLISTITEM poli,
         // go beyond the class name
         if (p = strchr(pip->szIdentity, ':'))
         {
-            /* #ifdef DEBUG_ORDEREDLIST
-                _Pmpf(("      Identities: %s and %s...", p, poli->szIdentity));
-            #endif */
+            PMPF_ORDEREDLIST(("      Identities: %s and %s...", p, poli->szIdentity));
 
             if (!stricmp(p, poli->szIdentity))
                 // object found: return the ICONPOS address
@@ -1593,12 +1578,11 @@ STATIC PICONPOS GetICONPOS(PORDEREDLISTITEM poli,
 
 SHORT XWPENTRY fdrSortByICONPOS(PVOID pItem1, PVOID pItem2, PVOID psip)
 {
-    /* #ifdef DEBUG_ORDEREDLIST
-        _Pmpf(("    Comparing %s and %s...",
+    PMPF_ORDEREDLIST(("    Comparing %s and %s...",
             _wpQueryTitle(((PORDEREDLISTITEM)pItem1)->pObj),
             _wpQueryTitle(((PORDEREDLISTITEM)pItem2)->pObj)
         ));
-    #endif */
+
     if ((pItem1) && (pItem2))
     {
         PICONPOS pip1 = GetICONPOS(((PORDEREDLISTITEM)pItem1), psip),
@@ -1826,8 +1810,6 @@ VOID WriteDropDownToIni(HWND hwndDropDown,
     PSZ     pszToSave = NULL;
     ULONG   cbToSave = 0;
 
-    _PmpfF(("entering"));
-
     for (ul = 0;
          ul < 10;
          ul++)
@@ -1839,8 +1821,6 @@ VOID WriteDropDownToIni(HWND hwndDropDown,
                                  sizeof(szEntry))
             < 1)
             break;
-
-        _Pmpf(("   got %s", szEntry));
 
         strhArrayAppend(&pszToSave,
                         szEntry,
@@ -2991,8 +2971,6 @@ STATIC BOOL PasteFillControls(PPASTEDLGDATA pData)
             SHORT   sIndex;
             PCSZ    pcszFormatName = NULL;
 
-            _Pmpf(("  got format %d", ulFormat));
-
             switch (ulFormat)
             {
                 case CF_BITMAP:
@@ -3711,12 +3689,9 @@ void _Optlink fntProcessStartupFolder(PTHREADINFO ptiMyself)
                     {
                         PUSEITEM    pUseItem = NULL;
 
-                        #ifdef DEBUG_STARTUP
-                            _Pmpf(("  WOM_WAITFORPROCESSNEXT: checking open views"));
-                            _Pmpf(("  obj %s, hwnd 0x%lX",
-                                        _wpQueryTitle(ppf->pObject),
-                                        ppf->hwndView));
-                        #endif
+                        PMPF_STARTUP(("  WOM_WAITFORPROCESSNEXT: checking open views"));
+                        PMPF_STARTUP(("  obj %s",
+                                        _wpQueryTitle(ppf->pObject)));
 
                         for (pUseItem = _wpFindUseItem(ppf->pObject, USAGE_OPENVIEW, NULL);
                              pUseItem;
@@ -3724,9 +3699,7 @@ void _Optlink fntProcessStartupFolder(PTHREADINFO ptiMyself)
                         {
                             PVIEWITEM pvi = (PVIEWITEM)(pUseItem + 1);
 
-                            #ifdef DEBUG_STARTUP
-                                _Pmpf(("    got view 0x%lX", pvi->handle));
-                            #endif
+                            PMPF_STARTUP(("    got view 0x%lX", pvi->handle));
 
                             if (pvi->handle == hwndCurrentView)
                             {

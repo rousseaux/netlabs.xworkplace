@@ -618,9 +618,7 @@ VOID trshFreeMapping(XWPTrashCan *pTrashCan,
                 PSZ pszSourceRealName = (PSZ)pMapping->Tree.ulKey;
                 ULONG ulDriveOfs = pszSourceRealName[0] - 'C';
                         // 0 for C:, 1 for D:, ...
-                #ifdef DEBUG_TRASHCAN
-                _PmpfF(("setting drive ofs %d dirty", ulDriveOfs));
-                #endif
+                PMPF_TRASHCAN(("setting drive ofs %d dirty", ulDriveOfs));
                 G_abMappingDrivesDirty[ulDriveOfs] = 1;
 
                 // now clean up
@@ -659,9 +657,7 @@ VOID trshSaveMappings(XWPTrashCan *pTrashCan)
     {
         if (pobjLock = cmnLockObject(pTrashCan))
         {
-            #ifdef DEBUG_TRASHCAN
-            _PmpfF(("Entering"));
-            #endif
+            PMPF_TRASHCAN(("Entering"));
 
             if (G_fMappingsTreeInitialized)
             {
@@ -962,11 +958,9 @@ XWPTrashObject* trshCreateTrashObject(M_XWPTrashObject *somSelf,
     {
         CHAR    szSetupString[300];
 
-        #ifdef DEBUG_TRASHCAN
-            _Pmpf(("xwpclsCreateTrashObject: Creating trash object \"%s\" in \"%s\"",
+        PMPF_TRASHCAN(("Creating trash object \"%s\" in \"%s\"",
                     _wpQueryTitle(pRelatedObject),
                     _wpQueryTitle(pTrashCan)));
-        #endif
 
         _wpLockObject(pRelatedObject);
 
@@ -1129,17 +1123,13 @@ PSZ trshComposeRelatedPath(XWPTrashObject *somSelf)
 {
     XWPTrashObjectData *somThis = XWPTrashObjectGetData(somSelf);
 
-    #ifdef DEBUG_TRASHCAN_
-        Pmpf(("    pRelatedObject: 0x%lX", _pRelatedObject));
-    #endif
+    PMPF_TRASHCAN(("    pRelatedObject: 0x%lX", _pRelatedObject));
 
     if (_pRelatedObject)
     {
         WPFolder *pTrashDir = _wpQueryFolder(_pRelatedObject);
 
-        #ifdef DEBUG_TRASHCAN
-            _Pmpf(("    pTrashDir: 0x%lX", pTrashDir));
-        #endif
+        PMPF_TRASHCAN(("    pTrashDir: 0x%lX", pTrashDir));
 
         if (pTrashDir)
         {
@@ -1163,9 +1153,7 @@ PSZ trshComposeRelatedPath(XWPTrashObject *somSelf)
                 {
                     CHAR szSourcePath[CCHMAXPATH];
 
-                    #ifdef DEBUG_TRASHCAN
-                        _Pmpf(("    szPathInTrash: %s", szPathInTrash));
-                    #endif
+                    PMPF_TRASHCAN(("    szPathInTrash: %s", szPathInTrash));
 
                     // copy drive letter
                     szSourcePath[0] = szPathInTrash[0];
@@ -1238,9 +1226,7 @@ STATIC BOOL AddTrashObjectsForTrashDir(M_XWPTrashObject *pXWPTrashObjectClass, /
         // error
         return 0;
 
-    #ifdef DEBUG_TRASHCAN
-        _Pmpf(("  Entering AddTrashObjectsForTrashDir for %s", _wpQueryTitle(pTrashDir)));
-    #endif
+    PMPF_TRASHCAN(("  Entering AddTrashObjectsForTrashDir for %s", _wpQueryTitle(pTrashDir)));
 
     lstInit(&llEmptyDirs, FALSE);       // no auto-free items, these are WPFOlder* pointers
 
@@ -1290,9 +1276,7 @@ STATIC BOOL AddTrashObjectsForTrashDir(M_XWPTrashObject *pXWPTrashObjectClass, /
                                 {
                                     // hidden directory: this is a trash directory!
 
-                                    #ifdef DEBUG_TRASHCAN
-                                        _Pmpf(("    Recursing with %s", _wpQueryTitle(pObject)));
-                                    #endif
+                                    PMPF_TRASHCAN(("    Recursing with %s", _wpQueryTitle(pObject)));
 
                                     brc = AddTrashObjectsForTrashDir(pXWPTrashObjectClass,
                                                                      pTrashCan,
@@ -1300,9 +1284,7 @@ STATIC BOOL AddTrashObjectsForTrashDir(M_XWPTrashObject *pXWPTrashObjectClass, /
                                                                      pfNeedSave,
                                                                      &ulTrashObjectCountSub);
 
-                                    #ifdef DEBUG_TRASHCAN
-                                        _Pmpf(("    Recursion returned %d objects", ulTrashObjectCountSub));
-                                    #endif
+                                    PMPF_TRASHCAN(("    Recursion returned %d objects", ulTrashObjectCountSub));
 
                                     if (ulTrashObjectCountSub == 0)
                                     {
@@ -1314,10 +1296,8 @@ STATIC BOOL AddTrashObjectsForTrashDir(M_XWPTrashObject *pXWPTrashObjectClass, /
                                         lstAppendItem(&llEmptyDirs,
                                                       pObject); // the empty WPFolder
 
-                                        #ifdef DEBUG_TRASHCAN
-                                            _Pmpf(("    Adding %s to dirs 2be deleted",
+                                        PMPF_TRASHCAN(("    Adding %s to dirs 2be deleted",
                                                     _wpQueryTitle(pObject)));
-                                        #endif
                                     }
 
                                     // don't create a trash object for this directory...
@@ -1340,20 +1320,16 @@ STATIC BOOL AddTrashObjectsForTrashDir(M_XWPTrashObject *pXWPTrashObjectClass, /
                     {
                         // non-folder or folder which is not hidden:
                         // add to trashcan!
-                        #ifdef DEBUG_TRASHCAN
-                            _Pmpf(("    Adding %s...",
+                        PMPF_TRASHCAN(("    Adding %s...",
                                         _wpQueryTitle(pObject)));
-                        #endif
 
                         trshCreateTrashObject(pXWPTrashObjectClass,
                                               pTrashCan,
                                               pObject);  // related object
                         (*pulObjectCount)++;
 
-                        #ifdef DEBUG_TRASHCAN
-                        _Pmpf(("    *pulObjectCount is now %d",
+                        PMPF_TRASHCAN(("    *pulObjectCount is now %d",
                                (*pulObjectCount)));
-                        #endif
                     }
                 } // end for (   pObject = _wpQueryContent(...
             } // end if (fTrashDirFolderLocked)
@@ -1393,9 +1369,8 @@ STATIC BOOL AddTrashObjectsForTrashDir(M_XWPTrashObject *pXWPTrashObjectClass, /
                                 pfNeedSave);
 
             // free the folder
-            #ifdef DEBUG_TRASHCAN
-                _Pmpf(("    Freeing empty folder %s", _wpQueryTitle(pFolder)));
-            #endif
+            PMPF_TRASHCAN(("    Freeing empty folder %s", _wpQueryTitle(pFolder)));
+
             _wpFree(pFolder);
 
             pDirNode = pDirNode->pNext;
@@ -1404,10 +1379,8 @@ STATIC BOOL AddTrashObjectsForTrashDir(M_XWPTrashObject *pXWPTrashObjectClass, /
         lstClear(&llEmptyDirs);
     }
 
-    #ifdef DEBUG_TRASHCAN
-        _Pmpf(("  End of AddTrashObjectsForTrashDir for %s;", _wpQueryTitle(pTrashDir)));
-        _Pmpf(("              returning %d objects ", (*pulObjectCount)));
-    #endif
+    PMPF_TRASHCAN(("  End of AddTrashObjectsForTrashDir for %s;", _wpQueryTitle(pTrashDir)));
+    PMPF_TRASHCAN(("              returning %d objects ", (*pulObjectCount)));
 
     return brc;
 }
@@ -1482,9 +1455,8 @@ BOOL trshPopulateFirstTime(XWPTrashCan *somSelf,
                     // get "\trash" dir on that drive
                     sprintf(szTrashDir, "%c:\\Trash",
                             cDrive);
-                    #ifdef DEBUG_TRASHCAN
-                        _Pmpf(("  trshPopulateFirstTime: Getting trash dir %s", szTrashDir));
-                    #endif
+
+                    PMPF_TRASHCAN(("  trshPopulateFirstTime: Getting trash dir %s", szTrashDir));
 
                     // first check if that directory exists using CP functions;
                     // otherwise the WPS will initialize the drive which causes
@@ -1509,15 +1481,11 @@ BOOL trshPopulateFirstTime(XWPTrashCan *somSelf,
                                                        &ulObjectCount);
                                    // this routine will recurse
 
-                            #ifdef DEBUG_TRASHCAN
-                                _Pmpf(("trshPopulateFirstTime: got %d objects for %s", ulObjectCount, szTrashDir));
-                            #endif
+                            PMPF_TRASHCAN(("got %d objects for %s", ulObjectCount, szTrashDir));
 
                             if (ulObjectCount == 0)
                             {
-                                #ifdef DEBUG_TRASHCAN
-                                    _Pmpf(("    is empty, deleting!"));
-                                #endif
+                                PMPF_TRASHCAN(("    is empty, deleting!"));
 
                                 // no trash objects found:
                                 _wpFree(pTrashDir);
@@ -1528,9 +1496,7 @@ BOOL trshPopulateFirstTime(XWPTrashCan *somSelf,
                 cDrive++;
             }
 
-            #ifdef DEBUG_TRASHCAN
-                _Pmpf(("  wpPopulate: Added new trash objects, now %d", _ulTrashObjectCount));
-            #endif
+            PMPF_TRASHCAN(("Added new trash objects, now %d", _ulTrashObjectCount));
 
             ulFldrFlags |= (FOI_POPULATEDWITHFOLDERS
                               | FOI_POPULATEDWITHALL);
@@ -1669,9 +1635,7 @@ BOOL trshDeleteIntoTrashCan(XWPTrashCan *pTrashCan, // in: trash can where to cr
          && (_wpQueryFilename(pSourceFolder, szSourceFolder, TRUE))
        )
     {
-        #ifdef DEBUG_TRASHCAN
-            _Pmpf(("xwpDeleteIntoTrashCan: Source folder: %s", szSourceFolder));
-        #endif
+        PMPF_TRASHCAN(("Source folder: %s", szSourceFolder));
 
         // get the \trash subdir corresponding to pSourceFolder;
         // this function either creates one or gets an existing
@@ -1705,27 +1669,21 @@ BOOL trshDeleteIntoTrashCan(XWPTrashCan *pTrashCan, // in: trash can where to cr
                 if (_fAlreadyPopulated)
                 {
                     SOMClass *pTrashObjectClass = _XWPTrashObject;
-                    #ifdef DEBUG_TRASHCAN
-                        _Pmpf(("xwpDeleteIntoTrashCan: Trash can is populated: creating trash object"));
-                        _Pmpf(("  pTrashObjectClass: 0x%lX", pTrashObjectClass));
-                    #endif
+                    PMPF_TRASHCAN(("Trash can is populated: creating trash object"));
+                    PMPF_TRASHCAN(("pTrashObjectClass: 0x%lX", pTrashObjectClass));
                     if (pTrashObjectClass)
                     {
                         if (trshCreateTrashObject(pTrashObjectClass,
                                                   pTrashCan,    // trash can
                                                   pObject))
-                            #ifdef DEBUG_TRASHCAN
-                                _Pmpf(("xwpDeleteIntoTrashCan: Created trash object successfully"))
-                            #endif
+                            PMPF_TRASHCAN(("Created trash object successfully"))
                             ;
                     }
                 }
                 else
                 {
                     // not populated yet:
-                    #ifdef DEBUG_TRASHCAN
-                        _Pmpf(("xwpDeleteIntoTrashCan: Trash can not populated, skipping trash object"));
-                    #endif
+                    PMPF_TRASHCAN(("Trash can not populated, skipping trash object"));
 
                     // just raise the number of trash items
                     // and change the icon, wpPopulate will
@@ -1774,13 +1732,11 @@ BOOL trshRestoreFromTrashCan(XWPTrashObject *pTrashObject,
                 PTASKREC    pTaskRecRelated = _wpFindTaskRec(_pRelatedObject);
                                 // from what I see, this is NULL always
 
-                #ifdef DEBUG_TRASHCAN
-                    _Pmpf(("xwpRestoreFromTrashCan: _pRelatedObject: %s",
+                PMPF_TRASHCAN(("_pRelatedObject: %s",
                             _wpQueryTitle(_pRelatedObject) ));
 
-                    wpshDumpTaskRec(pTrashObject, "xwpRestoreFromTrashCan (XWPTrashObject)", pTaskRecSelf);
-                    wpshDumpTaskRec(pTrashObject, "xwpRestoreFromTrashCan (related obj)", pTaskRecRelated);
-                #endif
+                wpshDumpTaskRec(pTrashObject, "xwpRestoreFromTrashCan (XWPTrashObject)", pTaskRecSelf);
+                wpshDumpTaskRec(pTrashObject, "xwpRestoreFromTrashCan (related obj)", pTaskRecRelated);
 
                 if (pTargetFolder)
                 {
@@ -1797,10 +1753,9 @@ BOOL trshRestoreFromTrashCan(XWPTrashObject *pTrashObject,
                     // where the object was deleted from
                     if (pszOriginalPath = _xwpQueryRelatedPath(pTrashObject))
                     {
-                        #ifdef DEBUG_TRASHCAN
-                        _Pmpf(("    using original path %s",
+                        PMPF_TRASHCAN(("    using original path %s",
                                 pszOriginalPath));
-                        #endif
+
                         // make sure that the original directory exists;
                         // it might not if a whole folder (tree) was
                         // moved into the trash can

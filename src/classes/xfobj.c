@@ -1275,9 +1275,7 @@ SOM_Scope HWND  SOMLINK xo_xwpHotkeyOrBorderAction(XFldObject *somSelf,
                          OPEN_DEFAULT,
                          0);           // "optional parameter" (?!?)
 
-    #ifdef DEBUG_KEYS
-        _Pmpf(("T1M_OpenObjectFromHandle: opened hwnd 0x%lX", hwnd));
-    #endif
+    PMPF_KEYS(("opened hwnd 0x%lX", hwnd));
 
     if (hwnd)
     {
@@ -1365,14 +1363,12 @@ SOM_Scope void  SOMLINK xo_wpInitData(XFldObject *somSelf)
                 // got it:
                 s_pWPObject = pClass;
 
-                #ifdef DEBUG_RESTOREDATA
-                    _PmpfF(("somGetInstanceSize %d",
+                PMPF_RESTOREDATA(("somGetInstanceSize %d",
                                 _somGetInstanceSize(pClass)));
-                    _PmpfF(("somGetInstancePartSize %d",
+                PMPF_RESTOREDATA(("somGetInstancePartSize %d",
                                 _somGetInstancePartSize(pClass)));
-                    _PmpfF(("sizeof(IBMOBJECTDATA) %d",
+                PMPF_RESTOREDATA(("sizeof(IBMOBJECTDATA) %d",
                                 sizeof(IBMOBJECTDATA)));
-                #endif
 
                 break;
             }
@@ -1861,13 +1857,11 @@ SOM_Scope void  SOMLINK xo_wpUnInitData(XFldObject *somSelf)
 
             if (_wpQueryStyle(somSelf) & (OBJSTYLE_NOTDEFAULTICON | OBJSTYLE_TEMPLATE))
             {
-                #ifdef DEBUG_ICONREPLACEMENTS
-                    _PmpfF(("checking hptr 0x%lX", pmrc->hptrIcon));
-                #endif
+                PMPF_ICONREPLACEMENTS(("checking hptr 0x%lX", pmrc->hptrIcon));
 
                 if (cmnIsStandardIcon(pmrc->hptrIcon))
                 {
-                    #ifdef DEBUG_ICONREPLACEMENTS
+                    #ifdef __DEBUG__
                         cmnLog(__FILE__, __LINE__, __FUNCTION__,
                                "WPS was about to nuke standard icon for object \"%s\"",
                                pmrc->pszIcon);
@@ -2218,16 +2212,16 @@ SOM_Scope BOOL  SOMLINK xo_wpRestoreState(XFldObject *somSelf,
     brc = XFldObject_parent_WPObject_wpRestoreState(somSelf,
                                                     ulReserved);
 
-    #ifdef DEBUG_RESTOREDATA
+    #ifdef __DEBUG__
         if (pod = (PIBMOBJECTDATA)_pvWPObjectData)
         {
-            _PmpfF(("pData->pFolder 0x%lX, _wpQueryFolder 0x%lX",
+            PMPF_RESTOREDATA(("pData->pFolder 0x%lX, _wpQueryFolder 0x%lX",
                         pod->pFolder, _wpQueryFolder(somSelf)));
 
-            _PmpfF(("pData->ulDefaultView 0x%lX, _wpQueryDefaultView 0x%lX",
+            PMPF_RESTOREDATA(("pData->ulDefaultView 0x%lX, _wpQueryDefaultView 0x%lX",
                         pod->ulDefaultView, _wpQueryDefaultView(somSelf)));
 
-            _PmpfF(("pData->pszObjectID 0x%lX, _wpQueryObjectID 0x%lX",
+            PMPF_RESTOREDATA(("pData->pszObjectID 0x%lX, _wpQueryObjectID 0x%lX",
                         pod->pszObjectID, _wpQueryObjectID(somSelf)));
         }
     #endif
@@ -2575,9 +2569,7 @@ SOM_Scope BOOL  SOMLINK xo_wpAddToObjUseList(XFldObject *somSelf,
             // AND this is a USAGE_OPENVIEW:
             // run our replacement
 
-            #ifdef DEBUG_ASSOCS
-            _PmpfF(("[%s] entering", _wpQueryTitle(somSelf)));
-            #endif
+            PMPF_ASSOCS(("[%s] entering", _wpQueryTitle(somSelf)));
 
             if (fLocked = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT))
             {
@@ -2627,11 +2619,10 @@ SOM_Scope BOOL  SOMLINK xo_wpAddToObjUseList(XFldObject *somSelf,
 
                 if (!(puiThis = pod->pUseItemFirst))
                 {
-                    #ifdef DEBUG_ASSOCS
-                    _Pmpf(("    adding hwnd %lX as first ui",
+                    PMPF_ASSOCS(("    adding hwnd %lX as first ui",
                            ((PVIEWITEM)(pUseItem + 1))->handle
                          ));
-                    #endif
+
                     pod->pUseItemFirst = pUseItem;
                 }
                 else
@@ -2639,20 +2630,16 @@ SOM_Scope BOOL  SOMLINK xo_wpAddToObjUseList(XFldObject *somSelf,
                     while (puiThis->pNext)
                         puiThis = puiThis->pNext;
 
-                    #ifdef DEBUG_ASSOCS
-                    _Pmpf(("    adding hwnd %lX as non-first ui",
+                    PMPF_ASSOCS(("    adding hwnd %lX as non-first ui",
                            ((PVIEWITEM)(pUseItem + 1))->handle
                          ));
-                    #endif
 
                     puiThis->pNext = pUseItem;
                 }
 
                 if (!pod->hevViewItems)
                 {
-                    #ifdef DEBUG_ASSOCS
-                    _Pmpf(("    creating event sem"));
-                    #endif
+                    PMPF_ASSOCS(("    creating event sem"));
 
                     DosCreateEventSem(NULL, &pod->hevViewItems, 0, FALSE);
                 }
@@ -2718,9 +2705,7 @@ SOM_Scope BOOL  SOMLINK xo_wpDeleteFromObjUseList(XFldObject *somSelf,
             // AND this is a USAGE_OPENVIEW:
             // run our replacement
 
-            #ifdef DEBUG_ASSOCS
-            _PmpfF(("[%s] entering", _wpQueryTitle(somSelf)));
-            #endif
+            PMPF_ASSOCS(("[%s] entering", _wpQueryTitle(somSelf)));
 
             if (fLocked = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT))
             {
@@ -3034,12 +3019,11 @@ SOM_Scope BOOL  SOMLINK xo_wpModifyMenu(XFldObject *somSelf,
     {
         XFldObjectData *somThis = XFldObjectGetData(somSelf);
 
-        #ifdef DEBUG_MENUS
-            _PmpfF(("[%s] hwndMenu 0x%lX hwndCnr 0x%lX",
+        PMPF_MENUS(("[%s] hwndMenu 0x%lX hwndCnr 0x%lX",
                     _wpQueryTitle(somSelf),
                     hwndMenu,
                     hwndCnr));
-            _Pmpf(("   type = 0x%lX (%s), view = 0x%lX (%s)",
+        PMPF_MENUS(("   type = 0x%lX (%s), view = 0x%lX (%s)",
                     ulMenuType,
                     (ulMenuType == MENU_OBJECTPOPUP) ? "MENU_OBJECTPOPUP"
                     : (ulMenuType == MENU_OPENVIEWPOPUP) ? "MENU_OPENVIEWPOPUP"
@@ -3056,8 +3040,6 @@ SOM_Scope BOOL  SOMLINK xo_wpModifyMenu(XFldObject *somSelf,
                     ulView,
                     mnuQueryViewName(ulView)
                     ));
-
-        #endif
 
         if (cmnQuerySetting(sfFixLockInPlace)) // V0.9.7 (2000-12-10) [umoeller]
         {
@@ -3152,71 +3134,6 @@ SOM_Scope BOOL  SOMLINK xo_wpMenuItemSelected(XFldObject *somSelf,
 
     switch (ulMenuId)
     {
-        #ifdef DEBUG_CONTEXT
-            case ID_XFMI_RECORDCORE:
-            {
-                int                 i;
-                CHAR                szMsg[1024] = "No record core.",
-                                    szTitle[1024],
-                                    szBuf[20] = "0x00000000";
-                PMINIRECORDCORE     pMRC = _wpQueryCoreRecord(somSelf);
-                PCLASSFIELDINFO     pCFI, pCFI2;
-                ULONG               ulCFISize = 0, ulErr;
-
-                strcpy(szTitle, "Record core for ");
-                strcat(szTitle, _wpQueryTitle(somSelf));
-
-                strcpy(szMsg, "Size of core record (cb): ");
-                UL2H(szBuf+2, pMRC->cb);
-                strcat(szMsg, szBuf);
-
-                strcat(szMsg, "\nSize of MINIRECORDCORE:   ");
-                UL2H(szBuf+2, sizeof(MINIRECORDCORE));
-                strcat(szMsg, szBuf);
-
-                strcat(szMsg, "\nSize of RECORDCORE:       ");
-                UL2H(szBuf+2, sizeof(RECORDCORE));
-                strcat(szMsg, szBuf);
-
-                strcat(szMsg, "\nNext record:              ");
-                UL2H(szBuf+2, (ULONG)pMRC->preccNextRecord);
-                strcat(szMsg, szBuf);
-
-                strcat(szMsg, "\nIcon X pos:               ");
-                UL2H(szBuf+2, pMRC->ptlIcon.x);
-                strcat(szMsg, szBuf);
-
-                strcat(szMsg, "\nIcon Y pos:               ");
-                UL2H(szBuf+2, pMRC->ptlIcon.y);
-                strcat(szMsg, szBuf);
-
-                strcat(szMsg, "\n\nDetails CLASSFIELDINFO:");
-
-                strcat(szMsg, "\nSize of structure:        ");
-                _wpQueryDetailsData(somSelf, NULL, &ulCFISize);
-                UL2H(szBuf+2, ulCFISize);
-                strcat(szMsg, szBuf);
-
-                pCFI = (PCLASSFIELDINFO)_wpAllocMem(somSelf, ulCFISize, &ulErr);
-                pCFI2 = pCFI;
-                _wpQueryDetailsData(somSelf, (PVOID)&pCFI2, &ulCFISize);
-
-                _wpFreeMem(somSelf, (PVOID)pCFI);
-
-                winhDebugBox(szTitle, szMsg);
-
-                brc = TRUE;
-            }
-            break;
-
-            case ID_XFMI_SHOWFOLDERDATA:
-                xthrPostWorkerMsg(WM_SHOWFOLDERDATA,
-                                  (MPARAM)somSelf,
-                                  MPNULL);
-                brc = TRUE;
-            break;
-        #endif
-
         /*  V0.9.16 (2001-12-06) [umoeller]:
             disabled the following, or the shredder will delete
             into the trash can as well... sigh
@@ -3540,18 +3457,14 @@ SOM_Scope HWND  SOMLINK xo_wpViewObject(XFldObject *somSelf,
     // XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xo_wpViewObject");
 
-    #ifdef DEBUG_ASSOCS
-    _PmpfF(("[%s] entering", _wpQueryTitle(somSelf)));
-    #endif
+    PMPF_ASSOCS(("[%s] entering", _wpQueryTitle(somSelf)));
 
     hwnd = XFldObject_parent_WPObject_wpViewObject(somSelf,
                                                    hwndCnr,
                                                    ulView,
                                                    param);
 
-    #ifdef DEBUG_ASSOCS
-    _PmpfF(("[%s] returning hwnd 0x%lX", _wpQueryTitle(somSelf), hwnd));
-    #endif
+    PMPF_ASSOCS(("[%s] returning hwnd 0x%lX", _wpQueryTitle(somSelf), hwnd));
 
     return hwnd;
 }
@@ -3922,15 +3835,15 @@ SOM_Scope ULONG  SOMLINK xo_wpConfirmObjectTitle(XFldObject *somSelf,
     // XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xo_wpConfirmObjectTitle");
 
-    #ifdef DEBUG_TITLECLASH
+    #ifdef __DEBUG__
     {
         CHAR szFolder2[CCHMAXPATH];
-        _Pmpf(("Entering wpConfirmObjectTitle"));
-        _Pmpf(("  somSelf == 0x%lX", somSelf));
-        _Pmpf(("    pszTitle: %s", pszTitle));
+        PMPF_TITLECLASH(("Entering wpConfirmObjectTitle"));
+        PMPF_TITLECLASH(("  somSelf == 0x%lX", somSelf));
+        PMPF_TITLECLASH(("    pszTitle: %s", pszTitle));
         _wpQueryFilename(_wpQueryFolder(somSelf), szFolder2, TRUE);
-        _Pmpf(("    in folder: %s", szFolder2));
-        _Pmpf(("  menuID: 0x%lX", menuID));
+        PMPF_TITLECLASH(("    in folder: %s", szFolder2));
+        PMPF_TITLECLASH(("  menuID: 0x%lX", menuID));
     }
     #endif
 
@@ -3953,9 +3866,7 @@ SOM_Scope ULONG  SOMLINK xo_wpConfirmObjectTitle(XFldObject *somSelf,
     {
         // global settings do not allow dialog
         // replacement: call default
-        #ifdef DEBUG_TITLECLASH
-            _Pmpf(("  Calling original"));
-        #endif
+        PMPF_TITLECLASH(("  calling original"));
         ulrc = XFldObject_parent_WPObject_wpConfirmObjectTitle(somSelf,
                                                                Folder,
                                                                ppDuplicate,
@@ -3965,25 +3876,27 @@ SOM_Scope ULONG  SOMLINK xo_wpConfirmObjectTitle(XFldObject *somSelf,
     }
 #endif
 
-    #ifdef DEBUG_TITLECLASH
+    #ifdef __DEBUG__
     {
         CHAR szFolder2[CCHMAXPATH];
-        _Pmpf(("  Return value: %d", ulrc));
-        _Pmpf(("  New somSelf == 0x%lX", somSelf));
-        _Pmpf(("    New pszTitle: %s", pszTitle));
+        PMPF_TITLECLASH(("  Return value: %d", ulrc));
+        PMPF_TITLECLASH(("  New somSelf == 0x%lX", somSelf));
+        PMPF_TITLECLASH(("    New pszTitle: %s", pszTitle));
         _wpQueryFilename(_wpQueryFolder(somSelf), szFolder2, TRUE);
-        _Pmpf(("    in folder: %s", szFolder2));
+        PMPF_TITLECLASH(("    in folder: %s", szFolder2));
 
-        if (ppDuplicate) {
-            _Pmpf(("  ppDuplicate neu != NULL"));
-            if (*ppDuplicate) {
-                _Pmpf(("    *ppDuplicate neu == 0x%lX", *ppDuplicate));
-                _Pmpf(("      Title neu: %s", _wpQueryTitle(*ppDuplicate) ));
+        if (ppDuplicate)
+        {
+            PMPF_TITLECLASH(("  ppDuplicate neu != NULL"));
+            if (*ppDuplicate)
+            {
+                PMPF_TITLECLASH(("    *ppDuplicate neu == 0x%lX", *ppDuplicate));
+                PMPF_TITLECLASH(("      Title neu: %s", _wpQueryTitle(*ppDuplicate) ));
                 _wpQueryFilename(_wpQueryFolder(*ppDuplicate), szFolder2, TRUE);
-                _Pmpf(("      in folder: %s", szFolder2));
+                PMPF_TITLECLASH(("      in folder: %s", szFolder2));
             }
         }
-        _Pmpf(("Done."));
+        PMPF_TITLECLASH(("Done."));
     }
     #endif
 

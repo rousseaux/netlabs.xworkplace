@@ -725,9 +725,7 @@ VOID hifCollectHotkeys(MPARAM mp1,  // in: HWND hwndCnr
         *pfBusy = TRUE;
         pHotkeys = hifQueryObjectHotkeys(&cHotkeys);
 
-        #ifdef DEBUG_KEYS
-            _Pmpf(("hifKeybdHotkeysInitPage: got %d hotkeys", cHotkeys));
-        #endif
+        PMPF_KEYS(("got %d hotkeys", cHotkeys));
 
         cnrhRemoveAll(hwndCnr);
 
@@ -748,9 +746,7 @@ VOID hifCollectHotkeys(MPARAM mp1,  // in: HWND hwndCnr
             {
                 PFUNCTIONKEY pFuncKey = 0;
 
-                #ifdef DEBUG_KEYS
-                    _Pmpf(("  %d: Getting hotkey for 0x%lX", ulCount, pHotkeyThis->ulHandle));
-                #endif
+                PMPF_KEYS(("  %d: Getting hotkey for 0x%lX", ulCount, pHotkeyThis->ulHandle));
 
                 preccThis->ulIndex = ulCount;
 

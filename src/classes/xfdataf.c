@@ -170,17 +170,17 @@ SOM_Scope void  SOMLINK xdf_wpUnInitData(XFldDataFile *somSelf)
     // of our standard icons WHICH MUST NOT BE FREED under any circumstances,
     // or the shared icon would disappear globally
     // V0.9.16 (2001-12-31) [umoeller]
-    #ifdef DEBUG_ICONREPLACEMENTS
+    #ifdef __DEBUG__
     {
         PMINIRECORDCORE pmrc = _wpQueryCoreRecord(somSelf);
-        _PmpfF(("[%s] OBJSTYLE_NOTDEFAULTICON %lX",
+        PMPF_ICONREPLACEMENTS(("[%s] OBJSTYLE_NOTDEFAULTICON %lX",
                 _wpQueryTitle(somSelf),
                 _wpQueryStyle(somSelf) & OBJSTYLE_NOTDEFAULTICON));
-        _Pmpf(("    OBJSTYLE_TEMPLATE %lX",
+        PMPF_ICONREPLACEMENTS(("    OBJSTYLE_TEMPLATE %lX",
                 _wpQueryStyle(somSelf) & OBJSTYLE_TEMPLATE));
-        _Pmpf(("    hptrIcon %lX",
+        PMPF_ICONREPLACEMENTS(("    hptrIcon %lX",
                 pmrc->hptrIcon));
-        _Pmpf(("    cmnIsStandardIcon %lX",
+        PMPF_ICONREPLACEMENTS(("    cmnIsStandardIcon %lX",
                 cmnIsStandardIcon(pmrc->hptrIcon)));
     }
     #endif
@@ -278,11 +278,9 @@ SOM_Scope BOOL  SOMLINK xdf_wpRestoreState(XFldDataFile *somSelf,
     {
         PMAKEAWAKEFS pFSData = (PMAKEAWAKEFS)ulReserved;
 
-        #ifdef DEBUG_ICONREPLACEMENTS
-            _Pmpf((__FUNCTION__ " pre: hptr: 0x%lX, OBJSTYLE_NOTDEFAULTICON: %lX",
+        PMPF_ICONREPLACEMENTS(("pre: hptr: 0x%lX, OBJSTYLE_NOTDEFAULTICON: %lX",
                 _wpQueryCoreRecord(somSelf)->hptrIcon,
                 _wpQueryStyle(somSelf) & OBJSTYLE_NOTDEFAULTICON));
-        #endif
 
         // find the WPFileSystem method by skipping the
         // buggy WPDataFile implementation
@@ -297,9 +295,7 @@ SOM_Scope BOOL  SOMLINK xdf_wpRestoreState(XFldDataFile *somSelf,
             HPOINTER hptrNew;
             ULONG flNewStyle = 0;
 
-            #ifdef DEBUG_ICONREPLACEMENTS
-                _PmpfF(("obj 0x%lX: pFSData is 0x%lX", somSelf, pFSData));
-            #endif
+            PMPF_ICONREPLACEMENTS(("obj 0x%lX: pFSData is 0x%lX", somSelf, pFSData));
 
             if (    (!prec->hptrIcon)
                  && (pFSData)
@@ -316,9 +312,7 @@ SOM_Scope BOOL  SOMLINK xdf_wpRestoreState(XFldDataFile *somSelf,
                 // V0.9.18 (2002-03-24) [umoeller]
                 flNewStyle = OBJSTYLE_NOTDEFAULTICON;
 
-                #ifdef DEBUG_ICONREPLACEMENTS
-                    _Pmpf(("    custom prec->hptrIcon is 0x%lX", prec->hptrIcon));
-                #endif
+                PMPF_ICONREPLACEMENTS(("    custom prec->hptrIcon is 0x%lX", prec->hptrIcon));
 
                 // set our instance data flag so that we know that
                 // we should NEVER EVER use an association icon
@@ -361,11 +355,9 @@ SOM_Scope BOOL  SOMLINK xdf_wpRestoreState(XFldDataFile *somSelf,
             cmnLog(__FILE__, __LINE__, __FUNCTION__,
                    "Cannot resolve WPFileSystem::wpRestoreState.");
 
-        #ifdef DEBUG_ICONREPLACEMENTS
-            _Pmpf((__FUNCTION__ " post: hptr: 0x%lX, OBJSTYLE_NOTDEFAULTICON: %lX",
+        PMPF_ICONREPLACEMENTS(("post: hptr: 0x%lX, OBJSTYLE_NOTDEFAULTICON: %lX",
                 _wpQueryCoreRecord(somSelf)->hptrIcon,
                 _wpQueryStyle(somSelf) & OBJSTYLE_NOTDEFAULTICON));
-        #endif
     }
 
     if (!pwpRestoreState)
@@ -443,9 +435,7 @@ SOM_Scope HPOINTER  SOMLINK xdf_wpQueryIcon(XFldDataFile *somSelf)
         HPOINTER hptrReturn = NULLHANDLE;
         PMINIRECORDCORE prec = _wpQueryCoreRecord(somSelf);
 
-        #ifdef DEBUG_ICONREPLACEMENTS
-            _PmpfF(("obj 0x%lX: prec->hptrIcon is 0x%lX", somSelf, prec->hptrIcon));
-        #endif
+        PMPF_ICONREPLACEMENTS(("obj 0x%lX: prec->hptrIcon is 0x%lX", somSelf, prec->hptrIcon));
 
         TRY_LOUD(excpt1)
         {
@@ -743,8 +733,7 @@ SOM_Scope WPObject*  SOMLINK xdf_wpQueryAssociatedProgram(XFldDataFile *somSelf,
     /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
     // XFldDataFileMethodDebug("XFldDataFile","xdf_wpQueryAssociatedProgram");
 
-    #if defined DEBUG_ASSOCS || defined DEBUG_SOMMETHODS
-        _Pmpf(("Entering wpQueryAssociatedProgram for %s; ulView = %lX, "
+    PMPF_ASSOCS(("Entering wpQueryAssociatedProgram for %s; ulView = %lX, "
                "*pulHowMatched = 0x%lX, "
                "pszMatchString = %s, pszDefaultType = %s",
                _wpQueryTitle(somSelf),
@@ -755,7 +744,6 @@ SOM_Scope WPObject*  SOMLINK xdf_wpQueryAssociatedProgram(XFldDataFile *somSelf,
                ),
                pszMatchString, pszDefaultType
                ));
-    #endif
 
 #ifndef __NEVEREXTASSOCS__
     if (cmnQuerySetting(sfExtAssocs))
@@ -780,9 +768,7 @@ SOM_Scope WPObject*  SOMLINK xdf_wpQueryAssociatedProgram(XFldDataFile *somSelf,
                                                                        cbMatchString,
                                                                        pszDefaultType);
 
-    #if defined DEBUG_ASSOCS || defined DEBUG_SOMMETHODS
-        _Pmpf(("End of wpQueryAssociatedProgram for %s", _wpQueryTitle(somSelf)));
-    #endif
+    PMPF_ASSOCS(("End of wpQueryAssociatedProgram for %s", _wpQueryTitle(somSelf)));
 
     return (pobj);
 }
@@ -812,10 +798,8 @@ SOM_Scope HPOINTER  SOMLINK xdf_wpQueryAssociatedFileIcon(XFldDataFile *somSelf)
     /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
     XFldDataFileMethodDebug("XFldDataFile","xdf_wpQueryAssociatedFileIcon");
 
-#ifdef DEBUG_ASSOCS
-    _PmpfF(("[%s] entering",
+    PMPF_ASSOCS(("[%s] entering",
             _wpQueryTitle(somSelf)));
-#endif
 
 #ifndef __NEVEREXTASSOCS__
     if (cmnQuerySetting(sfExtAssocs))
@@ -830,9 +814,7 @@ SOM_Scope HPOINTER  SOMLINK xdf_wpQueryAssociatedFileIcon(XFldDataFile *somSelf)
 
             WPObject *pobjAssoc;
 
-            #ifdef DEBUG_ASSOCS
-            _PmpfF(("   getting associated program for default view 0x%lX", ulView));
-            #endif
+            PMPF_ASSOCS(("   getting associated program for default view 0x%lX", ulView));
 
             if (pobjAssoc = ftypQueryAssociatedProgram(somSelf,
                                                        &ulView,
@@ -841,9 +823,7 @@ SOM_Scope HPOINTER  SOMLINK xdf_wpQueryAssociatedFileIcon(XFldDataFile *somSelf)
                                                        FALSE))
                     // locks the object
             {
-                #ifdef DEBUG_ASSOCS
-                _PmpfF(("   got associated program [%s]", _wpQueryTitle(pobjAssoc)));
-                #endif
+                PMPF_ASSOCS(("   got associated program [%s]", _wpQueryTitle(pobjAssoc)));
 
                 // get the assoc icon
                 // V0.9.20 (2002-07-25) [umoeller]
@@ -862,10 +842,8 @@ SOM_Scope HPOINTER  SOMLINK xdf_wpQueryAssociatedFileIcon(XFldDataFile *somSelf)
         {
         } END_CATCH();
 
-        #ifdef DEBUG_ASSOCS
-        _PmpfF(("done, returning 0x%lX",
+        PMPF_ASSOCS(("done, returning 0x%lX",
                 hptr));
-        #endif
 
         return hptr;      // NULLHANDLE still for "plain text"
     }
@@ -1056,10 +1034,9 @@ SOM_Scope BOOL  SOMLINK xdf_wpModifyMenu(XFldDataFile *somSelf,
                                                           ulView,
                                                           ulReserved))
     {
-        #ifdef DEBUG_MENUS
-            _PmpfF(("[%s]",
+        PMPF_MENUS(("[%s]",
                     _wpQueryTitle(somSelf)));
-            _Pmpf(("   type = 0x%lX (%s), view = 0x%lX (%s)",
+        PMPF_MENUS(("   type = 0x%lX (%s), view = 0x%lX (%s)",
                     ulMenuType,
                     (ulMenuType == MENU_OBJECTPOPUP) ? "MENU_OBJECTPOPUP"
                     : (ulMenuType == MENU_OPENVIEWPOPUP) ? "MENU_OPENVIEWPOPUP"
@@ -1076,8 +1053,6 @@ SOM_Scope BOOL  SOMLINK xdf_wpModifyMenu(XFldDataFile *somSelf,
                     ulView,
                     mnuQueryViewName(ulView)
                     ));
-
-        #endif
 
         // now check which type of menu we have
         switch (ulMenuType)
@@ -1217,9 +1192,7 @@ SOM_Scope HWND  SOMLINK xdf_wpOpen(XFldDataFile *somSelf,
     /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
     XFldDataFileMethodDebug("XFldDataFile","xdf_wpOpen");
 
-    #ifdef DEBUG_ASSOCS
-    _PmpfF(("[%s] entering, ulView: 0x%lX", _wpQueryTitle(somSelf), ulView));
-    #endif
+    PMPF_ASSOCS(("[%s] entering, ulView: 0x%lX", _wpQueryTitle(somSelf), ulView));
 
 #ifndef __NEVEREXTASSOCS__
     if (cmnQuerySetting(sfExtAssocs))
@@ -1280,9 +1253,7 @@ SOM_Scope HWND  SOMLINK xdf_wpOpen(XFldDataFile *somSelf,
                                                      ulView,
                                                      param);
 
-    #ifdef DEBUG_ASSOCS
-    _PmpfF(("[%s] returning hwnd 0x%lX", _wpQueryTitle(somSelf), hwnd));
-    #endif
+    PMPF_ASSOCS(("[%s] returning hwnd 0x%lX", _wpQueryTitle(somSelf), hwnd));
 
     return (hwnd);
 

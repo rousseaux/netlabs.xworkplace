@@ -82,8 +82,6 @@
 // generic headers
 #include "setup.h"                      // code generation and debugging options
 
-// #define DEBUG_ASSOCS        1
-
 // headers in /helpers
 #include "helpers\apps.h"               // application helpers
 #include "helpers\dosh.h"               // Control Program helper routines
@@ -360,10 +358,8 @@ SOM_Scope ULONG  SOMLINK xpgf_xwpQueryProgType(XWPProgramFile *somSelf,
         }
     }
 
-    #ifdef DEBUG_ASSOCS
-        _Pmpf(("  End of xwpQueryProgType, returning: 0x%lX (%s)",
+    PMPF_ASSOCS(("  End of xwpQueryProgType, returning: 0x%lX (%s)",
                 _ulAppType, appDescribeAppType(_ulAppType)));
-    #endif
 
     return _ulAppType;
 
@@ -673,9 +669,7 @@ SOM_Scope ULONG  SOMLINK xpgf_wpQueryDefaultView(XWPProgramFile *somSelf)
     // XWPProgramFileData *somThis = XWPProgramFileGetData(somSelf);
     XWPProgramFileMethodDebug("XWPProgramFile","xpgf_wpQueryDefaultView");
 
-    #ifdef DEBUG_ASSOCS
-        _Pmpf(( "wpQueryDefaultView for %s", _wpQueryTitle(somSelf) ));
-    #endif
+    PMPF_ASSOCS(("[%s]", _wpQueryTitle(somSelf) ));
 
     ulView = XWPProgramFile_parent_WPProgramFile_wpQueryDefaultView(somSelf);
 
@@ -840,9 +834,9 @@ STATIC BOOL ProgramFileIconHandler(XWPProgramFile *somSelf,
         CHAR        szProgramFile[CCHMAXPATH];
         BOOL        fFound = FALSE;
 
-        #ifdef DEBUG_ICONREPLACEMENTS
+        #ifdef __DEBUG__
             ULONG ulStyle = _wpQueryStyle(somSelf);
-            _PmpfF(("%s, old style: 0x%lX %s %s",
+            PMPF_ICONREPLACEMENTS(("%s, old style: 0x%lX %s %s",
                         _wpQueryTitle(somSelf),
                          ulStyle,
                          (ulStyle & OBJSTYLE_NOTDEFAULTICON) ? "OBJSTYLE_NOTDEFAULTICON" : "",
@@ -904,10 +898,8 @@ STATIC BOOL ProgramFileIconHandler(XWPProgramFile *somSelf,
                           NULL,
                           NULL);
 
-                #ifdef DEBUG_ICONREPLACEMENTS
-                    _PmpfF(("%s, calling exehOpen",
+                PMPF_ICONREPLACEMENTS(("%s, calling exehOpen",
                             szProgramFile));
-                #endif
 
                 if (!(arc = exehOpen(szProgramFile, &pExec)))
                 {
@@ -915,10 +907,8 @@ STATIC BOOL ProgramFileIconHandler(XWPProgramFile *somSelf,
                                       pExec,                // can be NULL
                                       szProgramFile);
 
-                    #ifdef DEBUG_ICONREPLACEMENTS
-                        _Pmpf(("  _xwpQueryProgType returned %d",
+                    PMPF_ICONREPLACEMENTS(("  _xwpQueryProgType returned %d",
                                 appDescribeAppType(_ulAppType)));
-                    #endif
 
                     if (!progFindIcon(pExec,
                                       _ulAppType,
@@ -1074,10 +1064,8 @@ SOM_Scope ULONG  SOMLINK xpgf_wpQueryIconData(XWPProgramFile *somSelf,
             else
             {
                 // not icon file: run the icon handler again
-                #ifdef DEBUG_ICONREPLACEMENTS
-                    _PmpfF(("calling ProgramFileIconHandler, cbRequired %d, pIconInfo 0x%lX",
+                PMPF_ICONREPLACEMENTS(("calling ProgramFileIconHandler, cbRequired %d, pIconInfo 0x%lX",
                               cbRequired, pIconInfo));
-                #endif
 
                 if (!(ProgramFileIconHandler(somSelf,
                                              NULL,          // HPOINTER *phptr,
@@ -1216,10 +1204,10 @@ SOM_Scope BOOL  SOMLINK xpgf_wpSetProgIcon(XWPProgramFile *somSelf,
                            OBJSTYLE_NOTDEFAULTICON,
                            (fNotDefaultIcon) ? OBJSTYLE_NOTDEFAULTICON : 0);
 
-            #ifdef DEBUG_ICONREPLACEMENTS
+            #ifdef __DEBUG__
             {
                 ULONG ulStyle;
-                _Pmpf(("End of xpgf_wpSetProgIcon, new style: 0x%lX %s %s",
+                PMPF_ICONREPLACEMENTS(("leaving, new style: 0x%lX %s %s",
                          ulStyle = _wpQueryStyle(somSelf),
                          (ulStyle & OBJSTYLE_NOTDEFAULTICON) ? "OBJSTYLE_NOTDEFAULTICON" : "",
                          (ulStyle & OBJSTYLE_CUSTOMICON) ? "OBJSTYLE_CUSTOMICON" : ""));

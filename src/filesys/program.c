@@ -558,10 +558,8 @@ ULONG progQueryProgType(PCSZ pszFullFile,
     ULONG           ulDosAppType = 0;
     BOOL            fCallQueryAppType = FALSE;
 
-    #ifdef DEBUG_ASSOCS
-        _PmpfF(("%s, before: 0x%lX (%s)",
+    PMPF_ASSOCS(("%s, before: 0x%lX (%s)",
             pszFullFile, ulAppType, appDescribeAppType(ulAppType)));
-    #endif
 
     TRY_LOUD(excpt1)
     {
@@ -1016,9 +1014,7 @@ BOOL progStoreRunningApp(WPObject *pProgram,        // in: started program
 
                     pobjLocked = pobjEmph;
 
-                    #ifdef DEBUG_ASSOCS
-                    _PmpfF(("[%s] allocating USAGE_OPENVIEW viewitem", _wpQueryTitle(pobjEmph)));
-                    #endif
+                    PMPF_ASSOCS(("[%s] allocating USAGE_OPENVIEW viewitem", _wpQueryTitle(pobjEmph)));
 
                     // in any case, add "in-use" emphasis to the object
                     if (pUseItemView = (PUSEITEM)_wpAllocMem(pobjEmph,
@@ -1033,9 +1029,7 @@ BOOL progStoreRunningApp(WPObject *pProgram,        // in: started program
                         pViewItem->view = OPEN_RUNNING;
                         pViewItem->handle = happ;
 
-                        #ifdef DEBUG_ASSOCS
-                        _PmpfF(("[%s] adding USAGE_OPENVIEW viewitem", _wpQueryTitle(pobjEmph)));
-                        #endif
+                        PMPF_ASSOCS(("[%s] adding USAGE_OPENVIEW viewitem", _wpQueryTitle(pobjEmph)));
 
                         // yo this call creates a handle!
                         // V0.9.20 (2002-08-04) [umoeller]
@@ -1048,9 +1042,7 @@ BOOL progStoreRunningApp(WPObject *pProgram,        // in: started program
                             // for data file associations, add VIEWFILE
                             // structure as well
 
-                            #ifdef DEBUG_ASSOCS
-                            _PmpfF(("[%s] allocating USAGE_OPENFILE viewitem", _wpQueryTitle(pobjEmph)));
-                            #endif
+                            PMPF_ASSOCS(("[%s] allocating USAGE_OPENFILE viewitem", _wpQueryTitle(pobjEmph)));
 
                             if (pUseItemFile =  (PUSEITEM)_wpAllocMem(pobjEmph,
                                                                       sizeof(USEITEM) + sizeof(VIEWFILE),
@@ -1064,9 +1056,7 @@ BOOL progStoreRunningApp(WPObject *pProgram,        // in: started program
                                 pViewFile->ulMenuId = ulMenuID;
                                 pViewFile->handle  = happ;
 
-                                #ifdef DEBUG_ASSOCS
-                                _PmpfF(("[%s] adding USAGE_OPENFILE viewitem", _wpQueryTitle(pobjEmph)));
-                                #endif
+                                PMPF_ASSOCS(("[%s] adding USAGE_OPENFILE viewitem", _wpQueryTitle(pobjEmph)));
 
                                 brc = _wpAddToObjUseList(pobjEmph,
                                                          pUseItemFile);
@@ -2068,12 +2058,10 @@ APIRET progOpenProgram(WPObject *pProgObject,       // in: WPProgram or WPProgra
 
     // INT3();
 
-    #ifdef DEBUG_PROGRAMSTART
-        _PmpfF(("[%s] entering, argDataFile [%s]",
+    PMPF_PROGRAMSTART(("[%s] entering, argDataFile [%s]",
                 _wpQueryTitle(pProgObject),
                 (pArgDataFile) ? _wpQueryTitle(pArgDataFile) : "NULL"
               ));
-    #endif
 
     xstrInit(&strParamsNew, 0);
     xstrInit(&strStartupDirNew, 0);
@@ -2166,9 +2154,7 @@ APIRET progOpenProgram(WPObject *pProgObject,       // in: WPProgram or WPProgra
                                         *phapp,
                                         ulMenuID);
 
-                #ifdef DEBUG_PROGRAMSTART
-                    _PmpfF(("returning %d", arc));
-                #endif
+                PMPF_PROGRAMSTART(("returning %d", arc));
             }
         }
     }
@@ -2884,112 +2870,6 @@ const char* fsysGetResourceFlagName(ULONG ulResourceFlag)
 }
 
 /*
- *@@ progGetWinResourceTypeName:
- *      returns a human-readable name for a Win
- *      resource type.
- *
- *@@added V0.9.16 (2001-12-18) [umoeller]
- */
-
-PSZ progGetWinResourceTypeName(PSZ pszBuf,
-                               ULONG ulTypeThis)
-{
-    PCSZ pcsz = "unknown";
-    switch (ulTypeThis)
-    {
-        case WINRT_ACCELERATOR: pcsz = "WINRT_ACCELERATOR"; break;
-        case WINRT_BITMAP: pcsz =  "WINRT_BITMAP"; break;
-        case WINRT_CURSOR: pcsz =  "WINRT_CURSOR"; break;
-        case WINRT_DIALOG: pcsz =  "WINRT_DIALOG"; break;
-        case WINRT_FONT: pcsz =  "WINRT_FONT"; break;
-        case WINRT_FONTDIR: pcsz =  "WINRT_FONTDIR"; break;
-        case WINRT_ICON: pcsz =  "WINRT_ICON"; break;
-        case WINRT_MENU: pcsz =  "WINRT_MENU"; break;
-        case WINRT_RCDATA: pcsz =  "WINRT_RCDATA"; break;
-        case WINRT_STRING: pcsz =  "WINRT_STRING"; break;
-        case WINRT_MESSAGELIST: pcsz = "WINRT_MESSAGELIST"; break;
-        case WINRT_GROUP_CURSOR: pcsz = "WINRT_GROUP_CURSOR"; break;
-        case WINRT_GROUP_ICON: pcsz = "WINRT_GROUP_ICON"; break;
-    }
-
-    sprintf(pszBuf, "%d (%s)", ulTypeThis, pcsz);
-
-    return (pszBuf);
-}
-
-/*
- *@@ progGetOS2ResourceTypeName:
- *      returns a human-readable name for an OS/2
- *      resource type.
- *
- *@@added V0.9.7 (2000-12-20) [lafaix]
- *@@changed V0.9.9 (2001-04-02) [umoeller]: now returning const char*
- *@@changed V0.9.16 (2002-01-05) [umoeller]: moved this here from fsys.c, renamed from fsysGetOS2ResourceTypeName
- *@@changed V0.9.16 (2002-01-05) [umoeller]: added icons display
- */
-
-PCSZ progGetOS2ResourceTypeName(ULONG ulResourceType)
-{
-    switch (ulResourceType)
-    {
-        case RT_POINTER:
-            return "Mouse pointer shape (RT_POINTER)";
-        case RT_BITMAP:
-            return "Bitmap (RT_BITMAP)";
-        case RT_MENU:
-            return "Menu template (RT_MENU)";
-        case RT_DIALOG:
-            return "Dialog template (RT_DIALOG)";
-        case RT_STRING:
-            return "String table (RT_STRING)";
-        case RT_FONTDIR:
-            return "Font directory (RT_FONTDIR)";
-        case RT_FONT:
-            return "Font (RT_FONT)";
-        case RT_ACCELTABLE:
-            return "Accelerator table (RT_ACCELTABLE)";
-        case RT_RCDATA:
-            return "Binary data (RT_RCDATA)";
-        case RT_MESSAGE:
-            return "Error message table (RT_MESSAGE)";
-        case RT_DLGINCLUDE:
-            return "Dialog include file name (RT_DLGINCLUDE)";
-        case RT_VKEYTBL:
-            return "Virtual key table (RT_VKEYTBL)";
-        case RT_KEYTBL:
-            return "Key table (RT_KEYTBL)";
-        case RT_CHARTBL:
-            return "Character table (RT_CHARTBL)";
-        case RT_DISPLAYINFO:
-            return "Display information (RT_DISPLAYINFO)";
-
-        case RT_FKASHORT:
-            return "Short-form function key area (RT_FKASHORT)";
-        case RT_FKALONG:
-            return "Long-form function key area (RT_FKALONG)";
-
-        case RT_HELPTABLE:
-            return "Help table (RT_HELPTABLE)";
-        case RT_HELPSUBTABLE:
-            return "Help subtable (RT_HELPSUBTABLE)";
-
-        case RT_FDDIR:
-            return "DBCS uniq/font driver directory (RT_FDDIR)";
-        case RT_FD:
-            return "DBCS uniq/font driver (RT_FD)";
-
-        #ifndef RT_RESNAMES
-            #define RT_RESNAMES         255
-        #endif
-
-        case RT_RESNAMES:
-            return "String ID table (RT_RESNAMES)";
-    }
-
-    return "Application specific"; // !!! Should return value too
-}
-
-/*
  *@@ fntInsertResources:
  *      transient thread started by progResourcesInitPage
  *      to insert resources into the "Resources" container.
@@ -3066,7 +2946,7 @@ STATIC void _Optlink fntInsertResources(PTHREADINFO pti)
                         // fixed bad resource naming for Windows resources
                         if (pExec->ulOS == EXEOS_WIN16)
                         {
-                            preccThis->pcszResourceType = progGetWinResourceTypeName(preccThis->szBuf,
+                            preccThis->pcszResourceType = icoGetWinResourceTypeName(preccThis->szBuf,
                                                                                      ulType);
                             if (ulType == WINRT_ICON)
                                 fLoad = TRUE;
@@ -3074,7 +2954,7 @@ STATIC void _Optlink fntInsertResources(PTHREADINFO pti)
                         else
                         {
                             // V0.9.16 (2001-12-18) [umoeller]
-                            preccThis->pcszResourceType = progGetOS2ResourceTypeName(ulType);
+                            preccThis->pcszResourceType = icoGetOS2ResourceTypeName(ulType);
                             if (ulType == RT_POINTER)
                                 fLoad = TRUE;
                             preccThis->pcszResourceFlag

@@ -302,10 +302,8 @@ MRESULT EXPENTRY fnwpSubclFolderContentMenu(HWND hwndMenu, ULONG msg, MPARAM mp1
                 PSWP pswp;
                 if (pswp = (PSWP)mp1)
                 {
-                    #ifdef DEBUG_MENUS
-                        _Pmpf(("WM_ADJUSTWINDOWPOS %d, %d, %d, %d",
+                    PMPF_MENUS(("WM_ADJUSTWINDOWPOS %d, %d, %d, %d",
                                 pswp->x, pswp->y, pswp->cx, pswp->cy));
-                    #endif
 
                     // is this the message that really sets the window?
                     if (    /* pswp->x
@@ -345,9 +343,9 @@ MRESULT EXPENTRY fnwpSubclFolderContentMenu(HWND hwndMenu, ULONG msg, MPARAM mp1
             }
             break;
 
-            #ifdef DEBUG_MENUS
+            #ifdef __DEBUG__
                 case MM_SELECTITEM:
-                    _Pmpf(( "MM_SELECTITEM: mp1 = %lX/%lX, mp2 = %lX",
+                    PMPF_MENUS(("MM_SELECTITEM: mp1 = %lX/%lX, mp2 = %lX",
                         SHORT1FROMMP(mp1),
                         SHORT2FROMMP(mp1),
                         mp2 ));
@@ -356,9 +354,7 @@ MRESULT EXPENTRY fnwpSubclFolderContentMenu(HWND hwndMenu, ULONG msg, MPARAM mp1
             #endif
 
             case WM_BUTTON2DOWN:
-                #ifdef DEBUG_MENUS
-                    _Pmpf(("WM_BUTTON2DOWN"));
-                #endif
+                PMPF_MENUS(("WM_BUTTON2DOWN"));
 
                 ptlMouse.x = SHORT1FROMMP(mp1);
                 ptlMouse.y = SHORT2FROMMP(mp1);
@@ -376,9 +372,8 @@ MRESULT EXPENTRY fnwpSubclFolderContentMenu(HWND hwndMenu, ULONG msg, MPARAM mp1
 
             /* case WM_BUTTON1DOWN:
                 // let this be handled by the default proc
-                #ifdef DEBUG_MENUS
-                    _Pmpf(("WM_BUTTON1DOWN"));
-                #endif
+                PMPF_MENUS(("WM_BUTTON1DOWN"));
+
                 // G_fFldrContentMenuButtonDown = TRUE;
                 mrc = pfnwpOrig(hwndMenu, msg, mp1, mp2);
             break; */
@@ -389,9 +384,8 @@ MRESULT EXPENTRY fnwpSubclFolderContentMenu(HWND hwndMenu, ULONG msg, MPARAM mp1
                 // upon receiving these, we will open the object directly;
                 // we need to cheat a little bit because sending
                 // MM_SELECTITEM would open the submenu
-                #ifdef DEBUG_MENUS
-                    _Pmpf(("WM_BUTTON2UP"));
-                #endif
+                PMPF_MENUS(("WM_BUTTON2UP"));
+
                 // G_fFldrContentMenuButtonDown = TRUE;
                 ptlMouse.x = SHORT1FROMMP(mp1);
                 ptlMouse.y = SHORT2FROMMP(mp1);

@@ -2295,9 +2295,8 @@ STATIC void _Optlink fntStartupThread(PTHREADINFO ptiMyself)
             // load XFldStartup class if not already loaded
             if (!_XFldStartup)
             {
-                #ifdef DEBUG_STARTUP
-                    _Pmpf(("Loading XFldStartup class"));
-                #endif
+                PMPF_STARTUP(("Loading XFldStartup class"));
+
                 XFldStartupNewClass(XFldStartup_MajorVersion,
                                     XFldStartup_MinorVersion);
                 // and make sure this is never unloaded
@@ -2480,9 +2479,7 @@ VOID initDesktopPopulated(VOID)
 
     initLog("Entering " __FUNCTION__"...");
 
-    #ifdef DEBUG_STARTUP
-        _Pmpf(("fnwpFileObject: got FIM_DESKTOPPOPULATED"));
-    #endif
+    PMPF_STARTUP(("entering"));
 
     // V0.9.9 (2001-03-10) [umoeller]
     TRY_LOUD(excpt1)
@@ -2516,5 +2513,7 @@ VOID initDesktopPopulated(VOID)
     // moved all the rest to fntStartupThread
 
     initLog("Leaving " __FUNCTION__);
+
+    PMPF_STARTUP(("leaving"));
 }
 

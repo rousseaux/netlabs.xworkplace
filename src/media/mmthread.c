@@ -180,9 +180,7 @@ STATIC VOID ThreadPlaySystemSound(HWND hwndObject,
     ULONG   ulVolume;
     CHAR    szFile[CCHMAXPATH];
 
-    #ifdef DEBUG_SOUNDS
-        _Pmpf(( "XMM_PLAYSYSTEMSOUND index %d", mp1));
-    #endif
+    PMPF_SOUNDS(("XMM_PLAYSYSTEMSOUND index %d", mp1));
 
     // get system sound from MMPM.INI
     if (sndQuerySystemSound(G_habPartyThread,
@@ -192,9 +190,7 @@ STATIC VOID ThreadPlaySystemSound(HWND hwndObject,
                             &ulVolume))
     {
         // OK, sound file found in MMPM.INI:
-        #ifdef DEBUG_SOUNDS
-            _Pmpf(( "  posting Sound %d == %s, %s", mp1, szDescr, pszFile ));
-        #endif
+        PMPF_SOUNDS(("  posting Sound %d == %s, %s", mp1, szDescr, szFile ));
 
         // play!
         WinPostMsg(hwndObject,
@@ -295,9 +291,7 @@ MRESULT EXPENTRY xmm_fnwpPartyObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPA
                                                  &G_usSoundDeviceID);
                         // and play when MM_MCIPASSDEVICE comes in
 
-                        #ifdef DEBUG_SOUNDS
-                            _PmpfF(("xmmOpenWaveDevice returned 0x%lX", ulrc));
-                        #endif
+                        PMPF_SOUNDS(("xmmOpenWaveDevice returned 0x%lX", ulrc));
                     }
                 }
                 else
@@ -341,10 +335,8 @@ MRESULT EXPENTRY xmm_fnwpPartyObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPA
         {
             BOOL fGainingUse = (SHORT1FROMMP(mp2) == MCI_GAINING_USE);
 
-            #ifdef DEBUG_SOUNDS
-                _PmpfF(("MM_MCIPASSDEVICE: mp1 = 0x%lX, mp2 = 0x%lX", mp1, mp2 ));
-                _Pmpf(( "    --> %s use", (fGainingUse) ? "Gaining" : "Losing" ));
-            #endif
+            PMPF_SOUNDS(("MM_MCIPASSDEVICE: mp1 = 0x%lX, mp2 = 0x%lX", mp1, mp2 ));
+            PMPF_SOUNDS(("    --> %s use", (fGainingUse) ? "Gaining" : "Losing" ));
 
             if (fGainingUse)
             {
@@ -382,9 +374,8 @@ MRESULT EXPENTRY xmm_fnwpPartyObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPA
                  && (usDeviceID == G_usSoundDeviceID)
                )
             {
-                #ifdef DEBUG_SOUNDS
-                    _PmpfF(("MM_MCINOTIFY: usNotifyCode = 0x%lX", usNotifyCode));
-                #endif
+                PMPF_SOUNDS(("MM_MCINOTIFY: usNotifyCode = 0x%lX", usNotifyCode));
+
                 if (usNotifyCode == MCI_NOTIFY_SUCCESSFUL)
                 {
                     xmmStopSound(&G_usSoundDeviceID);

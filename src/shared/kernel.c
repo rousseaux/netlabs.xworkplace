@@ -1148,11 +1148,9 @@ STATIC VOID T1M_OpenObjectFromHandle(HWND hwndObject,
                 WPObject *pobjStart = _wpclsQueryObject(_WPObject,
                                                         hobjStart);
 
-                #ifdef DEBUG_KEYS
-                    _Pmpf(("T1Object: received hobj 0x%lX -> 0x%lX",
+                PMPF_KEYS(("received hobj 0x%lX -> 0x%lX",
                             hobjStart,
                             pobjStart));
-                #endif
 
                 if (pobjStart)
                 {

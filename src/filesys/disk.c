@@ -222,8 +222,6 @@ BOOL dskQueryInfo(PXDISKINFO paDiskInfos,
     else
         cb = sizeof(XDISKINFO);
 
-    _PmpfF(("allocating %d bytes shared", cb));
-
     if (    (hwndDaemon = krnQueryDaemonObject())
          && (WinQueryWindowProcess(hwndDaemon,
                                    &pidDaemon,
@@ -240,8 +238,6 @@ BOOL dskQueryInfo(PXDISKINFO paDiskInfos,
                                    PAG_READ | PAG_WRITE))
             )
         {
-            _Pmpf(("   pShared is 0x%lX", pShared));
-
             if (brc = (BOOL)WinSendMsg(hwndDaemon,
                                        XDM_QUERYDISKS,
                                        (MPARAM)ulLogicalDrive,

@@ -640,9 +640,7 @@ SOM_Scope BOOL  SOMLINK xfdesk_wpPopulate(XFldDesktop *somSelf,
     XFldDesktopData *somThis = XFldDesktopGetData(somSelf);
     XFldDesktopMethodDebug("XFldDesktop","xfdesk_wpPopulate");
 
-    #ifdef DEBUG_STARTUP
-        _Pmpf(("XFldDesktop::wpPopulate"));
-    #endif
+    PMPF_STARTUP(("entering"));
 
     initLog("Entering " __FUNCTION__", calling parent WPDesktop::wpPopulate...");
 
@@ -653,9 +651,7 @@ SOM_Scope BOOL  SOMLINK xfdesk_wpPopulate(XFldDesktop *somSelf,
 
     initLog("  parent WPDesktop::wpPopulate returned %d", brc);
 
-    #ifdef DEBUG_STARTUP
-        _Pmpf(("XFldDesktop::wpPopulate: checking whether Worker thread needs notify"));
-    #endif
+    PMPF_STARTUP(("checking whether Worker thread needs notify"));
 
     if (    (!G_DesktopPopulated)
          && (_fOpened)                      // avoid the pre-populate, wait until it's open!
@@ -668,17 +664,14 @@ SOM_Scope BOOL  SOMLINK xfdesk_wpPopulate(XFldDesktop *somSelf,
 
         initLog("  first desktop populate after open, posting FIM_DESKTOPPOPULATED");
 
-        #ifdef DEBUG_STARTUP
-            _Pmpf(("  posting FIM_DESKTOPPOPULATED"));
-        #endif
+        PMPF_STARTUP(("posting FIM_DESKTOPPOPULATED"));
+
         xthrPostFileMsg(FIM_DESKTOPPOPULATED,
                         (MPARAM)somSelf,
                         0);
     }
 
-    #ifdef DEBUG_STARTUP
-        _Pmpf(("End of XFldDesktop::wpPopulate"));
-    #endif
+    PMPF_STARTUP(("leaving"));
 
     initLog("Leaving " __FUNCTION__);
 

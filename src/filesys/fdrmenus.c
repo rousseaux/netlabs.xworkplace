@@ -675,17 +675,13 @@ XWPSETTING mnuQueryMenuWPSSetting(WPObject *somSelf)
     {
         if (cmnIsADesktop(somSelf))
         {
-            #ifdef DEBUG_MENUS2
-                _PmpfF(("returning sflMenuDesktopWPS"));
-            #endif
+            PMPF_MENUS(("returning sflMenuDesktopWPS"));
 
             return sflMenuDesktopWPS;
         }
         else
         {
-            #ifdef DEBUG_MENUS2
-                _PmpfF(("returning sflMenuFolderWPS"));
-            #endif
+            PMPF_MENUS(("returning sflMenuFolderWPS"));
 
             return sflMenuFolderWPS;
         }
@@ -716,17 +712,13 @@ XWPSETTING mnuQueryMenuXWPSetting(WPObject *somSelf)
     {
         if (cmnIsADesktop(somSelf))
         {
-            #ifdef DEBUG_MENUS2
-                _PmpfF(("returning sflMenuDesktopXWP"));
-            #endif
+            PMPF_MENUS(("returning sflMenuDesktopXWP"));
 
             return sflMenuDesktopXWP;
         }
         else
         {
-            #ifdef DEBUG_MENUS2
-                _PmpfF(("returning sflMenuFolderXWP"));
-            #endif
+            PMPF_MENUS(("returning sflMenuFolderXWP"));
 
             return sflMenuFolderXWP;
         }
@@ -776,9 +768,7 @@ VOID mnuRemoveMenuItems(WPObject *somSelf,
     ULONG fl = cmnQuerySetting(s);
     ULONG ul;
 
-    #ifdef DEBUG_MENUS
-        _PmpfF(("got 0x%08lX for setting %d", fl, s));
-    #endif
+    PMPF_MENUS(("got 0x%08lX for setting %d", fl, s));
 
     for (ul = 0;
          ul < cSuppressFlags;
@@ -793,9 +783,7 @@ VOID mnuRemoveMenuItems(WPObject *somSelf,
             ULONG ul2;
             ULONG flTest = aSuppressFlags[ul] | XWPCTXT_HIGHBIT;
 
-            #ifdef DEBUG_MENUS
-            _Pmpf(("   finding flag 0x%08lX", flTest));
-            #endif
+            PMPF_MENUS(("   finding flag 0x%08lX", flTest));
 
             for (ul2 = 0;
                  ul2 < ARRAYITEMCOUNT(G_MenuItemsWithIDs);
@@ -803,11 +791,9 @@ VOID mnuRemoveMenuItems(WPObject *somSelf,
             {
                 if (flTest == G_MenuItemsWithIDs[ul2].flFilter)
                 {
-                    #ifdef DEBUG_MENUS
-                    _PmpfF(("flag %s set, removing id %d",
+                    PMPF_MENUS(("flag %s set, removing id %d",
                             cmnGetString(G_MenuItemsWithIDs[ul2].ulString),
                             G_MenuItemsWithIDs[ul2].idMenu));
-                    #endif
 
                     // regular ID:
                     winhDeleteMenuItem(hwndMenu, G_MenuItemsWithIDs[ul2].idMenu);
@@ -863,10 +849,7 @@ BOOL mnuInsertFldrViewItems(WPFolder *somSelf,      // in: folder w/ context men
     ULONG       ulAttr = 0;
     USHORT      usIconsAttr;
 
-    #ifdef DEBUG_MENUS
-        _PmpfF(("entering"));
-    #endif
-
+    PMPF_MENUS(("entering"));
 
     // add "small icons" item for all view types,
     // but disable for Details view
@@ -1312,9 +1295,7 @@ STATIC VOID UnlockConfigCache(VOID)
 
 VOID mnuInvalidateConfigCache(VOID)
 {
-    #ifdef DEBUG_MENUS
-    _Pmpf((__FUNCTION__));
-    #endif
+    PMPF_MENUS(("entering"));
 
     if (LockConfigCache())
     {
@@ -1372,9 +1353,7 @@ STATIC BOOL InsertConfigFolderItems(XFolder *somSelf,
             if (!G_fConfigCacheValid)
             {
                 // no: create one
-                #ifdef DEBUG_MENUS
-                _PmpfF(("calling BuildConfigItemsList"));
-                #endif
+                PMPF_MENUS(("calling BuildConfigItemsList"));
 
                 BuildConfigItemsList(&G_llConfigContent,
                                      pConfigFolder);
@@ -1513,17 +1492,15 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
         WinQueryMsgPos(G_habThread1,
                        &G_ptlMouseMenu);   // V0.9.16 (2001-10-23) [umoeller]
 
-        #ifdef DEBUG_MENUS
-            _PmpfF(("[%s] hwndCnr: 0x%lX", _wpQueryTitle(somSelf), hwndCnr));
+        PMPF_MENUS(("[%s] hwndCnr: 0x%lX", _wpQueryTitle(somSelf), hwndCnr));
 
-            _Pmpf(("  ulView is 0x%lX (%s)",
+        PMPF_MENUS(("  ulView is 0x%lX (%s)",
                     ulView,
                     (ulView == OPEN_CONTENTS) ? "OPEN_CONTENTS"
                     : (ulView == OPEN_DETAILS) ? "OPEN_DETAILS"
                     : (ulView == OPEN_TREE) ? "OPEN_TREE"
                     : (ulView == ulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW) ? "ID_XFMI_OFS_SPLITVIEW"
                     : "unknown"));
-        #endif
 
         // in wpFilterPopupMenu, because no codes are provided;
         // we only do this if the Global Settings want it
@@ -1604,9 +1581,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                 // mi.hwndSubMenu now contains "Select"/"View" submenu handle,
                 // which we can add items to now
 
-                #ifdef DEBUG_MENUS
-                    _Pmpf(("  'View'/'Select' hwnd:0x%X", mi.hwndSubMenu));
-                #endif
+                PMPF_MENUS(("  'View'/'Select' hwnd:0x%X", mi.hwndSubMenu));
 
                 // add "Select by name" and "Batch rename" only
                 // if not in Tree view V0.9.1 (2000-02-01) [umoeller]
@@ -2004,9 +1979,7 @@ BOOL mnuModifyFolderMenu(WPFolder *somSelf,
                                                MPNULL);
                 ULONG flXWP = cmnQuerySetting(mnuQueryMenuXWPSetting(somSelf));
 
-                #ifdef DEBUG_MENUS
-                    _Pmpf(("  'Edit' pulldown found"));
-                #endif
+                PMPF_MENUS(("  'Edit' pulldown found"));
 
                 // insert "Select by name" after that item
                 // fixed V0.9.19 (2002-06-18) [umoeller]:
@@ -2948,11 +2921,9 @@ STATIC MRESULT mnuItemsItemChanged(PNOTEBOOKPAGE pnbp,
 
                 XWPSETTING s;
 
-                #ifdef DEBUG_MENUS
-                _PmpfF(("category is %s", cmnGetString(pCategory->ulString)));
-                _Pmpf(("  recc %s, flFilter 0x%08lX",
+                PMPF_MENUS(("category is %s", cmnGetString(pCategory->ulString)));
+                PMPF_MENUS(("  recc %s, flFilter 0x%08lX",
                       cmnGetString(precc->pItem->ulString), flFilter));
-                #endif
 
                 if (flFilter & XWPCTXT_HIGHBIT)
                     // use XWP setting (XWPCTXT_* flag):
@@ -2966,17 +2937,13 @@ STATIC MRESULT mnuItemsItemChanged(PNOTEBOOKPAGE pnbp,
                 // clear bit if record is set and reversely
                 fl = cmnQuerySetting(s);
 
-                #ifdef DEBUG_MENUS
-                _Pmpf(("  old setting %d is 0x%08lX", s, fl));
-                #endif
+                PMPF_MENUS(("  old setting %d is 0x%08lX", s, fl));
 
                 fl &= ~flFilter;
                 if (!precc->recc.usCheckState)
                     fl |= flFilter;
 
-                #ifdef DEBUG_MENUS
-                _Pmpf(("  new setting %d is 0x%08lX", s, fl));
-                #endif
+                PMPF_MENUS(("  new setting %d is 0x%08lX", s, fl));
 
                 cmnSetSetting(s, fl);
 

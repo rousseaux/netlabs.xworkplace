@@ -407,9 +407,8 @@ STATIC VOID AddResourceDLLToLB(HWND hwndDlg,                   // in: dlg with l
     HMODULE hmodDLL = NULLHANDLE;
     APIRET  arc;
 
-    #ifdef DEBUG_LANGCODES
-        _Pmpf(("  Entering AddResourceDLLtoLB: %s", pszFileName));
-    #endif
+    PMPF_LANGCODES(("entering, %s", pszFileName));
+
     strcpy(szResourceModuleName, pszXFolderBasePath);
     strcat(szResourceModuleName, "\\bin\\");
     strcat(szResourceModuleName, pszFileName);
@@ -417,23 +416,20 @@ STATIC VOID AddResourceDLLToLB(HWND hwndDlg,                   // in: dlg with l
     arc = DosLoadModule(NULL, 0,
                         szResourceModuleName,
                         &hmodDLL);
-    #ifdef DEBUG_LANGCODES
-        _Pmpf(("    Loading module '%s', arc: %d", szResourceModuleName, arc));
-    #endif
+
+    PMPF_LANGCODES(("    Loading module '%s', arc: %d", szResourceModuleName, arc));
 
     if (arc == NO_ERROR)
     {
-        #ifdef DEBUG_LANGCODES
-            _Pmpf(("    Testing for language string"));
-        #endif
+        PMPF_LANGCODES(("    Testing for language string"));
+
         if (WinLoadString(WinQueryAnchorBlock(hwndDlg),
                           hmodDLL,
                           ID_XSSI_DLLLANGUAGE,
                           sizeof(szLBEntry), szLBEntry))
         {
-            #ifdef DEBUG_LANGCODES
-                _Pmpf(("      --> found %s", szLBEntry));
-            #endif
+            PMPF_LANGCODES(("      --> found %s", szLBEntry));
+
             strcat(szLBEntry, " -- ");
             strcat(szLBEntry, pszFileName);
 
@@ -442,17 +438,13 @@ STATIC VOID AddResourceDLLToLB(HWND hwndDlg,                   // in: dlg with l
                               (MPARAM)LIT_SORTASCENDING,
                               (MPARAM)szLBEntry);
         }
-        #ifdef DEBUG_LANGCODES
-            else
-                _Pmpf(("      --> language string not found"));
-        #endif
+        else
+            PMPF_LANGCODES(("      --> language string not found"));
 
         DosFreeModule(hmodDLL);
     }
-    #ifdef DEBUG_LANGCODES
-        else
-            _Pmpf(("    Error %d", arc));
-    #endif
+    else
+        PMPF_LANGCODES(("    Error %d", arc));
 }
 
 /* ******************************************************************
@@ -2842,35 +2834,6 @@ VOID setStatusInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
 {
     if (flFlags & CBI_INIT)
     {
-        #ifdef DEBUG_XWPSETUP_CLASSES
-            // this debugging flag will produce a message box
-            // showing the class object addresses in KERNELGLOBALS
-            PKERNELGLOBALS  pKernelGlobals = krnQueryGlobals();
-            CHAR            szMsg[2000];
-            PSZ             pMsg = szMsg;
-
-            pMsg += sprintf(pMsg, "pXFldObject: 0x%lX\n", pKernelGlobals->pXFldObject);
-            pMsg += sprintf(pMsg, "pXFolder: 0x%lX\n", pKernelGlobals->pXFolder);
-            pMsg += sprintf(pMsg, "pXFldDisk: 0x%lX\n", pKernelGlobals->pXFldDisk);
-            pMsg += sprintf(pMsg, "pXFldDesktop: 0x%lX\n", pKernelGlobals->pXFldDesktop);
-            pMsg += sprintf(pMsg, "pXFldDataFile: 0x%lX\n", pKernelGlobals->pXFldDataFile);
-            pMsg += sprintf(pMsg, "pXWPProgramFile: 0x%lX\n", pKernelGlobals->pXWPProgramFile);
-            pMsg += sprintf(pMsg, "pXWPSound: 0x%lX\n", pKernelGlobals->pXWPSound);
-            pMsg += sprintf(pMsg, "pXWPMouse: 0x%lX\n", pKernelGlobals->pXWPMouse);
-            pMsg += sprintf(pMsg, "pXWPKeyboard: 0x%lX\n", pKernelGlobals->pXWPKeyboard);
-            pMsg += sprintf(pMsg, "pXWPSetup: 0x%lX\n", pKernelGlobals->pXWPSetup);
-            pMsg += sprintf(pMsg, "pXFldSystem: 0x%lX\n", pKernelGlobals->pXFldSystem);
-            pMsg += sprintf(pMsg, "pXFldWPS: 0x%lX\n", pKernelGlobals->pXFldWPS);
-            pMsg += sprintf(pMsg, "pXWPScreen: 0x%lX\n", pKernelGlobals->pXWPScreen);
-            pMsg += sprintf(pMsg, "pXWPMedia: 0x%lX\n", pKernelGlobals->pXWPMedia);
-            pMsg += sprintf(pMsg, "pXFldStartup: 0x%lX\n", pKernelGlobals->pXFldStartup);
-            pMsg += sprintf(pMsg, "pXFldShutdown: 0x%lX\n", pKernelGlobals->pXFldShutdown);
-            pMsg += sprintf(pMsg, "pXWPClassList: 0x%lX\n", pKernelGlobals->pXWPClassList);
-            pMsg += sprintf(pMsg, "pXWPString: 0x%lX\n", pKernelGlobals->pXWPString);
-            pMsg += sprintf(pMsg, "pXCenter: 0x%lX\n", pKernelGlobals->pXCenter);
-
-            winhDebugBox("XWorkplace Class Objects", szMsg);
-        #endif
     }
 
     if (flFlags & CBI_SET)
@@ -2927,10 +2890,9 @@ VOID setStatusInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
         {
             sprintf(szSearchMask, "%s\\bin\\xfldr*.dll", szXFolderBasePath);
 
-            #ifdef DEBUG_LANGCODES
-                _Pmpf(("  szSearchMask: %s", szSearchMask));
-                _Pmpf(("  DosFindFirst"));
-            #endif
+            PMPF_LANGCODES(("  szSearchMask: %s", szSearchMask));
+            PMPF_LANGCODES(("  DosFindFirst"));
+
             rc = DosFindFirst(szSearchMask,         // file pattern
                               &hdirFindHandle,      // directory search handle
                               FILE_NORMAL,          // search attribute
@@ -2946,9 +2908,8 @@ VOID setStatusInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
             else
             {
                 // no error:
-                #ifdef DEBUG_LANGCODES
-                    _Pmpf(("  Found file: %s", FindBuffer.achName));
-                #endif
+                PMPF_LANGCODES(("  Found file: %s", FindBuffer.achName));
+
                 AddResourceDLLToLB(pnbp->hwndDlgPage,
                                    ID_XCDI_INFO_LANGUAGE,
                                    szXFolderBasePath,
@@ -2970,9 +2931,8 @@ VOID setStatusInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                                            ID_XCDI_INFO_LANGUAGE,
                                            szXFolderBasePath,
                                            FindBuffer.achName);
-                        #ifdef DEBUG_LANGCODES
-                            _Pmpf(("  Found next: %s", FindBuffer.achName));
-                        #endif
+
+                        PMPF_LANGCODES(("  Found next: %s", FindBuffer.achName));
                     }
                 } // endwhile
 
@@ -2981,9 +2941,8 @@ VOID setStatusInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                     cmnLog(__FILE__, __LINE__, __FUNCTION__,
                            "DosFindClose error");
 
-                #ifdef DEBUG_LANGCODES
-                    _Pmpf(("  Selecting: %s", cmnQueryLanguageCode()));
-                #endif
+                PMPF_LANGCODES(("  Selecting: %s", cmnQueryLanguageCode()));
+
                 WinSendDlgItemMsg(pnbp->hwndDlgPage, ID_XCDI_INFO_LANGUAGE,
                                   LM_SELECTITEM,
                                   WinSendDlgItemMsg(pnbp->hwndDlgPage,

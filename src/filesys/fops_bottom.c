@@ -954,7 +954,7 @@ APIRET fopsFileThreadSneakyDeleteFolderContents(PFILETASKLIST pftl,
                             else
                                 frc = DosDelete(szFullPath);
 
-                            _PmpfF(("<%s> deleted --> %d", szFullPath, frc));
+                            PMPF_TRASHCAN(("<%s> deleted --> %d", szFullPath, frc));
                         }
                     }
 
@@ -1098,9 +1098,7 @@ APIRET fopsFileThreadTrueDelete(HFILETASKLIST hftl,
                         cSubObjectsTemp = 0,
                         cSubDormantFilesTemp = 0;
 
-                #ifdef DEBUG_TRASHCAN
-                    _PmpfF(("expanding %s", _wpQueryTitle(pfu->pSourceObject)));
-                #endif
+                PMPF_TRASHCAN(("expanding %s", _wpQueryTitle(pfu->pSourceObject)));
 
                 // say "collecting objects"
                 if (!(frc = fopsCallProgressCallback(pftl,
@@ -1210,9 +1208,7 @@ APIRET fopsFileThreadTrueDelete(HFILETASKLIST hftl,
                                 break;
                             }
 
-                            #ifdef DEBUG_TRASHCAN
-                                _PmpfF(("calling _wpIsDeleteable"));
-                            #endif
+                            PMPF_TRASHCAN(("calling _wpIsDeleteable"));
 
                             if (!_wpIsDeleteable(pSubObjThis))
                                 // not deletable: prompt user about
@@ -1236,9 +1232,7 @@ APIRET fopsFileThreadTrueDelete(HFILETASKLIST hftl,
                                     // subobjects list)
                                     WPObject *pobj2 = pSubObjThis;
 
-                                    #ifdef DEBUG_TRASHCAN
-                                        _Pmpf(("Sneaky delete folder %s", _wpQueryTitle(pSubObjThis) ));
-                                    #endif
+                                    PMPF_TRASHCAN(("Sneaky delete folder %s", _wpQueryTitle(pSubObjThis) ));
 
                                     // before we do anything, set the "delete in progress"
                                     // flag. This greatly reduces the pressure on the WPS
@@ -1284,9 +1278,7 @@ APIRET fopsFileThreadTrueDelete(HFILETASKLIST hftl,
                                     fdrFlushNotifications(pSubObjThis);
                                 } // end if (_somIsA(pSubObjThis, _WPFolder))
 
-                                #ifdef DEBUG_TRASHCAN
-                                    _PmpfF(("calling _wpFree"));
-                                #endif
+                                PMPF_TRASHCAN(("calling _wpFree"));
 
                                 if (!_wpFree(pSubObjThis))
                                 {
@@ -1439,9 +1431,7 @@ VOID fopsFileThreadProcessing(HAB hab,              // in: file thread's anchor 
     BOOL frc = NO_ERROR;
     PFILETASKLIST pftl = (PFILETASKLIST)hftl;
 
-    #ifdef DEBUG_FOPS
-        _PmpfF(("0x%lX", hftl));
-    #endif
+    PMPF_FOPS(("0x%lX", hftl));
 
     TRY_LOUD(excpt2)
     {
@@ -1474,9 +1464,7 @@ VOID fopsFileThreadProcessing(HAB hab,              // in: file thread's anchor 
                     // so query the target folder first
                     pftl->pTargetFolder = _xwpclsQueryDefaultTrashCan(_XWPTrashCan);
 
-                    #ifdef DEBUG_TRASHCAN
-                        _Pmpf(("  target trash can is %s", _wpQueryTitle(pftl->pTargetFolder) ));
-                    #endif
+                    PMPF_TRASHCAN(("  target trash can is %s", _wpQueryTitle(pftl->pTargetFolder) ));
                 break;
 
                 case XFT_TRUEDELETE:
@@ -1502,9 +1490,7 @@ VOID fopsFileThreadProcessing(HAB hab,              // in: file thread's anchor 
             fu.ulProgressScalar = 0;
             fu.ulProgressMax = lstCountItems(&pftl->llObjects) * 100;
 
-            #ifdef DEBUG_FOPS
-                _Pmpf(("    %d items on list", fu.ulProgressMax / 100));
-            #endif
+            PMPF_FOPS(("    %d items on list", fu.ulProgressMax / 100));
 
             /*
              * 2) process objects on list
@@ -1517,9 +1503,7 @@ VOID fopsFileThreadProcessing(HAB hab,              // in: file thread's anchor 
                 WPObject        *pObjectFailed = NULL;
                 fu.pSourceObject = (WPObject*)pNode->pItemData;
 
-                #ifdef DEBUG_FOPS
-                    _Pmpf(("    checking object 0x%lX", fu.pSourceObject));
-                #endif
+                PMPF_FOPS(("    checking object 0x%lX", fu.pSourceObject));
 
                 // check if object is still valid
                 if (!wpshCheckObject(fu.pSourceObject))
@@ -1542,9 +1526,7 @@ VOID fopsFileThreadProcessing(HAB hab,              // in: file thread's anchor 
                     }
                 }
 
-                #ifdef DEBUG_FOPS
-                    _Pmpf(("    processing %s", _wpQueryTitle(fu.pSourceObject) ));
-                #endif
+                PMPF_FOPS(("    processing %s", _wpQueryTitle(fu.pSourceObject) ));
 
                 // now, for each object, perform
                 // the desired operation
@@ -1557,10 +1539,8 @@ VOID fopsFileThreadProcessing(HAB hab,              // in: file thread's anchor 
 
                     case XFT_MOVE2TRASHCAN:
                     {
-                        #ifdef DEBUG_FOPS
-                            _Pmpf(("  " __FUNCTION__ ": trashmove %s",
+                        PMPF_FOPS(("trashmove %s",
                                         _wpQueryTitle(fu.pSourceObject) ));
-                        #endif
 
                         // confirm this if the object is a folder and
                         // folder deletion confirm is on
@@ -1584,10 +1564,9 @@ VOID fopsFileThreadProcessing(HAB hab,              // in: file thread's anchor 
                      */
 
                     case XFT_RESTOREFROMTRASHCAN:
-                        #ifdef DEBUG_FOPS
-                            _Pmpf(("  " __FUNCTION__ ": restoring %s",
+                        PMPF_FOPS(("restoring %s",
                                     _wpQueryTitle(fu.pSourceObject) ));
-                        #endif
+
                         if (!_xwpRestoreFromTrashCan(fu.pSourceObject,       // trash object
                                                      pftl->pTargetFolder)) // can be NULL
                             frc = FOPSERR_NOT_HANDLED_ABORT;
@@ -1600,10 +1579,9 @@ VOID fopsFileThreadProcessing(HAB hab,              // in: file thread's anchor 
                      */
 
                     case XFT_TRUEDELETE:
-                        #ifdef DEBUG_FOPS
-                            _Pmpf(("  " __FUNCTION__ ": destroying %s",
+                        PMPF_FOPS(("destroying %s",
                                     _wpQueryTitle(fu.pSourceObject) ));
-                        #endif
+
                         frc = fopsFileThreadTrueDelete(hftl,
                                                        &fu,
                                                        &ulIgnoreSubsequent,

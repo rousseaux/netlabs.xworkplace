@@ -816,14 +816,14 @@ STATIC APIRET ConvertWinIcon(PBYTE pbBuffer,       // in: windows icon data
     ULONG cColors = 1 << pInfo->cBitCount;
     ULONG cyRealSrc = pInfo->cy / 2;             // cy is doubled always
 
-#ifdef DEBUG_ICONREPLACEMENTS
-    _Pmpf(("    cbFix %d", pInfo->cbFix));
-    _Pmpf(("    cx %d", pInfo->cx));
-    _Pmpf(("    cy %d", pInfo->cy));
-    _Pmpf(("    cPlanes %d", pInfo->cPlanes));
-    _Pmpf(("    cBitCount %d, cColors %d", pInfo->cBitCount, cColors));
-    _Pmpf(("    cColorsUsed %d", pInfo->cColorsUsed));
-#endif
+
+    PMPF_ICONREPLACEMENTS(("    cbFix %d", pInfo->cbFix));
+    PMPF_ICONREPLACEMENTS(("    cx %d", pInfo->cx));
+    PMPF_ICONREPLACEMENTS(("    cy %d", pInfo->cy));
+    PMPF_ICONREPLACEMENTS(("    cPlanes %d", pInfo->cPlanes));
+    PMPF_ICONREPLACEMENTS(("    cBitCount %d, cColors %d", pInfo->cBitCount, cColors));
+    PMPF_ICONREPLACEMENTS(("    cColorsUsed %d", pInfo->cColorsUsed));
+
 
     /*
      * check source format:
@@ -1126,6 +1126,114 @@ STATIC APIRET ConvertWinIcon(PBYTE pbBuffer,       // in: windows icon data
 }
 
 /*
+ *@@ icoGetWinResourceTypeName:
+ *      returns a human-readable name for a Win
+ *      resource type.
+ *
+ *@@added V0.9.16 (2001-12-18) [umoeller]
+ *@@changed V0.9.21 (2002-09-02) [umoeller]: moved this here from program.c
+ */
+
+PSZ icoGetWinResourceTypeName(PSZ pszBuf,
+                              ULONG ulTypeThis)
+{
+    PCSZ pcsz = "unknown";
+    switch (ulTypeThis)
+    {
+        case WINRT_ACCELERATOR: pcsz = "WINRT_ACCELERATOR"; break;
+        case WINRT_BITMAP: pcsz =  "WINRT_BITMAP"; break;
+        case WINRT_CURSOR: pcsz =  "WINRT_CURSOR"; break;
+        case WINRT_DIALOG: pcsz =  "WINRT_DIALOG"; break;
+        case WINRT_FONT: pcsz =  "WINRT_FONT"; break;
+        case WINRT_FONTDIR: pcsz =  "WINRT_FONTDIR"; break;
+        case WINRT_ICON: pcsz =  "WINRT_ICON"; break;
+        case WINRT_MENU: pcsz =  "WINRT_MENU"; break;
+        case WINRT_RCDATA: pcsz =  "WINRT_RCDATA"; break;
+        case WINRT_STRING: pcsz =  "WINRT_STRING"; break;
+        case WINRT_MESSAGELIST: pcsz = "WINRT_MESSAGELIST"; break;
+        case WINRT_GROUP_CURSOR: pcsz = "WINRT_GROUP_CURSOR"; break;
+        case WINRT_GROUP_ICON: pcsz = "WINRT_GROUP_ICON"; break;
+    }
+
+    sprintf(pszBuf, "%d (%s)", ulTypeThis, pcsz);
+
+    return (pszBuf);
+}
+
+/*
+ *@@ icoGetOS2ResourceTypeName:
+ *      returns a human-readable name for an OS/2
+ *      resource type.
+ *
+ *@@added V0.9.7 (2000-12-20) [lafaix]
+ *@@changed V0.9.9 (2001-04-02) [umoeller]: now returning const char*
+ *@@changed V0.9.16 (2002-01-05) [umoeller]: moved this here from fsys.c, renamed from fsysGetOS2ResourceTypeName
+ *@@changed V0.9.16 (2002-01-05) [umoeller]: added icons display
+ *@@changed V0.9.21 (2002-09-02) [umoeller]: moved this here from program.c
+ */
+
+PCSZ icoGetOS2ResourceTypeName(ULONG ulResourceType)
+{
+    switch (ulResourceType)
+    {
+        case RT_POINTER:
+            return "Mouse pointer shape (RT_POINTER)";
+        case RT_BITMAP:
+            return "Bitmap (RT_BITMAP)";
+        case RT_MENU:
+            return "Menu template (RT_MENU)";
+        case RT_DIALOG:
+            return "Dialog template (RT_DIALOG)";
+        case RT_STRING:
+            return "String table (RT_STRING)";
+        case RT_FONTDIR:
+            return "Font directory (RT_FONTDIR)";
+        case RT_FONT:
+            return "Font (RT_FONT)";
+        case RT_ACCELTABLE:
+            return "Accelerator table (RT_ACCELTABLE)";
+        case RT_RCDATA:
+            return "Binary data (RT_RCDATA)";
+        case RT_MESSAGE:
+            return "Error message table (RT_MESSAGE)";
+        case RT_DLGINCLUDE:
+            return "Dialog include file name (RT_DLGINCLUDE)";
+        case RT_VKEYTBL:
+            return "Virtual key table (RT_VKEYTBL)";
+        case RT_KEYTBL:
+            return "Key table (RT_KEYTBL)";
+        case RT_CHARTBL:
+            return "Character table (RT_CHARTBL)";
+        case RT_DISPLAYINFO:
+            return "Display information (RT_DISPLAYINFO)";
+
+        case RT_FKASHORT:
+            return "Short-form function key area (RT_FKASHORT)";
+        case RT_FKALONG:
+            return "Long-form function key area (RT_FKALONG)";
+
+        case RT_HELPTABLE:
+            return "Help table (RT_HELPTABLE)";
+        case RT_HELPSUBTABLE:
+            return "Help subtable (RT_HELPSUBTABLE)";
+
+        case RT_FDDIR:
+            return "DBCS uniq/font driver directory (RT_FDDIR)";
+        case RT_FD:
+            return "DBCS uniq/font driver (RT_FD)";
+
+        #ifndef RT_RESNAMES
+            #define RT_RESNAMES         255
+        #endif
+
+        case RT_RESNAMES:
+            return "String ID table (RT_RESNAMES)";
+    }
+
+    return "Application specific"; // !!! Should return value too
+}
+
+/*
  *@@ LoadWinNEResource:
  *      attempts to load the data of the resource
  *      with the specified type and id from a Win16
@@ -1277,13 +1385,15 @@ APIRET LoadWinNEResource(PEXECUTABLE pExec,     // in: executable from exehOpen
                     {
                         // this is not our type, so we can simply
                         // skip the entire table for speed
-#ifdef DEBUG_ICONREPLACEMENTS
-                        CHAR szBuf[100];
-                        _PmpfF(("skipping type %d (%s), %d entries",
-                                      ulTypeThis,
-                                      progGetWinResourceTypeName(szBuf, ulTypeThis),
-                                      typeinfo.rt_nres));
-#endif
+
+                        #ifdef __DEBUG__
+                            CHAR szBuf[100];
+                            PMPF_ICONREPLACEMENTS(("skipping type %d (%s), %d entries",
+                                          ulTypeThis,
+                                          icoGetWinResourceTypeName(szBuf, ulTypeThis),
+                                          typeinfo.rt_nres));
+                        #endif
+
                         ulCurrentOfs += typeinfo.rt_nres * sizeof(nameinfo);
                     }
                     else
@@ -1292,13 +1402,13 @@ APIRET LoadWinNEResource(PEXECUTABLE pExec,     // in: executable from exehOpen
                         nameinfo *paNameInfos = NULL;
                         ULONG cbNameInfos;
 
-#ifdef DEBUG_ICONREPLACEMENTS
-                        CHAR szBuf[100];
-                        _PmpfF(("entering type %d (%s), %d entries",
-                                      ulTypeThis,
-                                      progGetWinResourceTypeName(szBuf, ulTypeThis),
-                                      typeinfo.rt_nres));
-#endif
+                        #ifdef __DEBUG__
+                            CHAR szBuf[100];
+                            PMPF_ICONREPLACEMENTS(("entering type %d (%s), %d entries",
+                                          ulTypeThis,
+                                          icoGetWinResourceTypeName(szBuf, ulTypeThis),
+                                          typeinfo.rt_nres));
+                        #endif
 
                         if (    (!(arc = doshAllocArray(typeinfo.rt_nres,
                                                         sizeof(nameinfo),
@@ -1324,12 +1434,11 @@ APIRET LoadWinNEResource(PEXECUTABLE pExec,     // in: executable from exehOpen
                                 ULONG ulIDThis = pThis->rn_id;
                                 ULONG ulOffset = pThis->rn_offset << usAlignShift;
                                 ULONG cbThis =   pThis->rn_length << usAlignShift;
-#ifdef DEBUG_ICONREPLACEMENTS
-                                _Pmpf(("   found res type %d, id %d, length %d",
+
+                                PMPF_ICONREPLACEMENTS(("   found res type %d, id %d, length %d",
                                             ulTypeThis,
                                             ulIDThis & ~0x8000,
                                             cbThis));
-#endif
 
                                 if (    (!idResource)
                                      || (    (ulIDThis & 0x8000)
@@ -1539,11 +1648,9 @@ APIRET LoadRootResDirectory(PEXECUTABLE pExec,
 
     int i;
 
-#ifdef DEBUG_ICONREPLACEMENTS
-    _PmpfF(("entering, %d sections, looking for 0x%lX",
+    PMPF_ICONREPLACEMENTS(("entering, %d sections, looking for 0x%lX",
                 pPEHeader->FileHeader.usNumberOfSections,
                 ulAddressFind));
-#endif
 
     for (i = 0;
          i < pPEHeader->FileHeader.usNumberOfSections;
@@ -1551,12 +1658,10 @@ APIRET LoadRootResDirectory(PEXECUTABLE pExec,
     {
         PIMAGE_SECTION_HEADER pThis = &paSections[i];
 
-#ifdef DEBUG_ICONREPLACEMENTS
-        _Pmpf(("    %d (%s): virtual address 0x%lX",
+        PMPF_ICONREPLACEMENTS(("    %d (%s): virtual address 0x%lX",
                 i,
                 pThis->Name,
                 pThis->VirtualAddress));
-#endif
 
         if (pThis->flCharacteristics & IMAGE_SCN_CNT_UNINITIALIZED_DATA)
             continue;
@@ -1570,12 +1675,10 @@ APIRET LoadRootResDirectory(PEXECUTABLE pExec,
             ULONG cb = pThis->ulSizeOfRawData; // sizeof(IMAGE_RESOURCE_DIRECTORY);
             PIMAGE_RESOURCE_DIRECTORY pResDir;
 
-#ifdef DEBUG_ICONREPLACEMENTS
-            _PmpfF(("raw data size %d, ptr %d",
+            PMPF_ICONREPLACEMENTS(("raw data size %d, ptr %d",
                     pThis->ulSizeOfRawData,
                     pThis->ulPointerToRawData,
                     sizeof(IMAGE_RESOURCE_DIRECTORY)));
-#endif
 
             if (!(pResDir = malloc(cb)))
                 arc = ERROR_NOT_ENOUGH_MEMORY;
@@ -1600,9 +1703,7 @@ APIRET LoadRootResDirectory(PEXECUTABLE pExec,
         }
     }
 
-#ifdef DEBUG_ICONREPLACEMENTS
-    _Pmpf((__FUNCTION__": returning %d", arc));
-#endif
+    PMPF_ICONREPLACEMENTS(("returning %d", arc));
 
     return arc;
 }
@@ -1717,23 +1818,19 @@ APIRET LoadWinPEResource(PEXECUTABLE pExec,     // in: executable from exehOpen
 
             BOOL fPtrFound = FALSE;
 
-#ifdef DEBUG_ICONREPLACEMENTS
-            _Pmpf(("  found RT_GROUP_ICONW, %d names, %d ids",
+            PMPF_ICONREPLACEMENTS(("  found RT_GROUP_ICONW, %d names, %d ids",
                     icongroupresdir->NumberOfNamedEntries,
                     icongroupresdir->NumberOfIdEntries));
-#endif
 
             // go thru icon group
             for (ulIconGroup = 0;
                  ((ulIconGroup < iconDirCount) && (pResDirEntryThis)) && (!arc);
                  ulIconGroup++, pResDirEntryThis++)
             {
-#ifdef DEBUG_ICONREPLACEMENTS
-                _Pmpf(("  %d: idThis: %d, ofs to data 0x%lX",
+                PMPF_ICONREPLACEMENTS(("  %d: idThis: %d, ofs to data 0x%lX",
                         ulIconGroup,
                         pResDirEntryThis->u1.Id,
                         pResDirEntryThis->u2.OffsetToData));
-#endif
 
                 if (    (idResource == 0)       // first one found
                      || (pResDirEntryThis->u1.Id == idResource)
@@ -1758,9 +1855,7 @@ APIRET LoadWinPEResource(PEXECUTABLE pExec,     // in: executable from exehOpen
                         {
                             pXResDirEntry = pXResDirEntry + idResource;     // starting from specified index ...
 
-#ifdef DEBUG_ICONREPLACEMENTS
-                            _Pmpf(("    found icondir for id %d", pResDirEntryThis->u1.Id));
-#endif
+                            PMPF_ICONREPLACEMENTS(("    found icondir for id %d", pResDirEntryThis->u1.Id));
 
                             for (i = 0;
                                  i < ulIconGroup;
@@ -1802,9 +1897,7 @@ APIRET LoadWinPEResource(PEXECUTABLE pExec,     // in: executable from exehOpen
                                               + paSections[j].ulPointerToRawData
                                             );
 
-#ifdef DEBUG_ICONREPLACEMENTS
-                                    _Pmpf(("    data of this icon group is at 0x%lX", ulOfs));
-#endif
+                                    PMPF_ICONREPLACEMENTS(("    data of this icon group is at 0x%lX", ulOfs));
 
                                     /* RetPtr[i] = (HICON)pLookupIconIdFromDirectoryEx(igdata,
                                                                                     TRUE,
@@ -2009,10 +2102,10 @@ APIRET icoLoadExeIcon(PEXECUTABLE pExec,        // in: EXECUTABLE from exehOpen
                                                     idResource,
                                                     &pbData,
                                                     &cbData);
-#ifdef DEBUG_ICONREPLACEMENTS
-                        if (arc)
-                            _PmpfF(("LoadOS2NEResource returned %d", arc));
-#endif
+                        #ifdef __DEBUG__
+                            if (arc)
+                                PMPF_ICONREPLACEMENTS(("LoadOS2NEResource returned %d", arc));
+                        #endif
                     break;
 
                     case EXEOS_WIN16:
@@ -2022,10 +2115,10 @@ APIRET icoLoadExeIcon(PEXECUTABLE pExec,        // in: EXECUTABLE from exehOpen
                                                 idResource,
                                                 &pbData,
                                                 &cbData);
-#ifdef DEBUG_ICONREPLACEMENTS
-                        if (arc)
-                            _PmpfF(("LoadWinNEResource returned %d", arc));
-#endif
+                        #ifdef __DEBUG__
+                            if (arc)
+                                PMPF_ICONREPLACEMENTS(("LoadWinNEResource returned %d", arc));
+                        #endif
                     break;
 
                     default:
@@ -2039,9 +2132,8 @@ APIRET icoLoadExeIcon(PEXECUTABLE pExec,        // in: EXECUTABLE from exehOpen
                                         idResource,
                                         &pbData,
                                         &cbData);
-#ifdef DEBUG_ICONREPLACEMENTS
-                _PmpfF(("LoadWinPEResource returned %d", arc));
-#endif
+
+                PMPF_ICONREPLACEMENTS(("LoadWinPEResource returned %d", arc));
             break;
 
             default:        // includes COM, BAT, CMD
@@ -2094,10 +2186,10 @@ APIRET icoLoadExeIcon(PEXECUTABLE pExec,        // in: EXECUTABLE from exehOpen
     if (pbData)
         free(pbData);
 
-#ifdef DEBUG_ICONREPLACEMENTS
+    #ifdef __DEBUG__
     if (arc)
-        _PmpfF(("returning %d", arc));
-#endif
+        PMPF_ICONREPLACEMENTS(("returning %d", arc));
+    #endif
 
     return arc;
 }

@@ -217,11 +217,6 @@
      *
      ********************************************************************/
 
-    PSZ progGetWinResourceTypeName(PSZ pszBuf,
-                                   ULONG ulTypeThis);
-
-    PCSZ progGetOS2ResourceTypeName(ULONG ulResourceType);
-
 #ifdef NOTEBOOK_HEADER_INCLUDED
 #ifndef __NOMODULEPAGES__
         VOID XWPENTRY progFileInitPage(PNOTEBOOKPAGE pnbp,

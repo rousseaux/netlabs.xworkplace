@@ -806,9 +806,7 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
             PFNWP   pfncb = (PFNWP)mp2;
             BOOL    fContinue = FALSE;
 
-            #ifdef DEBUG_STARTUP
-                _Pmpf(("WOM_QUICKOPEN %lX", mp1));
-            #endif
+            PMPF_STARTUP(("WOM_QUICKOPEN %lX", mp1));
 
             if (pFolder)
             {
@@ -844,9 +842,7 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
             XFolder             *pFolder = (XFolder*)mp1;
             PPROCESSCONTENTINFO pPCI = (PPROCESSCONTENTINFO)mp2;
 
-            #ifdef DEBUG_STARTUP
-                _Pmpf(("Entering WOM_PROCESSORDEREDCONTENT..."));
-            #endif
+            PMPF_STARTUP(("Entering WOM_PROCESSORDEREDCONTENT..."));
 
 
         }
@@ -956,17 +952,13 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
          */
 
         case WOM_UPDATEALLSTATUSBARS:
-        {
-            #ifdef DEBUG_STATUSBARS
-                _Pmpf(( "WT: WOM_UPDATEALLSTATUSBARS" ));
-            #endif
+            PMPF_STATUSBARS(("WT: WOM_UPDATEALLSTATUSBARS" ));
 
             // for each open folder view, call the callback
             // which updates the status bars
             // (stb_UpdateCallback in folder.c)
             fdrForEachOpenGlobalView(stb_UpdateCallback,
                                      (ULONG)mp1);
-        }
         break;
 
         /*
@@ -1033,9 +1025,7 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                 sprintf(szComp, "%d@", (ULONG)mp1);
                 cbComp = strlen(szComp);
 
-                #ifdef DEBUG_CNRCONTENT
-                    _Pmpf(("Checking for folderpos %s", szComp));
-                #endif
+                PMPF_CNRCONTENT(("Checking for folderpos %s", szComp));
 
                 // now walk thru all the keys in the folderpos
                 // application and check if it's one for our
@@ -1047,9 +1037,8 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                         PrfWriteProfileData(HINI_USER,
                                             (PSZ)WPINIAPP_FOLDERPOS, pKey2,
                                             NULL, 0);
-                        #ifdef DEBUG_CNRCONTENT
-                            _Pmpf(("  Deleted %s", pKey2));
-                        #endif
+
+                        PMPF_CNRCONTENT(("  Deleted %s", pKey2));
                     }
 
                     pKey2 += strlen(pKey2)+1;
@@ -2172,19 +2161,11 @@ void _Optlink fntWimpThread(PTHREADINFO pti)
             // sleep five minutes
             DosSleep(5 * 60 * 1000);
 
-            #ifdef DEBUG_MEMORYBEEP
-                DosBeep(3000, 20);
-            #endif
-
             #if (__IBMC__ >= 300)
                 _heapmin();
                 // _heapmin returns all unused memory from the default
                 // runtime heap to the operating system;
                 // this is VAC++3.0-specific
-            #endif
-
-            #ifdef DEBUG_MEMORYBEEP
-                DosBeep(3500, 20);
             #endif
 
             // reload country settings

@@ -517,9 +517,8 @@ MRESULT arcArchivesItemChanged(PNOTEBOOKPAGE pnbp,
 
 VOID arcSetDefaultSettings(VOID)
 {
-    #ifdef DEBUG_STARTUP
-        _Pmpf(("**** Settings defaults"));
-    #endif
+    PMPF_STARTUP(("**** Settings defaults"));
+
     G_ArcSettings.ulArcFlags = 0;
     G_ArcSettings.dIniFilesPercent = .1;
     G_ArcSettings.ulEveryDays = 1;
@@ -997,9 +996,7 @@ APIRET arcSwitchArchivingOn(BOOL fSwitchOn)
             // reset the restore flag V0.9.13 (2001-06-14) [smilcke]
             arc = arcSetArchiveByte(0, ARCOFS_JUSTRESTORED);
 
-            #ifdef DEBUG_STARTUP
-             _Pmpf(("WPS Archiving activated"));
-            #endif
+            PMPF_STARTUP(("WPS Archiving activated"));
 
             // store date of backup in OS2.INI
             DosGetDateTime(&G_dtLastArchived);
@@ -1014,9 +1011,7 @@ APIRET arcSwitchArchivingOn(BOOL fSwitchOn)
     {
         arc = arcSetArchiveByte(0, ARCOFS_ARCHIVINGENABLED);
 
-        #ifdef DEBUG_STARTUP
-        _Pmpf(("WPS Archiving deactivated"));
-        #endif
+        PMPF_STARTUP(("WPS Archiving deactivated"));
     }
 
     if (arc)
@@ -1120,9 +1115,7 @@ BOOL arcCheckINIFiles(double* pdPercent,
     APIRET          arc;
     PSZ pszAppsList = NULL;
 
-    #ifdef DEBUG_STARTUP
-        _Pmpf(("Checking INI files"));
-    #endif
+    PMPF_STARTUP(("Checking INI files"));
 
     if (!(arc = prfhQueryKeysForApp(HINI_PROFILE, // both OS2.INI and OS2SYS.INI
                                     NULL,        // return applications
@@ -1194,16 +1187,16 @@ BOOL arcCheckINIFiles(double* pdPercent,
 
     if (*pdPercent != 0)
     {
-        #ifdef DEBUG_STARTUP
+        #ifdef __DEBUG__
             CHAR szTemp[1000];
 
-            _Pmpf(("Last, now"));
+            PMPF_STARTUP(("Last, now"));
             sprintf(szTemp, "Apps size: %f, %f", *pdAppsSizeLast, dTotalAppsSize);
-            _Pmpf(("%s", szTemp));
+            PMPF_STARTUP(("%s", szTemp));
             sprintf(szTemp, "Keys size: %f, %f", *pdKeysSizeLast, dTotalKeysSize);
-            _Pmpf(("%s", szTemp));
+            PMPF_STARTUP(("%s", szTemp));
             sprintf(szTemp, "Data sum: %f, %f", *pdDataSumLast, dDataSum);
-            _Pmpf(("%s", szTemp));
+            PMPF_STARTUP(("%s", szTemp));
         #endif
 
         if ((*pdAppsSizeLast) && (dTotalAppsSize))
@@ -1215,9 +1208,9 @@ BOOL arcCheckINIFiles(double* pdPercent,
                         * 100                               // in percent
                         / *pdAppsSizeLast;
 
-            #ifdef DEBUG_STARTUP
+            #ifdef __DEBUG__
                 sprintf(szTemp, "%f", dPercentThis);
-                _Pmpf(("dPercent Apps: %s", szTemp));
+                PMPF_STARTUP(("dPercent Apps: %s", szTemp));
             #endif
 
             if (dPercentThis > *pdPercent)
@@ -1240,9 +1233,9 @@ BOOL arcCheckINIFiles(double* pdPercent,
                         * 100                               // in percent
                         / *pdKeysSizeLast;
 
-            #ifdef DEBUG_STARTUP
+            #ifdef __DEBUG__
                 sprintf(szTemp, "%f", dPercentThis);
-                _Pmpf(("dPercent Keys: %s", szTemp));
+                PMPF_STARTUP(("dPercent Keys: %s", szTemp));
             #endif
 
             if (dPercentThis > *pdPercent)
@@ -1265,9 +1258,9 @@ BOOL arcCheckINIFiles(double* pdPercent,
                         * 100                               // in percent
                         / *pdDataSumLast;
 
-            #ifdef DEBUG_STARTUP
+            #ifdef __DEBUG__
                 sprintf(szTemp, "%f", dPercentThis);
-                _Pmpf(("dPercent Data: %s", szTemp));
+                PMPF_STARTUP(("dPercent Data: %s", szTemp));
             #endif
 
             if (dPercentThis > *pdPercent)
@@ -1297,9 +1290,7 @@ BOOL arcCheckINIFiles(double* pdPercent,
         brc = TRUE;
     }
 
-    #ifdef DEBUG_STARTUP
-        _Pmpf(("  Done checking INI files, returning %d", brc));
-    #endif
+    PMPF_STARTUP(("Done checking INI files, returning %d", brc));
 
     return brc;
 }

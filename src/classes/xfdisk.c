@@ -245,14 +245,12 @@ SOM_Scope BOOL  SOMLINK xfdisk_wpFilterMenu(XFldDisk *somSelf,
     XFldDiskData *somThis = XFldDiskGetData(somSelf);
     XFldDiskMethodDebug("XFldDisk","xfdisk_wpFilterMenu");
 
-    #ifdef DEBUG_MENUS
-        _PmpfF(( "[%s] entering", _wpQueryTitle(somSelf) ));
-    #endif
+    PMPF_MENUS(("[%s] entering", _wpQueryTitle(somSelf) ));
 
 #ifndef __NEVERREPLACEDRIVENOTREADY__
     if (fReplaceDNR = cmnQuerySetting(sfReplaceDriveNotReady))
     {
-        _PmpfF(("getting drive data for drive %d", ulLogicalDrive));
+        PMPF_DISK(("getting drive data for drive %d", ulLogicalDrive));
         if (G_paDriveData[i].pDisk != somSelf)
         {
             cmnLog(__FILE__, __LINE__, __FUNCTION__,
@@ -262,20 +260,20 @@ SOM_Scope BOOL  SOMLINK xfdisk_wpFilterMenu(XFldDisk *somSelf,
         }
         else
         {
-            _Pmpf(("bFileSystem: 0x%lX (%d)",
+            PMPF_DISK(("bFileSystem: 0x%lX (%d)",
                    G_paDriveData[i].bFileSystem,
                    G_paDriveData[i].bFileSystem));
-            _Pmpf(("fNotLocal: %d",
+            PMPF_DISK(("fNotLocal: %d",
                    G_paDriveData[i].fNotLocal));
-            _Pmpf(("fFixedDisk: %d",
+            PMPF_DISK(("fFixedDisk: %d",
                    G_paDriveData[i].fFixedDisk));
-            _Pmpf(("fZIP: %d",
+            PMPF_DISK(("fZIP: %d",
                    G_paDriveData[i].fZIP));
-            _Pmpf(("bDiskType: %d",
+            PMPF_DISK(("bDiskType: %d",
                    G_paDriveData[i].bDiskType));
-            _Pmpf(("ulSerial: 0x%lX",
+            PMPF_DISK(("ulSerial: 0x%lX",
                    G_paDriveData[i].ulSerial));
-            _Pmpf(("szVolLabel: %s",
+            PMPF_DISK(("szVolLabel: %s",
                    G_paDriveData[i].szVolLabel));
 
             if (G_paDriveData[i].bDiskType == DRVTYPE_CDROM)
@@ -333,9 +331,7 @@ SOM_Scope BOOL  SOMLINK xfdisk_wpFilterMenu(XFldDisk *somSelf,
             pFlags->Flags[1] &= ~aSuppressFlags[ul].flWPS1;
     }
 
-    #ifdef DEBUG_MENUS
-        _PmpfF(("[%s] leaving, returning %d", _wpQueryTitle(somSelf), brc));
-    #endif
+    PMPF_MENUS(("[%s] leaving, returning %d", _wpQueryTitle(somSelf), brc));
 
     return brc;
 }
@@ -380,9 +376,7 @@ SOM_Scope BOOL  SOMLINK xfdisk_wpModifyPopupMenu(XFldDisk *somSelf,
     XFldDiskData *somThis = XFldDiskGetData(somSelf);
     XFldDiskMethodDebug("XFldDisk","xfdisk_wpModifyPopupMenu");
 
-    #ifdef DEBUG_MENUS
-        _PmpfF(("[%s] entering", _wpQueryTitle(somSelf)));
-    #endif
+    PMPF_MENUS(("[%s] entering", _wpQueryTitle(somSelf)));
 
     if (!_pMenuRootFolder)
         // wpDisplayMenu has checked the root folder,
@@ -396,9 +390,7 @@ SOM_Scope BOOL  SOMLINK xfdisk_wpModifyPopupMenu(XFldDisk *somSelf,
                                                        hwndCnr,
                                                        iPosition);
 
-    #ifdef DEBUG_MENUS
-        _PmpfF(("[%s] leaving, returning %d", _wpQueryTitle(somSelf), brc));
-    #endif
+    PMPF_MENUS(("[%s] leaving, returning %d", _wpQueryTitle(somSelf), brc));
 
     return brc;
 }
@@ -467,9 +459,7 @@ SOM_Scope BOOL  SOMLINK xfdisk_wpModifyMenu(XFldDisk *somSelf,
     XFldDiskData *somThis = XFldDiskGetData(somSelf);
     XFldDiskMethodDebug("XFldDisk","xfdisk_wpModifyMenu");
 
-    #ifdef DEBUG_MENUS
-        _PmpfF(("[%s] entering", _wpQueryTitle(somSelf)));
-    #endif
+    PMPF_MENUS(("[%s] entering", _wpQueryTitle(somSelf)));
 
     if ((ULONG)_pMenuRootFolder != -1)
     {
@@ -497,9 +487,7 @@ SOM_Scope BOOL  SOMLINK xfdisk_wpModifyMenu(XFldDisk *somSelf,
                                       ulView);
     }
 
-    #ifdef DEBUG_MENUS
-        _PmpfF(("[%s] leaving, returning %d", _wpQueryTitle(somSelf), brc));
-    #endif
+    PMPF_MENUS(("[%s] leaving, returning %d", _wpQueryTitle(somSelf), brc));
 
     return brc;
 }
@@ -541,9 +529,7 @@ SOM_Scope HWND  SOMLINK xfdisk_wpDisplayMenu(XFldDisk *somSelf,
     XFldDiskData *somThis = XFldDiskGetData(somSelf);
     XFldDiskMethodDebug("XFldDisk","xfdisk_wpDisplayMenu");
 
-    #ifdef DEBUG_MENUS
-        _PmpfF(("[%s] entering", _wpQueryTitle(somSelf)));
-    #endif
+    PMPF_MENUS(("[%s] entering", _wpQueryTitle(somSelf)));
 
     _pMenuRootFolder = (WPObject*)-1;
 
@@ -554,7 +540,7 @@ SOM_Scope HWND  SOMLINK xfdisk_wpDisplayMenu(XFldDisk *somSelf,
         case MENU_SELECTEDPULLDOWN:
             if (cmnQuerySetting(sfReplaceDriveNotReady))
             {
-                _PmpfF(("safe-checking root folder"));
+                PMPF_DISK(("safe-checking root folder"));
                 // yes: use the safe way of opening the drive
                 _pMenuRootFolder = _xwpSafeQueryRootFolder(somSelf, FALSE, NULL);
             }
@@ -571,9 +557,7 @@ SOM_Scope HWND  SOMLINK xfdisk_wpDisplayMenu(XFldDisk *somSelf,
 
     _pMenuRootFolder = (WPObject*)-1;
 
-    #ifdef DEBUG_MENUS
-        _PmpfF(("[%s] leaving, returning 0x%lX", _wpQueryTitle(somSelf), hwndMenu));
-    #endif
+    PMPF_MENUS(("[%s] leaving, returning 0x%lX", _wpQueryTitle(somSelf), hwndMenu));
 
     return hwndMenu;
 }
@@ -653,7 +637,7 @@ SOM_Scope HWND  SOMLINK xfdisk_wpViewObject(XFldDisk *somSelf,
     /* XFldDiskData *somThis = XFldDiskGetData(somSelf); */
     XFldDiskMethodDebug("XFldDisk","xfdisk_wpViewObject");
 
-    _PmpfF(("entering"));
+    PMPF_DISK(("entering"));
 
     // "Drive not ready" replacement enabled?
 #ifndef __NEVERREPLACEDRIVENOTREADY__
@@ -683,7 +667,7 @@ SOM_Scope HWND  SOMLINK xfdisk_wpViewObject(XFldDisk *somSelf,
                                                         ulView,
                                                         param);
 
-    _PmpfF(("leaving"));
+    PMPF_DISK(("leaving"));
 
     return (hwndFrame);
 }
@@ -721,7 +705,7 @@ SOM_Scope HWND  SOMLINK xfdisk_wpOpen(XFldDisk *somSelf,
     HWND            hwndNewFrame = NULLHANDLE; // default: error occured
     XFolder         *pRootFolder = NULL;
 
-    _PmpfF(("entering"));
+    PMPF_DISK(("entering"));
 
     switch (ulView)
     {
@@ -847,7 +831,7 @@ SOM_Scope HWND  SOMLINK xfdisk_wpOpen(XFldDisk *somSelf,
                                                              param);
     } // switch (ulView)
 
-    _PmpfF(("leaving"));
+    PMPF_DISK(("leaving"));
 
     return (hwndNewFrame);
 }
