@@ -362,14 +362,15 @@ PPROGDETAILS progQueryDetails(WPObject *pProgObject)    // in: either WPProgram 
  *      buffer size is too small.
  *
  *@@added V0.9.16 (2002-01-04) [umoeller]
+ *@@changed V0.9.18 (2002-03-16) [umoeller]: now allowing NULL pcszExecutable
  */
 
 BOOL progFillProgDetails(PPROGDETAILS pProgDetails,     // can be NULL
                          ULONG ulProgType,              // in: prog type
                          ULONG fbVisible,               // in: visibility flag
-                         PSWP pswpInitial,
+                         PSWP pSWPInitial,
                          PCSZ pcszTitle,                // in: object title (can be NULL)
-                         PCSZ pcszExecutable,           // in: executable name (req.)
+                         PCSZ pcszExecutable,           // in: executable name (can be NULL)
                          USHORT usStartupDirHandle,      // in: 16-bit object handle for startup dir or NULLHANDLE
                          PCSZ pcszParameters,           // in: parameters or NULL
                          PCSZ pcszEnvironment,          // in: environment string in WinStartApp format or NULL
@@ -379,126 +380,127 @@ BOOL progFillProgDetails(PPROGDETAILS pProgDetails,     // can be NULL
 
     TRY_LOUD(excpt1)
     {
+        CHAR        szStartupDir[CCHMAXPATH];
+
+        ULONG       cbTitle = 0,
+                    cbExecutable = 0,
+                    cbStartupDir = 0,
+                    cbParameters = 0,
+                    cbEnvironment = 0,
+                    ulSize;
+
+        // 1) title
+        if (pcszTitle)
+            cbTitle = strlen(pcszTitle) + 1;
+
+        // 2) executable
         if (pcszExecutable)
-        {
-            CHAR        szStartupDir[CCHMAXPATH];
-
-            ULONG       cbTitle = 0,
-                        cbExecutable,
-                        cbStartupDir = 0,
-                        cbParameters = 0,
-                        cbEnvironment = 0,
-                        ulSize;
-
-            // 1) title
-            if (pcszTitle)
-                cbTitle = strlen(pcszTitle) + 1;
-
-            // 2) executable
             cbExecutable = strlen(pcszExecutable) + 1;
 
-            // 3) startup dir
-            if (usStartupDirHandle)
+        // 3) startup dir
+        if (usStartupDirHandle)
+        {
+            // we have a startup dir: get the full path from
+            // the handle
+            WPFolder *pStartup;
+            if (    (pStartup = _wpclsQueryObject(_WPFileSystem,
+                                                  usStartupDirHandle | (G_usHiwordFileSystem << 16)))
+                 && (_somIsA(pStartup, _WPFolder))
+                 && (_wpQueryFilename(pStartup, szStartupDir, TRUE))
+               )
             {
-                // we have a startup dir: get the full path from
-                // the handle
-                WPFolder *pStartup;
-                if (    (pStartup = _wpclsQueryObject(_WPFileSystem,
-                                                      usStartupDirHandle | (G_usHiwordFileSystem << 16)))
-                     && (_somIsA(pStartup, _WPFolder))
-                     && (_wpQueryFilename(pStartup, szStartupDir, TRUE))
+                cbStartupDir = strlen(szStartupDir) + 1;
+
+                // for root folders, we get "C:" instead of "C:\", so fix this
+                if (    (cbStartupDir == 3)
+                     && (szStartupDir[1] == ':')
                    )
                 {
-                    cbStartupDir = strlen(szStartupDir) + 1;
-
-                    // for root folders, we get "C:" instead of "C:\", so fix this
-                    if (    (cbStartupDir == 3)
-                         && (szStartupDir[1] == ':')
-                       )
-                    {
-                        szStartupDir[2] = '\\';
-                        szStartupDir[3] = '\0';
-                        cbStartupDir++;
-                    }
+                    szStartupDir[2] = '\\';
+                    szStartupDir[3] = '\0';
+                    cbStartupDir++;
                 }
             }
+        }
 
-            // 4) parameters
-            if (pcszParameters)
-                cbParameters = strlen(pcszParameters) + 1;
+        // 4) parameters
+        if (pcszParameters)
+            cbParameters = strlen(pcszParameters) + 1;
 
-            // 5) environment
-            if (pcszEnvironment)
-                cbEnvironment = appQueryEnvironmentLen(pcszEnvironment);
+        // 5) environment
+        if (pcszEnvironment)
+            cbEnvironment = appQueryEnvironmentLen(pcszEnvironment);
 
-            ulSize =   sizeof(PROGDETAILS)
-                     + cbTitle
-                     + cbExecutable
-                     + cbStartupDir
-                     + cbParameters
-                     + cbEnvironment;
+        ulSize =   sizeof(PROGDETAILS)
+                 + cbTitle
+                 + cbExecutable
+                 + cbStartupDir
+                 + cbParameters
+                 + cbEnvironment;
 
-            if (!pProgDetails)
-                // caller wants size only:
-                brc = TRUE;
-            else if (ulSize <= *pulSize)
+        if (!pProgDetails)
+            // caller wants size only:
+            brc = TRUE;
+        else if (ulSize <= *pulSize)
+        {
+            // caller has supplied sufficient buffer:
+            PBYTE   pbCurrent;
+
+            ZERO(pProgDetails);
+            pProgDetails->Length = sizeof(PROGDETAILS);
+
+            pProgDetails->progt.progc = ulProgType;
+            pProgDetails->progt.fbVisible = fbVisible;
+            if (pSWPInitial)
+                memcpy(&pProgDetails->swpInitial, pSWPInitial, sizeof(SWP));
+
+            // go copy after PROGDETAILS
+            pbCurrent = (PBYTE)(pProgDetails + 1);
+
+            // 1) title
+            if (cbTitle)
             {
-                // caller has supplied sufficient buffer:
-                PBYTE   pbCurrent;
+                pProgDetails->pszTitle = pbCurrent;
+                memcpy(pbCurrent, pcszTitle, cbTitle);       // includes 0
+                pbCurrent += cbTitle;
+            }
 
-                ZERO(pProgDetails);
-                pProgDetails->Length = sizeof(PROGDETAILS);
-
-                pProgDetails->progt.progc = ulProgType;
-                pProgDetails->progt.fbVisible = fbVisible;
-                if (pswpInitial)
-                    memcpy(&pProgDetails->swpInitial, pswpInitial, sizeof(SWP));
-
-                // go copy after PROGDETAILS
-                pbCurrent = (PBYTE)(pProgDetails + 1);
-
-                // 1) title
-                if (cbTitle)
-                {
-                    pProgDetails->pszTitle = pbCurrent;
-                    memcpy(pbCurrent, pcszTitle, cbTitle);       // includes 0
-                    pbCurrent += cbTitle;
-                }
-
-                // 2) executable
+            // 2) executable
+            if (cbExecutable)
+            {
                 pProgDetails->pszExecutable = pbCurrent;
                 memcpy(pbCurrent, pcszExecutable, cbExecutable);  // includes 0
                 pbCurrent += cbExecutable;
-
-                // 3) startup dir
-                if (cbStartupDir)
-                {
-                    pProgDetails->pszStartupDir = pbCurrent;
-                    memcpy(pbCurrent, szStartupDir, cbStartupDir);  // includes 0
-                    pbCurrent += cbStartupDir;
-                }
-
-                // 4) parameters
-                if (cbParameters)
-                {
-                    pProgDetails->pszParameters = pbCurrent;
-                    memcpy(pbCurrent, pcszParameters, cbParameters);  // includes 0
-                    pbCurrent += cbParameters;
-                }
-
-                // 5) environment
-                if (cbEnvironment)
-                {
-                    pProgDetails->pszEnvironment = pbCurrent;
-                    memcpy(pbCurrent, pcszEnvironment, cbEnvironment);  // includes all the nulls
-                    pbCurrent += cbEnvironment;
-                }
-
-                brc = TRUE;
             }
 
-            *pulSize = ulSize;
+            // 3) startup dir
+            if (cbStartupDir)
+            {
+                pProgDetails->pszStartupDir = pbCurrent;
+                memcpy(pbCurrent, szStartupDir, cbStartupDir);  // includes 0
+                pbCurrent += cbStartupDir;
+            }
+
+            // 4) parameters
+            if (cbParameters)
+            {
+                pProgDetails->pszParameters = pbCurrent;
+                memcpy(pbCurrent, pcszParameters, cbParameters);  // includes 0
+                pbCurrent += cbParameters;
+            }
+
+            // 5) environment
+            if (cbEnvironment)
+            {
+                pProgDetails->pszEnvironment = pbCurrent;
+                memcpy(pbCurrent, pcszEnvironment, cbEnvironment);  // includes all the nulls
+                pbCurrent += cbEnvironment;
+            }
+
+            brc = TRUE;
         }
+
+        *pulSize = ulSize;
     }
     CATCH(excpt1)
     {

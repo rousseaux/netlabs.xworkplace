@@ -81,38 +81,16 @@ interface XWPProgram : WPProgram
 
     BOOL        fNeedsSetProgIcon;      // flag for WPProgram::wpSetProgIcon
 
-    // pointers into WPProgramFile instance data
-    /* PVOID       pvpszEnvironment;       // pointer to a PSZ containing a
-                                        // string array with the program's
-                                        // environment (last string is terminated
-                                        // with two null bytes)
+    // pointer WPProgram instance data (see wpInitData)
+    // all the following replaced V0.9.18 (2002-03-16) [umoeller]
 
-    PVOID       pSWPInitial;            // pointer to SWP struct
+    PVOID       pvWPProgramData;
 
-    PULONG      pulExecutableHandle;    // 16-bit file-system handle for executable;
-                                        //     0xFFFF marks a "*" executable (cmdline)
-    PULONG      pulStartupDirHandle;    // 16-bit file-system handle for startup dir
-    PPROGTYPE   pProgType;              // prog type and visibility flag; two ULONGs!
-       */
-
-    // program data
-    PROGTYPE    ProgType;
-
-    USHORT      usExecutableHandle;
-    PSZ         pWszExecutable;         // only used if the user did not specify a
-                                        // executable that could be resolved to
-                                        // the executable fshandle above (e.g. an
-                                        // executable on the PATH)
-                                        // WARNING: allocated using wpAllocMem
-
-    PSZ         pWszParameters;         // parameters string or NULL
-                                        // WARNING: allocated using wpAllocMem
-
-    USHORT      usStartupDirHandle;
-
-    PSZ         pWszEnvironment;        // environment buffer (Dos format);
-                                        // WARNING: allocated using wpAllocMem
-    SWP         swpInitial;
+    BOOL        fWeAllocatedExecutable; // if TRUE, we set the executable PSZ and
+                                        // should free it
+    BOOL        fWeAllocatedParameters; // if TRUE, we set the parameters PSZ and
+                                        // should free it
+    BOOL        fWeAllocatedEnvironment;
 
     /*
      * WPProgram methods overridden by XWPProgram:
@@ -123,11 +101,6 @@ interface XWPProgram : WPProgram
     wpUnInitData: override;
 
     //# wpSetup: override;                  not needed, this properly calls the methods
-
-    wpSaveState: override;
-    wpRestoreState: override;
-
-    wpRestoreData: override;
 
     wpObjectReady: override;
 

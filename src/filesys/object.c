@@ -1236,8 +1236,11 @@ BOOL objAddToDirtyList(WPObject *pobj)
                                        treeCompareKeys));        // no duplicates
                     if (brc)
                     {
-                        // _Pmpf((__FUNCTION__ ": added obj 0x%lX (%s)", pobj, _wpQueryTitle(pobj) ));
-                        // _Pmpf(("  now %d objs on list", G_lDirtyListItemsCount ));
+                        _Pmpf((__FUNCTION__ ": added obj 0x%lX (%s, class %s)",
+                                            pobj,
+                                            _wpQueryTitle(pobj),
+                                            _somGetClassName(pobj) ));
+                        _Pmpf(("  now %d objs on list", G_lDirtyListItemsCount ));
 
                         // note that we do not need an object list flag
                         // here because the WPS automatically invokes
@@ -1316,9 +1319,11 @@ BOOL objRemoveFromDirtyList(WPObject *pobj)
                            pNode);
                 free(pNode);
 
-                /* _Pmpf((__FUNCTION__ ": removed obj 0x%lX, %d remaining",
-                       pobj,
-                       G_lDirtyListItemsCount )); */
+                _Pmpf((__FUNCTION__ ": removed obj 0x%lX (%s, class %s), %d remaining",
+                                    pobj,
+                                    _wpQueryTitle(pobj),
+                                    _somGetClassName(pobj),
+                                    G_lDirtyListItemsCount ));
 
                 // unset object's "dirty" list flag
                 _xwpModifyListNotify(pobj,

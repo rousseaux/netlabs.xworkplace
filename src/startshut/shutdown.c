@@ -3856,7 +3856,7 @@ BOOL _Optlink fncbSaveImmediate(WPObject *pobjThis,
                         // V0.9.16 (2001-10-25) [umoeller]
             brc = TRUE;
         else if (cmnIsObjectFromForeignDesktop(pobjThis))
-                        // never save objects which do not belong to
+                        // never save objects which belong to
                         // a foreign desktop
                         // V0.9.16 (2001-12-06) [umoeller]
         {
@@ -3873,7 +3873,13 @@ BOOL _Optlink fncbSaveImmediate(WPObject *pobjThis,
             brc = TRUE;
         }
         else
+        {
             brc = _wpSaveImmediate(pobjThis);
+            _Pmpf((__FUNCTION__ ": saved obj 0x%lX (%s, class %s)",
+                                pobjThis,
+                                _wpQueryTitle(pobjThis),
+                                _somGetClassName(pobjThis)));
+        }
     }
     CATCH(excpt1)
     {
@@ -4533,12 +4539,6 @@ static void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
                        (MPARAM)0,
                        (MPARAM)cObjectsToSave);
 
-            // have the WPS flush its buffers
-            xsdFlushWPS2INI();  // added V0.9.0 (UM 99-10-22)
-
-            // and wait a while
-            winhSleep(500);
-
             // if some thread is currently in an exception handler,
             // wait until the handler is done; otherwise the trap
             // log won't be written and we can't find out what
@@ -4550,6 +4550,12 @@ static void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
             // now using proper "dirty" list V0.9.9 (2001-04-04) [umoeller]
             cObjectsSaved = objForAllDirtyObjects(fncbSaveImmediate,
                                                   pShutdownData);  // user param
+
+            // have the WPS flush its buffers
+            xsdFlushWPS2INI();  // added V0.9.0 (UM 99-10-22)
+
+            // and wait a while
+            winhSleep(500);
 
             // if some thread is currently in an exception handler,
             // wait until the handler is done; otherwise the trap
