@@ -86,6 +86,9 @@
 
 #include "config\cfgsys.h"              // XFldSystem CONFIG.SYS pages implementation
 
+// win32k.sys includes
+#include "win32k.h"
+
 #pragma hdrstop                     // VAC++ keeps crashing otherwise
 
 /* ******************************************************************
@@ -97,18 +100,20 @@
 /*
  *@@ SNAPSHOT:
  *
+ *@@changed V0.9.9 (2001-03-30) [umoeller]: converted all fields to KB to avoid overflows
  */
 
 typedef struct _SNAPSHOT
 {
-    ULONG   ulSwapperSize,      // cfgQuerySwapperSize
-            ulPhysFree;         // Dos16MemAvail
+    ULONG   ulSwapperSizeKB,      // cfgQuerySwapperSize
+            ulSwapperFreeKB,      // free space in swapper (win32k.sys only)
+            ulPhysFreeKB;         // Dos16MemAvail
 
     // calculated values
-    ULONG   ulVirtTotal,        // (const) physical RAM plus swapper size
+    ULONG   ulVirtTotalKB,        // (const) physical RAM plus swapper size
 
-            ulVirtInUse,        //  = pThis->ulVirtTotal - pThis->ulPhysFree,
-            ulPhysInUse;        //  = ulVirtInUse - ulSwapper;
+            ulVirtInUseKB,        //  = pThis->ulVirtTotal - pThis->ulPhysFree,
+            ulPhysInUseKB;        //  = ulVirtInUse - ulSwapper;
 
     /* ษอออออออออออออออออออป                  ฤฤฤฟ      ฤฤฤฟ
        บ                   บ                     ณ         ณ
@@ -268,7 +273,8 @@ typedef struct _MONITORSETUP
     LONG        lcolBackground,         // background color
                 lcolForeground;         // foreground color (for text)
 
-    LONG        lcolSwap,               // bottommost
+    LONG        lcolSwapFree,           // bottommost
+                lcolSwap,
                 lcolPhysInUse,
                 lcolPhysFree;           // topmost
 
@@ -317,13 +323,16 @@ typedef struct _WIDGETPRIVATE
     ULONG           ulTextWidth,    // space to be left clear for digits on the left
                     ulSpacing;      // spacing for current font
 
-    ULONG           ulTotPhysMem;   // DosQuerySysinfo(QSV_TOTPHYSMEM);
+    ULONG           ulTotPhysMemKB; // DosQuerySysinfo(QSV_TOTPHYSMEM) / 1024;
 
     ULONG           ulMaxMemKBLast; // cache for scaling in bitmap
 
+    APIRET          arcWin32K;      // return code from win32k.sys; if NO_ERROR,
+                                    // we use win32k.sys for snapshots
+
     ULONG           cSnapshots;
     PSNAPSHOT       paSnapshots;
-            // array of Theseus snapshots
+            // array of memory snapshots
 
 } WIDGETPRIVATE, *PWIDGETPRIVATE;
 
@@ -420,9 +429,10 @@ VOID TwgtScanSetup(const char *pcszSetupString,
         pctrFreeSetupValue(p);
     }
     else
-        pSetup->pszFont = strdup("4.System VIO");
+        pSetup->pszFont = strdup("2.System VIO");
     // else: leave this field null
 
+    pSetup->lcolSwapFree = RGBCOL_RED;
     pSetup->lcolSwap = RGBCOL_DARKPINK;
     pSetup->lcolPhysInUse = RGBCOL_DARKBLUE;
     pSetup->lcolPhysFree = RGBCOL_DARKGREEN;
@@ -550,8 +560,12 @@ MRESULT TwgtCreate(HWND hwnd,
     // get current RAM size
     DosQuerySysInfo(QSV_TOTPHYSMEM,
                     QSV_TOTPHYSMEM,
-                    &pPrivate->ulTotPhysMem,
-                    sizeof(pPrivate->ulTotPhysMem));
+                    &pPrivate->ulTotPhysMemKB,
+                    sizeof(pPrivate->ulTotPhysMemKB));
+    // convert to KB
+    pPrivate->ulTotPhysMemKB = (pPrivate->ulTotPhysMemKB + 512) / 1024;
+
+    pPrivate->arcWin32K = libWin32kInit();
 
     // start update timer
     pPrivate->ulTimerID = ptmrStartXTimer(pWidget->pGlobals->pvXTimerSet,
@@ -625,7 +639,7 @@ BOOL TwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
 
 VOID PaintGraphLine(PWIDGETPRIVATE pPrivate,
                     PSNAPSHOT pThis,
-                    ULONG ulMaxMem,
+                    ULONG ulMaxMemKB,
                     LONG x,             // in: xpos to paint at
                     LONG yTop,          // in: yTop of bitmap rect
                     LONG lFillBkgnd)    // in: if != -1, bkgnd color
@@ -635,25 +649,48 @@ VOID PaintGraphLine(PWIDGETPRIVATE pPrivate,
     POINTL ptl;
     ptl.x = x;
 
-    // paint "swapper size"
-    GpiSetColor(hpsMem,
-                pSetup->lcolSwap);
-    ptl.y = 0;
-    GpiMove(hpsMem, &ptl);
-    ptl.y += yTop * pThis->ulSwapperSize / ulMaxMem;
-    GpiLine(hpsMem, &ptl);
+    if (ulMaxMemKB)           // avoid division by zero
+    {
+        ptl.y = 0;
+        GpiMove(hpsMem, &ptl);
 
-    // paint "physically used mem"
-    GpiSetColor(hpsMem,
-                pSetup->lcolPhysInUse);
-    ptl.y += yTop * pThis->ulPhysInUse / ulMaxMem;
-    GpiLine(hpsMem, &ptl);
+        // win32k.sys available?
+        if (pThis->ulSwapperFreeKB)
+        {
+            // yes: paint "swapper free"
+            GpiSetColor(hpsMem,
+                        pSetup->lcolSwapFree);
+            ptl.y += yTop * pThis->ulSwapperFreeKB / ulMaxMemKB;
+            GpiLine(hpsMem, &ptl);
 
-    // paint "free mem" in green
-    GpiSetColor(hpsMem,
-                pSetup->lcolPhysFree);
-    ptl.y += yTop * pThis->ulPhysFree / ulMaxMem;
-    GpiLine(hpsMem, &ptl);
+            // paint "swapper used"
+            GpiSetColor(hpsMem,
+                        pSetup->lcolSwap);
+            ptl.y += yTop * (pThis->ulSwapperSizeKB - pThis->ulSwapperFreeKB) / ulMaxMemKB;
+            GpiLine(hpsMem, &ptl);
+        }
+        else
+        {
+            // win32.sys not available:
+            // paint "swapper size"
+            GpiSetColor(hpsMem,
+                        pSetup->lcolSwap);
+            ptl.y += yTop * pThis->ulSwapperSizeKB / ulMaxMemKB;
+            GpiLine(hpsMem, &ptl);
+        }
+
+        // paint "physically used mem"
+        GpiSetColor(hpsMem,
+                    pSetup->lcolPhysInUse);
+        ptl.y += yTop * pThis->ulPhysInUseKB / ulMaxMemKB;
+        GpiLine(hpsMem, &ptl);
+
+        // paint "free mem" in green
+        GpiSetColor(hpsMem,
+                    pSetup->lcolPhysFree);
+        ptl.y += yTop * pThis->ulPhysFreeKB / ulMaxMemKB;
+        GpiLine(hpsMem, &ptl);
+    }
 
     if (lFillBkgnd != -1)
     {
@@ -730,7 +767,7 @@ VOID TwgtUpdateGraph(HWND hwnd,
              ul++)
         {
             PSNAPSHOT pThis = &pPrivate->paSnapshots[ul];
-            ULONG ulThis = pThis->ulVirtTotal;
+            ULONG ulThis = pThis->ulVirtTotalKB;
             if (ulThis > ulMaxMemKB)
                 ulMaxMemKB = ulThis;
         }
@@ -803,6 +840,11 @@ VOID TwgtUpdateGraph(HWND hwnd,
 
     pPrivate->fUpdateGraph = FALSE;
 }
+
+/*
+ *@@ DrawNumber:
+ *
+ */
 
 VOID DrawNumber(HPS hps,
                 LONG y,
@@ -902,21 +944,21 @@ VOID TwgtPaint2(HWND hwnd,
 
         LONG    y = 1;
 
-        #define MEGABYTE (1024*1024)    // what was that number again?
+        // #define MEGABYTE (1024*1024)    // what was that number again?
 
         DrawNumber(hps,
                    y,
-                   (pLatest->ulSwapperSize + (MEGABYTE / 2)) / MEGABYTE,
+                   (pLatest->ulSwapperSizeKB + (1024 / 2)) / 1024,
                    pSetup->lcolSwap);
         y += pPrivate->ulSpacing;
         DrawNumber(hps,
                    y,
-                   (pLatest->ulPhysInUse + (MEGABYTE / 2)) / MEGABYTE,
+                   (pLatest->ulPhysInUseKB + (1024 / 2)) / 1024,
                    pSetup->lcolPhysInUse);
         y += pPrivate->ulSpacing;
         DrawNumber(hps,
                    y,
-                   (pLatest->ulPhysFree + (MEGABYTE / 2)) / MEGABYTE,
+                   (pLatest->ulPhysFreeKB + (1024 / 2)) / 1024,
                    pSetup->lcolPhysFree);
     }
 }
@@ -949,8 +991,61 @@ VOID TwgtPaint(HWND hwnd)
 }
 
 /*
+ *@@ GetSnapshot:
+ *      updates the newest entry in the snapshots
+ *      array with the current memory values.
+ *
+ *      If win32k.sys was found, this uses that driver
+ *      to update the values. Otherwise we use the slow
+ *      and imprecise standard methods.
+ *
+ *@@added V0.9.9 (2001-03-30) [umoeller]
+ */
+
+VOID GetSnapshot(PWIDGETPRIVATE pPrivate)
+{
+    PSNAPSHOT pLatest = &pPrivate->paSnapshots[pPrivate->cSnapshots - 1];
+    memset(pLatest, 0, sizeof(SNAPSHOT));
+
+    if (pPrivate->arcWin32K == NO_ERROR)
+    {
+        K32SYSTEMMEMINFO MemInfo;
+
+        memset(&MemInfo, 0xFE, sizeof(MemInfo));
+        MemInfo.cb = sizeof(K32SYSTEMMEMINFO);
+        MemInfo.flFlags = K32_SYSMEMINFO_ALL;
+        pPrivate->arcWin32K = W32kQuerySystemMemInfo(&MemInfo);
+
+        if (pPrivate->arcWin32K == NO_ERROR)
+        {
+            pLatest->ulSwapperSizeKB = (MemInfo.cbSwapFileSize + 512) / 1024;
+            pLatest->ulSwapperFreeKB = (MemInfo.cbSwapFileAvail + 512) / 1024;
+            pLatest->ulPhysFreeKB = (MemInfo.cbPhysAvail + 512) / 1024;
+            pLatest->ulVirtTotalKB = pPrivate->ulTotPhysMemKB + pLatest->ulSwapperSizeKB;
+
+            pLatest->ulVirtInUseKB = (pLatest->ulVirtTotalKB - pLatest->ulPhysFreeKB);
+            // pLatest->ulPhysInUseKB = (MemInfo.cbPhysUsed + 512) / 1024;
+            pLatest->ulPhysInUseKB = (pLatest->ulVirtInUseKB - pLatest->ulSwapperSizeKB);
+        }
+    }
+    else
+    {
+        // win32k.sys failed:
+        pLatest->ulSwapperSizeKB = (pcfgQuerySwapperSize() + 512) / 1024;
+        Dos16MemAvail(&pLatest->ulPhysFreeKB);
+        pLatest->ulPhysFreeKB = (pLatest->ulPhysFreeKB + 512) / 1024;
+        pLatest->ulVirtTotalKB = pPrivate->ulTotPhysMemKB + pLatest->ulSwapperSizeKB;
+
+        // now do calcs based on that... we don't wanna go thru
+        // this on every paint
+        pLatest->ulVirtInUseKB = (pLatest->ulVirtTotalKB - pLatest->ulPhysFreeKB);
+        pLatest->ulPhysInUseKB = (pLatest->ulVirtInUseKB - pLatest->ulSwapperSizeKB);
+    }
+}
+
+/*
  *@@ TwgtTimer:
- *      updates the Theseus snapshots array, updates the
+ *      updates the snapshots array, updates the
  *      graph bitmap, and invalidates the window.
  */
 
@@ -981,9 +1076,6 @@ VOID TwgtTimer(HWND hwnd)
 
                 if (pPrivate->paSnapshots)
                 {
-                    PSNAPSHOT pLatest
-                        = &pPrivate->paSnapshots[pPrivate->cSnapshots - 1];
-
                     // in the array of loads, move each entry one to the front;
                     // drop the oldest entry
                     memcpy(&pPrivate->paSnapshots[0],
@@ -991,16 +1083,7 @@ VOID TwgtTimer(HWND hwnd)
                            sizeof(SNAPSHOT) * (pPrivate->cSnapshots - 1));
 
                     // and update the last entry with the current value
-                    memset(pLatest, 0, sizeof(SNAPSHOT));
-
-                    pLatest->ulSwapperSize = pcfgQuerySwapperSize();
-                    Dos16MemAvail(&pLatest->ulPhysFree);
-                    pLatest->ulVirtTotal = pPrivate->ulTotPhysMem + pLatest->ulSwapperSize;
-
-                    // now do calcs based on that... we don't wanna go thru
-                    // this on every paint
-                    pLatest->ulVirtInUse = (pLatest->ulVirtTotal - pLatest->ulPhysFree);
-                    pLatest->ulPhysInUse = (pLatest->ulVirtInUse - pLatest->ulSwapperSize);
+                    GetSnapshot(pPrivate);
 
                     // update display
                     pPrivate->fUpdateGraph = TRUE;
@@ -1352,6 +1435,8 @@ MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
                     ptmrStopXTimer(pPrivate->pWidget->pGlobals->pvXTimerSet,
                                   hwnd,
                                   pPrivate->ulTimerID);
+
+                libWin32kTerm();
 
                 free(pPrivate);
             } // end if (pPrivate)

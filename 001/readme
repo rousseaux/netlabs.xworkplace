@@ -1,7 +1,7 @@
 
-XWorkplace 0.9.8 README
+XWorkplace 0.9.9 README
 (W) Ulrich M”ller, Feb 7, 2000
-Last updated March 28, 2001
+Last updated March 31, 2001
 
 
 0. CONTENTS OF THIS FILE
@@ -53,17 +53,12 @@ Last updated March 28, 2001
 
     ---> In any case, before installing, MAKE A WPS BACKUP.
 
-    Note: Use WarpIN V0.9.8 or higher to install this archive.
-    Version 0.9.6 had a nasty bug with target paths which was
-    kind of annoying.
-
     If you are still unsure whether you should use XWorkplace at
-    this point, and if you have WarpIN V0.9.6 installed, you can
-    select the "Documentation" package in this archive only.
-    This way can then read through XWorkplace's documentation
-    first and decide then whether to actually install all of it.
-    To do this later, simply double-click on XWorkplace's .WPI
-    archive again.
+    this point, you can select the "Documentation" package in this
+    archive only. This way can then read through XWorkplace's
+    documentation first and decide then whether to actually install
+    all of it. To install later, simply double-click on XWorkplace's
+    .WPI archive again.
 
 
 3. UPGRADING
@@ -141,7 +136,10 @@ Last updated March 28, 2001
 7. LICENSE, COPYRIGHT, DISCLAIMER
 =================================
 
-    Copyright (C) 1997-2001 Ulrich M”ller and others.
+    Copyright (C) 1997-2001 Ulrich M”ller,
+                            Martin Lafaix,
+                            Paul Ratcliffe,
+                            and others.
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as contained in

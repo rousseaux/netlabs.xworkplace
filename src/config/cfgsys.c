@@ -231,6 +231,8 @@ BOOL cfgParseSwapPath(const char *pcszConfigSys,    // in: if NULL, this gets lo
 
 /*
  *@@ cfgQuerySwapperSize:
+ *      returns the current size of the swap file
+ *      in bytes.
  *
  *@@added V0.9.9 (2001-02-08) [umoeller]
  */

@@ -418,10 +418,10 @@ WPTrashObject 4 (Workplace Shell TrashCan by Kai Sommerfeld) This class implemen
 
 WarpCenterKey 1 (WarpCenterKey by Samuel Audet) Implements a keybord hotkey for opening the 'WarpCenter' button.
 
-StarImpressFile1 (SUN StarOffice/2 5.1a) Document class for StarImpress presentations.
-StarMathFile1 (SUN StarOffice/2 5.1a) Document class for StarMath formulas.
-StarWriterFile1 (SUN StarOffice/2 5.1a) Document class for StarWriter texts.
-StarWriterGlobalFile1 (SUN StarOffice/2 5.1a) Document class for StarWriter global documents.
+StarImpressFile 1 (SUN StarOffice/2 5.1a) Document class for StarImpress presentations.
+StarMathFile 1 (SUN StarOffice/2 5.1a) Document class for StarMath formulas.
+StarWriterFile 1 (SUN StarOffice/2 5.1a) Document class for StarWriter texts.
+StarWriterGlobalFile 1 (SUN StarOffice/2 5.1a) Document class for StarWriter global documents.
 
 LTFolder 1 (OS/2 Warp 3 Bonus Pak only) Light Table folder class which allows viewing different file types both through a viewer and as a large icon.
 

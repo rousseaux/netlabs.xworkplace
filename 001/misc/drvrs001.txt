@@ -246,7 +246,7 @@ CATEGORY "SCSI"
                 0),
         DRIVER ( "DEVICE=", "ASPIROUT.SYS",
                  "ASPI router",
-                 DRVF_NOPARAMS)
+                 0)
 
         DRIVER ( "BASEDEV=", "SYM8xx.ADD",
                  "Symbios/LSI/NCR 8xx based SCSI host",
@@ -366,6 +366,10 @@ CATEGORY "Installable File Systems"
         DRIVER ( "RUN=", "ISOFSDMN.EXE",
                  "ISOFS control program by Chris Wohlgemuth",
                  0)
+
+         DRIVER ( "IFS=", "TONIGY.IFS",
+                  "Tonigy Audio CD file system",
+                  DRVF_NOPARAMS)
     }
 
 CATEGORY "Video"
@@ -666,9 +670,9 @@ CATEGORY "Network"
                  0),
 
         DRIVER ( "DEVICE=", "VDOSTCP.SYS",
-                 "TCP/IP support for DOS/Windows",
+                 "TCP/IP support for DOS/Windows SYS",
                  0),
-        DRIVER ( "DEVICE=", "VDOSTCP.SYS",
+        DRIVER ( "DEVICE=", "VDOSTCP.VDD",
                  "TCP/IP support for DOS/Windows VDD",
                  0),
         DRIVER ( "RUN=", "VDOSCTL.EXE",

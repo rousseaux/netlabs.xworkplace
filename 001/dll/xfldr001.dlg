@@ -881,7 +881,7 @@ BEGIN
                         PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans Bold"
         LTEXT           "(C) 1998-2000 Ulrich M”ller", -1, 15, 156, 145, 8
                         PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        LTEXT           "ulrich.moeller@rz.hu-berlin.de", -1, 15, 147, 145,
+        LTEXT           "xworkplace-user@yahoogroups.com", -1, 15, 147, 145,
                         8
                         PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
         LTEXT           "http://xworkplace.netlabs.org", -1, 15, 138, 150, 8

@@ -411,8 +411,8 @@ FILE* _System krnExceptOpenLogFile(VOID)
         fprintf(file, "\nXWorkplace trap message -- Date: %04d-%02d-%02d, Time: %02d:%02d:%02d\n",
                 dt.year, dt.month, dt.day,
                 dt.hours, dt.minutes, dt.seconds);
-        fprintf(file, "----------------------------------------------------------\n"
-                      "\nAn internal error occurred within XWorkplace.\n"
+        fprintf(file, "-----------------------------------------------------------\n"
+                      "\nXWorkplace encountered an internal error.\n"
                       "Please contact the author so that this error may be removed\n"
                       "in future XWorkplace versions. A contact address may be\n"
                       "obtained from the XWorkplace User Guide. Please supply\n"
