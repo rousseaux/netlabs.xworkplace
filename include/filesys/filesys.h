@@ -199,6 +199,8 @@
 
     #ifdef SOM_WPFolder_h
         BOOL fsysPopulateWithFSObjects(WPFolder *somSelf,
+                                       HWND hwndReserved,
+                                       PMINIRECORDCORE pMyRecord,
                                        PCSZ pcszFolderFullPath,
                                        BOOL fFoldersOnly,
                                        PCSZ pcszFileMask,

@@ -259,9 +259,6 @@ PLINKLIST fopsFolder2ExpandedList(WPFolder *pFolder,
 
     BOOL        fFolderLocked = FALSE;
 
-    // ULONG       ulNesting = 0;
-    // DosEnterMustComplete(&ulNesting);
-
     #ifdef DEBUG_TRASHCAN
         _Pmpf(("Object \"%s\" is a folder, creating SFL", _wpQueryTitle(pFolder) ));
     #endif
@@ -326,8 +323,6 @@ PLINKLIST fopsFolder2ExpandedList(WPFolder *pFolder,
         fdrReleaseFolderMutexSem(pFolder);
         fFolderLocked = FALSE;
     }
-
-    // DosExitMustComplete(&lNesting);
 
     *pulSizeContents = ulSizeContents;
 
@@ -550,8 +545,6 @@ FOPSRET fopsExpandObjectFlat(PLINKLIST pllObjects,  // in: list to append to (pl
         // it's a folder:
         // lock it and build a list from its contents
         BOOL    fFolderLocked = FALSE;
-        // ULONG   ulNesting = 0;
-        // DosEnterMustComplete(&ulNesting);
 
         TRY_LOUD(excpt1)
         {
@@ -617,8 +610,6 @@ FOPSRET fopsExpandObjectFlat(PLINKLIST pllObjects,  // in: list to append to (pl
             fdrReleaseFolderMutexSem(pObject);
             fFolderLocked = FALSE;
         }
-
-        // DosExitMustComplete(&ulNesting);
 
     } // end if (_somIsA(pObject, _WPFolder))
 

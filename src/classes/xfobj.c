@@ -307,7 +307,7 @@ SOM_Scope PSZ  SOMLINK xfobj_xwpQueryOriginalObjectID(XFldObject *somSelf)
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xfobj_xwpQueryOriginalObjectID");
 
-    return _pszOriginalObjectID;
+    return _pWszOriginalObjectID;
 }
 
 /*
@@ -1045,7 +1045,7 @@ SOM_Scope void  SOMLINK xfobj_wpInitData(XFldObject *somSelf)
 
     _pObjectStrings = NULL;
 
-    _pszOriginalObjectID = NULL;
+    _pWszOriginalObjectID = NULL;
 
     _pTrashObject = NULL;
 
@@ -1377,7 +1377,7 @@ SOM_Scope void  SOMLINK xfobj_wpUnInitData(XFldObject *somSelf)
 
     // free the object ID backup if there's one
     // V0.9.16 (2001-12-06) [umoeller]
-    strhStore(&_pszOriginalObjectID, NULL, NULL);
+    wpshStore(somSelf, &_pWszOriginalObjectID, NULL, NULL);
 
     // destroy trash object, if there's one
     if (_pTrashObject)
@@ -1641,7 +1641,7 @@ SOM_Scope BOOL  SOMLINK xfobj_wpSetObjectID(XFldObject *somSelf,
     // so nuke the one we backed up, but only if the
     // object has been initialized
     if (_wpIsObjectInitialized(somSelf))
-        strhStore(&_pszOriginalObjectID, NULL, NULL);
+        wpshStore(somSelf, &_pWszOriginalObjectID, NULL, NULL);
 
     return (XFldObject_parent_WPObject_wpSetObjectID(somSelf,
                                                      pszObjectID));
@@ -1775,13 +1775,13 @@ SOM_Scope BOOL  SOMLINK xfobj_wpSaveState(XFldObject *somSelf)
             // and object ID in instance data is NULL:
          && (!_pObjectStrings->pszObjectID)
             // but there was one originally:
-         && (_pszOriginalObjectID)
+         && (_pWszOriginalObjectID)
        )
     {
         // restore the old object ID for save!!
-        _Pmpf((__FUNCTION__ ": restoring old object ID \"%s\" for save", _pszOriginalObjectID));
+        _Pmpf((__FUNCTION__ ": restoring old object ID \"%s\" for save", _pWszOriginalObjectID));
 
-        _pObjectStrings->pszObjectID = _pszOriginalObjectID;
+        _pObjectStrings->pszObjectID = _pWszOriginalObjectID;
         fHacked = TRUE;
     }
 
@@ -1834,7 +1834,10 @@ SOM_Scope BOOL  SOMLINK xfobj_wpRestoreState(XFldObject *somSelf,
          && (_pObjectStrings->pszObjectID)
          && (*(_pObjectStrings->pszObjectID))
        )
-        strhStore(&_pszOriginalObjectID, _pObjectStrings->pszObjectID, NULL);
+        wpshStore(somSelf,
+                  &_pWszOriginalObjectID,
+                  _pObjectStrings->pszObjectID,
+                  NULL);
 
     // restore trash can deletion
     if (    (_wpRestoreData(somSelf, (PSZ)G_pcszXFldObject, 1,

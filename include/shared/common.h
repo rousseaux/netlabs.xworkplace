@@ -1107,7 +1107,11 @@
      *
      ********************************************************************/
 
-    void XWPENTRY cmnLoadString(HAB habDesktop, HMODULE hmodResource, ULONG ulID, PSZ *ppsz);
+    void XWPENTRY cmnLoadString(HAB habDesktop,
+                                HMODULE hmodResource,
+                                ULONG ulID,
+                                PSZ *ppsz,
+                                PULONG pulLength);
 
     PSZ XWPENTRY cmnGetString(ULONG ulStringID);
     typedef PSZ XWPENTRY CMNGETSTRING(ULONG ulStringID);
@@ -1191,12 +1195,13 @@
      ********************************************************************/
 
     // settings types for XWPSETUPENTRY.ulType
-    #define     STG_LONG        1
+    #define     STG_LONG_DEC    1
     #define     STG_BOOL        2
     #define     STG_BITFLAG     3
     #define     STG_PSZ         4       // V0.9.9 (2001-03-07) [umoeller]
     #define     STG_PSZARRAY    5
     #define     STG_BINARY      6       // V0.9.12 (2001-05-24) [umoeller]
+    #define     STG_LONG_RGB    7       // V0.9.16 (2002-01-26) [umoeller]
 
     /*
      *@@ XWPSETUPENTRY:
@@ -1246,6 +1251,7 @@
      *      from a SOM object, it can really be any structure.
      *
      *@@added V0.9.9 (2001-01-29) [umoeller]
+     *@@changed V0.9.16 (2002-01-26) [umoeller]: added STG_LONG_RGB
      */
 
     typedef struct _XWPSETUPENTRY
@@ -1254,12 +1260,18 @@
                         // describes the type of the variable specified
                         // by ulOfsOfData. One of:
 
-                        // -- STG_LONG: LONG value; in that case,
+                        // -- STG_LONG_DEC: LONG value; in that case,
                         //      ulMin and ulMax apply and the setup
                         //      string gets the long value appended
+                        //      in decimal format.
+
+                        // -- STG_LONG_RGB: LONG value representing
+                        //      an RGB color; in that case, the
+                        //      corresponding setup string is in
+                        //      "red green blue" format.
 
                         // -- STG_BOOL: BOOL value; in that case,
-                        //      the setup string gets either YES or NO
+                        //      the setup string gets either YES or NO.
 
                         // -- STG_BITFLAG: a bitflag value; in that case,
                         //      the data is assumed to be a ULONG and

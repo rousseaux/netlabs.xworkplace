@@ -146,7 +146,7 @@ SOM_Scope PSZ  SOMLINK xfs_xwpQueryUpperRealName(XWPFileSystem *somSelf)
     XWPFileSystemData *somThis = XWPFileSystemGetData(somSelf);
     XWPFileSystemMethodDebug("XWPFileSystem","xfs_xwpQueryUpperRealName");
 
-    if (!_pszUpperRealName)
+    if (!_pWszUpperRealName)
     {
         // not queried yet:
         // create a copy
@@ -154,12 +154,12 @@ SOM_Scope PSZ  SOMLINK xfs_xwpQueryUpperRealName(XWPFileSystem *somSelf)
         if (_wpQueryFilename(somSelf, sz, FALSE))
         {
             ULONG ulLength;
-            strhStore(&_pszUpperRealName, sz, &ulLength);
-            nlsUpper(_pszUpperRealName, ulLength);
+            wpshStore(somSelf, &_pWszUpperRealName, sz, &ulLength);
+            nlsUpper(_pWszUpperRealName, ulLength);
         }
     }
 
-    return (_pszUpperRealName);
+    return (_pWszUpperRealName);
 }
 
 /*
@@ -178,7 +178,7 @@ SOM_Scope void  SOMLINK xfs_wpInitData(XWPFileSystem *somSelf)
     XWPFileSystem_parent_WPFileSystem_wpInitData(somSelf);
 
     _ulHandle = 0;
-    _pszUpperRealName = NULL;
+    _pWszUpperRealName = NULL;
     _ulCnrRefresh = -1;
 }
 
@@ -196,7 +196,7 @@ SOM_Scope void  SOMLINK xfs_wpUnInitData(XWPFileSystem *somSelf)
     XWPFileSystemData *somThis = XWPFileSystemGetData(somSelf);
     XWPFileSystemMethodDebug("XWPFileSystem","xfs_wpUnInitData");
 
-    strhStore(&_pszUpperRealName, NULL, NULL);
+    wpshStore(somSelf, &_pWszUpperRealName, NULL, NULL);
 
     XWPFileSystem_parent_WPFileSystem_wpUnInitData(somSelf);
 }

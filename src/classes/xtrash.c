@@ -1336,9 +1336,7 @@ SOM_Scope BOOL  SOMLINK xtrc_wpDeleteFromContent(XWPTrashCan *somSelf,
 /*
  *@@ wpDeleteContents:
  *      this WPFolder method gets called when a folder is
- *      bein<UL>#ifndef __ALWAYSREPLACEICONPAGE__
-</UL>
-g deleted to first delete the contents of a
+ *      being deleted to first delete the contents of a
  *      folder before the folder can be deleted. From my
  *      testing, BOTH WPFolder::wpDelete and WPFolder::wpFree
  *      call this method to nuke the folder contents.
@@ -1349,13 +1347,14 @@ g deleted to first delete the contents of a
  *      then invokes wpDelete on each item in the folder.
  *
  *      For the trash can, this is NOT the way to go. First
- *      of all, we produce all the trash objects during populate,
- *      so we do NOT want to have the trash can populated during
- *      delete. Even worse, WPFolder:.wpDeleteContents produces a
- *      silly message box for every single trash object then. Duh.
+ *      of all, we produce all the transient trash objects during
+ *      populate, so we do NOT want to have the trash can populated
+ *      during delete. Even worse, WPFolder:.wpDeleteContents
+ *      produces a silly message box for every single transient
+ *      object then. Duh.
  *
  *      So override this method and just invoke wpFree on all
- *      objects in the folder without further notice.
+ *      objects in the folder without further discussion.
  *
  *@@added V0.9.9 (2001-02-08) [umoeller]
  */

@@ -31,6 +31,147 @@
 
     // enable wrappers in include\helpers\winh.h
     #define WINH_STANDARDWRAPPERS
+    // and include\helpers\dosh.h
+    #define DOSH_STANDARDWRAPPERS
+
+    /*************************************************************
+     *
+     *   Page tuning
+     *
+     *************************************************************/
+
+    // stdlib; doesn't work right now... should we include
+    // setup.h before any stdlib headers?
+    #pragma alloc_text(FREQ_CODE1, strlen)
+    #pragma alloc_text(FREQ_CODE1, strdup)
+    #pragma alloc_text(FREQ_CODE1, free)
+    #pragma alloc_text(FREQ_CODE1, malloc)
+    #pragma alloc_text(FREQ_CODE1, strcmp)
+    #pragma alloc_text(FREQ_CODE1, memcpy)
+
+    // dosh.c
+    #pragma alloc_text(FREQ_CODE1, doshSleep)
+    #pragma alloc_text(FREQ_CODE1, doshRequestMutexSem)
+    #pragma alloc_text(FREQ_CODE1, doshSetExceptionHandler)
+    #pragma alloc_text(FREQ_CODE1, doshUnsetExceptionHandler)
+    #pragma alloc_text(FREQ_CODE1, PerformMatch)
+    #pragma alloc_text(FREQ_CODE1, doshMatch)
+    #pragma alloc_text(FREQ_CODE1, doshQuerySysUptime)
+
+    // winh.c
+    #pragma alloc_text(FREQ_CODE1, winhRequestMutexSem)
+
+    // common.c
+    #pragma alloc_text(FREQ_CODE1, cmnQuerySetting)
+    #pragma alloc_text(FREQ_CODE1, cmnGetString)
+
+    /*
+     *  functions used with wpQueryIcon and
+     *  extended associations
+     *
+     */
+
+    // linklist.c
+    #pragma alloc_text(FREQ_CODE1, lstInit)
+    #pragma alloc_text(FREQ_CODE1, lstCreate)
+    #pragma alloc_text(FREQ_CODE1, lstQueryFirstNode)
+    #pragma alloc_text(FREQ_CODE1, lstCountItems)
+    #pragma alloc_text(FREQ_CODE1, lstNodeFromIndex)
+    #pragma alloc_text(FREQ_CODE1, lstNodeFromItem)
+    #pragma alloc_text(FREQ_CODE1, lstAppendItem)
+    #pragma alloc_text(FREQ_CODE1, lstClear)
+    #pragma alloc_text(FREQ_CODE1, lstFree)
+
+    // tree.c
+    #pragma alloc_text(FREQ_CODE1, treeFind)
+    #pragma alloc_text(FREQ_CODE1, treeCompareKeys)
+    #pragma alloc_text(FREQ_CODE1, treeCompareStrings)
+
+    // object.c
+    #pragma alloc_text(FREQ_CODE1, LockHandlesCache)
+    #pragma alloc_text(FREQ_CODE1, UnlockHandlesCache)
+    #pragma alloc_text(FREQ_CODE1, objFindObjFromHandle)
+
+    // xfdataf.c
+    #pragma alloc_text(FREQ_CODE1, xdf_wpQueryIcon)
+    #pragma alloc_text(FREQ_CODE1, xdf_wpQueryAssociatedProgram)
+    #pragma alloc_text(FREQ_CODE1, xdf_wpQueryAssociatedFileIcon)
+
+    // filetype.c
+    #pragma alloc_text(FREQ_CODE1, prfhQueryKeysForApp)
+    #pragma alloc_text(FREQ_CODE1, prfhQueryProfileData)
+
+    #pragma alloc_text(FREQ_CODE1, ListAssocsForType)
+
+    #pragma alloc_text(FREQ_CODE1, ftypLockCaches)
+    #pragma alloc_text(FREQ_CODE1, ftypUnlockCaches)
+    #pragma alloc_text(FREQ_CODE1, ftypQueryAssociatedProgram)
+    #pragma alloc_text(FREQ_CODE1, ftypBuildAssocsList)
+
+    #pragma alloc_text(FREQ_CODE1, ftypFreeAssocsList)
+
+    #pragma alloc_text(FREQ_CODE1, FindWPSTypeAssoc)
+    #pragma alloc_text(FREQ_CODE1, strhSubstr)
+
+    #pragma alloc_text(FREQ_CODE1, AppendSingleTypeUnique)
+    #pragma alloc_text(FREQ_CODE1, AppendTypesFromString)
+    #pragma alloc_text(FREQ_CODE1, AppendTypesForFile)
+    #pragma alloc_text(FREQ_CODE1, GetCachedTypesWithFilters)
+
+    /*
+     *  functions used with exe icons
+     *
+     */
+
+    #pragma alloc_text(FREQ_CODE2, xpgf_wpSetProgIcon)
+    #pragma alloc_text(FREQ_CODE2, doshGetExtension)
+
+    #pragma alloc_text(FREQ_CODE2, krnLock)
+    #pragma alloc_text(FREQ_CODE2, krnUnlock)
+
+    #pragma alloc_text(FREQ_CODE2, icoLoadICOFile)
+    #pragma alloc_text(FREQ_CODE2, doshOpen )
+    #pragma alloc_text(FREQ_CODE2, doshReadAt)
+    #pragma alloc_text(FREQ_CODE2, doshQueryPathSize )
+    #pragma alloc_text(FREQ_CODE2, doshQueryFileSize )
+    #pragma alloc_text(FREQ_CODE2, icoBuildPtrHandle )
+    #pragma alloc_text(FREQ_CODE2, doshLockFile)
+    #pragma alloc_text(FREQ_CODE2, doshUnlockFile)
+    #pragma alloc_text(FREQ_CODE2, doshClose )
+
+    #pragma alloc_text(FREQ_CODE2, exehOpen)
+    #pragma alloc_text(FREQ_CODE2, exehClose)
+
+    #pragma alloc_text(FREQ_CODE2, doshAllocArray)
+
+    #pragma alloc_text(FREQ_CODE2, exehLoadLXMaps )
+    #pragma alloc_text(FREQ_CODE2, exehFreeLXMaps)
+
+    #pragma alloc_text(FREQ_CODE2, GetOfsFromPageTableIndex)
+    #pragma alloc_text(FREQ_CODE2, ExpandIterdata1)
+    #pragma alloc_text(FREQ_CODE2, ExpandIterdata2)
+    #pragma alloc_text(FREQ_CODE2, memcpyb)
+    #pragma alloc_text(FREQ_CODE2, memcpyw)
+    #pragma alloc_text(FREQ_CODE2, exehReadLXPage )
+
+    #pragma alloc_text(FREQ_CODE2, exehLoadLXResource )
+
+    #pragma alloc_text(FREQ_CODE2, ConvertWinIcon)
+    #pragma alloc_text(FREQ_CODE2, LoadWinNEResource )
+
+    // skipping OS2 NE (too rare)
+    // todo: LoadWinPEResource
+
+    #pragma alloc_text(FREQ_CODE2, xpgf_xwpQueryProgType)
+    #pragma alloc_text(FREQ_CODE2, progQueryProgType)
+
+    #pragma alloc_text(FREQ_CODE2, progFindIcon)
+
+    #pragma alloc_text(FREQ_CODE2, icoLoadExeIcon)
+
+    #pragma alloc_text(FREQ_CODE2, LockIcons)
+    #pragma alloc_text(FREQ_CODE2, UnlockIcons)
+    #pragma alloc_text(FREQ_CODE2, cmnGetStandardIcon)
 
     /*************************************************************
      *

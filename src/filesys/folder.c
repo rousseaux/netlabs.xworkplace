@@ -490,39 +490,42 @@ BOOL fdrQuerySetup(WPObject *somSelf,
 
         // BACKGROUND
         if (fInitialized) // V0.9.3 (2000-04-29) [umoeller]
-            if ((_pszFolderBkgndImageFile) && (_pFolderBackground))
+            if ((_pWszFolderBkgndImageFile) && (_pFolderBackground))
             {
                 CHAR cType = 'S';
 
                 PBYTE pbRGB = ( (PBYTE)(&(_pFolderBackground->rgbColor)) );
 
-                PSZ pszBitmapFile = strdup(_pszFolderBkgndImageFile);
-                CHAR cBootDrive = doshQueryBootDrive();
-
-                nlsUpper(pszBitmapFile, 0);
-                if (*pszBitmapFile == cBootDrive)
-                    // file on boot drive:
-                    // replace with '?' to make it portable
-                    *pszBitmapFile = '?';
-
-                switch (_pFolderBackground->bImageType & 0x07) // ?2=Normal, ?3=tiled, ?4=scaled
+                PSZ pszBitmapFile;
+                if (pszBitmapFile = strdup(_pWszFolderBkgndImageFile))
                 {
-                    case 2: cType = 'N'; break;
-                    case 3: cType = 'T'; break;
-                    default: /* 4 */ cType = 'S'; break;
+                    CHAR cBootDrive = doshQueryBootDrive();
+
+                    nlsUpper(pszBitmapFile, 0);
+                    if (*pszBitmapFile == cBootDrive)
+                        // file on boot drive:
+                        // replace with '?' to make it portable
+                        *pszBitmapFile = '?';
+
+                    switch (_pFolderBackground->bImageType & 0x07) // ?2=Normal, ?3=tiled, ?4=scaled
+                    {
+                        case 2: cType = 'N'; break;
+                        case 3: cType = 'T'; break;
+                        default: /* 4 */ cType = 'S'; break;
+                    }
+
+                    sprintf(szTemp, "BACKGROUND=%s,%c,%d,%c,%d %d %d;",
+                            pszBitmapFile,  // image name
+                            cType,                    // N = normal, T = tiled, S = scaled
+                            _pFolderBackground->bScaleFactor,  // scaling factor
+                            (_pFolderBackground->bColorOnly == 0x28) // 0x28 Image, 0x27 Color only
+                                ? 'I'
+                                : 'C', // I = image, C = color only
+                            *(pbRGB + 2), *(pbRGB + 1), *pbRGB);  // RGB color; apparently optional
+                    xstrcat(pstrSetup, szTemp, 0);
+
+                    free(pszBitmapFile);
                 }
-
-                sprintf(szTemp, "BACKGROUND=%s,%c,%d,%c,%d %d %d;",
-                        pszBitmapFile,  // image name
-                        cType,                    // N = normal, T = tiled, S = scaled
-                        _pFolderBackground->bScaleFactor,  // scaling factor
-                        (_pFolderBackground->bColorOnly == 0x28) // 0x28 Image, 0x27 Color only
-                            ? 'I'
-                            : 'C', // I = image, C = color only
-                        *(pbRGB + 2), *(pbRGB + 1), *pbRGB);  // RGB color; apparently optional
-                xstrcat(pstrSetup, szTemp, 0);
-
-                free(pszBitmapFile);
             }
 
         // DEFAULTVIEW: already handled by XFldObject
@@ -1199,17 +1202,9 @@ BOOL fdrQuickOpen(WPFolder *pFolder,
                 ulMax = 0;
     BOOL        fFolderLocked = FALSE;
 
-    // ULONG       ulNesting = 0;
-
-    // pre-resolve _wpQueryContent for speed V0.9.3 (2000-04-28) [umoeller]
-    // somTD_WPFolder_wpQueryContent rslv_wpQueryContent
-            // = SOM_Resolve(pFolder, WPFolder, wpQueryContent);
-
     // populate folder
     fdrCheckIfPopulated(pFolder,
                         FALSE);        // full populate
-
-    // DosEnterMustComplete(&ulNesting);
 
     TRY_LOUD(excpt1)
     {
@@ -1257,8 +1252,6 @@ BOOL fdrQuickOpen(WPFolder *pFolder,
 
     if (fFolderLocked)
         fdrReleaseFolderMutexSem(pFolder);
-
-    // DosExitMustComplete(&ulNesting);
 
     return (brc);
 }

@@ -92,11 +92,13 @@
 #define INCL_DOSPROCESS
 #define INCL_DOSSEMAPHORES
 #define INCL_DOSERRORS
+
 #define INCL_WINWINDOWMGR
 #define INCL_WINFRAMEMGR
 #define INCL_WININPUT
 #define INCL_WINRECTANGLES
 #define INCL_WINSYS             // needed for presparams
+#define INCL_WINPOINTERS
 #define INCL_WINMENUS
 #define INCL_WINTIMER
 #define INCL_WINDIALOGS
@@ -1000,7 +1002,7 @@ SOM_Scope WPFileSystem*  SOMLINK xf_xwpQueryDefaultDocument(XFolder *somSelf)
             {
                 XFolderData *somThis = XFolderGetData(somSelf);
 
-                if (_pszDefaultDocDeferred)
+                if (_pWszDefaultDocDeferred)
                     // we have a default document, but this hasn't been
                     // resolved yet:
                     rc = NULL;
@@ -1399,7 +1401,7 @@ SOM_Scope void  SOMLINK xf_wpInitData(XFolder *somSelf)
 
     _pulFolderShowAllInTreeView = NULL;
 
-    _pszFolderBkgndImageFile = NULL;
+    _pWszFolderBkgndImageFile = NULL;
 
     _fUnInitCalled = FALSE;
     _hwndCnrSaved = NULLHANDLE;
@@ -1407,7 +1409,7 @@ SOM_Scope void  SOMLINK xf_wpInitData(XFolder *somSelf)
     _pfnResolvedUpdateStatusBar = NULL;
 
     _pDefaultDocument = NULL; // V0.9.4 (2000-06-09) [umoeller]
-    _pszDefaultDocDeferred = NULL; // V0.9.4 (2000-06-09) [umoeller]
+    _pWszDefaultDocDeferred = NULL; // V0.9.4 (2000-06-09) [umoeller]
 
     _cObjects = 0;
 
@@ -1420,14 +1422,10 @@ SOM_Scope void  SOMLINK xf_wpInitData(XFolder *somSelf)
 
     _fInwpAddFolderView1Page = FALSE;
 
-    if (_pvFdrContents = malloc(sizeof(FDRCONTENTS)))
-            // V0.9.16 (2001-10-23) [umoeller]
-    {
-        treeInit(&((PFDRCONTENTS)_pvFdrContents)->FileSystemsTreeRoot,
-                 &((PFDRCONTENTS)_pvFdrContents)->cFileSystems);
-        treeInit(&((PFDRCONTENTS)_pvFdrContents)->AbstractsTreeRoot,
-                 &((PFDRCONTENTS)_pvFdrContents)->cAbstracts);
-    }
+    treeInit((TREE**)&_FileSystemsTreeRoot,
+             &_cFileSystems);
+    treeInit((TREE**)&_AbstractsTreeRoot,
+             &_cAbstracts);
 
     _pMonitor = NULL;
 
@@ -1539,12 +1537,12 @@ SOM_Scope void  SOMLINK xf_wpObjectReady(XFolder *somSelf,
 
 
             // in all cases, resolve deferred default document
-            if (_pszDefaultDocDeferred)
+            if (_pWszDefaultDocDeferred)
             {
                 // this has been set by wpRestoreState
-                _pDefaultDocument = wpshContainsFile(somSelf, _pszDefaultDocDeferred);
+                _pDefaultDocument = wpshContainsFile(somSelf, _pWszDefaultDocDeferred);
                     // can return NULL if not found
-                strhStore(&_pszDefaultDocDeferred, NULL, NULL);
+                wpshStore(somSelf, &_pWszDefaultDocDeferred, NULL, NULL);
             }
         }
     }
@@ -1583,8 +1581,8 @@ SOM_Scope void  SOMLINK xf_wpUnInitData(XFolder *somSelf)
         // V0.9.16 (2001-11-25) [umoeller]
         G_pConfigFolder = NULL;
 
-    strhStore(&_pszFolderBkgndImageFile, NULL, NULL);
-    strhStore(&_pszDefaultDocDeferred, NULL, NULL);
+    wpshStore(somSelf, &_pWszFolderBkgndImageFile, NULL, NULL);
+    wpshStore(somSelf, &_pWszDefaultDocDeferred, NULL, NULL);
 
     // lock out the folder auto-refresh
     if (fdrGetNotifySem(SEM_INDEFINITE_WAIT))
@@ -1598,12 +1596,6 @@ SOM_Scope void  SOMLINK xf_wpUnInitData(XFolder *somSelf)
         }
 
         fdrReleaseNotifySem();
-    }
-
-    if (_pvFdrContents)      // V0.9.16 (2001-10-23) [umoeller]
-    {
-        free(_pvFdrContents);       // @@todo check if objs are still in there
-        _pvFdrContents = NULL;
     }
 
     XFolder_parent_WPFolder_wpUnInitData(somSelf);
@@ -1837,7 +1829,7 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreState(XFolder *somSelf,
         // store file name in instance data; wpObjectReady will then
         // find the file, which doesn't work when the folder isn't
         // fully initialized
-        strhStore(&_pszDefaultDocDeferred, szDefaultDoc, NULL);
+        wpshStore(somSelf, &_pWszDefaultDocDeferred, szDefaultDoc, NULL);
 
     // sort keys changed again V0.9.12 (2001-05-18) [umoeller]
 
@@ -1977,7 +1969,7 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreString(XFolder *somSelf,
                 if ((pszValue) && (brc))
                 {
                     XFolderData *somThis = XFolderGetData(somSelf);
-                    strhStore(&_pszFolderBkgndImageFile, pszValue, NULL);
+                    wpshStore(somSelf, &_pWszFolderBkgndImageFile, pszValue, NULL);
                                 // freed in uninitdata
                 }
             break;
@@ -3751,10 +3743,12 @@ SOM_Scope BOOL  SOMLINK xfM_xwpclsQueryMenuBarVisibility(M_XFolder *somSelf)
 
 SOM_Scope void  SOMLINK xfM_wpclsInitData(M_XFolder *somSelf)
 {
-    // M_XFolderData *somThis = M_XFolderGetData(somSelf);
+    M_XFolderData *somThis = M_XFolderGetData(somSelf);
     M_XFolderMethodDebug("M_XFolder","xfM_wpclsInitData");
 
     M_XFolder_parent_M_WPFolder_wpclsInitData(somSelf);
+
+    _hptrAni1 = NULLHANDLE;
 
     if (krnLock(__FILE__, __LINE__, __FUNCTION__))
     {
@@ -3987,7 +3981,9 @@ SOM_Scope ULONG  SOMLINK xfM_wpclsQueryIconDataN(M_XFolder *somSelf,
     M_XFolderMethodDebug("M_XFolder","xfM_wpclsQueryIconDataN");
 
 #ifndef __NOICONREPLACEMENTS__
-    if (cmnQuerySetting(sfIconReplacements))
+    if (    (cmnQuerySetting(sfIconReplacements))
+         && (ulIconIndex == 1)
+       )
     {
         /* hmodIconsDLL = cmnQueryIconsDLL();
         // icon replacements allowed:
@@ -4017,6 +4013,92 @@ SOM_Scope ULONG  SOMLINK xfM_wpclsQueryIconDataN(M_XFolder *somSelf,
     return (ulrc);
 }
 
+/*
+ *@@ wpclsQueryIconN:
+ *      this WPFolder class method should return the class
+ *      animation icon with the given index.
+ *
+ *      We need to override this because the default WPFolder
+ *      method does not support the ICON_FILE format returned
+ *      by our new M_XFolder::wpclsQueryIconDataN. Since there
+ *      is _no_ wpclsSetIconDataN method as with the object
+ *      method (see M_XFldObject::wpclsSetIconData), we need
+ *      to override this instead. Gee, what a mess.
+ *
+ *@@added V0.9.16 (2002-01-26) [umoeller]
+ */
 
+SOM_Scope HPOINTER  SOMLINK xfM_wpclsQueryIconN(M_XFolder *somSelf,
+                                                ULONG ulIconIndex)
+{
+    HPOINTER hptr = NULLHANDLE;
 
+    M_XFolderData *somThis = M_XFolderGetData(somSelf);
+    M_XFolderMethodDebug("M_XFolder","xfM_wpclsQueryIconN");
+
+#ifndef __NOICONREPLACEMENTS__
+    if (cmnQuerySetting(sfIconReplacements))
+    {
+        switch (ulIconIndex)
+        {
+            case 0:
+                // closed folder icon; call WPObject (XFldObject) method
+                hptr = _wpclsQueryIcon(somSelf);
+            break;
+
+            case 1:
+                // avoid loading duplicate icons; do this only
+                // once per folder class
+                if (!_hptrAni1)
+                {
+                    PICONINFO pbData = NULL;
+                    APIRET arc;
+                    if (!(arc = DosAllocMem((PVOID*)&pbData,
+                                            0x10000,        // 64 K
+                                            OBJ_TILE | PAG_COMMIT | PAG_READ | PAG_WRITE)))
+                    {
+                        if (_wpclsQueryIconDataN(somSelf,
+                                                 pbData,
+                                                 ulIconIndex))
+                        {
+                            switch (pbData->fFormat)
+                            {
+                                case ICON_FILE:
+                                    _Pmpf(("        pIconInfo->pszFileName %s", pbData->pszFileName));
+                                    icoLoadICOFile(pbData->pszFileName,
+                                                   &_hptrAni1,
+                                                   NULL,
+                                                   NULL);
+                                break;
+
+                                case ICON_RESOURCE:
+                                    _hptrAni1 = WinLoadPointer(HWND_DESKTOP,
+                                                               pbData->hmod,
+                                                               pbData->resid);
+                                break;
+
+                                case ICON_DATA:
+                                    icoBuildPtrHandle(pbData->pIconData,
+                                                      &_hptrAni1);
+                                break;
+                            }
+                        }
+
+                        DosFreeMem(pbData);
+                    }
+                }
+
+                hptr = _hptrAni1;
+            break;
+
+        } // end switch (ulIconIndex)
+    }
+
+    if (!hptr)
+#endif
+        hptr = M_XFolder_parent_M_WPFolder_wpclsQueryIconN(somSelf,
+                                                           ulIconIndex);
+
+    return (hptr);
+}
 

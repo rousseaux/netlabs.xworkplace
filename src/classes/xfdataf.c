@@ -939,7 +939,6 @@ SOM_Scope WPObject*  SOMLINK xdf_wpQueryAssociatedProgram(XFldDataFile *somSelf,
                                                           PSZ pszDefaultType)
 {
     WPObject* pobj = 0;
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
     // XFldDataFileMethodDebug("XFldDataFile","xdf_wpQueryAssociatedProgram");
@@ -986,6 +985,54 @@ SOM_Scope WPObject*  SOMLINK xdf_wpQueryAssociatedProgram(XFldDataFile *somSelf,
     #endif
 
     return (pobj);
+}
+
+/*
+ *@@ wpQueryAssociatedFileIcon:
+ *      this WPDataFile method should return the icon of
+ *      the program that the data file is associated with.
+ *
+ *      This gets called on the first call to wpQueryIcon,
+ *      even if turbo folders are not enabled.
+ *
+ *      We override this for speed to call
+ *      ftypQueryAssociatedProgram directly.
+ *
+ *@@added V0.9.16 (2002-01-26) [umoeller]
+ */
+
+SOM_Scope HPOINTER  SOMLINK xdf_wpQueryAssociatedFileIcon(XFldDataFile *somSelf)
+{
+    /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
+    XFldDataFileMethodDebug("XFldDataFile","xdf_wpQueryAssociatedFileIcon");
+
+#ifndef __NEVEREXTASSOCS__
+    if (cmnQuerySetting(sfExtAssocs))
+    {
+        HPOINTER hptr = NULLHANDLE;
+        ULONG ulView = _wpQueryDefaultView(somSelf);
+                    // should return 0x1000 unless the user
+                    // has changed the data file's default view
+        WPObject *pobjAssoc = ftypQueryAssociatedProgram(somSelf,
+                                                         &ulView,
+                                                         // do not use "plain text" as default,
+                                                         // this affects the icon:
+                                                         FALSE);
+                                // locks the object
+
+        if (pobjAssoc)
+        {
+            hptr = _wpQueryIcon(pobjAssoc);
+            _wpUnlockObject(pobjAssoc);
+                    // is this smart? may the program go dormant?
+                    // default method does this though, so we do it too
+        }
+
+        return (hptr);      // NULLHANDLE still for "plain text"
+    }
+#endif
+
+    return (XFldDataFile_parent_WPDataFile_wpQueryAssociatedFileIcon(somSelf));
 }
 
 /*
@@ -1039,7 +1086,8 @@ SOM_Scope HPOINTER  SOMLINK xdf_wpQueryIcon(XFldDataFile *somSelf)
             // first call, and icon wasn't set in wpRestoreState:
             // be smart now...
 
-            // 1) if we're an icon or pointer file, load the
+            // 1) if we're an icon or pointer file, load
+            //    the icon from there
             if (    (_somIsA(somSelf, _WPIcon))
                  || (_somIsA(somSelf, _WPPointer))
                )
@@ -1086,7 +1134,9 @@ SOM_Scope HPOINTER  SOMLINK xdf_wpQueryIcon(XFldDataFile *somSelf)
  *
  *      From what I see, this method only seems to be called
  *      when a Settings view is _opened_, not when it's closed,
- *      which doesn't really make sense.
+ *      which doesn't really make sense. It does _not_ get
+ *      called during folder populate (during the normal
+ *      _wpQueryIcon processing).
  *
  *@@added V0.9.0 [umoeller]
  */

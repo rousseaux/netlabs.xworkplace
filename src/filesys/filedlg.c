@@ -86,6 +86,7 @@
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
 #include "helpers\linklist.h"           // linked list helper routines
+#include "helpers\nls.h"                // National Language Support helpers
 #include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\standards.h"          // some standard macros
 #include "helpers\stringh.h"            // string helper routines
@@ -213,7 +214,7 @@ typedef struct _FILEDLGDATA
                                             // or "\\SERVER\RESOURCE" if UNC
     BOOL        fUNCDrive;                  // TRUE if szDrive specifies something UNC
     CHAR        szDir[CCHMAXPATH],          // e.g. "\whatever"
-                szFileMask[CCHMAXPATH],     // e.g. "*.txt"
+                szFileMask[CCHMAXPATH],     // e.g. "*.TXT"
                 szFileName[CCHMAXPATH];     // e.g. "test.txt"
 
     BOOL        fFileDlgReady;
@@ -377,6 +378,7 @@ ULONG ParseFileString(PFILEDLGDATA pWinData,
             // get file name (mask) after that
             strcpy(pWinData->szFileMask,
                    p2);
+
             _Pmpf(("  new mask is %s", pWinData->szFileMask));
             ulChanged |= FFL_FILEMASK;
         }
@@ -528,7 +530,7 @@ WPFileSystem* GetFSFromRecord(PMINIRECORDCORE precc,
 
 BOOL IsInsertable(WPObject *pObject,
                   BOOL ulFoldersOnly,
-                  const char *pcszFileMask)
+                  const char *pcszFileMask)     // in: upper-case file mask
 {
     if (ulFoldersOnly)
     {
@@ -588,7 +590,9 @@ BOOL IsInsertable(WPObject *pObject,
                 if (_wpQueryFilename(pObject,
                                      szRealName,
                                      FALSE))       // not q'fied
+                {
                     return (doshMatch(pcszFileMask, szRealName));
+                }
             }
             else
                 // no file mask:

@@ -263,10 +263,10 @@ SOM_Scope BOOL  SOMLINK xpg_xwpQueryExecutable(XWPProgram *somSelf,
         strcpy(pszBuffer, "*");
         return (TRUE);
     }
-    else if (_pszExecutable)
+    else if (_pWszExecutable)
     {
         // executable string present: use that instead
-        strhncpy0(pszBuffer, _pszExecutable, CCHMAXPATH);
+        strhncpy0(pszBuffer, _pWszExecutable, CCHMAXPATH);
         return (TRUE);
     }
     else if (   (hobj = _usExecutableHandle)
@@ -302,11 +302,11 @@ SOM_Scope void  SOMLINK xpg_wpInitData(XWPProgram *somSelf)
     memset(&_ProgType, 0, sizeof(PROGTYPE));
 
     _usExecutableHandle = 0;
-    _pszExecutable = NULL;
-    _pszParameters = NULL;
+    _pWszExecutable = NULL;
+    _pWszParameters = NULL;
     _usStartupDirHandle = 0;
 
-    _pszEnvironment = NULL;
+    _pWszEnvironment = NULL;
     memset(&_swpInitial, 0, sizeof(SWP));
 }
 
@@ -326,8 +326,10 @@ SOM_Scope void  SOMLINK xpg_wpUnInitData(XWPProgram *somSelf)
     XWPProgramData *somThis = XWPProgramGetData(somSelf);
     XWPProgramMethodDebug("XWPProgram","xpg_wpUnInitData");
 
-    FREE(_pszExecutable);
-    FREE(_pszParameters);
+    if (_pWszExecutable)
+        _wpFreeMem(somSelf, _pWszExecutable);
+    if (_pWszParameters)
+        _wpFreeMem(somSelf, _pWszParameters);
 
     XWPProgram_parent_WPProgram_wpUnInitData(somSelf);
 }
@@ -465,7 +467,7 @@ SOM_Scope BOOL  SOMLINK xpg_wpSaveState(XWPProgram *somSelf)
 
     // save only if we have something to save at all
     if (    (    (_usExecutableHandle)
-              || (_pszExecutable)
+              || (_pWszExecutable)
               || (_usStartupDirHandle)
             )
             // resolve WPAbstract::wpSaveState so we can call
@@ -491,8 +493,8 @@ SOM_Scope BOOL  SOMLINK xpg_wpSaveState(XWPProgram *somSelf)
 
             PSZ     apsz[2] =
                 {
-                    _pszExecutable,
-                    _pszParameters
+                    _pWszExecutable,
+                    _pWszParameters
                 };
 
             ULONG   cb;
@@ -521,15 +523,15 @@ SOM_Scope BOOL  SOMLINK xpg_wpSaveState(XWPProgram *somSelf)
                         sizeof(SWP));
 
             // 4)   save environment
-            if (    (_pszEnvironment)
-                 && (cb = appQueryEnvironmentLen(_pszEnvironment))
+            if (    (_pWszEnvironment)
+                 && (cb = appQueryEnvironmentLen(_pWszEnvironment))
                )
             {
                 _Pmpf((" environment cb is %d", cb));
                 brc = _wpSaveData(somSelf,
                                   (PSZ)G_pcszWPProgramOrig,
                                   ID_WPPROGRAM_ENVIRONMENT,
-                                  (PBYTE)_pszEnvironment,
+                                  (PBYTE)_pWszEnvironment,
                                   cb);
             }
 
@@ -626,11 +628,14 @@ SOM_Scope BOOL  SOMLINK xpg_wpRestoreData(XWPProgram *somSelf,
                     {
                         // make copy of this
                         ULONG cb;
+                        APIRET arc;
                         if (    (cb = appQueryEnvironmentLen(pValue))
-                             && (_pszEnvironment = malloc(cb))
+                             && (_pWszEnvironment = _wpAllocMem(somSelf,
+                                                                cb,
+                                                                &arc))
                            )
                         {
-                            memcpy(_pszEnvironment,
+                            memcpy(_pWszEnvironment,
                                    pValue,
                                    cb);
                         }
@@ -671,7 +676,8 @@ SOM_Scope BOOL  SOMLINK xpg_wpRestoreData(XWPProgram *somSelf,
                                 case 0:
                                     _Pmpf((__FUNCTION__ ": got exec \"%s\"",
                                             pThis));
-                                    strhStore(&_pszExecutable,
+                                    wpshStore(somSelf,
+                                              &_pWszExecutable,
                                               pThis,
                                               NULL);
                                 break;
@@ -679,7 +685,8 @@ SOM_Scope BOOL  SOMLINK xpg_wpRestoreData(XWPProgram *somSelf,
                                 case 1:
                                     _Pmpf((__FUNCTION__ ": got params \"%s\"",
                                             pThis));
-                                    strhStore(&_pszParameters,
+                                    wpshStore(somSelf,
+                                              &_pWszParameters,
                                               pThis,
                                               NULL);
                                 break;
@@ -1240,13 +1247,13 @@ SOM_Scope BOOL  SOMLINK xpg_wpQueryProgDetails(XWPProgram *somSelf,
                     appDescribeAppType(_ProgType.progc)));
             _Pmpf(("   pcszExecutable: \"%s\"", szExecutable));
             _Pmpf(("   startupdir %lX", _usStartupDirHandle));
-            _Pmpf(("   params \"%s\"", (_pszParameters) ? _pszParameters : "NULL"));
+            _Pmpf(("   params \"%s\"", (_pWszParameters) ? _pWszParameters : "NULL"));
 
             _Pmpf(("   _pszEnvironment is 0x%lX",
-                                _pszEnvironment));
-            if (_pszEnvironment)
+                                _pWszEnvironment));
+            if (_pWszEnvironment)
             {
-                PSZ pszThis = _pszEnvironment;
+                PSZ pszThis = _pWszEnvironment;
                 while (*pszThis != 0)
                 {
                     _Pmpf(("  \"%s\"", pszThis));
@@ -1262,8 +1269,8 @@ SOM_Scope BOOL  SOMLINK xpg_wpQueryProgDetails(XWPProgram *somSelf,
                                         pszTitle,
                                         szExecutable,
                                         _usStartupDirHandle,
-                                        _pszParameters,
-                                        _pszEnvironment,
+                                        _pWszParameters,
+                                        _pWszEnvironment,
                                         pulSize));
         }
     }
@@ -1356,12 +1363,15 @@ SOM_Scope BOOL  SOMLINK xpg_wpSetProgDetails(XWPProgram *somSelf,
                 // "*" means command prompt
                 if (pProgDetails->pszExecutable[0] == '*')
                 {
-                    if (    (_pszExecutable)
+                    if (    (_pWszExecutable)
                          || (_usExecutableHandle != 0xFFFF)
                        )
                     {
                         // handle changed:
-                        strhStore(&_pszExecutable, NULL, NULL);
+                        wpshStore(somSelf,
+                                  &_pWszExecutable,
+                                  NULL,
+                                  NULL);
                         _usExecutableHandle = 0xFFFF;
                         _Pmpf(("   set hfs 0x%lX", _usExecutableHandle));
                         fSetProgIcon = TRUE;
@@ -1374,12 +1384,12 @@ SOM_Scope BOOL  SOMLINK xpg_wpSetProgDetails(XWPProgram *somSelf,
                         )
                 {
                     // got executable file handle:
-                    if (    (_pszExecutable)
+                    if (    (_pWszExecutable)
                          || (_usExecutableHandle != hfs)
                        )
                     {
                         // handle changed:
-                        strhStore(&_pszExecutable, NULL, NULL);
+                        wpshStore(somSelf, &_pWszExecutable, NULL, NULL);
                         _usExecutableHandle = hfs;
                         _Pmpf(("   set hfs 0x%lX", _usExecutableHandle));
                         fSetProgIcon = TRUE;
@@ -1388,17 +1398,18 @@ SOM_Scope BOOL  SOMLINK xpg_wpSetProgDetails(XWPProgram *somSelf,
                 else
                 {
                     // file doesn't exist (or is not fully qualified):
-                    if (    (!_pszExecutable)
-                         || (stricmp(_pszExecutable,
+                    if (    (!_pWszExecutable)
+                         || (stricmp(_pWszExecutable,
                                      pProgDetails->pszExecutable))
                        )
                     {
                         // file changed:
-                        strhStore(&_pszExecutable,
+                        wpshStore(somSelf,
+                                  &_pWszExecutable,
                                   pProgDetails->pszExecutable,
                                   NULL);
                         _usExecutableHandle = 0;
-                        _Pmpf((" set _pszExecutable %s", _pszExecutable));
+                        _Pmpf((" set _pszExecutable %s", _pWszExecutable));
                         fSetProgIcon = TRUE;
                     }
                 }
@@ -1406,7 +1417,7 @@ SOM_Scope BOOL  SOMLINK xpg_wpSetProgDetails(XWPProgram *somSelf,
             else
             {
                 // executable not specified: nuke it then
-                strhStore(&_pszExecutable, NULL, NULL);
+                wpshStore(somSelf, &_pWszExecutable, NULL, NULL);
                 _usExecutableHandle = NULLHANDLE;
                 fSetProgIcon = TRUE;
             }
@@ -1415,20 +1426,27 @@ SOM_Scope BOOL  SOMLINK xpg_wpSetProgDetails(XWPProgram *somSelf,
             _usStartupDirHandle = GetFSHandle(pProgDetails->pszStartupDir);
 
             // parameters
-            strhStore(&_pszParameters,
-                      pProgDetails->pszParameters,
+            wpshStore(somSelf,
+                      &_pWszParameters,
+                      pProgDetails->pszParameters,      // can be NULL
                       NULL);
 
             // environment
-            FREE(_pszEnvironment);
+            if (_pWszEnvironment)
+            {
+                _wpFreeMem(somSelf, _pWszEnvironment);
+                _pWszEnvironment = NULL;
+            }
+
             if (pProgDetails->pszEnvironment)
             {
                 ULONG cb;
+                APIRET arc;
                 if (    (cb = appQueryEnvironmentLen(pProgDetails->pszEnvironment))
-                     && (_pszEnvironment = malloc(cb))
+                     && (_pWszEnvironment = _wpAllocMem(somSelf, cb, &arc))
                    )
                 {
-                    memcpy(_pszEnvironment,
+                    memcpy(_pWszEnvironment,
                            pProgDetails->pszEnvironment,
                            cb);
                 }

@@ -297,19 +297,12 @@ SOM_Scope BOOL  SOMLINK fon_wpPopulate(XWPFontFolder *somSelf,
  *      testing, BOTH WPFolder::wpDelete and WPFolder::wpFree
  *      call this method to nuke the folder contents.
  *
- *      Even though the font folder should not really be
- *      deleted, if it does, the standard WPFolder::wpDeleteContents
- *      produces total garbage. It first populates the folder and
- *      then invokes wpDelete on each item in the folder.
- *
- *      For the font folder, this is NOT the way to go. First
- *      of all, we produce all the font objects during populate,
- *      so we do NOT want to have the font folder populated during
- *      delete. Even worse, WPFolder::wpDeleteContents produces a
- *      silly message box for every single font object then. Duh.
- *
- *      So override this method and just invoke wpFree on all
- *      objects in the folder without further notice.
+ *      Since we might have transients in here, we run
+ *      into the same problems as with the trash can
+ *      (see XWPTrashCan::wpDeleteContents for more).
+ *      So again, we override this method and just invoke
+ *      wpFree on all objects in the folder without further
+ *      discussion.
  *
  *@@added V0.9.9 (2001-02-08) [umoeller]
  */

@@ -53,6 +53,7 @@
 #ifndef __NEVEREXTASSOCS__
     #if defined (SOM_XFldDataFile_h) && defined (LINKLIST_HEADER_INCLUDED)
         PLINKLIST ftypBuildAssocsList(WPDataFile *somSelf,
+                                      ULONG ulBuildMax,
                                       BOOL fUsePlainTextAsDefault);
 
         ULONG ftypFreeAssocsList(PLINKLIST *ppllAssocs);

@@ -130,6 +130,8 @@
 #include <wpshadow.h>           // WPShadow
 #include "filesys\program.h"            // program implementation; WARNING: this redefines macros
 
+// #define DEBUG_ASSOCS
+
 /* ******************************************************************
  *
  *   Additional declarations
@@ -158,6 +160,7 @@ typedef struct _XWPTYPEWITHFILTERS
  *@@ WPSTYPEASSOCTREENODE:
  *
  *@@added V0.9.9 (2001-02-06) [umoeller]
+ *@@changed V0.9.16 (2002-01-26) [umoeller]: now using aulHandles for speed
  */
 
 typedef struct _WPSTYPEASSOCTREENODE
@@ -165,8 +168,11 @@ typedef struct _WPSTYPEASSOCTREENODE
     TREE        Tree;
         // we use Tree.ulKey for
         // PSZ         pszType;
-    PSZ         pszObjectHandles;
-    ULONG       cbObjectHandles;
+    ULONG       cHandles;                   // no. of items in aulHandles
+    HOBJECT     ahobjs[1];                  // array of objects handles;
+                                            // struct is dynamic in size
+    // PSZ         pszObjectHandles;
+    // ULONG       cbObjectHandles;
 } WPSTYPEASSOCTREENODE, *PWPSTYPEASSOCTREENODE;
 
 /*
@@ -177,9 +183,10 @@ typedef struct _WPSTYPEASSOCTREENODE
 
 typedef struct _INSTANCETYPE
 {
-    TREE        Tree;               // ulKey has upper-cased type string
-                                    // in newly allocated buffer
+    TREE        Tree;               // ulKey is a PSZ to szUpperType
     SOMClass    *pClassObject;
+    CHAR        szUpperType[1];     // upper-cased type string; struct
+                                    // is dynamic in size
 } INSTANCETYPE, *PINSTANCETYPE;
 
 /*
@@ -190,8 +197,8 @@ typedef struct _INSTANCETYPE
 
 typedef struct _INSTANCEFILTER
 {
-    PSZ         pszFilter;
     SOMClass    *pClassObject;
+    CHAR        szFilter[1];        // filter string; struct is dynamic in size
 } INSTANCEFILTER, *PINSTANCEFILTER;
 
 /* ******************************************************************
@@ -320,17 +327,20 @@ ULONG ftypRegisterInstanceTypesAndFilters(M_WPFileSystem *pClassObject)
                     ulLength = strlen(pStart);
 
                 if (    (ulLength)
-                     && (pNew = NEW(INSTANCETYPE))
+                     && (pNew = (PINSTANCETYPE)malloc(   sizeof(INSTANCETYPE)
+                                                                // has one byte for
+                                                                // null termn. already
+                                                       + ulLength))
                    )
                 {
-                    PSZ pszTypeThis = malloc(ulLength + 1);
-                    memcpy(pszTypeThis, pStart, ulLength);
-                    pszTypeThis[ulLength] = '\0';
-                    nlsUpper(pszTypeThis, ulLength);
+                    memcpy(pNew->szUpperType,
+                           pStart,
+                           ulLength);
+                    pNew->szUpperType[ulLength] = '\0';
+                    nlsUpper(pNew->szUpperType, ulLength);
 
-                    // _Pmpf(("    got type %s", pszTypeThis));
-
-                    pNew->Tree.ulKey = (ULONG)pszTypeThis;
+                    // store pointer to string in ulKey
+                    pNew->Tree.ulKey = (ULONG)pNew->szUpperType;
                     pNew->pClassObject = pClassObject;
 
                     if (!fLocked)
@@ -344,7 +354,6 @@ ULONG ftypRegisterInstanceTypesAndFilters(M_WPFileSystem *pClassObject)
                                        treeCompareStrings))
                         {
                             // already registered:
-                            free(pszTypeThis);
                             free(pNew);
                         }
                         else
@@ -395,15 +404,17 @@ ULONG ftypRegisterInstanceTypesAndFilters(M_WPFileSystem *pClassObject)
                     ulLength = strlen(pStart);
 
                 if (    (ulLength)
-                     && (pNew = NEW(INSTANCEFILTER))
+                     && (pNew = (PINSTANCEFILTER)malloc(   sizeof(INSTANCEFILTER)
+                                                                // has one byte for
+                                                                // null termn. already
+                                                         + ulLength))
                    )
                 {
-                    PSZ pszFilterThis = malloc(ulLength + 1);
-                    memcpy(pszFilterThis, pStart, ulLength);
-                    pszFilterThis[ulLength] = '\0';
-                    nlsUpper(pszFilterThis, ulLength);
+                    // PSZ pszFilterThis = malloc(ulLength + 1);
+                    memcpy(pNew->szFilter, pStart, ulLength);
+                    pNew->szFilter[ulLength] = '\0';
+                    nlsUpper(pNew->szFilter, ulLength);
 
-                    pNew->pszFilter = pszFilterThis;
                     pNew->pClassObject = pClassObject;
 
                     // _Pmpf(("    got filter %s", pszFilterThis));
@@ -513,11 +524,13 @@ PCSZ ftypFindClassFromInstanceFilter(PCSZ pcszObjectTitle)
              && (fLocked = ftypLockInstances())
            )
         {
+            ULONG ulObjectTitleLen;
             PLISTNODE pNode = lstQueryFirstNode(&G_llInstanceFilters);
+
             while (pNode)
             {
                 PINSTANCEFILTER p = (PINSTANCEFILTER)pNode->pItemData;
-                if (doshMatch(p->pszFilter, pcszObjectTitle))
+                if (doshMatch(p->szFilter, pcszObjectTitle))
                 {
                     pcszClassName = _somGetName(p->pClassObject);
                     // and stop, we're done
@@ -611,7 +624,7 @@ VOID ftypInvalidateCaches(VOID)
         if (G_fTypesWithFiltersValid)
         {
             // 1) clear the XWP types with filters
-            PLISTNODE pNode = lstQueryFirstNode(&G_llTypesWithFilters);
+            /* PLISTNODE pNode = lstQueryFirstNode(&G_llTypesWithFilters);
             while (pNode)
             {
                 PXWPTYPEWITHFILTERS pThis = (PXWPTYPEWITHFILTERS)pNode->pItemData;
@@ -627,7 +640,8 @@ VOID ftypInvalidateCaches(VOID)
                 }
 
                 pNode = pNode->pNext;
-            }
+            } */        // no longer necessary, these use the same memory block
+                        // V0.9.16 (2002-01-26) [umoeller]
 
             lstClear(&G_llTypesWithFilters);
                         // this frees the XWPTYPEWITHFILTERS structs themselves
@@ -656,11 +670,11 @@ VOID ftypInvalidateCaches(VOID)
                         free((PSZ)pWPSType->Tree.ulKey); // pszType);
                         pWPSType->Tree.ulKey = 0; // pszType = NULL;
                     }
-                    if (pWPSType->pszObjectHandles)
+                    /* if (pWPSType->pszObjectHandles)
                     {
                         free(pWPSType->pszObjectHandles);
                         pWPSType->pszObjectHandles = NULL;
-                    }
+                    } */ // no longer needed V0.9.16 (2002-01-26) [umoeller]
                     free(pWPSType);
                 }
 
@@ -679,6 +693,104 @@ VOID ftypInvalidateCaches(VOID)
 }
 
 /*
+ *@@ BuildTypesWithFiltersCache:
+ *      called from GetCachedTypesWithFilters to build
+ *      the tree of XWPTYPEWITHFILTERS entries.
+ *
+ *      Preconditions:
+ *
+ *      -- The caller must lock the caches before calling.
+ *
+ *@@added V0.9.16 (2002-01-26) [umoeller]
+ */
+
+VOID BuildTypesWithFiltersCache(VOID)
+{
+    // caches have been cleared, or first call:
+    // build the list in the global variable from OS2.INI...
+
+    APIRET arc;
+    PSZ     pszTypesWithFiltersList = NULL;
+
+    #ifdef DEBUG_ASSOCS
+        DosBeep(1000, 100);
+        _Pmpf((__FUNCTION__ ": rebuilding list"));
+    #endif
+
+    if (!(arc = prfhQueryKeysForApp(HINI_USER,
+                                    INIAPP_XWPFILEFILTERS, // "XWorkplace:FileFilters"
+                                    &pszTypesWithFiltersList)))
+    {
+        PSZ pTypeWithFilterThis = pszTypesWithFiltersList;
+
+        while (*pTypeWithFilterThis != 0)
+        {
+            // pFilterThis has the current type now
+            // (e.g. "C Code");
+            // get filters for that (e.g. "*.c");
+            // this is another list of null-terminated strings
+            ULONG ulTypeLength;
+            if (ulTypeLength = strlen(pTypeWithFilterThis))
+            {
+                ULONG cbFiltersForTypeList = 0;     // including null byte
+                PSZ pszFiltersForTypeList;
+                if (pszFiltersForTypeList = prfhQueryProfileData(HINI_USER,
+                                                                 INIAPP_XWPFILEFILTERS, // "XWorkplace:FileFilters"
+                                                                 pTypeWithFilterThis,
+                                                                 &cbFiltersForTypeList))
+                {
+                    if (cbFiltersForTypeList)
+                    {
+                        // this would be e.g. "*.c" now
+                        PXWPTYPEWITHFILTERS pNew;
+
+                        if (pNew = malloc(   sizeof(XWPTYPEWITHFILTERS)
+                                           + ulTypeLength + 1
+                                           + cbFiltersForTypeList))
+                        {
+                            // OK, pack this stuff:
+                            // V0.9.16 (2002-01-26) [umoeller]
+                            // put the type after pNew
+                            // put the filters list after that
+                            pNew->pszType = (PBYTE)pNew + sizeof(XWPTYPEWITHFILTERS);
+                                // strdup(pTypeWithFilterThis);
+                            pNew->pszFilters = pNew->pszType + ulTypeLength + 1;
+                                            // pszFiltersForTypeList;
+                                            // no copy, we have malloc() already
+
+                            memcpy(pNew->pszType,
+                                   pTypeWithFilterThis,
+                                   ulTypeLength + 1);
+                            memcpy(pNew->pszFilters,
+                                   pszFiltersForTypeList,
+                                   cbFiltersForTypeList);
+                            // upper-case this so we can use doshMatch
+                            // instead of doshMatchCase
+                            // V0.9.16 (2002-01-26) [umoeller]
+                            nlsUpper(pNew->pszFilters, cbFiltersForTypeList);
+                            lstAppendItem(&G_llTypesWithFilters, pNew);
+                        }
+                        else
+                            // malloc failed:
+                            break;
+                    }
+                    else
+                        if (pszFiltersForTypeList)
+                            free(pszFiltersForTypeList);
+                }
+            }
+
+            pTypeWithFilterThis += ulTypeLength + 1;   // next type/filter
+        } // end while (*pTypeWithFilterThis != 0)
+
+        free(pszTypesWithFiltersList);
+                    // we created copies of each string here
+
+        G_fTypesWithFiltersValid = TRUE;
+    }
+}
+
+/*
  *@@ GetCachedTypesWithFilters:
  *      returns the LINKLIST containing XWPTYPEWITHFILTERS pointers,
  *      which is built internally if this hasn't been done yet.
@@ -693,76 +805,15 @@ VOID ftypInvalidateCaches(VOID)
  *      -- The caller must lock the caches before calling.
  *
  *@@added V0.9.9 (2001-02-06) [umoeller]
+ *@@changed V0.9.16 (2002-01-26) [umoeller]: optimizations
  */
 
 PLINKLIST GetCachedTypesWithFilters(VOID)
 {
     if (!G_fTypesWithFiltersValid)
-    {
-        // caches have been cleared, or first call:
-        // build the list in the global variable from OS2.INI...
-
-        APIRET arc;
-        PSZ     pszTypesWithFiltersList = NULL;
-
-        if (!(arc = prfhQueryKeysForApp(HINI_USER,
-                                        INIAPP_XWPFILEFILTERS, // "XWorkplace:FileFilters"
-                                        &pszTypesWithFiltersList)))
-        {
-            PSZ pTypeWithFilterThis = pszTypesWithFiltersList;
-
-            while (*pTypeWithFilterThis != 0)
-            {
-                // pFilterThis has the current type now
-                // (e.g. "C Code");
-                // get filters for that (e.g. "*.c");
-                // this is another list of null-terminated strings
-                ULONG cbFiltersForTypeList = 0;
-                PSZ pszFiltersForTypeList;
-
-                if (pszFiltersForTypeList = prfhQueryProfileData(HINI_USER,
-                                                                 INIAPP_XWPFILEFILTERS, // "XWorkplace:FileFilters"
-                                                                 pTypeWithFilterThis,
-                                                                 &cbFiltersForTypeList))
-                {
-                    // this would be e.g. "*.c" now
-                    PXWPTYPEWITHFILTERS pNew;
-                    if (pNew = malloc(sizeof(XWPTYPEWITHFILTERS)))
-                    {
-                        pNew->pszType = strdup(pTypeWithFilterThis);
-                        pNew->pszFilters = pszFiltersForTypeList;
-                                        // no copy, we have malloc() already
-
-                        lstAppendItem(&G_llTypesWithFilters, pNew);
-                    }
-                    else
-                        // malloc failed:
-                        break;
-                }
-
-                pTypeWithFilterThis += strlen(pTypeWithFilterThis) + 1;   // next type/filter
-            } // end while (*pTypeWithFilterThis != 0)
-
-            free(pszTypesWithFiltersList);
-                        // we created copies of each string here
-
-            G_fTypesWithFiltersValid = TRUE;
-        }
-    }
+        BuildTypesWithFiltersCache();
 
     return (&G_llTypesWithFilters);
-}
-
-/*
- *@@ CompareTypeStrings:
- *
- *@@added V0.9.13 (2001-06-27) [umoeller]
- */
-
-int TREEENTRY CompareTypeStrings(ULONG ul1, ULONG ul2)
-{
-    return (strcmp((PCSZ)ul1,
-                   (PCSZ)ul2));
 }
 
 /*
@@ -776,6 +827,7 @@ int TREEENTRY CompareTypeStrings(ULONG ul1, ULONG ul2)
  *@@added V0.9.12 (2001-05-22) [umoeller]
  *@@changed V0.9.16 (2001-10-19) [umoeller]: fixed bad types count
  *@@changed V0.9.16 (2002-01-05) [umoeller]: some optimizations for empty strings
+ *@@changed V0.9.16 (2002-01-26) [umoeller]: now pre-resolving object handles for speed
  */
 
 VOID BuildWPSTypesCache(VOID)
@@ -789,39 +841,80 @@ VOID BuildWPSTypesCache(VOID)
         PSZ pTypeThis = pszAssocData;
         while (*pTypeThis)
         {
-            PWPSTYPEASSOCTREENODE pNewNode;
-            if (pNewNode = NEW(WPSTYPEASSOCTREENODE))
+            CHAR    szObjectHandles[1000];      // enough for 200 handles
+            ULONG   cb = sizeof(szObjectHandles);
+            ULONG   cHandles = 0;
+            PCSZ    pAssoc;
+            if (    (PrfQueryProfileData(HINI_USER,
+                                         (PSZ)WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE"
+                                         pTypeThis,
+                                         szObjectHandles,
+                                         &cb))
+                 && (cb > 1)
+               )
             {
-                pNewNode->Tree.ulKey = (ULONG)strdup(pTypeThis);
-                pNewNode->pszObjectHandles = prfhQueryProfileData(HINI_USER,
-                                                                  WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE"
-                                                                  pTypeThis,
-                                                                  &pNewNode->cbObjectHandles);
+                // we got handles for this type, and it's not
+                // just a null byte (just to name the type):
+                // count the handles
 
-                // many types only have a single null byte if there's
-                // no assocs currently defined (just to name the type);
-                // in that case, there's no need to keep a single
-                // byte allocated to pollute our global heap
-                // V0.9.16 (2002-01-05) [umoeller]
-                if (pNewNode->cbObjectHandles < 2)
+                pAssoc = szObjectHandles;
+                while (*pAssoc)
                 {
-                    FREE(pNewNode->pszObjectHandles);
-                    pNewNode->cbObjectHandles = 0;
-                }
+                    HOBJECT hobjAssoc;
+                    if (hobjAssoc = atoi(pAssoc))
+                    {
+                        cHandles++;
 
-                #ifdef DEBUG_ASSOCS
-                    _Pmpf((__FUNCTION__ ": inserting type %s, %d bytes data", pTypeThis, pNewNode->cbObjectHandles));
-                #endif
+                        // go for next object handle (after the 0 byte)
+                        pAssoc += strlen(pAssoc) + 1;
+                        if (pAssoc >= szObjectHandles + cb)
+                            break; // while (*pAssoc)
+                    }
+                    else
+                        // invalid handle:
+                        break;
+
+                } // end while (*pAssoc)
+            }
+
+            if (cHandles)
+            {
+                PWPSTYPEASSOCTREENODE pNewNode;
+                if (pNewNode = malloc(   sizeof(WPSTYPEASSOCTREENODE)
+                                       + (cHandles - 1) * sizeof(HOBJECT)))
+                {
+                    // ptr to first handle in buf
+                    HOBJECT     *phobjThis = pNewNode->ahobjs;
+
+                    pNewNode->Tree.ulKey = (ULONG)strdup(pTypeThis);
+                    pNewNode->cHandles = cHandles;
+
+                    // second loop, fill the handles array
+                    pAssoc = szObjectHandles;
+                    while (*pAssoc)
+                    {
+                        if (*phobjThis = atoi(pAssoc))
+                        {
+                            // go for next object handle (after the 0 byte)
+                            pAssoc += strlen(pAssoc) + 1;
+                            phobjThis++;
+                            if (pAssoc >= szObjectHandles + cb)
+                                break; // while (*pAssoc)
+                        }
+                        else
+                            // invalid handle:
+                            break;
+
+                    } // end while (*pAssoc)
+                }
 
                 // insert into binary tree
                 treeInsert(&G_WPSTypeAssocsTreeRoot,
                            &G_cWPSTypeAssocsTreeItems,   // V0.9.16 (2001-10-19) [umoeller]
                            (TREE*)pNewNode,
-                           CompareTypeStrings);
-                // G_cWPSTypeAssocsTreeItems++; // V0.9.12 (2001-05-22) [umoeller]
-            }
-            else
-                break;
+                           treeCompareStrings);
+
+            } // end if cHandles
 
             pTypeThis += strlen(pTypeThis) + 1;   // next type
         }
@@ -863,7 +956,7 @@ PWPSTYPEASSOCTREENODE FindWPSTypeAssoc(PCSZ pcszType)
 
         return ((PWPSTYPEASSOCTREENODE)treeFind(G_WPSTypeAssocsTreeRoot,
                                                 (ULONG)pcszType,
-                                                CompareTypeStrings));
+                                                treeCompareStrings));
     }
 
     return (NULL);
@@ -1036,7 +1129,13 @@ ULONG AppendTypesForFile(PCSZ pcszObjectTitle,
 
         if (pllTypesWithFilters)
         {
+            ULONG ulObjectTitleLen;
+            PSZ pszUpperTitle = strhdup(pcszObjectTitle, &ulObjectTitleLen);
+
             PLISTNODE pNode = lstQueryFirstNode(pllTypesWithFilters);
+
+            nlsUpper(pszUpperTitle, ulObjectTitleLen);
+
             while (pNode)
             {
                 PXWPTYPEWITHFILTERS pTypeWithFilters = (PXWPTYPEWITHFILTERS)pNode->pItemData;
@@ -1046,7 +1145,7 @@ ULONG AppendTypesForFile(PCSZ pcszObjectTitle,
                 while (*pFilterThis != 0)
                 {
                     // check if this matches the data file name
-                    if (doshMatch(pFilterThis, pcszObjectTitle))
+                    if (doshMatchCase(pFilterThis, pszUpperTitle))
                     {
                         #ifdef DEBUG_ASSOCS
                             _Pmpf(("  found type %s", pTypeWithFilters->pszType));
@@ -1070,6 +1169,8 @@ ULONG AppendTypesForFile(PCSZ pcszObjectTitle,
 
                 pNode = pNode->pNext;
             }
+
+            free(pszUpperTitle);
         }
 
         ftypUnlockCaches();
@@ -1078,13 +1179,19 @@ ULONG AppendTypesForFile(PCSZ pcszObjectTitle,
 }
 
 /*
- *@@ ftypListAssocsForType:
+ *@@ ListAssocsForType:
  *      this lists all associated WPProgram or WPProgramFile
  *      objects which have been assigned to the given type.
  *
  *      For example, if "System editor" has been assigned to
  *      the "C Code" type, this would add the "System editor"
  *      program object to the given list.
+ *
+ *      ppllAssocs must either point to a PLINKLIST that is
+ *      NULL (in which case a new LINKLIST is created) or
+ *      to an existing list of SOM pointers. This allows
+ *      for calling this function several times for several
+ *      types.
  *
  *      This adds plain SOM pointers to the given list, so
  *      you better not free() those.
@@ -1099,103 +1206,106 @@ ULONG AppendTypesForFile(PCSZ pcszObjectTitle,
  *@@changed V0.9.9 (2001-03-27) [umoeller]: now avoiding duplicate assocs
  *@@changed V0.9.9 (2001-04-02) [umoeller]: now using objFindObjFromHandle, DRAMATICALLY faster
  *@@changed V0.9.16 (2002-01-01) [umoeller]: loop stopped after an invalid handle, fixed
+ *@@changed V0.9.16 (2002-01-26) [umoeller]: added ulBuildMax, changed prototype, optimized
  */
 
-ULONG ftypListAssocsForType(PSZ pszType0,         // in: file type (e.g. "C Code")
-                            PLINKLIST pllAssocs) // in/out: list of WPProgram or WPProgramFile
-                                                // objects to append to
+ULONG ListAssocsForType(PLINKLIST *ppllAssocs, // in/out: list of WPProgram or WPProgramFile
+                                               // objects to append to
+                        PCSZ pcszType0,      // in: file type (e.g. "C Code")
+                        ULONG ulBuildMax,    // in: max no. of assocs to append or -1 for all
+                        BOOL *pfDone)        // out: set to TRUE only if ulBuildMax was reached; ptr can be NULL
 {
     ULONG   ulrc = 0;
 
-    if (ftypLockCaches())
+    CHAR    szTypeThis[100],
+            szParentForType[100];
+
+    PCSZ    pcszTypeThis = pcszType0;     // for now; later points to szTypeThis
+
+    BOOL    fQuit = FALSE;
+
+    // outer loop for climbing up the file type parents
+    do // while TRUE
     {
-        PSZ     pszType2 = pszType0,
-                pszParentForType = 0;
+        // get associations from WPS INI data
+        PWPSTYPEASSOCTREENODE pWPSType = FindWPSTypeAssoc(pcszTypeThis);
+        ULONG cb;
 
-        // outer loop for climbing up the file type parents
-        do
+        #ifdef DEBUG_ASSOCS
+            _Pmpf((__FUNCTION__ ": got %d handles for type %s",
+                (pWPSType) ? pWPSType->cHandles : 0,
+                pcszTypeThis));
+        #endif
+
+        if (pWPSType)
         {
-            // get associations from WPS INI data
-            PWPSTYPEASSOCTREENODE pWPSType = FindWPSTypeAssoc(pszType2);
+            ULONG ul;
 
-            #ifdef DEBUG_ASSOCS
-                _Pmpf((__FUNCTION__ ": got %d bytes for type %s",
-                    (pWPSType) ? pWPSType->cbObjectHandles : 0,
-                    pszType2));
-            #endif
-
-            if (pWPSType)
+            for (ul = 0;
+                 ul < pWPSType->cHandles;
+                 ul++)
             {
-                // pWPSType->pszObjectHandles now has the handles of the associated
-                // objects (as decimal strings, which we'll decode now)
-                PSZ     pAssoc;
-                if (pAssoc = pWPSType->pszObjectHandles)
+                WPObject *pobjAssoc;
+                if (pobjAssoc = objFindObjFromHandle(pWPSType->ahobjs[ul]))
                 {
-                    // now parse the handles string
-                    while (*pAssoc)
+                    PLINKLIST pllAssocs;
+
+                    if (!(pllAssocs = *ppllAssocs))
+                        // first assoc found and list not created yet:
+                        // create list then
+                        *ppllAssocs = pllAssocs = lstCreate(FALSE);
+
+                    // look if the object has already been added;
+                    // this might happen if the same object has
+                    // been defined for several types (inheritance!)
+                    // V0.9.9 (2001-03-27) [umoeller]
+                    if (!lstNodeFromItem(pllAssocs, pobjAssoc))
                     {
-                        HOBJECT hobjAssoc;
-                        WPObject *pobjAssoc;
+                        // no:
+                        lstAppendItem(pllAssocs, pobjAssoc);
+                        ulrc++;
 
-                        if (hobjAssoc = atoi(pAssoc))
+                        // V0.9.16 (2002-01-26) [umoeller]
+                        if (    (ulBuildMax != -1)
+                             && (lstCountItems(pllAssocs) >= ulBuildMax)
+                           )
                         {
-                            if (pobjAssoc = objFindObjFromHandle(hobjAssoc))
-                            {
-                                // look if the object has already been added;
-                                // this might happen if the same object has
-                                // been defined for several types (inheritance!)
-                                // V0.9.9 (2001-03-27) [umoeller]
-                                if (!lstNodeFromItem(pllAssocs, pobjAssoc))
-                                {
-                                    // no:
-                                    lstAppendItem(pllAssocs, pobjAssoc);
-                                    ulrc++;
-                                }
-                            }
-
-                            // V0.9.16 (2002-01-01) [umoeller]: moved this down...
-                            // we should continue if we find an invalid handle only
-
-                            // go for next object handle (after the 0 byte)
-                            pAssoc += strlen(pAssoc) + 1;
-                            if (pAssoc >= pWPSType->pszObjectHandles + pWPSType->cbObjectHandles)
-                                break; // while (*pAssoc)
-                        }
-                        else
+                            // we have reached the max no. the caller wants:
+                            fQuit = TRUE;
+                            if (pfDone)
+                                *pfDone = TRUE;
                             break;
-
-                    } // end while (*pAssoc)
+                        }
+                    }
                 }
-
-                // free(pszAssocData);
             }
+        }
 
+        if (fQuit)
+            break;
+        else
+        {
             // get parent type
+            cb = sizeof(szTypeThis);
+            if (    (PrfQueryProfileData(HINI_USER,
+                                         (PSZ)INIAPP_XWPFILETYPES, // "XWorkplace:FileTypes"
+                                         (PSZ)pcszTypeThis,        // key name: current type
+                                         szTypeThis,
+                                         &cb))
+                 && (cb)
+               )
             {
-                PSZ     psz2Free = 0;
-                if (pszParentForType)
-                    psz2Free = pszParentForType;
-                pszParentForType = prfhQueryProfileData(HINI_USER,
-                                                        INIAPP_XWPFILETYPES, // "XWorkplace:FileTypes"
-                                                        pszType2,
-                                                        NULL);
                 #ifdef DEBUG_ASSOCS
-                    _Pmpf(("        Got %s as parent for %s", pszParentForType, pszType2));
+                    _Pmpf(("        Got %s as parent", szTypeThis));
                 #endif
 
-                if (psz2Free)
-                    free(psz2Free);     // from last loop
-                if (pszParentForType)
-                    // parent found: use that one
-                    pszType2 = pszParentForType;
-                else
-                    break;
+                pcszTypeThis = szTypeThis;
             }
+            else
+                break;
+        }
 
-        } while (TRUE);
-
-        ftypUnlockCaches();
-    }
+    } while (TRUE);
 
     return (ulrc);
 }
@@ -1235,26 +1345,18 @@ APIRET ftypRenameFileType(PCSZ pcszOld,      // in: existing file type
             else
             {
                 // OK... first of all, we must write a new entry
-                // into "PMWP_ASSOC_TYPE" with the old handles.
-                // There's no such thing as a "rename INI entry",
-                // so we can only write a new one and delete the old
-                // one.
-
-                if (!PrfWriteProfileData(HINI_USER,
-                                         (PSZ)WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE"
-                                         (PSZ)pcszNew,
-                                         pWPSType->pszObjectHandles,
-                                         pWPSType->cbObjectHandles))
-                    arc = ERROR_INVALID_DATA;
-                else
+                // into "PMWP_ASSOC_TYPE" with the old handles
+                if (!(arc = prfhRenameKey(HINI_USER,
+                                          // old app:
+                                          WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE"
+                                          // old key:
+                                          pcszOld,
+                                          // new app:
+                                          NULL,     // same app
+                                          // new key:
+                                          pcszNew)))
                 {
                     PSZ pszXWPParentTypes;
-                    // OK so far: delete the old entry
-                    PrfWriteProfileData(HINI_USER,
-                                        (PSZ)WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE"
-                                        (PSZ)pcszOld,
-                                        NULL,
-                                        0);
 
                     // now update the the XWP entries, if any exist
 
@@ -1302,7 +1404,6 @@ APIRET ftypRenameFileType(PCSZ pcszOld,      // in: existing file type
                         free(pszXWPParentTypes);
                     }
                 }
-
             }
 
             ftypInvalidateCaches();
@@ -1517,86 +1618,143 @@ ULONG ftypAssocObjectDeleted(HOBJECT hobj)
  *@@changed V0.9.7 (2001-01-11) [umoeller]: no longer using plain text always
  *@@changed V0.9.9 (2001-03-27) [umoeller]: no longer creating list if no assocs exist, returning NULL now
  *@@changed V0.9.16 (2002-01-05) [umoeller]: this never added "plain text" if the object had a type but no associations
+ *@@changed V0.9.16 (2002-01-26) [umoeller]: added ulBuildMax, mostly rewritten for MAJOR speedup
  */
 
 PLINKLIST ftypBuildAssocsList(WPDataFile *somSelf,
+                              ULONG ulBuildMax,         // in: max no. of assocs to append or -1 for all
                               BOOL fUsePlainTextAsDefault)
 {
     PLINKLIST   pllAssocs = NULL;
 
-    PSZ pszTypes;
+    BOOL        fLocked = FALSE;
 
-    // create list of type strings (to be freed)
-    LINKLIST   llTypes;
-    ULONG       cTypes = 0;
-    lstInit(&llTypes, TRUE);
-
-    #ifdef DEBUG_ASSOCS
-        _Pmpf((__FUNCTION__ ": entering, fUsePlainTextAsDefault = %d", fUsePlainTextAsDefault));
-    #endif
-
-    // check if the data file has a file type
-    // assigned explicitly
-    if (pszTypes = _wpQueryType(somSelf))
-        // yes, explicit type(s):
-        // decode those
-        cTypes = AppendTypesFromString(pszTypes,
-                                       '\n',     // separator used by wpQueryType
-                                       &llTypes);
-
-    // add automatic (extended) file types based on the
-    // object file name
-    cTypes += AppendTypesForFile(_wpQueryTitle(somSelf),
-                                 &llTypes);
-
-    #ifdef DEBUG_ASSOCS
-        _Pmpf(("  AppendTypesForFile returned %d types", cTypes));
-    #endif
-
-    if (cTypes)
+    TRY_LOUD(excpt1)
     {
-        // OK, file type(s) found (either explicit or automatic):
-
-        // create list of associations (WPProgram or WPProgramFile)
-        // from the types list we had above
-        PLISTNODE pNode = lstQueryFirstNode(&llTypes);
-
-        // loop thru list
-        while (pNode)
+        if (fLocked = ftypLockCaches())       // V0.9.12 (2001-05-31) [umoeller]
         {
-            PSZ pszTypeThis = (PSZ)pNode->pItemData;
+            BOOL        fDone = FALSE;
 
-            if (!pllAssocs)
-                // first loop: create list of assocs to be returned
-                pllAssocs = lstCreate(FALSE);
+            // 1) run thru the types that were assigned explicitly
+            PSZ pszExplicitTypes;
+            if (    (pszExplicitTypes = _wpQueryType(somSelf))
+                 && (*pszExplicitTypes)
+               )
+            {
+                // yes, explicit type(s):
+                // decode those (separated by '\n')
+                PSZ pszTypesCopy;
+                if (pszTypesCopy = strdup(pszExplicitTypes))
+                {
+                    PSZ     pTypeThis = pszExplicitTypes;
+                    PSZ     pLF = 0;
 
-            ftypListAssocsForType(pszTypeThis,
-                                  pllAssocs);
-            pNode = pNode->pNext;
+                    // loop thru types list
+                    while (pTypeThis && *pTypeThis && !fDone)
+                    {
+                        // get next line feed
+                        if (pLF = strchr(pTypeThis, '\n'))
+                            // line feed found:
+                            *pLF = '\0';
+
+                        ListAssocsForType(&pllAssocs,
+                                          pTypeThis,
+                                          ulBuildMax,
+                                          &fDone);
+
+                        if (pLF)
+                            // next type (after LF)
+                            pTypeThis = pLF + 1;
+                        else
+                            break;
+                    }
+
+                    free(pszTypesCopy);
+                }
+            }
+
+            if (!fDone)
+            {
+                // 2) run thru automatic (extended) file types based on
+                //    the object title
+                PLINKLIST pllTypesWithFilters;
+
+                if (pllTypesWithFilters = GetCachedTypesWithFilters())
+                {
+                    PCSZ pcszObjectTitle = _wpQueryTitle(somSelf);
+                    PLISTNODE pNode = lstQueryFirstNode(pllTypesWithFilters);
+
+                    ULONG ulObjectTitleLen;
+                    PSZ pszUpperTitle = strhdup(pcszObjectTitle, &ulObjectTitleLen);
+                    nlsUpper(pszUpperTitle, ulObjectTitleLen);
+
+                    #ifdef DEBUG_ASSOCS
+                        _Pmpf((__FUNCTION__ ": entering for \"%s\", fUsePlainTextAsDefault = %d",
+                                    pszUpperTitle,
+                                    fUsePlainTextAsDefault));
+                    #endif
+
+                    while (pNode && !fDone)
+                    {
+                        PXWPTYPEWITHFILTERS pTypeWithFilters = (PXWPTYPEWITHFILTERS)pNode->pItemData;
+
+                        // second loop: thru all filters for this file type
+                        PSZ pFilterThis = pTypeWithFilters->pszFilters;
+                        while ((*pFilterThis != 0) && (!fDone))
+                        {
+                            // check if this matches the data file name;
+                            // we use doshMatchCase, it's magnitudes faster
+                            if (doshMatchCase(pFilterThis, pszUpperTitle))
+                            {
+                                #ifdef DEBUG_ASSOCS
+                                    _Pmpf(("  filter \"%s\" from type \"%s\" matches",
+                                            pFilterThis, pTypeWithFilters->pszType));
+                                #endif
+
+                                ListAssocsForType(&pllAssocs,
+                                                  pTypeWithFilters->pszType,
+                                                  ulBuildMax,
+                                                  &fDone);
+
+                                break;      // this file type is done, so go for next type
+                            }
+
+                            pFilterThis += strlen(pFilterThis) + 1;   // next type/filter
+                        } // end while (*pFilterThis)
+
+                        pNode = pNode->pNext;
+                    }
+
+                    free(pszUpperTitle);
+                }
+            }
+
+            // V0.9.16 (2002-01-05) [umoeller]:
+            // moved the following "plain text" addition down...
+            // previously, "plain text" was only added if no _types_
+            // were present, but that isn't entirely correct... really
+            // it should be added if no _associations_ were found,
+            // so check this here instead!
+            if (fUsePlainTextAsDefault)
+            {
+                if (    (!pllAssocs)
+                     || (!lstCountItems(pllAssocs))
+                   )
+                {
+                    ListAssocsForType(&pllAssocs,
+                                      "Plain Text",
+                                      ulBuildMax,
+                                      NULL);
+                }
+            }
         }
     }
-
-    lstClear(&llTypes);
-
-    // V0.9.16 (2002-01-05) [umoeller]:
-    // moved the following "plain text" addition down...
-    // previously, "plain text" was only added if no _types_
-    // were present, but that isn't entirely correct... really
-    // it should be added if no _associations_ were found,
-    // so check this here instead!
-    if (fUsePlainTextAsDefault)
+    CATCH(excpt1)
     {
-        if (!pllAssocs)
-        {
-            // we don't even have a list:
-            pllAssocs = lstCreate(FALSE);
-            ftypListAssocsForType("Plain Text",
-                                  pllAssocs);
-        }
-        else if (!lstCountItems(pllAssocs))
-            ftypListAssocsForType("Plain Text",
-                                  pllAssocs);
-    }
+    } END_CATCH();
+
+    if (fLocked)
+        ftypUnlockCaches();
 
     #ifdef DEBUG_ASSOCS
         _Pmpf(("    ftypBuildAssocsList: got %d assocs",
@@ -1665,11 +1823,12 @@ ULONG ftypFreeAssocsList(PLINKLIST *ppllAssocs)    // in: list created by ftypBu
  *@@added V0.9.0 (99-11-27) [umoeller]
  *@@changed V0.9.6 (2000-10-16) [umoeller]: lists are temporary only now
  *@@changed V0.9.6 (2000-11-12) [umoeller]: added pulView output
+ *@@changed V0.9.16 (2002-01-26) [umoeller]: performance tweaking
  */
 
 WPObject* ftypQueryAssociatedProgram(WPDataFile *somSelf,       // in: data file
                                      PULONG pulView,            // in: default view (normally 0x1000,
-                                                                // can be > 1000 if the default view
+                                                                // can be > 0x1000 if the default view
                                                                 // has been manually changed on the
                                                                 // "Menu" page);
                                                                 // out: "real" default view if this
@@ -1677,35 +1836,35 @@ WPObject* ftypQueryAssociatedProgram(WPDataFile *somSelf,       // in: data file
                                      BOOL fUsePlainTextAsDefault)
                                             // in: use "plain text" as standard if no other type was found?
 {
-    WPObject *pObjReturn = 0;
+    WPObject    *pObjReturn = 0;
 
-    PLINKLIST   pllAssocObjects = ftypBuildAssocsList(somSelf,
-                                                      fUsePlainTextAsDefault);
+    PLINKLIST   pllAssocObjects;
 
-    if (pllAssocObjects)
+    ULONG       ulIndex = 0;
+    if (*pulView == OPEN_RUNNING)
+        *pulView = 0x1000;
+    else if (*pulView == OPEN_DEFAULT)
+        *pulView = _wpQueryDefaultView(somSelf);
+                // returns 0x1000, unless the user has changed
+                // the default association on the "Menu" page
+
+    // calc index to search...
+    if (*pulView >= 0x1000)
+        ulIndex = *pulView - 0x1000;
+    else
+        ulIndex = 0;
+
+    if (pllAssocObjects = ftypBuildAssocsList(somSelf,
+                                              ulIndex + 1,
+                                              fUsePlainTextAsDefault))
     {
-        ULONG       cAssocObjects = lstCountItems(pllAssocObjects);
-        if (cAssocObjects)
+        ULONG   cAssocObjects;
+        if (cAssocObjects = lstCountItems(pllAssocObjects))
         {
             // any items found:
-            ULONG               ulIndex = 0;
             PLISTNODE           pAssocObjectNode = 0;
 
-            if (*pulView == OPEN_RUNNING)
-                *pulView = 0x1000;
-            else if (*pulView == OPEN_DEFAULT)
-                *pulView = _wpQueryDefaultView(somSelf);
-                        // returns 0x1000, unless the user has changed
-                        // the default association on the "Menu" page
-
-            // calc index to search...
-            if (*pulView >= 0x1000)
-            {
-                ulIndex = *pulView - 0x1000;
-                if (ulIndex > cAssocObjects)
-                    ulIndex = 0;
-            }
-            else
+            if (ulIndex >= cAssocObjects)
                 ulIndex = 0;
 
             if (pAssocObjectNode = lstNodeFromIndex(pllAssocObjects,
@@ -1805,6 +1964,8 @@ BOOL ftypModifyDataFileOpenSubmenu(WPDataFile *somSelf, // in: data file in ques
             PLINKLIST   pllAssocObjects;
             ULONG       cAssocObjects;
             if (    (pllAssocObjects = ftypBuildAssocsList(somSelf,
+                                                           // get all:
+                                                           -1,
                                                            // use "plain text" as default:
                                                            TRUE))
                  && (cAssocObjects = lstCountItems(pllAssocObjects))

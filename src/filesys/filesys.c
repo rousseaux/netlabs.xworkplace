@@ -1527,6 +1527,8 @@ void _Optlink fntFindFiles(PTHREADINFO ptiMyself)
  */
 
 BOOL fsysPopulateWithFSObjects(WPFolder *somSelf,
+                               HWND hwndReserved,
+                               PMINIRECORDCORE pMyRecord,
                                PCSZ pcszFolderFullPath,  // in: wpQueryFilename(somSelf, TRUE)
                                BOOL fFoldersOnly,
                                PCSZ pcszFileMask,     // in: file mask or NULL for "*" (ignored if fFoldersOnly)
@@ -1536,6 +1538,8 @@ BOOL fsysPopulateWithFSObjects(WPFolder *somSelf,
 
     THREADINFO  tiFindFiles;
     volatile TID tidFindFiles = 0;
+
+    // structure on stack to synchronize our two threads
     SYNCHPOPULATETHREADS spt;
 
     BOOL        fBufSem = FALSE;
@@ -1610,6 +1614,17 @@ BOOL fsysPopulateWithFSObjects(WPFolder *somSelf,
                                     pfb3 = (PFILEFINDBUF3)(   (PBYTE)pfb3
                                                             + pfb3->oNextEntryOffset
                                                           );
+                            }
+
+                            if (hwndReserved)
+                            {
+                                WinPostMsg(hwndReserved,
+                                           0x0405,
+                                           (MPARAM)-1,
+                                           (MPARAM)pMyRecord);
+                                // do this only once, or the folder
+                                // chokes on the number of objects inserted
+                                hwndReserved = NULLHANDLE;
                             }
                         }
                         else

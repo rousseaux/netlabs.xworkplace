@@ -707,7 +707,7 @@ WPObject* FindFSFromUpperName(WPFolder *pFolder,
             PFDRCONTENTITEM pNode;
 
             if (pNode = (PFDRCONTENTITEM)treeFind(
-                                 ((PFDRCONTENTS)_pvFdrContents)->FileSystemsTreeRoot,
+                                 _FileSystemsTreeRoot,
                                  (ULONG)pcszUpperShortName,
                                  treeCompareStrings))
             {
@@ -880,8 +880,7 @@ BOOL fdrAddToContent(WPFolder *somSelf,
                      BOOL *pfCallParent)        // out: call parent method
 {
     BOOL    brc = TRUE,
-            fFolderLocked = FALSE,
-            fLog = FALSE;
+            fFolderLocked = FALSE;
 
     *pfCallParent = TRUE;
 
@@ -917,11 +916,39 @@ BOOL fdrAddToContent(WPFolder *somSelf,
                     pNew->Tree.ulKey = (ULONG)pszUpperRealName;
                     pNew->pobj = pObject;
 
-                    if (treeInsert(&((PFDRCONTENTS)_pvFdrContents)->FileSystemsTreeRoot,
-                                   &((PFDRCONTENTS)_pvFdrContents)->cFileSystems,
+                    if (treeInsert((TREE**)&_FileSystemsTreeRoot,
+                                   &_cFileSystems,
                                    (TREE*)pNew,
                                    treeCompareStrings))
-                        fLog = TRUE;
+                    {
+                        PFDRCONTENTITEM pExisting;
+
+                        // wow, this failed:
+                        fdrReleaseFolderWriteMutexSem(somSelf);
+                        fFolderLocked = FALSE;
+
+                        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                               "treeInsert failed for %s %s (0x%lX, %s)",
+                               _somGetClassName(pObject),
+                               pszUpperRealName,
+                               pObject,
+                               _wpQueryTitle(pObject));
+
+                        if (pExisting = (PFDRCONTENTITEM)treeFind(
+                                             _FileSystemsTreeRoot,
+                                             (ULONG)pszUpperRealName,
+                                             treeCompareStrings))
+                            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                                   "Existing object of %s (0x%lX, %s)",
+                                   _somGetClassName(pExisting->pobj),
+                                   pExisting->pobj,
+                                   (pExisting->pobj)
+                                       ? _wpQueryTitle(pExisting->pobj)
+                                       : "NULL");
+                        else
+                            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                                   "cannot find existing object!");
+                    }
                 }
             }
             else if (_somIsA(pObject, _WPAbstract))
@@ -939,11 +966,22 @@ BOOL fdrAddToContent(WPFolder *somSelf,
                     pNew->Tree.ulKey = hobj;
                     pNew->pobj = pObject;
 
-                    if (treeInsert(&((PFDRCONTENTS)_pvFdrContents)->AbstractsTreeRoot,
-                                   &((PFDRCONTENTS)_pvFdrContents)->cAbstracts,
+                    if (treeInsert((TREE**)&_AbstractsTreeRoot,
+                                   &_cAbstracts,
                                    (TREE*)pNew,
                                    treeCompareKeys))
-                        fLog = TRUE;
+                    {
+                        // wow, this failed:
+                        fdrReleaseFolderWriteMutexSem(somSelf);
+                        fFolderLocked = FALSE;
+
+                        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                               "treeInsert failed for %s 0x%lX (0x%lX, %s)",
+                               _somGetClassName(pObject),
+                               hobj,
+                               pObject,
+                               _wpQueryTitle(pObject));
+                    }
                 }
             }
         }
@@ -955,11 +993,6 @@ BOOL fdrAddToContent(WPFolder *somSelf,
 
     if (fFolderLocked)
         fdrReleaseFolderWriteMutexSem(somSelf);
-
-    if (fLog)
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "treeInsert failed for %s",
-               _wpQueryTitle(pObject));
 
     return (brc);
 }
@@ -1002,26 +1035,29 @@ BOOL fdrRealNameChanged(WPFolder *somSelf,          // in: folder of pFSObject
         {
             // find the old real name in the tree
             if (pNode = (PFDRCONTENTITEM)treeFind(
-                             ((PFDRCONTENTS)_pvFdrContents)->FileSystemsTreeRoot,
+                             _FileSystemsTreeRoot,
                              (ULONG)pszOldRealName,
                              treeCompareStrings))
             {
                 // 1) remove that node from the tree
-                if (!treeDelete(&((PFDRCONTENTS)_pvFdrContents)->FileSystemsTreeRoot,
-                                &((PFDRCONTENTS)_pvFdrContents)->cFileSystems,
+                if (!treeDelete((TREE**)&_FileSystemsTreeRoot,
+                                &_cFileSystems,
                                 (TREE*)pNode))
                 {
                     // 2) set the new real name on the fs object
                     XWPFileSystemData *somThat = XWPFileSystemGetData(pFSObject);
 
                     // update the fs object's instance data
-                    strhStore(&somThat->pszUpperRealName, szNewUpperRealName, NULL);
+                    wpshStore(pFSObject,
+                              &somThat->pWszUpperRealName,
+                              szNewUpperRealName,
+                              NULL);
                     // refresh the tree node to point to the new buffer
-                    pNode->Tree.ulKey = (ULONG)somThat->pszUpperRealName;
+                    pNode->Tree.ulKey = (ULONG)somThat->pWszUpperRealName;
 
                     // 3) re-insert
-                    if (!treeInsert(&((PFDRCONTENTS)_pvFdrContents)->FileSystemsTreeRoot,
-                                    &((PFDRCONTENTS)_pvFdrContents)->cFileSystems,
+                    if (!treeInsert((TREE**)&_FileSystemsTreeRoot,
+                                    &_cFileSystems,
                                     (TREE*)pNode,
                                     treeCompareStrings))
                     {
@@ -1076,12 +1112,12 @@ BOOL fdrDeleteFromContent(WPFolder *somSelf,
                 // removing WPFileSystem:
                 PCSZ pcszUpperRealName;
                 if (pNode = (PFDRCONTENTITEM)treeFind(
-                                     ((PFDRCONTENTS)_pvFdrContents)->FileSystemsTreeRoot,
+                                     _FileSystemsTreeRoot,
                                      (ULONG)_xwpQueryUpperRealName(pObject),
                                      treeCompareStrings))
                 {
-                    if (!treeDelete(&((PFDRCONTENTS)_pvFdrContents)->FileSystemsTreeRoot,
-                                    &((PFDRCONTENTS)_pvFdrContents)->cFileSystems,
+                    if (!treeDelete((TREE**)&_FileSystemsTreeRoot,
+                                    &_cFileSystems,
                                     (TREE*)pNode))
                         brc = TRUE;
                 }
@@ -1090,12 +1126,12 @@ BOOL fdrDeleteFromContent(WPFolder *somSelf,
             {
                 // removing WPAbstract:
                 if (pNode = (PFDRCONTENTITEM)treeFind(
-                                     ((PFDRCONTENTS)_pvFdrContents)->AbstractsTreeRoot,
+                                     _AbstractsTreeRoot,
                                      (ULONG)_wpQueryHandle(pObject),
                                      treeCompareKeys))
                 {
-                    if (!treeDelete(&((PFDRCONTENTS)_pvFdrContents)->AbstractsTreeRoot,
-                                    &((PFDRCONTENTS)_pvFdrContents)->cAbstracts,
+                    if (!treeDelete((TREE**)&_AbstractsTreeRoot,
+                                    &_cAbstracts,
                                     (TREE*)pNode))
                         brc = TRUE;
                 }
@@ -2127,6 +2163,8 @@ BOOL fdrPopulate(WPFolder *somSelf,
             // in any case, populate FS objects; this
             // will use folders only if the flag is set
             if (fSuccess = fsysPopulateWithFSObjects(somSelf,
+                                                     hwndReserved,
+                                                     pMyRecord,
                                                      pcszFolderFullPath,
                                                      fFoldersOnly,
                                                      NULL,        // all objects

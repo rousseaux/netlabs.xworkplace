@@ -510,35 +510,6 @@
                     // object pointer
         } FDRCONTENTITEM, *PFDRCONTENTITEM;
 
-        /*
-         *@@ FDRCONTENTS:
-         *      holds the folder contents tree for
-         *      both file-system and abstract objects.
-         *      The _pvFdrContents instance data pointer
-         *      points to such a structure which is
-         *      allocated with each XFolder::wpInitData.
-         *
-         *      The reason for this is that we can't
-         *      use the TREE struct in IDL.
-         *
-         *      The tree is updated with every
-         *      XFolder::wpAddToContent and
-         *      XFolder::wpDeleteFromContent.
-         *
-         *@@added V0.9.16 (2001-10-23) [umoeller]
-         */
-
-        typedef struct _FDRCONTENTS
-        {
-            // tree of WPFileSystem objects
-            TREE    *FileSystemsTreeRoot;
-            LONG    cFileSystems;
-
-            // tree of WPAbstract objects;
-            TREE    *AbstractsTreeRoot;
-            LONG    cAbstracts;
-        } FDRCONTENTS, *PFDRCONTENTS;
-
     #endif
 
     WPObject* fdrFindFSFromName(WPFolder *pFolder,

@@ -57,6 +57,11 @@
      *
      ********************************************************************/
 
+    APIRET wpshStore(WPObject *somSelf,
+                     PSZ *ppszTarget,
+                     PCSZ pcszSource,
+                     PULONG pulLength);
+
     BOOL wpshCheckObject(WPObject *pObject);
 
     WPObject* wpshQueryObjectFromID(PCSZ pcszObjectID,

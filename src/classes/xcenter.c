@@ -422,10 +422,6 @@ SOM_Scope void  SOMLINK xctr_wpInitData(XCenter *somSelf)
  *      The parent method must always be called last.
  */
 
-/*
- * wpObjectReady: override;     removed V0.9.9 (2001-03-13) [umoeller]
- */
-
 SOM_Scope void  SOMLINK xctr_wpUnInitData(XCenter *somSelf)
 {
     XCenterData *somThis = XCenterGetData(somSelf);
