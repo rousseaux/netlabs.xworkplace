@@ -69,11 +69,11 @@
 // XFolder version flags; since this file is
 // #include'd in the NLS DLLs also, this string
 // will be readable as a resource in the NLS DLL
-#define XFOLDER_VERSION        "0.9.1"
+#define XFOLDER_VERSION        "0.9.2"
 
 // this sets the minimum version number for NLS DLLS
 // which XFolder will accept
-#define MINIMUM_NLS_VERSION    "0.9.1"
+#define MINIMUM_NLS_VERSION    "0.9.2"
 
 // icons / bitmaps
 #define ID_ICON1               100
@@ -417,7 +417,7 @@
 // XWPSetup info page (V0.9.0)
 #define ID_XCD_STATUS                   1100
 #define ID_XCDI_INFO_KERNEL_RELEASE     1101
-#define ID_XCDI_INFO_KERNEL_BUILD       1102
+// #define ID_XCDI_INFO_KERNEL_BUILD       1102 removed V0.9.2 (2000-02-20) [umoeller]
 // #define ID_XCDI_INFO_KERNEL_LOCALE      1103
 #define ID_XCDI_INFO_AWAKEOBJECTS       1103
 #define ID_XCDI_INFO_WPSTHREADS         1104

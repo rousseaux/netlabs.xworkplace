@@ -460,6 +460,7 @@ MRESULT EXPENTRY fnwpDoubleFilesDlg(HWND hwndDlg,
                 cnrhInsertRecords(hwndCnr,
                                   NULL,
                                   (PRECORDCORE)preccFirst,
+                                  TRUE, // invalidate
                                   NULL,
                                   CRA_RECORDREADONLY,
                                   ulItems);
@@ -2172,6 +2173,7 @@ void InsertDrivers(HWND hwndCnr,              // in: container
     cnrhInsertRecords(hwndCnr,
                       (PRECORDCORE)preccRoot, // parent
                       (PRECORDCORE)preccHeading,
+                      TRUE,     // invalidate
                       preccHeading->szParams,
                       CRA_RECORDREADONLY | CRA_COLLAPSED,
                       1);
@@ -2314,6 +2316,7 @@ void InsertDrivers(HWND hwndCnr,              // in: container
                 cnrhInsertRecords(hwndCnr,
                                   (PRECORDCORE)preccHeading, // parent
                                   (PRECORDCORE)precc,
+                                  TRUE, // invalidate
                                   precc->pDriverSpec->pszDescription, // precc->szDriverNameOnly,
                                   CRA_RECORDREADONLY | CRA_COLLAPSED,
                                   1);
@@ -2530,6 +2533,7 @@ void _Optlink fntDriversThread(PVOID ptiMyself)
             cnrhInsertRecords(hwndDriversCnr,
                               NULL,  // parent
                               (PRECORDCORE)preccRoot,
+                              TRUE, // invalidate
                               pNLSStrings->pszDriverCategories,
                               CRA_SELECTED | CRA_RECORDREADONLY | CRA_EXPANDED,
                               1);

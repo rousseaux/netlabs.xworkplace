@@ -7,7 +7,7 @@
  *            XFOLDER_VERSION in dlgids.h also needs to
  *            be changed.
  *
- *      Copyright (C) 1999 Ulrich M”ller.
+ *      Copyright (C) 1999-2000 Ulrich M”ller.
  *      This program is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
  *      the Free Software Foundation, in version 2 as it comes in the COPYING
@@ -19,7 +19,7 @@
  */
 
 #define BLDLEVEL_VENDOR         "Ulrich M”ller"
-#define BLDLEVEL_VERSION        "0.9.1"
+#define BLDLEVEL_VERSION        "0.9.2"
 #define BLDLEVEL_INFO           "to be overridden"
 
 

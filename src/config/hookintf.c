@@ -975,6 +975,7 @@ VOID hifMouseMovementInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
                     cnrhInsertRecords(hwndCnr,
                                       NULL,         // parent
                                       precc,
+                                      TRUE, // invalidate
                                       NULL,
                                       CRA_RECORDREADONLY,
                                       1);

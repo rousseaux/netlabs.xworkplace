@@ -1750,6 +1750,7 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                     cnrhInsertRecords(hwndCnr,
                                       NULL,         // parent
                                       (PRECORDCORE)preccFirst,
+                                      TRUE, // invalidate
                                       NULL,         // text
                                       CRA_RECORDREADONLY,
                                       cHotkeys);

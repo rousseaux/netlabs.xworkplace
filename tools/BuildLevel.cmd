@@ -65,7 +65,7 @@ BldLevel_Trailer="@#"
 Parse Arg DefinitionFile HeaderFile InfoOverride        /* (*UM) */
 
 if ((DefinitionFile = "") | (HeaderFile = "")) then do  /* (*UM) */
-    Say "BuildLevel V1.00, (W) 1996-99 Roman Stangl, Ulrich M”ller"
+    Say "BuildLevel V1.00, (W) 1996-2000 Roman Stangl, Ulrich M”ller"
     Say "Syntax: BuildLevel <def> <h> [<info>]"
     Say "with:"
     Say "   <def>           .DEF file to be modified"

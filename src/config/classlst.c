@@ -2587,6 +2587,7 @@ MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
                 cnrhInsertRecords(hwndMethodsCnr,
                                   NULL,         // no parent record
                                   (PRECORDCORE)precc,        // first record
+                                  TRUE, // invalidate
                                   NULL,         // no text
                                   CRA_RECORDREADONLY,
                                   pMethodInfo->ulMethodCount);

@@ -1289,6 +1289,7 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                 cnrhInsertRecords(hwndFeaturesCnr,
                                   (PRECORDCORE)preccParent,
                                   (PRECORDCORE)preccThis,
+                                  TRUE, // invalidate
                                   NULL,
                                   CRA_RECORDREADONLY,
                                   1);
@@ -1835,7 +1836,7 @@ BOOL setFeaturesMessages(PCREATENOTEBOOKPAGE pcnbp,
  *      Sets the controls on the page according to the
  *      Global Settings.
  *
- *@@todo: language drop-down box
+ *@@changed V0.9.2 (2000-02-20) [umoeller]: changed build string handling
  */
 
 VOID setStatusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -1874,7 +1875,8 @@ VOID setStatusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
     {
         HMODULE         hmodNLS = cmnQueryNLSModuleHandle(FALSE);
         CHAR            szXFolderBasePath[CCHMAXPATH],
-                        szSearchMask[2*CCHMAXPATH];
+                        szSearchMask[2*CCHMAXPATH],
+                        szTemp[200];
         HDIR            hdirFindHandle = HDIR_SYSTEM;
         FILEFINDBUF3    FindBuffer     = {0};      // Returned from FindFirst/Next
         ULONG           ulResultBufLen = sizeof(FILEFINDBUF3);
@@ -1886,18 +1888,19 @@ VOID setStatusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         HAB             hab = WinQueryAnchorBlock(pcnbp->hwndDlgPage);
 
         // kernel version number
-        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XCDI_INFO_KERNEL_RELEASE,
-                          XFOLDER_VERSION);
-
-        // kernel build (automatically increased with each build
+        strcpy(szSearchMask, XFOLDER_VERSION);
+        // append kernel build (automatically increased with each build
         // by xfldr.mak; string resource in xfldr.rc)
         if (WinLoadString(hab,
-                    cmnQueryMainModuleHandle(),       // main module (XFLDR.DLL)
-                    ID_XSSI_KERNEL_BUILD,
-                    sizeof(szSearchMask), szSearchMask))
-            sprintf(szSearchMask+strlen(szSearchMask), " (%s)", __DATE__);
-        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XCDI_INFO_KERNEL_BUILD,
-                        szSearchMask);
+                          cmnQueryMainModuleHandle(),       // main module (XFLDR.DLL)
+                          ID_XSSI_KERNEL_BUILD,
+                          sizeof(szTemp),
+                          szTemp))
+            sprintf(szSearchMask+strlen(szSearchMask), ", build %s (%s)", szTemp, __DATE__);
+
+        WinSetDlgItemText(pcnbp->hwndDlgPage,
+                          ID_XCDI_INFO_KERNEL_RELEASE,
+                          szSearchMask);
 
         // C runtime locale
         /* WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XCDI_INFO_KERNEL_LOCALE,

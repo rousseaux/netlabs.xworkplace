@@ -1,5 +1,5 @@
 /* XWorkplace installation program
-   (C) 1998-99 Ulrich M”ller */
+   (C) 1998-2000 Ulrich M”ller */
 
 /* NOTE: this is just an updated version of the XFolder
    install script. Future versions will be installed

@@ -905,6 +905,7 @@ PFILETYPERECORD AddFileType2Cnr(HWND hwndCnr,           // in: cnr to insert int
         cnrhInsertRecords(hwndCnr,
                         (PRECORDCORE)preccParent,
                         (PRECORDCORE)preccNew,
+                        TRUE, // invalidate
                         pliAssoc->pszFileType, usAttrs, 1);
     }
 
@@ -1249,6 +1250,7 @@ PRECORDCORE AddFilter2Cnr(PFILETYPESPAGEDATA pftpd,
         cnrhInsertRecords(pftpd->hwndFiltersCnr,
                         (PRECORDCORE)NULL,      // parent
                         (PRECORDCORE)preccNew,
+                        TRUE, // invalidate
                         pszNewFilter,
                         CRA_RECORDREADONLY,
                         1); // one record

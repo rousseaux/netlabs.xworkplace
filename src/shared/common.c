@@ -278,6 +278,9 @@ const char* cmnQueryMainModuleFilename(VOID)
  *      Returns TRUE if the semaphore could be
  *      accessed within the specified timeout.
  *
+ *      Note: this requires the existence of a message
+ *      queue since we use WinRequestMutexSem.
+ *
  *      Usage:
  *
  +      if (cmnLock(4000))
@@ -306,7 +309,10 @@ BOOL cmnLock(ULONG ulTimeout)
     if (WinRequestMutexSem(hmtxCommonLock, ulTimeout) == NO_ERROR)
         return TRUE;
     else
+    {
+        DosBeep(100, 200);
         return FALSE;
+    }
 }
 
 /*
@@ -1831,19 +1837,25 @@ BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
 VOID cmnShowProductInfo(ULONG ulSound) // in: sound intex to play
 {
     // advertise for myself
-    CHAR szGPLInfo[2000];
+    CHAR    szGPLInfo[2000];
+    LONG    lBackClr = CLR_WHITE;
     HWND hwndInfo = WinLoadDlg(HWND_DESKTOP, HWND_DESKTOP,
                                fnwpDlgGeneric,
                                cmnQueryNLSModuleHandle(FALSE),
                                ID_XFD_PRODINFO,
                                NULL),
          hwndTextView;
+
     txvRegisterTextView(WinQueryAnchorBlock(hwndInfo));
     hwndTextView = txvReplaceWithTextView(hwndInfo,
                                           ID_XLDI_TEXT2,
                                           WS_VISIBLE | WS_TABSTOP,
                                           XTXF_WORDWRAP | XTXF_VSCROLL,
                                           2);
+    WinSetPresParam(hwndTextView,
+                    PP_BACKGROUNDCOLOR,
+                    sizeof(ULONG),
+                    &lBackClr);
 
     cmnSetControlsFont(hwndInfo, 1, 10000);
 

@@ -168,6 +168,7 @@ POBJECTUSAGERECORD AddObjectUsage2Cnr(HWND hwndCnr,     // in: container on "Obj
     cnrhInsertRecords(hwndCnr,
                       (PRECORDCORE)preccParent,       // parent
                       (PRECORDCORE)preccNew,          // new record
+                      TRUE, // invalidate
                       preccNew->szText, flAttrs, 1);
     return (preccNew);
 }
@@ -961,7 +962,6 @@ MRESULT EXPENTRY obj_fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1,
                                )
                             )
                         {
-                            DosBeep(10000, 100);
                             // store hotkey for object;
                             // we'll now pass the scan code, which is
                             // used by the hook
@@ -978,7 +978,6 @@ MRESULT EXPENTRY obj_fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1,
                         }
                         else
                         {
-                            DosBeep(100, 100);
                             // invalid:
                             objSetObjectHotkey(pWinData->somSelf,
                                                0, 0, 0);

@@ -1,0 +1,1523 @@
+
+/*
+ * xpstat.c:
+ *      this is the main (and only) .C file for xpstat.exe.
+ *
+ *      Copyright (C) 2000 Ulrich M”ller.
+ *      This program is part of the XWorkplace package.
+ *      This program is free software; you can redistribute it and/or modify
+ *      it under the terms of the GNU General Public License as published by
+ *      the Free Software Foundation, in version 2 as it comes in the COPYING
+ *      file of the XWorkplace main distribution.
+ *      This program is distributed in the hope that it will be useful,
+ *      but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *      GNU General Public License for more details.
+ */
+
+#define  INCL_WIN
+#define  INCL_WINWORKPLACE
+#define  INCL_DOS
+#define  INCL_DOSERRORS
+#include <os2.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+
+#include "setup.h"
+#include "helpers\pmprintf.h"
+
+#include "helpers\comctl.h"
+#include "helpers\cnrh.h"
+#include "helpers\gpih.h"
+#include "helpers\linklist.h"
+#include "helpers\memdebug.h"
+#include "helpers\procstat.h"
+#include "helpers\dosh.h"
+#include "helpers\stringh.h"
+#include "helpers\textview.h"           // PM text view control
+#include "helpers\winh.h"
+
+#include "dlgids.h"
+
+#include "xpstat.h"
+
+/* ******************************************************************
+ *                                                                  *
+ *   Global variables                                               *
+ *                                                                  *
+ ********************************************************************/
+
+HAB         G_hab;
+HMQ         G_hmq;
+
+HMODULE     G_hmodNLS = NULLHANDLE;
+
+HWND        G_hwndProcListCnr = NULLHANDLE,
+            G_hwndProcView = NULLHANDLE,
+            G_hwndSplit = NULLHANDLE,
+            G_hMainMenu = NULLHANDLE;
+
+const char  *pcszClientClass = "ProcInfoClient";
+
+ULONG       G_ulCurrentView = ID_XPSMI_PIDLIST;
+
+PQTOPLEVEL32 G_pInfo = NULL;
+
+PRECORDCORE G_precSelected = NULL;
+
+BOOL        G_fWordWrap = FALSE;
+
+QPROCESS32  SysInitProcess =
+                {
+                    1,      // rectype
+                    NULL,   // pThreads
+                    1,      // PID
+                    0,      // PPID
+                    0,      // FS
+                    0,      // state
+                    0,      // SID
+                    NULLHANDLE, // hmod
+                    0,      // thread count
+                    0,      // ulPrivSem32Count;
+                    0,      // _reserved2_;    // 0 always
+                    0,      // usSem16Count;   // count of 16-bit semaphores in pausSem16 array
+                    0,      // usModuleCount;  // count of DLLs owned by this process
+                    0,      // usShrMemCount;  // count of shared memory items
+                    0,      // usFdsCount;     // count of open files; this is mostly way too large
+                    0,      // pausSem16;      // ptr to array of 16-bit semaphore handles;
+                    0,      // pausModules;    // ptr to array of modules;
+                    0,      // pausShrMems;    // ptr to array of shared mem items;
+                    0,      // pausFds;        // ptr to array of file handles;
+                };
+
+/* ******************************************************************
+ *                                                                  *
+ *   Miscellaneous                                                  *
+ *                                                                  *
+ ********************************************************************/
+
+/*
+ *@@ fnComparePID:
+ *      compare process IDs. Works with PROCRECORD's only.
+ */
+
+SHORT EXPENTRY fnComparePID(PPROCRECORD p1, PPROCRECORD p2, PVOID pStorage)
+{
+    if (p1->pProcess && p2->pProcess)
+    {
+        if (p1->pProcess->pid < p2->pProcess->pid)
+            return (-1);
+        else if (p1->pProcess->pid > p2->pProcess->pid)
+            return (1);
+    }
+
+    return (0);
+}
+
+/*
+ *@@ fnCompareSID:
+ *      compare session IDs. Works with PROCRECORD's only.
+ */
+
+SHORT EXPENTRY fnCompareSID(PPROCRECORD p1, PPROCRECORD p2, PVOID pStorage)
+{
+    if (p1->pProcess && p2->pProcess)
+    {
+        if (p1->pProcess->sessid < p2->pProcess->sessid)
+            return (-1);
+        else if (p1->pProcess->sessid > p2->pProcess->sessid)
+            return (1);
+    }
+
+    return (0);
+}
+
+/*
+ *@@ fnComparePSZ:
+ *      compare record titles. Works with all RECORDCORE's.
+ */
+
+SHORT EXPENTRY fnComparePSZ(PRECORDCORE p1, PRECORDCORE p2, PVOID pStorage)
+{
+    if (p1->pszIcon && p2->pszIcon)
+    {
+        switch (WinCompareStrings(G_hab,
+                                  0, 0,
+                                  p1->pszIcon,
+                                  p2->pszIcon,
+                                  0))
+        {
+            case WCS_LT: return (-1);
+            case WCS_GT: return (1);
+        }
+    }
+
+    return (0);
+}
+
+/*
+ *@@ SetupWindows:
+ *
+ */
+
+VOID SetupWindows(HWND hwndClient)
+{
+    SPLITBARCDATA sbcd;
+    XTEXTVIEWCDATA xtxvCData;
+    G_hwndProcListCnr = WinCreateWindow(hwndClient,
+                                        WC_CONTAINER,
+                                        "",
+                                        WS_VISIBLE,
+                                        0, 0, 100, 100,
+                                        hwndClient,
+                                        HWND_TOP,
+                                        ID_PROCLISTCNR,
+                                        0,
+                                        0);
+
+    memset(&xtxvCData, 0, sizeof(xtxvCData));
+    xtxvCData.cbData = sizeof(xtxvCData);
+    xtxvCData.flFormat = XTXF_PLAIN
+                | XTXF_HSCROLL | XTXF_VSCROLL
+                | XTXF_AUTOHHIDE | XTXF_AUTOVHIDE;
+    xtxvCData.ulXBorder = 20;
+    xtxvCData.ulYBorder = 20;
+    G_hwndProcView = WinCreateWindow(hwndClient,
+                                     WC_XTEXTVIEW,
+                                     "",
+                                     WS_VISIBLE,
+                                     0, 0, 100, 100,
+                                     hwndClient,
+                                     HWND_TOP,
+                                     ID_PROCINFO,
+                                     &xtxvCData,
+                                     0);
+
+    winhSetWindowFont(G_hwndProcListCnr, "9.WarpSans");
+    winhSetWindowFont(G_hwndProcView, "10.System VIO");
+
+    sbcd.ulSplitWindowID = ID_PROCSPLIT;
+    sbcd.ulCreateFlags = SBCF_VERTICAL | SBCF_PERCENTAGE | SBCF_3DSUNK | SBCF_MOVEABLE;
+    sbcd.lPos = 50;
+    sbcd.ulLeftOrBottomLimit = 100;
+    sbcd.ulRightOrTopLimit = 100;
+    sbcd.hwndParentAndOwner = hwndClient;
+    G_hwndSplit = ctlCreateSplitWindow(G_hab,
+                                       &sbcd);
+
+                     // fnwpProcInfoClient,
+    WinSendMsg(G_hwndSplit,
+               SPLM_SETLINKS,
+               (MPARAM)G_hwndProcListCnr,
+               (MPARAM)G_hwndProcView);
+
+    WinSetFocus(HWND_DESKTOP, G_hwndProcListCnr);
+}
+
+/*
+ *@@ SetupMenu:
+ *
+ */
+
+VOID SetupMenu(VOID)
+{
+    WinCheckMenuItem(G_hMainMenu,
+                     G_ulCurrentView,
+                     TRUE);
+    WinCheckMenuItem(G_hMainMenu,
+                     ID_XPSMI_WORDWRAP,
+                     G_fWordWrap);
+}
+
+/*
+ *@@ AppendModuleInfo:
+ *
+ */
+
+VOID AppendModuleInfo(PSZ *ppszCurrentInfo,
+                      PSZ pszModuleName)
+{
+    CHAR            szTemp[2000];
+    PSZ             pszTemp = szTemp;
+    PEXECUTABLE     pExec = NULL;
+    PSZ             pszExeFormat = "unknown",
+                    psz32Bits = "unknown",
+                    pszVersion = "not available",
+                    pszVendor = "not available",
+                    pszDescr = "not available";
+    // get module info
+    if (doshExecOpen(pszModuleName,
+                     &pExec)
+            == NO_ERROR)
+    {
+        switch (pExec->ulExeFormat)
+        {
+            case EXEFORMAT_OLDDOS:
+                pszExeFormat = "Old DOS";
+            break;
+            case EXEFORMAT_NE:
+                pszExeFormat = "New Executable (NE)";
+            break;
+            case EXEFORMAT_PE:
+                pszExeFormat = "Portable Executable (PE)";
+            break;
+            case EXEFORMAT_LX:
+                pszExeFormat = "Linear Executable (LX)";
+            break;
+            case EXEFORMAT_TEXT_BATCH:
+                pszExeFormat = "Text batch file";
+            break;
+            case EXEFORMAT_TEXT_REXX:
+                pszExeFormat = "Text REXX file";
+            break;
+        }
+
+        if (pExec->f32Bits)
+            psz32Bits = "yes";
+        else
+            psz32Bits = "no";
+
+        if (doshExecQueryBldLevel(pExec) == NO_ERROR)
+        {
+            if (pExec->pszVendor)
+                pszVendor = pExec->pszVendor;
+            if (pExec->pszVersion)
+                pszVersion = pExec->pszVersion;
+            if (pExec->pszInfo)
+                pszDescr = pExec->pszInfo;
+        }
+    }
+
+    pszTemp = szTemp;
+    pszTemp += sprintf(pszTemp, "Module format: %s\n", pszExeFormat);
+    pszTemp += sprintf(pszTemp, "32-bit module: %s\n", psz32Bits);
+    pszTemp += sprintf(pszTemp, "Vendor: %s\n", pszVendor);
+    pszTemp += sprintf(pszTemp, "Version: %s\n", pszVersion);
+    strhxcat(ppszCurrentInfo, szTemp);
+    pszTemp = szTemp;
+    pszTemp += sprintf(pszTemp, "Description: %s\n", pszDescr);
+    strhxcat(ppszCurrentInfo, szTemp);
+
+    if (pExec)
+        doshExecClose(pExec);
+}
+
+/* ******************************************************************
+ *                                                                  *
+ *   "Process list" mode                                            *
+ *                                                                  *
+ ********************************************************************/
+
+/*
+ *@@ InsertProcessList:
+ *      clears the container and inserts all processes by PID.
+ *      Gets called by RefreshView().
+ */
+
+VOID InsertProcessList(HWND hwndCnr,
+                       BOOL fSortBySID)     // in: else PID
+{
+    APIRET arc = NO_ERROR;
+    XFIELDINFO    axfi[2];
+    ULONG         i = 0;
+
+    WinSendMsg(hwndCnr,
+               CM_REMOVERECORD,
+               (MPARAM)NULL,
+               MPFROM2SHORT(0,  // all records
+                            CMA_FREE | CMA_INVALIDATE));
+
+    BEGIN_CNRINFO()
+    {
+        cnrhSetView(CV_DETAIL | CA_DETAILSVIEWTITLES);
+
+        if (fSortBySID)
+        {
+            cnrhSetSortFunc(fnCompareSID);
+        }
+        else
+            cnrhSetSortFunc(fnComparePID);
+    } END_CNRINFO(G_hwndProcListCnr);
+
+    // set up cnr details view
+    i = 0;
+    axfi[i].ulFieldOffset = FIELDOFFSET(PROCRECORD, pszPID);
+    if (fSortBySID)
+        axfi[i].pszColumnTitle = "SID";
+    else
+        axfi[i].pszColumnTitle = "PID";
+    axfi[i].ulDataType = CFA_STRING;
+    axfi[i++].ulOrientation = CFA_LEFT;
+
+    axfi[i].ulFieldOffset = FIELDOFFSET(PROCRECORD, pszModuleName);
+    axfi[i].pszColumnTitle = "Process";
+    axfi[i].ulDataType = CFA_STRING;
+    axfi[i++].ulOrientation = CFA_LEFT;
+
+    cnrhClearFieldInfos(G_hwndProcListCnr, FALSE);  // no invalidate
+    cnrhSetFieldInfos(G_hwndProcListCnr,
+                      axfi,
+                      i,
+                      TRUE,
+                      0);
+
+    if (G_pInfo)
+    {
+        prc32FreeInfo(G_pInfo);
+        G_pInfo = NULL;
+    }
+    G_pInfo = prc32GetInfo(&arc);
+
+    if (G_pInfo)
+    {
+        PQPROCESS32 pProcess = G_pInfo->pProcessData;
+        PPROCRECORD precFirst,
+                    precThis;
+        ULONG cProcesses = 0;
+
+        pProcess = G_pInfo->pProcessData;
+        while ((pProcess) && (pProcess->rectype == 1))
+        {
+            PQTHREAD32 pThread = pProcess->pThreads;
+            for (i = 0;
+                 i < pProcess->usThreadCount;
+                 i++, pThread++)
+                ;
+            pProcess = (PQPROCESS32)pThread;
+            cProcesses++;
+        }
+
+        // insert records
+        precFirst = (PPROCRECORD)cnrhAllocRecords(hwndCnr,
+                                                  sizeof(PROCRECORD),
+                                                  cProcesses);
+
+        pProcess = G_pInfo->pProcessData;
+        precThis = precFirst;
+        while ((pProcess) && (pProcess->rectype == 1))
+        {
+            PQTHREAD32 pThread = pProcess->pThreads;
+            for (i = 0;
+                 i < pProcess->usThreadCount;
+                 i++, pThread++)
+                ;
+
+            DosQueryModuleName(pProcess->usHModule,
+                               sizeof(precThis->szModuleName),
+                               precThis->szModuleName);
+
+            if (fSortBySID)
+                sprintf(precThis->szPID, "0x%04lX", pProcess->sessid);
+            else
+                sprintf(precThis->szPID, "0x%04lX", pProcess->pid);
+            precThis->pszPID = precThis->szPID;
+            sprintf(precThis->szTitle, "%s: %s",
+                    precThis->szPID,
+                    precThis->szModuleName);
+            precThis->pszModuleName = precThis->szModuleName;
+
+            precThis->recc.pszIcon
+                = precThis->recc.pszTree
+                = precThis->recc.pszName
+                = precThis->recc.pszText
+                = precThis->szTitle;
+            precThis->pProcess = pProcess;
+
+
+            pProcess = (PQPROCESS32)pThread;
+            precThis = (PPROCRECORD)precThis->recc.preccNextRecord;
+        }
+
+        cnrhInsertRecords(hwndCnr,
+                          NULL,         // parent recc
+                          (PRECORDCORE)precFirst,
+                          NULL,
+                          CRA_RECORDREADONLY,
+                          cProcesses);
+
+    }
+}
+
+/*
+ *@@ ProcessSelected:
+ *      gets called when a new process gets selected
+ *      to compose the process information string
+ *      displayed on the right.
+ */
+
+VOID ProcessSelected(VOID)
+{
+    PSZ pszCurrentInfo = NULL;
+
+    if (G_precSelected)
+    {
+        PQPROCESS32 pProcess = ((PPROCRECORD)G_precSelected)->pProcess;
+        PQTHREAD32  pThread;
+        PSZ         pszSessionType = "unknown";
+        CHAR        szTemp[2000],
+                    szTemp2[200] = "";
+        PSZ         pszTemp = szTemp;
+        ULONG       i;
+
+        pszTemp += sprintf(pszTemp, "PID: 0x%04lX\n", pProcess->pid);
+        pszTemp += sprintf(pszTemp, "Parent PID: 0x%04lX\n", pProcess->ppid);
+        pszTemp += sprintf(pszTemp, "Session ID: 0x%04lX\n", pProcess->sessid);
+
+        pszTemp += sprintf(pszTemp, "\nModule: %s\n", ((PPROCRECORD)G_precSelected)->szModuleName);
+        strhxcpy(&pszCurrentInfo, szTemp);
+
+        if (pProcess->pid == 1)
+        {
+            // sysinit:
+            strhxcat(&pszCurrentInfo, "\nKernel pseudo-process.\n");
+        }
+        else
+        {
+            // regular process:
+            AppendModuleInfo(&pszCurrentInfo,
+                             ((PPROCRECORD)G_precSelected)->szModuleName);
+            // get process type
+            switch (pProcess->ulProgType)
+            {
+                case 0:
+                    pszSessionType = "Full screen protected mode";
+                break;
+                case 1:
+                    pszSessionType = "Real mode (probably DOS or Windoze)";
+                break;
+                case 2:
+                    pszSessionType = "VIO windowable protected mode";
+                break;
+                case 3:
+                    pszSessionType = "Presentation manager protected mode";
+                break;
+                case 4:
+                    pszSessionType = "Detached protected mode";
+                break;
+            }
+
+            pszTemp = szTemp;
+            pszTemp += sprintf(pszTemp, "\nProcess type: %d (%s)\n",
+                               pProcess->ulProgType,
+                               pszSessionType);
+
+            if (pProcess->ulState & STAT_EXITLIST)
+                strcpy(szTemp2, "[processing exit list] ");
+            if (pProcess->ulState & STAT_EXIT1)
+                strcat(szTemp2, "[exiting thread 1] ");
+            if (pProcess->ulState & STAT_EXITALL)
+                strcat(szTemp2, "[exiting all] ");
+            if (pProcess->ulState & STAT_PARSTAT)
+                strcat(szTemp2, "[notify parent on exit] ");
+            if (pProcess->ulState & STAT_SYNCH)
+                strcat(szTemp2, "[parent waiting on exit] ");
+            if (pProcess->ulState & STAT_DYING)
+                strcat(szTemp2, "[dying] ");
+            if (pProcess->ulState & STAT_EMBRYO)
+                strcat(szTemp2, "[embryo] ");
+
+            pszTemp += sprintf(pszTemp, "\nStatus: 0x%lX %s\n",
+                               pProcess->ulState,
+                               szTemp2);
+
+            pszTemp += sprintf(pszTemp, "\nThreads: %d\n", pProcess->usThreadCount);
+            // header for the following
+            pszTemp += sprintf(pszTemp, "  TID Slot SleepID    Prty   State\n", pProcess->usThreadCount);
+            strhxcat(&pszCurrentInfo, szTemp);
+
+            // dump threads
+            pThread = pProcess->pThreads;
+            for (i = 0;
+                 i < pProcess->usThreadCount;
+                 i++, pThread++)
+            {
+                CHAR    szState[30] = "blocked";
+
+                switch(pThread->ucState)
+                {
+                    case 1: strcpy(szState, "ready"); break;
+                    case 5: strcpy(szState, "running"); break;
+                    case 9: strcpy(szState, "loaded"); break;
+                }
+
+                pszTemp = szTemp;
+                pszTemp += sprintf(pszTemp,
+                                   "   %02d 0x%02lX 0x%08lX 0x%04lX %s\n",
+                                   pThread->usTID,
+                                   pThread->usSlotID,
+                                   pThread->ulSleepID,
+                                   pThread->ulPriority,
+                                   szState);
+                strhxcat(&pszCurrentInfo, szTemp);
+            }
+
+            // dump 32-bit semaphores
+            sprintf(szTemp, "\nPrivate 32-bit semaphores: 0x%lX\n", pProcess->ulPrivSem32Count);
+            strhxcat(&pszCurrentInfo, szTemp);
+            {
+                PQSEM32STRUC32 pSem32 = G_pInfo->pSem32Data;
+                if (pSem32)
+                    while (pSem32)
+                    {
+                        sprintf(szTemp,
+                                "sem32: %s\n",
+                                pSem32->SmuxSem.pszName);
+                        strhxcat(&pszCurrentInfo, szTemp);
+
+                        pSem32 = pSem32->pNext;
+                    }
+                else
+                {
+                    PQSEM16STRUC32  pSemData = G_pInfo->pSem16Data;
+                    PQSEMA32        pSem16 = &pSemData->sema;
+                    strhxcat(&pszCurrentInfo, "  global pSem32Data is NULL\n");
+                }
+            }
+
+            // dump 16-bit semaphores
+            sprintf(szTemp, "\n16-bit semaphores: %d\n", pProcess->usSem16Count);
+            strhxcat(&pszCurrentInfo, szTemp);
+            if (pProcess->usSem16Count)
+            {
+                sprintf(szTemp, "  indx semaID cRef flags cSys \"reserved\"\n", pProcess->usSem16Count);
+                strhxcat(&pszCurrentInfo, szTemp);
+                for (i = 0;
+                     i < pProcess->usSem16Count;
+                     i++)
+                {
+                    USHORT usSemThis = pProcess->pausSem16[i];
+                    PQSEMA32 pSem16 = prc32FindSem16(G_pInfo, usSemThis);
+                    pszTemp = szTemp;
+                    pszTemp += sprintf(pszTemp, "  %4d", usSemThis);
+                    if (pSem16)
+                        pszTemp += sprintf(pszTemp,
+                                           " 0x%04lX %4d  0x%02lX 0x%02lX 0x%08lX S%s",
+                                           pSem16->usIndex,
+                                           pSem16->usRefCount,
+                                           pSem16->ucSysFlags,
+                                           pSem16->ucSysProcCount,
+                                           pSem16->_reserved1_,
+                                           pSem16->acName);
+
+
+                    strcat(pszTemp, "\n");
+                    strhxcat(&pszCurrentInfo, szTemp);
+                }
+            }
+
+            // dump shared memory
+            sprintf(szTemp, "\nShared mem: %d references\n", pProcess->usShrMemCount);
+            strhxcat(&pszCurrentInfo, szTemp);
+            if (pProcess->usShrMemCount)
+            {
+                sprintf(szTemp, "  shrmID selector cRef\n");
+                strhxcat(&pszCurrentInfo, szTemp);
+                for (i = 0;
+                     i < pProcess->usShrMemCount;
+                     i++)
+                {
+                    USHORT  usShrThis = pProcess->pausShrMems[i];
+                    PQSHRMEM32 pShrThis = prc32FindShrMem(G_pInfo, usShrThis);
+                    pszTemp = szTemp;
+                    pszTemp += sprintf(pszTemp, "  0x%04lX", usShrThis);
+                    if (pShrThis)
+                        pszTemp += sprintf(pszTemp, " 0x%04lX %6d %s",
+                                           pShrThis->usSelector,
+                                           pShrThis->usRefCount,
+                                           pShrThis->acName);
+                    strcat(pszTemp, "\n");
+                    strhxcat(&pszCurrentInfo, szTemp);
+                }
+            }
+
+            // dump modules
+            sprintf(szTemp, "\nModule references (imports): %d\n", pProcess->usModuleCount);
+            strhxcat(&pszCurrentInfo, szTemp);
+            if (pProcess->usModuleCount)
+            {
+                for (i = 0;
+                     i < pProcess->usModuleCount;
+                     i++)
+                {
+                    pszTemp = szTemp;
+                    pszTemp += sprintf(pszTemp, "  0x%04lX ", pProcess->pausModules[i]);
+                    DosQueryModuleName(pProcess->pausModules[i],
+                                       sizeof(szTemp),
+                                       pszTemp);
+                    strcat(pszTemp, "\n");
+                    strhxcat(&pszCurrentInfo, szTemp);
+                }
+            }
+
+            // dump open files
+            sprintf(szTemp, "\nOpen files: %d\n", pProcess->usFdsCount);
+            strhxcat(&pszCurrentInfo, szTemp);
+            if (pProcess->usFdsCount)
+            {
+                strhxcat(&pszCurrentInfo,
+                         "  sfn  cOpn Flags    Accs  Size hVol attribs\n");
+                for (i = 0;
+                     i < pProcess->usFdsCount;
+                     i++)
+                {
+                    USHORT usFileID = pProcess->pausFds[i];
+                    if (usFileID)       // rule out "0" file handles
+                    {
+                        PQFILEDATA32 pFile = prc32FindFileData(G_pInfo, usFileID);
+                        BOOL        fAppend = TRUE;
+
+                        szTemp[0] = 0;
+                        pszTemp = szTemp;
+
+                        if (pFile)      // rule out pseudo-file handles
+                        {
+                            CHAR    szAttribs[] = "......";
+                            PSZ     pszAccess = szAttribs;
+                            CHAR    szSize[20];
+                            *pszAccess++ = (pFile->filedata->attrib & 0x20) ? 'A' : '-';
+                            *pszAccess++ = (pFile->filedata->attrib & 0x10) ? 'D' : '-';
+                            *pszAccess++ = (pFile->filedata->attrib & 0x08) ? 'L' : '-';
+                            *pszAccess++ = (pFile->filedata->attrib & 0x04) ? 'S' : '-';
+                            *pszAccess++ = (pFile->filedata->attrib & 0x02) ? 'H' : '-';
+                            *pszAccess++ = (pFile->filedata->attrib & 0x01) ? 'R' : '-';
+
+                            if (pFile->filedata->ulFileSize > (8*1024*1024))
+                                sprintf(szSize, "%4dM", pFile->filedata->ulFileSize / (8*1024*1024));
+                            else if (pFile->filedata->ulFileSize > 1024)
+                                sprintf(szSize, "%4dK", pFile->filedata->ulFileSize / 1024);
+                            else
+                                sprintf(szSize, "%4db", pFile->filedata->ulFileSize);
+
+                            pszTemp += sprintf(pszTemp,
+                                               "  %04lX %04d %08lx %04x %s %04lX %s ",
+                                               usFileID,
+                                               pFile->ulOpenCount,
+                                               pFile->filedata->flFlags,
+                                               pFile->filedata->flAccess,
+                                               szSize,
+                                               pFile->filedata->hVolume,
+                                               szAttribs);
+
+                            if ((pFile->filedata->flFlags & FSF_NO_SFT_HANDLE_ALLOCTD) == 0)
+                                // we do have a file handle:
+                                pszTemp += sprintf(pszTemp,
+                                                   "%s",
+                                                   pFile->acFilename);
+                            else
+                                fAppend = FALSE;
+                                // no SFT file handle allocated:
+                                /* strcat(pszTemp, "[no SFT handle allocated]"); */
+
+                            strcat(szTemp, "\n");
+                        }
+                        if (fAppend)
+                            strhxcat(&pszCurrentInfo, szTemp);
+                    }
+                }
+            }
+        }
+    } // end if (G_precSelected)
+
+    strhxcat(&pszCurrentInfo, "End of dump\n");
+
+    WinSendMsg(G_hwndProcView,
+               TXM_NEWTEXT,
+               (MPARAM)pszCurrentInfo,
+               (MPARAM)0);
+    if (pszCurrentInfo)
+        free(pszCurrentInfo);
+    // WinInvalidateRect(G_hwndProcView, NULL, FALSE);
+}
+
+/* ******************************************************************
+ *                                                                  *
+ *   "Process tree" mode                                            *
+ *                                                                  *
+ ********************************************************************/
+
+/*
+ *@@ InsertProcTreeRecord:
+ *
+ */
+
+PPROCRECORD InsertProcTreeRecord(HWND hwndCnr,
+                                 PPROCRECORD precParent,
+                                 PQPROCESS32 pProcess)
+{
+    PPROCRECORD prec = (PPROCRECORD)cnrhAllocRecords(hwndCnr,
+                                                     sizeof(PROCRECORD),
+                                                     1);
+    if (pProcess->pid != 1)
+        DosQueryModuleName(pProcess->usHModule,
+                           sizeof(prec->szModuleName),
+                           prec->szModuleName);
+    else
+        strcpy(prec->szModuleName, "[sysinit]");
+    prec->pszModuleName = prec->szModuleName;
+
+    sprintf(prec->szPID, "0x%04lX",
+                pProcess->pid);
+
+    prec->pszPID = prec->szPID;
+    sprintf(prec->szTitle, "%s: %s",
+            prec->szPID,
+            prec->szModuleName);
+
+    prec->recc.pszIcon
+        = prec->recc.pszTree
+        = prec->recc.pszName
+        = prec->recc.pszText
+        = prec->szTitle;
+    prec->pProcess = pProcess;
+
+    // insert records
+    cnrhInsertRecords(hwndCnr,
+                      (PRECORDCORE)precParent,  // parent recc
+                      (PRECORDCORE)prec,
+                      NULL,
+                      CRA_RECORDREADONLY | CRA_EXPANDED,
+                      1);
+    return (prec);
+}
+
+/*
+ *@@ InsertProcessesWithParent:
+ *
+ */
+
+VOID InsertProcessesWithParent(HWND hwndCnr,
+                               ULONG ulParentPID,           // initially 0
+                               PPROCRECORD precParent)
+{
+    PQPROCESS32 pProcess = G_pInfo->pProcessData;
+    ULONG       i;
+
+    if (ulParentPID == 0)
+    {
+        PPROCRECORD prec = InsertProcTreeRecord(hwndCnr,
+                                                NULL,
+                                                &SysInitProcess);        // "sysinit" process
+        InsertProcessesWithParent(hwndCnr,
+                                  1,    // pid of sysinit
+                                  prec);     // preccParent
+    }
+
+    while ( (pProcess) && (pProcess->rectype == 1) )
+    {
+        PQTHREAD32 pThread = pProcess->pThreads;
+        for (i = 0;
+             i < pProcess->usThreadCount;
+             i++, pThread++)
+            ;
+
+        if (pProcess->ppid == ulParentPID)
+        {
+            PPROCRECORD prec = InsertProcTreeRecord(hwndCnr,
+                                                    precParent,
+                                                    pProcess);
+            // recurse for processes which have this proc as parent
+            InsertProcessesWithParent(hwndCnr,
+                                      pProcess->pid,
+                                      prec);     // preccParent
+        }
+
+        // next process
+        pProcess = (PQPROCESS32)pThread;
+    }
+}
+
+/*
+ *@@ InsertProcessTree:
+ *
+ */
+
+VOID InsertProcessTree(HWND hwndCnr)
+{
+    APIRET arc = NO_ERROR;
+    XFIELDINFO    axfi[2];
+    ULONG         i = 0;
+
+    WinSendMsg(hwndCnr,
+               CM_REMOVERECORD,
+               (MPARAM)NULL,
+               MPFROM2SHORT(0,  // all records
+                            CMA_FREE | CMA_INVALIDATE));
+
+    // clear cnr details view
+    cnrhClearFieldInfos(G_hwndProcListCnr, FALSE);  // no invalidate
+
+    BEGIN_CNRINFO()
+    {
+        cnrhSetView(CV_TREE | CV_TEXT | CA_TREELINE);
+        cnrhSetSortFunc(fnComparePID);
+        cnrhSetTreeIndent(20);
+    } END_CNRINFO(G_hwndProcListCnr);
+
+    if (G_pInfo)
+    {
+        prc32FreeInfo(G_pInfo);
+        G_pInfo = NULL;
+    }
+    G_pInfo = prc32GetInfo(&arc);
+
+    if (G_pInfo)
+    {
+        PQPROCESS32 pProcess = G_pInfo->pProcessData;
+        PPROCRECORD precFirst,
+                    precThis;
+        ULONG cProcesses = 0;
+
+        pProcess = G_pInfo->pProcessData;
+        while ((pProcess) && (pProcess->rectype == 1))
+        {
+            PQTHREAD32 pThread = pProcess->pThreads;
+            for (i = 0;
+                 i < pProcess->usThreadCount;
+                 i++, pThread++)
+                ;
+            pProcess = (PQPROCESS32)pThread;
+            cProcesses++;
+        }
+
+        // insert records
+        InsertProcessesWithParent(hwndCnr,
+                                  0,
+                                  NULL);     // preccParent
+
+    }
+}
+
+/* ******************************************************************
+ *                                                                  *
+ *   "Module tree" mode                                             *
+ *                                                                  *
+ ********************************************************************/
+
+/*
+ *@@ InsertModule2Parent:
+ *
+ */
+
+PMODRECORD InsertModule2Parent(HWND hwndCnr,
+                               PQMODULE32 pModule,
+                               PMODRECORD precParent)
+{
+    PSZ     p;
+    PMODRECORD prec = (PMODRECORD)cnrhAllocRecords(hwndCnr,
+                                                   sizeof(MODRECORD),
+                                                   1);
+    DosQueryModuleName(pModule->usHModule,
+                       sizeof(prec->szModuleName),
+                       prec->szModuleName);
+    prec->pszModuleName = prec->szModuleName;
+
+    p = strrchr(prec->szModuleName, '\\');
+    if (p)
+        p++;
+    else
+        p = prec->szModuleName;
+
+    prec->recc.pszIcon
+        = prec->recc.pszTree
+        = prec->recc.pszName
+        = prec->recc.pszText
+        = p;
+
+    prec->pModule = pModule;
+
+    // insert records
+    cnrhInsertRecords(hwndCnr,
+                      (PRECORDCORE)precParent,  // parent recc
+                      (PRECORDCORE)prec,
+                      NULL,
+                      CRA_RECORDREADONLY | CRA_COLLAPSED,
+                      1);
+
+    return (prec);
+}
+
+/*
+ *@@ InsertModulesTree:
+ *
+ */
+
+VOID InsertModulesTree(HWND hwndCnr)
+{
+    APIRET arc = NO_ERROR;
+    XFIELDINFO    axfi[2];
+    ULONG         i = 0;
+
+    WinSendMsg(hwndCnr,
+               CM_REMOVERECORD,
+               (MPARAM)NULL,
+               MPFROM2SHORT(0,  // all records
+                            CMA_FREE | CMA_INVALIDATE));
+
+    // clear cnr details view
+    cnrhClearFieldInfos(G_hwndProcListCnr, FALSE);  // no invalidate
+
+    BEGIN_CNRINFO()
+    {
+        cnrhSetView(CV_TREE | CV_TEXT | CA_TREELINE);
+        cnrhSetSortFunc(fnComparePSZ);
+        cnrhSetTreeIndent(20);
+    } END_CNRINFO(G_hwndProcListCnr);
+
+    if (G_pInfo)
+    {
+        prc32FreeInfo(G_pInfo);
+        G_pInfo = NULL;
+    }
+    G_pInfo = prc32GetInfo(&arc);
+
+    if (G_pInfo)
+    {
+        PQMODULE32 pModule = G_pInfo->pModuleData;
+
+        while (pModule)
+        {
+            // insert records; this recurses
+            InsertModule2Parent(hwndCnr,
+                                pModule,
+                                NULL);     // preccParent
+            pModule = pModule->pNext;
+        }
+    }
+}
+
+/*
+ *@@ ModuleSelected:
+ *
+ */
+
+VOID ModuleSelected(VOID)
+{
+    PSZ pszCurrentInfo = NULL;
+
+    if (G_precSelected)
+    {
+        PMODRECORD  precSelected = (PMODRECORD)G_precSelected;
+        PQMODULE32  pModule = precSelected->pModule,
+                    pModule2;
+        PQPROCESS32 pProcess = G_pInfo->pProcessData;
+
+        CHAR        szTemp[2000],
+                    szTemp2[200] = "";
+        PSZ         pszTemp = szTemp;
+
+        ULONG   i,
+                cProcCount = 0;
+
+        pszTemp += sprintf(pszTemp, "Module name: %s\n", precSelected->szModuleName);
+        pszTemp += sprintf(pszTemp, "Module handle: 0x%04lX\n", pModule->usHModule);
+        strhxcpy(&pszCurrentInfo, szTemp);
+
+        // module flags
+        pszTemp = szTemp;
+        pszTemp += sprintf(pszTemp, "Module flags: 0x%04lX\n", pModule->type);
+        pszTemp += sprintf(pszTemp, "Segments: %d\n\n", pModule->ulSegmentCount);
+        strhxcat(&pszCurrentInfo, szTemp);
+
+        // module info
+        AppendModuleInfo(&pszCurrentInfo,
+                         precSelected->szModuleName);
+
+        // find processes using this module
+        pszTemp = szTemp;
+        pszTemp += sprintf(pszTemp, "\nProcesses using this module directly:\n");
+        strhxcat(&pszCurrentInfo, szTemp);
+
+        pProcess = G_pInfo->pProcessData;
+        while ((pProcess) && (pProcess->rectype == 1))
+        {
+            PQTHREAD32 pThread = pProcess->pThreads;
+            if (pProcess->usModuleCount)
+            {
+                for (i = 0;
+                     i < pProcess->usModuleCount;
+                     i++)
+                {
+                    if (pProcess->pausModules[i] == pModule->usHModule)
+                    {
+                        // this proc uses this module:
+                        // store process name
+                        strcpy(szTemp, "    ");
+                        DosQueryModuleName(pProcess->usHModule,
+                                           sizeof(szTemp) - 4,
+                                           szTemp + 4);
+                        strcat(szTemp, "\n");
+                        strhxcat(&pszCurrentInfo, szTemp);
+                        cProcCount++;
+                    }
+                }
+            }
+
+            // next process
+            for (i = 0;
+                 i < pProcess->usThreadCount;
+                 i++, pThread++)
+                ;
+            pProcess = (PQPROCESS32)pThread;
+        }
+
+        pszTemp = szTemp;
+        if (cProcCount == 0)
+            pszTemp += sprintf(pszTemp, "    none\n");
+        else
+            pszTemp += sprintf(pszTemp, "Total: %d processes\n", cProcCount);
+        strhxcat(&pszCurrentInfo, szTemp);
+
+        // other modules using this module
+        pszTemp = szTemp;
+        pszTemp += sprintf(pszTemp, "\nOther modules using this module:\n");
+        strhxcat(&pszCurrentInfo, szTemp);
+
+        cProcCount = 0;
+        pModule2 = G_pInfo->pModuleData;
+        while (pModule2)
+        {
+            if (pModule2->ulRefCount)
+            {
+                for (i = 0;
+                     i < pModule2->ulRefCount;
+                     i++)
+                {
+                    if (pModule2->ausModRef[i] == pModule->usHModule)
+                    {
+                        pszTemp = szTemp;
+                        DosQueryModuleName(pModule2->usHModule,
+                                           sizeof(szTemp2),
+                                           szTemp2);
+                        pszTemp += sprintf(pszTemp, "    0x%04lX: %s\n",
+                                           pModule2->usHModule,
+                                           szTemp2);
+                        strhxcat(&pszCurrentInfo, szTemp);
+                        cProcCount++;
+                    }
+                }
+            }
+
+            pModule2 = pModule2->pNext;
+        }
+
+        pszTemp = szTemp;
+        if (cProcCount == 0)
+            pszTemp += sprintf(pszTemp, "    none\n");
+        else
+            pszTemp += sprintf(pszTemp, "Total: %d modules\n", cProcCount);
+        strhxcat(&pszCurrentInfo, szTemp);
+
+        // references
+        pszTemp = szTemp;
+        pszTemp += sprintf(pszTemp, "\nModule references (imports, inserted into tree): %d\n", pModule->ulRefCount);
+        strhxcat(&pszCurrentInfo, szTemp);
+
+        if (pModule->ulRefCount)
+        {
+            BOOL        fMarkSelected = FALSE;
+            for (i = 0;
+                 i < pModule->ulRefCount;
+                 i++)
+            {
+                pszTemp = szTemp;
+                DosQueryModuleName(pModule->ausModRef[i],
+                                   sizeof(szTemp2),
+                                   szTemp2);
+                pszTemp += sprintf(pszTemp, "    0x%04lX: %s\n",
+                                   pModule->ausModRef[i],
+                                   szTemp2);
+                strhxcat(&pszCurrentInfo, szTemp);
+
+                if (    (!precSelected->fSubModulesInserted)
+                     && (pModule->ausModRef[i] != pModule->usHModule)
+                   )
+                {
+                    PQMODULE32 pSubModule = prc32FindModule(G_pInfo,
+                                                            pModule->ausModRef[i]);
+                    if (pSubModule)
+                        InsertModule2Parent(G_hwndProcListCnr,
+                                            pSubModule,
+                                            precSelected);
+                    fMarkSelected = TRUE;
+                }
+            }
+
+            if (fMarkSelected)
+                precSelected->fSubModulesInserted = TRUE;
+        }
+    } // end if (G_precSelected)
+
+    strhxcat(&pszCurrentInfo, "End of dump\n");
+
+    WinSendMsg(G_hwndProcView,
+               TXM_NEWTEXT,
+               (MPARAM)pszCurrentInfo,
+               (MPARAM)0);
+    if (pszCurrentInfo)
+        free(pszCurrentInfo);
+}
+
+/* ******************************************************************
+ *                                                                  *
+ *   General view stuff                                             *
+ *                                                                  *
+ ********************************************************************/
+
+/*
+ *@@ RefreshView:
+ *
+ */
+
+VOID RefreshView(VOID)
+{
+    switch (G_ulCurrentView)
+    {
+        case ID_XPSMI_PIDLIST:
+            InsertProcessList(G_hwndProcListCnr, FALSE);
+        break;
+
+        case ID_XPSMI_SIDLIST:
+            InsertProcessList(G_hwndProcListCnr, TRUE);
+        break;
+
+        case ID_XPSMI_PIDTREE:
+            InsertProcessTree(G_hwndProcListCnr);
+        break;
+
+        case ID_XPSMI_MODTREE:
+            InsertModulesTree(G_hwndProcListCnr);
+        break;
+    }
+}
+
+BOOL APIENTRY PrintCallback(ULONG ulPage,
+                            ULONG ulUser)
+{
+    CHAR    szMsg[1000];
+    sprintf(szMsg, "Page %d. Continue?", ulPage);
+
+    if (YesNoBox("Printing", szMsg) == MBID_YES)
+        return (TRUE);
+    else
+        return (FALSE);
+}
+
+/*
+ *@@ fnwpProcInfoClient:
+ *
+ */
+
+MRESULT EXPENTRY fnwpProcInfoClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPARAM mp2)
+{
+    MRESULT mrc = 0;
+
+    switch (msg)
+    {
+        case WM_CREATE:
+            SetupWindows(hwndClient);
+            RefreshView();
+            mrc = (MPARAM)FALSE;        // continue;
+        break;
+
+        /*
+         * WM_WINDOWPOSCHANGED:
+         *
+         */
+
+        case WM_WINDOWPOSCHANGED:
+        {
+            // this msg is passed two SWP structs:                    WM_SIZE
+            // one for the old, one for the new data
+            // (from PM docs)
+            PSWP pswpNew = PVOIDFROMMP(mp1);
+            // PSWP pswpOld = pswpNew + 1;
+
+            // resizing?
+            if (pswpNew->fl & SWP_SIZE)
+            {
+                WinSetWindowPos(G_hwndSplit, HWND_TOP,
+                                0, 0,
+                                pswpNew->cx, pswpNew->cy, // sCXNew, sCYNew,
+                                SWP_SIZE);
+            }
+
+            // return default NULL
+        break; }
+
+        case WM_CONTROL:
+        {
+            USHORT  usID = SHORT1FROMMP(mp1);
+            USHORT  usNotifyCode = SHORT2FROMMP(mp1);
+
+            if (usID == ID_PROCLISTCNR)
+                switch (usNotifyCode)
+                {
+                    case CN_EMPHASIS:
+                    {
+                        PNOTIFYRECORDEMPHASIS pnre = (PNOTIFYRECORDEMPHASIS)mp2;
+
+                        if (pnre->pRecord)
+                            if (pnre->pRecord->flRecordAttr & CRA_SELECTED)
+                            {
+                                G_precSelected = pnre->pRecord;
+
+                                switch (G_ulCurrentView)
+                                {
+                                    case ID_XPSMI_PIDLIST:
+                                    case ID_XPSMI_SIDLIST:
+                                    case ID_XPSMI_PIDTREE:
+                                        ProcessSelected();
+                                    break;
+
+                                    case ID_XPSMI_MODTREE:
+                                        ModuleSelected();
+                                    break;
+                                }
+                            }
+                    break; }
+                }
+
+        break; }
+
+        case WM_COMMAND:
+        {
+            SHORT sCommand = SHORT1FROMMP(mp1);
+            switch (sCommand)
+            {
+                case ID_XPSMI_EXIT:
+                    WinPostMsg(WinQueryWindow(hwndClient, QW_PARENT),
+                               WM_CLOSE,
+                               0, 0);
+                break;
+
+                case ID_XPSMI_PIDLIST:
+                case ID_XPSMI_SIDLIST:
+                case ID_XPSMI_PIDTREE:
+                case ID_XPSMI_MODTREE:
+                    if (G_ulCurrentView != sCommand)
+                    {
+                        WinCheckMenuItem(G_hMainMenu,
+                                         G_ulCurrentView,
+                                         FALSE);
+                        G_ulCurrentView = sCommand;
+                        RefreshView();
+                        SetupMenu();
+                    }
+                break;
+
+                case ID_XPSMI_REFRESH:
+                    RefreshView(); // InsertProcessList(G_hwndProcListCnr);
+                break;
+
+                case ID_XPSMI_WORDWRAP:
+                    G_fWordWrap = !G_fWordWrap;
+                    SetupMenu();
+                    WinSendMsg(G_hwndProcView,
+                               TXM_SETWORDWRAP,
+                               (MPARAM)G_fWordWrap,
+                               0);
+                break;
+            }
+        break; }
+
+        case WM_CHAR:
+        {
+            USHORT usFlags    = SHORT1FROMMP(mp1);
+            USHORT usch       = SHORT1FROMMP(mp2);
+            USHORT usvk       = SHORT2FROMMP(mp2);
+
+            if (    (usFlags & KC_VIRTUALKEY)
+                 && (usvk == VK_TAB)
+               )
+            {
+                if ((usFlags & KC_KEYUP) == 0)
+                    if (WinQueryFocus(HWND_DESKTOP) == G_hwndProcListCnr)
+                        WinSetFocus(HWND_DESKTOP, G_hwndProcView);
+                    else
+                        WinSetFocus(HWND_DESKTOP, G_hwndProcListCnr);
+            }
+            else
+            {
+                if (    (usch == 'p')
+                     && (usFlags & KC_CTRL)
+                   )
+                {
+                    CHAR szRet[100];
+                    DosBeep(1000, 100);
+                    sprintf(szRet, "return code: %d",
+                            txvPrintWindow(G_hwndProcView,
+                                           "Process dump",
+                                           PrintCallback));
+
+                    DebugBox(0, "print", szRet);
+                }
+            }
+            mrc = (MPARAM)TRUE;
+        break; }
+
+        default:
+            mrc = WinDefWindowProc(hwndClient, msg, mp1, mp2);
+    }
+
+    return (mrc);
+}
+
+/*
+ *@@ LoadNLS:
+ *      load NLS interface.
+ *
+ */
+
+BOOL LoadNLS(VOID)
+{
+    CHAR        szNLSDLL[2*CCHMAXPATH];
+    BOOL Proceed = TRUE;
+
+    if (PrfQueryProfileString(HINI_USER,
+                              "XWorkplace",
+                              "XFolderPath",
+                              "",
+                              szNLSDLL, sizeof(szNLSDLL)) < 3)
+
+    {
+        WinMessageBox(HWND_DESKTOP, HWND_DESKTOP,
+                      "Treesize was unable to determine the location of the "
+                      "XWorkplace National Language Support DLL, which is "
+                      "required for operation. The OS2.INI file does not contain "
+                      "this information. "
+                      "Treesize cannot proceed. Please re-install XWorkplace.",
+                      "Treesize: Fatal Error",
+                      0, MB_OK | MB_MOVEABLE);
+        Proceed = FALSE;
+    }
+    else
+    {
+        CHAR    szLanguageCode[50] = "";
+
+        // now compose module name from language code
+        PrfQueryProfileString(HINI_USERPROFILE,
+                              "XWorkplace", "Language",
+                              "001",
+                              (PVOID)szLanguageCode,
+                              sizeof(szLanguageCode));
+        strcat(szNLSDLL, "\\bin\\xfldr");
+        strcat(szNLSDLL, szLanguageCode);
+        strcat(szNLSDLL, ".dll");
+
+        // try to load the module
+        if (DosLoadModule(NULL,
+                          0,
+                          szNLSDLL,
+                          &G_hmodNLS))
+        {
+            CHAR    szMessage[2000];
+            sprintf(szMessage,
+                    "Treesize was unable to load \"%s\", "
+                    "the National Language DLL which "
+                    "is specified for XWorkplace in OS2.INI.",
+                    szNLSDLL);
+            WinMessageBox(HWND_DESKTOP, HWND_DESKTOP,
+                          szMessage,
+                          "Treesize: Fatal Error",
+                          0, MB_OK | MB_MOVEABLE);
+            Proceed = FALSE;
+        }
+    }
+    return (Proceed);
+}
+
+/*
+ * main:
+ *      program entry point.
+ */
+
+int main(int argc, char *argv[])
+{
+    QMSG        qmsg;
+
+    if (!(G_hab = WinInitialize(0)))
+        return FALSE;
+
+    if (!(G_hmq = WinCreateMsgQueue(G_hab, 0)))
+        return FALSE;
+
+    // now attempt to find the XWorkplace NLS resource DLL,
+    // which we need for all resources (new with XWP 0.9.0)
+    if (LoadNLS())
+    {
+        SWP swpFrame;
+
+        swpFrame.x = 100;
+        swpFrame.y = 100;
+        swpFrame.cx = 500;
+        swpFrame.cy = 500;
+        swpFrame.hwndInsertBehind = HWND_TOP;
+        swpFrame.fl = SWP_MOVE | SWP_SIZE;
+
+        if (WinRegisterClass(G_hab,
+                             (PSZ)pcszClientClass,
+                             fnwpProcInfoClient,
+                             CS_SIZEREDRAW | CS_SYNCPAINT,
+                             sizeof(PVOID))
+            &&
+            txvRegisterTextView(G_hab)
+            )
+        {
+            HPOINTER hptrMain = WinLoadPointer(HWND_DESKTOP,
+                                               NULLHANDLE,
+                                               1);
+            HWND hwndClient;
+            HWND hwndMain = winhCreateStdWindow(HWND_DESKTOP,
+                                                &swpFrame,
+                                                FCF_SYSMENU
+                                                | FCF_SIZEBORDER
+                                                | FCF_TITLEBAR
+                                                | FCF_MINMAX
+                                                | FCF_NOBYTEALIGN | FCF_SHELLPOSITION,
+                                                WS_CLIPCHILDREN,
+                                                "xpstat",
+                                                0,
+                                                (PSZ)pcszClientClass,
+                                                WS_VISIBLE,
+                                                0,
+                                                NULL,
+                                                &hwndClient);
+            // now position the frame and the client:
+            // 1) frame
+            if (!winhRestoreWindowPos(hwndMain,
+                                      HINI_USER,
+                                      "XWorkplace",
+                                      "WndPosProcInfo",
+                                      SWP_MOVE | SWP_SIZE))
+                // INI data not found:
+                WinSetWindowPos(hwndMain,
+                                HWND_TOP,
+                                100, 100,
+                                500, 500,
+                                SWP_MOVE | SWP_SIZE);
+
+            G_hMainMenu = WinLoadMenu(hwndMain,
+                                      NULLHANDLE,
+                                      ID_XPSM_MAIN);
+            SetupMenu();
+
+            // add to task list
+            winhAddToTasklist(hwndMain,
+                              hptrMain);
+            // finally, show window
+            WinShowWindow(hwndMain, TRUE);
+
+            while (WinGetMsg(G_hab, &qmsg, 0, 0, 0))
+                WinDispatchMsg(G_hab, &qmsg);
+        }
+    } // end if (proceed)
+
+    // clean up on the way out
+    WinDestroyMsgQueue(G_hmq);
+    WinTerminate(G_hab);
+
+    return TRUE;
+}
+
+

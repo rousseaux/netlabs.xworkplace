@@ -135,7 +135,7 @@ Contact xworkplace-dev@egroups.com if you are familiar with the XWorkplace sourc
 XWorkplace is free software. The full source code is available from the author's homepage in a separate package. You are welcome to redistribute and/or modify XWorkplace under the conditions of the GNU General Public License (GPL).
 XWorkplace comes with absolutely NO WARRANTY. For details, refer to the "Notices" section of the XWorkplace User Guide and the GPL itself, which is contained in the COPYING file in the XWorkplace installation directory.
 
-XWorkplace uses copyrighted code from the following people:
+XWorkplace contains copyrighted code from the following people:
     ARAKAWA Atsushi
     Anthony Cruise
     John Currier
@@ -154,6 +154,7 @@ XWorkplace uses copyrighted code from the following people:
     Mark Stern
     Uri J. Stern
 
+See the "XWorkplace User Guide" for detailed credits.
 ;
 ; the following items are new with V0.9.0
 

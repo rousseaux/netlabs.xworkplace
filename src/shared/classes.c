@@ -178,6 +178,7 @@ PCLASSRECORDCORE clsAddClass2Cnr(HWND hwndCnr,                  // in: cnr to in
         cnrhInsertRecords(hwndCnr,
                           (PRECORDCORE)preccParent,
                           (PRECORDCORE)preccNew,
+                          TRUE, // invalidate
                           (pwpsMyself)
                               ? pwpsMyself->pszClassName
                               : pscd->pszOrphans,     // "Orphans" string

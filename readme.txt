@@ -1,6 +1,6 @@
-XWorkplace 0.9.0 README
+XWorkplace 0.9.2 README
 (W) Ulrich M”ller, July 2, 1999
-Last updated Jan 04, 2000, Ulrich M”ller
+Last updated Feb 18, 2000, Ulrich M”ller
 
 
 0. CONTENTS OF THIS FILE
@@ -43,6 +43,8 @@ Last updated Jan 04, 2000, Ulrich M”ller
     Programming information is contained in the PROGREF.INF file in
     the main directory of the source tree.
 
+    The most current release information (for developer versions)
+    is in the "001\readme" file.
 
 3. INSTALLATION
 ===============
@@ -105,31 +107,12 @@ Last updated Jan 04, 2000, Ulrich M”ller
 4. GETTING STARTED
 ==================
 
-    XWorkplace will take over your existing XFolder 0.85 settings,
-    if present. However, many more settings have arrived, so many
-    might not be initialized.
-
-    In any case, open the new "XWorkplace Setup" object first and
-    go to the "Features" page. This is the most central place to
-    enable XWorkplace features. Refer to the "Help" button there.
+    See "001\readme" for this.
 
 
 5. KNOWN LIMITATIONS
 ====================
 
-    This version is still buggy. I have it running on my system for
-    everyday work, but some things are a bit annoying, so be warned.
-
-    1)  If "Extended associations" is enabled in XWPSetup, the new
-        "File types" page in "Workplace Shell" is working, but XFldDataFile
-        doesn't support the enhanced file type icons yet.
-        You'll see the proper icons and associations in the "Open"
-        submenu, but clicking on them will not open the proper
-        association.
-
-    2)  The new trash displays wrong info sometimes and cannot delete
-        objects which have the read-only attribute on.
-
-    3)  XSHUTDWN.EXE currently doesn't work at all.
+    See "001\readme" for this.
 
 
