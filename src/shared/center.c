@@ -616,11 +616,11 @@ VOID ctrPaintStaticWidgetBorder(HPS hps,
                                         SYSCLR_DIALOGBACKGROUND);
         }
 
-        gpihDraw3DFrame(hps,
-                        &rclWin,        // inclusive
-                        1,
-                        lDark,
-                        lLight);
+        gpihDraw3DFrame2(hps,
+                         &rclWin,        // inclusive
+                         1,
+                         lDark,
+                         lLight);
     }
 }
 

@@ -272,16 +272,22 @@ static VOID ButtonPaint2(PFLATBUTTONDATA pfbd,
         // gpihDraw3DFrame wants an inclusive rectangle
         rclButton.xRight--;
         rclButton.yTop--;
-        gpihDraw3DFrame(hps,            // inclusive
-                        &rclButton,
-                        BUTTON_BORDER,
-                        lLeft,
-                        lRight);
+        gpihDraw3DFrame2(hps,            // inclusive
+                         &rclButton,
+                         BUTTON_BORDER,
+                         lLeft,
+                         lRight);
 
+        /*
         rclButton.xLeft += BUTTON_BORDER;
         rclButton.yBottom += BUTTON_BORDER;
         rclButton.xRight -= BUTTON_BORDER - 1;
         rclButton.yTop -= BUTTON_BORDER - 1;
+        */
+
+        rclButton.xRight++;
+        rclButton.yTop++;
+
         WinFillRect(hps,                // exclusive
                     &rclButton,
                     RGBCOL_RED);

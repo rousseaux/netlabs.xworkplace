@@ -136,9 +136,9 @@
      *
      ********************************************************************/
 
-    #ifdef FILETYPE_PRIVATE
+    #define MAX_ASSOCS_PER_OBJECT       20
 
-        #define MAX_ASSOCS_PER_OBJECT       20
+    #ifdef FILETYPE_PRIVATE
 
         BOOL ftypAppendSingleTypeUnique(PLINKLIST pll,
                                         PCSZ pcszNewType,

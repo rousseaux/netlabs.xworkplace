@@ -940,7 +940,8 @@ static VOID StatusPaint(HWND hwndBar)
     TRY_LOUD(excpt1)
     {
         RECTL   rclBar,
-                rclPaint;
+                rclPaint,
+                rcl2;
         POINTL  ptl1;
         PSZ     pszText;
         CHAR    szTemp[100] = "0";
@@ -971,37 +972,37 @@ static VOID StatusPaint(HWND hwndBar)
         {
             case SBSTYLE_WARP3RAISED:
                 // Warp 3 style, raised
-                gpihDraw3DFrame(hps,
-                                &rclPaint,
-                                1,
-                                lHiColor,
-                                lLoColor);
+                gpihDraw3DFrame2(hps,
+                                 &rclPaint,
+                                 1,
+                                 lHiColor,
+                                 lLoColor);
             break;
 
             case SBSTYLE_WARP3SUNKEN:
                 // Warp 3 style, sunken
-                gpihDraw3DFrame(hps,
-                                &rclPaint,
-                                1,
-                                lLoColor,
-                                lHiColor);
+                gpihDraw3DFrame2(hps,
+                                 &rclPaint,
+                                 1,
+                                 lLoColor,
+                                 lHiColor);
             break;
 
             case SBSTYLE_WARP4MENU:
                 // Warp 4 menu style: draw 3D line at top only
                 rclPaint.yBottom = rclPaint.yTop - 1;
-                gpihDraw3DFrame(hps,
-                                &rclPaint,
-                                1,
-                                lLoColor,
-                                lHiColor);
+                gpihDraw3DFrame2(hps,
+                                 &rclPaint,
+                                 1,
+                                 lLoColor,
+                                 lHiColor);
             break;
 
             default:
                 // Warp 4 button style
                 // draw "sunken" outer rect
                 gpihDraw3DFrame(hps,
-                                &rclPaint,
+                                &rcl2,
                                 2,
                                 lLoColor,
                                 lHiColor);
@@ -1010,11 +1011,11 @@ static VOID StatusPaint(HWND hwndBar)
                 rclPaint.yBottom++;
                 rclPaint.xRight--;
                 rclPaint.yTop--;
-                gpihDraw3DFrame(hps,
-                                &rclPaint,
-                                2,
-                                lHiColor,
-                                lLoColor);
+                gpihDraw3DFrame2(hps,
+                                 &rclPaint,
+                                 2,
+                                 lHiColor,
+                                 lLoColor);
             break;
         }
 

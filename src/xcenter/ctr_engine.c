@@ -4454,17 +4454,19 @@ static VOID ClientPaint2(HWND hwndClient,
         if (pGlobals->flDisplayStyle & XCS_ALL3DBORDERS)
         {
             // yes: draw 3D frame
-            gpihDraw3DFrame(hps,
-                            &rclWin,            // inclusive
-                            ul3DBorderWidth,      // width
-                            pGlobals->lcol3DLight,
-                            RGBCOL_BLACK); // pGlobals->lcol3DDark);
+            gpihDraw3DFrame2(hps,
+                             &rclWin,            // inclusive
+                             ul3DBorderWidth,      // width
+                             pGlobals->lcol3DLight,
+                             RGBCOL_BLACK); // pGlobals->lcol3DDark);
                                     // V0.9.18 (2002-03-19) [umoeller]
 
+            /* not need with gpihDraw3DFrame2 V0.9.21 (2002-08-24) [umoeller]
             rclWin.xLeft += ul3DBorderWidth;
             rclWin.xRight -= ul3DBorderWidth;
             rclWin.yBottom += ul3DBorderWidth;
             rclWin.yTop -= ul3DBorderWidth;
+            */
         }
         else
         {

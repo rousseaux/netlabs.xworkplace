@@ -179,6 +179,7 @@
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 #include "filesys\fileops.h"            // file operations implementation
+#include "filesys\filetype.h"           // extended file types implementation
 #include "filesys\folder.h"             // XFolder implementation
 #include "filesys\fdrmenus.h"           // shared folder menu logic
 #include "filesys\icons.h"              // icons handling
@@ -1126,6 +1127,7 @@ static VOID InitMenu(PSUBCLFOLDERVIEW psfv,     // in: frame information
  *      Otherwise the default wnd proc will be used.
  *
  *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
+ *@@changed V0.9.21 (2002-08-21) [umoeller]:
  */
 
 static BOOL MenuSelect(PSUBCLFOLDERVIEW psfv,   // in: frame information
@@ -1133,9 +1135,9 @@ static BOOL MenuSelect(PSUBCLFOLDERVIEW psfv,   // in: frame information
                        MPARAM mp2,              // in: mp2 from WM_MENUSELECT
                        BOOL *pfDismiss)         // out: dismissal flag
 {
-    BOOL fHandled = FALSE;
-    // return value for WM_MENUSELECT;
-    // TRUE means dismiss menu
+    BOOL        fHandled = FALSE;
+            // return value for WM_MENUSELECT;
+            // TRUE means dismiss menu
 
     USHORT      usItem = SHORT1FROMMP(mp1),
                 usPostCommand = SHORT2FROMMP(mp1);
@@ -1170,12 +1172,54 @@ static BOOL MenuSelect(PSUBCLFOLDERVIEW psfv,   // in: frame information
                 _Pmpf(( "  Object selections: %d", psfv->ulSelection));
             #endif
 
-            // now call the functions in fdrmenus.c for this,
-            // depending on the class of the object for which
-            // the menu was opened
             if (pObject = objResolveIfShadow(pObject))
             {
-                if (_somIsA(pObject, _WPFileSystem))
+                if (WinGetKeyState(HWND_DESKTOP, VK_SHIFT) & 0x8000)
+                {
+                    // shift is down: then check whether this is an "open view"
+                    // item and allow changing the object's default view this
+                    // way V0.9.21 (2002-08-21) [umoeller]
+                    ULONG   ulMenuId2 = usItem - cmnQuerySetting(sulVarMenuOffset);
+
+                    if (    (usItem == OPEN_CONTENTS)
+                         || (usItem == OPEN_TREE)
+                         || (usItem == OPEN_DETAILS)
+                         || (ulMenuId2 == ID_XFMI_OFS_SPLITVIEW)
+                         || (    (usItem >= 0x1000)
+                              && (usItem <= 0x1000 + MAX_ASSOCS_PER_OBJECT)
+                            )
+                       )
+                    {
+                        ULONG ulDefaultView = _wpQueryDefaultView(pObject);
+
+                        WinSendMsg((HWND)mp2,
+                                   MM_SETITEMATTR,
+                                   MPFROM2SHORT(LOUSHORT(ulDefaultView),
+                                                FALSE),
+                                   MPFROM2SHORT(MIA_CHECKED,
+                                                FALSE));
+
+                        WinSendMsg((HWND)mp2,
+                                   MM_SETITEMATTR,
+                                   MPFROM2SHORT(usItem,
+                                                FALSE),
+                                   MPFROM2SHORT(MIA_CHECKED,
+                                                MIA_CHECKED));
+
+                        _wpSetDefaultView(pObject,
+                                          usItem);
+                        _wpSaveDeferred(pObject);
+
+                        fHandled = TRUE;
+                    }
+                }
+
+                // now call the functions in fdrmenus.c for this,
+                // depending on the class of the object for which
+                // the menu was opened
+                if (    (!fHandled)
+                     && (_somIsA(pObject, _WPFileSystem))
+                   )
                 {
                     fHandled = mnuFileSystemSelectingMenuItem(
                                    psfv->pSourceObject,
@@ -1218,7 +1262,7 @@ static BOOL MenuSelect(PSUBCLFOLDERVIEW psfv,   // in: frame information
         }
     }
 
-    return (fHandled);
+    return fHandled;
 }
 
 /*

@@ -294,32 +294,6 @@
 #define WPMENUID_SORTBYNAME             0x1770      // "-2" sort criterion
 #define WPMENUID_SORTBYTYPE             0x1771      // "-1" sort criterion
 
-/*
- *@@ IBMSORTINFO:
- *      structure used internally by the WPS
- *      for sorting. This is undocumented and
- *      has been provided by Chris Wohlgemuth.
- *
- *      This is what wpQuerySortInfo really returns.
- *
- *      We intercept the address of this structure
- *      in the WPFolder instance data in
- *      XFolder::wpRestoreData and store the pointer
- *      in the XFolder instance data.
- *
- *@@added V0.9.12 (2001-05-18) [umoeller]
- */
-
-typedef struct _IBMSORTINFO
-{
-    LONG       lDefaultSort;     // default sort column index
-    BOOL       fAlwaysSort;      // "always maintain sort order"
-    LONG       lCurrentSort;     // current sort column index
-    PFNCOMPARE pfnCompare;       // WPS comparison func called by fnCompareDetailsColumn
-    ULONG      ulFieldOffset;    // field offset to compare
-    M_WPObject *Class;           // sort class
-} IBMSORTINFO, *PIBMSORTINFO;
-
 /* ******************************************************************
  *
  *   Modify-menu funcs
@@ -933,7 +907,9 @@ SHORT EXPENTRY fnCompareDetailsColumn(PMINIRECORDCORE pmrc1,
     XFolderData *somThis = XFolderGetData(pFolder);
     // get WPFolder-internal sort struct
     // from pointer hacked in wpRestoreData
-    PIBMSORTINFO pSortInfo = (PIBMSORTINFO)_pFolderSortInfo;
+    // PIBMSORTINFO pSortInfo = (PIBMSORTINFO)_pFolderSortInfo;
+    PIBMSORTINFO pSortInfo = &((PIBMFOLDERDATA)_pvWPFolderData)->SortInfo;
+            // V0.9.21 (2002-08-24) [umoeller]
 
     BOOL    f1IsOfSortClass,
             f2IsOfSortClass;
@@ -1109,8 +1085,9 @@ PFN fdrQuerySortFunc(WPFolder *somSelf,
             if (lSort >= 0)
             {
                 PIBMSORTINFO psi;
+                // PIBMSORTINFO psi;
 
-                if (    (psi = (PIBMSORTINFO)_pFolderSortInfo)
+                if (    (psi = &((PIBMFOLDERDATA)_pvWPFolderData)->SortInfo)
                      && (_wpIsSortAttribAvailable(somSelf,
                                                   lSort))
                      && (psi->Class = _wpQueryFldrSortClass(somSelf))
@@ -1233,10 +1210,10 @@ BOOL fdrHasAlwaysSort(WPFolder *somSelf)
                    : _lAlwaysSort;
 
 #ifndef __ALWAYSEXTSORT__
-    if (_pFolderSortInfo)
-        return (((PIBMSORTINFO)_pFolderSortInfo)->fAlwaysSort);
-
-    return FALSE;
+    // if (_pFolderSortInfo)
+        // return (((PIBMSORTINFO)_pFolderSortInfo)->fAlwaysSort);
+    // V0.9.21 (2002-08-24) [umoeller]
+    return ((PIBMFOLDERDATA)_pvWPFolderData)->SortInfo.fAlwaysSort;
 #endif
 }
 
@@ -1462,8 +1439,10 @@ VOID fdrSetFldrCnrSort(WPFolder *somSelf,      // in: folder to sort
                 // the WPS will keep reverting the cnr attrs; we have obtained the pointer
                 // to this structure in wpRestoreData
                 if (objIsObjectInitialized(somSelf))
-                    if (_pFolderSortInfo)
-                        ((PIBMSORTINFO)_pFolderSortInfo)->fAlwaysSort = AlwaysSort;
+                    ((PIBMFOLDERDATA)_pvWPFolderData)->SortInfo.fAlwaysSort = AlwaysSort;
+                                // V0.9.21 (2002-08-24) [umoeller]
+                    // if (_pFolderSortInfo)
+                       //  ((PIBMSORTINFO)_pFolderSortInfo)->fAlwaysSort = AlwaysSort;
 
                 // finally, set the cnr sort function: we perform these checks
                 // to avoid cnr flickering

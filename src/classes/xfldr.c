@@ -943,7 +943,6 @@ SOM_Scope WPFileSystem*  SOMLINK xf_xwpQueryDefaultDocument(XFolder *somSelf)
 
 SOM_Scope BOOL  SOMLINK xf_xwpQueryMenuBarVisibility(XFolder *somSelf)
 {
-    BOOL        brc = FALSE;
     XFolderMethodDebug("XFolder","xf_xwpQueryMenuBarVisibility");
 
     if (G_fIsWarp4)
@@ -953,23 +952,22 @@ SOM_Scope BOOL  SOMLINK xf_xwpQueryMenuBarVisibility(XFolder *somSelf)
         // check the FDRLONGARRAY (xfldr.idl) to which we have
         // obtained a pointer using the ugly kludge in
         // XFolder::wpRestoreData
-        if (objIsObjectInitialized(somSelf)) // V0.9.3 (2000-04-29) [umoeller]
-            if (_pFolderLongArray)
+        // rewritten V0.9.21 (2002-08-24) [umoeller]
+        PIBMFOLDERDATA pData;
+        if (pData = (PIBMFOLDERDATA)_pvWPFolderData)
+        {
+            switch (pData->LongArray.ulMenuBarVisibility)
             {
-                ULONG   ulMenuBarVisibility = _pFolderLongArray->ulMenuBarVisibility;
-                            // 0 = off, 1 = on, 2 = default
-                if (ulMenuBarVisibility == MENUBAR_ON) // 1)
-                    brc = TRUE;
-                else if (ulMenuBarVisibility == MENUBAR_DEFAULT) // 2)
-                {
-                    // default value set: get the default value
-                    brc = mnuQueryDefaultMenuBarVisibility();
-                            // V0.9.19 (2002-04-17) [umoeller]
-                }
+                case MENUBAR_ON:        // 1
+                    return TRUE;
+
+                case MENUBAR_DEFAULT:   // 2
+                    return mnuQueryDefaultMenuBarVisibility();
             }
+        }
     }
 
-    return brc;
+    return FALSE;
 }
 
 /*
@@ -1334,6 +1332,7 @@ SOM_Scope void  SOMLINK xf_wpInitData(XFolder *somSelf)
     _lFoldersFirst = SET_DEFAULT;
     _lAlwaysSort = SET_DEFAULT;
 
+    /*   all removed V0.9.21 (2002-08-24) [umoeller]
     _pFolderSortInfo = NULL;
     _pFolderLongArray = NULL;
     _pszFolderStrArray = NULL;
@@ -1346,6 +1345,7 @@ SOM_Scope void  SOMLINK xf_wpInitData(XFolder *somSelf)
     _pulFolderShowAllInTreeView = NULL;
 
     _pWszFolderBkgndImageFile = NULL;
+    */
 
     _fUnInitCalled = FALSE;
     _hwndCnrSaved = NULLHANDLE;
@@ -1525,7 +1525,7 @@ SOM_Scope void  SOMLINK xf_wpUnInitData(XFolder *somSelf)
         // V0.9.16 (2001-11-25) [umoeller]
         G_pConfigFolder = NULL;
 
-    wpshStore(somSelf, &_pWszFolderBkgndImageFile, NULL, NULL);
+    // wpshStore(somSelf, &_pWszFolderBkgndImageFile, NULL, NULL);
     wpshStore(somSelf, &_pWszDefaultDocDeferred, NULL, NULL);
 
     // lock out the folder auto-refresh
@@ -1801,19 +1801,23 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreState(XFolder *somSelf,
 
     if (_wpRestoreLong(somSelf, (PSZ)G_pcszXFolder, 1, &ul))
         _bSnapToGridInstance = (BYTE)ul;
-    else _bSnapToGridInstance = 2;
+    else
+        _bSnapToGridInstance = 2;
 
     if (_wpRestoreLong(somSelf, (PSZ)G_pcszXFolder, 2, &ul))
         _bFullPathInstance = (BYTE)ul;
-    else _bFullPathInstance = 2;
+    else
+        _bFullPathInstance = 2;
 
     if (_wpRestoreLong(somSelf, (PSZ)G_pcszXFolder, 3, &ul))
         _bFolderHotkeysInstance = (BYTE)ul;
-    else _bFolderHotkeysInstance = 2;
+    else
+        _bFolderHotkeysInstance = 2;
 
     if (_wpRestoreLong(somSelf, (PSZ)G_pcszXFolder, 4, &ul))
         _bStatusBarInstance = (BYTE)ul;
-    else _bStatusBarInstance = STATUSBAR_DEFAULT;
+    else
+        _bStatusBarInstance = STATUSBAR_DEFAULT;
 
     // ID 5 used to be inflated SB frame, must not be used again
 
@@ -1862,127 +1866,6 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreState(XFolder *somSelf,
 }
 
 /*
- *@@ wpRestoreLong:
- *      this WPObject instance method restores a LONG value
- *      which was previously saved by WPObject::wpSaveLong.
- *
- *      This may only be used while WPObject::wpRestoreState
- *      is being processed.
- *
- *      This method normally isn't designed to be overridden.
- *      However, since this gets called by WPFolder::wpRestoreState,
- *      we override this method to be able to intercept pointers
- *      to the WPFolder instance data, which we cannot access
- *      otherwise. We can store these pointers in the XFolder
- *      instance data then and read/write the WPFolder instance
- *      data this way.
- *
- *      On Warp 4, the WPS queries the
- *      IDKEY_FDRTREEVIEWCONTENTS key here, which is
- *      == 1 if the "SHOWALLINTREEVIEW" flag is on.
- */
-
-SOM_Scope BOOL  SOMLINK xf_wpRestoreLong(XFolder *somSelf, PSZ pszClass,
-                                         ULONG ulKey, PULONG pulValue)
-{
-    BOOL        brc;
-    // XFolderData *somThis = XFolderGetData(somSelf);
-    // XFolderMethodDebug("XFolder","xf_wpRestoreLong");
-
-    brc = XFolder_parent_WPFolder_wpRestoreLong(somSelf, pszClass,
-                                                ulKey, pulValue);
-
-    if (!strcmp(pszClass, G_pcszWPFolder))
-    {
-        switch (ulKey)
-        {
-            // Warp 4
-            #ifndef IDKEY_FDRTREEVIEWCONTENTS
-                #define IDKEY_FDRTREEVIEWCONTENTS 2939
-            #endif
-
-            case IDKEY_FDRTREEVIEWCONTENTS:
-                // then the pointer given to this method (pValue) must
-                // be the pointer to the WPFolder-internal SHOWALLINTREEVIEW
-                // flag
-                if (pulValue)
-                {
-                    XFolderData *somThis = XFolderGetData(somSelf);
-                    _pulFolderShowAllInTreeView = pulValue;
-                }
-            break;
-        }
-    }
-
-    #ifdef DEBUG_RESTOREDATA
-        if ((pulValue) && (brc))
-            _Pmpf(("Long %s (%s %d) --> 0x%lX",
-                   wpshIdentifyRestoreID(pszClass, ulKey),
-                   pszClass, ulKey,
-                   *pulValue));        // data returned
-    #endif
-
-    return brc;
-}
-
-/*
- *@@ wpRestoreString:
- *      this WPObject instance method restores a string
- *      which was previously saved by WPObject::wpSaveString.
- *
- *      This may only be used while WPObject::wpRestoreState
- *      is being processed.
- *
- *      This method normally isn't designed to be overridden.
- *      However, since this gets called by WPFolder::wpRestoreState,
- *      we override this method to be able to intercept pointers
- *      to the WPFolder instance data, which we cannot access
- *      otherwise. We can store these pointers in the XFolder
- *      instance data then and read/write the WPFolder instance
- *      data this way.
- *
- *@@added V0.9.1 (2000-01-17) [umoeller]
- */
-
-SOM_Scope BOOL  SOMLINK xf_wpRestoreString(XFolder *somSelf,
-                                           PSZ pszClass, ULONG ulKey,
-                                           PSZ pszValue, PULONG pcbValue)
-{
-    BOOL brc = FALSE;
-    // XFolderData *somThis = XFolderGetData(somSelf);
-    // XFolderMethodDebug("XFolder","xf_wpRestoreString");
-
-    brc = XFolder_parent_WPFolder_wpRestoreString(somSelf,
-                                                  pszClass, ulKey,
-                                                  pszValue, pcbValue);
-
-    if (!strcmp(pszClass, G_pcszWPFolder))
-    {
-        switch (ulKey)
-        {
-            case IDKEY_FDRBKGNDIMAGEFILE: // 2934
-                if ((pszValue) && (brc))
-                {
-                    XFolderData *somThis = XFolderGetData(somSelf);
-                    wpshStore(somSelf, &_pWszFolderBkgndImageFile, pszValue, NULL);
-                                // freed in uninitdata
-                }
-            break;
-        }
-    }
-
-    #ifdef DEBUG_RESTOREDATA
-        if ((pszValue) && (brc))
-            _Pmpf(("Strg %s (%s %d) --> %s",
-                   wpshIdentifyRestoreID(pszClass, ulKey),
-                   pszClass, ulKey,
-                   pszValue));        // data returned
-    #endif
-
-    return brc;
-}
-
-/*
  *@@ wpRestoreData:
  *      this WPObject instance method restores a chunk
  *      of binary instance data which was previously
@@ -1994,16 +1877,11 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreString(XFolder *somSelf,
  *      This method normally isn't designed to be overridden.
  *      However, since this gets called by WPFolder::wpRestoreState,
  *      we override this method to be able to intercept pointers
- *      to the WPFolder instance data, which we cannot access
- *      otherwise. We can store these pointers in the XFolder
- *      instance data then and read/write the WPFolder instance
- *      data this way.
- *
- *      On Warp 4, the WPS queries lots of sort and
- *      folder view settings here, whose pointers we
- *      can store in XFolder's instance data.
+ *      to the WPFolder instance data and compare them to what
+ *      we've calculated in the IBMFOLDERDATA for debugging.
  *
  *@@changed V0.9.7 (2000-12-18) [umoeller]: fixed always sort bug
+ *@@changed V0.9.21 (2002-08-24) [umoeller]: removed all code, except for debugging
  */
 
 SOM_Scope BOOL  SOMLINK xf_wpRestoreData(XFolder *somSelf,
@@ -2011,6 +1889,8 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreData(XFolder *somSelf,
                                          PBYTE pValue, PULONG pcbValue)
 {
     BOOL        brc;
+
+#ifdef DEBUG_RESTOREDATA
     ULONG       cbOrigValue = 0;
     // XFolderMethodDebug("XFolder","xf_wpRestoreData");
 
@@ -2019,6 +1899,7 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreData(XFolder *somSelf,
         // pValue given:
         cbOrigValue = *pcbValue;
     // else: caller is requesting the size of the data
+#endif
 
     // always call parent, even for the sort data, or
     // the WPFolder original gets confused
@@ -2026,6 +1907,7 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreData(XFolder *somSelf,
                                                 pszClass, ulKey,
                                                 pValue, pcbValue);
 
+#ifdef DEBUG_RESTOREDATA
     // after we have restored the setting by calling the
     // default WPFolder method, we check for a few flags
     // which we might be interested in; we can then store
@@ -2037,24 +1919,44 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreData(XFolder *somSelf,
 
         switch (ulKey)
         {
+            case IDKEY_FDRBACKGROUND:       // size: 2 bytes
+                if (pValue)
+                {
+                    // _cbFolderBackground = *pcbValue;
+                    // _pFolderBackground = (PVOID)pValue;
+                    PIBMFOLDERDATA pData = (PIBMFOLDERDATA)_pvWPFolderData;
+                    _PmpfF(("0x%lX <-- pValue of IDKEY_FDRBACKGROUND (%d bytes)",
+                                pValue,
+                                *pcbValue));
+                    _PmpfF(("0x%lX <-- we calculated (%d bytes)",
+                                &pData->Background.BkgndStore,
+                                sizeof(FDRBKGNDSTORE)));
+                }
+            break;
+
             case IDKEY_FDRSORTINFO:
                 // then the pointer given to this method (pValue) must
                 // be the pointer to the WPFolder-internal FDRSORTINFO
                 // structure (undocumented, I've declared it in
                 // xfldr.idl); we store this pointer in the instance
                 // data so that we can manipulate it later
+                if (pValue)
+                {
+                    PIBMFOLDERDATA pData = (PIBMFOLDERDATA)_pvWPFolderData;
+                    _PmpfF(("0x%lX <-- pValue of IDKEY_FDRSORTINFO (%d bytes)",
+                                pValue,
+                                *pcbValue));
+                    _PmpfF(("0x%lX <-- we calculated (%d bytes)",
+                                &pData->SortInfo,
+                                sizeof(IBMSORTINFO)));
+                }
+
+/*
                 if (cbOrigValue == sizeof(FDRSORTINFO))
                     if (pValue)
                         _pFolderSortInfo = (PFDRSORTINFO)pValue;
                 // _Pmpf(("IDKEY_FDRSORTINFO size %d -> %d", cbOrigValue, *pcbValue));
-            break;
-
-            case IDKEY_FDRBACKGROUND:       // size: 2 bytes
-                if (pValue)
-                {
-                    _cbFolderBackground = *pcbValue;
-                    _pFolderBackground = (PVOID)pValue;
-                }
+*/
             break;
 
             /* case IDKEY_FDRCNRBACKGROUND:
@@ -2073,21 +1975,33 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreData(XFolder *somSelf,
                 // store the size of the data returned in
                 // folder instance data, in case it is not
                 // 84 bytes (as it is with Warp 4 fixpak 8)
-                _cbFolderLongArray = *pcbValue;
+                // _cbFolderLongArray = *pcbValue;
                 if (pValue)
-                    _pFolderLongArray = (PFDRLONGARRAY)pValue;
+                {
+                    PIBMFOLDERDATA pData = (PIBMFOLDERDATA)_pvWPFolderData;
+                    _PmpfF(("0x%lX <-- pValue of IDKEY_FDRLONGARRAY (%d bytes)",
+                                pValue,
+                                *pcbValue));
+                    _PmpfF(("0x%lX <-- we calculated (%d bytes)",
+                                &pData->LongArray,
+                                sizeof(FDRLONGARRAY)));
+                    // _pFolderLongArray = (PFDRLONGARRAY)pValue;
+                }
             break;
 
+/*
             case IDKEY_FDRSTRARRAY:         // size: 400 bytes
                 // store the size of the data returned in
                 // folder instance data, in case it is not
                 // 400 bytes (as it is with Warp 4 fixpak 8)
                 if (pValue)
                 {
+                    // _pFolderLongArray = (PFDRLONGARRAY)pValue;
                     _cbFolderStrArray = *pcbValue;
                     _pszFolderStrArray = (PSZ)pValue;
                 }
             break;
+*/
 
             /* case IDKEY_CNRBACKGROUND:
             {
@@ -2202,14 +2116,14 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreData(XFolder *somSelf,
         }   // end switch
     }
 
-    #ifdef DEBUG_RESTOREDATA
-        if ((pValue) && (brc))
-            _Pmpf(("Data %s (%s %d) size_in %d -> out %d",
-                    wpshIdentifyRestoreID(pszClass, ulKey),
-                    pszClass, ulKey,
-                    cbOrigValue,    // size in or 0 if size queried
-                    *pcbValue));    // size out
-    #endif
+    if ((pValue) && (brc))
+        _Pmpf(("Data %s (%s %d) size_in %d -> out %d",
+                wpshIdentifyRestoreID(pszClass, ulKey),
+                pszClass, ulKey,
+                cbOrigValue,    // size in or 0 if size queried
+                *pcbValue));    // size out
+
+#endif
 
     return brc;
 }

@@ -141,6 +141,10 @@ interface WPFolder : WPFileSystem
 
     BOOL wpSetIconDataN(in PICONINFO pData, in ULONG ulIndex);
 
+    PVOID wpQueryBkgnd();
+            // returns an IBMFDRBKGND structure as declared in
+            // include\filesys\folder.h
+
 //# The WPS class list shows __get_XXX methods for this class, so
 //# there must be SOM attributes here. Since however there is no
 //# correponsing __set_XXX method, I assume the WPS uses readonly

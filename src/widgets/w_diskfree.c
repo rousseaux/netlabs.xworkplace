@@ -159,6 +159,7 @@ PCTRSCANSETUPSTRING pctrScanSetupString = NULL;
 PCTRSETSETUPSTRING pctrSetSetupString = NULL;
 
 PGPIHDRAW3DFRAME pgpihDraw3DFrame = NULL;
+PGPIHDRAW3DFRAME2 pgpihDraw3DFrame2 = NULL;
 PGPIHSWITCHTORGB pgpihSwitchToRGB = NULL;
 
 PWINHFREE pwinhFree = NULL;
@@ -197,6 +198,7 @@ static const RESOLVEFUNCTION G_aImports[] =
         "ctrSetSetupString", (PFN*)&pctrSetSetupString,
 
         "gpihDraw3DFrame", (PFN*)&pgpihDraw3DFrame,
+        "gpihDraw3DFrame2", (PFN*)&pgpihDraw3DFrame2,
         "gpihSwitchToRGB", (PFN*)&pgpihSwitchToRGB,
 
         "winhFree", (PFN*)&pwinhFree,
@@ -897,16 +899,18 @@ void WgtPaint(HWND hwnd,
                  rcl2.xRight--;
                  rcl2.yTop--;
 
-                 pgpihDraw3DFrame(hps,
-                                  &rcl2,
-                                  ulBorder,
-                                  pPrivate->pWidget->pGlobals->lcol3DDark,
-                                  pPrivate->pWidget->pGlobals->lcol3DLight);
+                 pgpihDraw3DFrame2(hps,
+                                   &rcl2,
+                                   ulBorder,
+                                   pPrivate->pWidget->pGlobals->lcol3DDark,
+                                   pPrivate->pWidget->pGlobals->lcol3DLight);
 
+                 /*
                  rclWin.xLeft += ulBorder;
                  rclWin.yBottom += ulBorder;
                  rclWin.xRight -= ulBorder;
                  rclWin.yTop -= ulBorder;
+                 */
             }
 
             // calculate percent
@@ -1020,14 +1024,17 @@ void WgtPaint(HWND hwnd,
                 rcGraph.xRight = rcGraph.xRight - 5;
                 rcGraph.xLeft  = rcGraph.xRight - 50;
                 pgpihDraw3DFrame(hps,
-                                  &rcGraph,
-                                  1,
-                                  pPrivate->pWidget->pGlobals->lcol3DDark,
-                                  pPrivate->pWidget->pGlobals->lcol3DLight);
+                                 &rcGraph,
+                                 1,
+                                 pPrivate->pWidget->pGlobals->lcol3DDark,
+                                 pPrivate->pWidget->pGlobals->lcol3DLight);
+                /*
                 rcGraph.yTop    --;
                 rcGraph.yBottom ++;
                 rcGraph.xRight  --;
                 rcGraph.xLeft   ++;
+                */
+
                 pgpihDraw3DFrame(hps, &rcGraph, 1, 0x000000, 0xC8C8C8);
                 // graph background
                 rcGraph.yBottom++;

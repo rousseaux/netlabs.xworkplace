@@ -35,46 +35,197 @@
      *
      ********************************************************************/
 
-    #pragma pack(1)                 // SOM packs structures, apparently
+    #ifdef SOM_XFolder_h
 
-    /*
-     *@@ IBMFOLDERDATA:
-     *      WPFolder instance data structure, as far as I
-     *      have been able to decode it. See
-     *      XFldObject::wpInitData where we get a pointer
-     *      to this.
-     *
-     *      WARNING: This is the result of the testing done
-     *      on eComStation, i.e. the MCP1 code level of the
-     *      WPS. I have not tested whether the struct ordering
-     *      is the same on all older versions of OS/2, nor can
-     *      I guarantee that the ordering will stay the same
-     *      in the future (even though it is unlikely that
-     *      anyone at IBM is capable of changing this structure
-     *      any more in the first place).
-     *
-     *      There are many more fields coming after this, but
-     *      right now I only need those.
-     *
-     *@@added V0.9.20 (2002-07-25) [umoeller]
-     */
+        #pragma pack(1)                 // SOM packs structures, apparently
 
-    typedef struct _IBMFOLDERDATA
-    {
-        // all these are also SOM readonly attributes and appear
-        // as _get_XXX in the WPS class list method table
-        WPObject        *FirstObj,              // first object of contents linked list;
-                                                // each object has a pobjNext attribute
-                        *LastObj;               // last object of contents linked list
-        ULONG           hmtxOneFindAtATime;     // whatever this is
-        ULONG           retaddrFindSemOwner;    // whatever this is
-        ULONG           hevFillFolder;          // whatever this is
+        /*
+         *@@ IBMSORTINFO:
+         *      structure used internally by the WPS
+         *      for sorting. This is undocumented and
+         *      has been provided by Chris Wohlgemuth.
+         *
+         *      This is what wpQuerySortInfo really returns.
+         *
+         *      We intercept the address of this structure
+         *      in the WPFolder instance data in
+         *      XFolder::wpRestoreData and store the pointer
+         *      in the XFolder instance data.
+         *
+         *@@added V0.9.12 (2001-05-18) [umoeller]
+         */
 
-        // many more fields following apparently, not decoded yet
+        typedef struct _IBMSORTINFO
+        {
+            LONG            lDefaultSort;     // default sort column index
+            BOOL            fAlwaysSort;      // "always maintain sort order"
+            LONG            lCurrentSort;     // current sort column index
+            PFNCOMPARE      pfnCompare;       // WPS comparison func called by fnCompareDetailsColumn
+            ULONG           ulFieldOffset;    // field offset to compare
+            M_WPObject      *Class;           // sort class
+        } IBMSORTINFO, *PIBMSORTINFO;
 
-    } IBMFOLDERDATA, *PIBMFOLDERDATA;
+        /*
+         *@@ FDRBKGNDSTORE:
+         *      WPS structure used for storing and restoring
+         *      a folder's background settings. This corresponds
+         *      to the IDKEY_FDRBACKGROUND key in wpRestoreState.
+         *
+         *      This information was originally from Henk Kelder.
+         *
+         *      Moved this here from xfldr.idl.
+         *
+         *@@added V0.9.21 (2002-08-24) [umoeller]
+         */
 
-    #pragma pack()
+        typedef struct _IBMFDRBKGNDSTORE
+        {
+            // 0x00 (0)
+            PSZ     pszBitmapFile;
+            // 0x04 (4)
+            LONG    lcolBackground;
+            // 0x08 (8)
+            USHORT  usColorOrBitmap;        // 0x127 == color only
+                                            // 0x128 == bitmap
+                        #define BKGND_COLORONLY     0x127
+                        #define BKGND_BITMAP        0x128
+
+            // 0x0A (10)
+            USHORT  usTiledOrScaled;        // 0x132 == normal
+                                            // 0x133 == tiled
+                                            // 0x134 == scaled
+                        #define BKGND_NORMAL        0x132
+                                // "normal" means, center the bitmap once
+                                // in the window and use lcolBackground for
+                                // the rest
+                        #define BKGND_TILED         0x133
+                                // "tiled" means, paint the bitmap as many
+                                // times as it fits in the window and never
+                                // paint the background color
+                        #define BKGND_SCALED        0x134
+                                // "scaled" means, enlarge the bitmap so
+                                // that it is displayed
+                                // usScaleFactor x usScaleFactor times in
+                                // the window; never paint the background
+                                // color either
+
+            // 0x0C (12)
+            USHORT  usScaleFactor;          // normally 1
+
+            // 0x0E (14) bytes altogether
+
+        } IBMFDRBKGNDSTORE, *PIBMFDRBKGNDSTORE;
+
+        /*
+         *@@ IBMFDRBKGND:
+         *      transient structure used by the WPS internally
+         *      to handle folder backgrounds.
+         *
+         *@@added V0.9.21 (2002-08-24) [umoeller]
+         */
+
+        typedef struct _IBMFDRBKGND
+        {
+            WPImageFile         *pobjImage;     // WPImageFile apparently
+            IBMFDRBKGNDSTORE    BkgndStore;     // persistent data
+        } IBMFDRBKGND, *PIBMFDRBKGND;
+
+        /*
+         *@@ IBMFOLDERDATA:
+         *      WPFolder instance data structure, as far as I
+         *      have been able to decode it. See
+         *      XFldObject::wpInitData where we get a pointer
+         *      to this.
+         *
+         *      WARNING: This is the result of the testing done
+         *      on eComStation, i.e. the MCP1 code level of the
+         *      WPS. I have not tested whether the struct ordering
+         *      is the same on all older versions of OS/2, nor can
+         *      I guarantee that the ordering will stay the same
+         *      in the future (even though it is unlikely that
+         *      anyone at IBM is capable of changing this structure
+         *      any more in the first place).
+         *
+         *@@added V0.9.20 (2002-07-25) [umoeller]
+         *@@changed V0.9.21 (2002-08-24) [umoeller]: greatly extended
+         */
+
+        typedef struct _IBMFOLDERDATA
+        {
+            // all these are also SOM readonly attributes and appear
+            // as _get_XXX in the WPS class list method table
+            WPObject        *FirstObj,              // first object of contents linked list;
+                                                    // each object has a pobjNext attribute
+                            *LastObj;               // last object of contents linked list
+            ULONG           hmtxOneFindAtATime;     // whatever this is
+            ULONG           retaddrFindSemOwner;    // whatever this is
+            ULONG           hevFillFolder;          // whatever this is
+
+            // these are non-attributes
+            SOMObject       *pRWMonitor;            // as returned by wpQueryRWMonitorObject
+            ULONG           ulUnknown1_1,
+                            ulUnknown1_2,
+                            ulUnknown1_3,
+                            ulUnknown1_4;
+
+            PIBMFDRBKGND    pCurrentBackground;
+                        // always contains ptr to current folder background, either
+                        // the default folder background struct or an instance one...
+                        // this ptr gets returned by wpQueryBkgnd (now defined in
+                        // idl\wps\wpfolder.idl)
+            IBMFDRBKGND     Background;
+                        // instance folder background data; apparently
+                        // wpRestoreState writes into the BkgndStore member
+                        // of this struct
+
+            ULONG           ulUnknown2_1,
+                            ulUnknown2_2;
+            WPObject        *pFilter;               // as returned by _wpQueryFldrFilter
+            ULONG           ulUnknown3;
+
+            // sort info structure
+            // (needed by us for extended folder sorting)
+            IBMSORTINFO     SortInfo;
+
+            ULONG           ulUnknown4_1,
+                            ulUnknown4_2,
+                            ulUnknown4_3,
+                            ulUnknown4_4,
+                            ulUnknown4_5,
+                            ulUnknown4_6,
+                            ulUnknown4_7,
+                            ulUnknown4_8,
+                            ulUnknown4_9,
+                            ulUnknown4_10,
+                            ulUnknown4_11,
+                            ulUnknown4_12,
+                            ulUnknown4_13,
+                            ulUnknown4_14,
+                            ulUnknown4_15,
+                            ulUnknown4_16;
+
+            // here comes the "folder long array" that is declared
+            // in xfldr.idl and stored as such with wpSaveState
+            FDRLONGARRAY    LongArray;
+
+            // since FDRLONGARRAY has been extended with Warp 4, at least
+            // the following fields are completely broken on Warp 3,
+            // so watch out with their use
+
+            BOOL            fShowAllInTreeView;
+                                // FALSE == folders only, TRUE == all objects;
+                                // Warp 4 only
+
+            // folder string array as used in wpSaveState; there's
+            // nothing in here we couldn't get through documented
+            // instance methods, so no need to use these!
+            FDRSTRINGARRAY  StringArray;
+
+        } IBMFOLDERDATA, *PIBMFOLDERDATA;
+
+        #pragma pack()
+
+    #endif // SOM_XFolder_h
 
     /* ******************************************************************
      *
@@ -443,6 +594,7 @@
             #define FFL_FOLDERSONLY         0x0001
             #define FFL_SCROLLTO            0x0002
             #define FFL_EXPAND              0x0004
+            #define FFL_SETBACKGROUND       0x0008
 
         #define FM_POPULATED_FILLTREE   (WM_USER + 2)
         #define FM_POPULATED_SCROLLTO   (WM_USER + 3)

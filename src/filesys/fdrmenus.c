@@ -2994,307 +2994,307 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
 {
     BOOL                brc = FALSE;     // "not processed" flag
 
+    if (!somSelf)
+        return FALSE;
+
     TRY_LOUD(excpt1)
     {
         ULONG   ulMenuId2 = ulMenuId - cmnQuerySetting(sulVarMenuOffset);
 
-        if (somSelf)
-        {
-            BOOL        fDummy;
-            WPFolder    *pFolder = NULL;
+        BOOL        fDummy;
+        WPFolder    *pFolder = NULL;
 
+        /*
+         *  "Sort" menu items:
+         *
+         */
+
+        if (fdrSortMenuItemSelected(somSelf,
+                                    hwndFrame,
+                                    NULLHANDLE,     // we don't know the menu hwnd
+                                    ulMenuId,
+                                    &fDummy))
+            brc = TRUE;
+
+        // no sort menu item:
+        // check other variable IDs
+        else switch (ulMenuId2)
+        {
             /*
-             *  "Sort" menu items:
+             * ID_XFMI_OFS_OPENPARTITIONS:
+             *      open WPDrives "Partitions" view
              *
+             *  V0.9.2 (2000-02-29) [umoeller]
              */
 
-            if (fdrSortMenuItemSelected(somSelf,
-                                        hwndFrame,
-                                        NULLHANDLE,     // we don't know the menu hwnd
-                                        ulMenuId,
-                                        &fDummy))
-                brc = TRUE;
+            /* case ID_XFMI_OFS_XWPVIEW:
+                partCreatePartitionsView(somSelf,
+                                         ulMenuId);
+            break; */ // disabled V0.9.12 (2001-05-03) [umoeller]
 
-            // no sort menu item:
-            // check other variable IDs
-            else switch (ulMenuId2)
+            /*
+             * ID_XFMI_OFS_FDRDEFAULTDOC:
+             *      open folder's default document
+             *
+             *  V0.9.4 (2000-06-09) [umoeller]
+             */
+
+            case ID_XFMI_OFS_FDRDEFAULTDOC:
             {
-                /*
-                 * ID_XFMI_OFS_OPENPARTITIONS:
-                 *      open WPDrives "Partitions" view
-                 *
-                 *  V0.9.2 (2000-02-29) [umoeller]
-                 */
-
-                /* case ID_XFMI_OFS_XWPVIEW:
-                    partCreatePartitionsView(somSelf,
-                                             ulMenuId);
-                break; */ // disabled V0.9.12 (2001-05-03) [umoeller]
-
-                /*
-                 * ID_XFMI_OFS_FDRDEFAULTDOC:
-                 *      open folder's default document
-                 *
-                 *  V0.9.4 (2000-06-09) [umoeller]
-                 */
-
-                case ID_XFMI_OFS_FDRDEFAULTDOC:
-                {
-                    WPFileSystem *pDefaultDoc;
-                    if (pDefaultDoc = _xwpQueryDefaultDocument(somSelf))
-                        _wpViewObject(pDefaultDoc, NULLHANDLE, OPEN_DEFAULT, 0);
-                }
-                break;
+                WPFileSystem *pDefaultDoc;
+                if (pDefaultDoc = _xwpQueryDefaultDocument(somSelf))
+                    _wpViewObject(pDefaultDoc, NULLHANDLE, OPEN_DEFAULT, 0);
+            }
+            break;
 
 #ifndef __XWPLITE__
-                /*
-                 * ID_XFMI_OFS_PRODINFO:
-                 *      "Product Information"
-                 */
+            /*
+             * ID_XFMI_OFS_PRODINFO:
+             *      "Product Information"
+             */
 
-                case ID_XFMI_OFS_PRODINFO:
-                    cmnShowProductInfo(NULLHANDLE,      // owner
-                                       MMSOUND_SYSTEMSTARTUP);
-                    brc = TRUE;
-                break;
+            case ID_XFMI_OFS_PRODINFO:
+                cmnShowProductInfo(NULLHANDLE,      // owner
+                                   MMSOUND_SYSTEMSTARTUP);
+                brc = TRUE;
+            break;
 #endif
 
 #if 0       // moved this to mnuFolderSelectingMenuItem, see remarks there
-            // V0.9.19 (2002-06-18) [umoeller]
+        // V0.9.19 (2002-06-18) [umoeller]
 
-                /*
-                 * ID_XFMI_OFS_SELECTSOME:
-                 *      show "Select by name" dialog.
-                 */
+            /*
+             * ID_XFMI_OFS_SELECTSOME:
+             *      show "Select by name" dialog.
+             */
 
-                case ID_XFMI_OFS_SELECTSOME:
-                    fdrShowSelectSome(hwndFrame);
-                            // V0.9.19 (2002-04-17) [umoeller]
-                    brc = TRUE;
-                break;
+            case ID_XFMI_OFS_SELECTSOME:
+                fdrShowSelectSome(hwndFrame);
+                        // V0.9.19 (2002-04-17) [umoeller]
+                brc = TRUE;
+            break;
 
-                /*
-                 * ID_XFMI_OFS_BATCHRENAME:
-                 *      show "batch rename" dialog.
-                 *      V0.9.19 (2002-06-18) [umoeller]
-                 */
+            /*
+             * ID_XFMI_OFS_BATCHRENAME:
+             *      show "batch rename" dialog.
+             *      V0.9.19 (2002-06-18) [umoeller]
+             */
 
-                case ID_XFMI_OFS_BATCHRENAME:
-                    fdrShowBatchRename(hwndFrame);
-                    brc = TRUE;
-                break;
+            case ID_XFMI_OFS_BATCHRENAME:
+                fdrShowBatchRename(hwndFrame);
+                brc = TRUE;
+            break;
 #endif
 
-                /*
-                 * ID_XFMI_OFS_COPYFILENAME_SHORT:
-                 * ID_XFMI_OFS_COPYFILENAME_FULL:
-                 *      these are no real menu items, but only
-                 *      pseudo-commands posted by the corresponding
-                 *      folder hotkeys
-                 */
+            /*
+             * ID_XFMI_OFS_COPYFILENAME_SHORT:
+             * ID_XFMI_OFS_COPYFILENAME_FULL:
+             *      these are no real menu items, but only
+             *      pseudo-commands posted by the corresponding
+             *      folder hotkeys
+             */
 
-                case ID_XFMI_OFS_COPYFILENAME_SHORT:
-                case ID_XFMI_OFS_COPYFILENAME_FULL:
+            case ID_XFMI_OFS_COPYFILENAME_SHORT:
+            case ID_XFMI_OFS_COPYFILENAME_FULL:
+            {
+                // if the user presses hotkeys for "copy filename",
+                // we don't want the filename of the folder
+                // (which somSelf points to here...), but of the
+                // selected objects, so we repost the msg to
+                // the first selected object, which will handle
+                // the rest
+                HWND hwndCnr;
+                if (hwndCnr = WinWindowFromID(hwndFrame, FID_CLIENT))
                 {
-                    // if the user presses hotkeys for "copy filename",
-                    // we don't want the filename of the folder
-                    // (which somSelf points to here...), but of the
-                    // selected objects, so we repost the msg to
-                    // the first selected object, which will handle
-                    // the rest
-                    HWND hwndCnr;
-                    if (hwndCnr = WinWindowFromID(hwndFrame, FID_CLIENT))
+                    PMINIRECORDCORE pmrc = WinSendMsg(hwndCnr,
+                                                      CM_QUERYRECORDEMPHASIS,
+                                                      (MPARAM)CMA_FIRST, // query first
+                                                      (MPARAM)CRA_SELECTED);
+                    if ((pmrc != NULL) && ((ULONG)pmrc != -1))
                     {
-                        PMINIRECORDCORE pmrc = WinSendMsg(hwndCnr,
-                                                          CM_QUERYRECORDEMPHASIS,
-                                                          (MPARAM)CMA_FIRST, // query first
-                                                          (MPARAM)CRA_SELECTED);
-                        if ((pmrc != NULL) && ((ULONG)pmrc != -1))
-                        {
-                            // get object from record core
-                            WPObject *pObject2;
-                            if (pObject2 = OBJECT_FROM_PREC(pmrc))
-                                objCopyObjectFileName(pObject2,
-                                                      hwndFrame,
-                                                      // full path:
-                                                      (ulMenuId2 == ID_XFMI_OFS_COPYFILENAME_FULL));
-                        }
+                        // get object from record core
+                        WPObject *pObject2;
+                        if (pObject2 = OBJECT_FROM_PREC(pmrc))
+                            objCopyObjectFileName(pObject2,
+                                                  hwndFrame,
+                                                  // full path:
+                                                  (ulMenuId2 == ID_XFMI_OFS_COPYFILENAME_FULL));
                     }
                 }
-                break;
+            }
+            break;
 
 #ifndef __NOSNAPTOGRID__
-                /*
-                 * ID_XFMI_OFS_SNAPTOGRID:
-                 *      "Snap to grid"
-                 */
+            /*
+             * ID_XFMI_OFS_SNAPTOGRID:
+             *      "Snap to grid"
+             */
 
-                case ID_XFMI_OFS_SNAPTOGRID:
-                    fdrSnapToGrid(somSelf, TRUE);
-                    brc = TRUE;
-                break;
+            case ID_XFMI_OFS_SNAPTOGRID:
+                fdrSnapToGrid(somSelf, TRUE);
+                brc = TRUE;
+            break;
 #endif
 
-                /*
-                 * ID_XFMI_OFS_OPENPARENT:
-                 *      "Open parent folder":
-                 *      only used by folder hotkeys also
-                 *
-                 * ID_XFMI_OFS_OPENPARENTANDCLOSE:
-                 *      "open parent, close current"
-                 *      only used by folder hotkeys also
-                 */
+            /*
+             * ID_XFMI_OFS_OPENPARENT:
+             *      "Open parent folder":
+             *      only used by folder hotkeys also
+             *
+             * ID_XFMI_OFS_OPENPARENTANDCLOSE:
+             *      "open parent, close current"
+             *      only used by folder hotkeys also
+             */
 
-                case ID_XFMI_OFS_OPENPARENT:
-                case ID_XFMI_OFS_OPENPARENTANDCLOSE:
-                    if (pFolder = _wpQueryFolder(somSelf))
-                        _wpViewObject(pFolder, NULLHANDLE, OPEN_DEFAULT, 0);
-                    else
-                        WinAlarm(HWND_DESKTOP, WA_WARNING);
+            case ID_XFMI_OFS_OPENPARENT:
+            case ID_XFMI_OFS_OPENPARENTANDCLOSE:
+                if (pFolder = _wpQueryFolder(somSelf))
+                    _wpViewObject(pFolder, NULLHANDLE, OPEN_DEFAULT, 0);
+                else
+                    WinAlarm(HWND_DESKTOP, WA_WARNING);
 
-                    if (    (ulMenuId2 == ID_XFMI_OFS_OPENPARENTANDCLOSE)
-                         && (somSelf != cmnQueryActiveDesktop())
-                       )
-                        // fixed V0.9.0 (UM 99-11-29); before it was
-                        // possible to close the Desktop...
-                        _wpClose(somSelf);
-                    brc = TRUE;
-                break;
+                if (    (ulMenuId2 == ID_XFMI_OFS_OPENPARENTANDCLOSE)
+                     && (somSelf != cmnQueryActiveDesktop())
+                   )
+                    // fixed V0.9.0 (UM 99-11-29); before it was
+                    // possible to close the Desktop...
+                    _wpClose(somSelf);
+                brc = TRUE;
+            break;
 
-                /*
-                 * ID_XFMI_OFS_CONTEXTMENU:
-                 *      "Show context menu":
-                 *      only used by folder hotkeys also
-                 */
+            /*
+             * ID_XFMI_OFS_CONTEXTMENU:
+             *      "Show context menu":
+             *      only used by folder hotkeys also
+             */
 
-                case ID_XFMI_OFS_CONTEXTMENU:
-                {
-                    HWND hwndCnr = WinWindowFromID(hwndFrame, FID_CLIENT);
-                    POINTS pts = {0, 0};
-                    WinPostMsg(hwndCnr,
-                               WM_CONTEXTMENU,
-                               (MPARAM)&pts,
-                               MPFROM2SHORT(0, TRUE));
-                    brc = TRUE;
-                }
-                break;
+            case ID_XFMI_OFS_CONTEXTMENU:
+            {
+                HWND hwndCnr = WinWindowFromID(hwndFrame, FID_CLIENT);
+                POINTS pts = {0, 0};
+                WinPostMsg(hwndCnr,
+                           WM_CONTEXTMENU,
+                           (MPARAM)&pts,
+                           MPFROM2SHORT(0, TRUE));
+                brc = TRUE;
+            }
+            break;
 
-                /*
-                 * ID_XFMI_OFS_REFRESH:
-                 *      "Refresh now":
-                 *      pass to File thread (V0.9.0)
-                 */
+            /*
+             * ID_XFMI_OFS_REFRESH:
+             *      "Refresh now":
+             *      pass to File thread (V0.9.0)
+             */
 
-                case ID_XFMI_OFS_REFRESH:
-                    // we used to call _wpRefresh ourselves...
-                    // apparently this wasn't such a good idea,
-                    // because the WPS is doing a lot more things
-                    // than just calling "Refresh". We get messed
-                    // up container record cores if we just call
-                    // _wpRefresh this way, so instead we post the
-                    // WPS the command as if the item from the
-                    // "View" submenu was selected...
+            case ID_XFMI_OFS_REFRESH:
+                // we used to call _wpRefresh ourselves...
+                // apparently this wasn't such a good idea,
+                // because the WPS is doing a lot more things
+                // than just calling "Refresh". We get messed
+                // up container record cores if we just call
+                // _wpRefresh this way, so instead we post the
+                // WPS the command as if the item from the
+                // "View" submenu was selected...
 
-                    WinPostMsg(hwndFrame,
-                               WM_COMMAND,
-                               MPFROMSHORT(WPMENUID_REFRESH),
-                               MPFROM2SHORT(CMDSRC_MENU,
-                                            FALSE));     // keyboard
+                WinPostMsg(hwndFrame,
+                           WM_COMMAND,
+                           MPFROMSHORT(WPMENUID_REFRESH),
+                           MPFROM2SHORT(CMDSRC_MENU,
+                                        FALSE));     // keyboard
 
-                    brc = TRUE; // V0.9.11 (2001-04-22) [umoeller]
-                break;
+                brc = TRUE; // V0.9.11 (2001-04-22) [umoeller]
+            break;
 
-                /*
-                 * ID_XFMI_OFS_CLOSE:
-                 *      this is only used for the "close window"
-                 *      folder hotkey;
-                 *      repost sys command
-                 */
+            /*
+             * ID_XFMI_OFS_CLOSE:
+             *      this is only used for the "close window"
+             *      folder hotkey;
+             *      repost sys command
+             */
 
-                case ID_XFMI_OFS_CLOSE:
-                    WinPostMsg(hwndFrame,
-                               WM_SYSCOMMAND,
-                               (MPARAM)SC_CLOSE,
-                               MPFROM2SHORT(CMDSRC_MENU,
-                                            FALSE));        // keyboard
-                    brc = TRUE;
-                break;
+            case ID_XFMI_OFS_CLOSE:
+                WinPostMsg(hwndFrame,
+                           WM_SYSCOMMAND,
+                           (MPARAM)SC_CLOSE,
+                           MPFROM2SHORT(CMDSRC_MENU,
+                                        FALSE));        // keyboard
+                brc = TRUE;
+            break;
 
-                /*
-                 * ID_XFMI_OFS_BORED:
-                 *      "[Config folder empty]" menu item...
-                 *      show a msg box
-                 */
+            /*
+             * ID_XFMI_OFS_BORED:
+             *      "[Config folder empty]" menu item...
+             *      show a msg box
+             */
 
-                case ID_XFMI_OFS_BORED:
-                    // explain how to configure XFolder
-                    cmnMessageBoxExt(HWND_DESKTOP,
-                                     116,
-                                     NULL, 0,
-                                     135,
-                                     MB_OK);
-                    brc = TRUE;
-                break;
+            case ID_XFMI_OFS_BORED:
+                // explain how to configure XFolder
+                cmnMessageBoxExt(HWND_DESKTOP,
+                                 116,
+                                 NULL, 0,
+                                 135,
+                                 MB_OK);
+                brc = TRUE;
+            break;
 
 
-                /*
-                 * ID_XFMI_OFS_RUN:
-                 *      open Run dialog
-                 *
-                 *  V0.9.14 (2001-08-07) [pr]
-                 */
+            /*
+             * ID_XFMI_OFS_RUN:
+             *      open Run dialog
+             *
+             *  V0.9.14 (2001-08-07) [pr]
+             */
 
-                case ID_XFMI_OFS_RUN:
-                    cmnRunCommandLine(NULLHANDLE, NULL);
-                    brc = TRUE;
-                break;
+            case ID_XFMI_OFS_RUN:
+                cmnRunCommandLine(NULLHANDLE, NULL);
+                brc = TRUE;
+            break;
 
-                /*
-                 * ID_XFMI_OFS_SPLITVIEW:
-                 *      "Open" -> "split view".
-                 *
-                 * V0.9.21 (2002-08-21) [umoeller]
-                 */
+            /*
+             * ID_XFMI_OFS_SPLITVIEW:
+             *      "Open" -> "split view".
+             *
+             * V0.9.21 (2002-08-21) [umoeller]
+             */
 
-                case ID_XFMI_OFS_SPLITVIEW:
-                    _wpViewObject(somSelf,
-                                  WinWindowFromID(hwndFrame, FID_CLIENT),
-                                                // hwndCnr
-                                  ulMenuId,     // varmenuofs + ID_XFMI_OFS_SPLITVIEW
-                                  NULLHANDLE);
-                break;
+            case ID_XFMI_OFS_SPLITVIEW:
+                _wpViewObject(somSelf,
+                              WinWindowFromID(hwndFrame, FID_CLIENT),
+                                            // hwndCnr
+                              ulMenuId,     // varmenuofs + ID_XFMI_OFS_SPLITVIEW
+                              NULLHANDLE);
+            break;
 
-                /*
-                 * default:
-                 *      check for variable menu items
-                 *      (ie. from config folder or folder
-                 *      content menus)
-                 */
+            /*
+             * default:
+             *      check for variable menu items
+             *      (ie. from config folder or folder
+             *      content menus)
+             */
 
-                default:
-                    // added call to HandleFolderEditMenuItems
-                    // to fix broken hotkeys
-                    // V0.9.20 (2002-08-08) [umoeller]
-                    if (!(brc = HandleFolderEditMenuItems(somSelf,
-                                                          hwndFrame,
-                                                          ulMenuId)))
-                        if (    (ulMenuId == WPMENUID_PASTE)        // V0.9.20 (2002-08-08) [umoeller]
+            default:
+                // added call to HandleFolderEditMenuItems
+                // to fix broken hotkeys
+                // V0.9.20 (2002-08-08) [umoeller]
+                if (!(brc = HandleFolderEditMenuItems(somSelf,
+                                                      hwndFrame,
+                                                      ulMenuId)))
+                    if (    (ulMenuId == WPMENUID_PASTE)        // V0.9.20 (2002-08-08) [umoeller]
 #ifndef __ALWAYSREPLACEPASTE__
-                             && (cmnQuerySetting(sfReplacePaste))
+                         && (cmnQuerySetting(sfReplacePaste))
 #endif
-                           )
-                        {
-                            fdrShowPasteDlg(somSelf, hwndFrame);
-                            brc = TRUE;
-                        }
-                        else
-                            // anything else: check if it's one of our variable menu items
-                            brc = CheckForVariableMenuItems(somSelf,
-                                                            hwndFrame,
-                                                            ulMenuId);
+                       )
+                    {
+                        fdrShowPasteDlg(somSelf, hwndFrame);
+                        brc = TRUE;
+                    }
+                    else
+                        // anything else: check if it's one of our variable menu items
+                        brc = CheckForVariableMenuItems(somSelf,
+                                                        hwndFrame,
+                                                        ulMenuId);
 
-            } // end switch;
-        } // end if (somSelf)
+        } // end switch;
     }
     CATCH(excpt1)
     {

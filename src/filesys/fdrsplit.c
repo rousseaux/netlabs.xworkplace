@@ -48,6 +48,9 @@
 #define INCL_WINSTDCNR
 #define INCL_WINSHELLDATA
 #define INCL_WINSYS
+
+#define INCL_GPIBITMAPS
+#define INCL_GPIREGIONS
 #include <os2.h>
 
 // C library headers
@@ -63,6 +66,7 @@
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\cnrh.h"               // container helper routines
 #include "helpers\except.h"             // exception handling
+#include "helpers\gpih.h"               // GPI helper routines
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\standards.h"          // some standard macros
 #include "helpers\threads.h"            // thread helpers
@@ -77,6 +81,7 @@
 #include "shared\classtest.h"           // some cheap funcs for WPS class checks
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\cnrsort.h"             // container sort comparison functions
+#include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 #include "filesys\folder.h"             // XFolder implementation
 #include "filesys\object.h"             // XFldObject implementation
@@ -94,15 +99,811 @@
 PCSZ    WC_SPLITVIEWCLIENT  = "XWPSplitViewClient",
         WC_SPLITPOPULATE   = "XWPSplitViewPopulate";
 
+
+/*
+ *@@ IMAGECACHEENTRY:
+ *
+ *@@added V0.9.21 (2002-08-24) [umoeller]
+ */
+
+typedef struct _IMAGECACHEENTRY
+{
+    WPFileSystem    *pobjImage;     // a WPImageFile really
+
+    HBITMAP         hbm;            // result from wpQueryBitmapHandle
+
+} IMAGECACHEENTRY, *PIMAGECACHEENTRY;
+
 /* ******************************************************************
  *
  *   Global variables
  *
  ********************************************************************/
 
-PFNWP   G_pfnFrameProc = NULL;
+PFNWP       G_pfnFrameProc = NULL;
 
-static MRESULT EXPENTRY fnwpSubclassedFilesFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2);
+HMTX        G_hmtxImages = NULLHANDLE;
+LINKLIST    G_llImages;     // linked list of IMAGECACHEENTRY structs, auto-free
+
+/* ******************************************************************
+ *
+ *   Image file cache
+ *
+ ********************************************************************/
+
+static BOOL LockImages(VOID)
+{
+    if (G_hmtxImages)
+        return !DosRequestMutexSem(G_hmtxImages, SEM_INDEFINITE_WAIT);
+
+    if (!DosCreateMutexSem(NULL,
+                           &G_hmtxImages,
+                           0,
+                           TRUE))
+    {
+        lstInit(&G_llImages,
+                TRUE);      // auto-free
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+static VOID UnlockImages(VOID)
+{
+    DosReleaseMutexSem(G_hmtxImages);
+}
+
+/* ******************************************************************
+ *
+ *   Painting container backgrounds
+ *
+ ********************************************************************/
+
+/*
+ *@@ SUBCLCNR:
+ *      QWL_USER data for containers that were
+ *      subclassed to paint backgrounds.
+ *
+ *@@added V0.9.21 (2002-08-24) [umoeller]
+ */
+
+typedef struct _SUBCLCNR
+{
+    HWND    hwndCnr;
+    PFNWP   pfnwpOrig;
+
+    LONG    lcolBackground;
+
+    // only if usColorOrBitmap == 0x128, we set the following:
+    HBITMAP hbm;            // folder background bitmap
+    SIZEL   szlBitmap;      // size of that bitmap
+
+    USHORT  usTiledOrScaled;        // 0x132 == normal
+                                    // 0x133 == tiled
+                                    // 0x134 == scaled
+                        // #define BKGND_NORMAL        0x132
+                        // #define BKGND_TILED         0x133
+                        // #define BKGND_SCALED        0x134
+    USHORT  usScaleFactor;          // normally 1
+
+} SUBCLCNR, *PSUBCLCNR;
+
+/*
+ *@@ DrawBitmapClipped:
+ *      draws a subrectangle of the given bitmap at
+ *      the given coordinates.
+ *
+ *      The problem with CM_PAINTBACKGROUND is that
+ *      we receive an update rectangle, and we MUST
+ *      ONLY PAINT IN THAT RECTANGLE, or we'll overpaint
+ *      parts of the container viewport that will not
+ *      be refreshed otherwise.
+ *
+ *      At the same time, we must center or tile bitmaps.
+ *      This function is a wrapper around WinDrawBitmap
+ *      that will paint the given bitmap at the pptlOrigin
+ *      position while making sure that only parts in
+ *      prclClip will actually be painted.
+ *
+ *@@added V0.9.21 (2002-08-24) [umoeller]
+ */
+
+VOID DrawBitmapClipped(HPS hps,             // in: presentation space
+                       HBITMAP hbm,         // in: bitmap to paint
+                       PPOINTL pptlOrigin,  // in: position to paint bitmap at
+                       PSIZEL pszlBitmap,   // in: bitmap size
+                       PRECTL prclClip)     // in: clip (update) rectangle
+{
+    RECTL   rclSubBitmap;
+    POINTL  ptl;
+
+    _PmpfF(("pptlOrigin->x: %d, pptlOrigin->y: %d",
+        pptlOrigin->x, pptlOrigin->y));
+
+    /*
+       -- pathological case:
+
+          cxBitmap = 200
+          cyBitmap = 300
+
+          ÚÄpresentation space (cnr)ÄÄÄÄÄÄÄÄÄÄÄÄ¿     500
+          ³                                     ³
+          ³                                     ³
+          ³      ÚÄbitmapÄÄÄÄÄÄÄ¿   ÚrclClip¿   ³     400
+          ³      ³              ³   ³       ³   ³
+          ³      ³              ³   ³       ³   ³
+          ³      ³              ³  350     450  ³     300
+          ³      ³              ³   ³       ³   ³
+          ³      ³              ³   ³       ³   ³
+          ³      100            ³   ÀÄÄÄÄÄÄÄÙ   ³     200
+          ³      ³              ³               ³
+          ³      ³              ³               ³
+          ³     pptlOriginÄ100ÄÄÙ               ³     100
+          ³                                     ³
+          ³                                     ³
+          ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ     0
+
+          0      100    200    300     400     500
+    */
+
+    // do nothing if the bitmap is not even in the
+    // clip rectangle
+
+    if (    (prclClip->xLeft >= pptlOrigin->x + pszlBitmap->cx)
+         || (prclClip->xRight <= pptlOrigin->x)
+         || (prclClip->yBottom >= pptlOrigin->y + pszlBitmap->cy)
+         || (prclClip->yTop <= pptlOrigin->y)
+       )
+    {
+        _Pmpf(("  pathological case, returning"));
+        return;
+    }
+
+    if (prclClip->xLeft > pptlOrigin->x)
+    {
+        /*
+           -- rclClip is to the right of bitmap origin:
+
+              cxBitmap = 300
+              cyBitmap = 300
+
+              ÚÄpresentation space (cnr)ÄÄÄÄÄÄÄÄÄÄÄÄ¿     500
+              ³                                     ³
+              ³                                     ³
+              ³      ÚÄbitmapÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿       ³     400
+              ³      ³                      ³       ³
+              ³      ³                      ³       ³
+              ³      ³             ÚÄrclClipÄÄÄÄ¿   ³     300
+              ³      100           300      ³   ³   ³
+              ³      ³             ³        ³   ³   ³
+              ³      ³             ÀÄÄÄÄÄ200ÅÄÄÄÙ   ³     200
+              ³      ³                      ³       ³
+              ³      ³                      ³       ³
+              ³     pptlOriginÄÄÄ100ÄÄÄÄÄÄÄÄÙ       ³     100
+              ³                                     ³
+              ³                                     ³
+              ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ     0
+
+              0      100    200    300     400     500
+
+              this gives us: rclSubBitmap xLeft   = 300 - 100 = 200
+                                          yBottom = 200 - 100 = 100
+                                          xRight  = 450 - 100 = 350 --> too wide, but shouldn't matter
+                                          yTop    = 300 - 100 = 200
+
+        */
+
+        rclSubBitmap.xLeft =   prclClip->xLeft
+                             - pptlOrigin->x;
+        rclSubBitmap.xRight =  prclClip->xRight
+                             - pptlOrigin->x;
+        ptl.x = prclClip->xLeft;
+    }
+    else
+    {
+        /*
+           -- rclClip is to the left of bitmap origin:
+
+              cxBitmap = 300
+              cyBitmap = 300
+
+              ÚÄpresentation space (cnr)ÄÄÄÄÄÄÄÄÄÄÄÄ¿     500
+              ³                                     ³
+              ³                                     ³
+              ³      ÚÄbitmapÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿       ³     400
+              ³      ³                      ³       ³
+              ³      ³                      ³       ³
+              ³  ÚÄrclClipÄÄÄÄÄÄÄÄÄ¿        ³       ³     300
+              ³  50  ³            300       ³       ³
+              ³  ³   ³             ³        ³       ³
+              ³  ÀÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÙ        ³       ³     200
+              ³     100                     ³       ³
+              ³      ³                      ³       ³
+              ³     pptlOriginÄÄÄ100ÄÄÄÄÄÄÄÄÙ       ³     100
+              ³                                     ³
+              ³                                     ³
+              ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ     0
+
+              0      100    200    300     400     500
+
+        */
+
+        rclSubBitmap.xLeft  = 0;
+        rclSubBitmap.xRight = prclClip->xRight - pptlOrigin->x;
+
+        ptl.x = pptlOrigin->x;
+
+    }
+
+    // same thing for y
+    if (prclClip->yBottom > pptlOrigin->y)
+    {
+
+        rclSubBitmap.yBottom =   prclClip->yBottom
+                               - pptlOrigin->y;
+        rclSubBitmap.yTop    =   prclClip->yTop
+                               - pptlOrigin->y;
+        ptl.y = prclClip->yBottom;
+    }
+    else
+    {
+        rclSubBitmap.yBottom  = 0;
+        rclSubBitmap.yTop = prclClip->yTop - pptlOrigin->y;
+
+        ptl.y = pptlOrigin->y;
+
+    }
+
+    if (    (rclSubBitmap.xLeft < rclSubBitmap.xRight)
+         && (rclSubBitmap.yBottom < rclSubBitmap.yTop)
+       )
+        WinDrawBitmap(hps,
+                      hbm,
+                      &rclSubBitmap,
+                      &ptl,
+                      0,
+                      0,
+                      0);
+}
+
+/*
+ *@@ PaintCnrBackground:
+ *      implementation of CM_PAINTBACKGROUND in fnwpSubclCnr.
+ *
+ *@@added V0.9.21 (2002-08-24) [umoeller]
+ */
+
+MRESULT PaintCnrBackground(HWND hwndCnr,
+                           POWNERBACKGROUND pob)        // in: mp1 of CM_PAINTBACKGROUND
+{
+    PSUBCLCNR pSubCnr;
+    if (pSubCnr = (PSUBCLCNR)WinQueryWindowPtr(hwndCnr, QWL_USER))
+    {
+        BOOL    fSwitched = FALSE;
+
+        // we need not paint the background if we
+        // have a bitmap AND it should fill the
+        // entire folder (avoid flicker)
+        if (    (!pSubCnr->hbm)
+             || (BKGND_NORMAL == pSubCnr->usTiledOrScaled)
+           )
+        {
+            fSwitched = gpihSwitchToRGB(pob->hps);
+
+            WinFillRect(pob->hps,
+                        &pob->rclBackground,
+                        pSubCnr->lcolBackground);
+        }
+
+        if (pSubCnr->hbm)
+        {
+            RECTL   rclCnr;
+            POINTL  ptl;
+            WinQueryWindowRect(hwndCnr, &rclCnr);
+
+            switch (pSubCnr->usTiledOrScaled)
+            {
+                case BKGND_NORMAL:
+                    // center the bitmap in the container, but
+                    // draw only the part that is specified
+                    // with the OWNERBACKGROUND
+
+                    ptl.x = (rclCnr.xRight - pSubCnr->szlBitmap.cx) / 2;
+                    ptl.y = (rclCnr.yTop - pSubCnr->szlBitmap.cy) / 2;
+
+                    _PmpfF(("BKGND_NORMAL"));
+                    _Pmpf(("  rclCnr xLeft %d, yBottom %d, xRight %d, yTop %d",
+                        rclCnr.xLeft, rclCnr.yBottom, rclCnr.xRight, rclCnr.yTop));
+                    _Pmpf(("  cxBitmap: %d, cyBitmap: %d",
+                        pSubCnr->szlBitmap.cx, pSubCnr->szlBitmap.cy));
+
+                    DrawBitmapClipped(pob->hps,
+                                      pSubCnr->hbm,
+                                      &ptl,
+                                      &pSubCnr->szlBitmap,
+                                      &pob->rclBackground);
+                break;
+
+                case BKGND_TILED:
+                    _PmpfF(("BKGND_TILED"));
+                    _Pmpf(("  rclCnr xLeft %d, yBottom %d, xRight %d, yTop %d",
+                        rclCnr.xLeft, rclCnr.yBottom, rclCnr.xRight, rclCnr.yTop));
+                    _Pmpf(("  cxBitmap: %d, cyBitmap: %d",
+                        pSubCnr->szlBitmap.cx, pSubCnr->szlBitmap.cy));
+
+                    // start with the first multiple of szlBitmap.cy that is
+                    // affected by the update rectangle's bottom
+                    ptl.y =   pob->rclBackground.yBottom
+                            / pSubCnr->szlBitmap.cy
+                            * pSubCnr->szlBitmap.cy;
+                    while (ptl.y < pob->rclBackground.yTop)
+                    {
+                        ptl.x =   pob->rclBackground.xLeft
+                                / pSubCnr->szlBitmap.cx
+                                * pSubCnr->szlBitmap.cx;
+                        while (ptl.x < pob->rclBackground.xRight)
+                        {
+                            _Pmpf(("  tiling, ptl.x: %d, ptl.y: %d",
+                                ptl.x, ptl.y));
+
+                            DrawBitmapClipped(pob->hps,
+                                              pSubCnr->hbm,
+                                              &ptl,
+                                              &pSubCnr->szlBitmap,
+                                              &pob->rclBackground);
+
+                            ptl.x += pSubCnr->szlBitmap.cx;
+                        }
+
+                        ptl.y += pSubCnr->szlBitmap.cy;
+                    }
+                break;
+
+                case BKGND_SCALED:
+                {
+                    // ignore scaling factor for now
+                    POINTL  aptl[4];
+                    HRGN    hrgnOldClip;
+
+                    // reset clip region to "all" to quickly
+                    // get the old clip region; we must save
+                    // and restore that, or the cnr will stop
+                    // painting quickly
+                    GpiSetClipRegion(pob->hps,
+                                     NULLHANDLE,
+                                     &hrgnOldClip);        // out: old clip region
+                    GpiIntersectClipRectangle(pob->hps,
+                                              &pob->rclBackground);
+
+                    memset(aptl, 0, sizeof(aptl));
+
+                    // aptl[0]: target bottom-left, is all 0
+
+                    // aptl[1]: target top-right (inclusive!)
+                    aptl[1].x = rclCnr.xRight - 1;
+                    aptl[1].y = rclCnr.yTop - 1;
+
+                    // aptl[2]: source bottom-left, is all 0
+
+                    // aptl[3]: source top-right (exclusive!)
+                    aptl[3].x = pSubCnr->szlBitmap.cx;
+                    aptl[3].y = pSubCnr->szlBitmap.cy;
+
+                    GpiWCBitBlt(pob->hps,
+                                pSubCnr->hbm,
+                                4L,             // must always be 4
+                                &aptl[0],       // points array
+                                ROP_SRCCOPY,
+                                BBO_IGNORE);
+
+                    // restore the old clip region
+                    GpiSetClipRegion(pob->hps,
+                                     hrgnOldClip,
+                                     &hrgnOldClip);
+                    // hrgnOldClip now has the clip region that was
+                    // created by GpiIntersectClipRectangle, so delete
+                    // that
+                    GpiDestroyRegion(pob->hps,
+                                     hrgnOldClip);
+                }
+                break;
+            }
+        }
+
+        return (MRESULT)TRUE;
+    }
+
+    return (MRESULT)FALSE;
+}
+
+/*
+ *@@ fnwpSubclCnr:
+ *
+ *@@added V0.9.21 (2002-08-24) [umoeller]
+ */
+
+MRESULT EXPENTRY fnwpSubclCnr(HWND hwndCnr, ULONG msg, MPARAM mp1, MPARAM mp2)
+{
+    MRESULT     mrc = 0;
+    PSUBCLCNR   pSubCnr;
+
+    switch (msg)
+    {
+        case CM_PAINTBACKGROUND:
+            mrc = PaintCnrBackground(hwndCnr, (POWNERBACKGROUND)mp1);
+        break;
+
+        case WM_DESTROY:
+            if (pSubCnr = (PSUBCLCNR)WinQueryWindowPtr(hwndCnr, QWL_USER))
+            {
+                mrc = pSubCnr->pfnwpOrig(hwndCnr, msg, mp1, mp2);
+
+                free(pSubCnr);
+            }
+        break;
+
+        default:
+            pSubCnr = (PSUBCLCNR)WinQueryWindowPtr(hwndCnr, QWL_USER);
+            mrc = pSubCnr->pfnwpOrig(hwndCnr, msg, mp1, mp2);
+        break;
+    }
+
+    return mrc;
+}
+
+/*
+ *@@ fdrMakeCnrPaint:
+ *
+ *@@added V0.9.21 (2002-08-24) [umoeller]
+ */
+
+BOOL fdrMakeCnrPaint(HWND hwndCnr)
+{
+    PSUBCLCNR   pSubCnr;
+    CNRINFO     CnrInfo;
+
+    if (cnrhQueryCnrInfo(hwndCnr, &CnrInfo))
+    {
+        CnrInfo.flWindowAttr |= CA_OWNERPAINTBACKGROUND;
+        WinSendMsg(hwndCnr,
+                   CM_SETCNRINFO,
+                   (MPARAM)&CnrInfo,
+                   (MPARAM)CMA_FLWINDOWATTR);
+
+        if (pSubCnr = NEW(SUBCLCNR))
+        {
+            ZERO(pSubCnr);
+
+            pSubCnr->hwndCnr = hwndCnr;
+            WinSetWindowPtr(hwndCnr, QWL_USER, pSubCnr);
+            if (pSubCnr->pfnwpOrig = WinSubclassWindow(hwndCnr,
+                                                       fnwpSubclCnr))
+                return TRUE;
+        }
+    }
+
+    return FALSE;
+}
+
+/*
+ *@@ ResolveColor:
+ *
+ *@@added V0.9.21 (2002-08-24) [umoeller]
+ */
+
+LONG ResolveColor(LONG lcol)         // in: explicit color or SYSCLR_* index
+{
+    // really sick stuff here... frequently, if the
+    // highest byte is set in the color value, it is
+    // really a SYSCLR_* index; for backgrounds, this
+    // is normally SYSCLR_WINDOW, so check this
+    #define USE_DEFAULT_COLOR   0xFF000000
+    if (lcol & USE_DEFAULT_COLOR)
+    {
+        #define DUMPCOL(i) case i: pcsz = # i; break
+        PCSZ pcsz = "unknown index";
+        switch (lcol)
+        {
+            DUMPCOL(SYSCLR_SHADOWHILITEBGND);
+            DUMPCOL(SYSCLR_SHADOWHILITEFGND);
+            DUMPCOL(SYSCLR_SHADOWTEXT);
+            DUMPCOL(SYSCLR_ENTRYFIELD);
+            DUMPCOL(SYSCLR_MENUDISABLEDTEXT);
+            DUMPCOL(SYSCLR_MENUHILITE);
+            DUMPCOL(SYSCLR_MENUHILITEBGND);
+            DUMPCOL(SYSCLR_PAGEBACKGROUND);
+            DUMPCOL(SYSCLR_FIELDBACKGROUND);
+            DUMPCOL(SYSCLR_BUTTONLIGHT);
+            DUMPCOL(SYSCLR_BUTTONMIDDLE);
+            DUMPCOL(SYSCLR_BUTTONDARK);
+            DUMPCOL(SYSCLR_BUTTONDEFAULT);
+            DUMPCOL(SYSCLR_TITLEBOTTOM);
+            DUMPCOL(SYSCLR_SHADOW);
+            DUMPCOL(SYSCLR_ICONTEXT);
+            DUMPCOL(SYSCLR_DIALOGBACKGROUND);
+            DUMPCOL(SYSCLR_HILITEFOREGROUND);
+            DUMPCOL(SYSCLR_HILITEBACKGROUND);
+            DUMPCOL(SYSCLR_INACTIVETITLETEXTBGND);
+            DUMPCOL(SYSCLR_ACTIVETITLETEXTBGND);
+            DUMPCOL(SYSCLR_INACTIVETITLETEXT);
+            DUMPCOL(SYSCLR_ACTIVETITLETEXT);
+            DUMPCOL(SYSCLR_OUTPUTTEXT);
+            DUMPCOL(SYSCLR_WINDOWSTATICTEXT);
+            DUMPCOL(SYSCLR_SCROLLBAR);
+            DUMPCOL(SYSCLR_BACKGROUND);
+            DUMPCOL(SYSCLR_ACTIVETITLE);
+            DUMPCOL(SYSCLR_INACTIVETITLE);
+            DUMPCOL(SYSCLR_MENU);
+            DUMPCOL(SYSCLR_WINDOW);
+            DUMPCOL(SYSCLR_WINDOWFRAME);
+            DUMPCOL(SYSCLR_MENUTEXT);
+            DUMPCOL(SYSCLR_WINDOWTEXT);
+            DUMPCOL(SYSCLR_TITLETEXT);
+            DUMPCOL(SYSCLR_ACTIVEBORDER);
+            DUMPCOL(SYSCLR_INACTIVEBORDER);
+            DUMPCOL(SYSCLR_APPWORKSPACE);
+            DUMPCOL(SYSCLR_HELPBACKGROUND);
+            DUMPCOL(SYSCLR_HELPTEXT);
+            DUMPCOL(SYSCLR_HELPHILITE);
+        }
+
+        _Pmpf(("  --> %d (%s)", lcol, pcsz));
+
+        lcol = WinQuerySysColor(HWND_DESKTOP,
+                                lcol,
+                                0);
+    }
+
+    return lcol;
+}
+
+typedef BOOL32 _System somTP_wpQueryBitmapHandle(WPObject *somSelf,
+                                                 HBITMAP *phBitmap,
+                                                 HPAL *phPalette,
+                                                 ULONG ulWidth,
+                                                 ULONG ulHeight,
+                                                 ULONG ulFlags,
+                                                 LONG lBackgroundColor,
+                                                 BOOL *pbQuitEarly);
+typedef somTP_wpQueryBitmapHandle *somTD_wpQueryBitmapHandle;
+
+/*
+ *@@ GetBitmap:
+ *      returns the bitmap handle for the given folder
+ *      background structure.
+ *
+ *      Returns NULLHANDLE if
+ *
+ *      --  the folder has no background bitmap;
+ *
+ *      --  the specified bitmap file does not exist
+ *
+ *      --  we're running on Warp 3.
+ *
+ *@@added V0.9.21 (2002-08-24) [umoeller]
+ */
+
+HBITMAP GetBitmap(PIBMFDRBKGND pBkgnd)
+{
+    HBITMAP hbm = NULLHANDLE;
+    BOOL    fLocked = FALSE;
+
+    TRY_LOUD(excpt1)
+    {
+        if (    (pBkgnd->BkgndStore.usColorOrBitmap == BKGND_BITMAP)
+             && (pBkgnd->BkgndStore.pszBitmapFile)
+           )
+        {
+            WPObject    *pobjImage;
+
+            /*
+            // check if WPFolder has found the WPImageFile
+            // for us already (that is, if the folder had
+            // a legacy open view already)
+            if (pobjImage = pBkgnd->pobjImage)
+            {
+                // yes: check that it's valid
+                CHAR szFilename[CCHMAXPATH] = "unknown";
+                _wpQueryFilename(pBkgnd->pobjImage, szFilename, TRUE);
+                if (stricmp(pBkgnd->BkgndStore.pszBitmapFile, szFilename))
+                    cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                           "Background bitmap mismatch:\n"
+                           "Folder has \"%s\", but image file is from \"%s\"",
+                           pBkgnd->BkgndStore.pszBitmapFile,
+                           szFilename);
+            }
+            else
+            */
+
+            // find the WPImageFile from the path, but DO NOT
+            // set the WPImageFile* pointer in the IBMFDRBKGND
+            // struct, or the WPS will go boom
+            CHAR    szTemp[CCHMAXPATH];
+            if (strchr(pBkgnd->BkgndStore.pszBitmapFile, '\\'))
+                strcpy(szTemp, pBkgnd->BkgndStore.pszBitmapFile);
+            else
+            {
+                // not fully qualified: assume ?:\os2\bitmap then
+                sprintf(szTemp,
+                        "?:\\os2\\bitmap\\%s",
+                        pBkgnd->BkgndStore.pszBitmapFile);
+            }
+
+            if (szTemp[0] == '?')
+                szTemp[0] = doshQueryBootDrive();
+
+            if (pobjImage = _wpclsQueryObjectFromPath(_WPFileSystem,
+                                                      szTemp))
+            {
+                // now we have the WPImageFile...
+                // in any case, LOCK it so it won't go dormant
+                // behind our butt
+                _wpLockObject(pobjImage);
+
+                // now we need to return a HBITMAP... unfortunately
+                // WPImageFile does NO reference counting whatsover
+                // when doing _wpQueryBitmapHandle, but will create
+                // a new HBITMAP for every call, which is just plain
+                // stupid. So that's what we need the image cache
+                // for: create only one HBITMAP for every image file,
+                // no matter how many times it is used...
+
+                // so check if we can find it in the cache
+                if (fLocked = LockImages())
+                {
+                    PLISTNODE pNode = lstQueryFirstNode(&G_llImages);
+                    while (pNode)
+                    {
+                        PIMAGECACHEENTRY pice = (PIMAGECACHEENTRY)pNode->pItemData;
+                        if (pice->pobjImage == pobjImage)
+                        {
+                            // found:
+                            hbm = pice->hbm;
+
+                            // then we've locked it before and can unlock
+                            // it once
+                            // _wpUnlockObject(pobjImage);
+
+                            break;
+                        }
+
+                        pNode = pNode->pNext;
+                    }
+
+                    if (!hbm)
+                    {
+                        // image file was not in cache:
+                        // then create a HBITMAP and add a cache entry
+                        somTD_wpQueryBitmapHandle _wpQueryBitmapHandle;
+                        if (_wpQueryBitmapHandle = (somTD_wpQueryBitmapHandle)wpshResolveFor(
+                                                                pobjImage,
+                                                                NULL,
+                                                                "wpQueryBitmapHandle"))
+                        {
+                            if (    (_wpQueryBitmapHandle(pobjImage,
+                                                          &hbm,
+                                                          NULL,      // no palette
+                                                          0,         // width (do not scale)
+                                                          0,         // height (do not scale)
+                                                          0,         // flags, unused apparently
+                                                          0,         // background color
+                                                          NULL))
+                                 && (hbm)
+                               )
+                            {
+                                PIMAGECACHEENTRY pice;
+                                if (pice = NEW(IMAGECACHEENTRY))
+                                {
+                                    ZERO(pice);
+                                    pice->pobjImage = pobjImage;
+                                    pice->hbm = hbm;
+
+                                    lstAppendItem(&G_llImages,
+                                                  pice);
+                                }
+                            }
+                        }
+                    }
+                } // end if (fLocked = LockImages())
+            }
+        }
+    }
+    CATCH(excpt1)
+    {
+    }
+    END_CATCH();
+
+    if (fLocked)
+        UnlockImages();
+
+    return hbm;
+}
+
+/*
+ *@@ SetCnrLayout:
+ *
+ *@@added V0.9.21 (2002-08-24) [umoeller]
+ */
+
+VOID SetCnrLayout(HWND hwndCnr,         // in: cnr whose colors and fonts are to be set
+                  XFolder *pFolder,     // in: folder that cnr gets filled with
+                  ULONG ulView)         // in: one of OPEN_CONTENTS, OPEN_DETAILS, OPEN_TREE
+{
+    TRY_LOUD(excpt1)
+    {
+        // try to figure out the background color
+        XFolderData     *somThis = XFolderGetData(pFolder);
+        PIBMFOLDERDATA  pFdrData;
+        PIBMFDRBKGND    pBkgnd;
+        if (    (pFdrData = (PIBMFOLDERDATA)_pvWPFolderData)
+             && (pBkgnd = pFdrData->pCurrentBackground)
+           )
+        {
+            LONG        lcolBack,
+                        lcolFore;
+            PSUBCLCNR   pSubCnr;
+
+            // hack background
+            lcolBack = ResolveColor(pBkgnd->BkgndStore.lcolBackground);
+
+            if (pSubCnr = (PSUBCLCNR)WinQueryWindowPtr(hwndCnr, QWL_USER))
+            {
+                pSubCnr->lcolBackground = lcolBack;
+
+                if (pSubCnr->hbm = GetBitmap(pBkgnd))
+                {
+                    BITMAPINFOHEADER2 bih;
+                    bih.cbFix = sizeof(bih);
+                    GpiQueryBitmapInfoHeader(pSubCnr->hbm,
+                                             &bih);
+                    pSubCnr->szlBitmap.cx = bih.cx;
+                    pSubCnr->szlBitmap.cy = bih.cy;
+                }
+
+                pSubCnr->usTiledOrScaled = pBkgnd->BkgndStore.usTiledOrScaled;
+                pSubCnr->usScaleFactor = pBkgnd->BkgndStore.usScaleFactor;
+            }
+            else
+                winhSetPresColor(hwndCnr,
+                                 PP_BACKGROUNDCOLOR,
+                                 lcolBack);
+
+            // hack foreground
+            switch (ulView)
+            {
+                case OPEN_CONTENTS:
+                    lcolFore = pFdrData->LongArray.rgbIconViewTextColColumns;
+                break;
+
+                case OPEN_DETAILS:
+                    lcolFore = pFdrData->LongArray.rgbDetlViewTextCol;
+                break;
+
+                case OPEN_TREE:
+                    lcolFore = pFdrData->LongArray.rgbTreeViewTextColIcons;
+                break;
+            }
+
+            lcolFore = ResolveColor(lcolFore);
+
+            winhSetPresColor(hwndCnr,
+                             PP_FOREGROUNDCOLOR,
+                             lcolFore);
+
+            // set the font according to the view flag;
+            // _wpQueryFldrFont returns a default font
+            // properly if there's no instance setting
+            // for this view
+            winhSetWindowFont(hwndCnr,
+                              _wpQueryFldrFont(pFolder, ulView));
+        }
+    }
+    CATCH(excpt1)
+    {
+    }
+    END_CATCH();
+}
 
 /* ******************************************************************
  *
@@ -126,6 +927,9 @@ static MRESULT EXPENTRY fnwpSubclassedFilesFrame(HWND hwndFrame, ULONG msg, MPAR
  *         a file-system object;
  *
  *      -- if the WPDisk or WPShadow cannot be resolved.
+ *
+ *      If fFoldersOnly and the return value is not NULL,
+ *      it is guaranteed to be some kind of folder.
  *
  *@@added V0.9.9 (2001-03-11) [umoeller]
  */
@@ -157,11 +961,11 @@ WPFileSystem* fdrGetFSFromRecord(PMINIRECORDCORE precc,
         }
     }
 
-    return (pobj);
+    return pobj;
 }
 
 /*
- *@@ IsInsertable:
+ *@@ fdrIsInsertable:
  *      checks if pObject can be inserted in a container.
  *
  *      The return value depends on ulInsert:
@@ -982,6 +1786,8 @@ VOID fdrPostFillFolder(PFDRSPLITVIEW psv,
                        PMINIRECORDCORE prec,       // in: record with folder to populate
                        ULONG fl)                   // in: FFL_* flags
 {
+    WPFileSystem    *pFolder;
+
     _PmpfF(("        posting FM_FILLFOLDER %s",
                 prec->pszIcon
             ));
@@ -1023,6 +1829,8 @@ HPOINTER fdrSplitQueryPointer(PFDRSPLITVIEW psv)
  *   Split view main control (main frame's client)
  *
  ********************************************************************/
+
+static MRESULT EXPENTRY fnwpSubclassedFilesFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2);
 
 /*
  *@@ fdrCreateFrameWithCnr:
@@ -1155,7 +1963,7 @@ MPARAM fdrSetupSplitView(HWND hwnd,
         // split window becomes client of main frame
     sbcd.ulCreateFlags =   SBCF_VERTICAL
                          | SBCF_PERCENTAGE
-                         // | SBCF_3DSUNK
+                         | SBCF_3DEXPLORERSTYLE
                          | SBCF_MOVEABLE;
     sbcd.lPos = psv->lSplitBarPos;   // in percent
     sbcd.ulLeftOrBottomLimit = 100;
@@ -1370,18 +2178,30 @@ MRESULT EXPENTRY fnwpSplitController(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
             if (psv = WinQueryWindowPtr(hwndClient, QWL_USER))
             {
                 PMINIRECORDCORE prec = (PMINIRECORDCORE)mp1;
-                BOOL        fFolderChanged = FALSE;
-                WPFolder    *pFolder;
 
                 _PmpfF(("FM_FILLFOLDER %s",
                             prec->pszIcon));
                 DumpFlags((ULONG)mp2);
 
                 if (0 == ((ULONG)mp2 & FFL_FOLDERSONLY))
+                {
+                    WPFolder    *pFolder;
+
                     // not folders-only: then we need to
                     // refresh the files list
                     fdrClearContainer(psv->hwndFilesCnr,
                                       &psv->llFileObjectsInserted);
+
+                    if (    ((ULONG)mp2 & FFL_SETBACKGROUND)
+                         && (pFolder = fdrGetFSFromRecord(prec,
+                                                          TRUE)) // folders only
+                       )
+                    {
+                        SetCnrLayout(psv->hwndFilesCnr,
+                                     pFolder,
+                                     OPEN_CONTENTS);
+                    }
+                }
 
                 fdrSplitPopulate(psv,
                                  prec,
@@ -1714,10 +2534,11 @@ MRESULT EXPENTRY fnwpSubclassedTreeFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, 
                             // record changed?
                             if (prec != psv->precFolderContentsShowing)
                             {
+                                // then go refresh the files container
                                 psv->precFolderContentsShowing = prec;
                                 fdrPostFillFolder(psv,
                                                   prec,
-                                                  0);
+                                                  FFL_SETBACKGROUND);
                             }
 
                             if (psv->hwndStatusBar)
@@ -1904,19 +2725,16 @@ static MRESULT EXPENTRY fnwpSubclassedFilesFrame(HWND hwndFrame, ULONG msg, MPAR
                         PNOTIFYRECORDEMPHASIS pnre = (PNOTIFYRECORDEMPHASIS)mp2;
                         PMINIRECORDCORE prec;
 
-                        if (    (pnre->pRecord)
-                             && (pnre->fEmphasisMask & CRA_SELECTED)
-                             && (prec = (PMINIRECORDCORE)pnre->pRecord)
-                             && (prec->flRecordAttr & CRA_SELECTED)
-                             && (hwndMainControl = WinQueryWindow(hwndFrame, QW_OWNER))
+                        if (    // (pnre->pRecord)
+                             // && (pnre->fEmphasisMask & CRA_SELECTED)
+                             // && (prec = (PMINIRECORDCORE)pnre->pRecord)
+                             // && (prec->flRecordAttr & CRA_SELECTED)
+                                (hwndMainControl = WinQueryWindow(hwndFrame, QW_OWNER))
                              && (psv = WinQueryWindowPtr(hwndMainControl, QWL_USER))
                              // notifications not disabled?
                              && (psv->fFileDlgReady)
                            )
                         {
-                            _PmpfF(("CN_EMPHASIS %s",
-                                    prec->pszIcon));
-
                             if (psv->hwndStatusBar)
                             {
                                 #ifdef DEBUG_STATUSBARS
@@ -2366,11 +3184,11 @@ HWND fdrCreateSplitView(WPFolder *somSelf,
                 // and populate this once we're running
                 fdrPostFillFolder(&psvd->sv,
                                   pRootRec,
-                                  /* FFL_FOLDERSONLY | */ FFL_EXPAND);
+                                  // full populate, and expand tree on the left,
+                                  // and set background
+                                  FFL_SETBACKGROUND | FFL_EXPAND);
 
                 // view-specific stuff
-
-                _PmpfF(("setting frame's PSPLITVIEWDATA to 0x%lX", psvd));
 
                 WinSetWindowPtr(psvd->sv.hwndMainFrame,
                                 QWL_USER,
@@ -2385,21 +3203,23 @@ HWND fdrCreateSplitView(WPFolder *somSelf,
                                 psvd->sv.hwndMainFrame,
                                 cmnGetString(ID_XFSI_FDR_SPLITVIEW));
 
+                // subclass the cnrs to let us paint the bitmaps
+                fdrMakeCnrPaint(psvd->sv.hwndTreeCnr);
+                fdrMakeCnrPaint(psvd->sv.hwndFilesCnr);
+
+                // set tree view colors
+                SetCnrLayout(psvd->sv.hwndTreeCnr,
+                             somSelf,
+                             OPEN_TREE);
+
+                // now go show the damn thing
                 WinSetWindowPos(psvd->sv.hwndMainFrame,
                                 HWND_TOP,
                                 pos.x,
                                 pos.y,
                                 pos.cx,
                                 pos.cy,
-                                SWP_MOVE | SWP_SIZE);
-
-                WinSetWindowPos(psvd->sv.hwndMainFrame,
-                                HWND_TOP,
-                                0, 0, 0, 0,
-                                SWP_SHOW | SWP_ACTIVATE | SWP_ZORDER);
-
-                _PmpfF(("frame's PSPLITVIEWDATA is now 0x%lX",
-                        WinQueryWindowPtr(psvd->sv.hwndMainFrame, QWL_USER) ));
+                                SWP_MOVE | SWP_SIZE | SWP_SHOW | SWP_ACTIVATE | SWP_ZORDER);
 
                 psvd->sv.fFileDlgReady = TRUE;
 

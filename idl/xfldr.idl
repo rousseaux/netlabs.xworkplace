@@ -47,36 +47,6 @@ interface XFolder : WPFolder
      *      use them in this .IDL file.
      */
 
-    // FDRSORTINFO:
-    // original WPS structure stored in folder instance data for
-    // remembering folder sort settings; it is into this structure
-    // that wpRestoreData writes IDKEY_FDRSORTINFO data
-    // V0.9.0: changed all types to ULONG to ensure four-byte packing
-    struct FDRSORTINFO
-    {
-        ULONG   ulDefaultSort;
-            // the sort criterion that has the check mark in
-            // the "Sort" submenu; one of the WPSORTKEY_*
-            // things defined in the passthru_h stuff below
-        ULONG   fAlwaysSort;
-        ULONG   ulCurrentSort;
-            // apparently, ulCurrentSort is only used by the WPS
-            // if fAlwaysSort == TRUE; in that case, it contains
-            // the current sort criterion, which may be different
-            // than the default one
-        ULONG   ulZero1;
-        ULONG   ulZero2;
-        ULONG   ulZero3;
-    };
-    typedef FDRSORTINFO *PFDRSORTINFO;
-
-    /* struct WPSRGB {
-        BYTE bBlue,
-             bGreen,
-             bRed,
-             bExtra;
-    }; */
-
     // FDRLONGARRAY:
     // original WPS structure stored in folder instance data for
     // storing various folder view data; it is into this structure
@@ -99,23 +69,34 @@ interface XFolder : WPFolder
         ULONG   ulTreeStyle;           // Henk says, always 00 00 00 00
         ULONG   ulDetailsStyle;        // Henk says, always FF FF FF FF
     // offset 0x0018:
-        ULONG   rgbTextBkgndCol;      // BB GG RR 00;
+        /* text colors */
+        ULONG   rgbTextBkgndCol;       // BB GG RR 00;
                 // this is the same for all views, but it is copied from
                 // some folder background data I don't know; byte 4 is also
                 // used for "transparency" when changed from Details view (duh)
-        ULONG   ul7;      // unknown, always EF FF FF FF (0xFFFFFFEF)
+        ULONG   rgbIconViewTextColNoIcons;  // always EF FF FF FF (0xFFFFFFEF)
 
-        /* text colors */
     // offset 0x0020:
         ULONG   rgbIconViewTextColColumns;
-                          // this color is used for FLOWED and NONFLOWED views.
-                          // If byte x + 3 is 0xFF, this means use default color;
-                          // otherwise:
-                          // -- byte x + 2 is red
-                          // -- byte x + 1 is green
-                          // -- byte x is blue
+                          // this color is used for FLOWED and NONFLOWED views
+                          // if icons are visible.
+                          // As a LONG value, the format is 0xXXRRGGBB, where
+                          // XX is special. If it is != 0, we can be sure that
+                          // we have a default color instead of an instance
+                          // color.
+                          // I have only seen 0xFFFFFFEC, which is -20 in hex,
+                          // which is the SYSCLR_WINDOW index value.
+                          // As four bytes,
+                          // -- x+3 is XX
+                          // -- x+2 is RR
+                          // -- x+1 is GG
+                          // -- x+0 is BB
+                          // If the flag byte (XX) is 0xFF, this means use
+                          // default color; if an instance color is set,
+                          // this is set to 0x00 from my experience.
         ULONG   rgbIconViewTextColAsPlaced;
-                          // this color is used for regular icon views.
+                          // this color is used for regular icon views if not gridded
+
     // offset 0x0028:
         ULONG   rgbTreeViewTextColTextOnly;
                           // this one is used if icons are NOT visible (TREEVIEW=INVISIBLE)
@@ -135,12 +116,20 @@ interface XFolder : WPFolder
         ULONG   ulTreeViewTextVisibility; // the same
 
     // offset 0x0040:
-        ULONG   ul16;     // unknown, always 00 00 00 00
+        ULONG   ulSelfClose;            // self-close setting
+                                        // --  0: use system default
+                                        //      (os2.ini, "PM_Workplace:FolderAutoClose",
+                                        //      "Objects")
+                                        // --  1: "NONE" string ("never" setting)
+                                        // --  2: "SUBFOLDERS" ("subfolders only" setting)
+                                        // --  3: "ALL" ("all objects" setting)
 
     // end of structure on Warp 3
     // the following long's are only available on Warp 4:
 
-        ULONG   ulMenuBarVisibility;    // 0 = off, 1 = on, 2 = default
+        ULONG   ulMenuBarVisibility;    // MENUBAR_OFF == 0,
+                                        // MENUBAR_ON == 1,
+                                        // MENUBAR_DEFAULT == 2
 
         /* Shadow text colors */
     // offset 0x0048:
@@ -148,27 +137,30 @@ interface XFolder : WPFolder
         ULONG   rgbTreeViewShadowCol;
     // offset 0x0050:
         ULONG   rgbDetlViewShadowCol;
+
     };
     typedef FDRLONGARRAY *PFDRLONGARRAY;
 
-    // FDRBACKGROUND:
-    // original WPS structure stored in folder instance data for
-    // storing folder background data; I don't know which IDKEY_*
-    // corresponds to this, because on Warp 4, something else
-    // seems to be used. This information is from Henk Kelder.
-    // That's 14 bytes altogether.
-    struct FDRBACKGROUND
+    /*
+     *@@ FDRSTRINGARRAY:
+     *
+     *@@added V0.9.21 (2002-08-24) [umoeller]
+     */
+
+    struct FDRSTRINGARRAY
     {
-        ULONG   ul1;
-        ULONG   rgbColor;
-        BYTE   bColorOnly; // 0x28 Image, 0x27 Color only
-        BYTE   b9;         // 0x01 -- what's this?
-        BYTE   bImageType; // 0x?2=Normal, 0x?3=tiled, 0x?4=scaled
-        BYTE   b10;        // 0x01 -- what's this?
-        BYTE   bScaleFactor;
-        BYTE   b12;
+        PSZ     pszFontIconViewNoIcons;     // if icons are off completely
+        PSZ     pszFontIconViewColumns;     // flowed or non-flowed
+        PSZ     pszFontIconViewAsPlaced;    // for regular icon view
+        PSZ     pszFontTreeViewNoIcons;
+        PSZ     pszFontTreeViewIcons;
+        PSZ     pszFontDetailsView;
+        PSZ     pszDetailsClass;
+        PSZ     pszStrange1;
+        PSZ     pszSortClass;
+        PSZ     pszStrange2;
     };
-    typedef FDRBACKGROUND *PFDRBACKGROUND;
+    typedef FDRSTRINGARRAY *PFDRSTRINGARRAY;
 
     /*
      * New instance methods for XFolder:
@@ -268,7 +260,9 @@ interface XFolder : WPFolder
      *
      */
 
-    PVOID           pvWPFolderData;     // V0.9.20 (2002-07-25) [umoeller]
+    PVOID           pvWPFolderData;
+                // pointer to IBMFOLDERDATA, resolved in wpInitData
+                // V0.9.20 (2002-07-25) [umoeller]
 
     // the following four correspond to the "XFolder" instance
     // settings page. Each of these can have one of the following
@@ -317,29 +311,32 @@ interface XFolder : WPFolder
     // This is an ugly hack to access some folder settings for which
     // no methods are defined...
 
+    // all fields removed since we can now use pvWPFolderData
+    // V0.9.21 (2002-08-24) [umoeller]
+
     // pointer to WPFolder's sort data struct;
     // this is intercepted in wpRestoreData (IDKEY_FDRSORTINFO)
-    PVOID           pFolderSortInfo;
+    // PVOID           pFolderSortInfo;
 
     // pointer to WPFolder's "long array";
     // this is intercepted in wpRestoreData (IDKEY_FDRLONGARRAY)
-    PFDRLONGARRAY   pFolderLongArray;
-    ULONG           cbFolderLongArray;
+    // PFDRLONGARRAY   pFolderLongArray;
+    // ULONG           cbFolderLongArray;
     // pointer to WPFolder's "string array";
     // this is intercepted in wpRestoreData (IDKEY_FDRSTRARRAY)
-    PSZ             pszFolderStrArray;
-    ULONG           cbFolderStrArray;
+    // PSZ             pszFolderStrArray;
+    // ULONG           cbFolderStrArray;
     // pointer to WPFolder's folder background info
-    PFDRBACKGROUND  pFolderBackground;
-    ULONG           cbFolderBackground;        // normally 14, see above
+    // PFDRBACKGROUND  pFolderBackground;
+    // ULONG           cbFolderBackground;        // normally 14, see above
     // pointer to WPFolder's "SHOWALLINTREEVIEW" flag
     // (Warp 4 only); this is intercepted in wpRestoreLong (IDKEY_FDRTREEVIEWCONTENTS)
-    PULONG          pulFolderShowAllInTreeView;
+    // PULONG          pulFolderShowAllInTreeView;
     // copy of IDKEY_CNRBACKGROUND data;
     // we cannot store a pointer to instance
     // data because the pointer used in wpRestoreString (IDKEY_FDRBKGNDIMAGEFILE)
     // apparently only points to a temporary buffer
-    PSZ             pWszFolderBkgndImageFile;
+    // PSZ             pWszFolderBkgndImageFile;
                         // WARNING: allocated using wpAllocMem
 
     // default document V0.9.4 (2000-06-09) [umoeller]
@@ -426,8 +423,8 @@ interface XFolder : WPFolder
 
     wpSaveState: override;
     wpRestoreState: override;
-    wpRestoreLong: override;
-    wpRestoreString: override;
+    //# wpRestoreLong: override; removed V0.9.21 (2002-08-24) [umoeller]
+    //# wpRestoreString: override; removed V0.9.21 (2002-08-24) [umoeller]
     wpRestoreData: override;
 
     //# 2)  WPObject query/set methods

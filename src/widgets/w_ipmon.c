@@ -1308,8 +1308,8 @@ static VOID IwgtPaint2(HWND hwnd,
     if (pPrivate->pBitmap)
     {
         POINTL      ptlBmpDest;
-        ptlBmpDest.x = rclWin.xLeft + ulBorder;
-        ptlBmpDest.y = rclWin.yBottom + ulBorder;
+        ptlBmpDest.x = rclWin.xLeft; //  + ulBorder;
+        ptlBmpDest.y = rclWin.yBottom; //  + ulBorder;
         // now paint graph from bitmap
         WinDrawBitmap(hps,
                       pPrivate->pBitmap->hbm,

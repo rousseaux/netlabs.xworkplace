@@ -145,9 +145,15 @@
 BOOL fdrHasShowAllInTreeView(WPFolder *somSelf)
 {
     XFolderData *somThis = XFolderGetData(somSelf);
+
+    return (    G_fIsWarp4
+             && (((PIBMFOLDERDATA)_pvWPFolderData)->fShowAllInTreeView)
+           );
+    /*  V0.9.21 (2002-08-24) [umoeller]
     return (    (_pulFolderShowAllInTreeView) // only != NULL on Warp 4
              && (*_pulFolderShowAllInTreeView)
            );
+    */
 }
 
 
@@ -414,21 +420,20 @@ BOOL fdrQuerySetup(WPObject *somSelf,
         XFolderData *somThis = XFolderGetData(somSelf);
 
         // temporary buffer for building the setup string
-        XSTRING // strTemp,
-                strView;
-        ULONG   ulValue = 0;
-        PSZ     pszValue = 0,
-                pszDefaultValue = 0;
-        SOMClass *pClassObject = 0;
-        BOOL    fTreeIconsInvisible = FALSE,
-                fIconViewColumns = FALSE;
+        XSTRING     strView;
+        ULONG       ulValue = 0;
+        PSZ         pszValue = 0,
+                    pszDefaultValue = 0;
+        SOMClass    *pClassObject = 0;
+        BOOL        fTreeIconsInvisible = FALSE,
+                    fIconViewColumns = FALSE;
 
-        CHAR    szTemp[1000] = "";
-        BOOL    fDefaultMenuBar = FALSE;
+        CHAR        szTemp[1000] = "";
+        BOOL        fDefaultMenuBar = FALSE;
 
         // some settings better have this extra check,
         // not sure if it's really needed
-        BOOL    fInitialized = objIsObjectInitialized(somSelf);
+        BOOL        fInitialized = objIsObjectInitialized(somSelf);
 
         // xstrInit(pstrSetup, 400);
         xstrInit(&strView, 200);
@@ -498,6 +503,7 @@ BOOL fdrQuerySetup(WPObject *somSelf,
          */
 
         // BACKGROUND
+/*
         if (fInitialized) // V0.9.3 (2000-04-29) [umoeller]
             if ((_pWszFolderBkgndImageFile) && (_pFolderBackground))
             {
@@ -521,7 +527,7 @@ BOOL fdrQuerySetup(WPObject *somSelf,
                     {
                         case 2: cType = 'N'; break;
                         case 3: cType = 'T'; break;
-                        default: /* 4 */ cType = 'S'; break;
+                        default: cType = 'S'; break;        // 4
                     }
 
                     sprintf(szTemp, "BACKGROUND=%s,%c,%d,%c,%d %d %d;",
@@ -537,7 +543,7 @@ BOOL fdrQuerySetup(WPObject *somSelf,
                     free(pszBitmapFile);
                 }
             }
-
+*/
         // DEFAULTVIEW: already handled by XFldObject
 
         /*
@@ -610,6 +616,16 @@ BOOL fdrQuerySetup(WPObject *somSelf,
 
         // ICONTEXTCOLOR
         if (fInitialized) // V0.9.3 (2000-04-29) [umoeller]
+#if 1
+            {
+                PIBMFOLDERDATA pData = (PIBMFOLDERDATA)_pvWPFolderData;
+                PBYTE pbArrayField;
+
+                if (!fIconViewColumns)
+                    pbArrayField = (PBYTE)&pData->LongArray.rgbIconViewTextColAsPlaced;
+                else
+                    pbArrayField = (PBYTE)&pData->LongArray.rgbIconViewTextColColumns;
+#else
             if (_pFolderLongArray)
             {
                 BYTE bUseDefault = FALSE;
@@ -617,9 +633,9 @@ BOOL fdrQuerySetup(WPObject *somSelf,
                 if (fIconViewColumns)
                     // FLOWED or NONFLOWED: use different field then
                     pbArrayField = ( (PBYTE)(&(_pFolderLongArray->rgbIconViewTextColColumns)) );
+#endif
 
-                bUseDefault = *(pbArrayField + 3);
-                if (!bUseDefault)
+                if (!(*(pbArrayField + 3)))       // use default?
                 {
                     BYTE bRed   = *(pbArrayField + 2);
                     BYTE bGreen = *(pbArrayField + 1);
@@ -632,14 +648,22 @@ BOOL fdrQuerySetup(WPObject *somSelf,
 
         // ICONSHADOWCOLOR
         if (fInitialized) // V0.9.3 (2000-04-29) [umoeller]
+#if 1
+                if (G_fIsWarp4)
+                {
+                    PIBMFOLDERDATA pData = (PIBMFOLDERDATA)_pvWPFolderData;
+                    PBYTE pbArrayField;
+
+                    pbArrayField = (PBYTE)&pData->LongArray.rgbIconViewShadowCol;
+#else
             if (_pFolderLongArray)
                 // only Warp 4 has these fields, so check size of array
                 if (_cbFolderLongArray >= 84)
                 {
                     PBYTE pbArrayField = ( (PBYTE)(&(_pFolderLongArray->rgbIconViewShadowCol)) );
+#endif
 
-                    BYTE bUseDefault = *(pbArrayField + 3);
-                    if (!bUseDefault)
+                    if (!(*(pbArrayField + 3)))       // use default?
                     {
                         BYTE bRed   = *(pbArrayField + 2);
                         BYTE bGreen = *(pbArrayField + 1);
@@ -731,17 +755,25 @@ BOOL fdrQuerySetup(WPObject *somSelf,
         xstrClear(&strView);
 
         if (fInitialized) // V0.9.3 (2000-04-29) [umoeller]
+#if 1
+            {
+                PIBMFOLDERDATA pData = (PIBMFOLDERDATA)_pvWPFolderData;
+                PBYTE pbArrayField;
+
+                if (fTreeIconsInvisible)
+                    pbArrayField = (PBYTE)&pData->LongArray.rgbTreeViewTextColTextOnly;
+                else
+                    pbArrayField = (PBYTE)&pData->LongArray.rgbTreeViewTextColIcons;
+#else
             if (_pFolderLongArray)
             {
                 // TREETEXTCOLOR
-                BYTE bUseDefault = FALSE;
                 PBYTE pbArrayField = ( (PBYTE)(&(_pFolderLongArray->rgbTreeViewTextColIcons)) );
-
                 if (fTreeIconsInvisible)
                     pbArrayField = ( (PBYTE)(&(_pFolderLongArray->rgbTreeViewTextColTextOnly)) );
+#endif
 
-                bUseDefault = *(pbArrayField + 3);
-                if (!bUseDefault)
+                if (!(*(pbArrayField + 3)))       // use default?
                 {
                     BYTE bRed   = *(pbArrayField + 2);
                     BYTE bGreen = *(pbArrayField + 1);
@@ -753,12 +785,16 @@ BOOL fdrQuerySetup(WPObject *somSelf,
 
                 // TREESHADOWCOLOR
                 // only Warp 4 has these fields, so check size of array
+#if 1
+                if (G_fIsWarp4)
+                {
+                    pbArrayField = (PBYTE)&pData->LongArray.rgbTreeViewShadowCol;
+#else
                 if (_cbFolderLongArray >= 84)
                 {
                     pbArrayField = ( (PBYTE)(&(_pFolderLongArray->rgbTreeViewShadowCol)) );
-
-                    bUseDefault = *(pbArrayField + 3);
-                    if (!bUseDefault)
+#endif
+                    if (!(*(pbArrayField + 3)))       // use default?
                     {
                         BYTE bRed   = *(pbArrayField + 2);
                         BYTE bGreen = *(pbArrayField + 1);
@@ -810,13 +846,21 @@ BOOL fdrQuerySetup(WPObject *somSelf,
 
         // DETAILSTEXTCOLOR
         if (fInitialized) // V0.9.3 (2000-04-29) [umoeller]
+#if 1
+            {
+                PIBMFOLDERDATA pData = (PIBMFOLDERDATA)_pvWPFolderData;
+                PBYTE pbArrayField;
+
+                pbArrayField = (PBYTE)&pData->LongArray.rgbDetlViewTextCol;
+
+#else
             if (_pFolderLongArray)
             {
-                BYTE bUseDefault = FALSE;
                 PBYTE pbArrayField = ( (PBYTE)(&(_pFolderLongArray->rgbDetlViewTextCol)) );
 
-                bUseDefault = *(pbArrayField + 3);
-                if (!bUseDefault)
+#endif
+
+                if (!(*(pbArrayField + 3)))       // use default?
                 {
                     BYTE bRed   = *(pbArrayField + 2);
                     BYTE bGreen = *(pbArrayField + 1);
@@ -828,12 +872,17 @@ BOOL fdrQuerySetup(WPObject *somSelf,
 
                 // DETAILSSHADOWCOLOR
                 // only Warp 4 has these fields, so check size of array
+#if 1
+                if (G_fIsWarp4)
+                {
+                    pbArrayField = (PBYTE)&pData->LongArray.rgbDetlViewShadowCol;
+#else
                 if (_cbFolderLongArray >= 84)
                 {
                     pbArrayField = ( (PBYTE)(&(_pFolderLongArray->rgbDetlViewShadowCol)) );
+#endif
 
-                    bUseDefault = *(pbArrayField + 3);
-                    if (!bUseDefault)
+                    if (!(*(pbArrayField + 3)))       // use default?
                     {
                         BYTE bRed   = *(pbArrayField + 2);
                         BYTE bGreen = *(pbArrayField + 1);
