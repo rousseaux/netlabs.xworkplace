@@ -125,14 +125,14 @@
 
 // root of linked list of opened notebook pages
 // (this holds NOTEBOOKPAGELISTITEM's)
-static LINKLIST        G_llOpenPages;   // this is auto-free
+STATIC LINKLIST        G_llOpenPages;   // this is auto-free
 
 // root of linked list of subclassed notebooks
 // (this holds
-static LINKLIST        G_llSubclNotebooks; // this is auto-free
+STATIC LINKLIST        G_llSubclNotebooks; // this is auto-free
 
 // mutex semaphore for both lists
-static HMTX            G_hmtxNotebooks = NULLHANDLE;
+STATIC HMTX            G_hmtxNotebooks = NULLHANDLE;
 
 MRESULT EXPENTRY fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM mp1, MPARAM mp2);
 
@@ -148,7 +148,7 @@ MRESULT EXPENTRY fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM mp1, MPA
  *@@added V0.9.16 (2001-10-25) [umoeller]
  */
 
-static BOOL LockNotebooks(VOID)
+STATIC BOOL LockNotebooks(VOID)
 {
     if (G_hmtxNotebooks)
         return !DosRequestMutexSem(G_hmtxNotebooks, SEM_INDEFINITE_WAIT);
@@ -177,7 +177,7 @@ static BOOL LockNotebooks(VOID)
  *@@added V0.9.16 (2001-10-25) [umoeller]
  */
 
-static VOID UnlockNotebooks(VOID)
+STATIC VOID UnlockNotebooks(VOID)
 {
     DosReleaseMutexSem(G_hmtxNotebooks);
 }
@@ -196,7 +196,7 @@ static VOID UnlockNotebooks(VOID)
  *@@added V0.9.1 (99-12-31) [umoeller]
  */
 
-static VOID PageInit(PNOTEBOOKPAGE pnbp,
+STATIC VOID PageInit(PNOTEBOOKPAGE pnbp,
                      HWND hwndDlg)
 {
     #ifdef DEBUG_NOTEBOOKS
@@ -282,7 +282,7 @@ static VOID PageInit(PNOTEBOOKPAGE pnbp,
  *@@changed V0.9.7 (2000-12-10) [umoeller]: fixed mutex problems
  */
 
-static VOID PageDestroy(PNOTEBOOKPAGE pnbp)
+STATIC VOID PageDestroy(PNOTEBOOKPAGE pnbp)
 {
     #ifdef DEBUG_NOTEBOOKS
         _Pmpf(("fnwpPageCommon: WM_DESTROY"));
@@ -375,7 +375,7 @@ static VOID PageDestroy(PNOTEBOOKPAGE pnbp)
  *@@changed V0.9.19 (2002-06-02) [umoeller]: optimizations
  */
 
-static MRESULT EXPENTRY PageWmControl(PNOTEBOOKPAGE pnbp,
+STATIC MRESULT EXPENTRY PageWmControl(PNOTEBOOKPAGE pnbp,
                                       ULONG msg,
                                       MPARAM mp1,
                                       MPARAM mp2) // in: as in WM_CONTROL
@@ -696,7 +696,7 @@ static MRESULT EXPENTRY PageWmControl(PNOTEBOOKPAGE pnbp,
  *@@added V0.9.7 (2000-12-10) [umoeller]
  */
 
-static VOID PageWindowPosChanged(PNOTEBOOKPAGE pnbp,
+STATIC VOID PageWindowPosChanged(PNOTEBOOKPAGE pnbp,
                                  MPARAM mp1)
 {
     PSWP pswp = (PSWP)mp1;
@@ -755,7 +755,7 @@ static VOID PageWindowPosChanged(PNOTEBOOKPAGE pnbp,
  *@@added V0.9.7 (2000-12-10) [umoeller]
  */
 
-static VOID PageTimer(PNOTEBOOKPAGE pnbp,
+STATIC VOID PageTimer(PNOTEBOOKPAGE pnbp,
                       MPARAM mp1)
 {
     #ifdef DEBUG_NOTEBOOKS
@@ -844,7 +844,7 @@ static VOID PageTimer(PNOTEBOOKPAGE pnbp,
  *@@changed V0.9.7 (2000-12-10) [umoeller]: extracted PageWindowPosChanged, PageTimer
  */
 
-static MRESULT EXPENTRY fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
+STATIC MRESULT EXPENTRY fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT             mrc = NULL;
     BOOL                fProcessed = FALSE;
@@ -1137,7 +1137,7 @@ static MRESULT EXPENTRY fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
  *@@changed V0.9.19 (2002-06-02) [umoeller]: optimized
  */
 
-static PNOTEBOOKPAGELISTITEM CreateNBLI(PNOTEBOOKPAGE pnbp) // in: new struct from ntbInsertPage
+STATIC PNOTEBOOKPAGELISTITEM CreateNBLI(PNOTEBOOKPAGE pnbp) // in: new struct from ntbInsertPage
 {
     BOOL        fLocked = FALSE;
 
@@ -1241,7 +1241,7 @@ static PNOTEBOOKPAGELISTITEM CreateNBLI(PNOTEBOOKPAGE pnbp) // in: new struct fr
  *@@added V0.9.7 (2000-12-09) [umoeller]
  */
 
-static PSUBCLNOTEBOOKLISTITEM FindNBLI(HWND hwndNotebook)
+STATIC PSUBCLNOTEBOOKLISTITEM FindNBLI(HWND hwndNotebook)
 {
     PSUBCLNOTEBOOKLISTITEM pSubclNBLI = NULL;
     BOOL fLocked = FALSE;
@@ -1286,7 +1286,7 @@ static PSUBCLNOTEBOOKLISTITEM FindNBLI(HWND hwndNotebook)
  *@@changed V0.9.14 (2001-08-23) [umoeller]: fixed bad pointer on list node remove
  */
 
-static VOID DestroyNBLI(HWND hwndNotebook,
+STATIC VOID DestroyNBLI(HWND hwndNotebook,
                         PSUBCLNOTEBOOKLISTITEM pSubclNBLI)
 {
     BOOL fLocked = FALSE;
@@ -1363,7 +1363,7 @@ static VOID DestroyNBLI(HWND hwndNotebook,
  *@@changed V0.9.7 (2000-12-10) [umoeller]: fixed mutex problems
  */
 
-static MRESULT EXPENTRY fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM mp1, MPARAM mp2)
+STATIC MRESULT EXPENTRY fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
 

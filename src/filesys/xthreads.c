@@ -138,42 +138,42 @@
 
 // thread infos: moved these here from KERNELGLOBALS
 // V0.9.9 (2001-03-07) [umoeller]
-static THREADINFO   G_tiWorkerThread,
+STATIC THREADINFO   G_tiWorkerThread,
                     G_tiBushThread,
                     G_tiWimpThread,
                     G_tiFileThread;
 
 // Worker thread -- awake objects
-static HMTX         G_hmtxAwakeObjectsList = NULLHANDLE;    // V0.9.9 (2001-04-04) [umoeller]
-static TREE         *G_AwakeObjectsTree;
-static LONG         G_lAwakeObjectsCount = 0;           // V0.9.9 (2001-04-04) [umoeller]
-static Heap_t       G_AwakeObjectsHeap;                 // user heap for _ucreate
+STATIC HMTX         G_hmtxAwakeObjectsList = NULLHANDLE;    // V0.9.9 (2001-04-04) [umoeller]
+STATIC TREE         *G_AwakeObjectsTree;
+STATIC LONG         G_lAwakeObjectsCount = 0;           // V0.9.9 (2001-04-04) [umoeller]
+STATIC Heap_t       G_AwakeObjectsHeap;                 // user heap for _ucreate
                                                         // V0.9.9 (2001-04-04) [umoeller]
-static char         G_HeapStartChunk[_HEAP_MIN_SIZE];   // first block of storage on the heap
+STATIC char         G_HeapStartChunk[_HEAP_MIN_SIZE];   // first block of storage on the heap
 
 // Worker thread -- other data
-static HWND         G_hwndWorkerObject = NULLHANDLE;    // V0.9.9 (2001-04-04) [umoeller]
-static HAB          G_habWorkerThread = NULLHANDLE;
-static HMQ          G_hmqWorkerThread = NULLHANDLE;
+STATIC HWND         G_hwndWorkerObject = NULLHANDLE;    // V0.9.9 (2001-04-04) [umoeller]
+STATIC HAB          G_habWorkerThread = NULLHANDLE;
+STATIC HMQ          G_hmqWorkerThread = NULLHANDLE;
 
 // currently waiting messages for Worker thread;
 // if this gets too large, its priority will be raised
-static HMTX         G_hmtxWorkerThreadData = NULLHANDLE;
-static ULONG        G_ulWorkerMsgCount = 0;     // V0.9.9 (2001-04-04) [umoeller]
-static BOOL         G_fWorkerThreadHighPriority = FALSE; // V0.9.9 (2001-04-04) [umoeller]
+STATIC HMTX         G_hmtxWorkerThreadData = NULLHANDLE;
+STATIC ULONG        G_ulWorkerMsgCount = 0;     // V0.9.9 (2001-04-04) [umoeller]
+STATIC BOOL         G_fWorkerThreadHighPriority = FALSE; // V0.9.9 (2001-04-04) [umoeller]
 
 // Bush thread
-static HAB          G_habBushThread = NULLHANDLE;
-static HMQ          G_hmqBushThread = NULLHANDLE;
-static CHAR         G_szBootupStatus[256];
+STATIC HAB          G_habBushThread = NULLHANDLE;
+STATIC HMQ          G_hmqBushThread = NULLHANDLE;
+STATIC CHAR         G_szBootupStatus[256];
 #ifndef __NOBOOTUPSTATUS__
-static HWND         G_hwndBootupStatus = NULLHANDLE;
+STATIC HWND         G_hwndBootupStatus = NULLHANDLE;
 #endif
 
 // File thread
-static HAB          G_habFileThread = NULLHANDLE;
-static HMQ          G_hmqFileThread = NULLHANDLE;
-static ULONG        G_CurFileThreadMsg = 0;
+STATIC HAB          G_habFileThread = NULLHANDLE;
+STATIC HMQ          G_hmqFileThread = NULLHANDLE;
+STATIC ULONG        G_CurFileThreadMsg = 0;
             // current message that File thread is processing,
             // or null if none
 
@@ -192,7 +192,7 @@ static ULONG        G_CurFileThreadMsg = 0;
  *@@added V0.9.9 (2001-04-04) [umoeller]
  */
 
-static void* WorkerExpandHeap(Heap_t uh,
+STATIC void* WorkerExpandHeap(Heap_t uh,
                               size_t *length,
                               int *clean)
 {
@@ -220,7 +220,7 @@ static void* WorkerExpandHeap(Heap_t uh,
  *@@added V0.9.9 (2001-04-04) [umoeller]
  */
 
-static void WorkerShrinkHeap(Heap_t uh,
+STATIC void WorkerShrinkHeap(Heap_t uh,
                              void *p,
                              size_t size)
 {
@@ -332,7 +332,7 @@ LONG xthrQueryAwakeObjectsCount(VOID)
  *@@changed V0.9.16 (2001-10-25) [umoeller]: fixed memory leak
  */
 
-static VOID WorkerAddObject(WPObject *pObj2Store)
+STATIC VOID WorkerAddObject(WPObject *pObj2Store)
 {
     BOOL            fWorkerAwakeObjectsSemOwned = FALSE;
 
@@ -419,7 +419,7 @@ static VOID WorkerAddObject(WPObject *pObj2Store)
  *@@added V0.9.9 (2001-04-04) [umoeller]
  */
 
-static VOID WorkerRemoveObject(WPObject *pObj)
+STATIC VOID WorkerRemoveObject(WPObject *pObj)
 {
     BOOL            fWorkerAwakeObjectsSemOwned = FALSE;
 
@@ -493,7 +493,7 @@ static VOID WorkerRemoveObject(WPObject *pObj)
  *@@added V0.9.9 (2001-04-04) [umoeller]
  */
 
-static BOOL LockWorkerThreadData(VOID)
+STATIC BOOL LockWorkerThreadData(VOID)
 {
     if (G_hmtxWorkerThreadData)
         return !DosRequestMutexSem(G_hmtxWorkerThreadData, SEM_INDEFINITE_WAIT);
@@ -510,7 +510,7 @@ static BOOL LockWorkerThreadData(VOID)
  *@@added V0.9.9 (2001-04-04) [umoeller]
  */
 
-static VOID UnlockWorkerThreadData(VOID)
+STATIC VOID UnlockWorkerThreadData(VOID)
 {
     DosReleaseMutexSem(G_hmtxWorkerThreadData);
 }
@@ -601,7 +601,7 @@ VOID xthrResetWorkerThreadPriority(VOID)
  *@@changed V0.9.9 (2001-04-04) [umoeller]: made mutexes more granular
  */
 
-static VOID RaiseWorkerThreadPriority(BOOL fRaise)
+STATIC VOID RaiseWorkerThreadPriority(BOOL fRaise)
 {
     static BOOL fFirstTime = TRUE;
 
@@ -1261,7 +1261,7 @@ ULONG xthrIsFileThreadBusy(VOID)
  *@@added V0.9.2 (2000-02-21) [umoeller]
  */
 
-static VOID CollectDoubleFiles(MPARAM mp1)
+STATIC VOID CollectDoubleFiles(MPARAM mp1)
 {
     PDOUBLEFILES pdf = (PDOUBLEFILES)mp1;
 

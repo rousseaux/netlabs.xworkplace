@@ -271,10 +271,10 @@ PXWPGLOBALSHARED   G_pXwpGlobalShared = NULL;
 HPOINTER        G_hptrDaemon = NULLHANDLE;
 
 // sliding focus data
-static ULONG    G_ulSlidingFocusTimer = 0;    // timer ID for delayed sliding focus
+STATIC ULONG    G_ulSlidingFocusTimer = 0;    // timer ID for delayed sliding focus
 // window to be activated
-static HWND     G_hwndSlidingUnderMouse = NULLHANDLE;
-static HWND     G_hwndSliding2Activate = NULLHANDLE;
+STATIC HWND     G_hwndSlidingUnderMouse = NULLHANDLE;
+STATIC HWND     G_hwndSliding2Activate = NULLHANDLE;
 
 // sliding menu data
 ULONG           G_ulSlidingMenuTimer = 0;
@@ -915,7 +915,7 @@ HSWITCH winhHSWITCHfromHAPP(HAPP happ)
  *@@added V0.9.9 (2001-03-21) [lafaix]
  */
 
-static VOID ProcessAutoScroll(PSCROLLDATA pScrollData,
+STATIC VOID ProcessAutoScroll(PSCROLLDATA pScrollData,
                               LONG lDelta,
                               BOOL fHorizontal)
 {
@@ -1008,7 +1008,7 @@ static VOID ProcessAutoScroll(PSCROLLDATA pScrollData,
  *@@changed V0.9.19 (2002-05-07) [umoeller]: now always ignoring pager
  */
 
-static VOID ProcessSlidingFocus(HWND hwndFrameInBetween, // in: != NULLHANDLE if hook has detected another frame
+STATIC VOID ProcessSlidingFocus(HWND hwndFrameInBetween, // in: != NULLHANDLE if hook has detected another frame
                                                          // under the mouse before the desktop frame window was
                                                          // reached
                                 HWND hwnd2Activate)     // in: highest parent of hwndUnderMouse, child of desktop
@@ -1252,7 +1252,7 @@ static VOID ProcessSlidingFocus(HWND hwndFrameInBetween, // in: != NULLHANDLE if
  *@@changed V0.9.18 (2002-02-12) [pr]: added screen wrap
  */
 
-static VOID ProcessHotCorner(MPARAM mp1)
+STATIC VOID ProcessHotCorner(MPARAM mp1)
 {
     // create array index: mp1
     LONG    lIndex = (LONG)mp1;
@@ -1406,7 +1406,7 @@ static VOID ProcessHotCorner(MPARAM mp1)
  *@@added V0.9.19 (2002-03-28) [umoeller]
  */
 
-static VOID ProcessChordWinList(VOID)
+STATIC VOID ProcessChordWinList(VOID)
 {
     POINTL  ptlMouse;       // mouse coordinates
     SWP     WinListPos;     // position of window list window
@@ -1444,7 +1444,7 @@ static VOID ProcessChordWinList(VOID)
  *@@added V0.9.19 (2002-03-28) [umoeller]
  */
 
-static VOID ProcessBeginScroll(HWND hwndObject)
+STATIC VOID ProcessBeginScroll(HWND hwndObject)
 {
     G_lScrollMode = (G_pHookData->SDXHorz.hwndScrollBar)
                   ? (G_pHookData->SDYVert.hwndScrollBar)
@@ -1526,7 +1526,7 @@ static VOID ProcessBeginScroll(HWND hwndObject)
  *@@added V0.9.19 (2002-03-28) [umoeller]
  */
 
-static VOID ProcessEndScroll(HWND hwndObject)
+STATIC VOID ProcessEndScroll(HWND hwndObject)
 {
     if (G_hptrOld)
         WinSetPointer(HWND_DESKTOP, G_hptrOld);
@@ -1557,7 +1557,7 @@ static VOID ProcessEndScroll(HWND hwndObject)
  *@@added V0.9.19 (2002-03-28) [umoeller]
  */
 
-static VOID ProcessSetPointer(MPARAM mp1)
+STATIC VOID ProcessSetPointer(MPARAM mp1)
 {
     if (    (abs(G_ptlScrollOrigin.x-SHORT1FROMMP(mp1)) < 2*(G_pHookData->HookConfig.usMB3ScrollMin))
          && (abs(G_ptlScrollOrigin.y-SHORT2FROMMP(mp1)) < 2*(G_pHookData->HookConfig.usMB3ScrollMin))
@@ -1602,7 +1602,7 @@ static VOID ProcessSetPointer(MPARAM mp1)
  *@@changed V0.9.14 (2001-08-21) [umoeller]: added delayed move-ptr-to-button
  */
 
-static MRESULT ProcessTimer(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
+STATIC MRESULT ProcessTimer(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     PULONG      pulStopTimer = NULL;
 
@@ -1818,7 +1818,7 @@ static MRESULT ProcessTimer(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
  *@@changed V0.9.19 (2002-06-14) [lafaix]: moved remove action to ProcessRemoveNotify
  */
 
-static MRESULT ProcessAddNotify(HWND hwndNotify,            // in: window to receive notifications
+STATIC MRESULT ProcessAddNotify(HWND hwndNotify,            // in: window to receive notifications
                                 ULONG ulMessage,            // in: msg to post
                                 PLINKLIST pllNotifies,      // in/out: list of CLIENTNOTIFY structs
                                 PULONG pcNotifies)          // out: no. of notifications on the list
@@ -1880,7 +1880,7 @@ static MRESULT ProcessAddNotify(HWND hwndNotify,            // in: window to rec
  *@@added V0.9.19 (2002-06-14) [lafaix]
  */
 
-static MRESULT ProcessRemoveNotify(HWND hwndNotify,         // in: window to remove
+STATIC MRESULT ProcessRemoveNotify(HWND hwndNotify,         // in: window to remove
                                    PLINKLIST pllNotifies,   // in/out: list of CLIENTNOTIFY structs
                                    PULONG pcNotifies)          // out: no. of notifications on the list
 {
@@ -1930,7 +1930,7 @@ static MRESULT ProcessRemoveNotify(HWND hwndNotify,         // in: window to rem
  *@@added V0.9.19 (2002-03-28) [umoeller]
  */
 
-static VOID ProcessMouseClicked(MPARAM mp1, MPARAM mp2)
+STATIC VOID ProcessMouseClicked(MPARAM mp1, MPARAM mp2)
 {
     PLISTNODE pNode = lstQueryFirstNode(&G_llClickWatches);
     while (pNode)
@@ -1961,7 +1961,7 @@ static VOID ProcessMouseClicked(MPARAM mp1, MPARAM mp2)
  *@@added V0.9.19 (2002-03-28) [umoeller]
  */
 
-static VOID ProcessMovePtrToButton(HWND hwndObject, MPARAM mp1)
+STATIC VOID ProcessMovePtrToButton(HWND hwndObject, MPARAM mp1)
 {
     HWND    hwndDefButton = (HWND)mp1;
     RECTL   rcl;
@@ -2019,7 +2019,7 @@ static VOID ProcessMovePtrToButton(HWND hwndObject, MPARAM mp1)
  *@@changed V0.9.19 (2002-04-14) [umoeller]: fixed SWP_MINIMIZE
  */
 
-static MRESULT ProcessStartApp(MPARAM mp1, MPARAM mp2)
+STATIC MRESULT ProcessStartApp(MPARAM mp1, MPARAM mp2)
 {
     APIRET arc;
 
@@ -2155,7 +2155,7 @@ static MRESULT ProcessStartApp(MPARAM mp1, MPARAM mp2)
  *@@changed V0.9.19 (2002-06-15) [lafaix]: no longer removing inexistant list entries
  */
 
-static VOID ProcessNotifies(ULONG ulMsgOffset,
+STATIC VOID ProcessNotifies(ULONG ulMsgOffset,
                             MPARAM mp1,
                             MPARAM mp2)
 {
@@ -2196,7 +2196,7 @@ static VOID ProcessNotifies(ULONG ulMsgOffset,
  *@@changed V0.9.19 (2002-06-18) [umoeller]: fixed missing WM_WINDOWPOSCHANGED
  */
 
-static VOID ProcessWindowChange(MPARAM mp1, MPARAM mp2)
+STATIC VOID ProcessWindowChange(MPARAM mp1, MPARAM mp2)
 {
     BOOL fPost = TRUE;
 
@@ -2238,7 +2238,7 @@ static VOID ProcessWindowChange(MPARAM mp1, MPARAM mp2)
  *@@added V0.9.19 (2002-05-28) [umoeller]
  */
 
-static VOID ProcessIconChange(MPARAM mp1, MPARAM mp2)
+STATIC VOID ProcessIconChange(MPARAM mp1, MPARAM mp2)
 {
     if (pgrIconChange((HWND)mp1, (HPOINTER)mp2))
     {

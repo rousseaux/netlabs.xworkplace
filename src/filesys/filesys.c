@@ -110,8 +110,8 @@
  *
  ********************************************************************/
 
-static PGEA2LIST    G_StandardGEA2List = NULL;
-static ULONG        G_cbStandardGEA2List = 0;
+STATIC PGEA2LIST    G_StandardGEA2List = NULL;
+STATIC ULONG        G_cbStandardGEA2List = 0;
 
 /* ******************************************************************
  *
@@ -466,7 +466,7 @@ VOID fsysCreateStandardGEAList(VOID)
  *@@added V0.9.16 (2001-12-08) [umoeller]
  */
 
-static PGEA2LIST GetGEA2List(VOID)
+STATIC PGEA2LIST GetGEA2List(VOID)
 {
     PGEA2LIST pList;
     if (pList = (PGEA2LIST)malloc(G_cbStandardGEA2List))
@@ -704,7 +704,7 @@ PBYTE fsysFindEAValue(PFEA2LIST pFEA2List2,      // in: file EA list
  *@@added V0.9.16 (2001-10-25) [umoeller]
  */
 
-static BOOL DecodeLongname(PFEA2LIST pFEA2List2,
+STATIC BOOL DecodeLongname(PFEA2LIST pFEA2List2,
                            PSZ pszLongname,          // out: .LONGNAME if TRUE is returned
                            PULONG pulNameLen)        // out: length of .LONGNAME string
 {
@@ -767,7 +767,7 @@ typedef struct _FSCLASSINFO
  *@@added V0.9.16 (2001-10-28) [umoeller]
  */
 
-static PCSZ DecodeClassInfo(PFEA2LIST pFEA2List2,
+STATIC PCSZ DecodeClassInfo(PFEA2LIST pFEA2List2,
                             PULONG pulClassNameLen,    // out: strlen of the return value
                             POBJDATA *ppObjData)       // out: OBJDATA for _wpclsMakeAwake
 {
@@ -824,7 +824,7 @@ static PCSZ DecodeClassInfo(PFEA2LIST pFEA2List2,
  *@@added V0.9.16 (2001-10-28) [umoeller]
  */
 
-static PCSZ FindBestDataFileClass(PFEA2LIST pFEA2List2,
+STATIC PCSZ FindBestDataFileClass(PFEA2LIST pFEA2List2,
                                   PCSZ pcszObjectTitle,
                                   ULONG ulTitleLen)      // in: length of title string (req.)
 {
@@ -925,7 +925,7 @@ static PCSZ FindBestDataFileClass(PFEA2LIST pFEA2List2,
  *@@changed V0.9.19 (2002-04-14) [umoeller]: fixed missing FOUNDBIT after awake
  */
 
-static WPFileSystem* RefreshOrAwake(WPFolder *pFolder,
+STATIC WPFileSystem* RefreshOrAwake(WPFolder *pFolder,
                                     PFILEFINDBUF3 pfb3)
 {
     WPFileSystem *pAwake = NULL;
@@ -1308,7 +1308,7 @@ typedef struct _SYNCHPOPULATETHREADS
  *@@changed V0.9.20 (2002-07-25) [umoeller]: lowered priority
  */
 
-static void _Optlink fntFindFiles(PTHREADINFO ptiMyself)
+STATIC void _Optlink fntFindFiles(PTHREADINFO ptiMyself)
 {
     PSYNCHPOPULATETHREADS pspt = (PSYNCHPOPULATETHREADS)ptiMyself->ulData;
     HDIR            hdirFindHandle = HDIR_CREATE;
@@ -1910,7 +1910,7 @@ APIRET fsysRefresh(WPFileSystem *somSelf,
 
 #define REAL_NAME_WIDTH         (INFO_ACTUAL_WIDTH - LEFT_COLUMN_WIDTH - 2 * COMMON_SPACING)
 
-static const CONTROLDEF
+STATIC const CONTROLDEF
     RealNameTxt = CONTROLDEF_TEXT(
                             LOAD_STRING,
                             ID_XSDI_FILES_REALNAME_TXT,
@@ -2027,7 +2027,7 @@ static const CONTROLDEF
                             MLE_WIDTH,
                             MLE_HEIGHT);
 
-static const DLGHITEM dlgFile1[] =
+STATIC const DLGHITEM dlgFile1[] =
     {
         START_TABLE,            // root table, required
             START_ROW(0),
@@ -2092,7 +2092,7 @@ static const DLGHITEM dlgFile1[] =
         END_TABLE
     };
 
-static MPARAM G_ampFile1Page[] =
+STATIC MPARAM G_ampFile1Page[] =
     {
         MPFROM2SHORT(ID_XSDI_FILES_REALNAME_TXT, XAC_MOVEY),
         MPFROM2SHORT(ID_XSDI_FILES_REALNAME, XAC_MOVEY | XAC_SIZEX),
@@ -2123,7 +2123,7 @@ static MPARAM G_ampFile1Page[] =
         MPFROM2SHORT(ID_XSDI_FILES_KEYPHRASES, XAC_MOVEX | XAC_SIZEY)
     };
 
-static ULONG G_cFile1Page = ARRAYITEMCOUNT(G_ampFile1Page);
+STATIC ULONG G_cFile1Page = ARRAYITEMCOUNT(G_ampFile1Page);
 
 /*
  *@@ FILEPAGEDATA:
@@ -2147,7 +2147,7 @@ typedef struct _FILEPAGEDATA
  *@@added V0.9.18 (2002-02-06) [umoeller]
  */
 
-static VOID SetDlgDateTime(HWND hwndDlg,           // in: dialog
+STATIC VOID SetDlgDateTime(HWND hwndDlg,           // in: dialog
                            ULONG idDate,           // in: dialog item ID for date string
                            ULONG idTime,           // in: dialog item ID for time string
                            PFDATE pfDate,          // in: file info

@@ -147,7 +147,7 @@
  *      core, which is also returned.
  */
 
-static PFILETYPERECORD AddFileType2Cnr(HWND hwndCnr,           // in: cnr to insert into
+STATIC PFILETYPERECORD AddFileType2Cnr(HWND hwndCnr,           // in: cnr to insert into
                                        PFILETYPERECORD preccParent,  // in: parent recc for tree view
                                        PFILETYPELISTITEM pliAssoc,   // in: file type to add
                                        PLINKLIST pllCheck,      // in: list of types for checking records
@@ -236,7 +236,7 @@ static PFILETYPERECORD AddFileType2Cnr(HWND hwndCnr,           // in: cnr to ins
  *      if they haven't been added yet.
  */
 
-static PFILETYPERECORD AddFileTypeAndAllParents(HWND hwndCnr,          // in: cnr to insert into
+STATIC PFILETYPERECORD AddFileTypeAndAllParents(HWND hwndCnr,          // in: cnr to insert into
                                                 PLINKLIST pllFileTypes, // in: list of all file types
                                                 PSZ pszKey,
                                                 PLINKLIST pllCheck,      // in: list of types for checking records
@@ -353,7 +353,7 @@ static PFILETYPERECORD AddFileTypeAndAllParents(HWND hwndCnr,          // in: cn
  *@@changed V0.9.12 (2001-05-12) [umoeller]: fixed small memory leak
  */
 
-static VOID FillCnrWithAvailableTypes(HWND hwndCnr,
+STATIC VOID FillCnrWithAvailableTypes(HWND hwndCnr,
                                       PLINKLIST pllFileTypes,  // in: list to append types to
                                       PLINKLIST pllCheck,      // in: list of types for checking records
                                       PLINKLIST pllDisable)    // in: list of types for disabling records
@@ -589,7 +589,7 @@ typedef struct _FILETYPESPAGEDATA
  *@@changed V0.9.16 (2001-09-29) [umoeller]: added icons to assoc records
  */
 
-static PASSOCRECORD AddAssocObject2Cnr(HWND hwndAssocsCnr,
+STATIC PASSOCRECORD AddAssocObject2Cnr(HWND hwndAssocsCnr,
                                        WPObject *pObject,  // in: must be a WPProgram or WPProgramFile
                                        PRECORDCORE preccInsertAfter, // in: record to insert after (or CMA_FIRST or CMA_END)
                                        BOOL fEnableRecord) // in: if FALSE, the record will be disabled
@@ -650,7 +650,7 @@ static PASSOCRECORD AddAssocObject2Cnr(HWND hwndAssocsCnr,
  *      func cannot find the object handles.
  */
 
-static BOOL WriteAssocs2INI(PSZ  pszProfileKey, // in: either "PMWP_ASSOC_TYPE" or "PMWP_ASSOC_FILTER"
+STATIC BOOL WriteAssocs2INI(PSZ  pszProfileKey, // in: either "PMWP_ASSOC_TYPE" or "PMWP_ASSOC_FILTER"
                             HWND hwndTypesCnr,  // in: cnr with selected FILETYPERECORD
                             HWND hwndAssocsCnr) // in: cnr with ASSOCRECORDs
 {
@@ -739,7 +739,7 @@ static BOOL WriteAssocs2INI(PSZ  pszProfileKey, // in: either "PMWP_ASSOC_TYPE" 
  *          dialog (and "PMWP_ASSOC_FILTER").
  */
 
-static VOID UpdateAssocsCnr(HWND hwndAssocsCnr,    // in: container to update
+STATIC VOID UpdateAssocsCnr(HWND hwndAssocsCnr,    // in: container to update
                             PSZ  pszTypeOrFilter,  // in: file type or file filter
                             PSZ  pszINIApp,        // in: "PMWP_ASSOC_TYPE" or "PMWP_ASSOC_FILTER"
                             BOOL fEmpty,           // in: if TRUE, list box will be emptied beforehand
@@ -810,7 +810,7 @@ static VOID UpdateAssocsCnr(HWND hwndAssocsCnr,    // in: container to update
  *      The new record core is returned.
  */
 
-static PRECORDCORE AddFilter2Cnr(PFILETYPESPAGEDATA pftpd,
+STATIC PRECORDCORE AddFilter2Cnr(PFILETYPESPAGEDATA pftpd,
                                  PCSZ pcszFilter)    // in: filter name
 {
     PRECORDCORE preccNew;
@@ -852,7 +852,7 @@ static PRECORDCORE AddFilter2Cnr(PFILETYPESPAGEDATA pftpd,
  *      Returns the number of filters written into the INI data.
  */
 
-static ULONG WriteXWPFilters2INI(PFILETYPESPAGEDATA pftpd)
+STATIC ULONG WriteXWPFilters2INI(PFILETYPESPAGEDATA pftpd)
 {
     ULONG ulrc = 0;
 
@@ -914,7 +914,7 @@ static ULONG WriteXWPFilters2INI(PFILETYPESPAGEDATA pftpd)
  *      has the currently selected file type in the container.
  */
 
-static VOID UpdateFiltersCnr(PFILETYPESPAGEDATA pftpd)
+STATIC VOID UpdateFiltersCnr(PFILETYPESPAGEDATA pftpd)
 {
     // get text of selected record core
     PSZ pszFileType = pftpd->pftreccSelected->recc.recc.pszIcon;
@@ -969,7 +969,7 @@ static VOID UpdateFiltersCnr(PFILETYPESPAGEDATA pftpd)
  *@@added V0.9.7 (2000-12-13) [umoeller]
  */
 
-static BOOL CreateFileType(PFILETYPESPAGEDATA pftpd,
+STATIC BOOL CreateFileType(PFILETYPESPAGEDATA pftpd,
                            PSZ pszNewType,             // in: new type (malloc!)
                            PFILETYPERECORD pParent)    // in: parent record or NULL if root type
 {
@@ -1046,7 +1046,7 @@ static BOOL CreateFileType(PFILETYPESPAGEDATA pftpd,
  *@@added V0.9.7 (2000-12-13) [umoeller]
  */
 
-static BOOL CheckFileTypeDrag(PFILETYPESPAGEDATA pftpd,
+STATIC BOOL CheckFileTypeDrag(PFILETYPESPAGEDATA pftpd,
                               PDRAGINFO pDragInfo,     // in: drag info
                               PFILETYPERECORD pTargetRec, // in: target record from CNRDRAGINFO
                               PUSHORT pusIndicator,    // out: DOR_* flag for indicator (ptr can be NULL)
@@ -1155,7 +1155,7 @@ END */
 #define FT_TEXT_HEIGHT          10
 #define FT_CNR_HEIGHT           40
 
-static const CONTROLDEF
+STATIC const CONTROLDEF
     FTGroup = LOADDEF_GROUP(ID_XSDI_FT_GROUP, SZL_AUTOSIZE),
     FTCnr = CONTROLDEF_CONTAINER(ID_XSDI_FT_CONTAINER,
                                  100,
@@ -1168,7 +1168,7 @@ static const CONTROLDEF
     FTAssocsCnr = CONTROLDEF_CONTAINER_EXTSEL(ID_XSDI_FT_ASSOCSCNR, 100, FT_CNR_HEIGHT),
     FTCreateDatafileHandleCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_FT_CREATEDATAFILEHANDLE);
 
-static const DLGHITEM G_dlgFileTypes[] =
+STATIC const DLGHITEM G_dlgFileTypes[] =
     {
         START_TABLE,
             START_ROW(0),
@@ -1204,7 +1204,7 @@ static const DLGHITEM G_dlgFileTypes[] =
  *@@added V0.9.4 (2000-08-08) [umoeller]
  */
 
-static MPARAM G_ampFileTypesPage[] =
+STATIC MPARAM G_ampFileTypesPage[] =
     {
         MPFROM2SHORT(ID_XSDI_FT_GROUP, XAC_SIZEX | XAC_SIZEY),
         MPFROM2SHORT(ID_XSDI_FT_CONTAINER, XAC_SIZEX | XAC_SIZEY),
@@ -1423,7 +1423,7 @@ VOID ftypFileTypesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
  *@@added V0.9.16 (2001-12-02) [umoeller]
  */
 
-static VOID ImportNewTypes(PNOTEBOOKPAGE pnbp)
+STATIC VOID ImportNewTypes(PNOTEBOOKPAGE pnbp)
 {
     CHAR szFilename[CCHMAXPATH];
     sprintf(szFilename, "%c:\\xwptypes.xtp", doshQueryBootDrive());
@@ -2665,7 +2665,7 @@ MRESULT ftypFileTypesItemChanged(PNOTEBOOKPAGE pnbp,
  *@@added V0.9.9 (2001-02-06) [umoeller]
  */
 
-static VOID FillListboxWithWPSFilters(HWND hwndDlg)
+STATIC VOID FillListboxWithWPSFilters(HWND hwndDlg)
 {
     HPOINTER hptrOld = winhSetWaitPointer();
 
@@ -2794,7 +2794,7 @@ static VOID FillListboxWithWPSFilters(HWND hwndDlg)
  *@@changed V0.9.9 (2001-02-06) [umoeller]: setting proper fonts now
  */
 
-static MRESULT EXPENTRY fnwpImportWPSFilters(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
+STATIC MRESULT EXPENTRY fnwpImportWPSFilters(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
 
@@ -3100,7 +3100,7 @@ static MRESULT EXPENTRY fnwpImportWPSFilters(HWND hwndDlg, ULONG msg, MPARAM mp1
  *@@added V0.9.9 (2001-03-27) [umoeller]
  */
 
-static MPARAM G_ampDatafileTypesPage[] =
+STATIC MPARAM G_ampDatafileTypesPage[] =
     {
         MPFROM2SHORT(ID_XSDI_DATAF_AVAILABLE_CNR, XAC_SIZEX | XAC_SIZEY),
         MPFROM2SHORT(ID_XSDI_DATAF_GROUP, XAC_SIZEX | XAC_SIZEY)
@@ -3139,7 +3139,7 @@ typedef struct _INSTANCEFILETYPESPAGE
  *@@added V0.9.9 (2001-04-02) [umoeller]
  */
 
-static VOID InitInstanceFileTypesPage(PNOTEBOOKPAGE pnbp,
+STATIC VOID InitInstanceFileTypesPage(PNOTEBOOKPAGE pnbp,
                                       PINSTANCEFILETYPESPAGE *pp)  // out: new struct
 {
     PINSTANCEFILETYPESPAGE pdftp;
@@ -3173,7 +3173,7 @@ static VOID InitInstanceFileTypesPage(PNOTEBOOKPAGE pnbp,
  *@@added V0.9.9 (2001-04-02) [umoeller]
  */
 
-static VOID FillInstanceFileTypesPage(PNOTEBOOKPAGE pnbp,
+STATIC VOID FillInstanceFileTypesPage(PNOTEBOOKPAGE pnbp,
                                       PCSZ pcszCheck,
                                       CHAR cSeparator,
                                       PLINKLIST pllDisable)
@@ -3216,7 +3216,7 @@ static VOID FillInstanceFileTypesPage(PNOTEBOOKPAGE pnbp,
  *@@added V0.9.9 (2001-04-02) [umoeller]
  */
 
-static VOID DestroyInstanceFileTypesPage(PNOTEBOOKPAGE pnbp)
+STATIC VOID DestroyInstanceFileTypesPage(PNOTEBOOKPAGE pnbp)
 {
     PINSTANCEFILETYPESPAGE pdftp;
     if (pdftp = (PINSTANCEFILETYPESPAGE)pnbp->pUser)
@@ -3239,7 +3239,7 @@ static VOID DestroyInstanceFileTypesPage(PNOTEBOOKPAGE pnbp)
  *@@changed V0.9.12 (2001-05-12) [umoeller]: fixed buggy type removal
  */
 
-static VOID HandleRecordChecked(ULONG ulExtra,         // from "item changed" callback
+STATIC VOID HandleRecordChecked(ULONG ulExtra,         // from "item changed" callback
                                 PXSTRING pstrTypes,
                                 PCSZ pcszSeparator)
 {

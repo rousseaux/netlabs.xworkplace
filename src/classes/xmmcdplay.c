@@ -102,7 +102,7 @@
  *
  ********************************************************************/
 
-static const char *G_pszCDPlayer = "XMMCDPlayer";
+STATIC const char *G_pszCDPlayer = "XMMCDPlayer";
 
 /* ******************************************************************
  *

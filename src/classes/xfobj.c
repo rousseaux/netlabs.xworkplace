@@ -146,18 +146,18 @@
 // #define USE_FASTMUTEX   1
 
 // global variable whether XWorkplace is initialized yet
-static BOOL         G_fXWorkplaceInitialized = FALSE;
+STATIC BOOL         G_fXWorkplaceInitialized = FALSE;
 
 extern WPFolder     *G_pConfigFolder;
                             // xfldr.c
 
 // awake objects list V0.9.20 (2002-07-25) [umoeller]
-static HMTX         G_hmtxAwakeObjects = NULLHANDLE;
+STATIC HMTX         G_hmtxAwakeObjects = NULLHANDLE;
 
 // object flags mutex V0.9.21 (2002-08-31) [umoeller]
-static HMTX         G_hmtxObjFlags = NULLHANDLE;
+STATIC HMTX         G_hmtxObjFlags = NULLHANDLE;
 
-static XFldObject   *G_pFirstAwakeObject = NULL,
+STATIC XFldObject   *G_pFirstAwakeObject = NULL,
                     *G_pLastAwakeObject = NULL;
 
 // the following two are also exported through kernel.h
@@ -176,7 +176,7 @@ ULONG               G_cAwakeObjects = 0;
  *@@added V0.9.20 (2002-07-25) [umoeller]
  */
 
-static BOOL LockAwakeObjectsList(VOID)
+STATIC BOOL LockAwakeObjectsList(VOID)
 {
     if (G_hmtxAwakeObjects)
         // return !DosRequestMutexSem(G_hmtxAwakeObjects, SEM_INDEFINITE_WAIT);
@@ -202,7 +202,7 @@ static BOOL LockAwakeObjectsList(VOID)
  *@@added V0.9.20 (2002-07-25) [umoeller]
  */
 
-static VOID UnlockAwakeObjectsList(VOID)
+STATIC VOID UnlockAwakeObjectsList(VOID)
 {
     DosReleaseMutexSem(G_hmtxAwakeObjects);
 }
@@ -219,7 +219,7 @@ static VOID UnlockAwakeObjectsList(VOID)
  *@@added V0.9.20 (2002-07-25) [umoeller]
  */
 
-static BOOL LockObjFlags(VOID)
+STATIC BOOL LockObjFlags(VOID)
 {
     if (G_hmtxObjFlags)
         return !DosRequestMutexSem(G_hmtxObjFlags, SEM_INDEFINITE_WAIT);
@@ -237,7 +237,7 @@ static BOOL LockObjFlags(VOID)
  *@@added V0.9.20 (2002-07-25) [umoeller]
  */
 
-static VOID UnlockObjFlags(VOID)
+STATIC VOID UnlockObjFlags(VOID)
 {
     DosReleaseMutexSem(G_hmtxObjFlags);
 }
@@ -522,7 +522,7 @@ SOM_Scope BOOL  SOMLINK xo_xwpQueryDeletion(XFldObject *somSelf,
  *@@added V0.9.20 (2002-07-25) [umoeller]
  */
 
-static PTRASHDATA GetTrashData(XFldObject *somSelf)
+STATIC PTRASHDATA GetTrashData(XFldObject *somSelf)
 {
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
 
@@ -681,7 +681,7 @@ SOM_Scope BOOL  SOMLINK xo_xwpSetTrashObject(XFldObject *somSelf,
  *      object. See XFldObject::xwpModifyFlags for details.
  *
  *@@added V0.9.6 (2000-10-23) [umoeller]
- *@@changed V0.9.21 (2002-08-31) [umoeller]: now using new flags mutex to avoid deadlocks
+ *@@changed V0.9.21 (2002-09-02) [umoeller]: now using new flags mutex to avoid deadlocks
  */
 
 SOM_Scope ULONG  SOMLINK xo_xwpQueryFlags(XFldObject *somSelf)
@@ -776,7 +776,7 @@ SOM_Scope ULONG  SOMLINK xo_xwpQueryFlags(XFldObject *somSelf)
  +                          FLAG1);            // flags to set (i.e. clear FLAG2)
  *
  *@@added V0.9.6 (2000-10-23) [umoeller]
- *@@changed V0.9.21 (2002-08-31) [umoeller]: now using new flags mutex to avoid deadlocks
+ *@@changed V0.9.21 (2002-09-02) [umoeller]: now using new flags mutex to avoid deadlocks
  */
 
 SOM_Scope BOOL  SOMLINK xo_xwpModifyFlags(XFldObject *somSelf,
@@ -792,7 +792,7 @@ SOM_Scope BOOL  SOMLINK xo_xwpModifyFlags(XFldObject *somSelf,
     {
         XFldObjectData *somThis = XFldObjectGetData(somSelf);
 
-        // V0.9.21 (2002-08-31) [umoeller]
+        // V0.9.21 (2002-09-02) [umoeller]
         // I have introduced a new mutex for the object flags
         // here. The mutex is global and thus protects the
         // object flags of all objects. We used to request
@@ -868,7 +868,7 @@ SOM_Scope BOOL  SOMLINK xo_xwpModifyFlags(XFldObject *somSelf,
  *
  *@@added V0.9.7 (2001-01-03) [umoeller]
  *@@changed V0.9.13 (2001-06-21) [umoeller]: renamed from xwpAddDestroyNotify
- *@@changed V0.9.21 (2002-08-31) [umoeller]: now using new flags mutex to avoid deadlocks
+ *@@changed V0.9.21 (2002-09-02) [umoeller]: now using new flags mutex to avoid deadlocks
  */
 
 SOM_Scope BOOL  SOMLINK xo_xwpAddWidgetNotify(XFldObject *somSelf,
@@ -919,7 +919,7 @@ SOM_Scope BOOL  SOMLINK xo_xwpAddWidgetNotify(XFldObject *somSelf,
  *      the reverse to XFldObject::AddWidgetNotify.
  *
  *@@added V0.9.7 (2001-01-03) [umoeller]
- *@@changed V0.9.21 (2002-08-31) [umoeller]: now using new flags mutex to avoid deadlocks
+ *@@changed V0.9.21 (2002-09-02) [umoeller]: now using new flags mutex to avoid deadlocks
  */
 
 SOM_Scope BOOL  SOMLINK xo_xwpRemoveDestroyNotify(XFldObject *somSelf,
@@ -2432,7 +2432,7 @@ SOM_Scope BOOL  SOMLINK xo_wpSetIcon(XFldObject *somSelf, HPOINTER hptrNewIcon)
 {
     BOOL            brc = FALSE;
     BOOL            fSharedLocked = FALSE,
-                    fSelfLocked = FALSE;
+                    fFlagsLocked = FALSE;
     XFldObjectData  *somThis = XFldObjectGetData(somSelf);
 
     XFldObjectMethodDebug("XFldObject","xo_wpSetIcon");
@@ -2456,7 +2456,9 @@ SOM_Scope BOOL  SOMLINK xo_wpSetIcon(XFldObject *somSelf, HPOINTER hptrNewIcon)
         // from fntLazyIcons.
         if (    (pData = (PIBMOBJECTDATA)_pvWPObjectData)
              && (pmrc = pData->pmrc)
-             && (fSelfLocked = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT))
+             // && (fSelfLocked = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT))
+                // V0.9.21 (2002-09-02) [umoeller]
+             && (fFlagsLocked = LockObjFlags())
            )
         {
             if (_flObject & OBJFL_LAZYLOADINGICON)
@@ -2470,8 +2472,8 @@ SOM_Scope BOOL  SOMLINK xo_wpSetIcon(XFldObject *somSelf, HPOINTER hptrNewIcon)
                 _flObject &= ~OBJFL_LAZYLOADINGICON;
             }
 
-            _wpReleaseObjectMutexSem(somSelf);
-            fSelfLocked = FALSE;
+            UnlockObjFlags();       // V0.9.21 (2002-09-02) [umoeller]
+            fFlagsLocked = FALSE;
         }
 
         // now go call the parent, which updates the object in all
@@ -2500,8 +2502,8 @@ SOM_Scope BOOL  SOMLINK xo_wpSetIcon(XFldObject *somSelf, HPOINTER hptrNewIcon)
     if (fSharedLocked)
         icomUnlockIconShares();
 
-    if (fSelfLocked)
-        _wpReleaseObjectMutexSem(somSelf);
+    if (fFlagsLocked)
+        UnlockObjFlags();       // V0.9.21 (2002-09-02) [umoeller]
 
     return brc;
 }

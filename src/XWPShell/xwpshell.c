@@ -410,7 +410,7 @@ VOID Error(const char* pcszFormat,
  *      the user name and password from the user.
  */
 
-static MRESULT EXPENTRY fnwpLogonDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
+STATIC MRESULT EXPENTRY fnwpLogonDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     static PXWPUSERDBENTRY puiLogon = NULL;
 

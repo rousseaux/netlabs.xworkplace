@@ -310,7 +310,7 @@
  *@@changed V0.9.13 (2001-06-19) [umoeller]: "always sort" and "folders first" always got unchecked, fixed
  */
 
-static VOID CheckDefaultSortItem(HWND hwndSortMenu,
+STATIC VOID CheckDefaultSortItem(HWND hwndSortMenu,
                                  LONG lSort)
 {
     ULONG ulVarMenuOffset = cmnQuerySetting(sulVarMenuOfs);
@@ -715,7 +715,7 @@ BOOL fdrSortMenuItemSelected(WPFolder *somSelf,
  *@@added V0.9.12 (2001-05-18) [umoeller]
  */
 
-static LONG EXPENTRY CompareStrings(PSZ *ppsz1,     // ptr to PSZ 1
+STATIC LONG EXPENTRY CompareStrings(PSZ *ppsz1,     // ptr to PSZ 1
                                     PSZ *ppsz2)     // ptr to PSZ 2
 {
     PSZ p1 = *ppsz1,
@@ -778,7 +778,7 @@ static LONG EXPENTRY CompareStrings(PSZ *ppsz1,     // ptr to PSZ 1
  *@@added V0.9.12 (2001-05-18) [umoeller]
  */
 
-static LONG EXPENTRY CompareULongs(PULONG pul1,     // ptr to ul1
+STATIC LONG EXPENTRY CompareULongs(PULONG pul1,     // ptr to ul1
                                    PULONG pul2)     // ptr to ul2
 {
     if (*pul1 > *pul2)
@@ -801,7 +801,7 @@ static LONG EXPENTRY CompareULongs(PULONG pul1,     // ptr to ul1
  *@@added V0.9.12 (2001-05-20) [umoeller]
  */
 
-static LONG EXPENTRY CompareDate(PCDATE pd1,     // ptr to ul1
+STATIC LONG EXPENTRY CompareDate(PCDATE pd1,     // ptr to ul1
                                  PCDATE pd2)     // ptr to ul2
 {
     /*  typedef struct _CDATE {
@@ -1550,7 +1550,7 @@ BOOL _Optlink fdrUpdateFolderSorts(WPFolder *somSelf,
  *@@added V0.9.12 (2001-05-18) [umoeller]
  */
 
-static VOID InsertSortItem(HWND hwndListbox,       // in: sort criteria list box
+STATIC VOID InsertSortItem(HWND hwndListbox,       // in: sort criteria list box
                            PULONG pulIndex,        // in/out: current index (raised by one here)
                            const char *pcsz,       // in: criterion name
                            LONG lItemHandle)       // in: details column index
@@ -1563,7 +1563,7 @@ static VOID InsertSortItem(HWND hwndListbox,       // in: sort criteria list box
                           lItemHandle);
 }
 
-static XWPSETTING G_SortBackup[] =
+STATIC XWPSETTING G_SortBackup[] =
     {
         slDefSortCrit,
         sfFoldersFirst,

@@ -98,20 +98,20 @@
  *
  ********************************************************************/
 
-static HAB         G_habPartyThread = NULLHANDLE;
-static HMQ         G_hmqPartyThread = NULLHANDLE;
+STATIC HAB         G_habPartyThread = NULLHANDLE;
+STATIC HMQ         G_hmqPartyThread = NULLHANDLE;
 extern HWND G_hwndPartyObject = NULLHANDLE;
 
 // sound data
-static ULONG       G_ulMMPM2Working = MMSTAT_UNKNOWN;
+STATIC ULONG       G_ulMMPM2Working = MMSTAT_UNKNOWN;
 
-static USHORT      G_usSoundDeviceID = 0;
-static ULONG       G_ulVolumeTemp = 0;
-static PSZ         G_pszSoundFile = NULL;
+STATIC USHORT      G_usSoundDeviceID = 0;
+STATIC ULONG       G_ulVolumeTemp = 0;
+STATIC PSZ         G_pszSoundFile = NULL;
 
-static THREADINFO  G_tiPartyThread = {0};
+STATIC THREADINFO  G_tiPartyThread = {0};
 
-static PCSZ WNDCLASS_MEDIAOBJECT = "XWPPartyThread";
+STATIC PCSZ WNDCLASS_MEDIAOBJECT = "XWPPartyThread";
 
 /* ******************************************************************
  *
@@ -136,7 +136,7 @@ FNTD_MMIOGETFORMATNAME      *G_mmioGetFormatName = NULL;
  *      Used with doshResolveImports.
  */
 
-static const RESOLVEFUNCTION G_aResolveFromMDM[] =
+STATIC const RESOLVEFUNCTION G_aResolveFromMDM[] =
         {
                 "mciSendCommand", (PFN*)&G_mciSendCommand,
                 "mciGetErrorString", (PFN*)&G_mciGetErrorString
@@ -148,7 +148,7 @@ static const RESOLVEFUNCTION G_aResolveFromMDM[] =
  *      Used with doshResolveImports.
  */
 
-static const RESOLVEFUNCTION G_aResolveFromMMIO[] =
+STATIC const RESOLVEFUNCTION G_aResolveFromMMIO[] =
         {
                 "mmioIniFileCODEC", (PFN*)&G_mmioIniFileCODEC,
                 "mmioQueryCODECNameLength", (PFN*)&G_mmioQueryCODECNameLength,
@@ -173,7 +173,7 @@ static const RESOLVEFUNCTION G_aResolveFromMMIO[] =
  *@@added V0.9.14 (2001-08-01) [umoeller]
  */
 
-static VOID ThreadPlaySystemSound(HWND hwndObject,
+STATIC VOID ThreadPlaySystemSound(HWND hwndObject,
                                   MPARAM mp1)
 {
     CHAR    szDescr[CCHMAXPATH];

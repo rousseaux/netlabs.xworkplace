@@ -109,7 +109,7 @@
 // static THREADINFO   G_ptiCreateFontObjects = {0};
 
 #define WC_XWPFONTOBJ_SAMPLE     "XWPFontSampleClient"
-static BOOL         G_fFontSampleClassRegistered = FALSE;
+STATIC BOOL         G_fFontSampleClassRegistered = FALSE;
 
 ULONG               G_ulFontSampleHints = 0;
                                     /* | HINTS_MAX_ASCENDER_DESCENDER_GRAYRECT
@@ -125,7 +125,7 @@ typedef struct _HINTMENUITEM
     ULONG       ulFlag;
 } HINTMENUITEM, *PHINTMENUITEM;
 
-static HINTMENUITEM G_aHintMenuItems[] =
+STATIC HINTMENUITEM G_aHintMenuItems[] =
         {
             ID_XSSI_FONT_BASELINE, // "Show baseline (red line)",
                                         HINTS_BASELINE_REDLINE,
@@ -138,11 +138,11 @@ static HINTMENUITEM G_aHintMenuItems[] =
         };
 
 // list of open views
-static LINKLIST     G_llFontSampleViews;
+STATIC LINKLIST     G_llFontSampleViews;
                         // list of plain HWND's with the frame windows
                         // of all currently open sample views... this
                         // is not auto-free, of course.
-static BOOL         G_fInitialized = FALSE;
+STATIC BOOL         G_fInitialized = FALSE;
                         // TRUE after first call... we must initialize the
                         // list.
 
@@ -1159,7 +1159,7 @@ typedef struct _FONTSAMPLEDATA
  *      the client's scroll bars.
  */
 
-static VOID UpdateScrollBars(PFONTSAMPLEDATA pWinData,
+STATIC VOID UpdateScrollBars(PFONTSAMPLEDATA pWinData,
                              ULONG ulWinCX,
                              ULONG ulWinCY)
 {
@@ -1186,7 +1186,7 @@ static VOID UpdateScrollBars(PFONTSAMPLEDATA pWinData,
  *@@changed V0.9.16 (2001-09-29) [umoeller]: now painting small sizes first
  */
 
-static VOID FontSamplePaint(HWND hwnd,
+STATIC VOID FontSamplePaint(HWND hwnd,
                             PFONTSAMPLEDATA pWinData)
 {
     HPS  hps = NULLHANDLE;
@@ -1466,7 +1466,7 @@ static VOID FontSamplePaint(HWND hwnd,
  *      defined in PMREF.
  */
 
-static MRESULT HandleContextMenu(WPObject *somSelf,            // in: object with view
+STATIC MRESULT HandleContextMenu(WPObject *somSelf,            // in: object with view
                                  HWND hwndClient,              // in: client window handle of view
                                                                // (must be FID_CLIENT)
                                  ULONG msg,                    // in: WM_CONTEXTMENU or WM_MENUEND
@@ -1520,7 +1520,7 @@ static MRESULT HandleContextMenu(WPObject *somSelf,            // in: object wit
  *      window proc for the subclassed frame.
  */
 
-static MRESULT EXPENTRY fon_fnwpFontSampleFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
+STATIC MRESULT EXPENTRY fon_fnwpFontSampleFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT             mrc = 0;
     PFONTSAMPLEDATA     pWinData = (PFONTSAMPLEDATA)WinQueryWindowPtr(hwnd, QWL_USER);
@@ -1550,7 +1550,7 @@ static MRESULT EXPENTRY fon_fnwpFontSampleFrame(HWND hwnd, ULONG msg, MPARAM mp1
  *      window proc for the font "Sample" view client.
  */
 
-static MRESULT EXPENTRY fon_fnwpFontSampleClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
+STATIC MRESULT EXPENTRY fon_fnwpFontSampleClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT             mrc = 0;
     PFONTSAMPLEDATA     pWinData = (PFONTSAMPLEDATA)WinQueryWindowPtr(hwnd, QWL_USER);

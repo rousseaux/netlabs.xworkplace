@@ -142,7 +142,7 @@ typedef struct _INVOKESETUPSTRING
  *@@added V0.9.20 (2002-07-12) [umoeller]
  */
 
-static const XWPSETUPENTRY G_XWPStringSetupSet[] =
+STATIC const XWPSETUPENTRY G_XWPStringSetupSet[] =
     {
         // type,  setup string,     offset,
         STG_BOOL, "CONFIRMINVOCATION", FIELDOFFSET(XWPStringData, fConfirm),
@@ -182,7 +182,7 @@ static const XWPSETUPENTRY G_XWPStringSetupSet[] =
  *@@changed V0.9.6 (2000-11-23) [umoeller]: now using PINVOKESETUPSTRING
  */
 
-static void _Optlink xwstrfntSetupThread(PTHREADINFO pti)
+STATIC void _Optlink xwstrfntSetupThread(PTHREADINFO pti)
 {
     BOOL brc = FALSE;
 
@@ -242,7 +242,7 @@ static void _Optlink xwstrfntSetupThread(PTHREADINFO pti)
  *@@added V0.9.3 (2000-04-27) [umoeller]
  */
 
-static VOID xwstrStringInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
+STATIC VOID xwstrStringInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                                 ULONG flFlags)        // CBI_* flags (notebook.h)
 {
     XWPStringData *somThis = XWPStringGetData(pnbp->inbp.somSelf);
@@ -342,7 +342,7 @@ static VOID xwstrStringInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
  *@@added V0.9.3 (2000-04-27) [umoeller]
  */
 
-static MRESULT xwstrStringItemChanged(PNOTEBOOKPAGE pnbp,
+STATIC MRESULT xwstrStringItemChanged(PNOTEBOOKPAGE pnbp,
                                       ULONG ulItemID, USHORT usNotifyCode,
                                       ULONG ulExtra)      // for checkboxes: contains new state
 {

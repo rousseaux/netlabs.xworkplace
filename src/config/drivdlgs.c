@@ -191,16 +191,16 @@ MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
  *
  ********************************************************************/
 
-static HMTX         G_hmxPlugins = NULLHANDLE;
+STATIC HMTX         G_hmxPlugins = NULLHANDLE;
 
-static LINKLIST     G_llCheckDrivers,       // linked list of DRIVERPLUGIN structs, auto-free
+STATIC LINKLIST     G_llCheckDrivers,       // linked list of DRIVERPLUGIN structs, auto-free
                     G_llModules;            // linked list of HMODULE's, no auto-free
-static BOOL         G_fModulesInitialized = FALSE,
+STATIC BOOL         G_fModulesInitialized = FALSE,
                     G_fDriverProcsLoaded = FALSE;
 
-static ULONG        G_ulDriverLoadsCount = 0;
+STATIC ULONG        G_ulDriverLoadsCount = 0;
 
-static PFNCHECKDRIVERNAME G_aBuiltInDriverProcs[] =
+STATIC PFNCHECKDRIVERNAME G_aBuiltInDriverProcs[] =
     {
             CheckHPFSDriverName,
             CheckHPFS386DriverName,
@@ -219,7 +219,7 @@ static PFNCHECKDRIVERNAME G_aBuiltInDriverProcs[] =
  *@@added V0.9.13 (2001-06-27) [umoeller]
  */
 
-static BOOL LockPlugins(VOID)
+STATIC BOOL LockPlugins(VOID)
 {
     if (G_hmxPlugins)
         return !DosRequestMutexSem(G_hmxPlugins, SEM_INDEFINITE_WAIT);
@@ -237,7 +237,7 @@ static BOOL LockPlugins(VOID)
  *@@added V0.9.13 (2001-06-27) [umoeller]
  */
 
-static VOID UnlockPlugins(VOID)
+STATIC VOID UnlockPlugins(VOID)
 {
     DosReleaseMutexSem(G_hmxPlugins);
 }
@@ -553,7 +553,7 @@ BOOL drvConfigSupported(PDRIVERSPEC pSpec)
  *@@added V0.9.13 (2001-06-27) [umoeller]
  */
 
-static BOOL ShowDriverDlg(HWND hwndOwner,
+STATIC BOOL ShowDriverDlg(HWND hwndOwner,
                           ULONG ulID,
                           PFNWP pfnwp,
                           PDRIVERDLGDATA pDlgData)
@@ -593,7 +593,7 @@ static BOOL ShowDriverDlg(HWND hwndOwner,
  *@@added V0.9.13 (2001-06-27) [umoeller]
  */
 
-static BOOL EXPENTRY ShowHPFSDlg(HWND hwndOwner,
+STATIC BOOL EXPENTRY ShowHPFSDlg(HWND hwndOwner,
                                  PDRIVERDLGDATA pDlgData)
 {
     return (ShowDriverDlg(hwndOwner,
@@ -608,7 +608,7 @@ static BOOL EXPENTRY ShowHPFSDlg(HWND hwndOwner,
  *@@added V0.9.13 (2001-06-27) [umoeller]
  */
 
-static BOOL EXPENTRY ShowHPFS386Dlg(HWND hwndOwner,
+STATIC BOOL EXPENTRY ShowHPFS386Dlg(HWND hwndOwner,
                                     PDRIVERDLGDATA pDlgData)
 {
     return (ShowDriverDlg(hwndOwner,
@@ -623,7 +623,7 @@ static BOOL EXPENTRY ShowHPFS386Dlg(HWND hwndOwner,
  *@@added V0.9.13 (2001-06-27) [umoeller]
  */
 
-static BOOL EXPENTRY ShowIBM1S506Dlg(HWND hwndOwner,
+STATIC BOOL EXPENTRY ShowIBM1S506Dlg(HWND hwndOwner,
                                      PDRIVERDLGDATA pDlgData)
 {
     return (ShowDriverDlg(hwndOwner,
@@ -638,7 +638,7 @@ static BOOL EXPENTRY ShowIBM1S506Dlg(HWND hwndOwner,
  *@@added V0.9.13 (2001-06-27) [umoeller]
  */
 
-static BOOL EXPENTRY CheckHPFSDriverName(HMODULE hmodPlugin, HMODULE hmodXFLDR, PDRIVERSPEC pSpec, PSZ psz)
+STATIC BOOL EXPENTRY CheckHPFSDriverName(HMODULE hmodPlugin, HMODULE hmodXFLDR, PDRIVERSPEC pSpec, PSZ psz)
 {
     if (!stricmp(pSpec->pszFilename, "HPFS.IFS"))
     {
@@ -655,7 +655,7 @@ static BOOL EXPENTRY CheckHPFSDriverName(HMODULE hmodPlugin, HMODULE hmodXFLDR, 
  *@@added V0.9.13 (2001-06-27) [umoeller]
  */
 
-static BOOL EXPENTRY CheckHPFS386DriverName(HMODULE hmodPlugin, HMODULE hmodXFLDR, PDRIVERSPEC pSpec, PSZ psz)
+STATIC BOOL EXPENTRY CheckHPFS386DriverName(HMODULE hmodPlugin, HMODULE hmodXFLDR, PDRIVERSPEC pSpec, PSZ psz)
 {
     if (!stricmp(pSpec->pszFilename, "HPFS386.IFS"))
     {
@@ -672,7 +672,7 @@ static BOOL EXPENTRY CheckHPFS386DriverName(HMODULE hmodPlugin, HMODULE hmodXFLD
  *@@added V0.9.13 (2001-06-27) [umoeller]
  */
 
-static BOOL EXPENTRY CheckIBM1S506DriverName(HMODULE hmodPlugin, HMODULE hmodXFLDR, PDRIVERSPEC pSpec, PSZ psz)
+STATIC BOOL EXPENTRY CheckIBM1S506DriverName(HMODULE hmodPlugin, HMODULE hmodXFLDR, PDRIVERSPEC pSpec, PSZ psz)
 {
     if (    (!stricmp(pSpec->pszFilename, "IBM1S506.ADD"))
          || (!stricmp(pSpec->pszFilename, "DANIS506.ADD"))
@@ -1176,7 +1176,7 @@ typedef struct _S506ALL
 PSZ     apszDMAChannels[DMACHANNELS_COUNT];
 
 // array of tools to be subclassed for tooltips
-static USHORT usS506ToolIDs[] =
+STATIC USHORT usS506ToolIDs[] =
     {
         ID_OSDI_S506_INITQUIET,
         ID_OSDI_S506_INITVERBOSE,
@@ -1237,7 +1237,7 @@ static USHORT usS506ToolIDs[] =
  *      default values.
  */
 
-static VOID SetS506Defaults(PS506ALL pS506All)
+STATIC VOID SetS506Defaults(PS506ALL pS506All)
 {
     ULONG   ul = 0;
     // defaults for global parameters
@@ -1306,7 +1306,7 @@ static VOID SetS506Defaults(PS506ALL pS506All)
  *@@added V0.9.3 (2000-04-10) [umoeller]
  */
 
-static VOID S506ParseParamsString(PDRIVERDLGDATA pddd)
+STATIC VOID S506ParseParamsString(PDRIVERDLGDATA pddd)
 {
     PSZ         pszParamsCopy = 0,
                 pszToken = 0;
@@ -1615,7 +1615,7 @@ static VOID S506ParseParamsString(PDRIVERDLGDATA pddd)
  *      Returns NULL if no params have been defined.
  */
 
-static PSZ RecomposeParamsString(HWND hwndDlg,         // in: driver dialog
+STATIC PSZ RecomposeParamsString(HWND hwndDlg,         // in: driver dialog
                                  PS506ALL pS506All)    // in: driver settings
 {
     XSTRING     strParams,
@@ -1864,7 +1864,7 @@ static PSZ RecomposeParamsString(HWND hwndDlg,         // in: driver dialog
  *@@added V0.9.3 (2000-04-10) [umoeller]
  */
 
-static VOID S506Settings2Dlg(HWND hwndDlg,
+STATIC VOID S506Settings2Dlg(HWND hwndDlg,
                              PDRIVERDLGDATA pddd)
 {
     CHAR            szTemp[30];
@@ -2021,7 +2021,7 @@ static VOID S506Settings2Dlg(HWND hwndDlg,
  *      driver.
  */
 
-static USHORT ausNotSupportedByIBM[] =
+STATIC USHORT ausNotSupportedByIBM[] =
             {
                 ID_OSDI_DANIS506_CLOCK_CHECK,
                 ID_OSDI_DANIS506_CLOCK_SLIDER,
@@ -2048,7 +2048,7 @@ static USHORT ausNotSupportedByIBM[] =
  *      drivers with versions < 10.xxx.
  */
 
-static USHORT ausNotSupportedByOldIBM[] =
+STATIC USHORT ausNotSupportedByOldIBM[] =
             {
                 ID_OSDI_S506_INITWAIT,
                 ID_OSDI_S506_U_BUSMASTER
@@ -2064,7 +2064,7 @@ static USHORT ausNotSupportedByOldIBM[] =
  *@@added V0.9.3 (2000-04-10) [umoeller]
  */
 
-static VOID S506EnableItems(HWND hwndDlg,
+STATIC VOID S506EnableItems(HWND hwndDlg,
                             PDRIVERDLGDATA pddd)
 {
     PS506ALL        pS506All = (PS506ALL)pddd->pvUser;

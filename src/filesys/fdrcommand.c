@@ -718,7 +718,7 @@ BOOL fcmdProcessViewCommand(WPFolder *somSelf,
  *@@changed V0.9.19 (2002-04-24) [umoeller]: replaced embarassing dialog from XFolder days
  */
 
-static BOOL ProgramObjectSelected(WPObject *pFolder,        // in: folder or disk object
+STATIC BOOL ProgramObjectSelected(WPObject *pFolder,        // in: folder or disk object
                                   WPProgram *pProgram)
 {
     PPROGDETAILS    pDetails;
@@ -954,7 +954,7 @@ static BOOL ProgramObjectSelected(WPObject *pFolder,        // in: folder or dis
  *@@added V0.9.14 (2001-07-14) [umoeller]
  */
 
-static BOOL CheckForVariableMenuItems(WPFolder *somSelf,  // in: folder or root folder
+STATIC BOOL CheckForVariableMenuItems(WPFolder *somSelf,  // in: folder or root folder
                                       HWND hwndFrame,    // in: as in wpMenuItemSelected
                                       ULONG ulMenuId)    // in: selected menu item
 {

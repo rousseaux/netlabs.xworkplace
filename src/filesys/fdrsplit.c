@@ -114,7 +114,7 @@ PCSZ    WC_SPLITVIEWCLIENT  = "XWPSplitViewClient",
  *
  ********************************************************************/
 
-PFNWP       G_pfnFrameProc = NULL;
+PFNWP       G_pfnwpSplitFrameOrig = NULL;
 
 /* ******************************************************************
  *
@@ -139,7 +139,7 @@ PFNWP       G_pfnFrameProc = NULL;
  *@@added V0.9.18 (2002-02-06) [umoeller]
  */
 
-static WPObject* AddFirstChild(WPFolder *pFolder,
+STATIC WPObject* AddFirstChild(WPFolder *pFolder,
                                PMINIRECORDCORE precParent,     // in: folder record to insert first child for
                                HWND hwndCnr,                   // in: cnr where precParent is inserted
                                PLINKLIST pll)                  // in/out: list of objs
@@ -301,7 +301,7 @@ static WPObject* AddFirstChild(WPFolder *pFolder,
  *      Runs on the split populate thread (fntSplitPopulate).
  */
 
-static MRESULT EXPENTRY fnwpSplitPopulate(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
+STATIC MRESULT EXPENTRY fnwpSplitPopulate(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
 
@@ -499,7 +499,7 @@ static MRESULT EXPENTRY fnwpSplitPopulate(HWND hwnd, ULONG msg, MPARAM mp1, MPAR
  *      scan the entire contents first.
  */
 
-static VOID _Optlink fntSplitPopulate(PTHREADINFO ptiMyself)
+STATIC VOID _Optlink fntSplitPopulate(PTHREADINFO ptiMyself)
 {
     TRY_LOUD(excpt1)
     {
@@ -788,7 +788,7 @@ VOID fdrInsertContents(WPFolder *pFolder,              // in: populated folder
  *
  ********************************************************************/
 
-static MRESULT EXPENTRY fnwpSubclassedFilesFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2);
+STATIC MRESULT EXPENTRY fnwpSubclassedFilesFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2);
 
 /*
  *@@ fdrCreateFrameWithCnr:
@@ -1992,7 +1992,7 @@ MRESULT FilesFrameControl(HWND hwndFrame,
  *      couple more for extra features.
  */
 
-static MRESULT EXPENTRY fnwpSubclassedFilesFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
+STATIC MRESULT EXPENTRY fnwpSubclassedFilesFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT             mrc = 0;
 
@@ -2328,7 +2328,7 @@ MRESULT EXPENTRY fnwpSplitViewFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARA
                                     sizeof(pos));
             }
 
-            mrc = G_pfnFrameProc(hwndFrame, msg, mp1, mp2);
+            mrc = G_pfnwpSplitFrameOrig(hwndFrame, msg, mp1, mp2);
         break;
 
         /*
@@ -2342,7 +2342,7 @@ MRESULT EXPENTRY fnwpSplitViewFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARA
         case WM_QUERYFRAMECTLCOUNT:
         {
             // query the standard frame controls count
-            ULONG ulCount = (ULONG)G_pfnFrameProc(hwndFrame, msg, mp1, mp2);
+            ULONG ulCount = (ULONG)G_pfnwpSplitFrameOrig(hwndFrame, msg, mp1, mp2);
 
             if (    (psvd = (PSPLITVIEWDATA)WinQueryWindowPtr(hwndFrame,
                                                               QWL_USER))
@@ -2377,7 +2377,7 @@ MRESULT EXPENTRY fnwpSplitViewFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARA
         case WM_FORMATFRAME:
         {
             //  query the number of standard frame controls
-            ULONG ulCount = (ULONG)G_pfnFrameProc(hwndFrame, msg, mp1, mp2);
+            ULONG ulCount = (ULONG)G_pfnwpSplitFrameOrig(hwndFrame, msg, mp1, mp2);
 
             if (    (psvd = (PSPLITVIEWDATA)WinQueryWindowPtr(hwndFrame,
                                                               QWL_USER))
@@ -2413,7 +2413,7 @@ MRESULT EXPENTRY fnwpSplitViewFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARA
          */
 
         case WM_CALCFRAMERECT:
-            mrc = G_pfnFrameProc(hwndFrame, msg, mp1, mp2);
+            mrc = G_pfnwpSplitFrameOrig(hwndFrame, msg, mp1, mp2);
 
             if (    (psvd = (PSPLITVIEWDATA)WinQueryWindowPtr(hwndFrame,
                                                               QWL_USER))
@@ -2432,7 +2432,7 @@ MRESULT EXPENTRY fnwpSplitViewFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARA
          */
 
         case WM_INITMENU:
-            mrc = G_pfnFrameProc(hwndFrame, msg, mp1, mp2);
+            mrc = G_pfnwpSplitFrameOrig(hwndFrame, msg, mp1, mp2);
 
             if (psvd = (PSPLITVIEWDATA)WinQueryWindowPtr(hwndFrame,
                                                          QWL_USER))
@@ -2552,7 +2552,7 @@ MRESULT EXPENTRY fnwpSplitViewFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARA
             }
             else
                 // none of our items: pass to original wnd proc
-                mrc = G_pfnFrameProc(hwndFrame, msg, mp1, mp2);
+                mrc = G_pfnwpSplitFrameOrig(hwndFrame, msg, mp1, mp2);
         break;
 
         /*
@@ -2572,10 +2572,10 @@ MRESULT EXPENTRY fnwpSplitViewFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARA
                 if (cmnuDrawItem(mp1, mp2))
                     mrc = (MRESULT)TRUE;
                 else // error occured:
-                    mrc = G_pfnFrameProc(hwndFrame, msg, mp1, mp2);
+                    mrc = G_pfnwpSplitFrameOrig(hwndFrame, msg, mp1, mp2);
             }
             else
-                mrc = G_pfnFrameProc(hwndFrame, msg, mp1, mp2);
+                mrc = G_pfnwpSplitFrameOrig(hwndFrame, msg, mp1, mp2);
         break;
 
         /*
@@ -2592,7 +2592,7 @@ MRESULT EXPENTRY fnwpSplitViewFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARA
                                        SHORT1FROMMP(mp1)))
                    )
                     // not processed:
-                    mrc = G_pfnFrameProc(hwndFrame, msg, mp1, mp2);
+                    mrc = G_pfnwpSplitFrameOrig(hwndFrame, msg, mp1, mp2);
             }
         break;
 
@@ -2619,11 +2619,11 @@ MRESULT EXPENTRY fnwpSplitViewFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARA
                            (PBYTE)psvd);
             }
 
-            mrc = G_pfnFrameProc(hwndFrame, msg, mp1, mp2);
+            mrc = G_pfnwpSplitFrameOrig(hwndFrame, msg, mp1, mp2);
         break;
 
         default:
-            mrc = G_pfnFrameProc(hwndFrame, msg, mp1, mp2);
+            mrc = G_pfnwpSplitFrameOrig(hwndFrame, msg, mp1, mp2);
     }
 
     return mrc;
@@ -2748,8 +2748,8 @@ HWND fdrCreateSplitView(WPObject *pRootObject,
                 WinSetWindowPtr(psvd->sv.hwndMainFrame,
                                 QWL_USER,
                                 psvd);
-                G_pfnFrameProc = WinSubclassWindow(psvd->sv.hwndMainFrame,
-                                                   fnwpSplitViewFrame);
+                G_pfnwpSplitFrameOrig = WinSubclassWindow(psvd->sv.hwndMainFrame,
+                                                          fnwpSplitViewFrame);
 
                 // register the view
                 cmnRegisterView(pRootObject,

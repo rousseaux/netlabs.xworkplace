@@ -132,8 +132,8 @@
  *
  ********************************************************************/
 
-static HMTX        G_hmtxRunning = NULLHANDLE;
-static LINKLIST    G_llRunning;
+STATIC HMTX        G_hmtxRunning = NULLHANDLE;
+STATIC LINKLIST    G_llRunning;
         // linked list of running programs; contains RUNNINGPROGRAM structs
 
 /* ******************************************************************
@@ -907,7 +907,7 @@ APIRET progFindIcon(PEXECUTABLE pExec,          // in: executable from exehOpen;
  *@@added V0.9.12 (2001-05-22) [umoeller]
  */
 
-static BOOL LockRunning(VOID)
+STATIC BOOL LockRunning(VOID)
 {
     if (G_hmtxRunning)
         return !DosRequestMutexSem(G_hmtxRunning, SEM_INDEFINITE_WAIT);
@@ -933,7 +933,7 @@ static BOOL LockRunning(VOID)
  *@@added V0.9.12 (2001-05-22) [umoeller]
  */
 
-static VOID UnlockRunning(VOID)
+STATIC VOID UnlockRunning(VOID)
 {
     DosReleaseMutexSem(G_hmtxRunning);
 }
@@ -1308,7 +1308,7 @@ BOOL progRunningAppDestroyed(WPObject *pobjEmphasis)    // in: destroyed object
  *@@added V0.9.6 (2000-10-16) [umoeller]
  */
 
-static BOOL DisplayParamsPrompt(PXSTRING pstrPrompt)   // in: prompt string,
+STATIC BOOL DisplayParamsPrompt(PXSTRING pstrPrompt)   // in: prompt string,
                                                 // out: what user entered
 {
     BOOL brc = FALSE;
@@ -1357,7 +1357,7 @@ static BOOL DisplayParamsPrompt(PXSTRING pstrPrompt)   // in: prompt string,
  *@@changed V0.9.18 (2002-02-13) [umoeller]: now using XSTRING
  */
 
-static VOID FixSpacesInFilename(PXSTRING pstr)
+STATIC VOID FixSpacesInFilename(PXSTRING pstr)
 {
     if (pstr && pstr->psz)
     {
@@ -1423,7 +1423,7 @@ static VOID FixSpacesInFilename(PXSTRING pstr)
  *@@changed V0.9.18 (2002-02-13) [umoeller]: fixed possible buffer overflows
  */
 
-static BOOL HandlePlaceholder(PCSZ p,           // in: placeholder (starting with "%")
+STATIC BOOL HandlePlaceholder(PCSZ p,           // in: placeholder (starting with "%")
                               PCSZ pcszFilename, // in: data file name;
                                                  // ptr is always valid, but can point to ""
                               PXSTRING pstrTemp,       // out: replacement string (e.g. filename)
@@ -2440,7 +2440,7 @@ typedef struct _IMPORTEDMODULERECORD
  *@@changed V0.9.9 (2001-03-30) [umoeller]: sped up display
  */
 
-static void _Optlink fntInsertModules(PTHREADINFO pti)
+STATIC void _Optlink fntInsertModules(PTHREADINFO pti)
 {
     PNOTEBOOKPAGE pnbp = (PNOTEBOOKPAGE)(pti->ulData);
 
@@ -2655,7 +2655,7 @@ const char* fsysGetExportedFunctionTypeName(ULONG ulType)
  *@@changed V0.9.9 (2001-03-30) [umoeller]: sped up display
  */
 
-static void _Optlink fntInsertFunctions(PTHREADINFO pti)
+STATIC void _Optlink fntInsertFunctions(PTHREADINFO pti)
 {
     PNOTEBOOKPAGE pnbp = (PNOTEBOOKPAGE)(pti->ulData);
 
@@ -3003,7 +3003,7 @@ PCSZ progGetOS2ResourceTypeName(ULONG ulResourceType)
  *@@changed V0.9.16 (2002-01-05) [umoeller]: fixed bad resource nameing for win resources
  */
 
-static void _Optlink fntInsertResources(PTHREADINFO pti)
+STATIC void _Optlink fntInsertResources(PTHREADINFO pti)
 {
     PNOTEBOOKPAGE pnbp = (PNOTEBOOKPAGE)(pti->ulData);
 
@@ -3127,7 +3127,7 @@ static void _Optlink fntInsertResources(PTHREADINFO pti)
  *@@added V0.9.16 (2002-01-05) [umoeller]
  */
 
-static ULONG EXPENTRY KillPointersInRecords(HWND hwndCnr,
+STATIC ULONG EXPENTRY KillPointersInRecords(HWND hwndCnr,
                                             PRECORDCORE precc,
                                             ULONG ulUser1,
                                             ULONG ulUser2)

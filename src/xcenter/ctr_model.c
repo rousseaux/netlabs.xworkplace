@@ -108,7 +108,7 @@
  *@@changed V0.9.20 (2002-07-23) [lafaix]: added NLS IDs
  */
 
-static const XCENTERWIDGETCLASS G_aBuiltInWidgets[]
+STATIC const XCENTERWIDGETCLASS G_aBuiltInWidgets[]
     = {
         // object button widget
         {
@@ -356,7 +356,7 @@ typedef struct _CLASSTOINSERT
  *
  */
 
-static signed short XWPENTRY SortClasses(void* pItem1,
+STATIC signed short XWPENTRY SortClasses(void* pItem1,
                                          void* pItem2,
                                          void* pStorage)       // HAB really
 {
@@ -1431,7 +1431,7 @@ PSZ ctrpStuffSettings(XCenter *somSelf,
  *@@added V0.9.13 (2001-06-21) [umoeller]
  */
 
-static VOID DecodeSubwidgets(PSZ p,                    // in: entire subwidgets substring (between [])
+STATIC VOID DecodeSubwidgets(PSZ p,                    // in: entire subwidgets substring (between [])
                              PTRAYSETTING pTray)       // in: tray setting to append widgets to
 {
     PSZ pClassName = p;
@@ -1551,7 +1551,7 @@ static VOID DecodeSubwidgets(PSZ p,                    // in: entire subwidgets 
  *@@added V0.9.13 (2001-06-21) [umoeller]
  */
 
-static VOID DecodeTraySettings(PSZ p,
+STATIC VOID DecodeTraySettings(PSZ p,
                                ULONG ulLength,
                                PPRIVATEWIDGETSETTING pSetting)
 {

@@ -155,7 +155,7 @@ typedef struct _FEATURESITEM
  *added V0.9.1 (99-12-19) [umoeller]
  */
 
-static FEATURESITEM G_FeatureItemsList[] =
+STATIC FEATURESITEM G_FeatureItemsList[] =
         {
             // general features
             ID_XCSI_GENERALFEATURES, 0, 0, NULL,
@@ -260,7 +260,7 @@ static FEATURESITEM G_FeatureItemsList[] =
 #endif
         };
 
-static PCHECKBOXRECORDCORE G_pFeatureRecordsList = NULL;
+STATIC PCHECKBOXRECORDCORE G_pFeatureRecordsList = NULL;
 
 #endif // __NOXWPSETUP__
 
@@ -291,7 +291,7 @@ typedef struct _STANDARDOBJECT
 #define OBJECTSIDLAST  230      // last object menu ID, inclusive
 
 // array of objects for "Standard Desktop objects" menu button
-static STANDARDOBJECT G_WPSObjects[] =
+STATIC STANDARDOBJECT G_WPSObjects[] =
     {
             &WPOBJID_KEYB, &G_pcszWPKeyboard, "<WP_CONFIG>", "", 100, 0,
             &WPOBJID_MOUSE, &G_pcszWPMouse, "<WP_CONFIG>", "", 101, 0,
@@ -397,7 +397,7 @@ static STANDARDOBJECT G_WPSObjects[] =
  *@@changed V0.8.5 [umoeller]: language string now initialized to ""
  */
 
-static VOID AddResourceDLLToLB(HWND hwndDlg,                   // in: dlg with listbox
+STATIC VOID AddResourceDLLToLB(HWND hwndDlg,                   // in: dlg with listbox
                                ULONG idLB,                     // in: listbox item ID
                                PSZ pszXFolderBasePath,         // in: from cmnQueryXWPBasePath
                                PSZ pszFileName)
@@ -505,7 +505,7 @@ typedef struct _XWPCLASSES
  *@@added V0.9.14 (2001-07-31) [umoeller]
  */
 
-static VOID RegisterArray(HWND hwndDlg,
+STATIC VOID RegisterArray(HWND hwndDlg,
                           HWND hwndTooltip,
                           PTOOLINFO pti,
                           ULONG ulFirstID,
@@ -537,26 +537,26 @@ static VOID RegisterArray(HWND hwndDlg,
     }
 }
 
-static const char **G_RequirementsXFldStartupShutdown[] =
+STATIC const char **G_RequirementsXFldStartupShutdown[] =
     {
         &G_pcszXFldDesktop,
         &G_pcszXFolder
     };
 
-static const char **G_RequirementsXWPTrashCan[] =
+STATIC const char **G_RequirementsXWPTrashCan[] =
     {
         &G_pcszXFolder,
         &G_pcszXWPTrashObject
     };
 
-static const char **G_RequirementsXWPFontFolder[] =
+STATIC const char **G_RequirementsXWPFontFolder[] =
     {
         &G_pcszXFolder,
         &G_pcszXWPFontObject,
         &G_pcszXWPFontFile
     };
 
-static const char **G_RequiresXFolderOnly[] =
+STATIC const char **G_RequiresXFolderOnly[] =
     {
         &G_pcszXFolder
     };
@@ -575,7 +575,7 @@ static const char **G_RequiresXFolderOnly[] =
  *@@added V0.9.14 (2001-07-31) [umoeller]
  */
 
-static const XWPCLASSITEM G_aClasses[] =
+STATIC const XWPCLASSITEM G_aClasses[] =
     {
         // class replacements
         &G_pcszXFldObject, &G_pcszWPObject,
@@ -682,7 +682,7 @@ static const XWPCLASSITEM G_aClasses[] =
  *@@added V0.9.14 (2001-07-31) [umoeller]
  */
 
-static VOID HandleEnableItems(HWND hwndDlg)
+STATIC VOID HandleEnableItems(HWND hwndDlg)
 {
     HPOINTER    hptrOld = winhSetWaitPointer();
     PBYTE pObjClass = winhQueryWPSClassList();
@@ -757,7 +757,7 @@ static VOID HandleEnableItems(HWND hwndDlg)
  *@@added V0.9.14 (2001-07-31) [umoeller]
  */
 
-static VOID HandleTooltip(HWND hwndDlg,
+STATIC VOID HandleTooltip(HWND hwndDlg,
                           MPARAM mp2)
 {
     PXWPCLASSES     pxwpc = WinQueryWindowPtr(hwndDlg, QWL_USER);
@@ -813,7 +813,7 @@ static VOID HandleTooltip(HWND hwndDlg,
  *@@added V0.9.14 (2001-07-31) [umoeller]
  */
 
-static BOOL HandleOKButton(HWND hwndDlg)
+STATIC BOOL HandleOKButton(HWND hwndDlg)
 {
     BOOL            fDismiss = TRUE;
     XSTRING         strDereg,
@@ -1310,7 +1310,7 @@ MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
  *@@added V0.9.14 (2001-07-31) [umoeller]
  */
 
-static VOID AppendClassesGroup(const CONTROLDEF *pOneClass,
+STATIC VOID AppendClassesGroup(const CONTROLDEF *pClsOneClass,
                                CONTROLDEF **ppControlDefThis,
                                DLGHITEM **ppDlgItemThis,
                                BOOL fReplacements)
@@ -1334,7 +1334,7 @@ static VOID AppendClassesGroup(const CONTROLDEF *pOneClass,
             // fill the controldef
             pDef = *ppControlDefThis;
             memcpy(pDef,
-                   pOneClass,
+                   pClsOneClass,
                    sizeof(CONTROLDEF));
             pDef->pcszText = *(G_aClasses[ul].ppcszClassName);
             pDef->usID = ID_CLASSES_FIRST + ul;
@@ -1349,37 +1349,37 @@ static VOID AppendClassesGroup(const CONTROLDEF *pOneClass,
     }
 }
 
-static CONTROLDEF
-        OKButton = CONTROLDEF_DEFPUSHBUTTON(
+STATIC CONTROLDEF
+        ClsOKButton = CONTROLDEF_DEFPUSHBUTTON(
                     NULL,
                     DID_OK,
                     STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT),
-        CancelButton = CONTROLDEF_PUSHBUTTON(
+        ClsCancelButton = CONTROLDEF_PUSHBUTTON(
                     NULL,
                     DID_CANCEL,
                     STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT),
-        HelpButton = CONTROLDEF_HELPPUSHBUTTON(
+        ClsHelpButton = CONTROLDEF_HELPPUSHBUTTON(
                     NULL,
                     DID_HELP,
                     STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT),
-        ReplGroup = LOADDEF_GROUP(
+        ClsReplGroup = LOADDEF_GROUP(
                     ID_XCD_CLASSES_REPLACEMENTS,
                     SZL_AUTOSIZE),
-        NewGroup = LOADDEF_GROUP(
+        ClsNewGroup = LOADDEF_GROUP(
                     ID_XCD_CLASSES_NEW,
                     SZL_AUTOSIZE),
-        OneClass = CONTROLDEF_AUTOCHECKBOX(
+        ClsOneClass = CONTROLDEF_AUTOCHECKBOX(
                     NULL,       // text, to be replaced
                     0,          // ID, to be replaced
                     SZL_AUTOSIZE,
                     SZL_AUTOSIZE);
 
-static const DLGHITEM
+STATIC const DLGHITEM
     dlgClassesFront[] =
     {
         START_TABLE,
             START_ROW(ROW_VALIGN_TOP),
-                START_GROUP_TABLE(&ReplGroup)
+                START_GROUP_TABLE(&ClsReplGroup)
     },
 
     // here the class replacements are inserted
@@ -1387,7 +1387,7 @@ static const DLGHITEM
     dlgClassesMiddle[] =
     {
                 END_TABLE,
-                START_GROUP_TABLE(&NewGroup)
+                START_GROUP_TABLE(&ClsNewGroup)
     },
 
     // here the new classes are inserted
@@ -1396,9 +1396,9 @@ static const DLGHITEM
     {
                 END_TABLE,
             START_ROW(0),
-                CONTROL_DEF(&OKButton),
-                CONTROL_DEF(&CancelButton),
-                CONTROL_DEF(&HelpButton),
+                CONTROL_DEF(&ClsOKButton),
+                CONTROL_DEF(&ClsCancelButton),
+                CONTROL_DEF(&ClsHelpButton),
         END_TABLE
     };
 
@@ -1412,7 +1412,7 @@ static const DLGHITEM
  *@@added V0.9.14 (2001-07-31) [umoeller]
  */
 
-static VOID ShowClassesDlg(HWND hwndOwner)
+STATIC VOID ShowClassesDlg(HWND hwndOwner)
 {
     TRY_LOUD(excpt1)
     {
@@ -1445,9 +1445,9 @@ static VOID ShowClassesDlg(HWND hwndOwner)
                                       ARRAYITEMCOUNT(dlgClassesMiddle),
                                       &paNewMiddle))
             {
-                OKButton.pcszText = cmnGetString(DID_OK);
-                CancelButton.pcszText = cmnGetString(DID_CANCEL);
-                HelpButton.pcszText = cmnGetString(DID_HELP);
+                ClsOKButton.pcszText = cmnGetString(DID_OK);
+                ClsCancelButton.pcszText = cmnGetString(DID_CANCEL);
+                ClsHelpButton.pcszText = cmnGetString(DID_HELP);
 
                 // copy front
                 for (ul = 0;
@@ -1459,7 +1459,7 @@ static VOID ShowClassesDlg(HWND hwndOwner)
                 }
 
                 // now go create the items for the class replacements
-                AppendClassesGroup(&OneClass,
+                AppendClassesGroup(&ClsOneClass,
                                    &pControlDefThis,
                                    &pDlgItemThis,
                                    TRUE);
@@ -1474,7 +1474,7 @@ static VOID ShowClassesDlg(HWND hwndOwner)
                 }
 
                 // and for the new classes
-                AppendClassesGroup(&OneClass,
+                AppendClassesGroup(&ClsOneClass,
                                    &pControlDefThis,
                                    &pDlgItemThis,
                                    FALSE);
@@ -1682,7 +1682,7 @@ typedef struct _XWPFEATURESDATA
 #endif
 } XWPFEATURESDATA, *PXWPFEATURESDATA;
 
-static const XWPSETTING G_FeaturesBackup[] =
+STATIC const XWPSETTING G_FeaturesBackup[] =
     {
 #ifndef __NOICONREPLACEMENTS__
         sfIconReplacements,
@@ -2642,7 +2642,7 @@ typedef struct _THREADRECORD
  *@@added V0.9.9 (2001-03-07) [umoeller]
  */
 
-static VOID ClearThreads(HWND hwndCnr)
+STATIC VOID ClearThreads(HWND hwndCnr)
 {
     PTHREADRECORD prec;
     while (    (prec = (PTHREADRECORD)WinSendMsg(hwndCnr,
@@ -3380,7 +3380,7 @@ BOOL setCreateStandardObject(HWND hwndOwner,         // in: for dialogs
  *@@changed V0.9.4 (2000-07-15) [umoeller]: now storing object pointer to disable menu item in time
  */
 
-static VOID DisableObjectMenuItems(HWND hwndMenu,          // in: button menu handle
+STATIC VOID DisableObjectMenuItems(HWND hwndMenu,          // in: button menu handle
                                    PSTANDARDOBJECT pso,    // in: first menu array item
                                    ULONG ulMax)            // in: size of menu array
 {
@@ -3560,7 +3560,7 @@ MRESULT setObjectsItemChanged(PNOTEBOOKPAGE pnbp,
  *
  ********************************************************************/
 
-static const XWPSETTING G_ParanoiaBackup[] =
+STATIC const XWPSETTING G_ParanoiaBackup[] =
     {
         sulVarMenuOfs,
         // sfNoFreakyMenus,     removed V0.9.21 (2002-08-26) [umoeller]
@@ -3583,7 +3583,7 @@ SLDCDATA
                      0           // scale 2 spacing
              };
 
-static const CONTROLDEF
+STATIC const CONTROLDEF
     ParanoiaGroup = LOADDEF_GROUP(ID_XCDI_PARANOIA_GROUP, SZL_AUTOSIZE),
     ParanoiaIntro = CONTROLDEF_TEXT_WORDBREAK(
                             LOAD_STRING,
@@ -3619,7 +3619,7 @@ static const CONTROLDEF
                             200,
                             -1);
 
-static const DLGHITEM dlgParanoia[] =
+STATIC const DLGHITEM dlgParanoia[] =
     {
         START_TABLE,
             START_ROW(0),

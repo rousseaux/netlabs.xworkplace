@@ -137,7 +137,7 @@
  ********************************************************************/
 
 // global lock semaphore for krnLock etc.
-static HMTX             G_hmtxCommonLock = NULLHANDLE;
+STATIC HMTX             G_hmtxCommonLock = NULLHANDLE;
 
 // "Quick open" dlg status (thread-1 object wnd)
 // static ULONG            G_ulQuickOpenNow = 0,
@@ -146,7 +146,7 @@ static HMTX             G_hmtxCommonLock = NULLHANDLE;
 // static BOOL             G_fQuickOpenCancelled = FALSE;
 
 // flags passed with mp1 of XDM_PAGERCONFIG
-static ULONG            G_XPagerConfigFlags = 0;
+STATIC ULONG            G_XPagerConfigFlags = 0;
 
 // global structure with data needed across threads
 // (see kernel.h)
@@ -154,7 +154,7 @@ KERNELGLOBALS           G_KernelGlobals = {0};
 
 // classes tree V0.9.16 (2001-09-29) [umoeller]
 // see krnClassInitialized
-static TREE             *G_ClassNamesTree;
+STATIC TREE             *G_ClassNamesTree;
 
 // anchor block of WPS thread 1 (queried in initMain);
 // this is exported thru kernel.h and never changed again
@@ -169,7 +169,7 @@ extern USHORT           G_usHiwordAbstract = 0;
 extern USHORT           G_usHiwordFileSystem = 0;
 
 // V0.9.11 (2001-04-25) [umoeller]
-static HWND             G_hwndXPagerContextMenu = NULLHANDLE;
+STATIC HWND             G_hwndXPagerContextMenu = NULLHANDLE;
 
 // resize information for ID_XFD_CONTAINERPAGE, which is used
 // by many settings pages
@@ -194,9 +194,9 @@ MRESULT EXPENTRY fncbQuickOpen(HWND hwndFolder, ULONG ulObject, MPARAM mpNow, MP
  *
  ********************************************************************/
 
-static const char  *G_pcszReqSourceFile = NULL;
-static ULONG       G_ulReqLine = 0;
-static const char  *G_pcszReqFunction = NULL;
+STATIC const char  *G_pcszReqSourceFile = NULL;
+STATIC ULONG       G_ulReqLine = 0;
+STATIC const char  *G_pcszReqFunction = NULL;
 
 /*
  *@@ krnLock:
@@ -891,12 +891,12 @@ MRESULT krnSendDaemonMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
  *
  ********************************************************************/
 
-static BOOL     G_fLimitMsgOpen = FALSE;
-static HWND     G_hwndArchiveStatus = NULLHANDLE;
-static PFNWP    G_pfnwpStatic = NULL;
+STATIC BOOL     G_fLimitMsgOpen = FALSE;
+STATIC HWND     G_hwndArchiveStatus = NULLHANDLE;
+STATIC PFNWP    G_pfnwpObjectStatic = NULL;
 
-static MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2);
-static MRESULT EXPENTRY fnwpAPIObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2);
+STATIC MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2);
+STATIC MRESULT EXPENTRY fnwpAPIObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2);
 
 /*
  *@@ krnCreateObjectWindows:
@@ -920,7 +920,7 @@ VOID krnCreateObjectWindows(VOID)
                                                 NULL,
                                                 NULL))
     {
-        G_pfnwpStatic = WinSubclassWindow(G_KernelGlobals.hwndThread1Object,
+        G_pfnwpObjectStatic = WinSubclassWindow(G_KernelGlobals.hwndThread1Object,
                                           fnwpThread1Object);
 
         // store HAB of WPS thread 1 V0.9.9 (2001-04-04) [umoeller]
@@ -939,7 +939,7 @@ VOID krnCreateObjectWindows(VOID)
                                                 NULL,
                                                 NULL))
     {
-        G_pfnwpStatic = WinSubclassWindow(G_KernelGlobals.hwndAPIObject,
+        G_pfnwpObjectStatic = WinSubclassWindow(G_KernelGlobals.hwndAPIObject,
                                           fnwpAPIObject);
     }
 }
@@ -951,7 +951,7 @@ VOID krnCreateObjectWindows(VOID)
  *@@added V0.9.3 (2000-04-24) [umoeller]
  */
 
-static VOID T1M_DaemonReady(VOID)
+STATIC VOID T1M_DaemonReady(VOID)
 {
     // _Pmpf(("T1M_DaemonReady"));
 
@@ -1046,7 +1046,7 @@ static VOID T1M_DaemonReady(VOID)
  *@@changed V0.9.19 (2002-04-24) [umoeller]: fixed major screwups during startup and shutdown
  */
 
-static VOID T1M_OpenObjectFromHandle(HWND hwndObject,
+STATIC VOID T1M_OpenObjectFromHandle(HWND hwndObject,
                                      MPARAM mp1,
                                      MPARAM mp2)
 {
@@ -1229,7 +1229,7 @@ static VOID T1M_OpenObjectFromHandle(HWND hwndObject,
  *@@changed V0.9.20 (2002-08-04) [umoeller]: "properties" in pager context menu opens pager page directly now
  */
 
-static MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
+STATIC MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MPARAM  mrc = NULL;
 
@@ -1814,7 +1814,7 @@ static MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1
 #endif
 
         default:
-            mrc = G_pfnwpStatic(hwndObject, msg, mp1, mp2);
+            mrc = G_pfnwpObjectStatic(hwndObject, msg, mp1, mp2);
     }
 
     return mrc;
@@ -1879,7 +1879,7 @@ MRESULT krnSendThread1ObjectMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
  *@@added V0.9.9 (2001-03-23) [umoeller]
  */
 
-static MRESULT EXPENTRY fnwpAPIObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
+STATIC MRESULT EXPENTRY fnwpAPIObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
 

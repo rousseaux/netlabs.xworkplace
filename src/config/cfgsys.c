@@ -121,13 +121,13 @@
  ********************************************************************/
 
 // some global variables for "Kernel" pages
-static CHAR    G_aszAllDrives[30][5];  // 30 strings with 5 chars each for spin button
-static PSZ     G_apszAllDrives[30];    // 30 pointers to the buffers
-static LONG    G_lDriveCount = 0;
-static HWND    G_hwndDlgDoubleFiles = NULLHANDLE;  // V0.9.9 (2001-02-28) [pr]
+STATIC CHAR    G_aszAllDrives[30][5];  // 30 strings with 5 chars each for spin button
+STATIC PSZ     G_apszAllDrives[30];    // 30 pointers to the buffers
+STATIC LONG    G_lDriveCount = 0;
+STATIC HWND    G_hwndDlgDoubleFiles = NULLHANDLE;  // V0.9.9 (2001-02-28) [pr]
 
 // #define SYSPATHCOUNT 5
-static PSZ G_apszPathNames[] =
+STATIC PSZ G_apszPathNames[] =
         {
             "LIBPATH=",
             "SET PATH=",
@@ -156,10 +156,10 @@ typedef struct _SYSPATH
  *      which in turn contains a linked list of path entries.
  */
 
-static PLINKLIST   G_pllSysPathsList;
+STATIC PLINKLIST   G_pllSysPathsList;
 
 // the currently selected SYSPATH
-static PSYSPATH    G_pSysPathSelected = 0;
+STATIC PSYSPATH    G_pSysPathSelected = 0;
 
 /* ******************************************************************
  *
@@ -192,7 +192,7 @@ static PSYSPATH    G_pSysPathSelected = 0;
  *      which should be CCHMAXPATH in size.
  */
 
-static MRESULT EXPENTRY fnwpNewSystemPathDlg(HWND hwndDlg,
+STATIC MRESULT EXPENTRY fnwpNewSystemPathDlg(HWND hwndDlg,
                                              ULONG msg,
                                              MPARAM mp1,
                                              MPARAM mp2)
@@ -333,7 +333,7 @@ typedef struct _DOUBLEFILESWINDATA
  *      array of controls flags for winhAdjustControls.
  */
 
-static const MPARAM ampDoubleFilesControls[] =
+STATIC const MPARAM ampDoubleFilesControls[] =
     {
         MPFROM2SHORT(ID_OSDI_FILELISTSYSPATH1,  XAC_MOVEY),
         MPFROM2SHORT(ID_OSDI_FILELISTSYSPATH2,  XAC_MOVEY | XAC_SIZEX),
@@ -355,7 +355,7 @@ static const MPARAM ampDoubleFilesControls[] =
  *@@changed V0.9.19 (2002-04-02) [umoeller]: localized hard-coded strings
  */
 
-static MRESULT EXPENTRY fnwpDoubleFilesDlg(HWND hwndDlg,
+STATIC MRESULT EXPENTRY fnwpDoubleFilesDlg(HWND hwndDlg,
                                            ULONG msg,
                                            MPARAM mp1,
                                            MPARAM mp2)
@@ -2426,7 +2426,7 @@ typedef struct _SYSLEVELRECORD
  *@@added V0.9.2 (2000-03-08) [umoeller]
  */
 
-static VOID AddOneSyslevel2Cnr(HWND hwndCnr,
+STATIC VOID AddOneSyslevel2Cnr(HWND hwndCnr,
                                HFILE hfSysLevel,
                                PSZ pszFilename)
 {
@@ -2539,7 +2539,7 @@ static VOID AddOneSyslevel2Cnr(HWND hwndCnr,
  *@@added V0.9.2 (2000-03-08) [umoeller]
  */
 
-static VOID AddSyslevelsForDir(HWND hwndCnr,
+STATIC VOID AddSyslevelsForDir(HWND hwndCnr,
                                PCSZ pszDir)     // in: directory to search (with terminating \)
 {
     HDIR          hdirFindHandle = HDIR_CREATE;

@@ -239,7 +239,7 @@ INLINE int _nls_tolower (int c)
    and DOS styles.  When the end of the string is reached, a pointer
    to the terminating null character is returned. */
 
-static const unsigned char *skip_comp_os2 (const unsigned char *src)
+STATIC const unsigned char *skip_comp_os2 (const unsigned char *src)
 {
   /* Skip characters until hitting a separator or the end of the
      string. */
@@ -264,7 +264,7 @@ static const unsigned char *skip_comp_os2 (const unsigned char *src)
    even in DOS style.  Return _FNM_MATCH iff MASK and NAME match.
    Note that this function is recursive. */
 
-static int match_comp_os2 (const unsigned char *mask,
+STATIC int match_comp_os2 (const unsigned char *mask,
                            const unsigned char *name,
                            unsigned flags, int has_dot)
 {
@@ -374,7 +374,7 @@ static int match_comp_os2 (const unsigned char *mask,
    separator.  The FLAGS argument is the same as that of fnmatch().
    Return _FNM_MATCH iff MASK and NAME match. */
 
-static int match_comp (const unsigned char *mask, const unsigned char *name,
+STATIC int match_comp (const unsigned char *mask, const unsigned char *name,
                        unsigned flags)
 {
   const unsigned char *s;
@@ -417,7 +417,7 @@ static int match_comp (const unsigned char *mask, const unsigned char *name,
    backslash character is used for escaping ? and * unless
    FNM_NOESCAPE is set. */
 
-static int match_unix (const unsigned char *mask, const unsigned char *name,
+STATIC int match_unix (const unsigned char *mask, const unsigned char *name,
                        unsigned flags, const unsigned char *comp)
 {
   unsigned char c1, c2;
@@ -638,7 +638,7 @@ static int match_unix (const unsigned char *mask, const unsigned char *name,
    FLAGS.  This is an internal function, with unsigned arguments. */
 
 
-static int _fnmatch_unsigned (const unsigned char *mask,
+STATIC int _fnmatch_unsigned (const unsigned char *mask,
                               const unsigned char *name,
                               unsigned flags)
 {
@@ -933,8 +933,8 @@ long DH32ENTRY __strtol (const char *string, char **end_ptr, int radix)
 #define VA_START(ap, last) ap = ((va_list)__StackToFlat(&last)) + __nextword(last)
 #endif
 
-static int skip_atoi(const char **s);
-static char * number(char * str, long num, int base, int size, int precision, int type);
+STATIC int skip_atoi(const char **s);
+STATIC char * number(char * str, long num, int base, int size, int precision, int type);
 int sprintf(char * buf, const char *fmt, ...);
 
 #if !defined(MINIFSD) && !defined(MWDD32) && !defined(FSD32)
@@ -984,7 +984,7 @@ unsigned long simple_strtoul(const char *cp,char **endp,unsigned int base)
 /* we use this so that we can do without the ctype library */
 #define is_digit(c)     ((c) >= '0' && (c) <= '9')
 
-static int skip_atoi(const char **s)
+STATIC int skip_atoi(const char **s)
 {
         int i=0;
 
@@ -1009,7 +1009,7 @@ n = ((unsigned long) n) / (unsigned) base; \
 __res; })
 #endif
 
-static char * number(char * str, long num, int base, int size, int precision
+STATIC char * number(char * str, long num, int base, int size, int precision
         ,int type)
 {
         char c,sign,tmp[66];
@@ -1241,7 +1241,7 @@ int DH32ENTRY __vsprintf(char *buf, const char *fmt, va_list args)
         return str-buf;
 }
 
-static void output_com(char *bufptr, int port)
+STATIC void output_com(char *bufptr, int port)
 {
     while (*bufptr)
     {

@@ -139,7 +139,7 @@ typedef struct _OBJECTUSAGERECORD
  *      to add one cnr record core.
  */
 
-static POBJECTUSAGERECORD AddObjectUsage2Cnr(HWND hwndCnr,     // in: container on "Object" page
+STATIC POBJECTUSAGERECORD AddObjectUsage2Cnr(HWND hwndCnr,     // in: container on "Object" page
                                              POBJECTUSAGERECORD preccParent, // in: parent record or NULL for root
                                              PCSZ pcszTitle,     // in: text to appear in cnr
                                              ULONG flAttrs)    // in: CRA_* flags for record
@@ -170,7 +170,7 @@ static POBJECTUSAGERECORD AddObjectUsage2Cnr(HWND hwndCnr,     // in: container 
  *@@changed V0.9.19 (2002-05-23) [umoeller]: now using string ID
  */
 
-static VOID AddFolderView2Cnr(HWND hwndCnr,
+STATIC VOID AddFolderView2Cnr(HWND hwndCnr,
                               POBJECTUSAGERECORD preccLevel2,
                               WPObject *pObject,
                               ULONG ulView,
@@ -472,7 +472,7 @@ VOID AddFolderItems(WPFolder *pObject,
  *@@changed V0.9.19 (2002-05-23) [umoeller]: finally localized strings in cnr
  */
 
-static VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
+STATIC VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
                                    WPObject *pObject)  // in: object for which to insert data
 {
     POBJECTUSAGERECORD
@@ -1028,7 +1028,7 @@ typedef struct _XFOBJWINDATA
  *@@changed V0.9.19 (2002-04-02) [umoeller]: now handling WM_TEXTEDIT for keyboard support
  */
 
-static MRESULT EXPENTRY fnwpObjectDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
+STATIC MRESULT EXPENTRY fnwpObjectDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
 
@@ -1227,7 +1227,7 @@ static MRESULT EXPENTRY fnwpObjectDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, M
 
 #define DETAILS_WIDTH       200
 
-static const CONTROLDEF
+STATIC const CONTROLDEF
     DetailsGroup = LOADDEF_GROUP(ID_XSDI_DETAILS_GROUP, SZL_AUTOSIZE),
     DetailsCnr =
         {
@@ -1245,10 +1245,10 @@ static const CONTROLDEF
                             ID_XSDI_DETAILS_SETUPSTR_EF,
                             DETAILS_WIDTH,
                             -1),
-    CloseButton = LOADDEF_DEFPUSHBUTTON(DID_CLOSE),
-    HelpButton = LOADDEF_HELPPUSHBUTTON(DID_HELP);
+    DtlCloseButton = LOADDEF_DEFPUSHBUTTON(DID_CLOSE),
+    DtlHelpButton = LOADDEF_HELPPUSHBUTTON(DID_HELP);
 
-static const DLGHITEM dlgObjDetails[] =
+STATIC const DLGHITEM dlgObjDetails[] =
     {
         START_TABLE,            // root table, required
             START_ROW(ROW_VALIGN_TOP),       // row 1 in the root table, required
@@ -1262,8 +1262,8 @@ static const DLGHITEM dlgObjDetails[] =
                         CONTROL_DEF(&SetupStringEF),
                 END_TABLE,
             START_ROW(ROW_VALIGN_TOP),
-                CONTROL_DEF(&CloseButton),
-                CONTROL_DEF(&HelpButton),
+                CONTROL_DEF(&DtlCloseButton),
+                CONTROL_DEF(&DtlHelpButton),
         END_TABLE
     };
 

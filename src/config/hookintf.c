@@ -113,7 +113,7 @@
  *
  ********************************************************************/
 
-static PFNWP G_pfnwpEntryFieldOrig = 0;
+STATIC PFNWP G_pfnwpEntryFieldOrig = 0;
 
 /* ******************************************************************
  *
@@ -1231,7 +1231,7 @@ MRESULT EXPENTRY hif_fnwpEditFunctionKeyDlg(HWND hwndDlg,
  *@@added V0.9.3 (2000-04-19) [umoeller]
  */
 
-static VOID AddFuncKeyRecord(HWND hwndCnr,             // in: cnr to create record in
+STATIC VOID AddFuncKeyRecord(HWND hwndCnr,             // in: cnr to create record in
                              PFUNCTIONKEY pFuncKey,    // in: new function key definition (one item)
                              ULONG ulIndex)            // in: index of item in FUNCTIONKEY array (must match!)
 {
@@ -1636,7 +1636,7 @@ SLDCDATA
                      0          // scale 2 spacing
              };
 
-static const CONTROLDEF
+STATIC const CONTROLDEF
     MMap2Group = LOADDEF_GROUP(ID_XSDI_MOUSE_MAPPINGS2GROUP, SZL_AUTOSIZE),
     MMap2ChordWinListCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_MOUSE_CHORDWINLIST),
     MMap2SysmenuMB2CB = LOADDEF_AUTOCHECKBOX(ID_XSDI_MOUSE_SYSMENUMB2),
@@ -1661,7 +1661,7 @@ static const CONTROLDEF
     MMap2MB3AmpTxt2 = CONTROLDEF_TEXT_CENTER("", ID_XSDI_MOUSE_MB3AMP_TXT2, 12, SZL_AUTOSIZE),
     MMap2MB3ScrollReverse = LOADDEF_AUTOCHECKBOX(ID_XSDI_MOUSE_MB3SCROLLREVERSE);
 
-static const DLGHITEM G_dlgMappings2[] =
+STATIC const DLGHITEM G_dlgMappings2[] =
     {
         START_TABLE,
             START_ROW(0),
@@ -2086,7 +2086,7 @@ SLDCDATA
                      0           // scale 2 spacing
              };
 
-static const CONTROLDEF
+STATIC const CONTROLDEF
 #ifndef __NOSLIDINGFOCUS__
     SlidingFocusGroup = LOADDEF_GROUP(ID_XSDI_MOUSE_SLIDINGFOCUS_GRP, SZL_AUTOSIZE),
     SlidingFocusCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_MOUSE_SLIDINGFOCUS),
@@ -2123,7 +2123,7 @@ static const CONTROLDEF
     CondCascadeCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_MOUSE_CONDCASCADE),
     MenuHiliteCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_MOUSE_MENUHILITE);
 
-static const DLGHITEM dlgMovement1[] =
+STATIC const DLGHITEM dlgMovement1[] =
     {
         START_TABLE,            // root table, required
 #ifndef __NOSLIDINGFOCUS__
@@ -2756,16 +2756,16 @@ MRESULT hifMouseMovement2ItemChanged(PNOTEBOOKPAGE pnbp,
  *
  ********************************************************************/
 
-static ULONG   G_ulScreenCornerSelectedID = ID_XSDI_MOUSE_RADIO_TOPLEFT;
-static ULONG   G_ulScreenCornerSelectedIndex = 0;
+STATIC ULONG   G_ulScreenCornerSelectedID = ID_XSDI_MOUSE_RADIO_TOPLEFT;
+STATIC ULONG   G_ulScreenCornerSelectedIndex = 0;
 
 // screen corner object container d'n'd
-static HOBJECT G_hobjBeingDragged = NULLHANDLE;
+STATIC HOBJECT G_hobjBeingDragged = NULLHANDLE;
             // NULLHANDLE means dropping is invalid;
             // in between CN_DRAGOVER and CN_DROP, this
             // contains the object handle being dragged
 
-static BOOL    G_fShutUpSlider = FALSE;
+STATIC BOOL    G_fShutUpSlider = FALSE;
 
 /*
  *@@ UpdateScreenCornerIndex:
@@ -2774,7 +2774,7 @@ static BOOL    G_fShutUpSlider = FALSE;
  *@@changed V0.9.18 (2002-02-12) [pr]: use defined constants
  */
 
-static VOID UpdateScreenCornerIndex(USHORT usItemID)
+STATIC VOID UpdateScreenCornerIndex(USHORT usItemID)
 {
     switch (usItemID)
     {

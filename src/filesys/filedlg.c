@@ -228,7 +228,7 @@ MRESULT EXPENTRY fnwpSubclassedFilesFrame(HWND hwndFrame, ULONG msg, MPARAM mp1,
  *@@changed V0.9.19 (2002-06-15) [umoeller]: fixed broken file detection (double-clicks)
  */
 
-static ULONG ParseFileString(PFILEDLGDATA pWinData,
+STATIC ULONG ParseFileString(PFILEDLGDATA pWinData,
                              const char *pcszFullFile)
 {
     ULONG   flChanged = 0;
@@ -403,7 +403,7 @@ static ULONG ParseFileString(PFILEDLGDATA pWinData,
  *@@changed V0.9.18 (2002-02-06) [umoeller]: mostly rewritten for better thread synchronization
  */
 
-static BOOL UpdateDlgWithFullFile(PFILEDLGDATA pWinData)
+STATIC BOOL UpdateDlgWithFullFile(PFILEDLGDATA pWinData)
 {
     PMINIRECORDCORE precDiskSelect = NULL;
     WPFolder        *pRootFolder = NULL;
@@ -594,7 +594,7 @@ static BOOL UpdateDlgWithFullFile(PFILEDLGDATA pWinData)
  *      to dismiss the dialog.
  */
 
-static VOID ParseAndUpdate(PFILEDLGDATA pWinData,
+STATIC VOID ParseAndUpdate(PFILEDLGDATA pWinData,
                            const char *pcszFullFile)
 {
     // parse the new file string
@@ -631,7 +631,7 @@ static VOID ParseAndUpdate(PFILEDLGDATA pWinData,
  *      "Drives" folder.
  */
 
-static VOID BuildDisksList(WPFolder *pRootFolder,
+STATIC VOID BuildDisksList(WPFolder *pRootFolder,
                            PLINKLIST pllDisks)
 {
     if (fdrCheckIfPopulated(pRootFolder,
@@ -669,7 +669,7 @@ static VOID BuildDisksList(WPFolder *pRootFolder,
  *@@changed V0.9.21 (2002-08-21) [umoeller]: extracted fdrSetupSplitView
  */
 
-static VOID MainControlCreate(PFILEDLGDATA pWinData)
+STATIC VOID MainControlCreate(PFILEDLGDATA pWinData)
 {
     // create static on top of left tree view
     pWinData->hwndTreeCnrTxt
@@ -797,7 +797,7 @@ static VOID MainControlCreate(PFILEDLGDATA pWinData)
  *@@added V0.9.9 (2001-03-13) [umoeller]
  */
 
-static MRESULT MainControlChar(HWND hwnd, MPARAM mp1, MPARAM mp2)
+STATIC MRESULT MainControlChar(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
     BOOL brc = FALSE;               // not processed
     PFILEDLGDATA pWinData = WinQueryWindowPtr(hwnd, QWL_USER);
@@ -881,7 +881,7 @@ static MRESULT MainControlChar(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *      cause the two container frames to be adjusted.
  */
 
-static VOID MainControlRepositionControls(PFILEDLGDATA pWinData)
+STATIC VOID MainControlRepositionControls(PFILEDLGDATA pWinData)
 {
     #define OUTER_SPACING       5
 
@@ -1039,7 +1039,7 @@ static VOID MainControlRepositionControls(PFILEDLGDATA pWinData)
  *
  ********************************************************************/
 
-static PFNWP    G_pfnFrameProc = NULL;
+STATIC PFNWP    G_pfnwpFiledlgFrameOrig = NULL;
 
 /*
  *@@ fnwpFileDlgFrame:
@@ -1058,7 +1058,7 @@ MRESULT EXPENTRY fnwpFileDlgFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
     switch (msg)
     {
         case WM_WINDOWPOSCHANGED:
-            mrc = G_pfnFrameProc(hwndFrame, msg, mp1, mp2);
+            mrc = G_pfnwpFiledlgFrameOrig(hwndFrame, msg, mp1, mp2);
 
             if (    (((PSWP)mp1)->fl & SWP_SIZE)
                  && (pWinData = WinQueryWindowPtr(hwndFrame, QWL_USER))
@@ -1112,7 +1112,7 @@ MRESULT EXPENTRY fnwpFileDlgFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
     }
 
     if (fCallDefault)
-        mrc = G_pfnFrameProc(hwndFrame, msg, mp1, mp2);
+        mrc = G_pfnwpFiledlgFrameOrig(hwndFrame, msg, mp1, mp2);
 
     return mrc;
 }
@@ -1283,8 +1283,8 @@ HWND fdlgFileDlg(HWND hwndOwner,
                 WinSetWindowPtr(WinData.sv.hwndMainFrame,
                                 QWL_USER,
                                 &WinData);
-                G_pfnFrameProc = WinSubclassWindow(WinData.sv.hwndMainFrame,
-                                                   fnwpFileDlgFrame);
+                G_pfnwpFiledlgFrameOrig = WinSubclassWindow(WinData.sv.hwndMainFrame,
+                                                            fnwpFileDlgFrame);
 
                 // set up types combo
                 if (pfd->papszITypeList)

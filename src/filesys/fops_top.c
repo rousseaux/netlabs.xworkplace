@@ -575,7 +575,7 @@ MRESULT EXPENTRY fops_fnwpGenericProgress(HWND hwndProgress, ULONG msg, MPARAM m
  *@@changed V0.9.19 (2002-06-13) [umoeller]: fixed crash if pSourceFolder was NULL (font install)
  */
 
-static APIRET StartWithGenericProgress(HFILETASKLIST hftl,
+STATIC APIRET StartWithGenericProgress(HFILETASKLIST hftl,
                                        ULONG ulOperation,
                                        HAB hab,  // in: as with fopsStartTask
                                        WPFolder *pSourceFolder, // in: source folder, as required by fopsCreateFileTaskList

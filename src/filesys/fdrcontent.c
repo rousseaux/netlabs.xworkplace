@@ -198,7 +198,7 @@
  *@@changed V0.9.20 (2002-07-25) [umoeller]: optimized
  */
 
-static SOMAny* GetMonitorObject(WPFolder *somSelf)
+STATIC SOMAny* GetMonitorObject(WPFolder *somSelf)
 {
 #ifdef __DEBUG__
     if (_somIsA(somSelf, _WPFolder))
@@ -417,7 +417,7 @@ VOID fdrReleaseNotifySem(VOID)
  *@@changed V0.9.18 (2002-02-06) [umoeller]: removed mutex request, renamed
  */
 
-static WPObject* FastFindFSFromUpperName(WPFolder *pFolder,
+STATIC WPObject* FastFindFSFromUpperName(WPFolder *pFolder,
                                          const char *pcszUpperShortName)
 {
     XFolderData *somThis = XFolderGetData(pFolder);
@@ -439,7 +439,7 @@ static WPObject* FastFindFSFromUpperName(WPFolder *pFolder,
  *@@added V0.9.18 (2002-02-06) [umoeller]
  */
 
-static WPObject* SafeFindFSFromUpperName(WPFolder *pFolder,
+STATIC WPObject* SafeFindFSFromUpperName(WPFolder *pFolder,
                                          const char *pcszUpperShortName)
 {
     WPObject *pobjReturn = NULL;
@@ -550,7 +550,7 @@ WPObject* fdrSafeFindFSFromName(WPFolder *pFolder,
  *@@changed V0.9.20 (2002-07-25) [umoeller]: rewritten to use SOM attributes now that we have them
  */
 
-static BOOL HackContentPointers(WPFolder *somSelf,
+STATIC BOOL HackContentPointers(WPFolder *somSelf,
                                 XFolderData *somThis,
                                 WPObject *pObject)
 {
@@ -1175,16 +1175,16 @@ BOOL fdrNukeContents(WPFolder *pFolder)
  *
  ********************************************************************/
 
-static LINKLIST     G_llRootFolders;        // linked list of root folders,
+STATIC LINKLIST     G_llRootFolders;        // linked list of root folders,
                                             // holding plain WPFolder pointers
                                             // (no auto-free, of course)
-static HMTX         G_hmtxRootFolders = NULLHANDLE;
+STATIC HMTX         G_hmtxRootFolders = NULLHANDLE;
 
 // last folder cache
 extern WPFolder     *G_pLastQueryAwakeFolder = NULL;
                         // this must be exported because if this goes
                         // dormant, XFolder::wpUnInitData must null this
-static CHAR         G_szLastQueryAwakeFolderPath[CCHMAXPATH];
+STATIC CHAR         G_szLastQueryAwakeFolderPath[CCHMAXPATH];
 
 /*
  *@@ LockRootFolders:
@@ -1196,7 +1196,7 @@ static CHAR         G_szLastQueryAwakeFolderPath[CCHMAXPATH];
  *@@added V0.9.16 (2001-10-25) [umoeller]
  */
 
-static BOOL LockRootFolders(VOID)
+STATIC BOOL LockRootFolders(VOID)
 {
     if (G_hmtxRootFolders)
         return !DosRequestMutexSem(G_hmtxRootFolders, SEM_INDEFINITE_WAIT);
@@ -1222,7 +1222,7 @@ static BOOL LockRootFolders(VOID)
  *@@added V0.9.16 (2001-10-25) [umoeller]
  */
 
-static VOID UnlockRootFolders(VOID)
+STATIC VOID UnlockRootFolders(VOID)
 {
     DosReleaseMutexSem(G_hmtxRootFolders);
 }
@@ -1331,7 +1331,7 @@ BOOL fdrRemoveAwakeRootFolder(WPFolder *somSelf)
  *@@added V0.9.16 (2001-10-25) [umoeller]
  */
 
-static WPFileSystem* ProcessParticles(WPFolder *pCurrentFolder,
+STATIC WPFileSystem* ProcessParticles(WPFolder *pCurrentFolder,
                                       PSZ pStartOfParticle)
 {
     // 0123456789012
@@ -1630,7 +1630,7 @@ VOID fdrDebugDumpFolderFlags(WPFolder *somSelf)
  *@@added V0.9.16 (2001-10-28) [umoeller]
  */
 
-static BOOL PopulateWithAbstracts(WPFolder *somSelf,
+STATIC BOOL PopulateWithAbstracts(WPFolder *somSelf,
                                   HWND hwndReserved,
                                   PMINIRECORDCORE pMyRecord,
                                   PBOOL pfExit)          // in: exit flag

@@ -89,7 +89,7 @@
  *
  ********************************************************************/
 
-static const char *G_pcszInstanceFilter = "*.OFM,*.FON,*.TTF,*.TTC";
+STATIC const char *G_pcszFontFileFilter = "*.OFM,*.FON,*.TTF,*.TTC";
 
 /* ******************************************************************
  *
@@ -316,7 +316,7 @@ SOM_Scope PSZ  SOMLINK fonfM_wpclsQueryInstanceFilter(M_XWPFontFile *somSelf)
 
     // return (M_XWPFontFile_parent_M_WPDataFile_wpclsQueryInstanceFilter(somSelf));
 
-    return ((PSZ)G_pcszInstanceFilter);
+    return ((PSZ)G_pcszFontFileFilter);
 }
 
 SOM_Scope PSZ  SOMLINK fonfM_wpclsQueryInstanceType(M_XWPFontFile *somSelf)

@@ -100,7 +100,7 @@
  *
  ********************************************************************/
 
-static PFNWP   G_pfnwpOrigStatic = NULL;
+STATIC PFNWP   G_pfnwpOrigStatic = NULL;
 
 /* ******************************************************************
  *
@@ -116,7 +116,7 @@ static PFNWP   G_pfnwpOrigStatic = NULL;
  *@@added V0.9.3 (2000-05-21) [umoeller]
  */
 
-static BOOL LoadPagerConfig(PAGERCONFIG* pPagerCfg)
+STATIC BOOL LoadPagerConfig(PAGERCONFIG* pPagerCfg)
 {
     ULONG cb = sizeof(PAGERCONFIG);
     memset(pPagerCfg, 0, sizeof(PAGERCONFIG));
@@ -142,7 +142,7 @@ static BOOL LoadPagerConfig(PAGERCONFIG* pPagerCfg)
  *@@added V0.9.3 (2000-04-09) [umoeller]
  */
 
-static VOID SavePagerConfig(PAGERCONFIG* pPagerCfg,
+STATIC VOID SavePagerConfig(PAGERCONFIG* pPagerCfg,
                             ULONG ulFlags)  // in: PGRCFG_* flags (xwphook.h)
 {
     // settings changed:
@@ -185,7 +185,7 @@ static VOID SavePagerConfig(PAGERCONFIG* pPagerCfg,
  *@@added V0.9.19 (2002-05-28) [umoeller]
  */
 
-static VOID EnableNotebookButtons(PNOTEBOOKPAGE pnbp,
+STATIC VOID EnableNotebookButtons(PNOTEBOOKPAGE pnbp,
                                   BOOL fEnable)
 {
     HWND    hwndThis,
@@ -229,7 +229,7 @@ static VOID EnableNotebookButtons(PNOTEBOOKPAGE pnbp,
  *@@changed V0.9.19 (2002-05-07) [umoeller]: rewritten to display dimensions correctly
  */
 
-static VOID UpdateValueSet(HWND hwndPage,
+STATIC VOID UpdateValueSet(HWND hwndPage,
                            PAGERCONFIG *pPagerCfg)
 {
     // the stupid value set control only accepts the
@@ -317,7 +317,7 @@ SLDCDATA
 #define PAGE_WIDTH          (VALUESET_WIDTH + SLIDER_WIDTH + 4 * COMMON_SPACING)
             // used by second page
 
-static const CONTROLDEF
+STATIC const CONTROLDEF
     Pgr1Group = LOADDEF_GROUP(ID_SCDI_PGR1_GROUP, SZL_AUTOSIZE),
     Pgr1Enable = LOADDEF_AUTOCHECKBOX(ID_SCDI_PGR1_ENABLE),
     Pgr1Spacing = CONTROLDEF_TEXT("", -1, SLIDER_WIDTH, SLIDER_WIDTH),
@@ -349,7 +349,7 @@ static const CONTROLDEF
     Pgr1HotkeysAltCB = LOADDEF_AUTOCHECKBOX(ID_SCDI_PGR1_HOTKEYS_ALT),
     Pgr1WraparoundCB = LOADDEF_AUTOCHECKBOX(ID_SCDI_PGR1_WRAPAROUND);
 
-static const DLGHITEM G_dlgPagerGeneral[] =
+STATIC const DLGHITEM G_dlgPagerGeneral[] =
     {
         START_TABLE,
             START_ROW(0),
@@ -416,7 +416,7 @@ typedef struct _PAGERPAGEDATA
  *@@changed V0.9.19 (2002-06-02) [umoeller]: added "desktop follows focus" setting
  */
 
-static VOID PagerGeneralInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
+STATIC VOID PagerGeneralInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                                  ULONG flFlags)        // CBI_* flags (notebook.h)
 {
     if (flFlags & CBI_INIT)
@@ -550,7 +550,7 @@ static VOID PagerGeneralInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
  *@@changed V0.9.9 (2001-03-15) [lafaix]: fixed odd undo/default behavior
  */
 
-static MRESULT PagerGeneralItemChanged(PNOTEBOOKPAGE pnbp,
+STATIC MRESULT PagerGeneralItemChanged(PNOTEBOOKPAGE pnbp,
                                        ULONG ulItemID, USHORT usNotifyCode,
                                        ULONG ulExtra)      // for checkboxes: contains new state
 {
@@ -768,27 +768,27 @@ static MRESULT PagerGeneralItemChanged(PNOTEBOOKPAGE pnbp,
  *
  ********************************************************************/
 
-static const CONTROLDEF
+STATIC const CONTROLDEF
     G_PagerDisabled = LOADDEF_TEXT_WORDBREAK(ID_SCDI_PGR2_DISABLED_INFO, PAGE_WIDTH),
             // also used by the other pages
     ControlWindowGroup = LOADDEF_GROUP(ID_SCDI_PGR1_WINDOW_GROUP, PAGE_WIDTH),
-    PreservePropsCB = LOADDEF_AUTOCHECKBOX(ID_SCDI_PGR1_PRESERVEPROPS),
-    StayOnTopCB = LOADDEF_AUTOCHECKBOX(ID_SCDI_PGR1_STAYONTOP),
-    FlashToTopCB = LOADDEF_AUTOCHECKBOX(ID_SCDI_PGR1_FLASHTOTOP),
-    DelayTxt1 = LOADDEF_TEXT(ID_SCDI_PGR1_FLASH_TXT1),
-    DelaySpin = CONTROLDEF_SPINBUTTON(
+    PgrPreservePropsCB = LOADDEF_AUTOCHECKBOX(ID_SCDI_PGR1_PRESERVEPROPS),
+    PgrStayOnTopCB = LOADDEF_AUTOCHECKBOX(ID_SCDI_PGR1_STAYONTOP),
+    PgrFlashToTopCB = LOADDEF_AUTOCHECKBOX(ID_SCDI_PGR1_FLASHTOTOP),
+    PgrDelayTxt1 = LOADDEF_TEXT(ID_SCDI_PGR1_FLASH_TXT1),
+    PgrDelaySpin = CONTROLDEF_SPINBUTTON(
                             ID_SCDI_PGR1_FLASH_SPIN,
                             25,
                             STD_SPIN_HEIGHT),
-    DelayTxt2 = LOADDEF_TEXT(ID_SCDI_PGR1_FLASH_TXT2),
-    MiniWindowsCB = LOADDEF_AUTOCHECKBOX(ID_SCDI_PGR1_SHOWWINDOWS),
-    ShowWinTitlesCB = LOADDEF_AUTOCHECKBOX(ID_SCDI_PGR1_SHOWWINTITLES),
-    ShowWinIconsCB = LOADDEF_AUTOCHECKBOX(ID_SCDI_PGR1_SHOWWINICONS),
-    Click2ActivateCB = LOADDEF_AUTOCHECKBOX(ID_SCDI_PGR1_CLICK2ACTIVATE),
-    ShowSecondaryCB = LOADDEF_AUTOCHECKBOX(ID_SCDI_PGR1_SHOWSECONDARY),
-    ShowStickyCB = LOADDEF_AUTOCHECKBOX(ID_SCDI_PGR1_SHOWSTICKY);
+    PgrDelayTxt2 = LOADDEF_TEXT(ID_SCDI_PGR1_FLASH_TXT2),
+    PgrMiniWindowsCB = LOADDEF_AUTOCHECKBOX(ID_SCDI_PGR1_SHOWWINDOWS),
+    PgrShowWinTitlesCB = LOADDEF_AUTOCHECKBOX(ID_SCDI_PGR1_SHOWWINTITLES),
+    PgrShowWinIconsCB = LOADDEF_AUTOCHECKBOX(ID_SCDI_PGR1_SHOWWINICONS),
+    PgrClick2ActivateCB = LOADDEF_AUTOCHECKBOX(ID_SCDI_PGR1_CLICK2ACTIVATE),
+    PgrShowSecondaryCB = LOADDEF_AUTOCHECKBOX(ID_SCDI_PGR1_SHOWSECONDARY),
+    PgrShowStickyCB = LOADDEF_AUTOCHECKBOX(ID_SCDI_PGR1_SHOWSTICKY);
 
-static const DLGHITEM G_dlgPagerWindow[] =
+STATIC const DLGHITEM G_dlgPagerWindow[] =
     {
         START_TABLE,
             START_ROW(0),
@@ -796,31 +796,31 @@ static const DLGHITEM G_dlgPagerWindow[] =
             START_ROW(0),
                 START_GROUP_TABLE(&ControlWindowGroup),
                     START_ROW(0),
-                        CONTROL_DEF(&PreservePropsCB),
+                        CONTROL_DEF(&PgrPreservePropsCB),
                     START_ROW(0),
-                        CONTROL_DEF(&StayOnTopCB),
+                        CONTROL_DEF(&PgrStayOnTopCB),
                     START_ROW(ROW_VALIGN_CENTER),
-                        CONTROL_DEF(&FlashToTopCB),
-                        CONTROL_DEF(&DelayTxt1),
-                        CONTROL_DEF(&DelaySpin),
-                        CONTROL_DEF(&DelayTxt2),
+                        CONTROL_DEF(&PgrFlashToTopCB),
+                        CONTROL_DEF(&PgrDelayTxt1),
+                        CONTROL_DEF(&PgrDelaySpin),
+                        CONTROL_DEF(&PgrDelayTxt2),
                     START_ROW(0),
-                        CONTROL_DEF(&MiniWindowsCB),
-                    START_ROW(0),
-                        CONTROL_DEF(&G_Spacing),
-                        CONTROL_DEF(&ShowWinTitlesCB),
+                        CONTROL_DEF(&PgrMiniWindowsCB),
                     START_ROW(0),
                         CONTROL_DEF(&G_Spacing),
-                        CONTROL_DEF(&ShowWinIconsCB),
+                        CONTROL_DEF(&PgrShowWinTitlesCB),
                     START_ROW(0),
                         CONTROL_DEF(&G_Spacing),
-                        CONTROL_DEF(&Click2ActivateCB),
+                        CONTROL_DEF(&PgrShowWinIconsCB),
                     START_ROW(0),
                         CONTROL_DEF(&G_Spacing),
-                        CONTROL_DEF(&ShowSecondaryCB),
+                        CONTROL_DEF(&PgrClick2ActivateCB),
                     START_ROW(0),
                         CONTROL_DEF(&G_Spacing),
-                        CONTROL_DEF(&ShowStickyCB),
+                        CONTROL_DEF(&PgrShowSecondaryCB),
+                    START_ROW(0),
+                        CONTROL_DEF(&G_Spacing),
+                        CONTROL_DEF(&PgrShowStickyCB),
                 END_TABLE,
             START_ROW(0),       // notebook buttons (will be moved)
                 CONTROL_DEF(&G_UndoButton),         // common.c
@@ -842,7 +842,7 @@ static const DLGHITEM G_dlgPagerWindow[] =
  *@@changed V0.9.19 (2002-05-28) [umoeller]: adjustments for new pager handling
  */
 
-static VOID PagerWindowInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
+STATIC VOID PagerWindowInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                                 ULONG flFlags)        // CBI_* flags (notebook.h)
 {
     if (flFlags & CBI_INIT)
@@ -961,7 +961,7 @@ static VOID PagerWindowInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
  *@@changed V0.9.19 (2002-04-11) [lafaix]: added support for MDF_INCLUDE*
  */
 
-static MRESULT PagerWindowItemChanged(PNOTEBOOKPAGE pnbp,
+STATIC MRESULT PagerWindowItemChanged(PNOTEBOOKPAGE pnbp,
                                       ULONG ulItemID, USHORT usNotifyCode,
                                       ULONG ulExtra)      // for checkboxes: contains new state
 {
@@ -1135,7 +1135,7 @@ typedef struct _STICKYRECORD
  *@@changed V0.9.19 (2002-05-28) [umoeller]: some cleanup
  */
 
-static VOID AdjustStickyRecord(PSTICKYRECORD pRec)
+STATIC VOID AdjustStickyRecord(PSTICKYRECORD pRec)
 {
     ULONG id;
 
@@ -1188,7 +1188,7 @@ static VOID AdjustStickyRecord(PSTICKYRECORD pRec)
  *@@changed V0.9.19 (2002-04-14) [lafaix]: added ulFlags support
  */
 
-static VOID AddStickyRecord(HWND hwndCnr,
+STATIC VOID AddStickyRecord(HWND hwndCnr,
                             PSZ pszStickyName,     // in: window or switch list title (for XPager)
                             ULONG ulFlags,         // in: entry flags (SF_*)
                             BOOL fInvalidate)      // in: if TRUE, invalidate records
@@ -1224,7 +1224,7 @@ static VOID AddStickyRecord(HWND hwndCnr,
  *@@changed V0.9.19 (2002-04-14) [lafaix]: added flags support
  */
 
-static VOID SaveStickies(HWND hwndCnr,
+STATIC VOID SaveStickies(HWND hwndCnr,
                          PAGERCONFIG* pPagerCfg)
 {
     PSTICKYRECORD   pRec = NULL;
@@ -1267,7 +1267,7 @@ static VOID SaveStickies(HWND hwndCnr,
 #define OPERWIDTH       50
 #define VALUEWIDTH      100
 
-static const CONTROLDEF
+STATIC const CONTROLDEF
     CriteriaGroup = LOADDEF_GROUP(ID_SCDI_STICKY_CRITERIAGROUP, SZL_AUTOSIZE),
     AttrTxt = CONTROLDEF_TEXT_CENTER(
                             LOAD_STRING,
@@ -1300,7 +1300,7 @@ static const CONTROLDEF
     IncludeRadio = LOADDEF_FIRST_AUTORADIO(ID_SCDI_STICKY_RADIO_INCLUDE),
     ExcludeRadio = LOADDEF_NEXT_AUTORADIO(ID_SCDI_STICKY_RADIO_EXCLUDE);
 
-static const DLGHITEM dlgAddSticky[] =
+STATIC const DLGHITEM dlgAddSticky[] =
     {
         START_TABLE,            // root table, required
 /*             START_ROW(0),        no, not in the dialog V0.9.20 (2002-07-03) [umoeller]
@@ -1347,7 +1347,7 @@ static const DLGHITEM dlgAddSticky[] =
  *@@added V0.9.19 (2002-04-17) [umoeller]
  */
 
-static MRESULT EXPENTRY fnwpEditStickyRecord(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
+STATIC MRESULT EXPENTRY fnwpEditStickyRecord(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
 
@@ -1419,7 +1419,7 @@ static MRESULT EXPENTRY fnwpEditStickyRecord(HWND hwndDlg, ULONG msg, MPARAM mp1
  *@@changed V0.9.20 (2002-07-03) [umoeller]: removed "pager is disabled" in sticky dialog, fixed excessive drop-downs
  */
 
-static VOID EditStickyRecord(PSTICKYRECORD pRec,
+STATIC VOID EditStickyRecord(PSTICKYRECORD pRec,
                              PNOTEBOOKPAGE pnbp,
                              HWND hwndCnr,
                              BOOL fInsert)
@@ -1575,7 +1575,7 @@ static VOID EditStickyRecord(PSTICKYRECORD pRec,
     }
 }
 
-static const CONTROLDEF
+STATIC const CONTROLDEF
     StickiesGroup = LOADDEF_GROUP(ID_SCDI_STICKY_GROUP, SZL_AUTOSIZE),
     StickiesCnr = CONTROLDEF_CONTAINER(
                             ID_SCDI_STICKY_CNR,
@@ -1585,7 +1585,7 @@ static const CONTROLDEF
     EditButton = LOADDEF_PUSHBUTTON(DID_EDIT),
     RemoveButton = LOADDEF_PUSHBUTTON(DID_REMOVE);
 
-static const DLGHITEM G_dlgPagerStickies[] =
+STATIC const DLGHITEM G_dlgPagerStickies[] =
     {
         START_TABLE,            // root table, required
             START_ROW(0),
@@ -1625,7 +1625,7 @@ MPARAM G_ampStickies[] =
  *@@changed V0.9.19 (2002-04-17) [umoeller]: now using dialog formatter
  */
 
-static VOID PagerStickyInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
+STATIC VOID PagerStickyInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                                 ULONG flFlags)        // CBI_* flags (notebook.h)
 {
     if (flFlags & CBI_INIT)
@@ -1749,7 +1749,7 @@ static VOID PagerStickyInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
  *@@changed V0.9.19 (2002-04-16) [lafaix]: fixed popup menu font and DID_UNDO
  */
 
-static MRESULT PagerStickyItemChanged(PNOTEBOOKPAGE pnbp,
+STATIC MRESULT PagerStickyItemChanged(PNOTEBOOKPAGE pnbp,
                                       ULONG ulItemID, USHORT usNotifyCode,
                                       ULONG ulExtra)      // for checkboxes: contains new state
 {
@@ -2006,7 +2006,7 @@ static MRESULT PagerStickyItemChanged(PNOTEBOOKPAGE pnbp,
 
 #pragma pack(1)
 
-static const struct
+STATIC const struct
     {
         SHORT   id,         // ID of static frame
                 idRow,      // ID of the static row title text
@@ -2043,7 +2043,7 @@ static const struct
  *@@added V0.9.3 (2000-04-09) [umoeller]
  */
 
-static PLONG GetColorPointer(HWND hwndStatic,
+STATIC PLONG GetColorPointer(HWND hwndStatic,
                              PAGERCONFIG* pPagerCfg)
 {
     switch (WinQueryWindowUShort(hwndStatic, QWS_ID))
@@ -2085,7 +2085,7 @@ static PLONG GetColorPointer(HWND hwndStatic,
  *@@added V0.9.19 (2002-05-28) [umoeller]
  */
 
-static MRESULT EXPENTRY fnwpColorSelect(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
+STATIC MRESULT EXPENTRY fnwpColorSelect(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
 
@@ -2125,7 +2125,7 @@ static MRESULT EXPENTRY fnwpColorSelect(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
  *@@added V0.9.19 (2002-05-28) [umoeller]
  */
 
-static VOID SetColor(HWND hwndColorDlg,
+STATIC VOID SetColor(HWND hwndColorDlg,
                      LONG lcol)
 {
     WinSendMsg(WinWindowFromID(hwndColorDlg, ID_COLORCTL),
@@ -2147,7 +2147,7 @@ static VOID SetColor(HWND hwndColorDlg,
  *@@added V0.9.19 (2002-05-28) [umoeller]
  */
 
-static HWND CreateColorDlg(HWND hwndOwner,
+STATIC HWND CreateColorDlg(HWND hwndOwner,
                            PFNWP pfnwpDialogProc,
                            PCSZ pcszTitle,
                            PVOID pCreateParams,
@@ -2200,7 +2200,7 @@ static HWND CreateColorDlg(HWND hwndOwner,
  *@@changed V0.9.19 (2002-05-28) [umoeller]: added color selection dlg on dblclk
  */
 
-static MRESULT EXPENTRY fnwpSubclassedStaticRect(HWND hwndStatic, ULONG msg, MPARAM mp1, MPARAM mp2)
+STATIC MRESULT EXPENTRY fnwpSubclassedStaticRect(HWND hwndStatic, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
     // access settings; these have been stored in QWL_USER
@@ -2353,7 +2353,7 @@ static MRESULT EXPENTRY fnwpSubclassedStaticRect(HWND hwndStatic, ULONG msg, MPA
 #define COLORBOX(id)    CONTROLDEF_TEXT("", id, 32, COLORBOX_HEIGHT)
 #define TEXTBOX(id)     CONTROLDEF_TEXT(LOAD_STRING, id, SZL_AUTOSIZE, COLORBOX_HEIGHT)
 
-static const CONTROLDEF
+STATIC const CONTROLDEF
     ColorsGroup = LOADDEF_GROUP(ID_SCDI_PGR2_COLORS_GROUP, SZL_AUTOSIZE),
     ColorsInfo = LOADDEF_TEXT_WORDBREAK(ID_SCDI_PGR2_COLORS_INFO, -100),
     TextEmpty = CONTROLDEF_TEXT("", -1, 10, COLORBOX_HEIGHT),
@@ -2378,7 +2378,7 @@ static const CONTROLDEF
     ColorTxtActive    = COLORBOX(ID_SCDI_PGR2_TXT_ACTIVE),
     ColorNull         = COLORBOX(-1);
 
-static const DLGHITEM G_dlgXPagerColors[] =
+STATIC const DLGHITEM G_dlgXPagerColors[] =
     {
         START_TABLE,
             START_ROW(0),
@@ -2464,7 +2464,7 @@ static const DLGHITEM G_dlgXPagerColors[] =
  *@@changed V0.9.19 (2002-05-07) [umoeller]: now using dialog formatter; updated for new colors
  */
 
-static VOID PagerColorsInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
+STATIC VOID PagerColorsInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                                      ULONG flFlags)        // CBI_* flags (notebook.h)
 {
     if (flFlags & CBI_INIT)
@@ -2581,7 +2581,7 @@ static VOID PagerColorsInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
  *@@changed V0.9.19 (2002-05-07) [umoeller]: now using dialog formatter; updated for new colors
  */
 
-static MRESULT PagerColorsItemChanged(PNOTEBOOKPAGE pnbp,
+STATIC MRESULT PagerColorsItemChanged(PNOTEBOOKPAGE pnbp,
                                       ULONG ulItemID, USHORT usNotifyCode,
                                       ULONG ulExtra)      // for checkboxes: contains new state
 {

@@ -152,7 +152,7 @@ typedef struct _PAGERWINDATA
  *
  ********************************************************************/
 
-static PCSZ         WC_PAGER = "XWPXPagerClient";
+STATIC PCSZ         WC_PAGER = "XWPXPagerClient";
 
 HMTX                G_hmtxSuppressNotify = NULLHANDLE;    // V0.9.14 (2001-08-25) [umoeller]
 
@@ -278,7 +278,7 @@ LONG pgrCalcClientCY(LONG cx)
  *@@added V0.9.19 (2002-05-07) [umoeller]
  */
 
-static VOID CheckFlashTimer(VOID)
+STATIC VOID CheckFlashTimer(VOID)
 {
     if (G_pHookData->PagerConfig.flPager & PGRFL_FLASHTOTOP)
         WinStartTimer(G_habDaemon,
@@ -472,7 +472,7 @@ VOID pgrRecoverWindows(HAB hab,
  *@@added V0.9.19 (2002-05-07) [umoeller]
  */
 
-static HBITMAP CreateTemplateBitmap(HAB hab,
+STATIC HBITMAP CreateTemplateBitmap(HAB hab,
                                     PSIZEL pszl)
 {
     HBITMAP hbmTemplate = NULLHANDLE;
@@ -544,7 +544,7 @@ static HBITMAP CreateTemplateBitmap(HAB hab,
  *@@added V0.9.19 (2002-05-07) [umoeller]
  */
 
-static VOID DestroyBitmaps(PPAGERWINDATA pWinData)
+STATIC VOID DestroyBitmaps(PPAGERWINDATA pWinData)
 {
     if (pWinData->hbmTemplate)
     {
@@ -632,7 +632,7 @@ VOID DrawPointer(HPS hpsMem,
  *@@added V0.9.19 (2002-05-07) [umoeller]
  */
 
-static VOID RefreshPagerBitmap(HWND hwnd,
+STATIC VOID RefreshPagerBitmap(HWND hwnd,
                                PPAGERWINDATA pWinData)
 {
     HPS     hpsMem = pWinData->pbmClient->hpsMem;
@@ -911,7 +911,7 @@ static VOID RefreshPagerBitmap(HWND hwnd,
  *@@changed V0.9.20 (2002-08-08) [umoeller]: fixed NIL windows
  */
 
-static HWND FindWindow(PPAGERWINDATA pWinData,
+STATIC HWND FindWindow(PPAGERWINDATA pWinData,
                        PPOINTL ptlClient,       // in: client coords
                        BOOL fAllowStickes)      // in: if TRUE, allow returning sticky windows
 {
@@ -1003,7 +1003,7 @@ static HWND FindWindow(PPAGERWINDATA pWinData,
  *@@added V0.9.19 (2002-05-07) [umoeller]
  */
 
-static VOID PagerPaint(HWND hwnd)
+STATIC VOID PagerPaint(HWND hwnd)
 {
     PPAGERWINDATA pWinData;
     HPS hps;
@@ -1087,7 +1087,7 @@ static VOID PagerPaint(HWND hwnd)
  *@@added V0.9.19 (2002-05-07) [umoeller]
  */
 
-static VOID PagerPresParamChanged(HWND hwnd, MPARAM mp1)
+STATIC VOID PagerPresParamChanged(HWND hwnd, MPARAM mp1)
 {
     PPAGERWINDATA pWinData;
     if (    (LONGFROMMP(mp1) == PP_FONTNAMESIZE)
@@ -1127,7 +1127,7 @@ static VOID PagerPresParamChanged(HWND hwnd, MPARAM mp1)
  *@@added V0.9.19 (2002-05-07) [umoeller]
  */
 
-static VOID PagerPositionFrame(VOID)
+STATIC VOID PagerPositionFrame(VOID)
 {
     // disable message processing in the hook
     if (pgrLockHook(__FILE__, __LINE__, __FUNCTION__))
@@ -1176,7 +1176,7 @@ static VOID PagerPositionFrame(VOID)
  *@@changed V0.9.20 (2002-08-08) [umoeller]: added shift mb2 click for hiding pager
  */
 
-static MRESULT PagerButtonClick(HWND hwnd,
+STATIC MRESULT PagerButtonClick(HWND hwnd,
                                 ULONG msg,
                                 MPARAM mp1,
                                 MPARAM mp2)
@@ -1356,7 +1356,7 @@ static MRESULT PagerButtonClick(HWND hwnd,
  *@@added V0.9.19 (2002-05-07) [umoeller]
  */
 
-static VOID PagerDrag(HWND hwnd, MPARAM mp1)
+STATIC VOID PagerDrag(HWND hwnd, MPARAM mp1)
 {
     PPAGERWINDATA pWinData;
     if (pWinData = (PPAGERWINDATA)WinQueryWindowPtr(hwnd, QWL_USER))
@@ -1552,7 +1552,7 @@ static VOID PagerDrag(HWND hwnd, MPARAM mp1)
  *@@changed V0.9.19 (2002-06-02) [umoeller]: made this configurable
  */
 
-static VOID PagerActiveChanged(HWND hwnd)
+STATIC VOID PagerActiveChanged(HWND hwnd)
 {
     // we only do this if we are not currently processing
     // a pager wraparound
@@ -1658,7 +1658,7 @@ static VOID PagerActiveChanged(HWND hwnd)
  *@@added V0.9.19 (2002-05-07) [umoeller]
  */
 
-static VOID PagerHotkey(MPARAM mp1)
+STATIC VOID PagerHotkey(MPARAM mp1)
 {
     LONG    dx = 0,
             dy = 0;
@@ -1697,7 +1697,7 @@ static VOID PagerHotkey(MPARAM mp1)
  *@@changed V0.9.20 (2002-07-03) [umoeller]: reduced activate delay from 200 to 50 ms
  */
 
-static MRESULT EXPENTRY fnwpPager(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
+STATIC MRESULT EXPENTRY fnwpPager(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
 
@@ -2004,7 +2004,7 @@ static MRESULT EXPENTRY fnwpPager(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
  *@@added V0.9.19 (2002-05-07) [umoeller]
  */
 
-static MRESULT EXPENTRY fnwpSubclPagerFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
+STATIC MRESULT EXPENTRY fnwpSubclPagerFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT     mrc = 0;
 

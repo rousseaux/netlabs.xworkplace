@@ -168,9 +168,9 @@
  ********************************************************************/
 
 // linked list for config folder content:
-static HMTX     G_hmtxConfigContent = NULLHANDLE;   // V0.9.9 (2001-04-04) [umoeller]
-static LINKLIST G_llConfigContent;
-static BOOL     G_fConfigCacheValid;                // if FALSE, cache is rebuilt
+STATIC HMTX     G_hmtxConfigContent = NULLHANDLE;   // V0.9.9 (2001-04-04) [umoeller]
+STATIC LINKLIST G_llConfigContent;
+STATIC BOOL     G_fConfigCacheValid;                // if FALSE, cache is rebuilt
 
 extern POINTL   G_ptlMouseMenu = {0, 0};    // ptr position when menu was opened
                                             // moved this here from XFolder instance
@@ -474,7 +474,7 @@ typedef struct _MENUITEMDEF
  *@@added V0.9.19 (2002-04-17) [umoeller]
  */
 
-static const MENUITEMDEF G_MenuItemsWithIDs[] =
+STATIC const MENUITEMDEF G_MenuItemsWithIDs[] =
     {
         // "~Open as"
         ID_XSDI_MENU_OPENAS, WPMENUID_OPEN,
@@ -1026,7 +1026,7 @@ BOOL mnuInsertFldrViewItems(WPFolder *somSelf,      // in: folder w/ context men
  *@@changed V0.9.19 (2002-06-08) [umoeller]: finally treating shadows to program objs like program objs
  */
 
-static BOOL BuildConfigItemsList(PLINKLIST pllContentThis,     // in: CONTENTLISTITEM list to append to
+STATIC BOOL BuildConfigItemsList(PLINKLIST pllContentThis,     // in: CONTENTLISTITEM list to append to
                                  XFolder *pFolderThis)         // in: folder to append from
 {
     BOOL        brc = TRUE;
@@ -1148,7 +1148,7 @@ static BOOL BuildConfigItemsList(PLINKLIST pllContentThis,     // in: CONTENTLIS
  *@@changed V0.9.0 [umoeller]: renamed from mnuFillMenuWithObjects; prototype changed; now running with lists
  */
 
-static LONG InsertObjectsFromList(PLINKLIST  pllContentThis, // in: list to take items from (var.)
+STATIC LONG InsertObjectsFromList(PLINKLIST  pllContentThis, // in: list to take items from (var.)
                                   HWND       hMenuThis,      // in: menu to add items to (var.)
                                   HWND       hwndCnr,        // in: needed for wpInsertPopupMenuItems (const)
                                   ULONG      ulOfs)          // in: cmnQuerySetting(sulVarMenuOfs)
@@ -1267,7 +1267,7 @@ static LONG InsertObjectsFromList(PLINKLIST  pllContentThis, // in: list to take
  *@@added V0.9.9 (2001-04-04) [umoeller]
  */
 
-static BOOL LockConfigCache(VOID)
+STATIC BOOL LockConfigCache(VOID)
 {
     if (G_hmtxConfigContent)
         return !DosRequestMutexSem(G_hmtxConfigContent, SEM_INDEFINITE_WAIT);
@@ -1292,7 +1292,7 @@ static BOOL LockConfigCache(VOID)
  *@@added V0.9.9 (2001-04-04) [umoeller]
  */
 
-static VOID UnlockConfigCache(VOID)
+STATIC VOID UnlockConfigCache(VOID)
 {
     DosReleaseMutexSem(G_hmtxConfigContent);
 }
@@ -1351,7 +1351,7 @@ VOID mnuInvalidateConfigCache(VOID)
  *@@changed V0.9.12 (2001-05-22) [umoeller]: added extended close menu
  */
 
-static BOOL InsertConfigFolderItems(XFolder *somSelf,
+STATIC BOOL InsertConfigFolderItems(XFolder *somSelf,
                                     HWND hwndMenu,
                                     HWND hwndCnr,
                                     ULONG ulOfs)
@@ -2388,7 +2388,7 @@ BOOL mnuModifyDataFilePopupMenu(WPObject *somSelf,  // in: data file
  *
  ********************************************************************/
 
-static const CONTROLDEF
+STATIC const CONTROLDEF
     MenuStyleGroup = LOADDEF_GROUP(ID_XSDI_MENU_STYLE_GROUP, SZL_AUTOSIZE),
     LongRadio = LOADDEF_FIRST_AUTORADIO(ID_XSDI_MENUS_LONG),
     ShortRadio = LOADDEF_NEXT_AUTORADIO(ID_XSDI_MENUS_SHORT),
@@ -2398,7 +2398,7 @@ static const CONTROLDEF
 #endif
     LockInPlaceNoSubCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_LOCKINPLACE_NOSUB);
 
-static const DLGHITEM G_dlgMenuSettings[] =
+STATIC const DLGHITEM G_dlgMenuSettings[] =
     {
         START_TABLE,
             START_ROW(0),
@@ -2423,7 +2423,7 @@ static const DLGHITEM G_dlgMenuSettings[] =
         END_TABLE
     };
 
-static const XWPSETTING G_MenuSettingsBackup[] =
+STATIC const XWPSETTING G_MenuSettingsBackup[] =
     {
         sfFixLockInPlace
 #ifndef __NOFOLDERCONTENTS__
@@ -2448,7 +2448,7 @@ typedef struct _MOREBACKUP
  *@@added V0.9.19 (2002-04-17) [umoeller]
  */
 
-static VOID mnuSettingsInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
+STATIC VOID mnuSettingsInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                                 ULONG flFlags)        // CBI_* flags (notebook.h)
 {
     if (flFlags & CBI_INIT)
@@ -2506,7 +2506,7 @@ static VOID mnuSettingsInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
  *@@added V0.9.19 (2002-04-17) [umoeller]
  */
 
-static MRESULT mnuSettingsItemChanged(PNOTEBOOKPAGE pnbp,
+STATIC MRESULT mnuSettingsItemChanged(PNOTEBOOKPAGE pnbp,
                                       ULONG ulItemID,
                                       USHORT usNotifyCode,
                                       ULONG ulExtra)
@@ -2576,13 +2576,13 @@ static MRESULT mnuSettingsItemChanged(PNOTEBOOKPAGE pnbp,
 
 #define CNR_WIDTH               (DEFAULT_TABLE_WIDTH - 2 * COMMON_SPACING)
 
-static const CONTROLDEF
+STATIC const CONTROLDEF
     EditCategoryTxt = CONTROLDEF_TEXT(LOAD_STRING, ID_XSDI_MENU_EDIT_CAT_TXT, -1, -1),
     EditCategoryDrop = CONTROLDEF_DROPDOWNLIST(ID_XSDI_MENU_EDIT_CAT_DROP, 80, 64),
     EditGroup = LOADDEF_GROUP(ID_XSDI_MENU_EDIT_GROUP, DEFAULT_TABLE_WIDTH),
     EditCnr = CONTROLDEF_CONTAINER(ID_XSDI_MENU_EDIT_CNR, CNR_WIDTH, 40);
 
-static const DLGHITEM G_dlgMenuItems[] =
+STATIC const DLGHITEM G_dlgMenuItems[] =
     {
         START_TABLE,
             START_ROW(ROW_VALIGN_CENTER),
@@ -2600,7 +2600,7 @@ static const DLGHITEM G_dlgMenuItems[] =
         END_TABLE
     };
 
-static MPARAM G_ampFile1Page[] =
+STATIC MPARAM G_ampMenuItemsPage[] =
     {
         MPFROM2SHORT(ID_XSDI_MENU_EDIT_CAT_TXT, XAC_MOVEY),
         MPFROM2SHORT(ID_XSDI_MENU_EDIT_CAT_DROP, XAC_MOVEY),
@@ -2633,7 +2633,7 @@ typedef struct _CATEGORYWITHFLAG
  *@@added V0.9.19 (2002-04-17) [umoeller]
  */
 
-static const CATEGORYWITHFLAG G_CategoriesWithFlags[] =
+STATIC const CATEGORYWITHFLAG G_CategoriesWithFlags[] =
     {
         // "Folders"
         ID_XSDI_MENU_EDIT_CAT_FOLDERS, CONFFL_WPFOLDER,
@@ -2667,7 +2667,7 @@ typedef struct _MENUITEMRECORD
     const MENUITEMDEF       *pItem;
 } MENUITEMRECORD, *PMENUITEMRECORD;
 
-static const XWPSETTING G_MenuItemsBackup[] =
+STATIC const XWPSETTING G_MenuItemsBackup[] =
     {
         sflMenuObjectWPS,
         sflMenuObjectXWP,
@@ -2696,7 +2696,7 @@ static const XWPSETTING G_MenuItemsBackup[] =
  *@@added V0.9.19 (2002-04-17) [umoeller]
  */
 
-static VOID mnuItemsInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
+STATIC VOID mnuItemsInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                              ULONG flFlags)        // CBI_* flags (notebook.h)
 {
     if (flFlags & CBI_INIT)
@@ -2913,7 +2913,7 @@ static VOID mnuItemsInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
  *@@added V0.9.19 (2002-04-17) [umoeller]
  */
 
-static MRESULT mnuItemsItemChanged(PNOTEBOOKPAGE pnbp,
+STATIC MRESULT mnuItemsItemChanged(PNOTEBOOKPAGE pnbp,
                                    ULONG ulItemID,
                                    USHORT usNotifyCode,
                                    ULONG ulExtra)
@@ -3008,39 +3008,39 @@ static MRESULT mnuItemsItemChanged(PNOTEBOOKPAGE pnbp,
  *
  ********************************************************************/
 
-static const CONTROLDEF
-    ConfigFdrGroup = LOADDEF_GROUP(ID_XSDI_MENUS_CONFIGFDR_GROUP, DEFAULT_TABLE_WIDTH),
-    CondCascadeCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_CASCADE),
-    RemoveXCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_REMOVEX),
-    AppendParamCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_APPDPARAM),
-    TemplateGroup = LOADDEF_GROUP(ID_XSDI_TPL_GROUP, DEFAULT_TABLE_WIDTH),
-    TplDoNothingRadio = LOADDEF_FIRST_AUTORADIO(ID_XSDI_TPL_DONOTHING),
-    TplEditTitleRadio = LOADDEF_NEXT_AUTORADIO(ID_XSDI_TPL_EDITTITLE),
-    TplOpenPropertiesRadio = LOADDEF_NEXT_AUTORADIO(ID_XSDI_TPL_OPENSETTINGS),
-    TplPositionCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_TPL_POSITION);
+STATIC const CONTROLDEF
+    CfgFdrGroup = LOADDEF_GROUP(ID_XSDI_MENUS_CONFIGFDR_GROUP, DEFAULT_TABLE_WIDTH),
+    CfgCondCascadeCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_CASCADE),
+    CfgRemoveXCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_REMOVEX),
+    CfgAppendParamCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_APPDPARAM),
+    CfgTemplateGroup = LOADDEF_GROUP(ID_XSDI_TPL_GROUP, DEFAULT_TABLE_WIDTH),
+    CfgTplDoNothingRadio = LOADDEF_FIRST_AUTORADIO(ID_XSDI_TPL_DONOTHING),
+    CfgTplEditTitleRadio = LOADDEF_NEXT_AUTORADIO(ID_XSDI_TPL_EDITTITLE),
+    CfgTplOpenPropertiesRadio = LOADDEF_NEXT_AUTORADIO(ID_XSDI_TPL_OPENSETTINGS),
+    CfgTplPositionCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_TPL_POSITION);
 
-static const DLGHITEM G_dlgMenuConfigFdr[] =
+STATIC const DLGHITEM G_dlgMenuConfigFdr[] =
     {
         START_TABLE,
             START_ROW(0),
-                START_GROUP_TABLE(&ConfigFdrGroup),
+                START_GROUP_TABLE(&CfgFdrGroup),
                     START_ROW(0),
-                        CONTROL_DEF(&CondCascadeCB),
+                        CONTROL_DEF(&CfgCondCascadeCB),
                     START_ROW(0),
-                        CONTROL_DEF(&RemoveXCB),
+                        CONTROL_DEF(&CfgRemoveXCB),
                     START_ROW(0),
-                        CONTROL_DEF(&AppendParamCB),
+                        CONTROL_DEF(&CfgAppendParamCB),
                 END_TABLE,
             START_ROW(0),
-                START_GROUP_TABLE(&TemplateGroup),
+                START_GROUP_TABLE(&CfgTemplateGroup),
                     START_ROW(0),
-                        CONTROL_DEF(&TplDoNothingRadio),
+                        CONTROL_DEF(&CfgTplDoNothingRadio),
                     START_ROW(0),
-                        CONTROL_DEF(&TplEditTitleRadio),
+                        CONTROL_DEF(&CfgTplEditTitleRadio),
                     START_ROW(0),
-                        CONTROL_DEF(&TplOpenPropertiesRadio),
+                        CONTROL_DEF(&CfgTplOpenPropertiesRadio),
                     START_ROW(0),
-                        CONTROL_DEF(&TplPositionCB),
+                        CONTROL_DEF(&CfgTplPositionCB),
                 END_TABLE,
             START_ROW(0),
                 CONTROL_DEF(&G_UndoButton),         // common.c
@@ -3049,7 +3049,7 @@ static const DLGHITEM G_dlgMenuConfigFdr[] =
         END_TABLE
     };
 
-static const XWPSETTING G_MenuConfigFdrBackup[] =
+STATIC const XWPSETTING G_MenuConfigFdrBackup[] =
     {
         sfMenuCascadeMode,
         sfRemoveX,
@@ -3072,7 +3072,7 @@ static const XWPSETTING G_MenuConfigFdrBackup[] =
  *@@changed V0.9.19 (2002-04-24) [umoeller]: now using dialog formatter
  */
 
-static VOID mnuConfigFolderMenusInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
+STATIC VOID mnuConfigFolderMenusInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                                          ULONG flFlags)        // CBI_* flags (notebook.h)
 {
     if (flFlags & CBI_INIT)
@@ -3124,7 +3124,7 @@ static VOID mnuConfigFolderMenusInitPage(PNOTEBOOKPAGE pnbp,   // notebook info 
  *@@changed V0.9.0 [umoeller]: adjusted function prototype
  */
 
-static MRESULT mnuConfigFolderMenusItemChanged(PNOTEBOOKPAGE pnbp,
+STATIC MRESULT mnuConfigFolderMenusItemChanged(PNOTEBOOKPAGE pnbp,
                                                ULONG ulItemID,
                                                USHORT usNotifyCode,
                                                ULONG ulExtra)      // for checkboxes: contains new state
@@ -3239,8 +3239,8 @@ ULONG mnuAddWPSMenuPages(WPObject *somSelf,     // in: XFldWPS* object
     inbp.ulPageID = SP_MENUITEMS;
     inbp.pfncbInitPage    = mnuItemsInitPage;
     inbp.pfncbItemChanged = mnuItemsItemChanged;
-    inbp.pampControlFlags = G_ampFile1Page;
-    inbp.cControlFlags = ARRAYITEMCOUNT(G_ampFile1Page);
+    inbp.pampControlFlags = G_ampMenuItemsPage;
+    inbp.cControlFlags = ARRAYITEMCOUNT(G_ampMenuItemsPage);
     ulrc = ntbInsertPage(&inbp);
 
     // new menu settings page V0.9.19 (2002-04-24) [umoeller]

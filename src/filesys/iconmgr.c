@@ -98,12 +98,12 @@
  *
  ********************************************************************/
 
-static HMTX         G_hmtxIconShares = NULLHANDLE;
+STATIC HMTX         G_hmtxIconShares = NULLHANDLE;
 
-static HMTX         G_hmtxLazyIcons = NULLHANDLE;
-static LINKLIST     G_llLazyIcons;
-static HEV          G_hevLazyIcons = NULLHANDLE;
-static THREADINFO   G_tiLazyIcons = {0};
+STATIC HMTX         G_hmtxLazyIcons = NULLHANDLE;
+STATIC LINKLIST     G_llLazyIcons;
+STATIC HEV          G_hevLazyIcons = NULLHANDLE;
+STATIC THREADINFO   G_tiLazyIcons = {0};
 
 /* ******************************************************************
  *
@@ -415,7 +415,7 @@ VOID icomUnShareIcon(WPObject *pobjServer,      // in: icon server object
  *
  ********************************************************************/
 
-static void _Optlink fntLazyIcons(PTHREADINFO ptiMyself);
+STATIC void _Optlink fntLazyIcons(PTHREADINFO ptiMyself);
 
 /*
  *@@ LockLazyIcons:
@@ -423,7 +423,7 @@ static void _Optlink fntLazyIcons(PTHREADINFO ptiMyself);
  *@@added V0.9.20 (2002-07-25) [umoeller]
  */
 
-static BOOL LockLazyIcons(VOID)
+STATIC BOOL LockLazyIcons(VOID)
 {
     if (G_hmtxLazyIcons)
         return !DosRequestMutexSem(G_hmtxLazyIcons, SEM_INDEFINITE_WAIT);
@@ -457,7 +457,7 @@ static BOOL LockLazyIcons(VOID)
  *@@added V0.9.20 (2002-07-25) [umoeller]
  */
 
-static VOID UnlockLazyIcons(VOID)
+STATIC VOID UnlockLazyIcons(VOID)
 {
     DosReleaseMutexSem(G_hmtxLazyIcons);
 }
@@ -468,7 +468,7 @@ static VOID UnlockLazyIcons(VOID)
  *@@added V0.9.20 (2002-07-25) [umoeller]
  */
 
-static void _Optlink fntLazyIcons(PTHREADINFO ptiMyself)
+STATIC void _Optlink fntLazyIcons(PTHREADINFO ptiMyself)
 {
     BOOL    fLocked = FALSE;
     BOOL    fDummy = 1;

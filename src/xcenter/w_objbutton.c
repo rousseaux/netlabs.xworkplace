@@ -121,9 +121,9 @@
  ********************************************************************/
 
 #ifndef __XWPLITE__
-static PCSZ G_pcszXButton =     "X Button";
+STATIC PCSZ G_pcszXButton =     "X Button";
 #else
-static PCSZ G_pcszXButton =     "eButton";
+STATIC PCSZ G_pcszXButton =     "eButton";
 #endif
 
 /* ******************************************************************
@@ -230,7 +230,7 @@ typedef struct _OBJBUTTONPRIVATE
  *      itself.
  */
 
-static VOID OwgtClearSetup(POBJBUTTONSETUP pSetup)
+STATIC VOID OwgtClearSetup(POBJBUTTONSETUP pSetup)
 {
     FREE(pSetup->pszXButtonBmp);
 }
@@ -248,7 +248,7 @@ static VOID OwgtClearSetup(POBJBUTTONSETUP pSetup)
  *@@changed V0.9.16 (2001-10-15) [umoeller]: added support for OBJECTHANDLE=<OBJID>
  */
 
-static VOID OwgtScanSetup(const char *pcszSetupString,
+STATIC VOID OwgtScanSetup(const char *pcszSetupString,
                           POBJBUTTONSETUP pSetup)
 {
     PSZ p;
@@ -300,7 +300,7 @@ static VOID OwgtScanSetup(const char *pcszSetupString,
  *      string after use.
  */
 
-static VOID OwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared first)
+STATIC VOID OwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared first)
                           BOOL fIsObjButton,
                           POBJBUTTONSETUP pSetup)
 {
@@ -451,12 +451,12 @@ typedef struct _XBTNMENUITEMDEF
 
 #define ID_ENTRYFIELD       999
 
-static CONTROLDEF
-            OKButton = CONTROLDEF_DEFPUSHBUTTON(NULL, DID_OK, STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT),
-            CancelButton = CONTROLDEF_PUSHBUTTON(NULL, DID_CANCEL, STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT),
-            HelpButton = CONTROLDEF_HELPPUSHBUTTON(NULL, DID_HELP, STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT),
+STATIC CONTROLDEF
+            XBOKButton = CONTROLDEF_DEFPUSHBUTTON(NULL, DID_OK, STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT),
+            XBCancelButton = CONTROLDEF_PUSHBUTTON(NULL, DID_CANCEL, STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT),
+            XBHelpButton = CONTROLDEF_HELPPUSHBUTTON(NULL, DID_HELP, STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT),
 
-            ChecksGroup = CONTROLDEF_GROUP(
+            XBChecksGroup = CONTROLDEF_GROUP(
                             NULL,
                             -1,
                             -1,
@@ -491,7 +491,7 @@ static CONTROLDEF
                                                   1000 + MENUFL_NORUNDLG,
                                                   SZL_AUTOSIZE,
                                                   SZL_AUTOSIZE),
-            BitmapGroup = CONTROLDEF_GROUP(
+            XBBitmapGroup = CONTROLDEF_GROUP(
                             NULL,
                             -1,
                             SZL_AUTOSIZE,
@@ -501,17 +501,17 @@ static CONTROLDEF
                             ID_ENTRYFIELD,
                             SZL_REMAINDER, // 100,
                             SZL_AUTOSIZE),
-            BitmapBrowse = CONTROLDEF_PUSHBUTTON(
+            XBBitmapBrowse = CONTROLDEF_PUSHBUTTON(
                             NULL,
                             DID_BROWSE,
                             SZL_AUTOSIZE,
                             STD_BUTTON_HEIGHT);
 
-static const DLGHITEM dlgXButtonSettings[] =
+STATIC const DLGHITEM dlgXButtonSettings[] =
     {
         START_TABLE,
             START_ROW(0),
-                START_GROUP_TABLE_EXT(&ChecksGroup, TABLE_INHERIT_SIZE),
+                START_GROUP_TABLE_EXT(&XBChecksGroup, TABLE_INHERIT_SIZE),
                     // fixed ordering V0.9.19 (2002-04-14) [umoeller]
                     START_ROW(0),
                         CONTROL_DEF(&CheckLockup),
@@ -527,15 +527,15 @@ static const DLGHITEM dlgXButtonSettings[] =
                         CONTROL_DEF(&CheckShutdown),
                 END_TABLE,
                 START_ROW(0),
-                START_GROUP_TABLE_EXT(&BitmapGroup, TABLE_INHERIT_SIZE),
+                START_GROUP_TABLE_EXT(&XBBitmapGroup, TABLE_INHERIT_SIZE),
                     START_ROW(ROW_VALIGN_CENTER),
                         CONTROL_DEF(&BitmapEF),
-                        CONTROL_DEF(&BitmapBrowse),
+                        CONTROL_DEF(&XBBitmapBrowse),
                 END_TABLE,
             START_ROW(0),
-                CONTROL_DEF(&OKButton),
-                CONTROL_DEF(&CancelButton),
-                CONTROL_DEF(&HelpButton),
+                CONTROL_DEF(&XBOKButton),
+                CONTROL_DEF(&XBCancelButton),
+                CONTROL_DEF(&XBHelpButton),
         END_TABLE
     };
 
@@ -547,7 +547,7 @@ static const DLGHITEM dlgXButtonSettings[] =
  *@@changed V0.9.20 (2002-07-16) [umoeller]: removed logoff checkbox
  */
 
-static MRESULT EXPENTRY fnwpSettingsDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
+STATIC MRESULT EXPENTRY fnwpSettingsDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
 
@@ -631,12 +631,12 @@ VOID EXPENTRY OwgtShowXButtonSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
                 strcpy(p, p + 3);
         }
 
-        ChecksGroup.pcszText = cmnGetString(ID_CRSI_OWGT_MENUITEMS);
-        BitmapGroup.pcszText = cmnGetString(ID_CRSI_OWGT_BITMAPFILE);
-        OKButton.pcszText = cmnGetString(DID_OK);
-        CancelButton.pcszText = cmnGetString(DID_CANCEL);
-        HelpButton.pcszText = cmnGetString(DID_HELP);
-        BitmapBrowse.pcszText = cmnGetString(DID_BROWSE);
+        XBChecksGroup.pcszText = cmnGetString(ID_CRSI_OWGT_MENUITEMS);
+        XBBitmapGroup.pcszText = cmnGetString(ID_CRSI_OWGT_BITMAPFILE);
+        XBOKButton.pcszText = cmnGetString(DID_OK);
+        XBCancelButton.pcszText = cmnGetString(DID_CANCEL);
+        XBHelpButton.pcszText = cmnGetString(DID_HELP);
+        XBBitmapBrowse.pcszText = cmnGetString(DID_BROWSE);
 
         if (!(arc = dlghCreateDlg(&hwndDlg,
                                   pData->hwndOwner,
@@ -746,7 +746,7 @@ VOID EXPENTRY OwgtShowXButtonSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
  *@@added V0.9.7 (2000-12-13) [umoeller]
  */
 
-static WPObject* FindObject(POBJBUTTONPRIVATE pPrivate)
+STATIC WPObject* FindObject(POBJBUTTONPRIVATE pPrivate)
 {
     WPObject *pobj = NULL;
 
@@ -788,7 +788,7 @@ static WPObject* FindObject(POBJBUTTONPRIVATE pPrivate)
  *@@changed V0.9.19 (2002-04-14) [umoeller]: now allowing for user-defined bitmaps
  */
 
-static MRESULT OwgtCreate(HWND hwnd, MPARAM mp1)
+STATIC MRESULT OwgtCreate(HWND hwnd, MPARAM mp1)
 {
     MRESULT mrc = 0;
     PXCENTERWIDGET pWidget = (PXCENTERWIDGET)mp1;
@@ -818,7 +818,7 @@ static MRESULT OwgtCreate(HWND hwnd, MPARAM mp1)
     return mrc;
 }
 
-static VOID OwgtButton1Down(HWND hwnd,
+STATIC VOID OwgtButton1Down(HWND hwnd,
                             BOOL fIsFromXCenterHotkey);
 
 /*
@@ -830,7 +830,7 @@ static VOID OwgtButton1Down(HWND hwnd,
  *@@changed V0.9.19 (2002-04-17) [umoeller]: added support for XCenter hotkey (XN_CENTERHOTKEYPRESSED)
  */
 
-static BOOL OwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
+STATIC BOOL OwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
     BOOL brc = FALSE;
 
@@ -970,7 +970,7 @@ static BOOL OwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *@@changed V0.9.13 (2001-06-21) [umoeller]: added in-use emphasis support
  */
 
-static VOID OwgtPaintButton(HWND hwnd)
+STATIC VOID OwgtPaintButton(HWND hwnd)
 {
     RECTL rclPaint;
     PXCENTERWIDGET pWidget;
@@ -1060,7 +1060,7 @@ static VOID OwgtPaintButton(HWND hwnd)
  *@@changed V0.9.19 (2002-04-14) [umoeller]: fixed duplicate separators when disabled
  */
 
-static VOID BuildXButtonMenu(HWND hwnd,
+STATIC VOID BuildXButtonMenu(HWND hwnd,
                              POBJBUTTONPRIVATE pPrivate)
 {
     WPObject *pActiveDesktop = cmnQueryActiveDesktop();
@@ -1180,7 +1180,7 @@ static VOID BuildXButtonMenu(HWND hwnd,
  *@@changed V0.9.19 (2002-04-17) [umoeller]: added support for XCenter hotkey press
  */
 
-static VOID OwgtButton1Down(HWND hwnd,
+STATIC VOID OwgtButton1Down(HWND hwnd,
                             BOOL fIsFromXCenterHotkey)      // V0.9.19 (2002-04-17) [umoeller]
 {
     PXCENTERWIDGET pWidget;
@@ -1300,7 +1300,7 @@ static VOID OwgtButton1Down(HWND hwnd,
  *      implementation for WM_BUTTON1UP.
  */
 
-static VOID OwgtButton1Up(HWND hwnd)
+STATIC VOID OwgtButton1Up(HWND hwnd)
 {
     PXCENTERWIDGET pWidget;
     POBJBUTTONPRIVATE pPrivate;
@@ -1373,7 +1373,7 @@ static VOID OwgtButton1Up(HWND hwnd)
  *         a folder (or disk).
  */
 
-static VOID OwgtInitMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
+STATIC VOID OwgtInitMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
     PXCENTERWIDGET pWidget;
     POBJBUTTONPRIVATE pPrivate;
@@ -1463,7 +1463,7 @@ static VOID OwgtInitMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *      implementation for WM_MENUEND.
  */
 
-static VOID OwgtMenuEnd(HWND hwnd, MPARAM mp2)
+STATIC VOID OwgtMenuEnd(HWND hwnd, MPARAM mp2)
 {
     PXCENTERWIDGET pWidget;
     POBJBUTTONPRIVATE pPrivate;
@@ -1505,7 +1505,7 @@ static VOID OwgtMenuEnd(HWND hwnd, MPARAM mp2)
  *@@changed V0.9.12 (2001-05-01) [umoeller]: added lockup
  */
 
-static BOOL OwgtCommand(HWND hwnd, MPARAM mp1)
+STATIC BOOL OwgtCommand(HWND hwnd, MPARAM mp1)
 {
     BOOL fProcessed = FALSE;
     ULONG ulMenuId = (ULONG)mp1;
@@ -1674,7 +1674,7 @@ static BOOL OwgtCommand(HWND hwnd, MPARAM mp1)
  *@@changed V0.9.20 (2002-08-10) [umoeller]: adjusted context menu
  */
 
-static MRESULT OwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
+STATIC MRESULT OwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
 
@@ -1830,7 +1830,7 @@ static MRESULT OwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *@@changed V0.9.19 (2002-04-02) [umoeller]: fixed crash/PM hang with dragover from other processes
  */
 
-static MRESULT OwgtDragover(HWND hwnd, MPARAM mp1, MPARAM mp2)
+STATIC MRESULT OwgtDragover(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
     PDRAGINFO   pdrgInfo = (PDRAGINFO)mp1;
     // default return values
@@ -1909,7 +1909,7 @@ static MRESULT OwgtDragover(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *@@added V0.9.13 (2001-06-19) [umoeller]
  */
 
-static VOID OwgtDragLeave(HWND hwnd)
+STATIC VOID OwgtDragLeave(HWND hwnd)
 {
     PXCENTERWIDGET pWidget;
     POBJBUTTONPRIVATE pPrivate;
@@ -1946,7 +1946,7 @@ static VOID OwgtDragLeave(HWND hwnd)
  *@@changed V0.9.14 (2001-08-05) [lafaix]: refuses move/default drops for DRM_XCENTERWIDGET
  */
 
-static VOID OwgtDrop(HWND hwnd, MPARAM mp1, MPARAM mp2)
+STATIC VOID OwgtDrop(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
     PDRAGINFO   pdrgInfo = (PDRAGINFO)mp1;
 
@@ -2014,7 +2014,7 @@ static VOID OwgtDrop(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *@@added V0.9.12 (2001-05-24) [umoeller]
  */
 
-static VOID OwgtDestroy(HWND hwnd)
+STATIC VOID OwgtDestroy(HWND hwnd)
 {
     PXCENTERWIDGET pWidget;
     POBJBUTTONPRIVATE pPrivate;

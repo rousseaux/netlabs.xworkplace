@@ -143,7 +143,7 @@
 // each group, set the TABLE_INHERIT_SIZE table flag to make the
 // group as wide as the main table.
 
-static const CONTROLDEF
+STATIC const CONTROLDEF
     TitleGroup = LOADDEF_GROUP(ID_XSDI_ICON_TITLE_TEXT, SZL_AUTOSIZE),
     TitleEF = CONTROLDEF_MLE(
                             NULL,
@@ -217,12 +217,12 @@ static const CONTROLDEF
                             SZL_AUTOSIZE,
                             STD_BUTTON_HEIGHT);
 
-static const DLGHITEM dlgObjIconFront[] =
+STATIC const DLGHITEM dlgObjIconFront[] =
     {
         START_TABLE,            // root table, required
     };
 
-static const DLGHITEM dlgObjIconTitle[] =
+STATIC const DLGHITEM dlgObjIconTitle[] =
     {
             // START_ROW(ROW_VALIGN_TOP),       // row 1 in the root table, required
             START_ROW(ROW_VALIGN_CENTER),
@@ -233,7 +233,7 @@ static const DLGHITEM dlgObjIconTitle[] =
                 END_TABLE,
     };
 
-static const DLGHITEM dlgObjIconIcon[] =
+STATIC const DLGHITEM dlgObjIconIcon[] =
     {
             START_ROW(ROW_VALIGN_CENTER),
                 START_GROUP_TABLE_EXT(&IconGroup, TABLE_INHERIT_SIZE),
@@ -251,7 +251,7 @@ static const DLGHITEM dlgObjIconIcon[] =
                 END_TABLE,
     };
 
-static const DLGHITEM dlgObjIconExtrasFront[] =
+STATIC const DLGHITEM dlgObjIconExtrasFront[] =
     {
             START_ROW(ROW_VALIGN_CENTER),
                 START_GROUP_TABLE_EXT(&ExtrasGroup, TABLE_INHERIT_SIZE),
@@ -259,7 +259,7 @@ static const DLGHITEM dlgObjIconExtrasFront[] =
                     START_ROW(0)
     };
 
-static const DLGHITEM dlgObjIconHotkey[] =
+STATIC const DLGHITEM dlgObjIconHotkey[] =
     {
                         START_ROW(ROW_VALIGN_CENTER),
                             CONTROL_DEF(&HotkeyText),
@@ -269,28 +269,28 @@ static const DLGHITEM dlgObjIconHotkey[] =
                         START_ROW(ROW_VALIGN_CENTER)
     };
 
-static const DLGHITEM dlgObjIconTemplate[] =
+STATIC const DLGHITEM dlgObjIconTemplate[] =
     {
                             CONTROL_DEF(&TemplateCB)
     };
 
-static const DLGHITEM dlgObjIconLockedInPlace[] =
+STATIC const DLGHITEM dlgObjIconLockedInPlace[] =
     {
                             CONTROL_DEF(&LockPositionCB)
     };
 
-static const DLGHITEM dlgObjIconExtrasTail[] =
+STATIC const DLGHITEM dlgObjIconExtrasTail[] =
     {
                 END_TABLE
     };
 
-static const DLGHITEM dlgObjIconDetails[] =
+STATIC const DLGHITEM dlgObjIconDetails[] =
     {
             START_ROW(0),
                 CONTROL_DEF(&DetailsButton)
     };
 
-static const DLGHITEM dlgObjIconTail[] =
+STATIC const DLGHITEM dlgObjIconTail[] =
     {
             START_ROW(0),
                 CONTROL_DEF(&G_UndoButton),         // common.c
@@ -477,7 +477,7 @@ typedef struct _OBJICONPAGEDATA
  *@@added V0.9.16 (2001-10-15) [umoeller]
  */
 
-static VOID PaintIcon(POBJICONPAGEDATA pData,
+STATIC VOID PaintIcon(POBJICONPAGEDATA pData,
                       HWND hwndStatic,
                       HPS hps)
 {
@@ -508,7 +508,7 @@ static VOID PaintIcon(POBJICONPAGEDATA pData,
  *@@added V0.9.16 (2001-10-15) [umoeller]
  */
 
-static VOID RemoveTargetEmphasis(POBJICONPAGEDATA pData,
+STATIC VOID RemoveTargetEmphasis(POBJICONPAGEDATA pData,
                                  HWND hwndStatic)
 {
     HPS hps = DrgGetPS(hwndStatic);
@@ -522,7 +522,7 @@ static VOID RemoveTargetEmphasis(POBJICONPAGEDATA pData,
  *@@added V0.9.16 (2001-10-19) [umoeller]
  */
 
-static VOID ReportError(PNOTEBOOKPAGE pnbp,
+STATIC VOID ReportError(PNOTEBOOKPAGE pnbp,
                         APIRET arc,
                         PCSZ pcszContext)
 {
@@ -544,7 +544,7 @@ static VOID ReportError(PNOTEBOOKPAGE pnbp,
  *@@added V0.9.16 (2001-10-19) [umoeller]
  */
 
-static VOID EditIcon(POBJICONPAGEDATA pData)
+STATIC VOID EditIcon(POBJICONPAGEDATA pData)
 {
     APIRET arc;
 
@@ -672,7 +672,7 @@ static VOID EditIcon(POBJICONPAGEDATA pData)
  *@@added V0.9.16 (2001-10-15) [umoeller]
  */
 
-static MRESULT EXPENTRY fnwpSubclassedIconStatic(HWND hwndStatic, ULONG msg, MPARAM mp1, MPARAM mp2)
+STATIC MRESULT EXPENTRY fnwpSubclassedIconStatic(HWND hwndStatic, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     POBJICONPAGEDATA  pData = (POBJICONPAGEDATA)WinQueryWindowPtr(hwndStatic, QWL_USER);
     MRESULT         mrc = FALSE;
@@ -1126,7 +1126,7 @@ VOID XWPENTRY icoIcon1InitPage(PNOTEBOOKPAGE pnbp,
  *@@added V0.9.16 (2001-12-08) [umoeller]
  */
 
-static MRESULT HandleENHotkey(POBJICONPAGEDATA pData,
+STATIC MRESULT HandleENHotkey(POBJICONPAGEDATA pData,
                               ULONG ulExtra)
 {
     PNOTEBOOKPAGE   pnbp = pData->pnbp;

@@ -149,9 +149,9 @@ typedef struct _CDPLAYWINDATA
  *
  ********************************************************************/
 
-static BOOL     G_fCDPlayerClientRegistered = FALSE;
+STATIC BOOL     G_fCDPlayerClientRegistered = FALSE;
 
-static const ULONG G_aulButtonIDs[] =
+STATIC const ULONG G_aulButtonIDs[] =
     {
         ID_ICON_CDPREV,
         ID_ICON_CDPLAY,
@@ -195,7 +195,7 @@ typedef struct _FLATBUTTONDATA
  *      implementation for WM_CREATE in fnwpFlatButton.
  */
 
-static MRESULT ButtonCreate(HWND hwnd)
+STATIC MRESULT ButtonCreate(HWND hwnd)
 {
     MRESULT mrc = (MPARAM)FALSE;
 
@@ -227,7 +227,7 @@ static MRESULT ButtonCreate(HWND hwnd)
  *
  */
 
-static VOID ButtonPaint2(PFLATBUTTONDATA pfbd,
+STATIC VOID ButtonPaint2(PFLATBUTTONDATA pfbd,
                          HPS hps)
 {
     RECTL       rclButton,
@@ -323,7 +323,7 @@ static VOID ButtonPaint2(PFLATBUTTONDATA pfbd,
  *      --  2: draw button depressed.
  */
 
-static VOID ButtonPaint(HWND hwnd)
+STATIC VOID ButtonPaint(HWND hwnd)
 {
     PFLATBUTTONDATA pfbd = (PFLATBUTTONDATA)WinQueryWindowPtr(hwnd, QWL_USER);
 
@@ -341,7 +341,7 @@ static VOID ButtonPaint(HWND hwnd)
  *      implementation for WM_SETICON in fnwpFlatButton.
  */
 
-static VOID ButtonSetIcon(HWND hwnd, MPARAM mp1)
+STATIC VOID ButtonSetIcon(HWND hwnd, MPARAM mp1)
 {
     PFLATBUTTONDATA pfbd = (PFLATBUTTONDATA)WinQueryWindowPtr(hwnd, QWL_USER);
     if (pfbd)
@@ -356,7 +356,7 @@ static VOID ButtonSetIcon(HWND hwnd, MPARAM mp1)
  *      implementation for WM_PRESPARAMCHANGED.
  */
 
-static VOID ButtonPresParamChanged(HWND hwnd, MPARAM mp1)
+STATIC VOID ButtonPresParamChanged(HWND hwnd, MPARAM mp1)
 {
     PFLATBUTTONDATA pfbd = (PFLATBUTTONDATA)WinQueryWindowPtr(hwnd, QWL_USER);
     if (pfbd)
@@ -390,7 +390,7 @@ static VOID ButtonPresParamChanged(HWND hwnd, MPARAM mp1)
  *      implementation for WM_MOUSEMOVE in fnwpFlatButton.
  */
 
-static MRESULT ButtonMouseMove(HWND hwnd, MPARAM mp1)
+STATIC MRESULT ButtonMouseMove(HWND hwnd, MPARAM mp1)
 {
     PFLATBUTTONDATA  pfbd = (PFLATBUTTONDATA)WinQueryWindowPtr(hwnd, QWL_USER);
 
@@ -417,7 +417,7 @@ static MRESULT ButtonMouseMove(HWND hwnd, MPARAM mp1)
  *      implementation for WM_MOUSELEAVE in fnwpFlatButton.
  */
 
-static MRESULT ButtonMouseLeave(HWND hwnd)
+STATIC MRESULT ButtonMouseLeave(HWND hwnd)
 {
     PFLATBUTTONDATA  pfbd = (PFLATBUTTONDATA)WinQueryWindowPtr(hwnd, QWL_USER);
 
@@ -442,7 +442,7 @@ static MRESULT ButtonMouseLeave(HWND hwnd)
  *      implementation for BM_CLICK in fnwpFlatButton.
  */
 
-static MRESULT ButtonClick(HWND hwnd,
+STATIC MRESULT ButtonClick(HWND hwnd,
                            MPARAM mp1)     // if FALSE, downclick; if TRUE, upclick
 {
     PFLATBUTTONDATA  pfbd = (PFLATBUTTONDATA)WinQueryWindowPtr(hwnd, QWL_USER);
@@ -486,7 +486,7 @@ static MRESULT ButtonClick(HWND hwnd,
  *      implementation for WM_DESTROY in fnwpFlatButton.
  */
 
-static VOID ButtonDestroy(HWND hwnd)
+STATIC VOID ButtonDestroy(HWND hwnd)
 {
     PFLATBUTTONDATA pfbd = (PFLATBUTTONDATA)WinQueryWindowPtr(hwnd, QWL_USER);
     if (pfbd)
@@ -501,7 +501,7 @@ static VOID ButtonDestroy(HWND hwnd)
  *      window proc for the "flat button" window class.
  */
 
-static MRESULT EXPENTRY fnwpFlatButton(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
+STATIC MRESULT EXPENTRY fnwpFlatButton(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
 
@@ -579,7 +579,7 @@ static MRESULT EXPENTRY fnwpFlatButton(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
  *
  */
 
-static BOOL RegisterFlatButtonClass(HAB hab)
+STATIC BOOL RegisterFlatButtonClass(HAB hab)
 {
     return (WinRegisterClass(hab,
                              WC_FLATBUTTON,
@@ -599,7 +599,7 @@ static BOOL RegisterFlatButtonClass(HAB hab)
  *      implementation for WM_CREATE.
  */
 
-static MRESULT CDCreate(HWND hwnd,
+STATIC MRESULT CDCreate(HWND hwnd,
                         MPARAM mp1)
 {
     MRESULT         mrc = (MRESULT)FALSE;
@@ -681,7 +681,7 @@ static MRESULT CDCreate(HWND hwnd,
  *      implementation for WM_ADJUSTWINDOWPOS.
  */
 
-static VOID CDAdjustWindowPos(HWND hwnd,
+STATIC VOID CDAdjustWindowPos(HWND hwnd,
                               PSWP pswp)
 {
     PCDPLAYWINDATA  pWinData = (PCDPLAYWINDATA)WinQueryWindowPtr(hwnd, QWL_USER);
@@ -696,7 +696,7 @@ static VOID CDAdjustWindowPos(HWND hwnd,
  *
  */
 
-static VOID PaintTrack(PCDPLAYWINDATA pWinData,
+STATIC VOID PaintTrack(PCDPLAYWINDATA pWinData,
                        HPS hps,
                        BOOL fDrawFrames)
 {
@@ -739,7 +739,7 @@ static VOID PaintTrack(PCDPLAYWINDATA pWinData,
  *
  */
 
-static VOID PaintTime(PCDPLAYWINDATA pWinData,
+STATIC VOID PaintTime(PCDPLAYWINDATA pWinData,
                       HPS hps,
                       BOOL fDrawFrames)
 {
@@ -784,7 +784,7 @@ static VOID PaintTime(PCDPLAYWINDATA pWinData,
  *      implementation for WM_PAINT.
  */
 
-static VOID CDPaint(HWND hwnd)
+STATIC VOID CDPaint(HWND hwnd)
 {
     PCDPLAYWINDATA  pWinData = (PCDPLAYWINDATA)WinQueryWindowPtr(hwnd, QWL_USER);
     XMMCDPlayerData *somThis = XMMCDPlayerGetData(pWinData->somSelf);
@@ -836,7 +836,7 @@ static VOID CDPaint(HWND hwnd)
  *      implementation for WM_CONTEXTMENU.
  */
 
-static MRESULT CDContextMenu(HWND hwnd, MPARAM mp1)
+STATIC MRESULT CDContextMenu(HWND hwnd, MPARAM mp1)
 {
     PCDPLAYWINDATA  pWinData = (PCDPLAYWINDATA)WinQueryWindowPtr(hwnd, QWL_USER);
     XMMCDPlayerData *somThis = XMMCDPlayerGetData(pWinData->somSelf);
@@ -871,7 +871,7 @@ static MRESULT CDContextMenu(HWND hwnd, MPARAM mp1)
  *      implementation for WM_COMMAND.
  */
 
-static VOID CDCommand(HWND hwnd, MPARAM mp1)
+STATIC VOID CDCommand(HWND hwnd, MPARAM mp1)
 {
     PCDPLAYWINDATA  pWinData = (PCDPLAYWINDATA)WinQueryWindowPtr(hwnd, QWL_USER);
 
@@ -916,7 +916,7 @@ static VOID CDCommand(HWND hwnd, MPARAM mp1)
  *      implementation for WM_PRESPARAMCHANGED.
  */
 
-static VOID CDPresParamChanged(HWND hwnd, MPARAM mp1)
+STATIC VOID CDPresParamChanged(HWND hwnd, MPARAM mp1)
 {
     PCDPLAYWINDATA pWinData = (PCDPLAYWINDATA)WinQueryWindowPtr(hwnd, QWL_USER);
     XMMCDPlayerData *somThis = XMMCDPlayerGetData(pWinData->somSelf);
@@ -986,7 +986,7 @@ static VOID CDPresParamChanged(HWND hwnd, MPARAM mp1)
  *      implementation for MM_MCIPOSITIONCHANGE.
  */
 
-static VOID CDPositionUpdate(HWND hwnd, MPARAM mp1, MPARAM mp2)
+STATIC VOID CDPositionUpdate(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
     PCDPLAYWINDATA  pWinData = (PCDPLAYWINDATA)WinQueryWindowPtr(hwnd, QWL_USER);
 
@@ -1020,7 +1020,7 @@ static VOID CDPositionUpdate(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *      implementation for WM_CLOSE.
  */
 
-static VOID CDClose(HWND hwnd)
+STATIC VOID CDClose(HWND hwnd)
 {
     PCDPLAYWINDATA  pWinData = (PCDPLAYWINDATA)WinQueryWindowPtr(hwnd, QWL_USER);
     CHAR szIniKey[100];
@@ -1041,7 +1041,7 @@ static VOID CDClose(HWND hwnd)
  *      window proc for the CD player client.
  */
 
-static MRESULT EXPENTRY fnwpCDPlayerClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
+STATIC MRESULT EXPENTRY fnwpCDPlayerClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
 
@@ -1136,7 +1136,7 @@ static MRESULT EXPENTRY fnwpCDPlayerClient(HWND hwnd, ULONG msg, MPARAM mp1, MPA
  *      the frame with this.
  */
 
-static MRESULT EXPENTRY fnwpCDPlayerFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
+STATIC MRESULT EXPENTRY fnwpCDPlayerFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
 

@@ -369,7 +369,7 @@ VOID ctrpInitData(XCenter *somSelf)
                      somThis);
 }
 
-static VOID AppendWidgetSettings(PXSTRING pstrSetup,
+STATIC VOID AppendWidgetSettings(PXSTRING pstrSetup,
                                  PLINKLIST pllSettings);
 
 /*
@@ -481,7 +481,7 @@ VOID ctrpAppendWidgetSettings(PXSTRING pstrSetup,
  *@@added V0.9.19 (2002-04-25) [umoeller]
  */
 
-static VOID AppendWidgetSettings(PXSTRING pstrSetup,
+STATIC VOID AppendWidgetSettings(PXSTRING pstrSetup,
                                  PLINKLIST pllSettings)
 {
     BOOL    fFirstWidget = TRUE;
@@ -580,7 +580,7 @@ BOOL ctrpQuerySetup(XCenter *somSelf,
  *@@added V0.9.19 (2002-04-25) [umoeller]
  */
 
-static BOOL CreateWidgetFromString(XCenter *somSelf,
+STATIC BOOL CreateWidgetFromString(XCenter *somSelf,
                                    PCSZ pcszClass,
                                    PCSZ pcszSetup,
                                    ULONG ulTrayWidgetIndex,
@@ -620,7 +620,7 @@ static BOOL CreateWidgetFromString(XCenter *somSelf,
     return TRUE;
 }
 
-static BOOL ParseWidgetsString(XCenter *somSelf,
+STATIC BOOL ParseWidgetsString(XCenter *somSelf,
                                PSZ pszWidgets,      // in: WIDGETS= data only
                                ULONG ulTrayWidgetIndex,
                                ULONG ulTrayIndex);
@@ -635,7 +635,7 @@ static BOOL ParseWidgetsString(XCenter *somSelf,
  *@@added V0.9.19 (2002-04-25) [umoeller]
  */
 
-static BOOL ParseTraysList(XCenter *somSelf,
+STATIC BOOL ParseTraysList(XCenter *somSelf,
                            PCSZ pcszTraysList,
                            ULONG ulTrayWidgetIndex)
 {
@@ -737,7 +737,7 @@ static BOOL ParseTraysList(XCenter *somSelf,
  *@@added V0.9.19 (2002-04-25) [umoeller]
  */
 
-static BOOL ParseWidgetsString(XCenter *somSelf,
+STATIC BOOL ParseWidgetsString(XCenter *somSelf,
                                PSZ pszWidgets,      // in: data from WIDGETS= only
                                ULONG ulTrayWidgetIndex,
                                ULONG ulTrayIndex)
@@ -969,7 +969,7 @@ static BOOL ParseWidgetsString(XCenter *somSelf,
  *@@added V0.9.19 (2002-04-25) [umoeller]
  */
 
-static ULONG AppendObjects(PXSTRING pstr,
+STATIC ULONG AppendObjects(PXSTRING pstr,
                            PCSZ *apcsz,
                            ULONG c)
 {
@@ -1013,7 +1013,7 @@ static ULONG AppendObjects(PXSTRING pstr,
  *@@added V0.9.20 (2002-07-19) [umoeller]
  */
 
-static BOOL CreateDefaultWidgets(XCenter *somSelf)
+STATIC BOOL CreateDefaultWidgets(XCenter *somSelf)
 {
     BOOL brc;
 

@@ -56,7 +56,7 @@
 
 #pragma hdrstop
 
-PFNWP   G_pfnwpStaticOriginal = NULL;
+PFNWP   G_pfnwpMoveStaticOrig = NULL;
 
 /*
  *@@ MoveCurrentDesktop:
@@ -417,7 +417,7 @@ MRESULT EXPENTRY fnwpMoveThread(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
             break;
 
             default:
-                mrc = G_pfnwpStaticOriginal(hwndObject, msg, mp1, mp2);
+                mrc = G_pfnwpMoveStaticOrig(hwndObject, msg, mp1, mp2);
 
         } // end switch (msg)
     }
@@ -463,7 +463,7 @@ VOID _Optlink fntMoveThread(PTHREADINFO pti)
                                                                  0,
                                                                  NULL,
                                                                  NULL))
-         && (G_pfnwpStaticOriginal = WinSubclassWindow(G_pHookData->hwndPagerMoveThread,
+         && (G_pfnwpMoveStaticOrig = WinSubclassWindow(G_pHookData->hwndPagerMoveThread,
                                                        fnwpMoveThread))
        )
     {

@@ -103,7 +103,7 @@
  */
 
 // XFolder folder hotkeys static array
-static XFLDHOTKEY     G_FolderHotkeys[FLDRHOTKEYCOUNT];
+STATIC XFLDHOTKEY     G_FolderHotkeys[FLDRHOTKEYCOUNT];
 
 /* ******************************************************************
  *
@@ -596,7 +596,7 @@ FLDRHOTKEYDESC G_aDescriptions[FLDRHOTKEYCOUNT] =
  *      a new accelerator can be created.
  */
 
-static PXFLDHOTKEY FindHotkeyFromLBSel(HWND hwndDlg,
+STATIC PXFLDHOTKEY FindHotkeyFromLBSel(HWND hwndDlg,
                                        USHORT *pusCommand)     // out: menu command
 {
     SHORT               i, i2 = 0;
@@ -669,7 +669,7 @@ static PXFLDHOTKEY FindHotkeyFromLBSel(HWND hwndDlg,
  *@@changed V0.9.19 (2002-04-17) [umoeller]: adjusted for new menu
  */
 
-static VOID AddHotkeyToMenuItem(HWND hwndMenu,
+STATIC VOID AddHotkeyToMenuItem(HWND hwndMenu,
                                 USHORT usPostCommand2Find,
                                 USHORT usMenuCommand)
 {
@@ -866,7 +866,7 @@ typedef struct _SUBCLHOTKEYEF
  *@@changed V0.9.9 (2001-04-04) [umoeller]: added "set" support
  */
 
-static MRESULT EXPENTRY fnwpFolderHotkeyEntryField(HWND hwndEdit, ULONG msg, MPARAM mp1, MPARAM mp2)
+STATIC MRESULT EXPENTRY fnwpFolderHotkeyEntryField(HWND hwndEdit, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     // get original wnd proc; this was stored in the
     // window words in xfwps.c
@@ -969,7 +969,7 @@ static MRESULT EXPENTRY fnwpFolderHotkeyEntryField(HWND hwndEdit, ULONG msg, MPA
     return mrc;
 }
 
-static const XWPSETTING G_HotkeysBackup[] =
+STATIC const XWPSETTING G_HotkeysBackup[] =
     {
         sfFolderHotkeysDefault,
         sfShowHotkeysInMenus

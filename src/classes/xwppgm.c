@@ -109,7 +109,7 @@
  *
  ********************************************************************/
 
-static PCSZ     G_pcszWPProgramOrig = "WPProgramRef";
+STATIC PCSZ     G_pcszWPProgramOrig = "WPProgramRef";
 
 /* ******************************************************************
  *
@@ -119,7 +119,7 @@ static PCSZ     G_pcszWPProgramOrig = "WPProgramRef";
 
 #ifdef _PMPRINTF_
 
-static void DumpMemoryBlock(PBYTE pb,       // in: start address
+STATIC void DumpMemoryBlock(PBYTE pb,       // in: start address
                      ULONG ulSize,   // in: size of block
                      ULONG ulIndent) // in: how many spaces to put
                                      //     before each output line
@@ -586,7 +586,7 @@ SOM_Scope HPOINTER  SOMLINK xpg_wpQueryIcon(XWPProgram *somSelf)
  *@@changed V0.9.20 (2002-07-03) [umoeller]: fixed bad icons for "*" command prompts
  */
 
-static BOOL ProgramIconHandler(XWPProgram *somSelf,
+STATIC BOOL ProgramIconHandler(XWPProgram *somSelf,
                                PIBMPROGRAMDATA pData,
                                XWPProgramData *somThis,
                                HPOINTER *phptr,

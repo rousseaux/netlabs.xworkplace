@@ -1249,7 +1249,7 @@ BOOL fdrUpdateAllFrameWindows(WPFolder *somSelf,
  *@@added V0.9.21 (2002-08-26) [umoeller]
  */
 
-static VOID _Optlink fntFdrRefresh(PTHREADINFO ptiMyself)
+STATIC VOID _Optlink fntFdrRefresh(PTHREADINFO ptiMyself)
 {
     TRY_LOUD(excpt1)
     {
@@ -1536,7 +1536,7 @@ BOOL fdrSnapToGrid(WPFolder *somSelf,
  *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
  */
 
-static PICONPOS GetICONPOS(PORDEREDLISTITEM poli,
+STATIC PICONPOS GetICONPOS(PORDEREDLISTITEM poli,
                            PSORTBYICONPOS psip)
 {
     PICONPOS                    pip;
@@ -1676,7 +1676,7 @@ VOID AddEntryToDropDown(HWND hwndDropDown,
  *@@added V0.9.19 (2002-04-17) [umoeller]
  */
 
-static VOID DoSelect(HWND hwndDlg,
+STATIC VOID DoSelect(HWND hwndDlg,
                      BOOL fSelect,
                      BOOL fRegExp)
 {
@@ -1783,7 +1783,7 @@ static VOID DoSelect(HWND hwndDlg,
  *@@added V0.9.19 (2002-06-18) [umoeller]
  */
 
-static VOID FillDropDownFromIni(HWND hwndDropDown,
+STATIC VOID FillDropDownFromIni(HWND hwndDropDown,
                                 PCSZ pcszIniKey) // in: XWorkplace ini key
 {
     PSZ     pszLast10 = NULL;
@@ -1873,7 +1873,7 @@ VOID WriteDropDownToIni(HWND hwndDropDown,
  *@@changed V0.9.19 (2002-04-17) [umoeller]: added regexp; fixed entry field length
  */
 
-static MRESULT EXPENTRY fnwpSelectSome(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
+STATIC MRESULT EXPENTRY fnwpSelectSome(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
     BOOL    fWriteAndClose = FALSE;
@@ -2018,7 +2018,7 @@ static MRESULT EXPENTRY fnwpSelectSome(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
 
 #define BUTTON_WIDTH        75
 
-static const CONTROLDEF
+STATIC const CONTROLDEF
     SomeIntroTxt = CONTROLDEF_TEXT_WORDBREAK(
                             LOAD_STRING,
                             ID_XFDI_SOME_INTROTXT,
@@ -2060,7 +2060,7 @@ static const CONTROLDEF
                             BUTTON_WIDTH,
                             STD_BUTTON_HEIGHT);
 
-static const DLGHITEM G_dlgSelectSome[] =
+STATIC const DLGHITEM G_dlgSelectSome[] =
     {
         START_TABLE,
             START_ROW(0),
@@ -2093,7 +2093,7 @@ static const DLGHITEM G_dlgSelectSome[] =
  *@@added V0.9.21 (2002-08-31) [umoeller]
  */
 
-static BOOL IsNotTreeView(HWND hwndFrame)
+STATIC BOOL IsNotTreeView(HWND hwndFrame)
 {
     HWND    hwndCnr;
     BOOL    brc = FALSE;
@@ -2171,7 +2171,7 @@ VOID fdrShowSelectSome(HWND hwndFrame)
  *
  ********************************************************************/
 
-static const CONTROLDEF
+STATIC const CONTROLDEF
     BatchIntroTxt = CONTROLDEF_TEXT_WORDBREAK(
                             LOAD_STRING,
                             ID_XFDI_BATCH_INTROTXT,
@@ -2200,7 +2200,7 @@ static const CONTROLDEF
                             BUTTON_WIDTH,
                             STD_BUTTON_HEIGHT);
 
-static const DLGHITEM G_dlgBatchRename[] =
+STATIC const DLGHITEM G_dlgBatchRename[] =
     {
         START_TABLE,
             START_ROW(0),
@@ -2649,7 +2649,7 @@ VOID DoRename(HWND hwndDlg)
  *@@changed V0.9.20 (2002-07-03) [umoeller]: "start renaming" button wasn't enabled properly, fixed
  */
 
-static MRESULT EXPENTRY fnwpBatchRename(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
+STATIC MRESULT EXPENTRY fnwpBatchRename(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
     BOOL    fWriteAndClose = FALSE;
@@ -2878,7 +2878,7 @@ ULONG PasteQuerySelectedFormat(PPASTEDLGDATA pData)
  *@@added V0.9.20 (2002-08-08) [umoeller]
  */
 
-static BOOL PasteFillClassesForFormat(PPASTEDLGDATA pData)
+STATIC BOOL PasteFillClassesForFormat(PPASTEDLGDATA pData)
 {
     BOOL    brc = FALSE;
     HATOMTBL hat;
@@ -2956,7 +2956,7 @@ static BOOL PasteFillClassesForFormat(PPASTEDLGDATA pData)
  *@@added V0.9.20 (2002-08-08) [umoeller]
  */
 
-static BOOL PasteFillControls(PPASTEDLGDATA pData)
+STATIC BOOL PasteFillControls(PPASTEDLGDATA pData)
 {
     BOOL    brc = FALSE,
             fClip = TRUE;
@@ -3058,7 +3058,7 @@ static BOOL PasteFillControls(PPASTEDLGDATA pData)
     return brc;
 }
 
-PFNWP G_pfnwpStaticOrig = NULL;
+PFNWP G_pfnwpPreviewStaticOrig = NULL;
 
 /*
  *@@ fnwpPreviewer:
@@ -3069,7 +3069,7 @@ PFNWP G_pfnwpStaticOrig = NULL;
  *@@added V0.9.20 (2002-08-10) [umoeller]
  */
 
-static MRESULT EXPENTRY fnwpPreviewer(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
+STATIC MRESULT EXPENTRY fnwpPreviewer(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
 
@@ -3115,7 +3115,7 @@ static MRESULT EXPENTRY fnwpPreviewer(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM m
         break;
 
         default:
-            mrc = G_pfnwpStaticOrig(hwnd, msg, mp1, mp2);
+            mrc = G_pfnwpPreviewStaticOrig(hwnd, msg, mp1, mp2);
     }
 
     return mrc;
@@ -3144,7 +3144,7 @@ static MRESULT EXPENTRY fnwpPreviewer(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM m
  *@@added V0.9.20 (2002-08-08) [umoeller]
  */
 
-static MRESULT EXPENTRY fnwpPaste(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
+STATIC MRESULT EXPENTRY fnwpPaste(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
 
@@ -3170,8 +3170,8 @@ static MRESULT EXPENTRY fnwpPaste(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp
             pData->hwndClass = WinWindowFromID(hwndDlg, ID_XFDI_PASTE_CLASS_DROP);
 
             WinSetWindowPtr(pData->hwndPreview, QWL_USER, pData);
-            G_pfnwpStaticOrig = WinSubclassWindow(pData->hwndPreview,
-                                                  fnwpPreviewer);
+            G_pfnwpPreviewStaticOrig = WinSubclassWindow(pData->hwndPreview,
+                                                         fnwpPreviewer);
 
             winhSetPresColor(pData->hwndPreview,
                              PP_BACKGROUNDCOLOR,
@@ -3274,7 +3274,7 @@ static MRESULT EXPENTRY fnwpPaste(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp
 
 #define CX_RIGHT        120
 
-static const CONTROLDEF
+STATIC const CONTROLDEF
     PastePreviewTxt = LOADDEF_TEXT(ID_XFDI_PASTE_PREVIEW_TXT),
     PastePreviewPane = CONTROLDEF_TEXT_WORDBREAK_CY("", ID_XFDI_PASTE_PREVIEW_PANE, CX_RIGHT, 30),
     PasteObjTitleTxt = LOADDEF_TEXT(ID_XFDI_PASTE_OBJTITLE_TXT),
@@ -3284,7 +3284,7 @@ static const CONTROLDEF
     PasteClassTxt = LOADDEF_TEXT(ID_XFDI_PASTE_CLASS_TXT),
     PasteClassDrop = CONTROLDEF_DROPDOWNLIST(ID_XFDI_PASTE_CLASS_DROP, CX_RIGHT, 50);
 
-static const DLGHITEM G_dlgPaste[] =
+STATIC const DLGHITEM G_dlgPaste[] =
     {
         START_TABLE,
             START_ROW(0),
@@ -3327,7 +3327,7 @@ static const DLGHITEM G_dlgPaste[] =
  *@@added V0.9.20 (2002-08-08) [umoeller]
  */
 
-static WPDataFile* DoPaste(WPFolder *pFolder,
+STATIC WPDataFile* DoPaste(WPFolder *pFolder,
                            PSZ pszClass,               // in: WPS class to use for new file
                            PSZ pszFilename,            // in: filename for new file
                            ULONG cbFilename,           // in: filename buffer size (needed for _wpConfirmObjectTitle)

@@ -21,9 +21,35 @@
 
     /*************************************************************
      *
-     *   API wrappers
+     *   Common declarations
      *
      *************************************************************/
+
+    // STATIC is now used with V0.9.21 (2002-09-02) [umoeller]
+    // instead of "static" for static functions. Unfortunately
+    // I spent a lot of work on making functions static a while
+    // ago to reduce the stress on the linker and avoid name
+    // conflicts, but only now discovered that static functions
+    // do not appear in the map files and therefore not in the
+    // sym files shipped with XWP either, which makes my trap
+    // logs a lot less useful.
+
+    // To be able to switch back to the "real" static functions
+    // later, I now define STATIC to do nothing, but this could
+    // be switched back eventually.
+
+    #define STATIC
+
+    // XWPENTRY defines the standard linkage for the
+    // XWorkplace helpers.
+
+    // VAC:
+    #if defined(__IBMC__) || defined(__IBMCPP__)
+        #define XWPENTRY _Optlink
+    #else
+        // EMX or Watcom:
+        #define XWPENTRY
+    #endif
 
     // All these have been added with V0.9.12 (2001-05-18) [umoeller].
     // If you run into trouble with these in one of your code files,
@@ -358,23 +384,6 @@
 
         // debug Xtimers
             // #define DEBUG_XTIMERS
-    #endif
-
-    /*************************************************************
-     *
-     *   Common helpers declarations
-     *
-     *************************************************************/
-
-    // XWPENTRY defines the standard linkage for the
-    // XWorkplace helpers.
-
-    // VAC:
-    #if defined(__IBMC__) || defined(__IBMCPP__)
-        #define XWPENTRY _Optlink
-    #else
-        // EMX or Watcom:
-        #define XWPENTRY
     #endif
 
     /********************************************************************

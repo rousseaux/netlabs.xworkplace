@@ -146,11 +146,11 @@
  *
  ********************************************************************/
 
-static CHAR    G_szXFldObjectStatusBarMnemonics[CCHMAXMNEMONICS] = "";
-static CHAR    G_szWPProgramStatusBarMnemonics[CCHMAXMNEMONICS] = "";
-static CHAR    G_szWPDiskStatusBarMnemonics[CCHMAXMNEMONICS] = "";
-static CHAR    G_szWPFileSystemStatusBarMnemonics[CCHMAXMNEMONICS] = "";
-static CHAR    G_szWPUrlStatusBarMnemonics[CCHMAXMNEMONICS] = "";
+STATIC CHAR    G_szXFldObjectStatusBarMnemonics[CCHMAXMNEMONICS] = "";
+STATIC CHAR    G_szWPProgramStatusBarMnemonics[CCHMAXMNEMONICS] = "";
+STATIC CHAR    G_szWPDiskStatusBarMnemonics[CCHMAXMNEMONICS] = "";
+STATIC CHAR    G_szWPFileSystemStatusBarMnemonics[CCHMAXMNEMONICS] = "";
+STATIC CHAR    G_szWPUrlStatusBarMnemonics[CCHMAXMNEMONICS] = "";
 
 // WPUrl class object; to preserve compatibility with Warp 3,
 // where this class does not exist, we call the SOM kernel
@@ -158,9 +158,9 @@ static CHAR    G_szWPUrlStatusBarMnemonics[CCHMAXMNEMONICS] = "";
 // The initial value of -1 means that we have not queried
 // this class yet. After the first query, this either points
 // to the class object or is NULL if the class does not exist.
-static SOMClass    *G_WPUrl = (SOMClass*)-1;
+STATIC SOMClass    *G_WPUrl = (SOMClass*)-1;
 
-static MRESULT EXPENTRY fnwpStatusBar(HWND hwndBar, ULONG msg, MPARAM mp1, MPARAM mp2);
+STATIC MRESULT EXPENTRY fnwpStatusBar(HWND hwndBar, ULONG msg, MPARAM mp1, MPARAM mp2);
 
 /* ******************************************************************
  *
@@ -747,7 +747,7 @@ BOOL _Optlink stb_PostCallback(WPFolder *somSelf,
  *@@changed V0.9.19 (2002-04-17) [umoeller]: made this static
  */
 
-static VOID CallResolvedUpdateStatusBar(WPFolder *pFolder,
+STATIC VOID CallResolvedUpdateStatusBar(WPFolder *pFolder,
                                         HWND hwndStatusBar,
                                         HWND hwndCnr)
 {
@@ -852,7 +852,7 @@ VOID stbUpdate(WPFolder *pFolder)
  *@@changed V0.9.16 (2001-10-28) [umoeller]: fixed bad excpt handler cleanup
  */
 
-static VOID StatusTimer(HWND hwndBar,
+STATIC VOID StatusTimer(HWND hwndBar,
                         PSTATUSBARDATA psbd)
 {
     TRY_LOUD(excpt1)
@@ -943,7 +943,7 @@ static VOID StatusTimer(HWND hwndBar,
  *@@added V0.9.16 (2001-10-28) [umoeller]
  */
 
-static VOID StatusPaint(HWND hwndBar)
+STATIC VOID StatusPaint(HWND hwndBar)
 {
     // preparations:
     HPS     hps = WinBeginPaint(hwndBar, NULLHANDLE, NULL);
@@ -1137,7 +1137,7 @@ static VOID StatusPaint(HWND hwndBar)
  *@@added V0.9.16 (2001-10-28) [umoeller]
  */
 
-static VOID StatusPresParamChanged(HWND hwndBar,
+STATIC VOID StatusPresParamChanged(HWND hwndBar,
                                    PSTATUSBARDATA psbd,
                                    MPARAM mp1)
 {
@@ -1234,7 +1234,7 @@ static VOID StatusPresParamChanged(HWND hwndBar,
  *@@changed V0.9.1 (99-12-19) [umoeller]: finally fixed the context menu problems with MB2 right-click on status bar
  */
 
-static MRESULT EXPENTRY fnwpStatusBar(HWND hwndBar, ULONG msg, MPARAM mp1, MPARAM mp2)
+STATIC MRESULT EXPENTRY fnwpStatusBar(HWND hwndBar, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     PSTATUSBARDATA psbd = (PSTATUSBARDATA)WinQueryWindowPtr(hwndBar, QWL_USER);
     MRESULT        mrc = 0;
@@ -1521,7 +1521,7 @@ PSZ stbVar1024Double(PSZ pszTarget,
  *@@changed V0.9.16 (2001-10-28) [umoeller]: fixed SOM resource leak
  */
 
-static VOID ResolveWPUrl(VOID)
+STATIC VOID ResolveWPUrl(VOID)
 {
     if (G_WPUrl == (SOMClass*)-1)
     {
@@ -1861,7 +1861,7 @@ PSZ stbQueryClassMnemonics(SOMClass *pClassObject)    // in: class object of sel
  *@@added V0.9.11 (2001-04-22) [umoeller]
  */
 
-static ULONG GetDivisor(CHAR c,
+STATIC ULONG GetDivisor(CHAR c,
                         PULONG pcReplace)      // out: chars to replace (2 or 3)
 {
     *pcReplace = 3;
@@ -1909,7 +1909,7 @@ static ULONG GetDivisor(CHAR c,
  *@@added V0.9.11 (2001-04-22) [umoeller]
  */
 
-static VOID FormatDoubleValue(PSZ pszBuf,              // out: formatted string
+STATIC VOID FormatDoubleValue(PSZ pszBuf,              // out: formatted string
                               ULONG ulDivisor,         // in: divisor from GetDivisor()
                               double dbl,              // in: value to format
                               PCOUNTRYSETTINGS pcs)    // in: country settings for formatting
@@ -1967,7 +1967,7 @@ static VOID FormatDoubleValue(PSZ pszBuf,              // out: formatted string
  *@@changed V0.9.16 (2001-10-04) [umoeller]: stopped the disk A: clicking for remote disks
  */
 
-static BOOL CheckLogicalDrive(PULONG pulLogicalDrive,
+STATIC BOOL CheckLogicalDrive(PULONG pulLogicalDrive,
                               WPDisk *pDisk)
 {
     if (*pulLogicalDrive == -1)
@@ -2608,7 +2608,7 @@ ULONG stbTranslateSingleMnemonics(SOMClass *pObject,       // in: object
  *@@added V0.9.19 (2002-06-02) [umoeller]
  */
 
-static VOID ReplaceKeyWithDouble(XSTRING *pstrText, // in/out: status bar text
+STATIC VOID ReplaceKeyWithDouble(XSTRING *pstrText, // in/out: status bar text
                                  PCSZ pcszKey,      // in: two-character key to search for
                                  double dValue,     // in: value to replace three chars with
                                  PCOUNTRYSETTINGS pcs)  // in: country settings for formatting
@@ -3098,7 +3098,7 @@ typedef struct _STATUSBARSELECTCLASS
  *@@changed V0.9.0 [umoeller]: moved this func here from xfwps.c
  */
 
-static MRESULT EXPENTRY fncbWPSStatusBarReturnClassAttr(HWND hwndCnr,
+STATIC MRESULT EXPENTRY fncbWPSStatusBarReturnClassAttr(HWND hwndCnr,
                                                         ULONG ulscd,   // SELECTCLASSDATA struct
                                                         MPARAM mpwps,  // current WPSLISTITEM struct
                                                         MPARAM mpreccParent) // parent record core
@@ -3169,7 +3169,7 @@ static MRESULT EXPENTRY fncbWPSStatusBarReturnClassAttr(HWND hwndCnr,
  *@@changed V0.9.0 [umoeller]: moved this func here from xfwps.c
  */
 
-static MRESULT EXPENTRY fncbWPSStatusBarClassSelected(HWND hwndCnr,
+STATIC MRESULT EXPENTRY fncbWPSStatusBarClassSelected(HWND hwndCnr,
                                                       ULONG ulpsbsc,
                                                       MPARAM mpwps,
                                                       MPARAM mphwndInfo)
@@ -3208,7 +3208,7 @@ static MRESULT EXPENTRY fncbWPSStatusBarClassSelected(HWND hwndCnr,
 
 #endif
 
-static const CONTROLDEF
+STATIC const CONTROLDEF
     StatusEnable = LOADDEF_AUTOCHECKBOX(ID_XSDI_ENABLESTATUSBAR),
     VisibleInGroup = LOADDEF_GROUP(ID_XSDI_VISIBLEIN_GROUP, DEFAULT_TABLE_WIDTH),
     VisIconCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_SBFORICONVIEWS),
@@ -3220,7 +3220,7 @@ static const CONTROLDEF
     ButtonRadio = LOADDEF_NEXT_AUTORADIO(ID_XSDI_SBSTYLE_4RECT),
     MenuRadio = LOADDEF_NEXT_AUTORADIO(ID_XSDI_SBSTYLE_4MENU);
 
-static const DLGHITEM G_dlgStatusBar1[] =
+STATIC const DLGHITEM G_dlgStatusBar1[] =
     {
         START_TABLE,
             START_ROW(0),
@@ -3252,7 +3252,7 @@ static const DLGHITEM G_dlgStatusBar1[] =
         END_TABLE,
     };
 
-static const XWPSETTING G_StatusBar1Backup[] =
+STATIC const XWPSETTING G_StatusBar1Backup[] =
     {
         sfDefaultStatusBarVisibility,
         sflSBForViews,
@@ -3480,7 +3480,7 @@ MRESULT stbStatusBar1ItemChanged(PNOTEBOOKPAGE pnbp,
  *@@added V0.9.16 (2001-10-28) [umoeller]
  */
 
-static VOID RefreshClassObject(PSTATUSBARPAGEDATA psbpd)
+STATIC VOID RefreshClassObject(PSTATUSBARPAGEDATA psbpd)
 {
     somId somidClassSelected;
     if (somidClassSelected = somIdFromString(psbpd->szSBClassSelected))
@@ -3494,7 +3494,7 @@ static VOID RefreshClassObject(PSTATUSBARPAGEDATA psbpd)
     }
 }
 
-static const XWPSETTING G_StatusBar2Backup[] =
+STATIC const XWPSETTING G_StatusBar2Backup[] =
     {
         sflDereferenceShadows
     };
@@ -3646,7 +3646,7 @@ typedef struct _KEYARRAYITEM
     ULONG       ulDescription;          // string ID for description
 } KEYARRAYITEM, *PKEYARRAYITEM;
 
-static const KEYARRAYITEM
+STATIC const KEYARRAYITEM
     G_aFormatSubKeys[] =
     {
         1, "b", ID_XSSI_SBMNC_1,       // "in bytes"
@@ -3722,7 +3722,7 @@ static const KEYARRAYITEM
  *@@added V0.9.14 (2001-07-31) [umoeller]
  */
 
-static VOID InsertKeysIntoMenu(HWND hwndMenu,
+STATIC VOID InsertKeysIntoMenu(HWND hwndMenu,
                                const KEYARRAYITEM *paKeys,
                                ULONG cKeys,
                                BOOL fSeparatorBefore)
@@ -3796,7 +3796,7 @@ static VOID InsertKeysIntoMenu(HWND hwndMenu,
  *@@added V0.9.14 (2001-07-31) [umoeller]
  */
 
-static MRESULT CreateKeysMenu(PSTATUSBARPAGEDATA psbpd,
+STATIC MRESULT CreateKeysMenu(PSTATUSBARPAGEDATA psbpd,
                               ULONG ulItemID)
 {
     HPOINTER hptrOld = winhSetWaitPointer();

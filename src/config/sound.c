@@ -114,7 +114,7 @@
  *      Those constants are decl'd in common.h.
  */
 
-static ULONG aulAddtlSystemSounds[] =
+STATIC ULONG aulAddtlSystemSounds[] =
         {
             MMSOUND_XFLD_SHUTDOWN,
             MMSOUND_XFLD_RESTARTWPS,
@@ -301,7 +301,7 @@ BOOL sndInstallAddtlSounds(HAB hab,
  *      this manually afterwards (using SelectSoundScheme).
  */
 
-static VOID FillDropDownWithSchemes(HWND hwndDropDown)
+STATIC VOID FillDropDownWithSchemes(HWND hwndDropDown)
 {
     APIRET arc = NO_ERROR;
     PSZ pszSchemes = NULL;
@@ -336,7 +336,7 @@ static VOID FillDropDownWithSchemes(HWND hwndDropDown)
  *      the box's entry field to display "<none>".
  */
 
-static VOID SelectSoundScheme(PSOUNDPAGEDATA pspd,
+STATIC VOID SelectSoundScheme(PSOUNDPAGEDATA pspd,
                               SHORT sIndex)
 {
     winhSetLboxSelectedItem(pspd->hwndSchemesDropDown,
@@ -377,7 +377,7 @@ static VOID SelectSoundScheme(PSOUNDPAGEDATA pspd,
  *      current sound scheme to "none".
  */
 
-static VOID UpdateMMPMINI(PNOTEBOOKPAGE pnbp)
+STATIC VOID UpdateMMPMINI(PNOTEBOOKPAGE pnbp)
 {
     PSOUNDPAGEDATA pspd = (PSOUNDPAGEDATA)pnbp->pUser;
 
@@ -426,7 +426,7 @@ static VOID UpdateMMPMINI(PNOTEBOOKPAGE pnbp)
  *@@changed V0.9.20 (2002-07-03) [umoeller]: check for scheme exists is case-insensitive now
  */
 
-static BOOL SaveSoundSchemeAs(PNOTEBOOKPAGE pnbp,
+STATIC BOOL SaveSoundSchemeAs(PNOTEBOOKPAGE pnbp,
                               BOOL fSelectNew)
 {
     BOOL    brc = FALSE;
@@ -552,7 +552,7 @@ static BOOL SaveSoundSchemeAs(PNOTEBOOKPAGE pnbp,
  *      No more confirmations in this function.
  */
 
-static BOOL LoadSoundSchemeFrom(PNOTEBOOKPAGE pnbp)
+STATIC BOOL LoadSoundSchemeFrom(PNOTEBOOKPAGE pnbp)
 {
     BOOL    brc = FALSE;
     PSOUNDPAGEDATA pspd = (PSOUNDPAGEDATA)pnbp->pUser;
@@ -595,7 +595,7 @@ static BOOL LoadSoundSchemeFrom(PNOTEBOOKPAGE pnbp)
  *      entryfield.
  */
 
-static VOID DrawTargetEmphasis(HWND hwnd, BOOL fEmphasis)
+STATIC VOID DrawTargetEmphasis(HWND hwnd, BOOL fEmphasis)
 {
     HPS                hps;
     POINTL             ptl;
@@ -641,7 +641,7 @@ static VOID DrawTargetEmphasis(HWND hwnd, BOOL fEmphasis)
  *      page's CREATENOTEBOOKPAGE structure.
  */
 
-static MRESULT EXPENTRY fnwpSubclassedSoundFile(HWND hwndEntryField,
+STATIC MRESULT EXPENTRY fnwpSubclassedSoundFile(HWND hwndEntryField,
                                                 ULONG msg,
                                                 MPARAM mp1,
                                                 MPARAM mp2)

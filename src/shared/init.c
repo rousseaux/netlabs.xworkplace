@@ -157,7 +157,7 @@ extern KERNELGLOBALS    G_KernelGlobals;            // kernel.c
 
 extern PIBMDRIVEDATA    G_paDriveData = NULL;
 
-static THREADINFO       G_tiSentinel = {0};
+STATIC THREADINFO       G_tiSentinel = {0};
 
 #define DESKTOP_VALID               0
 #define HANDLES_BROKEN              1       // V0.9.20 (2002-08-04) [umoeller]
@@ -166,15 +166,15 @@ static THREADINFO       G_tiSentinel = {0};
 #define DESKTOP_DIR_DOESNT_EXIST    4
 #define DESKTOP_IS_NO_DIRECTORY     5
 
-static ULONG            G_ulDesktopValid = -1;      // unknown at this point
-static APIRET           G_arcHandles = 0;               // V0.9.20 (2002-08-04) [umoeller]
+STATIC ULONG            G_ulDesktopValid = -1;      // unknown at this point
+STATIC APIRET           G_arcHandles = 0;               // V0.9.20 (2002-08-04) [umoeller]
 
-static HOBJECT          G_hobjDesktop;
-static CHAR             G_szDesktopPath[CCHMAXPATH];
+STATIC HOBJECT          G_hobjDesktop;
+STATIC CHAR             G_szDesktopPath[CCHMAXPATH];
 
-static HMTX             G_hmtxLog = NULLHANDLE;
+STATIC HMTX             G_hmtxLog = NULLHANDLE;
 
-static PXFILE           G_pStartupLogFile = NULL;
+STATIC PXFILE           G_pStartupLogFile = NULL;
 
 /* ******************************************************************
  *
@@ -278,7 +278,7 @@ void initLog(const char* pcszFormat,
  *      from XFolder to XWorkplace.
  */
 
-static const char **G_appszXFolderKeys[]
+STATIC const char **G_appszXFolderKeys[]
         = {
                 &INIKEY_GLOBALSETTINGS  , // "GlobalSettings"
                 &INIKEY_ACCELERATORS    , // "Accelerators"
@@ -321,7 +321,7 @@ static const char **G_appszXFolderKeys[]
  *@@added V0.9.9 (2001-03-07) [umoeller]
  */
 
-static ULONG WaitForApp(PCSZ pcszTitle,
+STATIC ULONG WaitForApp(PCSZ pcszTitle,
                         HAPP happ)
 {
     ULONG   ulrc = -1;
@@ -386,7 +386,7 @@ static ULONG WaitForApp(PCSZ pcszTitle,
                         PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
 */
 
-static const CONTROLDEF
+STATIC const CONTROLDEF
 #ifndef __NOBOOTLOGO__
     SkipBootLogoCB = LOADDEF_AUTOCHECKBOX(ID_XFDI_PANIC_SKIPBOOTLOGO),
 #endif
@@ -422,7 +422,7 @@ static const CONTROLDEF
     ShutdownButton = LOADDEF_PUSHBUTTON(ID_XFDI_PANIC_SHUTDOWN),
     ShutdownText = LOADDEF_TEXT(ID_XFDI_PANIC_SHUTDOWN_TXT);
 
-static const DLGHITEM dlgPanic[] =
+STATIC const DLGHITEM dlgPanic[] =
     {
         START_TABLE,            // root table, required
 #ifndef __NOBOOTLOGO__
@@ -484,7 +484,7 @@ static const DLGHITEM dlgPanic[] =
  *@@added V0.9.16 (2001-10-25) [umoeller]
  */
 
-static APIRET StartCmdExe(HWND hwndNotify,
+STATIC APIRET StartCmdExe(HWND hwndNotify,
                           HAPP *phappCmd)
 {
     PROGDETAILS pd = {0};
@@ -509,7 +509,7 @@ static APIRET StartCmdExe(HWND hwndNotify,
  *@@added V0.9.16 (2001-10-25) [umoeller]
  */
 
-static BOOL RunXFix(VOID)
+STATIC BOOL RunXFix(VOID)
 {
     CHAR        szXfix[CCHMAXPATH];
     PROGDETAILS pd = {0};
@@ -545,7 +545,7 @@ static BOOL RunXFix(VOID)
  *@@changed V0.9.17 (2002-02-05) [umoeller]: added fForceShow and "disable check desktop"
  */
 
-static VOID ShowPanicDlg(BOOL fForceShow)      // V0.9.17 (2002-02-05) [umoeller]
+STATIC VOID ShowPanicDlg(BOOL fForceShow)      // V0.9.17 (2002-02-05) [umoeller]
 {
     BOOL    fRepeat = fForceShow;
 
@@ -727,7 +727,7 @@ static VOID ShowPanicDlg(BOOL fForceShow)      // V0.9.17 (2002-02-05) [umoeller
  *@@changed V0.9.18 (2002-02-06) [umoeller]: fixed multiple XFolder conversions
  */
 
-static VOID ShowStartupDlgs(VOID)
+STATIC VOID ShowStartupDlgs(VOID)
 {
     ULONG   cbData = 0;
     PCSZ    pcszXFolderConverted = "_XFolderConv";
@@ -835,7 +835,7 @@ static VOID ShowStartupDlgs(VOID)
  *@@changed V0.9.10 (2001-04-08) [umoeller]: added exception handling
  */
 
-static VOID ReplaceWheelWatcher(VOID)
+STATIC VOID ReplaceWheelWatcher(VOID)
 {
     APIRET      arc = NO_ERROR;
 
@@ -965,7 +965,7 @@ static VOID ReplaceWheelWatcher(VOID)
  *@@added V0.9.16 (2001-10-25) [umoeller]
  */
 
-static ULONG CheckDesktop(HHANDLES hHandles)       // in: handles buffer from wphLoadHandles
+STATIC ULONG CheckDesktop(HHANDLES hHandles)       // in: handles buffer from wphLoadHandles
 {
     ULONG   ulResult = DESKTOP_VALID;
 
@@ -2055,7 +2055,7 @@ typedef struct _QUICKOPENDATA
  *@@changed V0.9.16 (2002-01-13) [umoeller]: moved this here from xthreads.c
  */
 
-static MRESULT EXPENTRY fnwpQuickOpenDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
+STATIC MRESULT EXPENTRY fnwpQuickOpenDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc;
 
@@ -2118,7 +2118,7 @@ static MRESULT EXPENTRY fnwpQuickOpenDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARA
  *@@changed V0.9.16 (2002-01-13) [umoeller]: moved this here from xthreads.c
  */
 
-static BOOL _Optlink fncbQuickOpen(WPFolder *pFolder,
+STATIC BOOL _Optlink fncbQuickOpen(WPFolder *pFolder,
                                    WPObject *pObject,
                                    ULONG ulNow,
                                    ULONG ulMax,
@@ -2151,7 +2151,7 @@ static BOOL _Optlink fncbQuickOpen(WPFolder *pFolder,
  *@@changed V0.9.16 (2002-01-13) [umoeller]: moved this here from xthreads.c
  */
 
-static void _Optlink fntQuickOpenFolders(PTHREADINFO ptiMyself)
+STATIC void _Optlink fntQuickOpenFolders(PTHREADINFO ptiMyself)
 {
     PQUICKOPENDATA pqod = (PQUICKOPENDATA)ptiMyself->ulData;
     PLISTNODE pNode;
@@ -2241,7 +2241,7 @@ static void _Optlink fntQuickOpenFolders(PTHREADINFO ptiMyself)
  *@@changed V0.9.19 (2002-04-02) [umoeller]: added startup logging
  */
 
-static void _Optlink fntStartupThread(PTHREADINFO ptiMyself)
+STATIC void _Optlink fntStartupThread(PTHREADINFO ptiMyself)
 {
     PCKERNELGLOBALS     pKernelGlobals = krnQueryGlobals();
 

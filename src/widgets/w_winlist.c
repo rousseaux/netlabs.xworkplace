@@ -143,7 +143,7 @@ ew */
 
 // string used for separating filters in setup strings;
 // this better not appear in window titles
-static PCSZ G_pcszFilterSeparator = "#~^ø@";
+STATIC PCSZ G_pcszFilterSeparator = "#~^ø@";
 
 VOID EXPENTRY WwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData);
 
@@ -161,7 +161,7 @@ VOID EXPENTRY WwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData);
 
 #define WNDCLASS_WIDGET_WINLIST "XWPCenterWinlistWidget"
 
-static const XCENTERWIDGETCLASS G_WidgetClasses[] =
+STATIC const XCENTERWIDGETCLASS G_WidgetClasses[] =
     {
         WNDCLASS_WIDGET_WINLIST,
         0,
@@ -256,7 +256,7 @@ PXSTRCPY pxstrcpy = NULL;
 PXSTRCLEAR pxstrClear = NULL;
 PXSTRINIT pxstrInit = NULL;
 
-static const RESOLVEFUNCTION G_aImports[] =
+STATIC const RESOLVEFUNCTION G_aImports[] =
     {
         "cmnGetString", (PFN*)&pcmnGetString,
         "cmnLoadDlg", (PFN*)&pcmnLoadDlg,
@@ -453,7 +453,7 @@ typedef struct _WINLISTPRIVATE
  *      itself.
  */
 
-static VOID WwgtClearSetup(PWINLISTSETUP pSetup)
+STATIC VOID WwgtClearSetup(PWINLISTSETUP pSetup)
 {
     if (pSetup)
     {
@@ -479,7 +479,7 @@ static VOID WwgtClearSetup(PWINLISTSETUP pSetup)
  *@@changed V0.9.14 (2001-08-01) [umoeller]: fixed memory leak
  */
 
-static VOID WwgtScanSetup(PCSZ pcszSetupString,
+STATIC VOID WwgtScanSetup(PCSZ pcszSetupString,
                           PWINLISTSETUP pSetup)
 {
     PSZ p;
@@ -547,7 +547,7 @@ static VOID WwgtScanSetup(PCSZ pcszSetupString,
  *      string after use.
  */
 
-static VOID WwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared first)
+STATIC VOID WwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared first)
                           PWINLISTSETUP pSetup)
 {
     CHAR    szTemp[100];
@@ -634,7 +634,7 @@ VOID WwgtSaveSetupAndSend(HWND hwndWidget,
  *@@added V0.9.16 (2001-12-02) [umoeller]
  */
 
-static BOOL IsCtrlDesktopOrXCenter(HWND hwndFrame)
+STATIC BOOL IsCtrlDesktopOrXCenter(HWND hwndFrame)
 {
     // rule out all XCenter frames
     // V0.9.16 (2001-12-02) [umoeller]
@@ -658,7 +658,7 @@ static BOOL IsCtrlDesktopOrXCenter(HWND hwndFrame)
  *      puts the current switch list entries into the listbox.
  */
 
-static VOID DumpSwitchList(HWND hwnd)
+STATIC VOID DumpSwitchList(HWND hwnd)
 {
     PSWBLOCK pswBlock;
     if (pswBlock = pwinhQuerySwitchList(WinQueryAnchorBlock(hwnd)))
@@ -693,7 +693,7 @@ static VOID DumpSwitchList(HWND hwnd)
  *      sets up the dialog according to the current settings.
  */
 
-static VOID Settings2Dlg(HWND hwnd,
+STATIC VOID Settings2Dlg(HWND hwnd,
                          PWINLISTSETUP pSetup)
 {
     HWND hwndFiltersLB = WinWindowFromID(hwnd, ID_CRDI_FILTERS_CURRENTLB);
@@ -718,7 +718,7 @@ static VOID Settings2Dlg(HWND hwnd,
  *      present in the filters list box.
  */
 
-static BOOL IsSwlistItemAddable(HWND hwndCombo,
+STATIC BOOL IsSwlistItemAddable(HWND hwndCombo,
                                 PWINLISTSETUP pSetup)
 {
     BOOL fEnableComboAdd = FALSE;
@@ -755,7 +755,7 @@ static BOOL IsSwlistItemAddable(HWND hwndCombo,
  *      current selections.
  */
 
-static VOID EnableItems(HWND hwnd,
+STATIC VOID EnableItems(HWND hwnd,
                         PWINLISTSETUP pSetup)
 {
     HWND hwndFiltersLB = WinWindowFromID(hwnd, ID_CRDI_FILTERS_CURRENTLB);
@@ -779,7 +779,7 @@ static VOID EnableItems(HWND hwnd,
  *      retrieves the new settings from the dialog.
  */
 
-static VOID Dlg2Settings(HWND hwnd,
+STATIC VOID Dlg2Settings(HWND hwnd,
                          PWINLISTSETUP pSetup)
 {
     HWND hwndFiltersLB = WinWindowFromID(hwnd, ID_CRDI_FILTERS_CURRENTLB);
@@ -809,7 +809,7 @@ static VOID Dlg2Settings(HWND hwnd,
  *      dialog proc for the winlist settings dialog.
  */
 
-static MRESULT EXPENTRY fnwpSettingsDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
+STATIC MRESULT EXPENTRY fnwpSettingsDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
 
@@ -1095,7 +1095,7 @@ VOID EXPENTRY WwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
  *      be used for painting the buttons.
  */
 
-static VOID GetPaintableRect(PWINLISTPRIVATE pPrivate,
+STATIC VOID GetPaintableRect(PWINLISTPRIVATE pPrivate,
                              PRECTL prcl)
 {
     WinQueryWindowRect(pPrivate->pWidget->hwndWidget,
@@ -1138,7 +1138,7 @@ static VOID GetPaintableRect(PWINLISTPRIVATE pPrivate,
  *@@changed V0.9.16 (2001-11-25) [umoeller]: now ruling out desktop and all XCenters always
  */
 
-static BOOL IsCtrlFiltered(PLINKLIST pllFilters,   // in: pPrivate->Setup.llFilters
+STATIC BOOL IsCtrlFiltered(PLINKLIST pllFilters,   // in: pPrivate->Setup.llFilters
                            HWND hwndXCenterFrame,  // in: pPrivate->pWidget->pGlobals->hwndFrame
                            PSWCNTRL pCtrlOrig)     // in: un-hacked switch list entry
 {
@@ -1192,7 +1192,7 @@ static BOOL IsCtrlFiltered(PLINKLIST pllFilters,   // in: pPrivate->Setup.llFilt
  *@@added V0.9.11 (2001-04-18) [umoeller]
  */
 
-static PLISTNODE FindSwitchNodeFromHWND(PLINKLIST pll,
+STATIC PLISTNODE FindSwitchNodeFromHWND(PLINKLIST pll,
                                         HWND hwnd)
 {
     PLISTNODE pNode;
@@ -1218,7 +1218,7 @@ static PLISTNODE FindSwitchNodeFromHWND(PLINKLIST pll,
  *@@added V0.9.19 (2002-05-28) [umoeller]
  */
 
-static VOID FillEntry(PWINLISTENTRY pCtrl,
+STATIC VOID FillEntry(PWINLISTENTRY pCtrl,
                       PSWCNTRL pOrigEntry)
 {
     SWP     swp;
@@ -1238,7 +1238,7 @@ static VOID FillEntry(PWINLISTENTRY pCtrl,
  *@@added V0.9.19 (2002-05-28) [umoeller]
  */
 
-static PWINLISTENTRY AddEntry(PWINLISTPRIVATE pPrivate,
+STATIC PWINLISTENTRY AddEntry(PWINLISTPRIVATE pPrivate,
                               PSWCNTRL pOrigEntry)
 {
     PWINLISTENTRY pCtrl = NULL;
@@ -1282,7 +1282,7 @@ static PWINLISTENTRY AddEntry(PWINLISTPRIVATE pPrivate,
  *@@added V0.9.19 (2002-05-28) [umoeller]
  */
 
-static PWINLISTENTRY AddOrRefreshEntry(PWINLISTPRIVATE pPrivate,
+STATIC PWINLISTENTRY AddOrRefreshEntry(PWINLISTPRIVATE pPrivate,
                                        HWND hwnd,                // in: window to add entry for
                                        PBOOL pfRefreshAll)       // out: TRUE if item was added or removed
 {
@@ -1347,7 +1347,7 @@ static PWINLISTENTRY AddOrRefreshEntry(PWINLISTPRIVATE pPrivate,
  *@@changed V0.9.19 (2002-05-28) [umoeller]: rewritten to use XWPDAEMN
  */
 
-static VOID ScanSwitchList(HWND hwndWidget,
+STATIC VOID ScanSwitchList(HWND hwndWidget,
                            PWINLISTPRIVATE pPrivate)
 {
     PSWBLOCK pswBlock;
@@ -1392,7 +1392,7 @@ static VOID ScanSwitchList(HWND hwndWidget,
  *@@added V0.9.9 (2001-01-29) [umoeller]
  */
 
-static LONG CalcButtonCX(PWINLISTPRIVATE pPrivate,
+STATIC LONG CalcButtonCX(PWINLISTPRIVATE pPrivate,
                          PRECTL prclSubclient,
                          PWINLISTENTRY pCtrlThis,  // in: switch list entry; can be NULL
                          PLONG pcxRegular)
@@ -1440,7 +1440,7 @@ static LONG CalcButtonCX(PWINLISTPRIVATE pPrivate,
  *@@changed V0.9.19 (2002-06-18) [umoeller]: fixed bad indices by always re-numbering here
  */
 
-static VOID DrawOneCtrl(PWINLISTPRIVATE pPrivate,
+STATIC VOID DrawOneCtrl(PWINLISTPRIVATE pPrivate,
                         HPS hps,
                         PRECTL prclSubclient,     // in: paint area (exclusive)
                         PWINLISTENTRY pCtrlThis,  // in: switch list entry to paint
@@ -1606,7 +1606,7 @@ static VOID DrawOneCtrl(PWINLISTPRIVATE pPrivate,
  *@@changed V0.9.11 (2001-04-18) [umoeller]: adjusted for new linklist
  */
 
-static VOID DrawAllCtrls(PWINLISTPRIVATE pPrivate,
+STATIC VOID DrawAllCtrls(PWINLISTPRIVATE pPrivate,
                          HPS hps,
                          PRECTL prclSubclient)       // in: max available space (exclusive)
 {
@@ -1670,7 +1670,7 @@ static VOID DrawAllCtrls(PWINLISTPRIVATE pPrivate,
  *@@added V0.9.20 (2002-08-10) [umoeller]
  */
 
-static VOID DoRedraw(HWND hwnd,
+STATIC VOID DoRedraw(HWND hwnd,
                      PWINLISTPRIVATE pPrivate,
                      PWINLISTENTRY pCtrlThis)   // in: switch list entry to paint or NULL for all
 {
@@ -1714,7 +1714,7 @@ static VOID DoRedraw(HWND hwnd,
  *@@changed V0.9.11 (2001-04-18) [umoeller]: adjusted for new linklist
  */
 
-static PWINLISTENTRY FindCtrlFromPoint(PWINLISTPRIVATE pPrivate,
+STATIC PWINLISTENTRY FindCtrlFromPoint(PWINLISTPRIVATE pPrivate,
                                        PPOINTL pptl,
                                        PRECTL prclSubclient)    // in: from GetPaintableRect
 {
@@ -1751,7 +1751,7 @@ static PWINLISTENTRY FindCtrlFromPoint(PWINLISTPRIVATE pPrivate,
  *
  */
 
-static BOOL IsMenuItemEnabled(HWND hwndMenu, USHORT usItem)
+STATIC BOOL IsMenuItemEnabled(HWND hwndMenu, USHORT usItem)
 {
     BOOL brc = FALSE;
     if ((SHORT)WinSendMsg(hwndMenu,
@@ -1780,7 +1780,7 @@ static BOOL IsMenuItemEnabled(HWND hwndMenu, USHORT usItem)
  *@@changed V0.9.19 (2002-05-28) [umoeller]: adjusted for new daemon interface
  */
 
-static MRESULT WwgtCreate(HWND hwnd,
+STATIC MRESULT WwgtCreate(HWND hwnd,
                           PXCENTERWIDGET pWidget)
 {
     MRESULT mrc = 0;
@@ -1841,7 +1841,7 @@ static MRESULT WwgtCreate(HWND hwnd,
  *      implementation for WM_DESTROY.
  */
 
-static VOID WwgtDestroy(HWND hwnd)
+STATIC VOID WwgtDestroy(HWND hwnd)
 {
     PXCENTERWIDGET pWidget;
     PWINLISTPRIVATE pPrivate;
@@ -1880,7 +1880,7 @@ static VOID WwgtDestroy(HWND hwnd)
  *@@added V0.9.7 (2000-12-14) [umoeller]
  */
 
-static BOOL WwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
+STATIC BOOL WwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
     BOOL brc = FALSE;
 
@@ -1992,7 +1992,7 @@ static BOOL WwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *      implementation for WM_PAINT.
  */
 
-static VOID WwgtPaint(HWND hwnd)
+STATIC VOID WwgtPaint(HWND hwnd)
 {
     PXCENTERWIDGET pWidget;
     PWINLISTPRIVATE pPrivate;
@@ -2048,7 +2048,7 @@ static VOID WwgtPaint(HWND hwnd)
  *@@changed V0.9.19 (2002-06-18) [umoeller]: fixed bad button indices
  */
 
-static VOID WwgtWindowChange(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
+STATIC VOID WwgtWindowChange(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     PXCENTERWIDGET pWidget;
     PWINLISTPRIVATE pPrivate;
@@ -2167,7 +2167,7 @@ static VOID WwgtWindowChange(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
  *@@changed V0.9.19 (2002-06-18) [umoeller]: added hide if window does not support minimize
  */
 
-static VOID WwgtButton1Down(HWND hwnd, MPARAM mp1)
+STATIC VOID WwgtButton1Down(HWND hwnd, MPARAM mp1)
 {
     PXCENTERWIDGET pWidget;
     PWINLISTPRIVATE pPrivate;
@@ -2314,7 +2314,7 @@ static VOID WwgtButton1Down(HWND hwnd, MPARAM mp1)
  *@@changed V0.9.20 (2002-08-10) [umoeller]: cleaned up those stupid menu ids
  */
 
-static VOID HackContextMenu(PWINLISTPRIVATE pPrivate)
+STATIC VOID HackContextMenu(PWINLISTPRIVATE pPrivate)
 {
     static const ULONG aulMenuItems[] =
             {
@@ -2393,7 +2393,7 @@ static VOID HackContextMenu(PWINLISTPRIVATE pPrivate)
  *@@added V0.9.8 (2001-01-10) [umoeller]
  */
 
-static MRESULT WwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
+STATIC MRESULT WwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
 
@@ -2583,7 +2583,7 @@ static MRESULT WwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *@@added V0.9.7 (2001-01-10) [umoeller]
  */
 
-static VOID WwgtMenuEnd(HWND hwnd, MPARAM mp1, MPARAM mp2)
+STATIC VOID WwgtMenuEnd(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
     BOOL fCallDefault = TRUE;
 
@@ -2616,7 +2616,7 @@ static VOID WwgtMenuEnd(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *@@changed V0.9.20 (2002-08-10) [umoeller]: added filtering via menu
  */
 
-static VOID WwgtCommand(HWND hwnd, MPARAM mp1, MPARAM mp2)
+STATIC VOID WwgtCommand(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
     BOOL fCallDefault = TRUE;
 
@@ -2701,7 +2701,7 @@ static VOID WwgtCommand(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *@@changed V0.9.13 (2001-06-21) [umoeller]: changed XCM_SAVESETUP call for tray support
  */
 
-static VOID WwgtPresParamChanged(HWND hwnd, ULONG ulAttrChanged)
+STATIC VOID WwgtPresParamChanged(HWND hwnd, ULONG ulAttrChanged)
 {
     PXCENTERWIDGET pWidget;
     PWINLISTPRIVATE pPrivate;

@@ -121,7 +121,7 @@
  *
  */
 
-static VOID SetEFText(PNOTEBOOKPAGE pnbp,    // notebook info struct
+STATIC VOID SetEFText(PNOTEBOOKPAGE pnbp,    // notebook info struct
                       ULONG ulID,
                       PCSZ pcsz)
 {
@@ -148,7 +148,7 @@ static VOID SetEFText(PNOTEBOOKPAGE pnbp,    // notebook info struct
 #define ID_XSDI_VCARD_SUMMARY_EMAIL_TEXT       32006
 #define ID_XSDI_VCARD_SUMMARY_EMAIL_EF         32007
 
-static const CONTROLDEF
+STATIC const CONTROLDEF
     TEXT_AND_ENTRYFIELD(SummaryName,
                         "~Name:",
                         ID_XSDI_VCARD_SUMMARY_NAME),
@@ -169,7 +169,7 @@ static const CONTROLDEF
                         "~E-Mail:",
                         ID_XSDI_VCARD_SUMMARY_EMAIL);
 
-static const DLGHITEM dlgSummary[] =
+STATIC const DLGHITEM dlgSummary[] =
     {
         START_TABLE,            // root table, required
             START_ROW(ROW_VALIGN_CENTER),
@@ -196,7 +196,7 @@ static const DLGHITEM dlgSummary[] =
  *
  */
 
-static VOID SetStringOrArray(PNOTEBOOKPAGE pnbp,    // notebook info struct
+STATIC VOID SetStringOrArray(PNOTEBOOKPAGE pnbp,    // notebook info struct
                              ULONG ulID,
                              PCSZ pcszReal,
                              PCSZ *papcsz,
@@ -243,7 +243,7 @@ static VOID SetStringOrArray(PNOTEBOOKPAGE pnbp,    // notebook info struct
  *
  */
 
-static VOID vcfSummaryInitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
+STATIC VOID vcfSummaryInitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
                                ULONG flFlags)                // CBI_* flags (notebook.h)
 {
     if (flFlags & CBI_INIT)
@@ -334,7 +334,7 @@ static VOID vcfSummaryInitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
 #define ID_XSDI_VCARD_PERS_SUFFIX_TEXT           30011
 #define ID_XSDI_VCARD_PERS_SUFFIX_EF             30012
 
-static const CONTROLDEF
+STATIC const CONTROLDEF
     NameFieldsGroup = CONTROLDEF_GROUP(
                             "Name fields",
                             ID_XSDI_VCARD_PERS_NAMEFIELDS_GROUP,
@@ -356,7 +356,7 @@ static const CONTROLDEF
                         "Name su~ffix:",
                         ID_XSDI_VCARD_PERS_SUFFIX);
 
-static const DLGHITEM dlgName[] =
+STATIC const DLGHITEM dlgName[] =
     {
         START_TABLE,            // root table, required
             START_ROW(0),
@@ -391,7 +391,7 @@ static const DLGHITEM dlgName[] =
  *
  */
 
-static VOID vcfNameInitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
+STATIC VOID vcfNameInitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
                             ULONG flFlags)                // CBI_* flags (notebook.h)
 {
     if (flFlags & CBI_INIT)
@@ -461,7 +461,7 @@ static VOID vcfNameInitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
 #define ID_XSDI_VCARD_PHONE_VIDEO           33016
 
 
-static const CONTROLDEF
+STATIC const CONTROLDEF
     PhoneLB = CONTROLDEF_LISTBOX(
                             ID_XSDI_VCARD_PHONE_LISTBOX,
                             30,
@@ -514,7 +514,7 @@ static const CONTROLDEF
                         "Video",
                         ID_XSDI_VCARD_PHONE_VIDEO, -1, -1); // video phone
 
-static const DLGHITEM dlgPhone[] =
+STATIC const DLGHITEM dlgPhone[] =
     {
         START_TABLE,            // root table, required
             START_ROW(0),
@@ -567,7 +567,7 @@ static const DLGHITEM dlgPhone[] =
  *
  */
 
-static VOID vcfPhoneInitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
+STATIC VOID vcfPhoneInitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
                              ULONG flFlags)                // CBI_* flags (notebook.h)
 {
     if (flFlags & CBI_INIT)
@@ -611,7 +611,7 @@ static VOID vcfPhoneInitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
  *
  */
 
-static MRESULT XWPENTRY vcfPhoneItemChanged(PNOTEBOOKPAGE pnbp,
+STATIC MRESULT XWPENTRY vcfPhoneItemChanged(PNOTEBOOKPAGE pnbp,
                                             ULONG ulItemID, USHORT usNotifyCode,
                                             ULONG ulExtra)
 {
@@ -709,7 +709,7 @@ static MRESULT XWPENTRY vcfPhoneItemChanged(PNOTEBOOKPAGE pnbp,
 #define ID_XSDI_VCARD_ADDR_COUNTRY_TEXT         31025
 #define ID_XSDI_VCARD_ADDR_COUNTRY_EF           31026
 
-static const CONTROLDEF
+STATIC const CONTROLDEF
     AddressFieldsGroup = CONTROLDEF_GROUP(
                             "Address fields",
                             ID_XSDI_VCARD_ADDR_NAMEFIELDS_GROUP,
@@ -737,7 +737,7 @@ static const CONTROLDEF
                         "Country:",
                         ID_XSDI_VCARD_ADDR_COUNTRY);
 
-static const DLGHITEM dlgAddresses[] =
+STATIC const DLGHITEM dlgAddresses[] =
     {
         START_TABLE,            // root table, required
             START_ROW(0),
@@ -777,7 +777,7 @@ static const DLGHITEM dlgAddresses[] =
  *
  */
 
-static VOID vcfAddressesInitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
+STATIC VOID vcfAddressesInitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
                                  ULONG flFlags)                // CBI_* flags (notebook.h)
 {
     if (flFlags & CBI_INIT)

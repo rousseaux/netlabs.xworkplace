@@ -201,13 +201,13 @@
 
 // flag for whether we have manipulated the "wpFolder window"
 // PM window class already; this is done in fdr_SendMsgHook
-static BOOL                G_WPFolderWinClassExtended = FALSE;
+STATIC BOOL                G_WPFolderWinClassExtended = FALSE;
 
-static CLASSINFO           G_WPFolderWinClassInfo;
+STATIC CLASSINFO           G_WPFolderWinClassInfo;
 
-static ULONG               G_SFVOffset = 0;
+STATIC ULONG               G_SFVOffset = 0;
 
-static MRESULT EXPENTRY fnwpSubclWPFolderWindow(HWND hwndFrame,
+STATIC MRESULT EXPENTRY fnwpSubclWPFolderWindow(HWND hwndFrame,
                                                   ULONG msg,
                                                   MPARAM mp1,
                                                   MPARAM mp2);
@@ -568,7 +568,7 @@ VOID fdrManipulateNewView(WPFolder *somSelf,        // in: folder with new view
  *@@added V0.9.19 (2002-06-02) [umoeller]
  */
 
-static VOID PostWMChar(HWND hwnd,
+STATIC VOID PostWMChar(HWND hwnd,
                        USHORT fsFlags,
                        MPARAM mp2)
 {
@@ -1027,7 +1027,7 @@ VOID fdrInitMenu(PSUBCLFOLDERVIEW psfv,     // in: frame information
  *@@changed V0.9.21 (2002-08-21) [umoeller]:
  */
 
-static BOOL MenuSelect(PSUBCLFOLDERVIEW psfv,   // in: frame information
+STATIC BOOL MenuSelect(PSUBCLFOLDERVIEW psfv,   // in: frame information
                        MPARAM mp1,              // in: mp1 from WM_MENUSELECT
                        MPARAM mp2,              // in: mp2 from WM_MENUSELECT
                        BOOL *pfDismiss)         // out: dismissal flag
@@ -1213,7 +1213,7 @@ BOOL fdrWMCommand(PSUBCLFOLDERVIEW psfv,
  *@@changed V0.9.19 (2002-04-02) [umoeller]: fixed broken true delete if trashcan is disabled
  */
 
-static VOID WMChar_Delete(PSUBCLFOLDERVIEW psfv,
+STATIC VOID WMChar_Delete(PSUBCLFOLDERVIEW psfv,
                           BOOL fTrueDelete)             // in: do true delete instead of trash?
 {
     ULONG       ulSelection = 0;
@@ -1258,7 +1258,7 @@ static VOID WMChar_Delete(PSUBCLFOLDERVIEW psfv,
  *@@changed V0.9.21 (2002-08-24) [umoeller]: fixed key up/down processing
  */
 
-static BOOL WMChar(HWND hwndFrame,
+STATIC BOOL WMChar(HWND hwndFrame,
                    PSUBCLFOLDERVIEW psfv,
                    MPARAM mp1,
                    MPARAM mp2)
@@ -1447,7 +1447,7 @@ static BOOL WMChar(HWND hwndFrame,
  *@@changed V0.9.21 (2002-08-21) [umoeller]: fixed painting problems for folder shadows
  */
 
-static BOOL CnrDrawIcon(HWND hwndCnr,               // in: container HWND (we can't use poi->hwnd)
+STATIC BOOL CnrDrawIcon(HWND hwndCnr,               // in: container HWND (we can't use poi->hwnd)
                         ULONG flOwnerDraw,          // in: OWDRFL_* flags plus maybe 0x80000000 for "force mini icon"
                         POWNERITEM poi)             // in: mp2 of WM_DRAWITEM
 {
@@ -1762,7 +1762,7 @@ static BOOL CnrDrawIcon(HWND hwndCnr,               // in: container HWND (we ca
  *@@added V0.9.20 (2002-07-31) [umoeller]
  */
 
-static BOOL CnrDrawItem(PSUBCLFOLDERVIEW psfv,      // in: folder view data
+STATIC BOOL CnrDrawItem(PSUBCLFOLDERVIEW psfv,      // in: folder view data
                         POWNERITEM poi)             // in: mp2 of WM_DRAWITEM
 {
     ULONG               flOwnerDraw;
@@ -2475,7 +2475,7 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
  *@@changed V0.9.21 (2002-08-26) [umoeller]: renamed from fnwpSubclassedFolderFrame
  */
 
-static MRESULT EXPENTRY fnwpSubclWPFolderWindow(HWND hwndFrame,
+STATIC MRESULT EXPENTRY fnwpSubclWPFolderWindow(HWND hwndFrame,
                                                 ULONG msg,
                                                 MPARAM mp1,
                                                 MPARAM mp2)

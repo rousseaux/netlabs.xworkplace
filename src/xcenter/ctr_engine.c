@@ -170,37 +170,37 @@ VOID ClientPaint2(HWND hwndClient, HPS hps);
 
 // static PXTIMERSET           G_pLastXTimerSet = NULL;
 
-static COUNTRYSETTINGS      G_CountrySettings = {0};
+STATIC COUNTRYSETTINGS      G_CountrySettings = {0};
 
 // widget being dragged
-static PPRIVATEWIDGETVIEW     G_pWidgetBeingDragged = NULL;
+STATIC PPRIVATEWIDGETVIEW     G_pWidgetBeingDragged = NULL;
 
-static PWINSETDESKTOPWORKAREA   G_WinSetDesktopWorkArea = (PWINSETDESKTOPWORKAREA)-1;
-static PWINQUERYDESKTOPWORKAREA G_WinQueryDesktopWorkArea = (PWINQUERYDESKTOPWORKAREA)-1;
+STATIC PWINSETDESKTOPWORKAREA   G_WinSetDesktopWorkArea = (PWINSETDESKTOPWORKAREA)-1;
+STATIC PWINQUERYDESKTOPWORKAREA G_WinQueryDesktopWorkArea = (PWINQUERYDESKTOPWORKAREA)-1;
 
-static BOOL                     G_fWorkAreaSupported = FALSE;
+STATIC BOOL                     G_fWorkAreaSupported = FALSE;
                                     // set by ctrpDesktopWorkareaSupported
-static LINKLIST                 G_llWorkAreaViews;
+STATIC LINKLIST                 G_llWorkAreaViews;
                                     // linked list of XCENTERVIEWDATA's which currently
                                     // have the "reduce workarea" flag on. This list
                                     // gets updated when XCenters are opened/closed
                                     // and/or their "reduce workarea" setting is
                                     // changed. Plain pointers, no auto-free.
                                     // Maintained by UpdateDesktopWorkarea.
-static HMTX                     G_hmtxWorkAreaViews = NULLHANDLE;
+STATIC HMTX                     G_hmtxWorkAreaViews = NULLHANDLE;
                                     // mutex protecting that list;
 
-static LINKLIST                 G_llOpenViews;
+STATIC LINKLIST                 G_llOpenViews;
                                     // linked list of XCENTERVIEWDATA's which are
                                     // currently open (regarless of the workarea
                                     // settings)
-static HMTX                     G_hmtxOpenViews = NULLHANDLE;
+STATIC HMTX                     G_hmtxOpenViews = NULLHANDLE;
                                     // mutex protecting that list;
 
-static ULONG                    G_ulWidgetFromXY = 0;
+STATIC ULONG                    G_ulWidgetFromXY = 0;
                                     // MB1/MB2 drag about to happen?
-static BOOL                     G_fSizeable = FALSE;
-static PPRIVATEWIDGETVIEW         G_pViewOver = NULL;
+STATIC BOOL                     G_fSizeable = FALSE;
+STATIC PPRIVATEWIDGETVIEW         G_pViewOver = NULL;
 
 /* ******************************************************************
  *
@@ -217,7 +217,7 @@ static PPRIVATEWIDGETVIEW         G_pViewOver = NULL;
  *@@changed V0.9.13 (2001-06-19) [umoeller]: added tray widget
  */
 
-static BOOL RegisterBuiltInWidgets(HAB hab)
+STATIC BOOL RegisterBuiltInWidgets(HAB hab)
 {
     return (
                 (WinRegisterClass(hab,
@@ -254,7 +254,7 @@ static BOOL RegisterBuiltInWidgets(HAB hab)
  *@@added V0.9.7 (2001-01-18) [umoeller]
  */
 
-static BOOL LockWorkAreas(VOID)
+STATIC BOOL LockWorkAreas(VOID)
 {
     if (G_hmtxWorkAreaViews)
         return !DosRequestMutexSem(G_hmtxWorkAreaViews, SEM_INDEFINITE_WAIT);
@@ -273,7 +273,7 @@ static BOOL LockWorkAreas(VOID)
  *@@added V0.9.7 (2001-01-18) [umoeller]
  */
 
-static VOID UnlockWorkAreas(VOID)
+STATIC VOID UnlockWorkAreas(VOID)
 {
     DosReleaseMutexSem(G_hmtxWorkAreaViews);
 }
@@ -352,7 +352,7 @@ APIRET ctrpDesktopWorkareaSupported(VOID)
  *@@changed V0.9.12 (2001-05-06) [umoeller]: fixed potential endless loop
  */
 
-static BOOL UpdateDesktopWorkarea(PXCENTERWINDATA pXCenterData,
+STATIC BOOL UpdateDesktopWorkarea(PXCENTERWINDATA pXCenterData,
                                   BOOL fForceRemove)       // in: if TRUE, item is removed
 {
     BOOL brc = FALSE;
@@ -539,7 +539,7 @@ static BOOL UpdateDesktopWorkarea(PXCENTERWINDATA pXCenterData,
  *@@added V0.9.16 (2001-12-02) [umoeller]
  */
 
-static BOOL LockOpenViews(VOID)
+STATIC BOOL LockOpenViews(VOID)
 {
     if (G_hmtxOpenViews)
         return !DosRequestMutexSem(G_hmtxOpenViews, SEM_INDEFINITE_WAIT);
@@ -564,7 +564,7 @@ static BOOL LockOpenViews(VOID)
  *@@added V0.9.16 (2001-12-02) [umoeller]
  */
 
-static VOID UnlockOpenViews(VOID)
+STATIC VOID UnlockOpenViews(VOID)
 {
     DosReleaseMutexSem(G_hmtxOpenViews);
 }
@@ -577,7 +577,7 @@ static VOID UnlockOpenViews(VOID)
  *@@added V0.9.16 (2001-12-02) [umoeller]
  */
 
-static VOID RegisterOpenView(PXCENTERWINDATA pXCenterData,
+STATIC VOID RegisterOpenView(PXCENTERWINDATA pXCenterData,
                              BOOL fRemove)       // in: if TRUE, item is removed
 {
     BOOL fLocked = FALSE;
@@ -724,7 +724,7 @@ ULONG ctrpBroadcastWidgetNotify(PLINKLIST pllWidgets,   // in: linked list of PR
  *@@added V0.9.7 (2001-01-18) [umoeller]
  */
 
-static VOID CopyDisplayStyle(PXCENTERWINDATA pXCenterData,     // target: view data
+STATIC VOID CopyDisplayStyle(PXCENTERWINDATA pXCenterData,     // target: view data
                              XCenterData *somThis)             // source: XCenter instance data
 {
     PXCENTERGLOBALS pGlobals = &pXCenterData->Globals;
@@ -860,7 +860,7 @@ ULONG ctrpPositionWidgets(PXCENTERGLOBALS pGlobals,
  *      May only run on the XCenter GUI thread.
  */
 
-static ULONG ReformatWidgets(PXCENTERWINDATA pXCenterData,
+STATIC ULONG ReformatWidgets(PXCENTERWINDATA pXCenterData,
                              BOOL fShow)               // in: show widgets?
 {
     PXCENTERGLOBALS pGlobals = &pXCenterData->Globals;
@@ -982,7 +982,7 @@ static ULONG ReformatWidgets(PXCENTERWINDATA pXCenterData,
  *@@added V0.9.7 (2000-12-14) [umoeller]
  */
 
-static VOID GetWidgetSize(PPRIVATEWIDGETVIEW pWidgetThis)
+STATIC VOID GetWidgetSize(PPRIVATEWIDGETVIEW pWidgetThis)
 {
     if (!WinSendMsg(pWidgetThis->Widget.hwndWidget,
                     WM_CONTROL,
@@ -1062,7 +1062,7 @@ ULONG ctrpQueryMaxWidgetCY(PLINKLIST pllWidgets) // in: linked list of PRIVATEWI
  *@@added V0.9.7 (2001-01-19) [umoeller]
  */
 
-static VOID StopAutoHide(PXCENTERWINDATA pXCenterData)
+STATIC VOID StopAutoHide(PXCENTERWINDATA pXCenterData)
 {
     PXCENTERGLOBALS pGlobals = &pXCenterData->Globals;
 
@@ -1092,7 +1092,7 @@ static VOID StopAutoHide(PXCENTERWINDATA pXCenterData)
  *@@changed V0.9.14 (2001-08-21) [umoeller]: added "hide on click" support
  */
 
-static VOID StartAutoHide(PXCENTERWINDATA pXCenterData)
+STATIC VOID StartAutoHide(PXCENTERWINDATA pXCenterData)
 {
     PXCENTERGLOBALS pGlobals = &pXCenterData->Globals;
     XCenterData *somThis = XCenterGetData(pXCenterData->somSelf);
@@ -1137,7 +1137,7 @@ static VOID StartAutoHide(PXCENTERWINDATA pXCenterData)
  *@@changed V0.9.19 (2002-04-25) [umoeller]: disabling auto-hide while mb2 is down
  */
 
-static BOOL StartAutohideNow(PXCENTERWINDATA pXCenterData)
+STATIC BOOL StartAutohideNow(PXCENTERWINDATA pXCenterData)
 {
     PXCENTERGLOBALS pGlobals = &pXCenterData->Globals;
     PXTIMERSET pTimerSet = (PXTIMERSET)pGlobals->pvXTimerSet;
@@ -2099,7 +2099,7 @@ BOOL ctrpVerifyType(PDRAGITEM pdrgItem,
  *@@changed V0.9.14 (2001-07-31) [lafaix]: accepts copy for DRT_WIDGET type files
  */
 
-static PLINKLIST GetDragoverObjects(PDRAGINFO pdrgInfo,
+STATIC PLINKLIST GetDragoverObjects(PDRAGINFO pdrgInfo,
                                     PUSHORT pusIndicator,  // out: indicator for DM_DRAGOVER (ptr can be NULL)
                                     PUSHORT pusOp)         // out: def't op for DM_DRAGOVER (ptr can be NULL)
 {
@@ -2232,7 +2232,7 @@ static PLINKLIST GetDragoverObjects(PDRAGINFO pdrgInfo,
  *@@changed V0.9.14 (2001-08-05) [lafaix]: added widget transparency support
  */
 
-static ULONG FindWidgetFromClientXY(PXCENTERWINDATA pXCenterData,
+STATIC ULONG FindWidgetFromClientXY(PXCENTERWINDATA pXCenterData,
                                     HWND hwndTrayWidget,           // in: tray widget or NULLHANDLE
                                     SHORT sx,
                                     SHORT sy,
@@ -2343,7 +2343,7 @@ static ULONG FindWidgetFromClientXY(PXCENTERWINDATA pXCenterData,
  *@@added V0.9.14 (2001-08-06) [lafaix]
  */
 
-static BOOL CheckIfPresent(XCenter *somSelf,
+STATIC BOOL CheckIfPresent(XCenter *somSelf,
                            PXCENTERWIDGET pWidget,
                            BOOL bMove)
 {
@@ -2568,7 +2568,7 @@ MRESULT ctrpDragOver(HWND hwndClient,
  *@@added V0.9.19 (2002-05-14) [umoeller]
  */
 
-static APIRET CopyWidgetSetting(PPRIVATEWIDGETSETTING pSettingSource,
+STATIC APIRET CopyWidgetSetting(PPRIVATEWIDGETSETTING pSettingSource,
                                 PPRIVATEWIDGETSETTING *ppSettingTarget)
 {
     APIRET arc = NO_ERROR;
@@ -2663,7 +2663,7 @@ static APIRET CopyWidgetSetting(PPRIVATEWIDGETSETTING pSettingSource,
  *@@added V0.9.19 (2002-05-23) [umoeller]
  */
 
-static APIRET CopyOrMoveWidget(PXCENTERWINDATA pXCenterData,
+STATIC APIRET CopyOrMoveWidget(PXCENTERWINDATA pXCenterData,
                                PDRAGINFO pdrgInfo,          // in: widget's draginfo
                                PWIDGETPOSITION pposTarget)  // in: target position for widget
 {
@@ -2824,7 +2824,7 @@ static APIRET CopyOrMoveWidget(PXCENTERWINDATA pXCenterData,
  *@@added V0.9.19 (2002-05-23) [umoeller]
  */
 
-static APIRET CreateWidgetsFromFiles(PXCENTERWINDATA pXCenterData,
+STATIC APIRET CreateWidgetsFromFiles(PXCENTERWINDATA pXCenterData,
                                      PDRAGINFO pdrgInfo,            // in: draginfo for files
                                      PWIDGETPOSITION pposTarget)    // in: target position for new widgets
 {
@@ -3461,7 +3461,7 @@ PPRIVATEWIDGETVIEW ctrpCreateWidgetWindow(PXCENTERWINDATA pXCenterData,      // 
  *@@changed V0.9.16 (2001-10-18) [umoeller]: renamed from CreateWidgets
  */
 
-static ULONG CreateAllWidgetWindows(PXCENTERWINDATA pXCenterData)
+STATIC ULONG CreateAllWidgetWindows(PXCENTERWINDATA pXCenterData)
 {
     ULONG   ulrc = 0;
 
@@ -3529,7 +3529,7 @@ static ULONG CreateAllWidgetWindows(PXCENTERWINDATA pXCenterData)
  *@@changed V0.9.16 (2001-10-18) [umoeller]: renamed from DestroyWidgets
  */
 
-static VOID DestroyAllWidgetWindows(PXCENTERWINDATA pXCenterData)
+STATIC VOID DestroyAllWidgetWindows(PXCENTERWINDATA pXCenterData)
 {
     PLISTNODE pNode = lstQueryFirstNode(&pXCenterData->llWidgets);
     while (pNode)
@@ -3560,7 +3560,7 @@ static VOID DestroyAllWidgetWindows(PXCENTERWINDATA pXCenterData)
  *      May only run on the XCenter GUI thread.
  */
 
-static BOOL SetWidgetSize(PXCENTERWINDATA pXCenterData,
+STATIC BOOL SetWidgetSize(PXCENTERWINDATA pXCenterData,
                           HWND hwndWidget,
                           ULONG ulNewWidth)
 {
@@ -3602,7 +3602,7 @@ static BOOL SetWidgetSize(PXCENTERWINDATA pXCenterData,
  *@@changed V0.9.20 (2002-07-23) [lafaix]: removed PPRIVATEWIDGETCLASS reference
  */
 
-static VOID FrameCommand(HWND hwnd, USHORT usCmd)
+STATIC VOID FrameCommand(HWND hwnd, USHORT usCmd)
 {
     PXCENTERWINDATA     pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwnd, QWL_USER);
 
@@ -3649,7 +3649,7 @@ static VOID FrameCommand(HWND hwnd, USHORT usCmd)
  *@@added V0.9.16 (2002-01-13) [umoeller]
  */
 
-static VOID FrameMenuEnd(HWND hwnd, MPARAM mp2)
+STATIC VOID FrameMenuEnd(HWND hwnd, MPARAM mp2)
 {
     PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwnd, QWL_USER);
 
@@ -3676,7 +3676,7 @@ static VOID FrameMenuEnd(HWND hwnd, MPARAM mp2)
  *@@changed V0.9.13 (2001-06-23) [lafaix]: added XN_{BEGIN|END}ANIMATE support
  */
 
-static BOOL FrameTimer(HWND hwnd,
+STATIC BOOL FrameTimer(HWND hwnd,
                        PXCENTERWINDATA pXCenterData,
                        USHORT usTimerID)
 {
@@ -3926,7 +3926,7 @@ static BOOL FrameTimer(HWND hwnd,
  *@@changed V0.9.19 (2002-05-28) [umoeller]: moved WinRemoveSwitchEntry here to fix zombies in switchlist
  */
 
-static VOID FrameDestroy(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
+STATIC VOID FrameDestroy(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwnd, QWL_USER);
     XCenterData     *somThis = XCenterGetData(pXCenterData->somSelf);
@@ -4024,7 +4024,7 @@ static VOID FrameDestroy(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
  *@@changed V0.9.19 (2002-06-02) [umoeller]: fixed missing WM_QUIT after WM_CLOSE
  */
 
-static MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
+STATIC MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT             mrc = 0;
     BOOL                fCallDefault = FALSE;
@@ -4426,7 +4426,7 @@ static MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, M
  *@@changed V0.9.18 (2002-03-19) [umoeller]: changed bottom 3D color to black
  */
 
-static VOID ClientPaint2(HWND hwndClient,
+STATIC VOID ClientPaint2(HWND hwndClient,
                          HPS hps)
 {
     PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwndClient, QWL_USER);
@@ -4584,7 +4584,7 @@ static VOID ClientPaint2(HWND hwndClient,
  *      implementation for WM_PAINT in fnwpXCenterMainClient.
  */
 
-static VOID ClientPaint(HWND hwnd)
+STATIC VOID ClientPaint(HWND hwnd)
 {
     RECTL rclPaint;
     HPS hps = WinBeginPaint(hwnd, NULLHANDLE, &rclPaint);
@@ -4609,7 +4609,7 @@ static VOID ClientPaint(HWND hwnd)
  *@@added V0.9.9 (2001-03-07) [umoeller]
  */
 
-static VOID ClientPresParamChanged(HWND hwnd,
+STATIC VOID ClientPresParamChanged(HWND hwnd,
                                    ULONG idAttrChanged)
 {
     PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwnd, QWL_USER);
@@ -4658,7 +4658,7 @@ static VOID ClientPresParamChanged(HWND hwnd,
  *@@changed V0.9.13 (2001-06-19) [umoeller]: fixed pointer change if XCenter is disabled
  */
 
-static MRESULT ClientMouseMove(HWND hwnd, MPARAM mp1)
+STATIC MRESULT ClientMouseMove(HWND hwnd, MPARAM mp1)
 {
     PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwnd, QWL_USER);
     PXCENTERGLOBALS pGlobals = &pXCenterData->Globals;
@@ -4728,7 +4728,7 @@ static MRESULT ClientMouseMove(HWND hwnd, MPARAM mp1)
  *@@changed V0.9.19 (2002-04-16) [lafaix]: added saving XCenter's new height
  */
 
-static MRESULT ClientButton12Drag(HWND hwnd, MPARAM mp1)
+STATIC MRESULT ClientButton12Drag(HWND hwnd, MPARAM mp1)
 {
     PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwnd, QWL_USER);
     PXCENTERGLOBALS pGlobals = &pXCenterData->Globals;
@@ -4872,7 +4872,7 @@ static MRESULT ClientButton12Drag(HWND hwnd, MPARAM mp1)
  *      implementation for WM_CONTEXTMENU in fnwpXCenterMainClient.
  */
 
-static MRESULT ClientContextMenu(HWND hwnd, MPARAM mp1)
+STATIC MRESULT ClientContextMenu(HWND hwnd, MPARAM mp1)
 {
     PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwnd, QWL_USER);
     PXCENTERGLOBALS pGlobals = &pXCenterData->Globals;
@@ -4917,7 +4917,7 @@ static MRESULT ClientContextMenu(HWND hwnd, MPARAM mp1)
  *@@changed V0.9.13 (2001-06-21) [umoeller]: added TTN_SHOW, TTN_POP widget support
  */
 
-static MRESULT ClientControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
+STATIC MRESULT ClientControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
 
@@ -4966,7 +4966,7 @@ static MRESULT ClientControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *@@added V0.9.7 (2000-12-04) [umoeller]
  */
 
-static BOOL ClientSaveSetup(HWND hwndClient,
+STATIC BOOL ClientSaveSetup(HWND hwndClient,
                             HWND hwndWidget,
                             PCSZ pcszSetupString)    // can be NULL
 {
@@ -5044,7 +5044,7 @@ static BOOL ClientSaveSetup(HWND hwndClient,
  *@@changed V0.9.14 (2001-08-21) [umoeller]: added "hide on click" support
  */
 
-static MRESULT EXPENTRY fnwpXCenterMainClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
+STATIC MRESULT EXPENTRY fnwpXCenterMainClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT             mrc = 0;
 
@@ -5647,7 +5647,7 @@ BOOL ctrpModifyPopupMenu(XCenter *somSelf,
  *@@changed V0.9.19 (2002-05-07) [umoeller]: respecting instance setting for auto-screen border
  */
 
-static void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
+STATIC void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
 {
     BOOL        fCreated = FALSE;
     PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)ptiMyself->ulData;

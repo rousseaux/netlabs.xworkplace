@@ -193,7 +193,7 @@ typedef struct _DRIVERRECORD
  *@@changed V0.9.3 (2000-04-10) [umoeller]: added pszVersion to DRIVERSPEC
  */
 
-static void InsertDrivers(HWND hwndCnr,              // in: container
+STATIC void InsertDrivers(HWND hwndCnr,              // in: container
                           PDRIVERRECORD preccRoot,   // in: root record core ("Drivers drivers")
                           PSZ pszHeading,            // in: heading for new category;
                                                      // this is freed after this call, so this must
@@ -376,7 +376,7 @@ static void InsertDrivers(HWND hwndCnr,              // in: container
  *@@added V0.9.5 (2000-08-30) [umoeller]
  */
 
-static VOID FreeDriverSpec(PDRIVERSPEC pSpecThis)
+STATIC VOID FreeDriverSpec(PDRIVERSPEC pSpecThis)
 {
     if (pSpecThis->pszKeyword)
         free(pSpecThis->pszKeyword);
@@ -412,7 +412,7 @@ static VOID FreeDriverSpec(PDRIVERSPEC pSpecThis)
  *@@changed V0.9.3 (2000-05-21) [umoeller]: DRVF_NOPARAMS wasn't recognized, fixed
  */
 
-static PLINKLIST InsertDriverCategories(HWND hwndCnr,
+STATIC PLINKLIST InsertDriverCategories(HWND hwndCnr,
                                         PDRIVERRECORD preccRoot,
                                                // in: root record core ("Drivers drivers")
                                         PSZ pszConfigSys,
@@ -589,7 +589,7 @@ static PLINKLIST InsertDriverCategories(HWND hwndCnr,
  *@@changed V0.9.16 (2002-01-09) [umoeller]: added excpt handling, this took down the wps
  */
 
-static void _Optlink fntDriversThread(PTHREADINFO pti)
+STATIC void _Optlink fntDriversThread(PTHREADINFO pti)
 {
     TRY_LOUD(excpt1)
     {
@@ -683,7 +683,7 @@ static void _Optlink fntDriversThread(PTHREADINFO pti)
  *@@added V0.9.4 (2000-08-08) [umoeller]
  */
 
-static MPARAM G_ampDriversPage[] =
+STATIC MPARAM G_ampDriversPage[] =
     {
         MPFROM2SHORT(ID_OSDI_DRIVR_CNR, XAC_SIZEX | XAC_SIZEY),
         MPFROM2SHORT(ID_OSDI_DRIVR_GROUP1, XAC_SIZEX | XAC_SIZEY),

@@ -105,7 +105,7 @@
 // two arrays to specify the affected settings with
 // each "view" page; used with cmnSetupSetDefaults etc.
 
-static ULONG    G_aulView1SetupOffsets[]
+STATIC ULONG    G_aulView1SetupOffsets[]
     = {
             FIELDOFFSET(XCenterData, fReduceDesktopWorkarea),
             FIELDOFFSET(XCenterData, ulPosition),
@@ -114,7 +114,7 @@ static ULONG    G_aulView1SetupOffsets[]
             FIELDOFFSET(XCenterData, lPriorityDelta)   // V0.9.9 (2001-02-28) [pr]: added
       };
 
-static ULONG    G_aulView2SetupOffsets[]
+STATIC ULONG    G_aulView2SetupOffsets[]
     = {
             FIELDOFFSET(XCenterData, flDisplayStyle),
             FIELDOFFSET(XCenterData, ul3DBorderWidth),
@@ -122,10 +122,10 @@ static ULONG    G_aulView2SetupOffsets[]
             FIELDOFFSET(XCenterData, ulWidgetSpacing)
       };
 
-static BOOL     G_fSetting = FALSE;
+STATIC BOOL     G_fSetting = FALSE;
 
-static SLDCDATA
-        DelaySliderCData =
+STATIC SLDCDATA
+        CtrDelaySliderCData =
              {
                      sizeof(SLDCDATA),
             // usScale1Increments:
@@ -149,15 +149,15 @@ static SLDCDATA
 #define DESCRTXT_WIDTH      15
 #define SLIDER_WIDTH        (HALF_TABLE_WIDTH - 4 * COMMON_SPACING - DESCRTXT_WIDTH )
 
-static const CONTROLDEF
+STATIC const CONTROLDEF
     FrameGroup = LOADDEF_GROUP(ID_XRDI_VIEW_FRAMEGROUP, VIEW_TABLE_WIDTH),
     ReduceDesktopCB = LOADDEF_AUTOCHECKBOX(ID_CRDI_VIEW_REDUCEWORKAREA),
     AlwaysOnTopCB = LOADDEF_AUTOCHECKBOX(ID_CRDI_VIEW_ALWAYSONTOP),
     AnimateCB = LOADDEF_AUTOCHECKBOX(ID_CRDI_VIEW_ANIMATE),
     AutoHideCB = LOADDEF_AUTOCHECKBOX(ID_CRDI_VIEW_AUTOHIDE),
-    DelayTxt1 = LOADDEF_TEXT(ID_CRDI_VIEW_AUTOHIDE_TXT1),
-    DelaySlider = CONTROLDEF_SLIDER(ID_CRDI_VIEW_AUTOHIDE_SLIDER, 108, 14, &DelaySliderCData),
-    DelayTxt2 = CONTROLDEF_TEXT_CENTER("TBR", ID_CRDI_VIEW_AUTOHIDE_TXT2, DESCRTXT_WIDTH, SZL_AUTOSIZE),
+    CtrDelayTxt1 = LOADDEF_TEXT(ID_CRDI_VIEW_AUTOHIDE_TXT1),
+    CtrDelaySlider = CONTROLDEF_SLIDER(ID_CRDI_VIEW_AUTOHIDE_SLIDER, 108, 14, &CtrDelaySliderCData),
+    CtrDelayTxt2 = CONTROLDEF_TEXT_CENTER("TBR", ID_CRDI_VIEW_AUTOHIDE_TXT2, DESCRTXT_WIDTH, SZL_AUTOSIZE),
     AutoHideClickCB = LOADDEF_AUTOCHECKBOX(ID_CRDI_VIEW_AUTOHIDE_CLICK),
     AutoScreenBorderCB = LOADDEF_AUTOCHECKBOX(ID_CRDI_VIEW_AUTOSCREENBORDER),
     PriorityGroup = LOADDEF_GROUP(ID_CRDI_VIEW_PRTY_GROUP, HALF_TABLE_WIDTH),
@@ -167,7 +167,7 @@ static const CONTROLDEF
     TopOfScreenRadio = LOADDEF_FIRST_AUTORADIO(ID_CRDI_VIEW_TOPOFSCREEN),
     BottomOfScreenRadio = LOADDEF_NEXT_AUTORADIO(ID_CRDI_VIEW_BOTTOMOFSCREEN);
 
-static const DLGHITEM G_dlgXCenterView[] =
+STATIC const DLGHITEM G_dlgXCenterView[] =
     {
         START_TABLE,            // root table, required
             START_ROW(0),
@@ -182,9 +182,9 @@ static const DLGHITEM G_dlgXCenterView[] =
                         CONTROL_DEF(&AutoHideCB),
                     START_ROW(ROW_VALIGN_CENTER),
                         CONTROL_DEF(&G_Spacing),
-                        CONTROL_DEF(&DelayTxt1),
-                        CONTROL_DEF(&DelaySlider),
-                        CONTROL_DEF(&DelayTxt2),
+                        CONTROL_DEF(&CtrDelayTxt1),
+                        CONTROL_DEF(&CtrDelaySlider),
+                        CONTROL_DEF(&CtrDelayTxt2),
                     START_ROW(ROW_VALIGN_CENTER),
                         CONTROL_DEF(&G_Spacing),
                         CONTROL_DEF(&AutoHideClickCB),
@@ -511,7 +511,7 @@ MRESULT ctrpView1ItemChanged(PNOTEBOOKPAGE pnbp,
  *
  ********************************************************************/
 
-static SLDCDATA
+STATIC SLDCDATA
         BorderWidthSliderCData =
              {
                      sizeof(SLDCDATA),
@@ -544,7 +544,7 @@ static SLDCDATA
 #define STYLE_SLIDERS_HEIGHT        15
 #define STYLE_SLIDERTEXT_WIDTH      DESCRTXT_WIDTH      // from above
 
-static const CONTROLDEF
+STATIC const CONTROLDEF
     BorderWidthGroup = LOADDEF_GROUP(ID_CRDI_VIEW2_3DBORDER_GROUP, HALF_TABLE_WIDTH),
     BorderWidthSlider = CONTROLDEF_SLIDER(
                             ID_CRDI_VIEW2_3DBORDER_SLIDER,
@@ -587,7 +587,7 @@ static const CONTROLDEF
     SunkBordersCB = LOADDEF_AUTOCHECKBOX(ID_CRDI_VIEW2_SUNKBORDERS),
     HatchInUseCB = LOADDEF_AUTOCHECKBOX(ID_CRDI_VIEW2_HATCHINUSE);
 
-static const DLGHITEM G_dlgXCenterStyle[] =
+STATIC const DLGHITEM G_dlgXCenterStyle[] =
     {
         START_TABLE,            // root table, required
             START_ROW(0),
@@ -910,7 +910,7 @@ PFNWP G_pfnwpWidgetsCnr = NULL;
  *@@added V0.9.14 (2001-07-29) [lafaix]
  */
 
-static MRESULT EXPENTRY fnwpWidgetsCnr(HWND hwndCnr,
+STATIC MRESULT EXPENTRY fnwpWidgetsCnr(HWND hwndCnr,
                                        ULONG msg,
                                        MPARAM mp1,
                                        MPARAM mp2)
@@ -995,7 +995,7 @@ DosBeep(100, 100);
  *@@added V0.9.13 (2001-06-23) [umoeller]
  */
 
-static PWIDGETRECORD InsertWidgetSetting(HWND hwndCnr,
+STATIC PWIDGETRECORD InsertWidgetSetting(HWND hwndCnr,
                                          PPRIVATEWIDGETSETTING pSetting,
                                          const WIDGETPOSITION *pPosition)
                                   /*
@@ -1201,7 +1201,7 @@ VOID ctrpWidgetsInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
 // #define WIDGET_PRIVATE_RMF  "(" WIDGET_RMF_MECH ")x(" WIDGET_RMF_FORMAT ")"
 #define WIDGET_PRIVATE_RMF  "(" WIDGET_RMF_MECH ",DRM_OS2FILE,DRM_DISCARD)x(" WIDGET_RMF_FORMAT ")"
 
-static PWIDGETRECORD G_precDragged = NULL,
+STATIC PWIDGETRECORD G_precDragged = NULL,
                      G_precAfter = NULL;
 
 /*

@@ -121,7 +121,7 @@
  *
  ********************************************************************/
 
-static const char *G_pcszInstanceFilter = "OS2KRNL,*.ADD,*.COM,*.DLL,*.DMD,*.EXE,*.FLT,*.IFS,*.SNP,*.SYS";
+STATIC const char *G_pcszPgmFileFilter = "OS2KRNL,*.ADD,*.COM,*.DLL,*.DMD,*.EXE,*.FLT,*.IFS,*.SNP,*.SYS";
 
 /* ******************************************************************
  *
@@ -825,7 +825,7 @@ SOM_Scope BOOL  SOMLINK xpgf_wpQueryDefaultHelp(XWPProgramFile *somSelf,
  *@@added V0.9.18 (2002-03-19) [umoeller]
  */
 
-static BOOL ProgramFileIconHandler(XWPProgramFile *somSelf,
+STATIC BOOL ProgramFileIconHandler(XWPProgramFile *somSelf,
                                    HPOINTER *phptr,      // out: if != NULL, newly build icon handle
                                    PULONG pcbIconInfo,   // out: if != NULL, size of ICONINFO buffer required
                                    PICONINFO pIconInfo,  // out: if != NULL, icon info
@@ -1592,7 +1592,7 @@ SOM_Scope PSZ  SOMLINK xpgfM_wpclsQueryInstanceFilter(M_XWPProgramFile *somSelf)
     {
 #ifndef __NOICONREPLACEMENTS__
         if (cmnQuerySetting(sfIconReplacements))
-            return (PSZ)G_pcszInstanceFilter;
+            return (PSZ)G_pcszPgmFileFilter;
 #endif
 
         return "*.COM,*.EXE";

@@ -116,7 +116,7 @@
  *
  ********************************************************************/
 
-static THREADINFO   G_tiInsertDevices = {0},
+STATIC THREADINFO   G_tiInsertDevices = {0},
                     G_tiInsertCodecs = {0},
                     G_tiInsertIOProcs = {0};
 

@@ -90,7 +90,7 @@
  ********************************************************************/
 
 // default trash can
-static XWPNetwork *G_pNetworkFolder = NULL;
+STATIC XWPNetwork *G_pNetworkFolder = NULL;
 
 /* ******************************************************************
  *

@@ -152,54 +152,54 @@
  ********************************************************************/
 
 // main module (XFLDR.DLL)
-static char             G_szDLLFile[CCHMAXPATH];
-static HMODULE          G_hmodDLL = NULLHANDLE;
+STATIC char             G_szDLLFile[CCHMAXPATH];
+STATIC HMODULE          G_hmodDLL = NULLHANDLE;
 
 // res module (XWPRES.DLL)
-static HMODULE          G_hmodRes = NULLHANDLE;
+STATIC HMODULE          G_hmodRes = NULLHANDLE;
 
 // NLS
-static HMODULE          G_hmodNLS = NULLHANDLE;
+STATIC HMODULE          G_hmodNLS = NULLHANDLE;
 
 // paths
-static CHAR             G_szXWPBasePath[CCHMAXPATH] = "";        // V0.9.16 (2002-01-13) [umoeller]
+STATIC CHAR             G_szXWPBasePath[CCHMAXPATH] = "";        // V0.9.16 (2002-01-13) [umoeller]
 
-static CHAR             G_szXWPThemeDir[CCHMAXPATH] = "";
-static CHAR             G_szHelpLibrary[CCHMAXPATH] = "";
-static CHAR             G_szMessageFile[CCHMAXPATH] = "";
+STATIC CHAR             G_szXWPThemeDir[CCHMAXPATH] = "";
+STATIC CHAR             G_szHelpLibrary[CCHMAXPATH] = "";
+STATIC CHAR             G_szMessageFile[CCHMAXPATH] = "";
 
 // static GLOBALSETTINGS  G_GlobalSettings = {0};
             // removed V0.9.16 (2002-01-05) [umoeller]
 // array of ULONGs with values for cmnGetSetting; this
 // is filled on startup
-static ULONG            G_aulSettings[___LAST_SETTING];
+STATIC ULONG            G_aulSettings[___LAST_SETTING];
 #ifndef __NOTURBOFOLDERS__
 extern BOOL             G_fTurboSettingsEnabled = FALSE;
             // set by cmnEnableTurboFolders() V0.9.16 (2002-01-05) [umoeller]
 #endif
 
 #ifndef __NOICONREPLACEMENTS__
-static HMODULE          G_hmodIconsDLL = NULLHANDLE;
+STATIC HMODULE          G_hmodIconsDLL = NULLHANDLE;
 #endif
-static CHAR             G_szLanguageCode[20] = "";
+STATIC CHAR             G_szLanguageCode[20] = "";
 
-static HPOINTER         G_hptrDlgIcon = NULLHANDLE;
+STATIC HPOINTER         G_hptrDlgIcon = NULLHANDLE;
             // XWP icon for message boxes and stuff
             // V0.9.16 (2001-11-10) [umoeller]
 
-static COUNTRYSETTINGS  G_CountrySettings;                  // V0.9.6 (2000-11-12) [umoeller]
-static BOOL             G_fCountrySettingsLoaded = FALSE;
+STATIC COUNTRYSETTINGS  G_CountrySettings;                  // V0.9.6 (2000-11-12) [umoeller]
+STATIC BOOL             G_fCountrySettingsLoaded = FALSE;
 
-static ULONG            G_ulCurHelpPanel = 0;      // holds help panel for dialog
+STATIC ULONG            G_ulCurHelpPanel = 0;      // holds help panel for dialog
 
-static CHAR             G_szStatusBarFont[100] = "";
-static CHAR             G_szSBTextNoneSel[CCHMAXMNEMONICS] = "",
+STATIC CHAR             G_szStatusBarFont[100] = "";
+STATIC CHAR             G_szSBTextNoneSel[CCHMAXMNEMONICS] = "",
                         G_szSBTextMultiSel[CCHMAXMNEMONICS] = "";
-static ULONG            G_ulStatusBarHeight = 0;
+STATIC ULONG            G_ulStatusBarHeight = 0;
 
-static CHAR             G_szRunDirectory[CCHMAXPATH]; // V0.9.14
+STATIC CHAR             G_szRunDirectory[CCHMAXPATH]; // V0.9.14
 
-static PTMFMSGFILE      G_pXWPMsgFile = NULL;        // V0.9.16 (2001-10-08) [umoeller]
+STATIC PTMFMSGFILE      G_pXWPMsgFile = NULL;        // V0.9.16 (2001-10-08) [umoeller]
 
 extern BOOL             G_fIsWarp4 = FALSE;     // V0.9.19 (2002-04-24) [umoeller]
 
@@ -1071,9 +1071,9 @@ typedef struct _XWPENTITY
 
 typedef const struct _XWPENTITY *PCXWPENTITY;
 
-static CHAR     G_szCopyright[5] = "";
+STATIC CHAR     G_szCopyright[5] = "";
 
-static PCSZ     G_pcszBldlevel = BLDLEVEL_VERSION,
+STATIC PCSZ     G_pcszBldlevel = BLDLEVEL_VERSION,
                 G_pcszBldDate = __DATE__,
                 G_pcszNewLine = "\n",
                 G_pcszNBSP = "\xFF",      // non-breaking space
@@ -1082,9 +1082,9 @@ static PCSZ     G_pcszBldlevel = BLDLEVEL_VERSION,
                 G_pcszCopyChar = "\xB8",       // in codepage 850
                 G_pcszCopyright = G_szCopyright;
 
-static BOOL     G_fEntitiesHacked = FALSE;
+STATIC BOOL     G_fEntitiesHacked = FALSE;
 
-static const XWPENTITY G_aEntities[] =
+STATIC const XWPENTITY G_aEntities[] =
     {
         "&copy;", &G_pcszCopyright,
         "&xwp;", &ENTITY_XWORKPLACE,
@@ -1144,7 +1144,7 @@ VOID cmnInitEntities(VOID)
  *@@added V0.9.16 (2001-09-29) [umoeller]
  */
 
-static ULONG ReplaceEntities(PXSTRING pstr)
+STATIC ULONG ReplaceEntities(PXSTRING pstr)
 {
     ULONG ul,
           rc = 0;
@@ -1214,9 +1214,9 @@ void cmnLoadString(HAB habDesktop,
     // do not free string
 }
 
-static HMTX        G_hmtxStringsCache = NULLHANDLE;
-static TREE        *G_StringsCache;
-static LONG        G_cStringsInCache = 0;
+STATIC HMTX        G_hmtxStringsCache = NULLHANDLE;
+STATIC TREE        *G_StringsCache;
+STATIC LONG        G_cStringsInCache = 0;
 
 /*
  *@@ LockStrings:
@@ -1224,7 +1224,7 @@ static LONG        G_cStringsInCache = 0;
  *@@added V0.9.9 (2001-04-04) [umoeller]
  */
 
-static BOOL LockStrings(VOID)
+STATIC BOOL LockStrings(VOID)
 {
     if (G_hmtxStringsCache)
         return !DosRequestMutexSem(G_hmtxStringsCache, SEM_INDEFINITE_WAIT);
@@ -1250,7 +1250,7 @@ static BOOL LockStrings(VOID)
  *@@added V0.9.9 (2001-04-04) [umoeller]
  */
 
-static VOID UnlockStrings(VOID)
+STATIC VOID UnlockStrings(VOID)
 {
     DosReleaseMutexSem(G_hmtxStringsCache);
 }
@@ -1403,7 +1403,7 @@ PSZ cmnGetString(ULONG ulStringID)
  *@@added V0.9.9 (2001-04-04) [umoeller]
  */
 
-static VOID UnloadAllStrings(VOID)
+STATIC VOID UnloadAllStrings(VOID)
 {
     BOOL    fLocked = FALSE;
 
@@ -1716,7 +1716,7 @@ LONG        G_cIconsInCache = 0;
  *@@changed V0.9.20 (2002-07-31) [umoeller]: renamed, returning APIRET now
  */
 
-static APIRET LockIconsCache(VOID)
+STATIC APIRET LockIconsCache(VOID)
 {
     APIRET arc;
 
@@ -1742,7 +1742,7 @@ static APIRET LockIconsCache(VOID)
  *@@added V0.9.16 (2001-12-08) [umoeller]
  */
 
-static VOID UnlockIconsCache(VOID)
+STATIC VOID UnlockIconsCache(VOID)
 {
     DosReleaseMutexSem(G_hmtxIconsCache);
 }
@@ -1762,7 +1762,7 @@ typedef struct _STDICON
 
 typedef const struct _STDICON *PCSTDICON;
 
-static const STDICON aStdIcons[] =
+STATIC const STDICON aStdIcons[] =
     {
         {
             STDICON_SHADOWOVERLAY,  // added V0.9.20 (2002-07-31) [umoeller]
@@ -1878,7 +1878,7 @@ static const STDICON aStdIcons[] =
  *@@added V0.9.16 (2001-12-08) [umoeller]
  */
 
-static PICONTREENODE LoadNewIcon(ULONG ulStdIcon)
+STATIC PICONTREENODE LoadNewIcon(ULONG ulStdIcon)
 {
     HPOINTER hptrReturn = NULLHANDLE;
     PICONTREENODE pNode;
@@ -1987,8 +1987,8 @@ static PICONTREENODE LoadNewIcon(ULONG ulStdIcon)
     return pNode;
 }
 
-static PICONTREENODE G_pLastIconTreeNode = NULL;
-static ULONG         G_ulLastStdIconId = NULLHANDLE;
+STATIC PICONTREENODE G_pLastIconTreeNode = NULL;
+STATIC ULONG         G_ulLastStdIconId = NULLHANDLE;
 
 /*
  *@@ FindIconTreeNode:
@@ -1996,7 +1996,7 @@ static ULONG         G_ulLastStdIconId = NULLHANDLE;
  *@@added V0.9.20 (2002-07-31) [umoeller]
  */
 
-static PICONTREENODE FindIconTreeNode(ULONG ulStdIconId)
+STATIC PICONTREENODE FindIconTreeNode(ULONG ulStdIconId)
 {
     PICONTREENODE pNode;
 
@@ -2827,7 +2827,7 @@ typedef const struct _SETTINGINFO *PCSETTINGINFO;
  *@@changed V0.9.19 (2002-04-17) [umoeller]: adjusted for new menu handling
  */
 
-static const SETTINGINFO G_aSettingInfos[] =
+STATIC const SETTINGINFO G_aSettingInfos[] =
     {
 #ifndef __NOICONREPLACEMENTS__
         sfIconReplacements, FIELDOFFSET(OLDGLOBALSETTINGS, __fIconReplacements), 4,
@@ -3225,7 +3225,7 @@ static const SETTINGINFO G_aSettingInfos[] =
  *@@added V0.9.16 (2002-01-05) [umoeller]
  */
 
-static PCSETTINGINFO FindSettingInfo(XWPSETTING s)
+STATIC PCSETTINGINFO FindSettingInfo(XWPSETTING s)
 {
     ULONG ul2;
     for (ul2 = 0;
@@ -3257,7 +3257,7 @@ static PCSETTINGINFO FindSettingInfo(XWPSETTING s)
  *@@added V0.9.16 (2002-01-05) [umoeller]
  */
 
-static VOID ConvertOldGlobalSettings(POLDGLOBALSETTINGS pOld)
+STATIC VOID ConvertOldGlobalSettings(POLDGLOBALSETTINGS pOld)
 {
     ULONG s, ul2;
 
@@ -4913,7 +4913,7 @@ BOOL cmnAddProductInfoMenuItem(WPFolder *somSelf,
 #define INFO_WIDTH  250
 #endif
 
-static CONTROLDEF
+STATIC CONTROLDEF
     ProductInfoBitmap = CONTROLDEF_BITMAP(
                             NULLHANDLE,     // replaced with HBITMAP below
                             ID_XFD_PRODLOGO),
@@ -4988,7 +4988,7 @@ static CONTROLDEF
                             STD_BUTTON_HEIGHT);
 
 
-static const DLGHITEM dlgProductInfo[] =
+STATIC const DLGHITEM dlgProductInfo[] =
     {
         START_TABLE_ALIGN,            // root table, required
             START_ROW(ROW_VALIGN_CENTER),
@@ -5034,7 +5034,7 @@ static const DLGHITEM dlgProductInfo[] =
  *@@changed V0.9.21 (2002-08-28) [umoeller]: added bug report
  */
 
-static MRESULT EXPENTRY fnwpProductInfo(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
+STATIC MRESULT EXPENTRY fnwpProductInfo(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc;
 
@@ -5666,7 +5666,7 @@ WPObject* cmnQueryObjectFromID(PCSZ pcszObjectID)   // in: object ID (e.g. "<WP_
  *
  ********************************************************************/
 
-static PCSZ G_apcszExtensions[]
+STATIC PCSZ G_apcszExtensions[]
     = {
                 "EXE",
                 "COM",
@@ -5689,7 +5689,7 @@ static PCSZ G_apcszExtensions[]
  *@@added V0.9.11 (2001-04-18) [umoeller]
  */
 
-static PSZ StripParams(PSZ pcszCommand,
+STATIC PSZ StripParams(PSZ pcszCommand,
                        PSZ *ppParams)      // out: ptr to first char of params
 {
     PSZ pszReturn = NULL;
@@ -5736,7 +5736,7 @@ static PSZ StripParams(PSZ pcszCommand,
  *@@added V0.9.14 (2001-08-23) [pr]
  */
 
-static APIRET GetExeFromControl(HWND hwnd,
+STATIC APIRET GetExeFromControl(HWND hwnd,
                                 PSZ pszExecutable,
                                 USHORT usExeLength)
 {
@@ -5776,7 +5776,7 @@ static APIRET GetExeFromControl(HWND hwnd,
  *@@added V0.9.14 (2001-08-23) [pr]
  */
 
-static BOOL LoadRunHistory(HWND hwnd)
+STATIC BOOL LoadRunHistory(HWND hwnd)
 {
     USHORT i;
     BOOL   bOK = FALSE;
@@ -5813,7 +5813,7 @@ static BOOL LoadRunHistory(HWND hwnd)
  *@@added V0.9.14 (2001-08-23) [pr]
  */
 
-static VOID SaveRunHistory(HWND hwnd)
+STATIC VOID SaveRunHistory(HWND hwnd)
 {
     USHORT i;
 
@@ -5838,7 +5838,7 @@ static VOID SaveRunHistory(HWND hwnd)
  *@@added V0.9.14 (2001-08-23) [pr]
  */
 
-static VOID UpdateRunHistory(HWND hwnd)
+STATIC VOID UpdateRunHistory(HWND hwnd)
 {
     CHAR szData[CCHMAXPATH];
     USHORT i, usCount;
@@ -5892,7 +5892,7 @@ static VOID UpdateRunHistory(HWND hwnd)
  *@@changed V0.9.14 (2001-08-23) [pr]: added more options and Browse button
  */
 
-static MRESULT EXPENTRY fnwpRunCommandLine(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
+STATIC MRESULT EXPENTRY fnwpRunCommandLine(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
 
@@ -6079,7 +6079,7 @@ static MRESULT EXPENTRY fnwpRunCommandLine(HWND hwnd, ULONG msg, MPARAM mp1, MPA
 #define WIN16_GROUP_WIDTH   (WIN16_TABLE_WIDTH + 2 * COMMON_SPACING + 2 * GROUP_INNER_SPACING_X)
 #define LEFT_COLUMN_WIDTH   (RUNDLG_WIDTH - WIN16_GROUP_WIDTH)
 
-static const CONTROLDEF
+STATIC const CONTROLDEF
     RunIntro = LOADDEF_TEXT_WORDBREAK_MNEMONIC(ID_XFD_RUN_INTRO, RUNDLG_WIDTH),
     RunCommandDrop = CONTROLDEF_DROPDOWN(ID_XFD_RUN_COMMAND, RUNDLG_WIDTH, 150),
     RunFullpath = CONTROLDEF_TEXT_RIGHT("M", ID_XFD_RUN_FULLPATH, RUNDLG_WIDTH, SZL_AUTOSIZE),
@@ -6093,7 +6093,7 @@ static const CONTROLDEF
     RunStartupDirEF = CONTROLDEF_ENTRYFIELD(NULL, ID_XFD_RUN_STARTUPDIR, RUNDLG_WIDTH, SZL_AUTOSIZE),
     RunBrowseButton = LOADDEF_PUSHBUTTON(DID_BROWSE);
 
-static const DLGHITEM G_dlgRun[] =
+STATIC const DLGHITEM G_dlgRun[] =
     {
         START_TABLE,
             START_ROW(0),

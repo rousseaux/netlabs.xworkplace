@@ -147,21 +147,21 @@
  ********************************************************************/
 
 // shutdown animation
-static SHUTDOWNANIM     G_sdAnim;
+STATIC SHUTDOWNANIM     G_sdAnim;
 
-static THREADINFO       G_tiShutdownThread = {0},
+STATIC THREADINFO       G_tiShutdownThread = {0},
                         G_tiUpdateThread = {0};
 
-static ULONG            G_ulShutdownState = XSD_IDLE;
+STATIC ULONG            G_ulShutdownState = XSD_IDLE;
                 // V0.9.19 (2002-04-24) [umoeller]
                 // -- XSD_* flag signalling status
 
-static BOOL             G_fConfirmWindowExtended = TRUE;
-static BOOL             G_fConfirmDialogReady = FALSE;
-static ULONG            G_ulConfirmHelpPanel = NULLHANDLE;
+STATIC BOOL             G_fConfirmWindowExtended = TRUE;
+STATIC BOOL             G_fConfirmDialogReady = FALSE;
+STATIC ULONG            G_ulConfirmHelpPanel = NULLHANDLE;
 
-static PFNWP            G_pfnwpFrameOrig = NULL;
-static PXBITMAP         G_pbmDim = NULLHANDLE;
+STATIC PFNWP            G_pfnwpFrameOrig = NULL;
+STATIC PXBITMAP         G_pbmDim = NULLHANDLE;
 
 // forward declarations
 MRESULT EXPENTRY fnwpShutdownThread(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2);
@@ -183,7 +183,7 @@ void _Optlink fntUpdateThread(PTHREADINFO pti);
  *@@changed V0.9.1 (2000-01-20) [umoeller]: reformat wasn't working right; fixed.
  */
 
-static VOID ReformatConfirmWindow(HWND hwndDlg,        // in: confirmation dlg window
+STATIC VOID ReformatConfirmWindow(HWND hwndDlg,        // in: confirmation dlg window
                                   BOOL fExtended)      // in: if TRUE, the list box will be shown
 {
     // _Pmpf(("ReformatConfirmWindow: %d, ready: %d", fExtended, G_fConfirmDialogReady));
@@ -222,7 +222,7 @@ static VOID ReformatConfirmWindow(HWND hwndDlg,        // in: confirmation dlg w
  *@@changed V0.9.1 (2000-01-20) [umoeller]: reformat wasn't working right; fixed.
  */
 
-static MRESULT EXPENTRY fnwpConfirm(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
+STATIC MRESULT EXPENTRY fnwpConfirm(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = MPNULL;
     switch (msg)
@@ -266,7 +266,7 @@ static MRESULT EXPENTRY fnwpConfirm(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
  *@@added V0.9.16 (2002-01-04) [umoeller]
  */
 
-static MRESULT EXPENTRY fnwpDimScreen(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
+STATIC MRESULT EXPENTRY fnwpDimScreen(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
 
@@ -306,7 +306,7 @@ static MRESULT EXPENTRY fnwpDimScreen(HWND hwndFrame, ULONG msg, MPARAM mp1, MPA
  *@@added V0.9.16 (2002-01-04) [umoeller]
  */
 
-static HWND CreateDimScreenWindow(VOID)
+STATIC HWND CreateDimScreenWindow(VOID)
 {
     HWND hwnd;
 
@@ -594,7 +594,7 @@ ULONG xsdConfirmShutdown(PSHUTDOWNPARAMS psdParms)
     return (ulReturn);
 }
 
-static CONTROLDEF
+STATIC CONTROLDEF
     TrafficLightIcon = CONTROLDEF_ICON(0, ID_SDDI_ICON),
     ConfirmText = CONTROLDEF_TEXT_WORDBREAK(
                             LOAD_STRING,
@@ -624,7 +624,7 @@ static CONTROLDEF
                             STD_BUTTON_WIDTH,
                             STD_BUTTON_HEIGHT);
 
-static const DLGHITEM dlgConfirmRestartDesktop[] =
+STATIC const DLGHITEM dlgConfirmRestartDesktop[] =
     {
         START_TABLE,            // root table, required
             START_ROW(0),
@@ -1242,7 +1242,7 @@ MRESULT EXPENTRY fnwpAutoCloseDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
 #define ACL_WIDTH       200
 #define ACL_LB_WIDTH    (ACL_WIDTH - COMMON_SPACING - STD_BUTTON_WIDTH)
 
-static const CONTROLDEF
+STATIC const CONTROLDEF
     ACLIcon = CONTROLDEF_ICON(NULLHANDLE, ID_SDDI_ICON),
     ACLIntro = LOADDEF_TEXT_WORDBREAK(ID_XSDI_ACL_INTRO, ACL_WIDTH - 30),
     ACLListbox = CONTROLDEF_LISTBOX(ID_XSDI_XRB_LISTBOX, ACL_LB_WIDTH, 60),
@@ -1255,7 +1255,7 @@ static const CONTROLDEF
     ACLWMCloseRadio = LOADDEF_NEXT_AUTORADIO(ID_XSDI_ACL_WMCLOSE),
     ACLKillRadio = LOADDEF_NEXT_AUTORADIO(ID_XSDI_ACL_KILLSESSION);
 
-static const DLGHITEM G_dlgAutoCloseDetails[] =
+STATIC const DLGHITEM G_dlgAutoCloseDetails[] =
     {
         START_TABLE,
             START_ROW(ROW_VALIGN_CENTER),
@@ -1295,7 +1295,7 @@ static const DLGHITEM G_dlgAutoCloseDetails[] =
  *@@added V0.9.19 (2002-05-23) [umoeller]
  */
 
-static VOID ShowAutoCloseDetails(HWND hwndOwner)
+STATIC VOID ShowAutoCloseDetails(HWND hwndOwner)
 {
     PDLGHITEM paNew;
     if (!cmnLoadDialogStrings(G_dlgAutoCloseDetails,
@@ -2044,7 +2044,7 @@ ULONG xsdQueryShutdownState(VOID)
  *@@added V0.9.9 (2001-03-07) [umoeller]
  */
 
-static VOID StartShutdownThread(BOOL fStartShutdown,
+STATIC VOID StartShutdownThread(BOOL fStartShutdown,
                                 BOOL fPlayRestartDesktopSound,     // in: else: play shutdown sound
                                 PSHUTDOWNPARAMS psdp)
 {
@@ -2336,7 +2336,7 @@ BOOL xsdInitiateShutdownExt(PSHUTDOWNPARAMS psdpShared)
 
 #define COLUMN_WIDTH        100
 
-static const CONTROLDEF
+STATIC const CONTROLDEF
     ShutdownGroup = LOADDEF_GROUP(ID_SDDI_SHUTDOWNGROUP, SZL_AUTOSIZE),
     RebootAfterwardsCB = CONTROLDEF_AUTOCHECKBOX(
                             LOAD_STRING, // "~Reboot afterwards"
@@ -2397,7 +2397,7 @@ static const CONTROLDEF
                             -1,
                             STD_BUTTON_HEIGHT);
 
-static const DLGHITEM dlgShutdown[] =
+STATIC const DLGHITEM dlgShutdown[] =
     {
         START_TABLE,            // root table, required
             START_ROW(0),       // shared settings group
@@ -2457,7 +2457,7 @@ static const DLGHITEM dlgShutdown[] =
         END_TABLE
     };
 
-static const XWPSETTING G_ShutdownBackup[] =
+STATIC const XWPSETTING G_ShutdownBackup[] =
     {
         sflXShutdown,
 #ifndef __EASYSHUTDOWN__
@@ -4038,7 +4038,7 @@ BOOL _Optlink fncbSaveImmediate(WPObject *pobjThis,
  *@@changed V0.9.19 (2002-06-18) [umoeller]: no longer recovering windows to current desktop for restart wps
  */
 
-static void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
+STATIC void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
 {
     /*************************************************
      *
@@ -5072,7 +5072,7 @@ VOID xsdCloseVIO(PSHUTDOWNDATA pShutdownData,
  *@@added V0.9.9 (2001-04-04) [umoeller]
  */
 
-static VOID CloseOneItem(PSHUTDOWNDATA pShutdownData,
+STATIC VOID CloseOneItem(PSHUTDOWNDATA pShutdownData,
                          HWND hwndListbox,
                          PSHUTLISTITEM pItem)
 {
@@ -5217,7 +5217,7 @@ static VOID CloseOneItem(PSHUTDOWNDATA pShutdownData,
  *@@changed V0.9.19 (2002-06-18) [umoeller]: now running shutdown folder only for shutdown, not restart wps
  */
 
-static MRESULT EXPENTRY fnwpShutdownThread(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
+STATIC MRESULT EXPENTRY fnwpShutdownThread(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT         mrc = MRFALSE;
 
@@ -5681,7 +5681,7 @@ static MRESULT EXPENTRY fnwpShutdownThread(HWND hwndFrame, ULONG msg, MPARAM mp1
  *      Runs on the Shutdown thread.
  */
 
-static MRESULT EXPENTRY fncbUpdateINIStatus(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
+STATIC MRESULT EXPENTRY fncbUpdateINIStatus(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     if (hwnd)
         WinSendMsg(hwnd, msg, mp1, mp2);
@@ -5695,7 +5695,7 @@ static MRESULT EXPENTRY fncbUpdateINIStatus(HWND hwnd, ULONG msg, MPARAM mp1, MP
  *      Runs on the Shutdown thread.
  */
 
-static MRESULT EXPENTRY fncbSaveINIError(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
+STATIC MRESULT EXPENTRY fncbSaveINIError(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     return ((MRESULT)cmnMessageBox(HWND_DESKTOP,
                                    "XShutdown: Error",
@@ -5886,7 +5886,7 @@ VOID xsdFinishShutdown(PSHUTDOWNDATA pShutdownData) // HAB hab)
  *@@added V0.9.7 (2000-12-13) [umoeller]
  */
 
-static VOID PowerOffAnim(HPS hpsScreen)
+STATIC VOID PowerOffAnim(HPS hpsScreen)
 {
     anmPowerOff(hpsScreen,
                 500, 800, 200, 300);
@@ -6266,7 +6266,7 @@ VOID xsdFinishAPMPowerOff(PSHUTDOWNDATA pShutdownData)
  *@@changed V0.9.0 [umoeller]: code has been re-ordered for semaphore safety.
  */
 
-static void _Optlink fntUpdateThread(PTHREADINFO ptiMyself)
+STATIC void _Optlink fntUpdateThread(PTHREADINFO ptiMyself)
 {
     PSZ             pszErrMsg = NULL;
 

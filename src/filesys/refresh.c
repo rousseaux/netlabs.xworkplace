@@ -136,18 +136,18 @@
  ********************************************************************/
 
 // find folder thread
-static THREADINFO      G_tiFindFolder = {0};
-static HWND            G_hwndFindFolder = NULLHANDLE;
-static HEV             G_hevFindFolderReady = NULLHANDLE;
+STATIC THREADINFO      G_tiFindFolder = {0};
+STATIC HWND            G_hwndFindFolder = NULLHANDLE;
+STATIC HEV             G_hevFindFolderReady = NULLHANDLE;
 
 // pump thread
-static THREADINFO      G_tiPumpThread = {0};
-static HEV             G_hevNotificationPump = NULLHANDLE;
+STATIC THREADINFO      G_tiPumpThread = {0};
+STATIC HEV             G_hevNotificationPump = NULLHANDLE;
 
 // global list of all notifications (auto-free)
-static LINKLIST        G_llAllNotifications;
+STATIC LINKLIST        G_llAllNotifications;
 
-static BOOL            G_fExitAllRefreshThreads = FALSE;
+STATIC BOOL            G_fExitAllRefreshThreads = FALSE;
             // this is set to TRUE as an emergency exit if
             // one of the refresh threads crashed. All three
             // threads will then terminate.
@@ -359,7 +359,7 @@ VOID refrClearFolderNotifications(WPFolder *pFolder)
  *@@changed V0.9.20 (2002-07-25) [umoeller]: optimized refresh
  */
 
-static ULONG PumpAgedNotification(PXWPNOTIFY pNotify)
+STATIC ULONG PumpAgedNotification(PXWPNOTIFY pNotify)
 {
     // per default, remove the node V0.9.12 (2001-05-29) [umoeller]
     ULONG ulrc = REMOVE_NODE;
@@ -540,7 +540,7 @@ static ULONG PumpAgedNotification(PXWPNOTIFY pNotify)
  *@@changed V0.9.12 (2001-05-31) [umoeller]: fixed more list crashes on overflow
  */
 
-static BOOL PumpNotifications(VOID)
+STATIC BOOL PumpNotifications(VOID)
 {
     BOOL        fNotificationsLeft = FALSE;
     ULONG       ulrc = 100*1000;
@@ -635,7 +635,7 @@ static BOOL PumpNotifications(VOID)
  *@@added V0.9.9 (2001-02-01) [umoeller]
  */
 
-static VOID _Optlink fntPumpThread(PTHREADINFO ptiMyself)
+STATIC VOID _Optlink fntPumpThread(PTHREADINFO ptiMyself)
 {
     // QMSG qmsg;
     ULONG   ulWaitTime = 1000;
@@ -726,7 +726,7 @@ static VOID _Optlink fntPumpThread(PTHREADINFO ptiMyself)
  *@@changed V0.9.19 (2002-05-23) [umoeller]: added touching notifications for refresh and duplicates
  */
 
-static BOOL AddNotifyIfNotRedundant(PXWPNOTIFY pNotify)
+STATIC BOOL AddNotifyIfNotRedundant(PXWPNOTIFY pNotify)
 {
     BOOL    fAddThis = FALSE;
 
@@ -869,7 +869,7 @@ static BOOL AddNotifyIfNotRedundant(PXWPNOTIFY pNotify)
  *@@changed V0.9.16 (2002-01-09) [umoeller]: added RCNF_DEVICE_ATTACHED, RCNF_DEVICE_DETACHED support
  */
 
-static VOID FindFolderForNotification(PXWPNOTIFY pNotify,
+STATIC VOID FindFolderForNotification(PXWPNOTIFY pNotify,
                                       WPFolder **ppLastValidFolder)    // out: last valid folder
 {
     static M_WPFileSystem *pclsWPFileSystem = NULL;
@@ -1126,7 +1126,7 @@ static VOID FindFolderForNotification(PXWPNOTIFY pNotify,
  *@@changed V0.9.12 (2001-05-18) [umoeller]: added full refresh on overflow
  */
 
-static MRESULT EXPENTRY fnwpFindFolder(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
+STATIC MRESULT EXPENTRY fnwpFindFolder(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
 
@@ -1222,7 +1222,7 @@ static MRESULT EXPENTRY fnwpFindFolder(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
  *@@added V0.9.9 (2001-01-29) [umoeller]
  */
 
-static VOID _Optlink fntFindFolder(PTHREADINFO ptiMyself)
+STATIC VOID _Optlink fntFindFolder(PTHREADINFO ptiMyself)
 {
     QMSG qmsg;
 
@@ -1269,7 +1269,7 @@ static VOID _Optlink fntFindFolder(PTHREADINFO ptiMyself)
  *@@added V0.9.12 (2001-05-18) [umoeller]
  */
 
-static VOID PostXWPNotify(PCNINFO pCNInfo)
+STATIC VOID PostXWPNotify(PCNINFO pCNInfo)
 {
     // create an XWPNOTIFY struct which has
     // a CNINFO in it... the find-folder worker

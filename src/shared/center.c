@@ -791,7 +791,7 @@ VOID ctrDrawWidgetEmphasis(PXCENTERWIDGET pWidget,
  *@@changed V0.9.14 (2001-08-05) [lafaix]: optimized WGTF_TRANSPARENT support
  */
 
-static VOID DwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
+STATIC VOID DwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
     PXCENTERWIDGET pWidget;
     if (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
@@ -828,7 +828,7 @@ static VOID DwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *      implementation for WM_MENUEND in ctrDefWidgetProc.
  */
 
-static VOID DwgtMenuEnd(HWND hwnd,
+STATIC VOID DwgtMenuEnd(HWND hwnd,
                         HWND hwndMenu)
 {
     PXCENTERWIDGET pWidget;
@@ -850,7 +850,7 @@ static VOID DwgtMenuEnd(HWND hwnd,
  *@@changed V0.9.21 (2002-08-12) [umoeller]: confirmations for delete never worked, fixed
  */
 
-static VOID DwgtCommand(HWND hwnd,
+STATIC VOID DwgtCommand(HWND hwnd,
                         USHORT usCmd)
 {
     PXCENTERWIDGET  pWidget;
@@ -976,7 +976,7 @@ xcenterhelp:
  *@@added V0.9.9 (2001-03-09) [umoeller]
  */
 
-static MRESULT DwgtBeginDrag(HWND hwnd, MPARAM mp1)
+STATIC MRESULT DwgtBeginDrag(HWND hwnd, MPARAM mp1)
 {
     PXCENTERWIDGET pWidget;
     if (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
@@ -1003,7 +1003,7 @@ static MRESULT DwgtBeginDrag(HWND hwnd, MPARAM mp1)
  *      WinDestroyWindow on the widget.
  */
 
-static VOID DwgtDestroy(HWND hwnd)
+STATIC VOID DwgtDestroy(HWND hwnd)
 {
     PXCENTERWIDGET pWidget;
     HWND hwndClient;
@@ -1091,7 +1091,7 @@ static VOID DwgtDestroy(HWND hwnd)
  *@@changed V0.9.19 (2002-06-08) [umoeller]: fixed major leaks
  */
 
-static BOOL DwgtRender(HWND hwnd,
+STATIC BOOL DwgtRender(HWND hwnd,
                        PDRAGTRANSFER pdt)
 {
     PXCENTERWIDGET  pWidget;

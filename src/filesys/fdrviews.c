@@ -170,7 +170,7 @@ LINKLIST    G_llImages;     // linked list of IMAGECACHEENTRY structs, auto-free
  *
  */
 
-static BOOL LockImages(VOID)
+STATIC BOOL LockImages(VOID)
 {
     if (G_hmtxImages)
         return !DosRequestMutexSem(G_hmtxImages, SEM_INDEFINITE_WAIT);
@@ -193,7 +193,7 @@ static BOOL LockImages(VOID)
  *
  */
 
-static VOID UnlockImages(VOID)
+STATIC VOID UnlockImages(VOID)
 {
     DosReleaseMutexSem(G_hmtxImages);
 }

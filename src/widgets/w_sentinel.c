@@ -171,7 +171,7 @@ APIRET16 APIENTRY16 Dos16MemAvail(PULONG pulAvailMem);
 
 #define WNDCLASS_WIDGET_SENTINEL    "XWPCenterSentinelWidget"
 
-static const XCENTERWIDGETCLASS G_WidgetClasses[] =
+STATIC const XCENTERWIDGETCLASS G_WidgetClasses[] =
     {
         {
             WNDCLASS_WIDGET_SENTINEL,
@@ -245,7 +245,7 @@ PXSTRCAT pxstrcat = NULL;
 PXSTRCLEAR pxstrClear = NULL;
 PXSTRINIT pxstrInit = NULL;
 
-static const RESOLVEFUNCTION G_aImports[] =
+STATIC const RESOLVEFUNCTION G_aImports[] =
     {
         "csysQuerySwapperSize", (PFN*)&pcsysQuerySwapperSize,
 
@@ -617,7 +617,7 @@ MRESULT TwgtCreate(HWND hwnd,
  *@@added V0.9.19 (2002-06-08) [umoeller]
  */
 
-static VOID TwgtDestroy(HWND hwnd)
+STATIC VOID TwgtDestroy(HWND hwnd)
 {
     PXCENTERWIDGET pWidget;
     PWIDGETPRIVATE pPrivate;

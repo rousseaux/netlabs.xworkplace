@@ -251,7 +251,7 @@ int _System ioctl(int, int, char *, int);
 
 #define WNDCLASS_WIDGET_IPMON    "XWPCenterIPMonWidget"
 
-static const XCENTERWIDGETCLASS G_WidgetClasses[] =
+STATIC const XCENTERWIDGETCLASS G_WidgetClasses[] =
     {
         {
             WNDCLASS_WIDGET_IPMON,
@@ -329,7 +329,7 @@ PXSTRCLEAR pxstrClear = NULL;
 PXSTRINIT pxstrInit = NULL;
 PXSTRPRINTF pxstrPrintf = NULL;
 
-static const RESOLVEFUNCTION G_aImports[] =
+STATIC const RESOLVEFUNCTION G_aImports[] =
     {
         "cmnGetString", (PFN*)&pcmnGetString,
         "cmnQueryDefaultFont", (PFN*)&pcmnQueryDefaultFont,
@@ -682,7 +682,7 @@ VOID IwgtSaveSetupAndSend(HWND hwnd,
  *
  */
 
-static VOID SubclassAndSetColor(HWND hwndDlg,
+STATIC VOID SubclassAndSetColor(HWND hwndDlg,
                                 ULONG ulID,
                                 PCSZ pcszTitle,
                                 LONG lColor,
@@ -712,7 +712,7 @@ static VOID SubclassAndSetColor(HWND hwndDlg,
  *
  */
 
-static LONG GetColor(HWND hwndDlg,
+STATIC LONG GetColor(HWND hwndDlg,
                      ULONG ulID)
 {
     return (pwinhQueryPresColor(WinWindowFromID(hwndDlg, ulID),
@@ -724,7 +724,7 @@ static LONG GetColor(HWND hwndDlg,
 #define COLOR_WIDTH     50
 #define COLOR_HEIGHT    16
 
-static CONTROLDEF
+STATIC CONTROLDEF
     OKButton = CONTROLDEF_DEFPUSHBUTTON(NULL, DID_OK, STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT),
     CancelButton = CONTROLDEF_PUSHBUTTON(NULL, DID_CANCEL, STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT),
 
@@ -764,7 +764,7 @@ static CONTROLDEF
                                   COLOR_WIDTH,
                                   COLOR_HEIGHT);
 
-static const DLGHITEM
+STATIC const DLGHITEM
     dlgIpmon[] =
     {
         START_TABLE,
@@ -897,7 +897,7 @@ VOID EXPENTRY IwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
  *      implementation for WM_CREATE.
  */
 
-static MRESULT IwgtCreate(HWND hwnd,
+STATIC MRESULT IwgtCreate(HWND hwnd,
                           PXCENTERWIDGET pWidget)
 {
     MRESULT mrc = 0;        // continue window creation
@@ -1001,7 +1001,7 @@ static MRESULT IwgtCreate(HWND hwnd,
  *@@added V0.9.19 (2002-06-08) [umoeller]
  */
 
-static VOID IwgtDestroy(HWND hwnd)
+STATIC VOID IwgtDestroy(HWND hwnd)
 {
     PXCENTERWIDGET pWidget;
     PWIDGETPRIVATE pPrivate;
@@ -1035,7 +1035,7 @@ static VOID IwgtDestroy(HWND hwnd)
  *      implementation for WM_CONTROL.
  */
 
-static BOOL IwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
+STATIC BOOL IwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
     BOOL brc = FALSE;
 
@@ -1127,7 +1127,7 @@ static BOOL IwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *          pPrivate->hpsMem.
  */
 
-static VOID IwgtUpdateGraph(HWND hwnd,
+STATIC VOID IwgtUpdateGraph(HWND hwnd,
                             PWIDGETPRIVATE pPrivate)
 {
     PXCENTERWIDGET pWidget = pPrivate->pWidget;
@@ -1259,7 +1259,7 @@ static VOID IwgtUpdateGraph(HWND hwnd,
  *      Otherwise an error msg is displayed.
  */
 
-static VOID IwgtPaint2(HWND hwnd,
+STATIC VOID IwgtPaint2(HWND hwnd,
                        PWIDGETPRIVATE pPrivate,
                        HPS hps,
                        BOOL fDrawFrame)     // in: if TRUE, everything is painted
@@ -1354,7 +1354,7 @@ static VOID IwgtPaint2(HWND hwnd,
  *      implementation for WM_PAINT.
  */
 
-static VOID IwgtPaint(HWND hwnd)
+STATIC VOID IwgtPaint(HWND hwnd)
 {
     HPS hps;
     if (hps = WinBeginPaint(hwnd, NULLHANDLE, NULL))
@@ -1383,7 +1383,7 @@ static VOID IwgtPaint(HWND hwnd)
  *      array with the current IP values.
  */
 
-static VOID GetSnapshot(PWIDGETPRIVATE pPrivate)
+STATIC VOID GetSnapshot(PWIDGETPRIVATE pPrivate)
 {
     if (pPrivate->sock > 0)
     {
@@ -1477,7 +1477,7 @@ static VOID GetSnapshot(PWIDGETPRIVATE pPrivate)
  *      graph bitmap, and invalidates the window.
  */
 
-static VOID IwgtTimer(HWND hwnd)
+STATIC VOID IwgtTimer(HWND hwnd)
 {
     PXCENTERWIDGET pWidget;
     PWIDGETPRIVATE pPrivate;
@@ -1532,7 +1532,7 @@ static VOID IwgtTimer(HWND hwnd)
  *
  */
 
-static VOID IwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
+STATIC VOID IwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
     PXCENTERWIDGET pWidget;
     PWIDGETPRIVATE pPrivate;
@@ -1610,7 +1610,7 @@ static VOID IwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *
  */
 
-static VOID IwgtPresParamChanged(HWND hwnd,
+STATIC VOID IwgtPresParamChanged(HWND hwnd,
                                  ULONG ulAttrChanged)
 {
     PXCENTERWIDGET pWidget;
@@ -1694,7 +1694,7 @@ static VOID IwgtPresParamChanged(HWND hwnd,
  *
  */
 
-static VOID HackContextMenu(PWIDGETPRIVATE pPrivate)
+STATIC VOID HackContextMenu(PWIDGETPRIVATE pPrivate)
 {
     HWND hwndSubmenu;
     SHORT s = (SHORT)WinSendMsg(pPrivate->pWidget->hwndContextMenu,
@@ -1749,7 +1749,7 @@ static VOID HackContextMenu(PWIDGETPRIVATE pPrivate)
  *@@added V0.9.19 (2002-06-08) [umoeller]
  */
 
-static MRESULT IwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
+STATIC MRESULT IwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
     PXCENTERWIDGET pWidget;
     PWIDGETPRIVATE pPrivate;

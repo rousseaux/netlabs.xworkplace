@@ -210,7 +210,7 @@ VOID plgUnlockClasses(PPLUGINCATEGORY pplgCategory)
  *@@changed V0.9.9 (2001-02-06) [umoeller]: added fCallUnInit
  */
 
-static APIRET FreeModule(HMODULE hmod,
+STATIC APIRET FreeModule(HMODULE hmod,
                          BOOL fCallUnInit)     // in: if TRUE, "uninit" export gets called
 {
     if (fCallUnInit)

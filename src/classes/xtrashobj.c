@@ -180,7 +180,7 @@ typedef struct _XTRO_DETAILS
 #endif
         // raised V0.9.12 (2001-05-18) [umoeller]
 
-static CLASSFIELDINFO G_acfiTrashObject[XTRO_EXTRAFIELDS];
+STATIC CLASSFIELDINFO G_acfiTrashObject[XTRO_EXTRAFIELDS];
 
 /* ******************************************************************
  *

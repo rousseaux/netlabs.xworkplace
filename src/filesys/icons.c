@@ -720,7 +720,7 @@ typedef struct _WIN16DIBINFO
  *@@added V0.9.16 (2001-12-18) [umoeller]
  */
 
-static const struct _DefaultIconHeader
+STATIC const struct _DefaultIconHeader
 {
         // bitmap array file header;
         // includes first BITMAPFILEHEADER for AND and XOR masks
@@ -799,7 +799,7 @@ static const struct _DefaultIconHeader
  *@@added V0.9.16 (2001-12-18) [umoeller]
  */
 
-static APIRET ConvertWinIcon(PBYTE pbBuffer,       // in: windows icon data
+STATIC APIRET ConvertWinIcon(PBYTE pbBuffer,       // in: windows icon data
                              ULONG cbBuffer,       // in: size of *pbBuffer
                              PBYTE *ppbResData,     // out: converted icon data (to be free()'d)
                              PULONG pcbResdata)   // out: size of converted data (ptr can be NULL)

@@ -732,7 +732,7 @@ BOOL dtpMenuItemSelected(XFldDesktop *somSelf,
  *
  ********************************************************************/
 
-static const CONTROLDEF
+STATIC const CONTROLDEF
 #ifndef __NOBOOTLOGO__
     BootLogoGroup = LOADDEF_GROUP(ID_XSDI_DTP_LOGOGROUP, SZL_AUTOSIZE),
     BootLogoCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_DTP_BOOTLOGO),
@@ -784,7 +784,7 @@ static const CONTROLDEF
 #endif
     NumLockOnCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_DTP_NUMLOCKON);
 
-static const DLGHITEM dlgDesktopStartup[] =
+STATIC const DLGHITEM dlgDesktopStartup[] =
     {
         START_TABLE,            // root table, required
 #ifndef __NOBOOTLOGO__
@@ -835,7 +835,7 @@ static const DLGHITEM dlgDesktopStartup[] =
         END_TABLE
     };
 
-static const XWPSETTING G_DtpStartupBackup[] =
+STATIC const XWPSETTING G_DtpStartupBackup[] =
     {
         sfWriteXWPStartupLog,
 #ifndef __NOBOOTUPSTATUS__
@@ -1002,7 +1002,7 @@ VOID dtpStartupInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
  *@@added V0.9.13 (2001-06-14) [umoeller]
  */
 
-static VOID SetBootLogoFile(PNOTEBOOKPAGE pnbp,
+STATIC VOID SetBootLogoFile(PNOTEBOOKPAGE pnbp,
                             PCSZ pcszNewBootLogoFile,
                             BOOL fWrite)                   // in: if TRUE, write back to OS2.INI
 {

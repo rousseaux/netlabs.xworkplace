@@ -96,7 +96,7 @@
 
 void EXPENTRY WgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData);
 
-static const XCENTERWIDGETCLASS G_WidgetClasses[]
+STATIC const XCENTERWIDGETCLASS G_WidgetClasses[]
     = {
           WNDCLASS_WIDGET_SAMPLE,     // PM window class name
           0,                          // additional flag, not used here
@@ -172,7 +172,7 @@ PXSTRCAT pxstrcat = NULL;
 PXSTRCLEAR pxstrClear = NULL;
 PXSTRINIT pxstrInit = NULL;
 
-static const RESOLVEFUNCTION G_aImports[] =
+STATIC const RESOLVEFUNCTION G_aImports[] =
     {
         "cmnLoadDlg", (PFN*)&pcmnLoadDlg,
         "cmnQueryDefaultFont", (PFN*)&pcmnQueryDefaultFont,

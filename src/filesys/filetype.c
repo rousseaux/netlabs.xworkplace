@@ -170,10 +170,10 @@ typedef struct _INSTANCEFILTER
  *
  ********************************************************************/
 
-static HMTX                G_hmtxInstances = NULLHANDLE;
-static TREE                *G_InstanceTypesTreeRoot = NULL;
-static LONG                G_cInstanceTypes;
-static LINKLIST            G_llInstanceFilters;
+STATIC HMTX                G_hmtxInstances = NULLHANDLE;
+STATIC TREE                *G_InstanceTypesTreeRoot = NULL;
+STATIC LONG                G_cInstanceTypes;
+STATIC LINKLIST            G_llInstanceFilters;
 
 /* ******************************************************************
  *
@@ -188,7 +188,7 @@ static LINKLIST            G_llInstanceFilters;
  *@@added V0.9.9 (2001-02-06) [umoeller]
  */
 
-static BOOL LockInstances(VOID)
+STATIC BOOL LockInstances(VOID)
 {
     if (G_hmtxInstances)
         return !DosRequestMutexSem(G_hmtxInstances, SEM_INDEFINITE_WAIT);
@@ -216,7 +216,7 @@ static BOOL LockInstances(VOID)
  *@@added V0.9.9 (2001-02-06) [umoeller]
  */
 
-static VOID UnlockInstances(VOID)
+STATIC VOID UnlockInstances(VOID)
 {
     DosReleaseMutexSem(G_hmtxInstances);
 }
@@ -530,7 +530,7 @@ PCSZ ftypFindClassFromInstanceFilter(PCSZ pcszObjectTitle,
  *@@added V0.9.12 (2001-05-22) [umoeller]
  */
 
-static ULONG RemoveAssocReferences(PCSZ pcszHandle,     // in: decimal object handle
+STATIC ULONG RemoveAssocReferences(PCSZ pcszHandle,     // in: decimal object handle
                                    PCSZ pcszIniApp)     // in: OS2.INI app to search
 {
     APIRET arc;
@@ -1018,7 +1018,7 @@ ULONG ftypForEachAutoType(PCSZ pcszObjectTitle,
  *@@changed V0.9.20 (2002-07-25) [umoeller]: adjusted for getting rid of caches and mutexes
  */
 
-static ULONG ListAssocsForType(WPObject **papObjects,   // in/out: array of assoc objects
+STATIC ULONG ListAssocsForType(WPObject **papObjects,   // in/out: array of assoc objects
                                PULONG pcAssocs,         // in/out: count of items in array
                                PCSZ pcszType0,          // in: file type (e.g. "C Code")
                                ULONG ulBuildMax,        // in: max no. of assocs to append (<= MAX_ASSOCS_PER_OBJECT)
@@ -1234,7 +1234,7 @@ BOOL _Optlink fncbBuildAssocsList(PCSZ pcszType,
  *@@changed V0.9.20 (2002-07-25) [umoeller]: got rid of linked list
  */
 
-static ULONG BuildAssocsList(WPDataFile *somSelf,
+STATIC ULONG BuildAssocsList(WPDataFile *somSelf,
                              WPObject **papObjects,         // out: array of assocs
                              ULONG ulBuildMax,              // in: max no. of assocs to append or -1 for all
                              BOOL fUsePlainTextAsDefault)
@@ -1342,7 +1342,7 @@ static ULONG BuildAssocsList(WPDataFile *somSelf,
  *@@changed V0.9.20 (2002-07-25) [umoeller]: got rid of linked list
  */
 
-static ULONG FreeAssocsList(WPObject **papObjects,   // in: array created by BuildAssocsList
+STATIC ULONG FreeAssocsList(WPObject **papObjects,   // in: array created by BuildAssocsList
                             ULONG cObjects)
 {
     ULONG       ul;
@@ -1723,7 +1723,7 @@ APIRET ftypRenameFileType(PCSZ pcszOld,      // in: existing file type
  *@@added V0.9.12 (2001-05-21) [umoeller]
  */
 
-static APIRET ImportFilters(PDOMNODE pTypeElementThis,
+STATIC APIRET ImportFilters(PDOMNODE pTypeElementThis,
                             PCSZ pcszTypeNameThis)
 {
     APIRET arc = NO_ERROR;
@@ -1882,7 +1882,7 @@ static APIRET ImportFilters(PDOMNODE pTypeElementThis,
  *@@added V0.9.12 (2001-05-21) [umoeller]
  */
 
-static APIRET ImportTypes(PDOMNODE pParentElement,
+STATIC APIRET ImportTypes(PDOMNODE pParentElement,
                           PCSZ pcszParentType)  // in: parent type name or NULL
 {
     APIRET arc = NO_ERROR;
@@ -2111,7 +2111,7 @@ APIRET ftypImportTypes(PCSZ pcszFilename,        // in: XML file name
  *@@added V0.9.12 (2001-05-21) [umoeller]
  */
 
-static APIRET ExportAddType(PDOMNODE pParentNode,          // in: type's parent node (document root node if none)
+STATIC APIRET ExportAddType(PDOMNODE pParentNode,          // in: type's parent node (document root node if none)
                             PFILETYPELISTITEM pliAssoc,    // in: type description
                             PDOMNODE *ppNewNode)           // out: new element
 {
@@ -2198,7 +2198,7 @@ static APIRET ExportAddType(PDOMNODE pParentNode,          // in: type's parent 
  *@@added V0.9.12 (2001-05-21) [umoeller]
  */
 
-static APIRET ExportAddFileTypeAndAllParents(PDOMNODE pRootElement,
+STATIC APIRET ExportAddFileTypeAndAllParents(PDOMNODE pRootElement,
                                              PLINKLIST pllFileTypes,  // in: list of all file types
                                              PSZ pszKey,
                                              PDOMNODE *ppNewElement)   // out: element node for this key
@@ -2286,7 +2286,7 @@ static APIRET ExportAddFileTypeAndAllParents(PDOMNODE pRootElement,
  *@@added V0.9.12 (2001-05-21) [umoeller]
  */
 
-static APIRET ExportAddTypesTree(PDOMNODE pRootElement)
+STATIC APIRET ExportAddTypesTree(PDOMNODE pRootElement)
 {
     APIRET arc = NO_ERROR;
     PSZ pszAssocTypeList;
@@ -2399,7 +2399,7 @@ static APIRET ExportAddTypesTree(PDOMNODE pRootElement)
  *@@added V0.9.12 (2001-05-21) [umoeller]
  */
 
-static PCSZ G_pcszDoctype =
+STATIC PCSZ G_pcszDoctype =
 "<!DOCTYPE XWPFILETYPES [\n"
 "\n"
 "<!ELEMENT XWPFILETYPES (TYPE*)>\n"

@@ -629,7 +629,7 @@ APIRET fopsExpandObjectFlat(PLINKLIST pllObjects,  // in: list to append to (pla
  *      dialog items' keyboard focus and such.
  */
 
-static MRESULT EXPENTRY fnwpTitleClashDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
+STATIC MRESULT EXPENTRY fnwpTitleClashDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     #define WM_DELAYEDFOCUS         (WM_USER+1)
 
@@ -930,7 +930,7 @@ BOOL fopsProposeNewTitle(const char *pcszTitle,          // in: title to modify
 
 #define CX_INTRO   (CX_COL1 + CX_COLDATE + CX_COLTIME + CX_COLSIZE + 6 * COMMON_SPACING)
 
-static CONTROLDEF
+STATIC CONTROLDEF
     ClashIntro = CONTROLDEF_TEXT_WORDBREAK(NULL, ID_XFDI_CLASH_TXT1, -100),
     ClashOldObject = CONTROLDEF_TEXT(LOAD_STRING, ID_XFDI_CLASH_OLDOBJECT, CX_COL1, SZL_AUTOSIZE),
     ClashDateOld = CONTROLDEF_TEXT("99.99.9999 ", ID_XFDI_CLASH_DATEOLD, SZL_AUTOSIZE, SZL_AUTOSIZE),
@@ -947,7 +947,7 @@ static CONTROLDEF
     ClashRenameOldRadio = CONTROLDEF_NEXT_AUTORADIO(LOAD_STRING, ID_XFDI_CLASH_RENAMEOLD, -60, SZL_AUTOSIZE),
     ClashRenameOldEF = CONTROLDEF_ENTRYFIELD("M", ID_XFDI_CLASH_RENAMEOLDTXT, -40, SZL_AUTOSIZE);
 
-static const DLGHITEM G_dlgFileExists[] =
+STATIC const DLGHITEM G_dlgFileExists[] =
     {
         START_TABLE,
             START_ROW(0),
@@ -991,7 +991,7 @@ static const DLGHITEM G_dlgFileExists[] =
  *@@changed V0.9.20 (2002-08-08) [umoeller]: now using dialog formatter
  */
 
-static HWND PrepareFileExistsDlg(WPObject *somSelf,
+STATIC HWND PrepareFileExistsDlg(WPObject *somSelf,
                                  WPFolder *Folder,
                                  WPObject *pExisting,
                                  PSZ pszTitle,
@@ -1231,7 +1231,7 @@ static HWND PrepareFileExistsDlg(WPObject *somSelf,
  *@@changed V0.9.20 (2002-08-08) [umoeller]: this never respected the auto-rename etc. "Title" settings in "Workplcae Shell", fixed
  */
 
-static ULONG ConfirmObjectTitle(WPFolder *Folder,          // in: target folder to check
+STATIC ULONG ConfirmObjectTitle(WPFolder *Folder,          // in: target folder to check
                                 WPObject **ppExistingObject, // in: current object,
                                                              // out: object to append to or to replace
                                 PSZ pszTitle,              // in: title to check for,

@@ -111,7 +111,7 @@ typedef struct _FNTO_DETAILS
 // extra data fields for XWPFontObject object details:
 #define FNTO_EXTRAFIELDS 3
         // we add one field
-static CLASSFIELDINFO G_acfiFontObject[FNTO_EXTRAFIELDS];
+STATIC CLASSFIELDINFO G_acfiFontObject[FNTO_EXTRAFIELDS];
         // we add three fields
 // See XWPFontObject::wpclsQueryDetailsInfo for details.
 

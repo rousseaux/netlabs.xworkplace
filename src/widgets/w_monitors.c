@@ -161,7 +161,7 @@ APIRET16 APIENTRY16 Dos16MemAvail(PULONG pulAvailMem);
 
 #define WNDCLASS_WIDGET_MONITORS    "XWPCenterMonitorWidget"
 
-static const XCENTERWIDGETCLASS G_WidgetClasses[] =
+STATIC const XCENTERWIDGETCLASS G_WidgetClasses[] =
     {
         {
             WNDCLASS_WIDGET_MONITORS,
@@ -288,7 +288,7 @@ PXSTRCATC pxstrcatc = NULL;
 PXSTRCLEAR pxstrClear = NULL;
 PXSTRINIT pxstrInit = NULL;
 
-static const RESOLVEFUNCTION G_aImports[] =
+STATIC const RESOLVEFUNCTION G_aImports[] =
     {
         "apmhOpen", (PFN*)&papmhOpen,
         "apmhReadStatus", (PFN*)&papmhReadStatus,
@@ -1612,7 +1612,7 @@ VOID ForceRepaint(PMONITORPRIVATE pPrivate)
  *@@added V0.9.19 (2002-06-08) [umoeller]
  */
 
-static VOID MwgtPaint(HWND hwnd)
+STATIC VOID MwgtPaint(HWND hwnd)
 {
     HPS hps;
     if (hps = WinBeginPaint(hwnd, NULLHANDLE, NULL))

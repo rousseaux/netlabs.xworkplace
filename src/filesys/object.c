@@ -305,19 +305,19 @@ typedef struct _OBJTREENODE
  ********************************************************************/
 
 // mutex semaphores for object lists (favorite folders, quick-open)
-static HMTX         G_hmtxObjectsLists = NULLHANDLE;
+STATIC HMTX         G_hmtxObjectsLists = NULLHANDLE;
 
 // object handles cache
-static TREE         *G_HandlesCacheRoot;
-static HOBJECT      G_hobjLast = NULLHANDLE;        // V0.9.20 (2002-07-25) [umoeller]
-static WPObject     *G_pobjLast = NULL;
-static HMTX         G_hmtxHandlesCache = NULLHANDLE;
-static LONG         G_lHandlesCacheItemsCount = 0;
+STATIC TREE         *G_HandlesCacheRoot;
+STATIC HOBJECT      G_hobjLast = NULLHANDLE;        // V0.9.20 (2002-07-25) [umoeller]
+STATIC WPObject     *G_pobjLast = NULL;
+STATIC HMTX         G_hmtxHandlesCache = NULLHANDLE;
+STATIC LONG         G_lHandlesCacheItemsCount = 0;
 
 // dirty objects list
-static TREE        *G_DirtyList;
-static HMTX        G_hmtxDirtyList = NULLHANDLE;
-static LONG        G_lDirtyListItemsCount = 0;
+STATIC TREE        *G_DirtyList;
+STATIC HMTX        G_hmtxDirtyList = NULLHANDLE;
+STATIC LONG        G_lDirtyListItemsCount = 0;
 
 /* ******************************************************************
  *
@@ -740,7 +740,7 @@ BOOL objQuerySetup(WPObject *somSelf,
  *@@changed V0.9.18 (2002-02-24) [pr]: was freeing setup string twice
  */
 
-static ULONG WriteOutObjectSetup(FILE *RexxFile,
+STATIC ULONG WriteOutObjectSetup(FILE *RexxFile,
                                  WPObject *pobj,
                                  ULONG ulRecursion,        // in: recursion level, initially 0
                                  BOOL fRecurse)
@@ -1167,7 +1167,7 @@ VOID objRefreshUseItems(WPObject *somSelf,
  *@@added V0.9.7 (2001-01-18) [umoeller]
  */
 
-static BOOL LockObjectsList(VOID)
+STATIC BOOL LockObjectsList(VOID)
 {
     if (G_hmtxObjectsLists)
         return !DosRequestMutexSem(G_hmtxObjectsLists, SEM_INDEFINITE_WAIT);
@@ -1186,7 +1186,7 @@ static BOOL LockObjectsList(VOID)
  *@@added V0.9.7 (2001-01-18) [umoeller]
  */
 
-static VOID UnlockObjectsList(VOID)
+STATIC VOID UnlockObjectsList(VOID)
 {
     DosReleaseMutexSem(G_hmtxObjectsLists);
 }
@@ -1203,7 +1203,7 @@ static VOID UnlockObjectsList(VOID)
  *@@changed V0.9.9 (2001-03-27) [umoeller]: added OBJECTLIST encapsulation
  */
 
-static BOOL WriteObjectsList(POBJECTLIST pll,
+STATIC BOOL WriteObjectsList(POBJECTLIST pll,
                              PCSZ pcszIniKey)
 {
     BOOL brc = FALSE;
@@ -1266,7 +1266,7 @@ static BOOL WriteObjectsList(POBJECTLIST pll,
  *@@changed V0.9.16 (2001-10-24) [umoeller]: added fixes for duplicate objects on list, which lead to endlessly looping startup folders
  */
 
-static BOOL LoadObjectsList(POBJECTLIST pll,
+STATIC BOOL LoadObjectsList(POBJECTLIST pll,
                             ULONG ulListFlag,          // in: list flag for xwpModifyFlags
                             PCSZ pcszIniKey)
 {
@@ -1670,7 +1670,7 @@ WPObject* objEnumList(POBJECTLIST pll,        // in: linked list of WPObject* po
  *@@added V0.9.9 (2001-04-02) [umoeller]
  */
 
-static BOOL LockHandlesCache(VOID)
+STATIC BOOL LockHandlesCache(VOID)
 {
     if (G_hmtxHandlesCache)
         return !DosRequestMutexSem(G_hmtxHandlesCache, SEM_INDEFINITE_WAIT);
@@ -1697,7 +1697,7 @@ static BOOL LockHandlesCache(VOID)
  *@@added V0.9.9 (2001-04-02) [umoeller]
  */
 
-static VOID UnlockHandlesCache(VOID)
+STATIC VOID UnlockHandlesCache(VOID)
 {
     DosReleaseMutexSem(G_hmtxHandlesCache);
 }
@@ -1720,7 +1720,7 @@ static VOID UnlockHandlesCache(VOID)
  *@@changed V0.9.20 (2002-07-25) [umoeller]: this deleted the wrong object, fixed
  */
 
-static ULONG CheckShrinkCache(VOID)
+STATIC ULONG CheckShrinkCache(VOID)
 {
     ULONG   ulDeleted = 0;
     LONG    lObjectsToDelete = G_lHandlesCacheItemsCount - CACHE_ITEM_LIMIT;
@@ -1936,7 +1936,7 @@ VOID objRemoveFromHandlesCache(WPObject *somSelf)
  *@@added V0.9.9 (2001-04-02) [umoeller]
  */
 
-static BOOL LockDirtyList(VOID)
+STATIC BOOL LockDirtyList(VOID)
 {
     if (G_hmtxDirtyList)
         return !DosRequestMutexSem(G_hmtxDirtyList, SEM_INDEFINITE_WAIT);
@@ -1962,7 +1962,7 @@ static BOOL LockDirtyList(VOID)
  *@@added V0.9.9 (2001-04-02) [umoeller]
  */
 
-static VOID UnlockDirtyList(VOID)
+STATIC VOID UnlockDirtyList(VOID)
 {
     DosReleaseMutexSem(G_hmtxDirtyList);
 }
@@ -2583,7 +2583,7 @@ BOOL objRemoveObjectHotkey(HOBJECT hobj)
  *@@added V0.9.19 (2002-06-02) [umoeller]
  */
 
-static VOID CopyOneObject(PXSTRING pstr,
+STATIC VOID CopyOneObject(PXSTRING pstr,
                           WPObject *pObject,
                           BOOL fFullPath)
 {

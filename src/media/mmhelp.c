@@ -110,8 +110,8 @@
 
 // list of all open MMPM/2 devices: this list
 // holds the plain USHORT device ID's
-static HMTX        G_hmtxOpenDevices = NULLHANDLE;
-static LINKLIST    G_lstOpenDevices;
+STATIC HMTX        G_hmtxOpenDevices = NULLHANDLE;
+STATIC LINKLIST    G_lstOpenDevices;
 
 extern HWND G_hwndMediaObject;      // in mmthread.c
 
@@ -1415,7 +1415,7 @@ ULONG xmmSetMasterVolume(ULONG ulVolume)
  *@@added V0.9.7 (2000-11-30) [umoeller]
  */
 
-static const char* GetDeviceTypeName(ULONG ulDeviceType)
+STATIC const char* GetDeviceTypeName(ULONG ulDeviceType)
 {
     ULONG   ulStringID = 0;
     // const char *prc = "Unknown";
@@ -1523,7 +1523,7 @@ static const char* GetDeviceTypeName(ULONG ulDeviceType)
  *@@added V0.9.13 (2001-06-14) [umoeller]
  */
 
-static ULONG GetAllDeviceNames(PULONG pcDevices,       // out: device count
+STATIC ULONG GetAllDeviceNames(PULONG pcDevices,       // out: device count
                                PSZ *ppszNames)         // out: device names
 {
     ULONG               cDevices = 0,
@@ -1603,7 +1603,7 @@ static ULONG GetAllDeviceNames(PULONG pcDevices,       // out: device count
  *@@changed V0.9.14 (2001-08-01) [umoeller]: fixed memory leak
  */
 
-static ULONG GetDeviceInfo(PXMMDEVICE pDevice,         // out: device info
+STATIC ULONG GetDeviceInfo(PXMMDEVICE pDevice,         // out: device info
                            const char *pcszName)       // in: device name (e.g. "CDaudio01")
 {
     ULONG rc;

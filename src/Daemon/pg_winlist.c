@@ -280,7 +280,7 @@ MRESULT EXPENTRY fnwpSubclDebugFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp
     return mrc;
 }
 
-static VOID FillRec(PXWININFO pWinInfo)
+STATIC VOID FillRec(PXWININFO pWinInfo)
 {
     ULONG       pid, tid, flStyle;
     PWINLISTRECORD prec;
@@ -380,7 +380,7 @@ static VOID FillRec(PXWININFO pWinInfo)
     prec->pWinInfo = pWinInfo;
 }
 
-static VOID CreateDebugFrame(VOID)
+STATIC VOID CreateDebugFrame(VOID)
 {
     ULONG fl = FCF_SYSMENU | FCF_TITLEBAR | FCF_MINBUTTON | FCF_SIZEBORDER | FCF_NOBYTEALIGN | FCF_TASKLIST;
     if (!(G_hwndDebugFrame = WinCreateStdWindow(HWND_DESKTOP,
@@ -594,7 +594,7 @@ PXWININFO pgrFindWinInfo(HWND hwndThis,         // in: window to find
  *@@added V0.9.7 (2001-01-21) [umoeller]
  */
 
-static VOID ClearWinlist(VOID)
+STATIC VOID ClearWinlist(VOID)
 {
     #ifdef DEBUG_WINDOWLIST
         WinSendMsg(G_hwndDebugCnr,
@@ -616,7 +616,7 @@ static VOID ClearWinlist(VOID)
 
 #ifdef __DEBUG__
 
-static VOID DumpOneWindow(PCSZ pcszPrefix,
+STATIC VOID DumpOneWindow(PCSZ pcszPrefix,
                           PXWININFO pEntryThis)
 {
     _Pmpf(("%s hwnd 0x%lX \"%s\":\"%s\" pid 0x%lX(%d) type %d",
@@ -634,7 +634,7 @@ static VOID DumpOneWindow(PCSZ pcszPrefix,
  *
  */
 
-static VOID DumpAllWindows(VOID)
+STATIC VOID DumpAllWindows(VOID)
 {
     if (pgrLockWinlist())
     {
@@ -673,7 +673,7 @@ static VOID DumpAllWindows(VOID)
  *@@added V0.9.19 (2002-06-15) [umoeller]
  */
 
-static VOID AddInfo(PXWININFO pWinInfo)
+STATIC VOID AddInfo(PXWININFO pWinInfo)
 {
     lstAppendItem(&G_llWinInfos, pWinInfo);
 
@@ -707,7 +707,7 @@ static VOID AddInfo(PXWININFO pWinInfo)
  *@@added V0.9.19 (2002-06-15) [umoeller]
  */
 
-static VOID RemoveInfo(PLISTNODE pNode)
+STATIC VOID RemoveInfo(PLISTNODE pNode)
 {
     #ifdef DEBUG_WINDOWLIST
     {

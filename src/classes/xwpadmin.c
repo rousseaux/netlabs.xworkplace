@@ -105,7 +105,7 @@
  *@@added V0.9.19 (2002-04-02) [umoeller]
  */
 
-static VOID Error(WPObject *somSelf,
+STATIC VOID Error(WPObject *somSelf,
                   HWND hwndOwner,
                   APIRET arc)
 {
@@ -128,7 +128,7 @@ static VOID Error(WPObject *somSelf,
 #define LEFT_COLUMN     100
 #define RIGHT_COLUMN    50
 
-static const CONTROLDEF
+STATIC const CONTROLDEF
     LocalUserGroup = LOADDEF_GROUP(ID_AMDI_USER_LOCAL_GROUP, SZL_AUTOSIZE),
     LocalUserNameTxt = CONTROLDEF_TEXT(
                             LOAD_STRING,
@@ -171,7 +171,7 @@ static const CONTROLDEF
                             RIGHT_COLUMN,
                             -1);
 
-static const DLGHITEM dlgLocalUser[] =
+STATIC const DLGHITEM dlgLocalUser[] =
     {
         START_TABLE,            // root table, required
             START_ROW(0),       // row 1 in the root table, required
