@@ -289,7 +289,7 @@ SOM_Scope ULONG  SOMLINK fonfM_wpclsQueryIconData(M_XWPFontFile *somSelf,
         pIconInfo->hmod    = cmnQueryMainResModuleHandle();
     }
 
-    return (sizeof(ICONINFO));
+    return sizeof(ICONINFO);
 }
 
 
@@ -316,7 +316,7 @@ SOM_Scope PSZ  SOMLINK fonfM_wpclsQueryInstanceFilter(M_XWPFontFile *somSelf)
 
     // return (M_XWPFontFile_parent_M_WPDataFile_wpclsQueryInstanceFilter(somSelf));
 
-    return ((PSZ)G_pcszFontFileFilter);
+    return (PSZ)G_pcszFontFileFilter;
 }
 
 SOM_Scope PSZ  SOMLINK fonfM_wpclsQueryInstanceType(M_XWPFontFile *somSelf)
@@ -324,6 +324,6 @@ SOM_Scope PSZ  SOMLINK fonfM_wpclsQueryInstanceType(M_XWPFontFile *somSelf)
     /* M_XWPFontFileData *somThis = M_XWPFontFileGetData(somSelf); */
     M_XWPFontFileMethodDebug("M_XWPFontFile","fonfM_wpclsQueryInstanceType");
 
-    return ("Font file");
+    return "Font file";
 }
 

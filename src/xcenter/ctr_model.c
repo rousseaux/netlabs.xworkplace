@@ -181,7 +181,7 @@ APIRET ctrpRegisterCategory(VOID)
                         ARRAYITEMCOUNT(G_aBuiltInWidgets),
                         &G_aBuiltInWidgets);
 
-    return (NO_ERROR);
+    return NO_ERROR;
 }
 
 /*
@@ -194,7 +194,7 @@ APIRET ctrpRegisterCategory(VOID)
 
 BOOL ctrpLockClasses(VOID)
 {
-    return (plgLockClasses(&G_plgXCenterCategory));
+    return plgLockClasses(&G_plgXCenterCategory);
 }
 
 /*
@@ -256,7 +256,7 @@ VOID ctrpLoadClasses(VOID)
 
 PLINKLIST ctrpQueryClasses(VOID)
 {
-    return (plgQueryClasses(&G_plgXCenterCategory));
+    return plgQueryClasses(&G_plgXCenterCategory);
 }
 
 /*
@@ -511,7 +511,7 @@ HWND ctrpAddWidgetsMenu(XCenter *somSelf,
 
     ctrpFreeClasses();
 
-    return (hwndWidgetsSubmenu);
+    return hwndWidgetsSubmenu;
 }
 
 /*
@@ -1000,7 +1000,7 @@ PTRAYSETTING ctrpCreateTraySetting(PPRIVATEWIDGETSETTING ppws, // in: private tr
             *pulIndex = lstCountItems(ppws->pllTraySettings) - 1;
     }
 
-    return (pNewTray);
+    return pNewTray;
 }
 
 /*
@@ -1174,7 +1174,7 @@ PLINKLIST ctrpQuerySettingsList(XCenter *somSelf)
         ctrpUnstuffSettings(somSelf);
     }
 
-    return (_pllAllWidgetSettings);
+    return _pllAllWidgetSettings;
 }
 
 /*
@@ -1191,7 +1191,7 @@ ULONG ctrpQueryWidgetsCount(XCenter *somSelf)
 {
     PLINKLIST pll;
     if (pll = ctrpQuerySettingsList(somSelf))
-        return (lstCountItems(pll));
+        return lstCountItems(pll);
 
     return 0;
 }
@@ -1422,7 +1422,7 @@ PSZ ctrpStuffSettings(XCenter *somSelf,
     xstrClear(&strEncoded);
     xstrClear(&strTray);
 
-    return (psz);
+    return psz;
 }
 
 /*
@@ -1777,7 +1777,7 @@ ULONG ctrpUnstuffSettings(XCenter *somSelf)
         ctrpFreeClasses();
     }
 
-    return (ulrc);
+    return ulrc;
 }
 
 

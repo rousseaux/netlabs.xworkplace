@@ -175,7 +175,7 @@ WPFolder* dskCheckDriveReady(WPDisk *somSelf)
 
     } while (mbrc == MBID_RETRY);
 
-    return (pRootFolder);
+    return pRootFolder;
 }
 
 /*

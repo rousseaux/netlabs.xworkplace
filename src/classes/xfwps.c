@@ -748,7 +748,7 @@ SOM_Scope PSZ  SOMLINK xwpM_wpclsQueryTitle(M_XFldWPS *somSelf)
     // M_XFldWPSData *somThis = M_XFldWPSGetData(somSelf);
     M_XFldWPSMethodDebug("M_XFldWPS","xwpM_wpclsQueryTitle");
 
-    return ("Workplace Shell");
+    return "Workplace Shell";       // @@todo localize
 }
 
 /*
@@ -818,7 +818,7 @@ SOM_Scope ULONG  SOMLINK xwpM_wpclsQueryIconData(M_XFldWPS *somSelf,
         pIconInfo->hmod    = cmnQueryMainResModuleHandle();
     }
 
-    return (sizeof(ICONINFO));
+    return sizeof(ICONINFO);
 }
 
 

@@ -945,7 +945,7 @@ STATIC MRESULT FrameChar(HWND hwnd, MPARAM mp1, MPARAM mp2)
         }
     }
 
-    return ((MPARAM)brc);
+    return (MPARAM)brc;
 }
 
 /*
@@ -1720,6 +1720,6 @@ HWND fdlgFileDlg(HWND hwndOwner,
 
     WinSetPointer(HWND_DESKTOP, hptrOld);
 
-    return (hwndReturn);
+    return hwndReturn;
 }
 

@@ -154,10 +154,10 @@ ULONG cnrhInsertFieldInfos(HWND hwndCnr,                // in: cnr for Details v
     fii.fInvalidateFieldInfo = TRUE;
     fii.cFieldInfoInsert = ulFieldCount;
 
-    return ((ULONG)WinSendMsg(hwndCnr,
-                              CM_INSERTDETAILFIELDINFO,
-                              (MPARAM)pFieldInfoFirst,
-                              (MPARAM)&fii));
+    return (ULONG)WinSendMsg(hwndCnr,
+                             CM_INSERTDETAILFIELDINFO,
+                             (MPARAM)pFieldInfoFirst,
+                             (MPARAM)&fii);
 }
 
     #undef FIELDOFFSET
@@ -221,7 +221,7 @@ PFIELDINFO cnrhSetFieldInfos(HWND hwndCnr,            // in: container hwnd
             pFieldInfoReturn = NULL;
     }
 
-    return (pFieldInfoReturn);
+    return pFieldInfoReturn;
 }
 
     #define BEGIN_CNRINFO()                                         \

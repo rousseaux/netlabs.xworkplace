@@ -1316,7 +1316,7 @@ ULONG EXPENTRY MwgtInitModule(HAB hab,  // XCenter's anchor block
         }
     }
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*

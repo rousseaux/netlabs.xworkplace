@@ -1322,7 +1322,7 @@ MRESULT dtpStartupItemChanged(PNOTEBOOKPAGE pnbp,
         }
     } // end if (!fProcessed)
 
-    return ((MPARAM)0);
+    return (MPARAM)0;
 }
 
 

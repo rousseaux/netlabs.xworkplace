@@ -640,7 +640,7 @@ BOOL icomRunReplacement(VOID)
             fRunReplacement = TRUE;
 #endif
 
-    return (fRunReplacement);
+    return fRunReplacement;
 }
 
 /*

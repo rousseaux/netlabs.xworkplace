@@ -606,7 +606,7 @@ SOM_Scope ULONG  SOMLINK adm_wpQueryDefaultView(XWPAdmin *somSelf)
     /* XWPAdminData *somThis = XWPAdminGetData(somSelf); */
     XWPAdminMethodDebug("XWPAdmin","adm_wpQueryDefaultView");
 
-    return (OPEN_SETTINGS);     // settings view is default
+    return OPEN_SETTINGS;
 }
 
 /*
@@ -775,7 +775,7 @@ SOM_Scope ULONG  SOMLINK admM_wpclsQueryIconData(M_XWPAdmin *somSelf,
         pIconInfo->hmod    = cmnQueryMainResModuleHandle();
     }
 
-    return (sizeof(ICONINFO));
+    return sizeof(ICONINFO);
 }
 
 /*

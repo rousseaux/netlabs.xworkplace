@@ -712,7 +712,7 @@ ULONG ctrpBroadcastWidgetNotify(PLINKLIST pllWidgets,   // in: linked list of PR
         ulrc++;
     }
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*
@@ -834,7 +834,7 @@ ULONG ctrpPositionWidgets(PXCENTERGLOBALS pGlobals,
         ulrc++;
     }
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*
@@ -969,7 +969,7 @@ STATIC ULONG ReformatWidgets(PXCENTERWINDATA pXCenterData,
 
     WinInvalidateRect(pGlobals->hwndClient, NULL, FALSE);
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*
@@ -1050,7 +1050,7 @@ ULONG ctrpQueryMaxWidgetCY(PLINKLIST pllWidgets) // in: linked list of PRIVATEWI
         pNode = pNode->pNext;
     }
 
-    return (cyMax);
+    return cyMax;
 }
 
 /*
@@ -1219,7 +1219,7 @@ STATIC BOOL StartAutohideNow(PXCENTERWINDATA pXCenterData)
     else
         StartAutoHide(pXCenterData);
 
-    return (fStart);
+    return fStart;
 }
 
 /*
@@ -2020,7 +2020,7 @@ HWND ctrpDragWidget(HWND hwnd,
             GpiDeleteBitmap(hbmWidget);
     }
 
-    return (hwndDrop);
+    return hwndDrop;
 }
 
 /*
@@ -2191,7 +2191,7 @@ STATIC PLINKLIST GetDragoverObjects(PDRAGINFO pdrgInfo,
             *pusIndicator = DOR_NODROP;
         // but do send DM_DRAGOVER again
 
-    return (pllObjects);
+    return pllObjects;
 }
 
 /*
@@ -2267,7 +2267,7 @@ STATIC ULONG FindWidgetFromClientXY(PXCENTERWINDATA pXCenterData,
                 )
            )
             // mouse is over sizing border:
-            return (2);
+            return 2;
 
         // not over sizing border:
         // use the main widgets list for searching
@@ -2301,7 +2301,7 @@ STATIC ULONG FindWidgetFromClientXY(PXCENTERWINDATA pXCenterData,
                     *ppViewOver = pView;
                 if (pulIndexOver)
                     *pulIndexOver = ul;
-                return (1);
+                return 1;
             }
         }
         else if (pView->Widget.ulClassFlags & WGTF_TRANSPARENT)
@@ -2323,7 +2323,7 @@ STATIC ULONG FindWidgetFromClientXY(PXCENTERWINDATA pXCenterData,
             if (pulIndexOver)
                 *pulIndexOver = ul;
 
-            return (1);
+            return 1;
         }
         else
             break;
@@ -2555,7 +2555,7 @@ MRESULT ctrpDragOver(HWND hwndClient,
     }
 
     // and return the drop flags
-    return (MRFROM2SHORT(usIndicator, usOp));
+    return MRFROM2SHORT(usIndicator, usOp);
 }
 
 /*
@@ -3434,7 +3434,7 @@ PPRIVATEWIDGETVIEW ctrpCreateWidgetWindow(PXCENTERWINDATA pXCenterData,      // 
     if (fLocked)
         ctrpUnlockClasses();
 
-    return (pNewView);
+    return pNewView;
 }
 
 /*
@@ -3514,7 +3514,7 @@ STATIC ULONG CreateAllWidgetWindows(PXCENTERWINDATA pXCenterData)
     ctrpReformat(pXCenterData,
                  XFMF_DISPLAYSTYLECHANGED);
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*
@@ -4715,7 +4715,7 @@ STATIC MRESULT ClientMouseMove(HWND hwnd, MPARAM mp1)
                                   MPFROMSHORT(XAF_SHOW));
     }
 
-    return ((MPARAM)TRUE);      // message processed
+    return (MPARAM)TRUE;      // message processed
 }
 
 /*
@@ -4861,9 +4861,9 @@ STATIC MRESULT ClientButton12Drag(HWND hwnd, MPARAM mp1)
         }
     }
     else
-        return ((MPARAM)FALSE); // V0.9.14 (2001-07-14) [lafaix]
+        return (MPARAM)FALSE; // V0.9.14 (2001-07-14) [lafaix]
 
-     return ((MPARAM)TRUE);      // message processed
+     return (MPARAM)TRUE;      // message processed
 }
 
 /*
@@ -4905,7 +4905,7 @@ STATIC MRESULT ClientContextMenu(HWND hwnd, MPARAM mp1)
                              MENU_OPENVIEWPOPUP,
                              0);
 
-    return ((MPARAM)TRUE);      // message processed
+    return (MPARAM)TRUE;      // message processed
 }
 
 /*
@@ -6075,7 +6075,7 @@ HWND ctrpCreateXCenterView(XCenter *somSelf,
         CATCH(excpt1) {} END_CATCH();
     } // end if (!_tid)
 
-    return (hwndFrame);
+    return hwndFrame;
 }
 
 

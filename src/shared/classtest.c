@@ -170,7 +170,7 @@ BOOL ctsIsTransient(WPObject *somSelf)
 BOOL ctsIsMinWin(WPObject *somSelf)
 {
     // WPMinWindow is undocumented, so check class name
-    return (!strcmp(_somGetClassName(somSelf), "WPMinWindow"));
+    return !strcmp(_somGetClassName(somSelf), "WPMinWindow");
 }
 
 /*

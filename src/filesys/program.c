@@ -340,7 +340,7 @@ PPROGDETAILS progQueryDetails(WPObject *pProgObject)    // in: either WPProgram 
             if (_wpQueryProgDetails(pProgObject,
                                     pProgDetails,
                                     &ulSize))
-                return (pProgDetails);
+                return pProgDetails;
 
             free(pProgDetails);
         }
@@ -686,7 +686,7 @@ ULONG progQueryProgType(PCSZ pszFullFile,
         // we opened the executable: free that again
         exehClose(&pExec);
 
-    return (ulAppType);
+    return ulAppType;
 }
 
 /*
@@ -1972,7 +1972,7 @@ PSZ progSetupEnv(WPObject *pProgObject,     // in: WPProgram or WPProgramFile
         appFreeEnvironment(&Env);
     }
 
-    return (pszNewEnv);
+    return pszNewEnv;
 }
 
 /*
@@ -2899,7 +2899,7 @@ const char* fsysGetResourceFlagName(ULONG ulResourceFlag)
     if ((ulResourceFlag & FLAG_MASK) == 0)
         return "Fixed, not discardable";
 
-    return ("Unknown");
+    return "Unknown";
 }
 
 /*

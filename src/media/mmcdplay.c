@@ -409,7 +409,7 @@ STATIC MRESULT ButtonMouseMove(HWND hwnd, MPARAM mp1)
         WinReleasePS(hps);
     }
 
-    return ((MRESULT)TRUE);
+    return (MRESULT)TRUE;
 }
 
 /*
@@ -434,7 +434,7 @@ STATIC MRESULT ButtonMouseLeave(HWND hwnd)
         WinReleasePS(hps);
     }
 
-    return ((MRESULT)TRUE);
+    return (MRESULT)TRUE;
 }
 
 /*
@@ -478,7 +478,7 @@ STATIC MRESULT ButtonClick(HWND hwnd,
 
     WinReleasePS(hps);
 
-    return ((MRESULT)TRUE);
+    return (MRESULT)TRUE;
 }
 
 /*
@@ -581,11 +581,11 @@ STATIC MRESULT EXPENTRY fnwpFlatButton(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
 
 STATIC BOOL RegisterFlatButtonClass(HAB hab)
 {
-    return (WinRegisterClass(hab,
-                             WC_FLATBUTTON,
-                             fnwpFlatButton,
-                             CS_SIZEREDRAW | CS_SYNCPAINT, //  | CS_PARENTCLIP,
-                             sizeof(PFLATBUTTONDATA)));
+    return WinRegisterClass(hab,
+                            WC_FLATBUTTON,
+                            fnwpFlatButton,
+                            CS_SIZEREDRAW | CS_SYNCPAINT, //  | CS_PARENTCLIP,
+                            sizeof(PFLATBUTTONDATA));
 }
 
 /* ******************************************************************
@@ -863,7 +863,7 @@ STATIC MRESULT CDContextMenu(HWND hwnd, MPARAM mp1)
                              MENU_OPENVIEWPOPUP, //  | MENU_NODISPLAY,
                              0);
 
-    return ((MPARAM)TRUE);      // message processed
+    return (MPARAM)TRUE;      // message processed
 }
 
 /*
@@ -1305,7 +1305,7 @@ HWND xmmCreateCDPlayerView(WPObject *somSelf,
         hwndFrame = NULLHANDLE;
     } END_CATCH();
 
-    return (hwndFrame);
+    return hwndFrame;
 }
 
 

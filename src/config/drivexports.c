@@ -79,9 +79,9 @@ BOOL drvDisplayHelp(PVOID pvKernel,
 {
     if (!pcszHelpFile)
         pcszHelpFile = cmnQueryHelpLibrary();
-    return (_wpDisplayHelp((WPObject*)pvKernel,
-                           ulHelpPanel,
-                           (PSZ)pcszHelpFile));
+    return _wpDisplayHelp((WPObject*)pvKernel,
+                          ulHelpPanel,
+                          (PSZ)pcszHelpFile);
 }
 
 /*
@@ -95,7 +95,7 @@ BOOL drvDisplayHelp(PVOID pvKernel,
 
 char* drv_strtok(char *string1, const char *string2)
 {
-    return (strtok(string1, string2));
+    return strtok(string1, string2);
 }
 
 /*
@@ -109,7 +109,7 @@ char* drv_strtok(char *string1, const char *string2)
 
 int drv_memicmp(void *buf1, void *buf2, unsigned int cnt)
 {
-    return (memicmp(buf1, buf2, cnt));
+    return memicmp(buf1, buf2, cnt);
 }
 
 /*
@@ -126,7 +126,7 @@ int drv_sprintf(char *pBuf, const char *pcszFormat, ...)
     i = vsprintf(pBuf, pcszFormat, args);
     va_end(args);
 
-    return (i);
+    return i;
 }
 
 /*

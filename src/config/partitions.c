@@ -622,7 +622,7 @@ HWND partCreatePartitionsView(WPObject *somSelf,     // of WPDrives, really
     }
     CATCH(excpt1) { } END_CATCH();
 
-    return (hwndFrame);
+    return hwndFrame;
 
 }
 

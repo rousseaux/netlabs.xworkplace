@@ -152,7 +152,7 @@ PSZ strhistr(PCSZ string1, PCSZ string2)
         if (pszSrchIn)
             free(pszSrchIn);
     }
-    return (prc);
+    return prc;
 }
 
 /*
@@ -243,7 +243,7 @@ ULONG WinCenteredDlgBox(HWND hwndParent,
     else
         DisplayError("Cannot load dialog");
 
-    return (ulReply);
+    return ulReply;
 }
 
 /*
@@ -352,7 +352,7 @@ BOOL LoadNLS(VOID)
         }
     }
 
-    return (Proceed);
+    return Proceed;
 }
 
 /*
@@ -372,10 +372,10 @@ int main(int argc,
     BOOL            Proceed = TRUE;
 
     if (!(G_hab = WinInitialize(0)))
-        return (1);
+        return 1;
 
     if (!(hmq = WinCreateMsgQueue(G_hab, 0)))
-        return (1);
+        return 1;
 
     // now attempt to find the XWorkplace NLS resource DLL,
     // which we need for all resources (new with XWP 0.9.0)
@@ -570,7 +570,7 @@ int main(int argc,
                                           NULL);
 
             if (!G_hwndDebug)
-                return (1);
+                return 1;
 
             // set the NetscDDE icon for the frame window
             WinSendMsg(G_hwndDebug,
@@ -737,7 +737,7 @@ BOOL DDERequest(HWND hwndClient,
     else
         ShowMessage("    --> failed");
 
-    return (G_NetscapeFound);
+    return G_NetscapeFound;
 }
 
 /*

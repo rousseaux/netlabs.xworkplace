@@ -434,7 +434,7 @@ PSZ ctrScanSetupString(PCSZ pcszSetupString, // in: entire setup string
         } // end while (pEquals)
     }
 
-    return (pszValue);
+    return pszValue;
 }
 
 /*
@@ -985,7 +985,7 @@ STATIC MRESULT DwgtBeginDrag(HWND hwnd, MPARAM mp1)
                                        pWidget);
     }
 
-    return ((MPARAM)TRUE);
+    return (MPARAM)TRUE;
 }
 
 /*

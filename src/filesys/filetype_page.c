@@ -1,29 +1,8 @@
 
 /*
  *@@sourcefile filetype.c:
- *      extended file types implementation code. This has
+ *      extended file types notebook code. This has
  *      the method implementations for XFldDataFile.
- *
- *      This has the complete engine for the extended
- *      file type associations, i.e. associating filters
- *      with types, and types with program objects.
- *
- *      This file is ALL new with V0.9.0.
- *
- *      There are several entry points into this mess:
- *
- *      --  ftypQueryAssociatedProgram gets called from
- *          XFldDataFile::wpQueryAssociatedProgram and also
- *          from XFldDataFile::wpOpen. This must return a
- *          single association according to a given view ID.
- *
- *      --  ftypModifyDataFileOpenSubmenu gets called from
- *          the XFldDataFile menu methods to hack the
- *          "Open" submenu.
- *
- *      --  BuildAssocsList could be called separately
- *          to build a complete associations list for an
- *          object.
  *
  *      Function prefix for this file:
  *      --  ftyp*

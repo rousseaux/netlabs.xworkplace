@@ -728,8 +728,8 @@ SOM_Scope ULONG  SOMLINK xfdesk_wpAddDesktopArcRest1Page(XFldDesktop *somSelf,
 
 #ifndef __ALWAYSREPLACEARCHIVING__
     if (!cmnQuerySetting(sfReplaceArchiving))
-        return (XFldDesktop_parent_WPDesktop_wpAddDesktopArcRest1Page(somSelf,
-                                                                      hwndNotebook));
+        return XFldDesktop_parent_WPDesktop_wpAddDesktopArcRest1Page(somSelf,
+                                                                     hwndNotebook);
 #endif
 
     // remove this, we'll add a new one at a different

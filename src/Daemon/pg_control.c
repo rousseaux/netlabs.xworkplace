@@ -988,7 +988,7 @@ STATIC HWND FindWindow(PPAGERWINDATA pWinData,
         WinEndEnumWindows(henumPoint);
     }
 
-    return (hwndResult);
+    return hwndResult;
 }
 
 /* ******************************************************************
@@ -1318,7 +1318,7 @@ STATIC MRESULT PagerButtonClick(HWND hwnd,
 
     CheckFlashTimer();
 
-    return ((MPARAM)TRUE);      // processed
+    return (MPARAM)TRUE;      // processed
 }
 
 /*

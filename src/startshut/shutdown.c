@@ -419,7 +419,7 @@ BOOL xsdInitiateShutdown(VOID)
                         FALSE,  // fPlayRestartDesktopSound
                         psdp);
 
-    return (fStartShutdown);
+    return fStartShutdown;
 }
 
 /*
@@ -491,7 +491,7 @@ BOOL xsdInitiateRestartWPS(BOOL fLogoff)        // in: if TRUE, perform logoff a
                         TRUE,  // fPlayRestartDesktopSound
                         psdp);
 
-    return (fStartShutdown);
+    return fStartShutdown;
 }
 
 /*
@@ -554,7 +554,7 @@ BOOL xsdInitiateShutdownExt(PSHUTDOWNPARAMS psdpShared)
                         FALSE,  // fPlayRestartDesktopSound
                         psdpNew);
 
-    return (fStartShutdown);
+    return fStartShutdown;
 }
 
 /* ******************************************************************
@@ -879,7 +879,7 @@ PSHUTLISTITEM xsdItemFromPID(PLINKLIST pList,
     if (fLocked)
         DosReleaseMutexSem(hmtx);
 
-    return (pItem);
+    return pItem;
 }
 
 /*
@@ -928,7 +928,7 @@ PSHUTLISTITEM xsdItemFromSID(PLINKLIST pList,
     if (fLocked)
         DosReleaseMutexSem(hmtx);
 
-    return (pItem);
+    return pItem;
 }
 
 /*
@@ -966,7 +966,7 @@ ULONG xsdCountRemainingItems(PSHUTDOWNDATA pData)
     if (fShutdownSemOwned)
         DosReleaseMutexSem(pData->hmtxShutdown);
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*
@@ -1075,7 +1075,7 @@ PSHUTLISTITEM xsdQueryCurrentItem(PSHUTDOWNDATA pData)
     if (fShutdownSemOwned)
         DosReleaseMutexSem(pData->hmtxShutdown);
 
-    return (pliShutItem);
+    return pliShutItem;
 }
 
 /*
@@ -1175,7 +1175,7 @@ PSHUTLISTITEM xsdAppendShutListItem(PSHUTDOWNDATA pShutdownData,
         lstAppendItem(pList, pNewItem);
     }
 
-    return (pNewItem);
+    return pNewItem;
 }
 
 /*
@@ -1252,28 +1252,28 @@ LONG xsdIsClosable(HAB hab,                 // in: caller's anchor block
          || (pSwEntry->swctl.hwnd == pConsts->hwndVioDlg)
          || (pSwEntry->swctl.hwnd == pConsts->hwndShutdownStatus)
        )
-        return (XSD_SYSTEM);
+        return XSD_SYSTEM;
     // skip invisible tasklist entries; this
     // includes a PMWORKPLACE cmd.exe:
     else if (pSwEntry->swctl.uchVisibility != SWL_VISIBLE)
-        return (XSD_INVISIBLE);
+        return XSD_INVISIBLE;
     // open WarpCenter (WarpCenter bar only):
     else if (   (pSwEntry->swctl.hwnd == pConsts->hwndOpenWarpCenter)
              && (pConsts->pKernelGlobals)
             )
     {
         *ppObject = G_pAwakeWarpCenter;     // global variable (xfobj.c, kernel.h) V0.9.20 (2002-07-25) [umoeller]
-        return (XSD_WARPCENTER);
+        return XSD_WARPCENTER;
     }
 #ifdef __DEBUG__
     // if we're in debug mode, skip the PMPRINTF window
     // because we want to see debug output
     else if (!strncmp(szSwUpperTitle, "PMPRINTF", 8))
-        return (XSD_DEBUGNEED);
+        return XSD_DEBUGNEED;
     // skip VAC debugger, which is probably debugging
     // PMSHELL.EXE
     else if (!strcmp(szSwUpperTitle, "ICSDEBUG.EXE"))
-        return (XSD_DEBUGNEED);
+        return XSD_DEBUGNEED;
 #endif
 
     // now fix the data in the switch list entries,
@@ -1346,7 +1346,7 @@ LONG xsdIsClosable(HAB hab,                 // in: caller's anchor block
                     lrc = XSD_OTHER_FOREIGN;
     }
 
-    return (lrc);
+    return lrc;
 }
 
 /*
@@ -3372,7 +3372,7 @@ STATIC MRESULT EXPENTRY fncbUpdateINIStatus(HWND hwnd, ULONG msg, MPARAM mp1, MP
 {
     if (hwnd)
         WinSendMsg(hwnd, msg, mp1, mp2);
-    return ((MPARAM)TRUE);
+    return (MPARAM)TRUE;
 }
 
 /*
@@ -3384,12 +3384,11 @@ STATIC MRESULT EXPENTRY fncbUpdateINIStatus(HWND hwnd, ULONG msg, MPARAM mp1, MP
 
 STATIC MRESULT EXPENTRY fncbSaveINIError(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
-    return ((MRESULT)cmnMessageBox(HWND_DESKTOP,
-                                   "XShutdown: Error",
-                                   (PSZ)mp1,     // error text
-                                   NULLHANDLE, // no help
-                                   (ULONG)mp2)   // MB_ABORTRETRYIGNORE or something
-       );
+    return (MRESULT)cmnMessageBox(HWND_DESKTOP,
+                                  "XShutdown: Error",
+                                  (PSZ)mp1,     // error text
+                                  NULLHANDLE, // no help
+                                  (ULONG)mp2);   // MB_ABORTRETRYIGNORE or something
 }
 
 /*

@@ -160,10 +160,10 @@ BOOL APIENTRY fopsGenericProgressCallback(PFOPSUPDATE pfu,
     PGENERICPROGRESSWINDATA ppwd = (PGENERICPROGRESSWINDATA)ulUser;
 
     if (ppwd->hwndProgress)     // V0.9.19 (2002-04-17) [umoeller]
-        return ((BOOL)WinSendMsg(ppwd->hwndProgress,
-                                 XM_UPDATE,
-                                 (MPARAM)pfu,
-                                 (MPARAM)0));
+        return (BOOL)WinSendMsg(ppwd->hwndProgress,
+                                XM_UPDATE,
+                                (MPARAM)pfu,
+                                (MPARAM)0);
 
     return TRUE;
 }
@@ -355,7 +355,7 @@ APIRET APIENTRY fopsGenericErrorCallback(ULONG ulOperation,
 
     free(pszTitle);
 
-    return (frError);
+    return frError;
 }
 
 /*
@@ -681,7 +681,7 @@ STATIC APIRET StartWithGenericProgress(HFILETASKLIST hftl,
         frc = ERROR_PROTECTION_VIOLATION;       // V0.9.19 (2002-06-12) [umoeller]
     } END_CATCH();
 
-    return (frc);
+    return frc;
 }
 
 /*
@@ -880,7 +880,7 @@ APIRET fopsStartTaskFromCnr(ULONG ulOperation,       // in: operation; see fopsC
 
     PMPF_FOPS(("returning APIRET %d", frc));
 
-    return (frc);
+    return frc;
 }
 
 /*
@@ -987,7 +987,7 @@ APIRET fopsStartTaskFromList(ULONG ulOperation,
 
     PMPF_FOPS(("APIRET %d", frc));
 
-    return (frc);
+    return frc;
 }
 
 /********************************************************************
@@ -1147,7 +1147,7 @@ APIRET fopsStartDeleteFromCnr(HAB hab,                 // in: as with fopsStartT
         }
     }
 
-    return (frc);
+    return frc;
 }
 
 /*
@@ -1173,15 +1173,15 @@ APIRET fopsStartTrashRestoreFromCnr(HAB hab,                 // in: as with fops
                                     ULONG ulSelection,       // in: SEL_* flag
                                     HWND hwndCnr)            // in: container to collect objects from
 {
-    return (fopsStartTaskFromCnr(XFT_RESTOREFROMTRASHCAN,
-                                 hab,
-                                 pTrashSource,
-                                 pTargetFolder, // can be NULL
-                                 pSourceObject,
-                                 ulSelection,
-                                 FALSE,       // no related objects
-                                 hwndCnr,
-                                 NULL));
+    return fopsStartTaskFromCnr(XFT_RESTOREFROMTRASHCAN,
+                                hab,
+                                pTrashSource,
+                                pTargetFolder, // can be NULL
+                                pSourceObject,
+                                ulSelection,
+                                FALSE,       // no related objects
+                                hwndCnr,
+                                NULL);
 }
 
 /*
@@ -1221,18 +1221,17 @@ APIRET fopsStartTrashDestroyFromCnr(HAB hab,                 // in: as with fops
         Confirm.ulMsgMultiple = 178;
     }
 
-    return (fopsStartTaskFromCnr(XFT_TRUEDELETE,
-                                 hab,
-                                 pTrashSource,
-                                 NULL,             // no target folder
-                                 pSourceObject,
-                                 ulSelection,
-                                 TRUE,       // collect related objects instead
-                                 hwndCnr,
-                                 (fConfirm)
-                                    ? &Confirm
-                                    : NULL)
-            );
+    return fopsStartTaskFromCnr(XFT_TRUEDELETE,
+                                hab,
+                                pTrashSource,
+                                NULL,             // no target folder
+                                pSourceObject,
+                                ulSelection,
+                                TRUE,       // collect related objects instead
+                                hwndCnr,
+                                (fConfirm)
+                                   ? &Confirm
+                                   : NULL);
 }
 
 /*
@@ -1279,7 +1278,7 @@ APIRET fopsStartPopulate(HAB hab,              // in: as with fopsStartTask
         frc = fopsStartTask(hftl,
                             hab);
 
-    return (frc);
+    return frc;
 }
 
 /*
@@ -1314,17 +1313,16 @@ APIRET fopsStartFontDeinstallFromCnr(HAB hab,          // in: as with fopsStartT
         Confirm.ulMsgMultiple = 203;
     }
 
-    return (fopsStartTaskFromCnr(XFT_DEINSTALLFONTS,
-                                 hab,
-                                 pFontFolderSource,
-                                 NULL,             // no target folder
-                                 pSourceObject,
-                                 ulSelection,
-                                 FALSE,             // no related objects... don't work!
-                                 hwndCnr,
-                                 (fConfirm)
-                                    ? &Confirm
-                                    : NULL)
-            );
+    return fopsStartTaskFromCnr(XFT_DEINSTALLFONTS,
+                                hab,
+                                pFontFolderSource,
+                                NULL,             // no target folder
+                                pSourceObject,
+                                ulSelection,
+                                FALSE,             // no related objects... don't work!
+                                hwndCnr,
+                                (fConfirm)
+                                   ? &Confirm
+                                   : NULL);
 }
 

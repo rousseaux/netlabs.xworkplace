@@ -526,10 +526,10 @@ STATIC VOID SubclassAndSetColor(HWND hwndDlg,
 STATIC LONG GetColor(HWND hwndDlg,
                      ULONG ulID)
 {
-    return (winhQueryPresColor(WinWindowFromID(hwndDlg, ulID),
-                               PP_BACKGROUNDCOLOR,
-                               FALSE,
-                               SYSCLR_DIALOGBACKGROUND));
+    return winhQueryPresColor(WinWindowFromID(hwndDlg, ulID),
+                              PP_BACKGROUNDCOLOR,
+                              FALSE,
+                              SYSCLR_DIALOGBACKGROUND);
 }
 
 #define COLOR_WIDTH     50

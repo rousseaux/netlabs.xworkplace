@@ -774,7 +774,7 @@ STATIC WPObject* FindObject(POBJBUTTONPRIVATE pPrivate)
         }
     }
 
-    return (pobj);
+    return pobj;
 }
 
 /*
@@ -1654,7 +1654,7 @@ STATIC BOOL OwgtCommand(HWND hwnd, MPARAM mp1)
         pPrivate->fOpenedWPSContextMenu = FALSE;
     }
 
-    return (fProcessed);
+    return fProcessed;
 }
 
 /*

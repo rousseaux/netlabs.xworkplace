@@ -7546,23 +7546,23 @@ PCSZ cmnIdentifyView(ULONG ulView)
             switch (ulKey)
             {
                 case 1:
-                    return ("IDKEY_OBJID");
+                    return "IDKEY_OBJID";
                 case 2:
-                    return ("IDKEY_OBJHELPPANEL");
+                    return "IDKEY_OBJHELPPANEL";
                 case 6:
-                    return ("IDKEY_OBJSZID");
+                    return "IDKEY_OBJSZID";
                 case 7:
-                    return ("IDKEY_OBJSTYLE");
+                    return "IDKEY_OBJSTYLE";
                 case 8:
-                    return ("IDKEY_OBJMINWIN");
+                    return "IDKEY_OBJMINWIN";
                 case 9:
-                    return ("IDKEY_OBJCONCURRENT");
+                    return "IDKEY_OBJCONCURRENT";
                 case 10:
-                    return ("IDKEY_OBJVIEWBUTTON");
+                    return "IDKEY_OBJVIEWBUTTON";
                 case 11:
-                    return ("IDKEY_OBJLONGS");
+                    return "IDKEY_OBJLONGS";
                 case 12:
-                    return ("IDKEY_OBJSTRINGS");
+                    return "IDKEY_OBJSTRINGS";
             }
         }
         else if (!strcmp(pszClass, "WPFileSystem"))
@@ -7570,9 +7570,9 @@ PCSZ cmnIdentifyView(ULONG ulView)
             switch (ulKey)
             {
                 case 4:
-                    return ("IDKEY_FSYSMENUCOUNT");
+                    return "IDKEY_FSYSMENUCOUNT";
                 case 3:
-                    return ("IDKEY_FSYSMENUARRAY");
+                    return "IDKEY_FSYSMENUARRAY";
             }
         }
         else if (!strcmp(pszClass, G_pcszWPFolder))
@@ -7580,74 +7580,74 @@ PCSZ cmnIdentifyView(ULONG ulView)
             switch (ulKey)
             {
                 case IDKEY_FDRCONTENTATTR    : // 2900
-                    return ("IDKEY_FDRCONTENTATTR");
+                    return "IDKEY_FDRCONTENTATTR";
                 case IDKEY_FDRTREEATTR       : // 2901
-                    return ("IDKEY_FDRTREEATTR");
+                    return "IDKEY_FDRTREEATTR";
                 case IDKEY_FDRCVLFONT        : // 2902
-                    return ("IDKEY_FDRCVLFONT");
+                    return "IDKEY_FDRCVLFONT";
                 case IDKEY_FDRCVNFONT        : // 2903
-                    return ("IDKEY_FDRCVNFONT");
+                    return "IDKEY_FDRCVNFONT";
                 case IDKEY_FDRCVIFONT        : // 2904
-                    return ("IDKEY_FDRCVIFONT");
+                    return "IDKEY_FDRCVIFONT";
                 case IDKEY_FDRTVLFONT        : // 2905
-                    return ("IDKEY_FDRTVLFONT");
+                    return "IDKEY_FDRTVLFONT";
                 case IDKEY_FDRTVNFONT        : // 2906
-                    return ("IDKEY_FDRTVNFONT");
+                    return "IDKEY_FDRTVNFONT";
                 case IDKEY_FDRDETAILSATTR    : // 2907
-                    return ("IDKEY_FDRDETAILSATTR");
+                    return "IDKEY_FDRDETAILSATTR";
                 case IDKEY_FDRDVFONT         : // 2908
-                    return ("IDKEY_FDRDVFONT");
+                    return "IDKEY_FDRDVFONT";
                 case IDKEY_FDRDETAILSCLASS   : // 2909
-                    return ("IDKEY_FDRDETAILSCLASS");
+                    return "IDKEY_FDRDETAILSCLASS";
                 case IDKEY_FDRICONPOS        : // 2910
-                    return ("IDKEY_FDRICONPOS");
+                    return "IDKEY_FDRICONPOS";
                 case IDKEY_FDRINVISCOLUMNS   : // 2914
-                    return ("IDKEY_FDRINVISCOLUMNS");
+                    return "IDKEY_FDRINVISCOLUMNS";
                 case IDKEY_FDRINCCLASS       : // 2920
-                    return ("IDKEY_FDRINCCLASS");
+                    return "IDKEY_FDRINCCLASS";
                 case IDKEY_FDRINCNAME        : // 2921
-                    return ("IDKEY_FDRINCNAME");
+                    return "IDKEY_FDRINCNAME";
                 case IDKEY_FDRFSYSSEARCHINFO : // 2922
-                    return ("IDKEY_FDRFSYSSEARCHINFO");
+                    return "IDKEY_FDRFSYSSEARCHINFO";
                 case IDKEY_FILTERCONTENT     : // 2923
-                    return ("IDKEY_FILTERCONTENT");
+                    return "IDKEY_FILTERCONTENT";
                 case IDKEY_CNRBACKGROUND     : // 2924
-                    return ("IDKEY_CNRBACKGROUND");
+                    return "IDKEY_CNRBACKGROUND";
                 case IDKEY_FDRINCCRITERIA    : // 2925
-                    return ("IDKEY_FDRINCCRITERIA");
+                    return "IDKEY_FDRINCCRITERIA";
                 case IDKEY_FDRICONVIEWPOS    : // 2926
-                    return ("IDKEY_FDRICONVIEWPOS");
+                    return "IDKEY_FDRICONVIEWPOS";
                 case IDKEY_FDRSORTCLASS      : // 2927
-                    return ("IDKEY_FDRSORTCLASS");
+                    return "IDKEY_FDRSORTCLASS";
                 case IDKEY_FDRSORTATTRIBS    : // 2928
-                    return ("IDKEY_FDRSORTATTRIBS");
+                    return "IDKEY_FDRSORTATTRIBS";
                 case IDKEY_FDRSORTINFO       : // 2929
-                    return ("IDKEY_FDRSORTINFO");
+                    return "IDKEY_FDRSORTINFO";
                 case IDKEY_FDRSNEAKYCOUNT    : // 2930
-                    return ("IDKEY_FDRSNEAKYCOUNT");
+                    return "IDKEY_FDRSNEAKYCOUNT";
                 case IDKEY_FDRLONGARRAY      : // 2931
-                    return ("IDKEY_FDRLONGARRAY");
+                    return "IDKEY_FDRLONGARRAY";
                 case IDKEY_FDRSTRARRAY       : // 2932
-                    return ("IDKEY_FDRSTRARRAY");
+                    return "IDKEY_FDRSTRARRAY";
                 case IDKEY_FDRCNRBACKGROUND  : // 2933
-                    return ("IDKEY_FDRCNRBACKGROUND");
+                    return "IDKEY_FDRCNRBACKGROUND";
                 case IDKEY_FDRBKGNDIMAGEFILE : // 2934
-                    return ("IDKEY_FDRBKGNDIMAGEFILE");
+                    return "IDKEY_FDRBKGNDIMAGEFILE";
                 case IDKEY_FDRBACKGROUND     : // 2935
-                    return ("IDKEY_FDRBACKGROUND");
+                    return "IDKEY_FDRBACKGROUND";
                 case IDKEY_FDRSELFCLOSE      : // 2936
-                    return ("IDKEY_FDRSELFCLOSE");
+                    return "IDKEY_FDRSELFCLOSE";
 
                 case 2937:
-                    return ("IDKEY_FDRODMENUBARON");
+                    return "IDKEY_FDRODMENUBARON";
                 case 2938:
-                    return ("IDKEY_FDRGRIDINFO");
+                    return "IDKEY_FDRGRIDINFO";
                 case 2939:
-                    return ("IDKEY_FDRTREEVIEWCONTENTS");
+                    return "IDKEY_FDRTREEVIEWCONTENTS";
             }
         }
 
-        return ("unknown");
+        return "unknown";
     }
 
     /*

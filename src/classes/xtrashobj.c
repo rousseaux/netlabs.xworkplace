@@ -257,7 +257,7 @@ SOM_Scope WPObject*  SOMLINK xtro_xwpQueryRelatedObject(XWPTrashObject *somSelf)
     XWPTrashObjectData *somThis = XWPTrashObjectGetData(somSelf);
     XWPTrashObjectMethodDebug("XWPTrashObject","xtro_xwpQueryRelatedObject");
 
-    return (_pRelatedObject);
+    return _pRelatedObject;
 }
 
 /*
@@ -284,7 +284,7 @@ SOM_Scope PSZ SOMLINK xtro_xwpQueryRelatedPath(XWPTrashObject *somSelf)
         // do it now
         _pszSourcePath = trshComposeRelatedPath(somSelf);
 
-    return (_pszSourcePath);
+    return _pszSourcePath;
 }
 
 /*
@@ -338,7 +338,7 @@ SOM_Scope ULONG  SOMLINK xtro_xwpQueryRelatedSize(XWPTrashObject *somSelf)
     XWPTrashObjectData *somThis = XWPTrashObjectGetData(somSelf);
     XWPTrashObjectMethodDebug("XWPTrashObject","xtro_xwpQueryRelatedSize");
 
-    return (_ulTotalSize);
+    return _ulTotalSize;
 }
 
 /*
@@ -422,7 +422,7 @@ SOM_Scope BOOL  SOMLINK xtro_xwpRestoreFromTrashCan(XWPTrashObject *somSelf,
 {
     XWPTrashObjectMethodDebug("XWPTrashObject","xtro_xwpRestoreFromTrashCan");
 
-    return (trshRestoreFromTrashCan(somSelf, pTargetFolder));
+    return trshRestoreFromTrashCan(somSelf, pTargetFolder);
 }
 
 /*
@@ -510,7 +510,7 @@ SOM_Scope BOOL  SOMLINK xtro_wpSetupOnce(XWPTrashObject *somSelf,
                                                       pszSetupString))
     {
         // OK:
-        return (trshSetupOnce(somSelf, pszSetupString));
+        return trshSetupOnce(somSelf, pszSetupString);
     }
 
     return FALSE;
@@ -547,7 +547,7 @@ SOM_Scope HPOINTER  SOMLINK xtro_wpQueryIcon(XWPTrashObject *somSelf)
         return pmrc->hptrIcon;
     }
 
-    return (XWPTrashObject_parent_WPTransient_wpQueryIcon(somSelf));
+    return XWPTrashObject_parent_WPTransient_wpQueryIcon(somSelf);
                 // dull red default icon
 }
 
@@ -607,7 +607,7 @@ SOM_Scope ULONG  SOMLINK xtro_wpQueryDetailsData(XWPTrashObject *somSelf,
         *pcp += sizeof(XTRO_DETAILS);
     }
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*
@@ -814,8 +814,8 @@ SOM_Scope BOOL  SOMLINK xtro_wpMoveObject(XWPTrashObject *somSelf,
     // XWPTrashObjectData *somThis = XWPTrashObjectGetData(somSelf);
     XWPTrashObjectMethodDebug("XWPTrashObject","xtro_wpMoveObject");
 
-    return (_xwpRestoreFromTrashCan(somSelf,
-                                    Folder));  // move-target folder to recreate object in
+    return _xwpRestoreFromTrashCan(somSelf,
+                                   Folder);  // move-target folder to recreate object in
         // this destroys somSelf
 }
 
@@ -866,8 +866,7 @@ SOM_Scope MRESULT  SOMLINK xtro_wpDragOver(XWPTrashObject *somSelf,
     /* XWPTrashObjectData *somThis = XWPTrashObjectGetData(somSelf); */
     XWPTrashObjectMethodDebug("XWPTrashObject","xtro_wpDragOver");
 
-    return ((MRESULT)DOR_NEVERDROP   // object does not accept d'n'd
-                );
+    return (MRESULT)DOR_NEVERDROP;   // object does not accept d'n'd
 }
 
 /*
@@ -889,7 +888,7 @@ SOM_Scope MRESULT  SOMLINK xtro_wpDrop(XWPTrashObject *somSelf,
     /* XWPTrashObjectData *somThis = XWPTrashObjectGetData(somSelf); */
     XWPTrashObjectMethodDebug("XWPTrashObject","xtro_wpDrop");
 
-    return ((MRESULT)RC_DROP_ERROR);
+    return (MRESULT)RC_DROP_ERROR;
 }
 
 /* ******************************************************************
@@ -917,10 +916,10 @@ LONG EXPENTRY CompareTrashSize(PULONG pul1,     // ptr to ul1
                                PULONG pul2)     // ptr to ul2
 {
     if (*pul1 < *pul2)
-        return (CMP_GREATER);
+        return CMP_GREATER;
     if (*pul1 > *pul2)
-        return (CMP_LESS);
-    return (CMP_EQUAL);
+        return CMP_LESS;
+    return CMP_EQUAL;
 }
 
 /*

@@ -1622,7 +1622,7 @@ ULONG EXPENTRY WgtInitModule(HAB hab,         // XCenter's anchor block
         }
     }
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*

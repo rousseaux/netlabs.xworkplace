@@ -573,7 +573,7 @@ STATIC PLINKLIST InsertDriverCategories(HWND hwndCnr,
 
     } // while (pSearch = strstr(pSearch, "CATEGORY"))
 
-    return (pllReturn);
+    return pllReturn;
 }
 
 /*

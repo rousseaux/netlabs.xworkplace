@@ -242,7 +242,7 @@ ULONG xmmOpenDevice(HWND hwndNotify,
     }
     // else: device already open:
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*
@@ -378,7 +378,7 @@ ULONG xmmOpenWaveDevice(HWND hwndObject,       // in: Media thread object wnd
         PMPF_SOUNDS(("MCI_STOP returned 0x%lX", ulrc));
     }
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*
@@ -437,7 +437,7 @@ ULONG xmmPlaySound(HWND hwndObject,     // in: Media thread object wnd
         }
     }
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*
@@ -480,7 +480,7 @@ ULONG xmmStopSound(PUSHORT pusDeviceID)
                             0);
     // _PmpfF(("MCI_RELEASEDEVICE returned 0x%lX", ulrc));
 
-    return (ulrc);
+    return ulrc;
 }
 
 /* ******************************************************************
@@ -609,7 +609,7 @@ ULONG xmmCDOpenDevice(PXMMCDPLAYER *ppPlayer,
         }
     }
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*
@@ -651,7 +651,7 @@ ULONG xmmCDCloseDevice(PXMMCDPLAYER *ppPlayer)
         }
     }
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*
@@ -755,7 +755,7 @@ ULONG xmmCDGetTOC(PXMMCDPLAYER pPlayer)
         xmmUnlockDevicesList();
     }
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*
@@ -810,7 +810,7 @@ ULONG xmmCDQueryStatus(USHORT usDeviceID)
         xmmUnlockDevicesList();
     }
 
-    return (ulReturn);
+    return ulReturn;
 }
 
 /*
@@ -876,7 +876,7 @@ ULONG xmmCDQueryCurrentTrack(PXMMCDPLAYER pPlayer)
         xmmUnlockDevicesList();
     }
 
-    return (ulReturn);
+    return ulReturn;
 }
 
 /*
@@ -961,7 +961,7 @@ ULONG xmmCDPlay(PXMMCDPLAYER pPlayer,
     if (hptrOld)
         WinSetPointer(HWND_DESKTOP, hptrOld);
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*
@@ -1058,7 +1058,7 @@ ULONG xmmCDPlayTrack(PXMMCDPLAYER pPlayer,
     if (hptrOld)
         WinSetPointer(HWND_DESKTOP, hptrOld);
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*
@@ -1104,7 +1104,7 @@ ULONG xmmCDCalcTrack(PXMMCDPLAYER pPlayer,
 
     *pulSecondsInTrack = ulMSInTrack / 1000;
 
-    return (ulTrack);
+    return ulTrack;
 }
 
 /*
@@ -1178,7 +1178,7 @@ ULONG xmmCDPositionAdvise(PXMMCDPLAYER pPlayer,
         xmmUnlockDevicesList();
     }
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*
@@ -1213,7 +1213,7 @@ ULONG xmmCDPause(PXMMCDPLAYER pPlayer)
         xmmUnlockDevicesList();
     }
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*
@@ -1260,7 +1260,7 @@ ULONG xmmCDStop(PXMMCDPLAYER *ppPlayer)
         xmmUnlockDevicesList();
     }
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*
@@ -1304,7 +1304,7 @@ ULONG xmmCDEject(PXMMCDPLAYER *ppPlayer)
         xmmUnlockDevicesList();
     }
 
-    return (ulrc);
+    return ulrc;
 }
 
 /* ******************************************************************
@@ -1338,7 +1338,7 @@ ULONG xmmQueryMasterVolume(PULONG pulVolume)
     if (LOUSHORT(ulrc) == MCIERR_SUCCESS)
         *pulVolume = mvp.ulReturn;
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*
@@ -1364,7 +1364,7 @@ ULONG xmmSetMasterVolume(ULONG ulVolume)
                             &mvp,
                             0);
 
-    return (ulrc);
+    return ulrc;
 }
 
 /* ******************************************************************
@@ -1495,9 +1495,9 @@ STATIC const char* GetDeviceTypeName(ULONG ulDeviceType)
     }
 
     if (ulStringID)
-        return (cmnGetString(ulStringID));
+        return cmnGetString(ulStringID);
 
-    return ("Unknown");
+    return "Unknown";
 }
 
 /*
@@ -1585,7 +1585,7 @@ STATIC ULONG GetAllDeviceNames(PULONG pcDevices,       // out: device count
         }
     }
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*
@@ -1791,7 +1791,7 @@ STATIC ULONG GetDeviceInfo(PXMMDEVICE pDevice,         // out: device info
         }
     }
 
-    return (rc);
+    return rc;
 }
 
 /*
@@ -1850,7 +1850,7 @@ PXMMDEVICE xmmQueryDevices(PULONG pcDevices)
 
     *pcDevices = cDevices;
 
-    return (paDevices);
+    return paDevices;
 }
 
 /*

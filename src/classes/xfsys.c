@@ -252,7 +252,7 @@ SOM_Scope ULONG  SOMLINK xfsys_xwpAddXFldSystemPages(XFldSystem *somSelf,
     inbp.cControlFlags = G_cGenericCnrPage;
     inbp.pfncbInitPage    = cfgSyslevelInitPage;
     inbp.pfncbItemChanged = cfgSyslevelItemChanged;
-    return (ntbInsertPage(&inbp));
+    return ntbInsertPage(&inbp);
 }
 
 /*
@@ -395,7 +395,7 @@ SOM_Scope PSZ  SOMLINK xfsysM_wpclsQueryTitle(M_XFldSystem *somSelf)
     // M_XFldSystemData *somThis = M_XFldSystemGetData(somSelf);
     M_XFldSystemMethodDebug("M_XFldSystem","xfsysM_wpclsQueryTitle");
 
-    return ("OS/2 Kernel");
+    return "OS/2 Kernel";       // @@todo localize
 }
 
 /*
@@ -465,7 +465,7 @@ SOM_Scope ULONG  SOMLINK xfsysM_wpclsQueryIconData(M_XFldSystem *somSelf,
         pIconInfo->hmod    = cmnQueryMainResModuleHandle();
     }
 
-    return (sizeof(ICONINFO));
+    return sizeof(ICONINFO);
 }
 
 

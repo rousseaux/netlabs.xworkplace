@@ -130,7 +130,7 @@ static XFLDHOTKEY     G_FolderHotkeys[FLDRHOTKEYCOUNT];
 
 PXFLDHOTKEY fdrQueryFldrHotkeys(VOID)
 {
-    return (G_FolderHotkeys);
+    return G_FolderHotkeys;
 }
 
 /*

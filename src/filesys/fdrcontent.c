@@ -216,7 +216,7 @@ STATIC SOMAny* GetMonitorObject(WPFolder *somSelf)
                     // we can use the method now V0.9.20 (2002-07-25) [umoeller]
         }
 
-        return (_pMonitor);
+        return _pMonitor;
     }
 
 #ifdef __DEBUG__
@@ -281,7 +281,7 @@ ULONG fdrRequestFolderWriteMutexSem(WPFolder *somSelf)
             ulrc = pRequestWrite(pMonitor);
     }
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*
@@ -312,7 +312,7 @@ ULONG fdrReleaseFolderWriteMutexSem(WPFolder *somSelf)
             ulrc = pReleaseWrite(pMonitor);
     }
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*
@@ -338,7 +338,7 @@ ULONG fdrFlushNotifications(WPFolder *somSelf)
                                                     "wpFlushNotifications"))
         ulrc = _wpFlushNotifications(somSelf);
 
-    return (ulrc);
+    return ulrc;
 }
 */
 
@@ -450,7 +450,7 @@ STATIC WPObject* FastFindFSFromUpperName(WPFolder *pFolder,
                          _FileSystemsTreeRoot,
                          (ULONG)pcszUpperShortName,
                          treeCompareStrings))
-        return (pNode->pobj);
+        return pNode->pobj;
 
     return NULL;
 }
@@ -485,7 +485,7 @@ STATIC WPObject* SafeFindFSFromUpperName(WPFolder *pFolder,
     if (fFolderLocked)
         _wpReleaseFolderMutexSem(pFolder);
 
-    return (pobjReturn);
+    return pobjReturn;
 }
 
 /*
@@ -560,7 +560,7 @@ WPObject* fdrSafeFindFSFromName(WPFolder *pFolder,
     if (fFolderLocked)
         _wpReleaseFolderMutexSem(pFolder);
 
-    return (pobjReturn);
+    return pobjReturn;
 }
 
 /*
@@ -1031,7 +1031,7 @@ WPObject* fdrQueryContent(WPFolder *somSelf,
         pobjReturn = NULL;
     } END_CATCH();
 
-    return (pobjReturn);
+    return pobjReturn;
 }
 
 /*
@@ -1117,7 +1117,7 @@ WPObject** fdrQueryContentArray(WPFolder *pFolder,
         }
     } END_CATCH();
 
-    return (paObjects);
+    return paObjects;
 }
 
 /*
@@ -1416,7 +1416,7 @@ STATIC WPFileSystem* ProcessParticles(WPFolder *pCurrentFolder,
                                         OBJLIST_QUERYAWAKEFSOBJECT);
                     }
                     // return this
-                    return (pFound);
+                    return pFound;
                 }
                 else
                 {
@@ -1593,7 +1593,7 @@ WPFileSystem* fdrQueryAwakeFSObject(PCSZ pcszFQPath)
     if (fLocked)
         UnlockRootFolders();
 
-    return (pReturn);
+    return pReturn;
 }
 
 /* ******************************************************************
@@ -1739,7 +1739,7 @@ STATIC BOOL PopulateWithAbstracts(WPFolder *somSelf,
     if (hFind)
         _wpclsFindObjectEnd(_WPObject, hFind);
 
-    return (fSuccess);
+    return fSuccess;
 }
 
 /* ******************************************************************
@@ -1986,7 +1986,7 @@ BOOL fdrPopulate(WPFolder *somSelf,
 
     PMPF_TURBOFOLDERS(("returning %d", fSuccess));
 
-    return (fSuccess);
+    return fSuccess;
 }
 
 #endif
@@ -2208,7 +2208,7 @@ ULONG fdrInsertAllContents(WPFolder *pFolder)
          free(papObjects);
      }
 
-    return (cObjects);
+    return cObjects;
 }
 
 

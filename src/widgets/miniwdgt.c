@@ -505,7 +505,7 @@ ULONG EXPENTRY WgtInitModule(HAB hab,               // XCenter's anchor block
         ulrc = sizeof(G_WidgetClasses) / sizeof(G_WidgetClasses[0]);
     }
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*

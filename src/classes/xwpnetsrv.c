@@ -287,8 +287,7 @@ SOM_Scope MRESULT  SOMLINK xsrv_wpDragOver(XWPNetServer *somSelf,
     XWPNetServerData *somThis = XWPNetServerGetData(somSelf);
     XWPNetServerMethodDebug("XWPNetServer","xsrv_wpDragOver");
 
-    return ((MRESULT)DOR_NEVERDROP   // object does not accept d'n'd
-                );
+    return (MRESULT)DOR_NEVERDROP;   // object does not accept d'n'd
 }
 
 /*
@@ -303,7 +302,7 @@ SOM_Scope MRESULT  SOMLINK xsrv_wpDrop(XWPNetServer *somSelf,
     XWPNetServerData *somThis = XWPNetServerGetData(somSelf);
     XWPNetServerMethodDebug("XWPNetServer","xsrv_wpDrop");
 
-    return ((MRESULT)RC_DROP_ERROR);
+    return (MRESULT)RC_DROP_ERROR;
 }
 
 
@@ -374,7 +373,7 @@ SOM_Scope PSZ  SOMLINK xsrvM_wpclsQueryTitle(M_XWPNetServer *somSelf)
     /* M_XWPNetServerData *somThis = M_XWPNetServerGetData(somSelf); */
     M_XWPNetServerMethodDebug("M_XWPNetServer","xsrvM_wpclsQueryTitle");
 
-    return ("Network server");  // @@todo localize
+    return "Network server";  // @@todo localize
 }
 
 /*
@@ -469,6 +468,6 @@ SOM_Scope ULONG  SOMLINK xsrvM_wpclsQueryIconData(M_XWPNetServer *somSelf,
                                                                            pIconInfo));
     }
 
-    return (sizeof(ICONINFO));
+    return sizeof(ICONINFO);
 }
 

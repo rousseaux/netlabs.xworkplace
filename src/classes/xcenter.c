@@ -1576,7 +1576,7 @@ SOM_Scope PSZ  SOMLINK xctrM_wpclsQueryTitle(M_XCenter *somSelf)
     /* M_XCenterData *somThis = M_XCenterGetData(somSelf); */
     M_XCenterMethodDebug("M_XCenter","xctrM_wpclsQueryTitle");
 
-    return ((PSZ)ENTITY_XCENTER);
+    return (PSZ)ENTITY_XCENTER;
 }
 
 /*

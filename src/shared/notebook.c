@@ -1245,7 +1245,7 @@ STATIC PSUBCLNOTEBOOKLISTITEM FindNBLI(HWND hwndNotebook)
     if (fLocked)
         UnlockNotebooks();
 
-    return (pSubclNBLI);
+    return pSubclNBLI;
 }
 
 /*
@@ -1696,7 +1696,7 @@ ULONG ntbInsertPage(PINSERTNOTEBOOKPAGE pinbp)
         }
     }
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*
@@ -1857,9 +1857,9 @@ PNOTEBOOKPAGE ntbQueryOpenPages(PNOTEBOOKPAGE pnbp)
         UnlockNotebooks();
 
     if (pItemReturn)
-        return (pItemReturn->pnbp);
-    else
-        return NULL;
+        return pItemReturn->pnbp;
+
+    return NULL;
 }
 
 /*
@@ -1919,7 +1919,7 @@ ULONG ntbUpdateVisiblePage(WPObject *somSelf,
         }
     } // while (pcnbp = ntbQueryOpenPages(pcnbp))
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*

@@ -549,14 +549,14 @@ ULONG MessageBox(HWND hwndOwner,
     i = vsprintf(szBuf, pcszFormat, args);
     va_end(args);
 
-    return (dlghMessageBox(hwndOwner,
-                           G_hptrMain,
-                           "xfix",
-                           szBuf,
-                           NULL,
-                           flFlags,
-                           "9.WarpSans",
-                           &Strings));
+    return dlghMessageBox(hwndOwner,
+                          G_hptrMain,
+                          "xfix",
+                          szBuf,
+                          NULL,
+                          flFlags,
+                          "9.WarpSans",
+                          &Strings);
 }
 
 /*
@@ -660,15 +660,15 @@ LONG inline CompareStrings(PVOID precc1, PVOID precc2, ULONG ulFieldOfs)
             // case WCS_EQ:
                 return 0;
         }
-        /* return (strcmp(psz1,
-                       psz2)); */
+        /* return strcmp(psz1,
+                         psz2); */
     }
     else if (psz1)
         // string 1 exists, but 2 doesn't:
-        return (1);
+        return 1;
     else if (psz2)
         // string 2 exists, but 1 doesn't:
-        return (-1);
+        return -1;
 
     return 0;
 }
@@ -687,8 +687,8 @@ LONG inline CompareStrings(PVOID precc1, PVOID precc2, ULONG ulFieldOfs)
 
 int TREEENTRY CompareStrings(ULONG ul1, ULONG ul2)
 {
-    return (strhcmp((const char*)(ul1),
-                    (const char*)(ul2)));
+    return strhcmp((const char*)(ul1),
+                   (const char*)(ul2));
 }
 
 /*
@@ -1346,52 +1346,52 @@ void _Optlink fntCheckFiles(PTHREADINFO ptiMyself)
 
 SHORT EXPENTRY fnMainCompareIndex(PNODERECORD p1, PNODERECORD p2, PVOID pStorage)
 {
-    return (CompareULongs(p1, p2, FIELDOFFSET(NODERECORD, ulIndex)));
+    return CompareULongs(p1, p2, FIELDOFFSET(NODERECORD, ulIndex));
 }
 
 SHORT EXPENTRY fnMainCompareStatus(PNODERECORD p1, PNODERECORD p2, PVOID pStorage)
 {
-    return (CompareStrings(p1, p2, FIELDOFFSET(NODERECORD, pszStatusDescr)));
+    return CompareStrings(p1, p2, FIELDOFFSET(NODERECORD, pszStatusDescr));
 }
 
 SHORT EXPENTRY fnMainCompareType(PNODERECORD p1, PNODERECORD p2, PVOID pStorage)
 {
-    return (CompareStrings(p1, p2, FIELDOFFSET(NODERECORD, pszType)));
+    return CompareStrings(p1, p2, FIELDOFFSET(NODERECORD, pszType));
 }
 
 SHORT EXPENTRY fnMainCompareHandle(PNODERECORD p1, PNODERECORD p2, PVOID pStorage)
 {
-    return (CompareULongs(p1, p2, FIELDOFFSET(NODERECORD, ulHandle)));
+    return CompareULongs(p1, p2, FIELDOFFSET(NODERECORD, ulHandle));
 }
 
 SHORT EXPENTRY fnMainCompareParent(PNODERECORD p1, PNODERECORD p2, PVOID pStorage)
 {
-    return (CompareULongs(p1, p2, FIELDOFFSET(NODERECORD, ulParentHandle)));
+    return CompareULongs(p1, p2, FIELDOFFSET(NODERECORD, ulParentHandle));
 }
 
 SHORT EXPENTRY fnMainCompareShortName(PNODERECORD p1, PNODERECORD p2, PVOID pStorage)
 {
-    return (CompareStrings(p1, p2, FIELDOFFSET(NODERECORD, pszShortNameCopy)));
+    return CompareStrings(p1, p2, FIELDOFFSET(NODERECORD, pszShortNameCopy));
 }
 
 SHORT EXPENTRY fnMainCompareChildren(PNODERECORD p1, PNODERECORD p2, PVOID pStorage)
 {
-    return (-CompareULongs(p1, p2, FIELDOFFSET(NODERECORD, cChildren)));
+    return -CompareULongs(p1, p2, FIELDOFFSET(NODERECORD, cChildren));
 }
 
 SHORT EXPENTRY fnMainCompareDuplicates(PNODERECORD p1, PNODERECORD p2, PVOID pStorage)
 {
-    return (-CompareULongs(p1, p2, FIELDOFFSET(NODERECORD, cDuplicates)));
+    return -CompareULongs(p1, p2, FIELDOFFSET(NODERECORD, cDuplicates));
 }
 
 SHORT EXPENTRY fnMainCompareReferences(PNODERECORD p1, PNODERECORD p2, PVOID pStorage)
 {
-    return (-CompareStrings(p1, p2, FIELDOFFSET(NODERECORD, pszRefcsDescr)));
+    return -CompareStrings(p1, p2, FIELDOFFSET(NODERECORD, pszRefcsDescr));
 }
 
 SHORT EXPENTRY fnMainCompareLongName(PNODERECORD p1, PNODERECORD p2, PVOID pStorage)
 {
-    return (CompareStrings(p1, p2, FIELDOFFSET(NODERECORD, pszLongName)));
+    return CompareStrings(p1, p2, FIELDOFFSET(NODERECORD, pszLongName));
 }
 
 /* ******************************************************************
@@ -1402,27 +1402,27 @@ SHORT EXPENTRY fnMainCompareLongName(PNODERECORD p1, PNODERECORD p2, PVOID pStor
 
 SHORT EXPENTRY fnObjIdsCompareIndex(POBJIDRECORD p1, POBJIDRECORD p2, PVOID pStorage)
 {
-    return (CompareULongs(p1, p2, FIELDOFFSET(OBJIDRECORD, ulIndex)));
+    return CompareULongs(p1, p2, FIELDOFFSET(OBJIDRECORD, ulIndex));
 }
 
 SHORT EXPENTRY fnObjIdsCompareStatus(POBJIDRECORD p1, POBJIDRECORD p2, PVOID pStorage)
 {
-    return (CompareStrings(p1, p2, FIELDOFFSET(OBJIDRECORD, pszStatus)));
+    return CompareStrings(p1, p2, FIELDOFFSET(OBJIDRECORD, pszStatus));
 }
 
 SHORT EXPENTRY fnObjIdsCompareIDs(POBJIDRECORD p1, POBJIDRECORD p2, PVOID pStorage)
 {
-    return (CompareStrings(p1, p2, FIELDOFFSET(OBJIDRECORD, pcszID)));
+    return CompareStrings(p1, p2, FIELDOFFSET(OBJIDRECORD, pcszID));
 }
 
 SHORT EXPENTRY fnObjIdsCompareHandles(POBJIDRECORD p1, POBJIDRECORD p2, PVOID pStorage)
 {
-    return (CompareULongs(p1, p2, FIELDOFFSET(OBJIDRECORD, ulHandle)));
+    return CompareULongs(p1, p2, FIELDOFFSET(OBJIDRECORD, ulHandle));
 }
 
 SHORT EXPENTRY fnObjIdsCompareLongNames(POBJIDRECORD p1, POBJIDRECORD p2, PVOID pStorage)
 {
-    return (CompareStrings(p1, p2, FIELDOFFSET(OBJIDRECORD, pszLongName)));
+    return CompareStrings(p1, p2, FIELDOFFSET(OBJIDRECORD, pszLongName));
 }
 
 /*
@@ -2136,7 +2136,7 @@ PULONG GetAbstracts(PNODERECORD prec,
         // this is an array of ULONGs really
         *pcAbstracts = cbFolderContent / sizeof(ULONG);
 
-    return ((PULONG)pszAbstracts);
+    return (PULONG)pszAbstracts;
 }
 
 /*
@@ -2926,7 +2926,7 @@ PLINKLIST GetSelectedRecords(HWND hwndCnr,
         *pcRecs = lstCountItems(pll);
     }
 
-    return (pll);
+    return pll;
 }
 
 #define IDDI_FILEMASK       500
@@ -4049,6 +4049,6 @@ int main(int argc, char* argv[])
     WinDestroyMsgQueue(hmq);
     WinTerminate(G_hab);
 
-    return (G_ulrc);        // 0 if nothing changed
+    return G_ulrc;          // 0 if nothing changed
                             // 1 if OS2SYS.INI was changed
 }

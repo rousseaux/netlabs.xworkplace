@@ -80,6 +80,7 @@
 #define INCL_WINPOINTERS
 #define INCL_WINMENUS
 #define INCL_WINPROGRAMLIST     // needed for wppgm.h
+#define INCL_WINSHELLDATA       // Prf* functions
 #include <os2.h>
 
 // C library headers
@@ -93,6 +94,7 @@
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
 #include "helpers\linklist.h"           // linked list helper routines
+#include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\standards.h"          // some standard macros
 #include "helpers\winh.h"               // PM helper routines
 
@@ -116,7 +118,7 @@
 #include "filesys\fdrhotky.h"           // folder hotkey handling
 #include "filesys\fdrmenus.h"           // shared folder menu logic
 #include "filesys\icons.h"              // icons handling
-// #include "filesys\object.h"             // XFldObject implementation
+#include "filesys\object.h"             // XFldObject implementation
 #include "filesys\program.h"            // program implementation; WARNING: this redefines macros
 
 // other SOM headers
@@ -127,6 +129,192 @@
  *   XFldDataFile instance methods
  *
  ********************************************************************/
+
+/*
+ *@@ BUILDSTACK:
+ *      temp struct for fncbBuildAssocsList.
+ *
+ *@@added V0.9.20 (2002-07-25) [umoeller]
+ */
+
+typedef struct _BUILDSTACK
+{
+    WPObject    **papObjects;
+    PULONG      pcAssocs;
+    ULONG       ulBuildMax;
+    PBOOL       pfDone;
+} BUILDSTACK, *PBUILDSTACK;
+
+/*
+ *@@ fncbBuildAssocsList:
+ *      callback set from BuildAssocsList for ftypForEachAutoType.
+ *
+ *@@added V0.9.20 (2002-07-25) [umoeller]
+ */
+
+BOOL _Optlink fncbBuildAssocsList(PCSZ pcszType,
+                                  ULONG ulTypeLen,
+                                  PVOID pvUser)
+{
+    PBUILDSTACK pb = (PBUILDSTACK)pvUser;
+    _xwpclsListAssocsForType(_XFldDataFile,
+                             pb->papObjects,
+                             pb->pcAssocs,
+                             (PSZ)pcszType,
+                             pb->ulBuildMax,
+                             pb->pfDone);
+
+    // return TRUE to keep going
+    return !(*(pb->pfDone));
+}
+
+/*
+ *@@ xwpQueryAssociations:
+ *      this helper instance method builds a list of all
+ *      associated WPProgram and WPProgramFile objects
+ *      and returns it in the array that is passed in.
+ *
+ *      This is the heart of the extended associations
+ *      engine. This function gets called whenever
+ *      extended associations are needed.
+ *
+ *      --  From ftypQueryAssociatedProgram, this gets
+ *          called with (fUsePlainTextAsDefault == FALSE),
+ *          mostly (inheriting that func's param).
+ *          Since that method is called during folder
+ *          population to find the correct icon for the
+ *          data file, we do NOT want all data files to
+ *          receive the icons for plain text files.
+ *
+ *      --  From ftypModifyDataFileOpenSubmenu, this gets
+ *          called with (fUsePlainTextAsDefault == TRUE).
+ *          We do want the items for "plain text" in the
+ *          "Open" context menu if no other type has been
+ *          assigned.
+ *
+ *      The list (which is of type PLINKLIST, containing
+ *      plain WPObject* pointers) is returned.
+ *
+ *      This returns NULL if an error occured or no
+ *      associations were added.
+ *
+ *      NOTE: This locks each object instantiated as a
+ *      result of the call. After this function
+ *      returns, run through the array that was filled
+ *      and unlock each object once.
+ *
+ *@@added V0.9.0 (99-11-27) [umoeller]
+ *@@changed V0.9.6 (2000-10-16) [umoeller]: now returning a PLINKLIST
+ *@@changed V0.9.7 (2001-01-11) [umoeller]: no longer using plain text always
+ *@@changed V0.9.9 (2001-03-27) [umoeller]: no longer creating list if no assocs exist, returning NULL now
+ *@@changed V0.9.16 (2002-01-05) [umoeller]: this never added "plain text" if the object had a type but no associations
+ *@@changed V0.9.16 (2002-01-26) [umoeller]: added ulBuildMax, mostly rewritten for MAJOR speedup
+ *@@changed V0.9.20 (2002-07-25) [umoeller]: adjustments for getting rid of caches and mutexes
+ *@@changed V0.9.20 (2002-07-25) [umoeller]: made function private
+ *@@changed V0.9.20 (2002-07-25) [umoeller]: got rid of linked list
+ *@@changed V1.0.1 (2002-12-14) [umoeller]: turned this into a method
+ */
+
+SOM_Scope ULONG  SOMLINK xdf_xwpQueryAssociations(XFldDataFile *somSelf,
+                                                  WPObject** papObjects,
+                                                  ULONG ulBuildMax,
+                                                  BOOL fUsePlainTextAsDefault)
+{
+    ULONG cAssocs = 0;
+
+    // XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
+    XFldDataFileMethodDebug("XFldDataFile","xdf_xwpQueryAssociations");
+
+    TRY_LOUD(excpt1)
+    {
+        BOOL        fDone = FALSE;
+        PSZ pszExplicitTypes;
+
+        if (    (ulBuildMax == -1)
+             || (ulBuildMax > MAX_ASSOCS_PER_OBJECT)
+           )
+            // caller wants all assocs:
+            // delimit anyway to not crash the array
+            ulBuildMax = MAX_ASSOCS_PER_OBJECT;
+
+        // 1) run thru the types that were assigned explicitly
+        if (    (pszExplicitTypes = _wpQueryType(somSelf))
+             && (*pszExplicitTypes)
+           )
+        {
+            // yes, explicit type(s):
+            // decode those (separated by '\n')
+            PSZ pszTypesCopy;
+            if (pszTypesCopy = strdup(pszExplicitTypes))
+            {
+                PSZ     pTypeThis = pszExplicitTypes;
+                PSZ     pLF = 0;
+
+                // loop thru types list
+                while (pTypeThis && *pTypeThis && !fDone)
+                {
+                    // get next line feed
+                    if (pLF = strchr(pTypeThis, '\n'))
+                        // line feed found:
+                        *pLF = '\0';
+
+                    _xwpclsListAssocsForType(_XFldDataFile,
+                                             papObjects,
+                                             &cAssocs,
+                                             pTypeThis,
+                                             ulBuildMax,
+                                             &fDone);
+
+                    if (pLF)
+                        // next type (after LF)
+                        pTypeThis = pLF + 1;
+                    else
+                        break;
+                }
+
+                free(pszTypesCopy);
+            }
+        }
+
+        if (!fDone)
+        {
+            // 2) run thru automatic (extended) file types based on
+            //    the object title
+            BUILDSTACK bs;
+            bs.papObjects = papObjects;
+            bs.pcAssocs = &cAssocs;
+            bs.ulBuildMax = ulBuildMax;
+            bs.pfDone = &fDone;
+
+            ftypForEachAutoType(_wpQueryTitle(somSelf),
+                                fncbBuildAssocsList,
+                                &bs);
+        }
+
+        // V0.9.16 (2002-01-05) [umoeller]:
+        // moved the following "plain text" addition down...
+        // previously, "plain text" was only added if no _types_
+        // were present, but that isn't entirely correct... really
+        // it should be added if no _associations_ were found,
+        // so check this here instead!
+        if (    (fUsePlainTextAsDefault)
+             && (!cAssocs)
+           )
+        {
+            _xwpclsListAssocsForType(_XFldDataFile,
+                                     papObjects,
+                                     &cAssocs,
+                                     "Plain Text",
+                                     ulBuildMax,
+                                     NULL);
+        }
+    }
+    CATCH(excpt1)
+    {
+    } END_CATCH();
+
+    return cAssocs;
+}
 
 /*
  *@@ wpInitData:
@@ -1124,8 +1312,7 @@ SOM_Scope BOOL  SOMLINK xdf_wpModifyMenu(XFldDataFile *somSelf,
                         // but skip program files with OPEN_RUNNING
 
                         ftypModifyDataFileOpenSubmenu(somSelf,
-                                                      mi.hwndSubMenu,
-                                                      TRUE);        // delete existing
+                                                      mi.hwndSubMenu);
                     }
                 }
 #endif
@@ -1526,18 +1713,176 @@ SOM_Scope WPObject*  SOMLINK xdf_wpCreateFromTemplate(XFldDataFile *somSelf,
  ********************************************************************/
 
 /*
+ *@@ xwpclsListAssocsForType:
+ *      this new M_XFldDataFile class method lists all
+ *      associated WPProgram or WPProgramFile objects which
+ *      have been assigned with the given file type.
+ *
+ *      For example, if "System editor" has been assigned to
+ *      the "C Code" type, this would add the "System editor"
+ *      program object to the given array.
+ *
+ *      V0.9.20 got rid of the linked list that used to be
+ *      passed in. Instead, pass in an array of WPObject*
+ *      pointers, which must be ulBuildMax in size, and pass
+ *      in the current array item count in *pcAssocs.
+ *      *pcAssocs gets raised with every object added, so
+ *      you can call this several times to get the association
+ *      array for multiple types.
+ *
+ *      NOTE: This locks each object instantiated as a
+ *      result of the call.
+ *
+ *      This returns the no. of objects added to the list
+ *      (0 if none). This will be less than the *pcAssocs
+ *      output if there were objects in the array already.
+ *
+ *@@added V0.9.0 (99-11-27) [umoeller]
+ *@@changed V0.9.9 (2001-03-27) [umoeller]: now avoiding duplicate assocs
+ *@@changed V0.9.9 (2001-04-02) [umoeller]: now using objFindObjFromHandle, DRAMATICALLY faster
+ *@@changed V0.9.16 (2002-01-01) [umoeller]: loop stopped after an invalid handle, fixed
+ *@@changed V0.9.16 (2002-01-26) [umoeller]: added ulBuildMax, changed prototype, optimized
+ *@@changed V0.9.20 (2002-07-25) [umoeller]: adjusted for getting rid of caches and mutexes
+ *@@changed V1.0.1 (2002-12-14) [umoeller]: turned this into a class method
+ */
+
+SOM_Scope ULONG  SOMLINK xdfM_xwpclsListAssocsForType(M_XFldDataFile *somSelf,
+                                                      WPObject** papObjects,
+                                                      PULONG pcAssocs,
+                                                      PSZ pcszType0,
+                                                      ULONG ulBuildMax,
+                                                      BOOL* pfDone)
+{
+    ULONG   ulrc = 0;
+
+    CHAR    szTypeThis[100];
+    PCSZ    pcszTypeThis = pcszType0;     // for now; later points to szTypeThis
+
+    BOOL    fQuit = FALSE;
+
+    /* M_XFldDataFileData *somThis = M_XFldDataFileGetData(somSelf); */
+    M_XFldDataFileMethodDebug("M_XFldDataFile","xdfM_xwpclsListAssocsForType");
+
+    PMPF_ASSOCS((" entering with type %s", pcszTypeThis));
+
+    // outer loop for climbing up the file type parents
+    do // while TRUE
+    {
+        // get associations from WPS INI data
+        CHAR    szObjectHandles[200];
+        ULONG   cb = sizeof(szObjectHandles);
+        ULONG   cHandles = 0;
+        PCSZ    pAssoc;
+        if (    (PrfQueryProfileData(HINI_USER,
+                                     (PSZ)WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE"
+                                     (PSZ)pcszTypeThis,
+                                     szObjectHandles,
+                                     &cb))
+             && (cb > 1)
+           )
+        {
+            // null-terminate the data in any case  V0.9.20 (2002-07-25) [umoeller]
+            szObjectHandles[sizeof(szObjectHandles) - 1] = '\0';
+
+            // we got handles for this type, and it's not
+            // just a null byte (just to name the type):
+            // count the handles
+            pAssoc = szObjectHandles;
+            while (*pAssoc)
+            {
+                HOBJECT hobjAssoc;
+                if (!(hobjAssoc = atoi(pAssoc)))
+                    // invalid handle:
+                    break;
+                else
+                {
+                    WPObject *pobjAssoc;
+
+                    if (pobjAssoc = objFindObjFromHandle(hobjAssoc))
+                    {
+                        // look if the object has already been added;
+                        // this might happen if the same object has
+                        // been defined for several types (inheritance!)
+                        // V0.9.9 (2001-03-27) [umoeller]
+
+                        ULONG   ul;
+                        BOOL    fFound = FALSE;
+                        for (ul = 0;
+                             ul < *pcAssocs;
+                             ++ul)
+                        {
+                            if (papObjects[ul] == pobjAssoc)
+                            {
+                                fFound = TRUE;
+                                break;
+                            }
+                        }
+
+                        if (!fFound)
+                        {
+                            // no:
+                            papObjects[(*pcAssocs)++] = pobjAssoc;
+                            ++ulrc;
+
+                            // V0.9.16 (2002-01-26) [umoeller]
+                            if (*pcAssocs >= ulBuildMax)
+                            {
+                                // we have reached the max no. the caller wants:
+                                fQuit = TRUE;
+                                if (pfDone)
+                                    *pfDone = TRUE;
+
+                                break;      // while (*pAssoc)
+                            }
+                        }
+                    }
+                }
+
+                // go for next object handle (after the 0 byte)
+                pAssoc += strlen(pAssoc) + 1;
+                if (pAssoc >= szObjectHandles + cb)
+                    break; // while (*pAssoc)
+
+            } // end while (*pAssoc)
+        }
+
+        if (fQuit)
+            break;
+        else
+        {
+            // get parent type
+            cb = sizeof(szTypeThis);
+            if (    (PrfQueryProfileData(HINI_USER,
+                                         (PSZ)INIAPP_XWPFILETYPES, // "XWorkplace:FileTypes"
+                                         (PSZ)pcszTypeThis,        // key name: current type
+                                         szTypeThis,
+                                         &cb))
+                 && (cb)
+               )
+            {
+                pcszTypeThis = szTypeThis;
+
+                PMPF_ASSOCS(("   next round for %s", pcszTypeThis));
+            }
+            else
+                break;
+        }
+
+    } while (TRUE);
+
+    return ulrc;
+}
+
+/*
  *@@ wpclsInitData:
  *      this WPObject class method gets called when a class
  *      is loaded by the WPS (probably from within a
  *      somFindClass call) and allows the class to initialize
  *      itself.
  *
- *      We also manually patch the class method table to
- *      override some WPDataFile methods that IBM didn't
- *      want us to see.
- *
  *@@changed V0.9.0 [umoeller]: added class object to KERNELGLOBALS
  *@@changed V0.9.6 (2000-10-16) [umoeller]: added method tables override
+ *@@changed V1.0.0 (2002-08-31) [umoeller]: removed overrides
  */
 
 SOM_Scope void  SOMLINK xdfM_wpclsInitData(M_XFldDataFile *somSelf)

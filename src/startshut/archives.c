@@ -498,7 +498,7 @@ MRESULT arcArchivesItemChanged(PNOTEBOOKPAGE pnbp,
         // enable/disable items
         arcSaveSettings();
 
-    return ((MPARAM)0);
+    return (MPARAM)0;
 }
 
 /********************************************************************
@@ -578,7 +578,7 @@ PARCHIVINGSETTINGS arcQuerySettings(VOID)
                 doshQueryBootDrive());
     }
 
-    return (&G_ArcSettings);
+    return &G_ArcSettings;
 }
 
 /*
@@ -589,11 +589,11 @@ PARCHIVINGSETTINGS arcQuerySettings(VOID)
 
 BOOL arcSaveSettings(VOID)
 {
-    return (PrfWriteProfileData(HINI_USER,
-                                (PSZ)INIAPP_XWORKPLACE,
-                                (PSZ)INIKEY_ARCHIVE_SETTINGS,
-                                &G_ArcSettings,
-                                sizeof(G_ArcSettings)));
+    return PrfWriteProfileData(HINI_USER,
+                               (PSZ)INIAPP_XWORKPLACE,
+                               (PSZ)INIKEY_ARCHIVE_SETTINGS,
+                               &G_ArcSettings,
+                               sizeof(G_ArcSettings));
 }
 
 /********************************************************************
@@ -970,7 +970,7 @@ BOOL arcCheckIfBackupNeeded(HWND hwndNotify,        // in: window to notify
                          MB_OK);
     }
 
-    return (fBackup);
+    return fBackup;
 }
 
 /*

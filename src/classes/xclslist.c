@@ -202,7 +202,7 @@ SOM_Scope ULONG  SOMLINK xwlist_xwpAddXWPClassListPages(XWPClassList *somSelf,
     inbp.pfncbInitPage    = cllClassListInitPage;
     inbp.pfncbItemChanged = cllClassListItemChanged;
 
-    return (ntbInsertPage(&inbp));
+    return ntbInsertPage(&inbp);
 }
 
 /*
@@ -305,10 +305,10 @@ SOM_Scope BOOL  SOMLINK xwlist_wpModifyPopupMenu(XWPClassList *somSelf,
                                                          hwndMenu,
                                                          hwndCnr,
                                                          iPosition))
-        return (cllModifyPopupMenu(somSelf,
-                                   hwndMenu,
-                                   hwndCnr,
-                                   iPosition));
+        return cllModifyPopupMenu(somSelf,
+                                  hwndMenu,
+                                  hwndCnr,
+                                  iPosition);
 
     return FALSE;
 }
@@ -422,7 +422,7 @@ SOM_Scope HWND  SOMLINK xwlist_wpOpen(XWPClassList *somSelf,
 
     // DosExitMustComplete(&ulNesting);
 
-    return (hwndNewView);
+    return hwndNewView;
 }
 
 /*
@@ -463,7 +463,7 @@ SOM_Scope BOOL  SOMLINK xwlist_wpAddSettingsPages(XWPClassList *somSelf,
 
     XWPClassList_parent_WPAbstract_wpAddSettingsPages(somSelf, hwndNotebook);
 
-    return (_xwpAddXWPClassListPages(somSelf, hwndNotebook));
+    return _xwpAddXWPClassListPages(somSelf, hwndNotebook);
 }
 
 /* ******************************************************************
@@ -591,7 +591,7 @@ SOM_Scope ULONG  SOMLINK xwlistM_wpclsQueryIconData(M_XWPClassList *somSelf,
         pIconInfo->hmod    = cmnQueryMainResModuleHandle();
     }
 
-    return (sizeof(ICONINFO));
+    return sizeof(ICONINFO);
 }
 
 

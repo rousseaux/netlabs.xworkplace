@@ -122,32 +122,6 @@ static THREADINFO   G_tiInsertDevices = {0},
 
 /* ******************************************************************
  *
- *   Shared helpers
- *
- ********************************************************************/
-
-/*
- *@@ CompareStrings:
- *      compares two strings and returns a value
- *      which can be used by container sort procs.
- */
-
-/* SHORT EXPENTRY fnCompareName(PSZ psz1, PSZ psz2)
-{
-    HAB habDesktop = WinQueryAnchorBlock(HWND_DESKTOP);
-    if ((psz1) && (psz2))
-        switch (WinCompareStrings(habDesktop, 0, 0,
-                                  psz1, psz2, 0))
-        {
-            case WCS_LT: return (-1);
-            case WCS_GT: return (1);
-        }
-
-    return 0;
-} */
-
-/* ******************************************************************
- *
  *   XWPMedia "Device" page notebook callbacks (notebook.c)
  *
  ********************************************************************/

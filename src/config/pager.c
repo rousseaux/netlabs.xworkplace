@@ -121,11 +121,11 @@ STATIC BOOL LoadPagerConfig(PAGERCONFIG* pPagerCfg)
     ULONG cb = sizeof(PAGERCONFIG);
     memset(pPagerCfg, 0, sizeof(PAGERCONFIG));
     // overwrite from INI, if found
-    return (PrfQueryProfileData(HINI_USER,
-                                INIAPP_XWPHOOK,
-                                INIKEY_HOOK_PAGERCONFIG,
-                                pPagerCfg,
-                                &cb));
+    return PrfQueryProfileData(HINI_USER,
+                               INIAPP_XWPHOOK,
+                               INIKEY_HOOK_PAGERCONFIG,
+                               pPagerCfg,
+                               &cb);
 }
 
 /*
@@ -2090,31 +2090,31 @@ STATIC PLONG GetColorPointer(HWND hwndStatic,
     switch (WinQueryWindowUShort(hwndStatic, QWS_ID))
     {
         case ID_SCDI_PGR2_DTP_INACTIVE_1:
-            return (&pPagerCfg->lcolDesktop1);
+            return &pPagerCfg->lcolDesktop1;
 
         case ID_SCDI_PGR2_DTP_INACTIVE_2:
-            return (&pPagerCfg->lcolDesktop2);
+            return &pPagerCfg->lcolDesktop2;
 
         case ID_SCDI_PGR2_DTP_ACTIVE:
-            return (&pPagerCfg->lcolActiveDesktop);
+            return &pPagerCfg->lcolActiveDesktop;
 
         case ID_SCDI_PGR2_DTP_GRID:
-            return (&pPagerCfg->lcolGrid);
+            return &pPagerCfg->lcolGrid;
 
         case ID_SCDI_PGR2_WIN_INACTIVE:
-            return (&pPagerCfg->lcolInactiveWindow);
+            return &pPagerCfg->lcolInactiveWindow;
 
         case ID_SCDI_PGR2_WIN_ACTIVE:
-            return (&pPagerCfg->lcolActiveWindow);
+            return &pPagerCfg->lcolActiveWindow;
 
         case ID_SCDI_PGR2_WIN_BORDER:
-            return (&pPagerCfg->lcolWindowFrame);
+            return &pPagerCfg->lcolWindowFrame;
 
         case ID_SCDI_PGR2_TXT_INACTIVE:
-            return (&pPagerCfg->lcolInactiveText);
+            return &pPagerCfg->lcolInactiveText;
 
         case ID_SCDI_PGR2_TXT_ACTIVE:
-            return (&pPagerCfg->lcolActiveText);
+            return &pPagerCfg->lcolActiveText;
     }
 
     return NULL;

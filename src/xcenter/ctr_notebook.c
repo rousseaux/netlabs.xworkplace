@@ -993,7 +993,7 @@ DosBeep(100, 100);
 */        }
     }
 
-    return (G_pfnwpWidgetsCnr(hwndCnr, msg, mp1, mp2));
+    return G_pfnwpWidgetsCnr(hwndCnr, msg, mp1, mp2);
 }
 
 /*
@@ -1045,7 +1045,7 @@ STATIC PWIDGETRECORD InsertWidgetSetting(HWND hwndCnr,
                           1);
     }
 
-    return (preccThis);
+    return preccThis;
 }
 
 /*

@@ -819,7 +819,7 @@ MRESULT fdrXFolderItemChanged(PNOTEBOOKPAGE pnbp,
     if (fUpdate)
         _wpSaveDeferred(pnbp->inbp.somSelf);
 
-    return ((MPARAM)0);
+    return (MPARAM)0;
 }
 
 #ifndef __NOXWPSTARTUP__
@@ -1011,7 +1011,7 @@ MRESULT fdrStartupFolderItemChanged(PNOTEBOOKPAGE pnbp,
     if (fUpdate)
         _wpSaveDeferred(pnbp->inbp.somSelf);
 
-    return ((MPARAM)0);
+    return (MPARAM)0;
 }
 
 #endif

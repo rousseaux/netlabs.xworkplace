@@ -78,7 +78,7 @@ PSZ apmQueryVersion(VOID)
     if (G_ulAPMStat == APM_UNKNOWN)
         apmPowerOffSupported();
     sprintf(G_szAPMVersion, "%d.%d", G_usAPMVersion>>8, G_usAPMVersion & 0xff);
-    return (G_szAPMVersion);
+    return G_szAPMVersion;
 }
 
 /*
@@ -232,7 +232,7 @@ ULONG apmPreparePowerOff(PSZ pszError)      // in: error message
     if (arc != NO_ERROR)
     {
         strcpy(pszError, "Cannot open APM driver.");
-        return (APM_CANCEL);
+        return APM_CANCEL;
     }
     // enable APM feature
     memset(&sendpowerevent, 0, sizeof(sendpowerevent));
@@ -250,7 +250,7 @@ ULONG apmPreparePowerOff(PSZ pszError)      // in: error message
        )
     {
         strcpy(pszError, "Cannot enable APM.");
-        return (APM_CANCEL);
+        return APM_CANCEL;
     }
 
     return (APM_OK | APM_DOSSHUTDOWN_1);

@@ -1636,7 +1636,7 @@ ULONG EXPENTRY TwgtInitModule(HAB hab,         // XCenter's anchor block
         }
     }
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*

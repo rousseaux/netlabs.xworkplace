@@ -1117,7 +1117,7 @@ STATIC BOOL HandleOKButton(HWND hwndDlg)
 
     free(pObjClass);
 
-    return (fDismiss);
+    return fDismiss;
 }
 
 /*
@@ -3072,7 +3072,7 @@ MRESULT setStatusItemChanged(PNOTEBOOKPAGE pnbp,
         break;
     }
 
-    return ((MPARAM)-1);
+    return (MPARAM)-1;
 }
 
 /*
@@ -3812,7 +3812,7 @@ MRESULT setParanoiaItemChanged(PNOTEBOOKPAGE pnbp,
         }
     }
 
-    return ((MPARAM)-1);
+    return (MPARAM)-1;
 }
 
 /* ******************************************************************

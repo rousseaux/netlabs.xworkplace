@@ -470,7 +470,7 @@ APIRET wpshStore(WPObject *somSelf,
     ULONG   ulLength = 0;
 
     if (!ppszTarget)
-        return (ERROR_INVALID_PARAMETER);
+        return ERROR_INVALID_PARAMETER;
 
     if (*ppszTarget)
         _wpFreeMem(somSelf, *ppszTarget);
@@ -1748,7 +1748,7 @@ double wpshQueryDiskFreeFromFolder(WPFolder *somSelf)
          && (!doshQueryDiskFree(ulDisk, &dFree))
        )
     {
-        return (dFree);
+        return dFree;
     }
 
     return 0;
@@ -1772,7 +1772,7 @@ double wpshQueryDiskSizeFromFolder(WPFolder *somSelf)
          && (!doshQueryDiskSize(ulDisk, &dSize))
        )
     {
-        return (dSize);
+        return dSize;
     }
 
     return 0;

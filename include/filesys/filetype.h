@@ -59,8 +59,7 @@
                                              BOOL fUsePlainTextAsDefault);
 
         BOOL ftypModifyDataFileOpenSubmenu(WPDataFile *somSelf,
-                                           HWND hwndOpenSubmenu,
-                                           BOOL fDeleteExisting);
+                                           HWND hwndOpenSubmenu);
     #endif
 
     /* ******************************************************************
@@ -138,6 +137,25 @@
      *
      ********************************************************************/
 
+    /*
+     *@@ FNFOREACHAUTOMATICTYPE:
+     *      callback for ftypForEachAutoType.
+     *
+     *      If this returns FALSE, processing is
+     *      aborted.
+     *
+     *@@added V0.9.20 (2002-07-25) [umoeller]
+     */
+
+    typedef BOOL _Optlink FNFOREACHAUTOMATICTYPE(PCSZ pcszType,
+                                                 ULONG ulTypeLen,
+                                                 PVOID pvUser);
+    typedef FNFOREACHAUTOMATICTYPE *PFNFOREACHAUTOMATICTYPE;
+
+    ULONG ftypForEachAutoType(PCSZ pcszObjectTitle,
+                              PFNFOREACHAUTOMATICTYPE pfnftypForEachAutoType,
+                              PVOID pvUser);
+
     #ifdef FILETYPE_PRIVATE
 
         BOOL ftypAppendSingleTypeUnique(PLINKLIST pll,
@@ -147,25 +165,6 @@
         ULONG ftypAppendTypesFromString(PCSZ pcszTypes,
                                         CHAR cSeparator,
                                         PLINKLIST pllTypes);
-
-        /*
-         *@@ FNFOREACHAUTOMATICTYPE:
-         *      callback for ftypForEachAutoType.
-         *
-         *      If this returns FALSE, processing is
-         *      aborted.
-         *
-         *@@added V0.9.20 (2002-07-25) [umoeller]
-         */
-
-        typedef BOOL _Optlink FNFOREACHAUTOMATICTYPE(PCSZ pcszType,
-                                                     ULONG ulTypeLen,
-                                                     PVOID pvUser);
-        typedef FNFOREACHAUTOMATICTYPE *PFNFOREACHAUTOMATICTYPE;
-
-        ULONG ftypForEachAutoType(PCSZ pcszObjectTitle,
-                                  PFNFOREACHAUTOMATICTYPE pfnftypForEachAutoType,
-                                  PVOID pvUser);
 
         VOID ftypClearTypesList(HWND hwndCnr,
                                 PLINKLIST pllFileTypes);

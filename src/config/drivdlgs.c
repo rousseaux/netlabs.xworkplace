@@ -398,7 +398,7 @@ BOOL drvLoadPlugins(HAB hab)
     if (fLocked)
         UnlockPlugins();
 
-    return (rc);
+    return rc;
 }
 
 /*
@@ -596,10 +596,10 @@ STATIC BOOL ShowDriverDlg(HWND hwndOwner,
 STATIC BOOL EXPENTRY ShowHPFSDlg(HWND hwndOwner,
                                  PDRIVERDLGDATA pDlgData)
 {
-    return (ShowDriverDlg(hwndOwner,
-                          ID_OSD_DRIVER_HPFS,
-                          drv_fnwpConfigHPFS,
-                          pDlgData));
+    return ShowDriverDlg(hwndOwner,
+                         ID_OSD_DRIVER_HPFS,
+                         drv_fnwpConfigHPFS,
+                         pDlgData);
 }
 
 /*
@@ -611,10 +611,10 @@ STATIC BOOL EXPENTRY ShowHPFSDlg(HWND hwndOwner,
 STATIC BOOL EXPENTRY ShowHPFS386Dlg(HWND hwndOwner,
                                     PDRIVERDLGDATA pDlgData)
 {
-    return (ShowDriverDlg(hwndOwner,
-                          ID_OSD_DRIVER_HPFS386,
-                          drv_fnwpConfigHPFS386,
-                          pDlgData));
+    return ShowDriverDlg(hwndOwner,
+                         ID_OSD_DRIVER_HPFS386,
+                         drv_fnwpConfigHPFS386,
+                         pDlgData);
 }
 
 /*
@@ -626,10 +626,10 @@ STATIC BOOL EXPENTRY ShowHPFS386Dlg(HWND hwndOwner,
 STATIC BOOL EXPENTRY ShowIBM1S506Dlg(HWND hwndOwner,
                                      PDRIVERDLGDATA pDlgData)
 {
-    return (ShowDriverDlg(hwndOwner,
-                          ID_OSD_DRIVER_IBM1S506,
-                          drv_fnwpConfigIBM1S506,
-                          pDlgData));
+    return ShowDriverDlg(hwndOwner,
+                         ID_OSD_DRIVER_IBM1S506,
+                         drv_fnwpConfigIBM1S506,
+                         pDlgData);
 }
 
 /*
@@ -1851,7 +1851,7 @@ STATIC PSZ RecomposeParamsString(HWND hwndDlg,         // in: driver dialog
     xstrClear(&strUnitParams[2]);
     xstrClear(&strUnitParams[3]);
 
-    return (strParams.psz);
+    return strParams.psz;
 }
 
 /*

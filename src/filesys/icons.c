@@ -1159,7 +1159,7 @@ PSZ icoGetWinResourceTypeName(PSZ pszBuf,
 
     sprintf(pszBuf, "%d (%s)", ulTypeThis, pcsz);
 
-    return (pszBuf);
+    return pszBuf;
 }
 
 /*
@@ -1290,7 +1290,7 @@ APIRET LoadWinNEResource(PEXECUTABLE pExec,     // in: executable from exehOpen
     PXFILE          pFile;
 
     if (!(pNEHeader = pExec->pNEHeader))
-        return (ERROR_INVALID_EXE_SIGNATURE);
+        return ERROR_INVALID_EXE_SIGNATURE;
 
     if (pExec->pDosExeHeader)
         // executable has DOS stub: V0.9.12 (2001-05-03) [umoeller]
@@ -1768,11 +1768,11 @@ APIRET LoadWinPEResource(PEXECUTABLE pExec,     // in: executable from exehOpen
                     icongroupresdir = NULL;
 
     if (!(pPEHeader = pExec->pPEHeader))
-        return (ERROR_INVALID_EXE_SIGNATURE);
+        return ERROR_INVALID_EXE_SIGNATURE;
     if (    (pExec->ulOS != EXEOS_WIN32_GUI)
          && (pExec->ulOS != EXEOS_WIN32_CLI)
        )
-        return (ERROR_INVALID_EXE_SIGNATURE);
+        return ERROR_INVALID_EXE_SIGNATURE;
 
     if (pExec->pDosExeHeader)
         // executable has DOS stub: V0.9.12 (2001-05-03) [umoeller]

@@ -652,7 +652,7 @@ MRESULT xsdShutdownItemChanged(PNOTEBOOKPAGE pnbp,
         xsdShutdownInitPage(pnbp, CBI_ENABLE);
     }
 
-    return ((MPARAM)0);
+    return (MPARAM)0;
 }
 
 #endif

@@ -245,7 +245,7 @@ ULONG winlCreateRecords(HWND hwndCnr)
         free(pSwBlock);
     }
 
-    return (ulIndex);
+    return ulIndex;
 }
 
 /*
@@ -527,6 +527,6 @@ HWND winlCreateWinListWindow(VOID)
         }
     }
 
-    return (hwndFrame);
+    return hwndFrame;
 }
 

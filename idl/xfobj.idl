@@ -23,13 +23,12 @@
 #include <wpobject.idl>         // this is SOM for WPObject
 
 /*
-   CLASS: XFldObject
+   CLASS: XWPObjList
 
    CLASS HIERARCHY:
 
        SOMObject
-         юдд WPObject
-               юдд XFldObject
+         юдд XWPObjList
 */
 
 interface XWPObjList : SOMObject
@@ -108,6 +107,16 @@ interface XWPObjList : SOMObject
   }; // implementation
 #endif /* __SOMIDL__ */
 };
+
+/*
+   CLASS: XFldObject
+
+   CLASS HIERARCHY:
+
+       SOMObject
+         юдд WPObject
+               юдд XFldObject
+*/
 
 interface M_XFldObject;            // Forward Reference to XFldObject metaclass
 

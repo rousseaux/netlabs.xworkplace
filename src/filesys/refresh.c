@@ -516,7 +516,7 @@ STATIC ULONG PumpAgedNotification(PXWPNOTIFY pNotify)
         break;
     }
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*
@@ -615,7 +615,7 @@ STATIC BOOL PumpNotifications(VOID)
     if (!fNotificationsLeft)
         ulrc = 0;
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*
@@ -841,7 +841,7 @@ STATIC BOOL AddNotifyIfNotRedundant(PXWPNOTIFY pNotify)
 
     } // end if (pNotify)
 
-    return (fAddThis);
+    return fAddThis;
 }
 
 /*

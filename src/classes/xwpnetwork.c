@@ -360,7 +360,7 @@ SOM_Scope PSZ  SOMLINK xnwM_wpclsQueryTitle(M_XWPNetwork *somSelf)
     /* M_XWPNetworkData *somThis = M_XWPNetworkGetData(somSelf); */
     M_XWPNetworkMethodDebug("M_XWPNetwork","xnwM_wpclsQueryTitle");
 
-    return ("Network");     // @@todo localize
+    return "Network";     // @@todo localize
 }
 
 /*

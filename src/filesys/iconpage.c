@@ -1263,7 +1263,7 @@ STATIC MRESULT HandleENHotkey(POBJICONPAGEDATA pData,
         // and have entry field display that (comctl.c)
     }
 
-    return ((MPARAM)flReturn);
+    return (MPARAM)flReturn;
 }
 
 /*

@@ -1295,7 +1295,7 @@ STATIC ULONG CheckShrinkCache(VOID)
         }
     }
 
-    return (ulDeleted);
+    return ulDeleted;
 }
 
 /*
@@ -1411,7 +1411,7 @@ WPObject* objFindObjFromHandle(HOBJECT hobj)
             UnlockHandlesCache();
     }
 
-    return (pobjReturn);
+    return pobjReturn;
 }
 
 /*
@@ -1672,7 +1672,7 @@ ULONG objQueryDirtyObjectsCount(VOID)
         UnlockDirtyList();
     }
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*
@@ -1767,7 +1767,7 @@ ULONG objForAllDirtyObjects(FNFORALLDIRTIESCALLBACK *pCallback,  // in: callback
     if (fLocked)
         UnlockDirtyList();
 
-    return (ulrc);
+    return ulrc;
 }
 
 /* ******************************************************************
@@ -1806,7 +1806,7 @@ PGLOBALHOTKEY objFindHotkey(PGLOBALHOTKEY pHotkeys, // in: array returned by hif
         pHotkeyThis++;
     }
 
-    return (prc);
+    return prc;
 }
 
 /*

@@ -137,7 +137,7 @@ HWND GetScrollBar(HWND hwndOwner,
         WinEndEnumWindows(henum);
     }
 
-    return (hwndReturn);
+    return hwndReturn;
 }
 
 /*
@@ -371,7 +371,7 @@ LONG CalcScrollBarSize(PSCROLLDATA pScrollData,  // in: scroll data structure in
         }
     }
 
-    return (lrc);
+    return lrc;
 }
 
 /*

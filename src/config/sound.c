@@ -1526,7 +1526,7 @@ MRESULT sndSoundsItemChanged(PNOTEBOOKPAGE pnbp,  // notebook info
         break;
     }
 
-    return ((MPARAM)0);
+    return (MPARAM)0;
 }
 
 

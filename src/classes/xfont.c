@@ -124,7 +124,7 @@ SOM_Scope ULONG  SOMLINK fon_xwpAddFontsPage(XWPFontFolder *somSelf,
     inbp.ulDefaultHelpPanel  = ID_XSH_FONTFOLDER_TEXT;
     inbp.pfncbInitPage    = fonSampleTextInitPage;
     inbp.pfncbItemChanged = fonSampleTextItemChanged;
-    return (ntbInsertPage(&inbp));
+    return ntbInsertPage(&inbp);
 }
 
 /*
@@ -258,7 +258,7 @@ SOM_Scope BOOL  SOMLINK fon_xwpUpdateStatusBar(XWPFontFolder *somSelf,
     else
         sprintf(szText, "%d fonts installed.", _ulFontsCurrent);
 
-    return (WinSetWindowText(hwndStatusBar, szText));
+    return WinSetWindowText(hwndStatusBar, szText);
 
     /* return (XWPFontFolder_parent_XFolder_xwpUpdateStatusBar(somSelf,
                                                             hwndStatusBar,
@@ -362,7 +362,7 @@ SOM_Scope ULONG  SOMLINK fon_wpDeleteContents(XWPFontFolder *somSelf,
     if (fdrNukeContents(somSelf))
         ulrc = OK_DELETE;
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*
@@ -625,7 +625,7 @@ SOM_Scope ULONG  SOMLINK fonM_wpclsQueryIconData(M_XWPFontFolder *somSelf,
         pIconInfo->hmod    = cmnQueryMainResModuleHandle();
     }
 
-    return (sizeof(ICONINFO));
+    return sizeof(ICONINFO);
 }
 
 /*
@@ -648,6 +648,6 @@ SOM_Scope ULONG  SOMLINK fonM_wpclsQueryIconDataN(M_XWPFontFolder *somSelf,
         pIconInfo->hmod    = cmnQueryMainResModuleHandle();
     }
 
-    return (sizeof(ICONINFO));
+    return sizeof(ICONINFO);
 }
 

@@ -318,7 +318,7 @@ ULONG krnQueryLock(VOID)
                          &tid,
                          &ulCount)
             == NO_ERROR)
-        return (tid);
+        return tid;
 
     return 0;
 }
@@ -357,7 +357,7 @@ PKERNELGLOBALS krnLockGlobals(PCSZ pcszSourceFile,
                               PCSZ pcszFunction)
 {
     if (krnLock(pcszSourceFile, ulLine, pcszFunction))
-        return (&G_KernelGlobals);
+        return &G_KernelGlobals;
 
     return NULL;
 }
@@ -825,7 +825,7 @@ HWND krnQueryDaemonObject(VOID)
                 cmnLog(__FILE__, __LINE__, __FUNCTION__,
                        "pXwpGlobalShared->hwndDaemonObject is NULLHANDLE.");
             else
-                return (pXwpGlobalShared->hwndDaemonObject);
+                return pXwpGlobalShared->hwndDaemonObject;
     }
 
     return NULLHANDLE;

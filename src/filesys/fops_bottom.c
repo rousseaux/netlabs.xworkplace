@@ -790,7 +790,7 @@ APIRET fopsFileThreadConfirmDeleteFolder(PFILETASKLIST pftl,
 
 BOOL fopsUseForceDelete(PCSZ pcszFilename)
 {
-    return (!strnicmp(pcszFilename + 1, ":\\trash\\", 8));
+    return !strnicmp(pcszFilename + 1, ":\\trash\\", 8);
 }
 
 /*

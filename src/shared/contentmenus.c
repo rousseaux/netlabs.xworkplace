@@ -690,8 +690,8 @@ SHORT XWPENTRY fncbSortContentMenuItems(PVOID pItem1, PVOID pItem2, PVOID hab)
                               ((PMENULISTITEM)pItem1)->szItemString,
                               ((PMENULISTITEM)pItem2)->szItemString, 0))
     {
-        case WCS_LT:    return (-1);
-        case WCS_GT:    return (1);
+        case WCS_LT:    return -1;
+        case WCS_GT:    return 1;
     }
 
     return 0;

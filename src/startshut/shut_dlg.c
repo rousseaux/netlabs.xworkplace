@@ -346,7 +346,7 @@ STATIC HWND CreateDimScreenWindow(VOID)
         // in the dialog can't bring up the help panel
         // V0.9.19 (2002-04-24) [umoeller]
 
-    return (hwnd);
+    return hwnd;
 }
 
 /*
@@ -684,7 +684,7 @@ ULONG xsdConfirmShutdown(PSHUTDOWNPARAMS psdParms)
     winhDestroyWindow(&hwndDim);
 
 
-    return (ulReturn);
+    return ulReturn;
 }
 
 static CONTROLDEF
@@ -856,7 +856,7 @@ ULONG xsdConfirmRestartWPS(PSHUTDOWNPARAMS psdParms)
 
     winhDestroyWindow(&hwndDim);
 
-    return (ulReturn);
+    return ulReturn;
 }
 
 /* ******************************************************************
@@ -932,7 +932,7 @@ USHORT xsdLoadAutoCloseItems(PLINKLIST pllItems,   // in: list of AUTOCLOSELISTI
         }
     }
 
-    return (usItemCount);
+    return usItemCount;
 }
 
 /*
@@ -1002,7 +1002,7 @@ USHORT xsdWriteAutoCloseItems(PLINKLIST pllItems)
                             (PSZ)INIKEY_AUTOCLOSE,
                             NULL, 0);
 
-    return (usInvalid);
+    return usInvalid;
 }
 
 /*

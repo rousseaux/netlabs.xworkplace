@@ -1118,7 +1118,7 @@ STATIC LONG InsertObjectsFromList(PLINKLIST  pllContentThis, // in: list to take
                 // now we're back: check if error occured; if so, exit
                 // immediately to stop recursing
                 if (lDefaultItem == -1)
-                    return (-1);
+                    return -1;
 
                 if (lDefaultItem)
                 {
@@ -1147,7 +1147,7 @@ STATIC LONG InsertObjectsFromList(PLINKLIST  pllContentThis, // in: list to take
 
         pContentNode = pContentNode->pNext;
     } // end while (pContentNode)
-    return (lReturnDefaultItem);
+    return lReturnDefaultItem;
 }
 
 /*

@@ -163,8 +163,7 @@ BOOL fhdlLockHandles(ULONG ulTimeout)
 
 BOOL fhdlUnlockHandles(VOID)
 {
-    return (DosReleaseMutexSem(G_hmtxHandles)
-                == NO_ERROR);
+    return !DosReleaseMutexSem(G_hmtxHandles);
 }
 
 /* ******************************************************************

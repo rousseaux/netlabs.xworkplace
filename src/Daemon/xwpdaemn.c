@@ -371,7 +371,8 @@ FILE* _System dmnExceptOpenLogFile(VOID)
                       "\nRunning XWorkplace version: " BLDLEVEL_VERSION " built " __DATE__ "\n");
 
     }
-    return (file);
+
+    return file;
 }
 
 /*
@@ -1864,7 +1865,7 @@ STATIC MRESULT ProcessTimer(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
 #endif
 
         default:
-            return (WinDefWindowProc(hwndObject, msg, mp1, mp2));
+            return WinDefWindowProc(hwndObject, msg, mp1, mp2);
     }
 
     if (pulStopTimer)
@@ -3357,11 +3358,11 @@ ULONG _System TerminateExcHandler(PEXCEPTIONREPORTRECORD pReportRec,
                                   PVOID pv)
 {
     if (pReportRec->fHandlerFlags & EH_EXIT_UNWIND)
-       return (XCPT_CONTINUE_SEARCH);
+       return XCPT_CONTINUE_SEARCH;
     if (pReportRec->fHandlerFlags & EH_UNWINDING)
-       return (XCPT_CONTINUE_SEARCH);
+       return XCPT_CONTINUE_SEARCH;
     if (pReportRec->fHandlerFlags & EH_NESTED_CALL)
-       return (XCPT_CONTINUE_SEARCH);
+       return XCPT_CONTINUE_SEARCH;
 
     switch (pReportRec->ExceptionNum)
     {
@@ -3393,7 +3394,7 @@ ULONG _System TerminateExcHandler(PEXCEPTIONREPORTRECORD pReportRec,
         break;
     }
 
-    return (XCPT_CONTINUE_SEARCH);
+    return XCPT_CONTINUE_SEARCH;
 }
 
 /*

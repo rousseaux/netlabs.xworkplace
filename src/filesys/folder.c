@@ -440,7 +440,7 @@ BOOL fdrSetup(WPFolder *somSelf,
     if (fChanged)
         _wpSaveDeferred(somSelf);
 
-    return (rc);
+    return rc;
 }
 
 /*
@@ -1599,7 +1599,7 @@ STATIC PICONPOS GetICONPOS(PORDEREDLISTITEM poli,
 
             if (!stricmp(p, poli->szIdentity))
                 // object found: return the ICONPOS address
-                return (pip);
+                return pip;
             else
                 // not identical: go to next ICONPOS structure
                 pip = (PICONPOS)(   (PBYTE)pip
@@ -1636,12 +1636,13 @@ SHORT XWPENTRY fdrSortByICONPOS(PVOID pItem1, PVOID pItem2, PVOID psip)
 
         if ((pip1) && (pip2))
             if (pip1 < pip2)
-                return (-1);
-            else return (1);
+                return -1;
+            else
+                return 1;
         else if (pip1)
-            return (-1);
+            return -1;
         else if (pip2)
-            return (1);
+            return 1;
     }
 
     return 0;
@@ -3825,7 +3826,7 @@ ULONG fdrStartFolderContents(WPFolder *pFolder,
     winhSaveWindowPos(pf.hwndStatus, HINI_USER, INIAPP_XWORKPLACE, INIKEY_WNDPOSSTARTUP);
     winhDestroyWindow(&pf.hwndStatus);
 
-    return (ulrc);
+    return ulrc;
 }
 
 

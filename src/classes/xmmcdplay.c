@@ -125,7 +125,7 @@ SOM_Scope ULONG  SOMLINK cdp_xwpCDQueryStatus(XMMCDPlayer *somSelf)
     if (xmmQueryStatus() == MMSTAT_WORKING)
         ulrc = 0;       // @@todo
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*
@@ -302,7 +302,7 @@ SOM_Scope ULONG  SOMLINK cdp_xwpCDQueryCurrentTrack(XMMCDPlayer *somSelf)
         CATCH(excpt1) {} END_CATCH();
     }
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*
@@ -797,7 +797,7 @@ SOM_Scope HWND  SOMLINK cdp_wpOpen(XMMCDPlayer *somSelf, HWND hwndCnr,
         hwndNewView = XMMCDPlayer_parent_WPAbstract_wpOpen(somSelf, hwndCnr,
                                                            ulView, param);
 
-    return (hwndNewView);
+    return hwndNewView;
 }
 
 /*
@@ -961,7 +961,7 @@ SOM_Scope ULONG  SOMLINK cdpM_wpclsQueryIconData(M_XMMCDPlayer *somSelf,
         pIconInfo->hmod    = cmnQueryMainResModuleHandle();
     }
 
-    return (sizeof(ICONINFO));
+    return sizeof(ICONINFO);
 }
 
 

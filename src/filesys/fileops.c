@@ -1571,7 +1571,7 @@ BOOL fopsMoveObjectConfirmed(WPObject *pObject,
     if (fDoMove)
         fDidMove = _wpMoveObject(pObject, pTargetFolder);
 
-    return (fDidMove);
+    return fDidMove;
 }
 
 /*
@@ -1625,7 +1625,7 @@ BOOL fopsRenameObjectConfirmed(WPObject *pObject,
     if (fDoRename)
         fDidRename = _wpSetTitle(pObject, szNewTitle);
 
-    return (fDidRename);
+    return fDidRename;
 }
 
 

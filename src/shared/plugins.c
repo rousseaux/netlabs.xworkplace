@@ -178,12 +178,12 @@ PLINKLIST plgQueryCategories(VOID)
 BOOL plgLockClasses(PPLUGINCATEGORY pplgCategory)
 {
     if (!pplgCategory->hmtx)
-        return (!DosCreateMutexSem(NULL,
-                                   &pplgCategory->hmtx,
-                                   0,
-                                   TRUE));       // request now
+        return !DosCreateMutexSem(NULL,
+                                  &pplgCategory->hmtx,
+                                  0,
+                                  TRUE);       // request now
 
-    return (!DosRequestMutexSem(pplgCategory->hmtx, SEM_INDEFINITE_WAIT));
+    return !DosRequestMutexSem(pplgCategory->hmtx, SEM_INDEFINITE_WAIT);
 }
 
 /*
@@ -231,7 +231,7 @@ STATIC APIRET FreeModule(HMODULE hmod,
         CATCH(excpt2) {} END_CATCH();
     }
 
-    return (DosFreeModule(hmod));
+    return DosFreeModule(hmod);
 }
 
 /*
@@ -562,7 +562,7 @@ VOID plgLoadClasses(PPLUGINCATEGORY pplgCategory)
 
 PLINKLIST plgQueryClasses(PPLUGINCATEGORY pplgCategory)
 {
-    return (&pplgCategory->llClasses);
+    return &pplgCategory->llClasses;
 }
 
 /*
@@ -729,9 +729,9 @@ APIRET plgFindClass(PPLUGINCATEGORY pplgCategory,
 BOOL plgIsClassBuiltIn(PPLUGINCLASS pClass)
 {
     if (pClass)
-        return (!((PPRIVATEPLUGINCLASS)pClass)->hmod);
-    else
-        return FALSE;
+        return !((PPRIVATEPLUGINCLASS)pClass)->hmod;
+
+    return FALSE;
 }
 
 APIRET plgQueryClassVersion(PPLUGINCLASS pClass,

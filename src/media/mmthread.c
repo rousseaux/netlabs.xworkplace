@@ -560,7 +560,7 @@ VOID xmmDisable(VOID)
 
 ULONG xmmQueryStatus(VOID)
 {
-    return (G_ulMMPM2Working);
+    return G_ulMMPM2Working;
 }
 
 /*
@@ -580,7 +580,7 @@ BOOL xmmPostPartyMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
             if (G_ulMMPM2Working == MMSTAT_WORKING)
                 rc = WinPostMsg(G_hwndPartyObject, msg, mp1, mp2);
     }
-    return (rc);
+    return rc;
 }
 
 /*

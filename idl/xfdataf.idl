@@ -44,8 +44,14 @@ interface XFldDataFile : WPDataFile
      *
      */
 
+    ULONG xwpQueryAssociations(in WPObject *papObjects,
+                               in ULONG ulBuildMax,
+                               in BOOL fUsePlainTextAsDefault);
+
 #ifdef __SOMIDL__
   implementation {
+
+    releaseorder:       xwpQueryAssociations;
 
     /*
      * Class Modifiers:
@@ -142,8 +148,21 @@ interface XFldDataFile : WPDataFile
 interface M_XFldDataFile : M_WPDataFile
 {
 
+    /*
+     * New instance methods for M_XFldDataFile:
+     *
+     */
+
+    ULONG xwpclsListAssocsForType(in WPObject *papObjects,
+                                  in PULONG pcAssocs,
+                                  in PSZ pcszType0,
+                                  in ULONG ulBuildMax,
+                                  in BOOL *pfDone);
+
 #ifdef __SOMIDL__
   implementation {
+
+    releaseorder:   xwpclsListAssocsForType;
 
     /*
      * Class Modifiers:

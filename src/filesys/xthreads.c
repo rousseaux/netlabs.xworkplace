@@ -298,10 +298,10 @@ APIRET xthrQueryAwakeObjectsMutexOwner(PPID ppid,
                                        PTID ptid,
                                        PULONG pulCount)
 {
-    return (DosQueryMutexSem(G_hmtxAwakeObjectsList,
-                             ppid,
-                             ptid,
-                             pulCount));
+    return DosQueryMutexSem(G_hmtxAwakeObjectsList,
+                            ppid,
+                            ptid,
+                            pulCount);
 }
 
 /*
@@ -320,7 +320,7 @@ LONG xthrQueryAwakeObjectsCount(VOID)
         xthrUnlockAwakeObjectsList();
     }
 
-    return (l);
+    return l;
 }
 
 /*
@@ -1220,7 +1220,7 @@ BOOL xthrPostFileMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
                "Failed to post msg = 0x%lX, mp1 = 0x%lX, mp2 = 0x%lX",
                msg, mp1, mp2);
 
-    return (rc);
+    return rc;
 }
 
 /*
@@ -1238,7 +1238,7 @@ BOOL xthrPostFileMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
 
 ULONG xthrIsFileThreadBusy(VOID)
 {
-    return (G_CurFileThreadMsg);
+    return G_CurFileThreadMsg;
 }
 
 /*
@@ -1750,7 +1750,7 @@ BOOL xthrPostBushMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
                "Failed to post msg = 0x%lX, mp1 = 0x%lX, mp2 = 0x%lX",
                msg, mp1, mp2);
 
-    return (rc);
+    return rc;
 }
 
 #ifndef __NOBOOTLOGO__

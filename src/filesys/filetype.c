@@ -397,7 +397,7 @@ ULONG ftypRegisterInstanceTypesAndFilters(M_WPFileSystem *pClassObject)
     if (fLocked)
         UnlockInstances();
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*
@@ -448,7 +448,7 @@ PCSZ ftypFindClassFromInstanceType(PCSZ pcszType)     // in: type string (case i
     if (fLocked)
         UnlockInstances();
 
-    return (pcszClassName);
+    return pcszClassName;
 }
 
 /*
@@ -504,7 +504,7 @@ PCSZ ftypFindClassFromInstanceFilter(PCSZ pcszObjectTitle,
     if (fLocked)
         UnlockInstances();
 
-    return (pcszClassName);
+    return pcszClassName;
 }
 
 /* ******************************************************************
@@ -611,7 +611,7 @@ STATIC ULONG RemoveAssocReferences(PCSZ pcszHandle,     // in: decimal object ha
         free(pszKeys);
     }
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*
@@ -661,7 +661,7 @@ ULONG ftypAssocObjectDeleted(WPObject *somSelf)
     }
     CATCH(excpt1) {} END_CATCH();
 
-    return (ulrc);
+    return ulrc;
 }
 
 #ifndef __NEVEREXTASSOCS__
@@ -831,7 +831,7 @@ ULONG ftypAppendTypesFromString(PCSZ pcszTypes, // in: types string (e.g. "C Cod
         }
     }
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*
@@ -964,161 +964,7 @@ ULONG ftypForEachAutoType(PCSZ pcszObjectTitle,
         free(pszUpperTitle);
     }
 
-    return (ulrc);
-}
-
-/*
- *@@ ListAssocsForType:
- *      this lists all associated WPProgram or WPProgramFile
- *      objects which have been assigned to the given type.
- *
- *      For example, if "System editor" has been assigned to
- *      the "C Code" type, this would add the "System editor"
- *      program object to the given array.
- *
- *      V0.9.20 got rid of the linked list that used to be
- *      passed in. Instead, pass in an array of WPObject*
- *      pointers, which must be MAX_ASSOCS_PER_OBJECT in
- *      size, and pass in the current array item count in
- *      *pcAssocs. *pcAssocs gets raised with every object
- *      added.
- *
- *      NOTE: This locks each object instantiated as a
- *      result of the call.
- *
- *      This returns the no. of objects added to the list
- *      (0 if none). This will be less than the *pcAssocs
- *      output if there were objects in the array already.
- *
- *@@added V0.9.0 (99-11-27) [umoeller]
- *@@changed V0.9.9 (2001-03-27) [umoeller]: now avoiding duplicate assocs
- *@@changed V0.9.9 (2001-04-02) [umoeller]: now using objFindObjFromHandle, DRAMATICALLY faster
- *@@changed V0.9.16 (2002-01-01) [umoeller]: loop stopped after an invalid handle, fixed
- *@@changed V0.9.16 (2002-01-26) [umoeller]: added ulBuildMax, changed prototype, optimized
- *@@changed V0.9.20 (2002-07-25) [umoeller]: adjusted for getting rid of caches and mutexes
- */
-
-STATIC ULONG ListAssocsForType(WPObject **papObjects,   // in/out: array of assoc objects
-                               PULONG pcAssocs,         // in/out: count of items in array
-                               PCSZ pcszType0,          // in: file type (e.g. "C Code")
-                               ULONG ulBuildMax,        // in: max no. of assocs to append (<= MAX_ASSOCS_PER_OBJECT)
-                               BOOL *pfDone)            // out: set to TRUE only if ulBuildMax was reached; ptr can be NULL
-{
-    ULONG   ulrc = 0;
-
-    CHAR    szTypeThis[100];
-    PCSZ    pcszTypeThis = pcszType0;     // for now; later points to szTypeThis
-
-    BOOL    fQuit = FALSE;
-
-    PMPF_ASSOCS((" entering with type %s", pcszTypeThis));
-
-    // outer loop for climbing up the file type parents
-    do // while TRUE
-    {
-        // get associations from WPS INI data
-        CHAR    szObjectHandles[200];
-        ULONG   cb = sizeof(szObjectHandles);
-        ULONG   cHandles = 0;
-        PCSZ    pAssoc;
-        if (    (PrfQueryProfileData(HINI_USER,
-                                     (PSZ)WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE"
-                                     (PSZ)pcszTypeThis,
-                                     szObjectHandles,
-                                     &cb))
-             && (cb > 1)
-           )
-        {
-            // null-terminate the data in any case  V0.9.20 (2002-07-25) [umoeller]
-            szObjectHandles[sizeof(szObjectHandles) - 1] = '\0';
-
-            // we got handles for this type, and it's not
-            // just a null byte (just to name the type):
-            // count the handles
-            pAssoc = szObjectHandles;
-            while (*pAssoc)
-            {
-                HOBJECT hobjAssoc;
-                if (!(hobjAssoc = atoi(pAssoc)))
-                    // invalid handle:
-                    break;
-                else
-                {
-                    WPObject *pobjAssoc;
-
-                    if (pobjAssoc = objFindObjFromHandle(hobjAssoc))
-                    {
-                        // look if the object has already been added;
-                        // this might happen if the same object has
-                        // been defined for several types (inheritance!)
-                        // V0.9.9 (2001-03-27) [umoeller]
-
-                        ULONG   ul;
-                        BOOL    fFound = FALSE;
-                        for (ul = 0;
-                             ul < *pcAssocs;
-                             ++ul)
-                        {
-                            if (papObjects[ul] == pobjAssoc)
-                            {
-                                fFound = TRUE;
-                                break;
-                            }
-                        }
-
-                        if (!fFound)
-                        {
-                            // no:
-                            papObjects[(*pcAssocs)++] = pobjAssoc;
-                            ++ulrc;
-
-                            // V0.9.16 (2002-01-26) [umoeller]
-                            if (*pcAssocs >= ulBuildMax)
-                            {
-                                // we have reached the max no. the caller wants:
-                                fQuit = TRUE;
-                                if (pfDone)
-                                    *pfDone = TRUE;
-
-                                break;      // while (*pAssoc)
-                            }
-                        }
-                    }
-                }
-
-                // go for next object handle (after the 0 byte)
-                pAssoc += strlen(pAssoc) + 1;
-                if (pAssoc >= szObjectHandles + cb)
-                    break; // while (*pAssoc)
-
-            } // end while (*pAssoc)
-        }
-
-        if (fQuit)
-            break;
-        else
-        {
-            // get parent type
-            cb = sizeof(szTypeThis);
-            if (    (PrfQueryProfileData(HINI_USER,
-                                         (PSZ)INIAPP_XWPFILETYPES, // "XWorkplace:FileTypes"
-                                         (PSZ)pcszTypeThis,        // key name: current type
-                                         szTypeThis,
-                                         &cb))
-                 && (cb)
-               )
-            {
-                pcszTypeThis = szTypeThis;
-
-                PMPF_ASSOCS(("   next round for %s", pcszTypeThis));
-            }
-            else
-                break;
-        }
-
-    } while (TRUE);
-
-    return (ulrc);
+    return ulrc;
 }
 
 /* ******************************************************************
@@ -1126,212 +972,6 @@ STATIC ULONG ListAssocsForType(WPObject **papObjects,   // in/out: array of asso
  *   XFldDataFile extended associations
  *
  ********************************************************************/
-
-/*
- *@@ BUILDSTACK:
- *      temp struct for fncbBuildAssocsList.
- *
- *@@added V0.9.20 (2002-07-25) [umoeller]
- */
-
-typedef struct _BUILDSTACK
-{
-    WPObject    **papObjects;
-    PULONG      pcAssocs;
-    ULONG       ulBuildMax;
-    PBOOL       pfDone;
-} BUILDSTACK, *PBUILDSTACK;
-
-/*
- *@@ fncbBuildAssocsList:
- *      callback set from BuildAssocsList for ftypForEachAutoType.
- *
- *@@added V0.9.20 (2002-07-25) [umoeller]
- */
-
-BOOL _Optlink fncbBuildAssocsList(PCSZ pcszType,
-                                  ULONG ulTypeLen,
-                                  PVOID pvUser)
-{
-    PBUILDSTACK pb = (PBUILDSTACK)pvUser;
-    ListAssocsForType(pb->papObjects,
-                      pb->pcAssocs,
-                      pcszType,
-                      pb->ulBuildMax,
-                      pb->pfDone);
-
-    // return TRUE to keep going
-    return !(*(pb->pfDone));
-}
-
-/*
- *@@ BuildAssocsList:
- *      this helper function builds a list of all
- *      associated WPProgram and WPProgramFile objects
- *      in the data file's instance data.
- *
- *      This is the heart of the extended associations
- *      engine. This function gets called whenever
- *      extended associations are needed.
- *
- *      --  From ftypQueryAssociatedProgram, this gets
- *          called with (fUsePlainTextAsDefault == FALSE),
- *          mostly (inheriting that func's param).
- *          Since that method is called during folder
- *          population to find the correct icon for the
- *          data file, we do NOT want all data files to
- *          receive the icons for plain text files.
- *
- *      --  From ftypModifyDataFileOpenSubmenu, this gets
- *          called with (fUsePlainTextAsDefault == TRUE).
- *          We do want the items for "plain text" in the
- *          "Open" context menu if no other type has been
- *          assigned.
- *
- *      The list (which is of type PLINKLIST, containing
- *      plain WPObject* pointers) is returned.
- *
- *      This returns NULL if an error occured or no
- *      associations were added.
- *
- *      NOTE: This locks each object instantiated as a
- *      result of the call. Use FreeAssocsList instead
- *      of lstFree to free the list returned by this
- *      function.
- *
- *@@added V0.9.0 (99-11-27) [umoeller]
- *@@changed V0.9.6 (2000-10-16) [umoeller]: now returning a PLINKLIST
- *@@changed V0.9.7 (2001-01-11) [umoeller]: no longer using plain text always
- *@@changed V0.9.9 (2001-03-27) [umoeller]: no longer creating list if no assocs exist, returning NULL now
- *@@changed V0.9.16 (2002-01-05) [umoeller]: this never added "plain text" if the object had a type but no associations
- *@@changed V0.9.16 (2002-01-26) [umoeller]: added ulBuildMax, mostly rewritten for MAJOR speedup
- *@@changed V0.9.20 (2002-07-25) [umoeller]: adjustments for getting rid of caches and mutexes
- *@@changed V0.9.20 (2002-07-25) [umoeller]: made function private
- *@@changed V0.9.20 (2002-07-25) [umoeller]: got rid of linked list
- */
-
-STATIC ULONG BuildAssocsList(WPDataFile *somSelf,
-                             WPObject **papObjects,         // out: array of assocs
-                             ULONG ulBuildMax,              // in: max no. of assocs to append or -1 for all
-                             BOOL fUsePlainTextAsDefault)
-{
-    ULONG cAssocs = 0;
-
-    TRY_LOUD(excpt1)
-    {
-        BOOL        fDone = FALSE;
-        PSZ pszExplicitTypes;
-
-        if (    (ulBuildMax == -1)
-             || (ulBuildMax > MAX_ASSOCS_PER_OBJECT)
-           )
-            // caller wants all assocs:
-            // delimit anyway to not crash the array
-            ulBuildMax = MAX_ASSOCS_PER_OBJECT;
-
-        // 1) run thru the types that were assigned explicitly
-        if (    (pszExplicitTypes = _wpQueryType(somSelf))
-             && (*pszExplicitTypes)
-           )
-        {
-            // yes, explicit type(s):
-            // decode those (separated by '\n')
-            PSZ pszTypesCopy;
-            if (pszTypesCopy = strdup(pszExplicitTypes))
-            {
-                PSZ     pTypeThis = pszExplicitTypes;
-                PSZ     pLF = 0;
-
-                // loop thru types list
-                while (pTypeThis && *pTypeThis && !fDone)
-                {
-                    // get next line feed
-                    if (pLF = strchr(pTypeThis, '\n'))
-                        // line feed found:
-                        *pLF = '\0';
-
-                    ListAssocsForType(papObjects,
-                                      &cAssocs,
-                                      pTypeThis,
-                                      ulBuildMax,
-                                      &fDone);
-
-                    if (pLF)
-                        // next type (after LF)
-                        pTypeThis = pLF + 1;
-                    else
-                        break;
-                }
-
-                free(pszTypesCopy);
-            }
-        }
-
-        if (!fDone)
-        {
-            // 2) run thru automatic (extended) file types based on
-            //    the object title
-            BUILDSTACK bs;
-            bs.papObjects = papObjects;
-            bs.pcAssocs = &cAssocs;
-            bs.ulBuildMax = ulBuildMax;
-            bs.pfDone = &fDone;
-
-            ftypForEachAutoType(_wpQueryTitle(somSelf),
-                                fncbBuildAssocsList,
-                                &bs);
-        }
-
-        // V0.9.16 (2002-01-05) [umoeller]:
-        // moved the following "plain text" addition down...
-        // previously, "plain text" was only added if no _types_
-        // were present, but that isn't entirely correct... really
-        // it should be added if no _associations_ were found,
-        // so check this here instead!
-        if (    (fUsePlainTextAsDefault)
-             && (!cAssocs)
-           )
-        {
-            ListAssocsForType(papObjects,
-                              &cAssocs,
-                              "Plain Text",
-                              ulBuildMax,
-                              NULL);
-        }
-    }
-    CATCH(excpt1)
-    {
-    } END_CATCH();
-
-    return cAssocs;
-}
-
-/*
- *@@ FreeAssocsList:
- *      frees all resources allocated by BuildAssocsList
- *      by unlocking all objects on the specified list and
- *      then freeing the list.
- *
- *@@added V0.9.6 (2000-10-16) [umoeller]
- *@@changed V0.9.12 (2001-05-24) [umoeller]: changed prototype for new lstFree
- *@@changed V0.9.20 (2002-07-25) [umoeller]: made function private
- *@@changed V0.9.20 (2002-07-25) [umoeller]: got rid of linked list
- */
-
-STATIC ULONG FreeAssocsList(WPObject **papObjects,   // in: array created by BuildAssocsList
-                            ULONG cObjects)
-{
-    ULONG       ul;
-
-    for (ul = 0;
-         ul < cObjects;
-         ++ul)
-    {
-        _wpUnlockObject(papObjects[ul]);
-    }
-
-    return (ul);
-}
 
 /*
  *@@ ftypQueryAssociatedProgram:
@@ -1406,49 +1046,37 @@ WPObject* ftypQueryAssociatedProgram(WPDataFile *somSelf,       // in: data file
         // have a default view >= 0x1000.
         // V0.9.19 (2002-05-23) [umoeller]
 
-        if (cAssocObjects = BuildAssocsList(somSelf,
-                                            apObjects,
-                                            ulIndex + 1,
-                                            fUsePlainTextAsDefault))
+        if (cAssocObjects = _xwpQueryAssociations(somSelf,
+                                                  apObjects,
+                                                  ulIndex + 1,
+                                                  fUsePlainTextAsDefault))
         {
             // any items found:
-            PLISTNODE           pAssocObjectNode = 0;
+            ULONG       ul;
 
             if (ulIndex >= cAssocObjects)
                 ulIndex = 0;
 
             pObjReturn = apObjects[ulIndex];
-            // raise lock count on this object again (i.e. lock
-            // twice) because FreeAssocsList unlocks each
-            // object on the list once, and this one better
-            // stay locked
-            _wpLockObject(pObjReturn);
 
-            FreeAssocsList(apObjects, cAssocObjects);
+            // unlock all objs except the one that we return
+            for (ul = 0;
+                 ul < cAssocObjects;
+                 ++ul)
+            {
+                if (apObjects[ul] != pObjReturn)
+                    _wpUnlockObject(apObjects[ul]);
+            }
         }
     }
 
-    return (pObjReturn);
+    return pObjReturn;
 }
 
 /*
  *@@ ftypModifyDataFileOpenSubmenu:
- *      this adds associations to an "Open" submenu.
- *
- *      -- On Warp 3, this gets called from the wpDisplayMenu
- *         override with (fDeleteExisting == TRUE).
- *
- *         This is a brute-force hack to get around the
- *         limitations which IBM has imposed on manipulation
- *         of the "Open" submenu. See XFldDataFile::wpDisplayMenu
- *         for details.
- *
- *         We remove all associations from the "Open" menu and
- *         add our own ones instead.
- *
- *      -- Instead, on Warp 4, this gets called from our
- *         XFldDataFile::wpModifyMenu hack with
- *         (fDeleteExisting == FALSE).
+ *      this adds associations to an "Open" submenu, after
+ *      clearing old the existing items in that menu.
  *
  *      This gets called only if extended associations are
  *      enabled.
@@ -1456,13 +1084,12 @@ WPObject* ftypQueryAssociatedProgram(WPDataFile *somSelf,       // in: data file
  *@@added V0.9.0 (99-11-27) [umoeller]
  *@@changed V0.9.20 (2002-07-25) [umoeller]: got rid of linked list
  *@@changed V1.0.0 (2002-08-31) [umoeller]: fixed deletion of WPMENUID_PROPERTIES
+ *@@changed V1.0.1 (2002-12-14) [umoeller]: removed fDeleteExisting param
  */
 
 BOOL ftypModifyDataFileOpenSubmenu(WPDataFile *somSelf, // in: data file in question
-                                   HWND hwndOpenSubmenu,
+                                   HWND hwndOpenSubmenu)
                                             // in: "Open" submenu window
-                                   BOOL fDeleteExisting)
-                                            // in: if TRUE, we remove all items from "Open"
 {
     BOOL            brc = FALSE;
 
@@ -1473,52 +1100,46 @@ BOOL ftypModifyDataFileOpenSubmenu(WPDataFile *somSelf, // in: data file in ques
         // 1) remove existing (default WPS) association
         // items from "Open" submenu
 
-        if (!fDeleteExisting)
-            brc = TRUE;     // continue
-        else
+        // find first item
+        SHORT sPos = 0;
+
+        do
         {
-            // delete existing:
-            // find first item
-            SHORT sPos = 0;
-
-            do
+            ulItemID = (ULONG)WinSendMsg(hwndOpenSubmenu,
+                                         MM_ITEMIDFROMPOSITION,
+                                         (MPARAM)sPos,      // V1.0.0 (2002-08-31) [umoeller]
+                                         0);      // reserved
+            if (    (ulItemID)
+                 && (ulItemID != MIT_ERROR)
+               )
             {
-                ulItemID = (ULONG)WinSendMsg(hwndOpenSubmenu,
-                                             MM_ITEMIDFROMPOSITION,
-                                             (MPARAM)sPos,      // V1.0.0 (2002-08-31) [umoeller]
-                                             0);      // reserved
-                if (    (ulItemID)
-                     && (ulItemID != MIT_ERROR)
-                   )
+                // only remove items >= 0x1000 because at this
+                // point, the "properties" menu item is still
+                // in the menu (dammit, IBM)
+                // V1.0.0 (2002-08-31) [umoeller]
+                if (ulItemID < 0x1000)
                 {
-                    // only remove items >= 0x1000 because at this
-                    // point, the "properties" menu item is still
-                    // in the menu (dammit, IBM)
-                    // V1.0.0 (2002-08-31) [umoeller]
-                    if (ulItemID < 0x1000)
-                    {
-                        ++sPos;
-                    }
-                    else
-                    {
-                        #ifdef __DEBUG__
-                            PSZ pszItemText = winhQueryMenuItemText(hwndOpenSubmenu, ulItemID);
-                            PMPF_ASSOCS((" removing 0x%lX (%s)",
-                                        ulItemID,
-                                        pszItemText));
-                            free(pszItemText);
-                        #endif
-
-                        winhDeleteMenuItem(hwndOpenSubmenu, ulItemID);
-                    }
-
-                    brc = TRUE;
+                    ++sPos;
                 }
                 else
-                    break;
+                {
+                    #ifdef __DEBUG__
+                        PSZ pszItemText = winhQueryMenuItemText(hwndOpenSubmenu, ulItemID);
+                        PMPF_ASSOCS((" removing 0x%lX (%s)",
+                                    ulItemID,
+                                    pszItemText));
+                        free(pszItemText);
+                    #endif
 
-            } while (TRUE);
-        }
+                    winhDeleteMenuItem(hwndOpenSubmenu, ulItemID);
+                }
+
+                brc = TRUE;
+            }
+            else
+                break;
+
+        } while (TRUE);
 
         // 2) add the new extended associations
 
@@ -1526,12 +1147,12 @@ BOOL ftypModifyDataFileOpenSubmenu(WPDataFile *somSelf, // in: data file in ques
         {
             WPObject    *apObjects[MAX_ASSOCS_PER_OBJECT];
             ULONG       cAssocObjects = 0;
-            if (cAssocObjects = BuildAssocsList(somSelf,
-                                                apObjects,
-                                                // get all:
-                                                -1,
-                                                // use "plain text" as default:
-                                                TRUE))
+            if (cAssocObjects = _xwpQueryAssociations(somSelf,
+                                                      apObjects,
+                                                      // get all:
+                                                      -1,
+                                                      // use "plain text" as default:
+                                                      TRUE))
             {
                 // now add all the associations; this list has
                 // instances of WPProgram and WPProgramFile
@@ -1566,13 +1187,13 @@ BOOL ftypModifyDataFileOpenSubmenu(WPDataFile *somSelf, // in: data file in ques
                                                     ? MIA_CHECKED
                                                     : 0);
                         }
+
+                        _wpUnlockObject(pAssocThis);
                     }
 
                     ulItemID++;     // raise item ID even if object was invalid;
                                     // this must be the same in wpMenuItemSelected
                 }
-
-                FreeAssocsList(apObjects, cAssocObjects);
             }
         }
     }

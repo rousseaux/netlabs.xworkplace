@@ -358,8 +358,8 @@ STATIC PTRAYSETTING FindCurrentTray(PTRAYWIDGETPRIVATE pPrivate)
     if (pPrivate->Setup.pPrivateSetting->ulCurrentTray == -1)
         return NULL;
 
-    return (lstItemFromIndex(ppws->pllTraySettings,
-                             pPrivate->Setup.pPrivateSetting->ulCurrentTray));
+    return lstItemFromIndex(ppws->pllTraySettings,
+                            pPrivate->Setup.pPrivateSetting->ulCurrentTray);
 }
 
 /*
@@ -712,7 +712,7 @@ APIRET YwgtCreateSubwidget(PTRAYWIDGETPRIVATE pPrivate,
         }
     }
 
-    return (pSubwidget);
+    return pSubwidget;
     */
 }
 
@@ -1246,7 +1246,7 @@ STATIC MRESULT YwgtMenuEnd(HWND hwnd, MPARAM mp1, MPARAM mp2)
         }
     } // end if (pWidget)
 
-    return (ctrDefWidgetProc(hwnd, WM_MENUEND, mp1, mp2));
+    return ctrDefWidgetProc(hwnd, WM_MENUEND, mp1, mp2);
 }
 
 /*
@@ -1333,10 +1333,10 @@ STATIC MRESULT YwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
     }
 
     // let default widget proc display context menu
-    return (ctrDefWidgetProc(hwnd,
-                             WM_CONTEXTMENU,
-                             mp1,
-                             mp2));
+    return ctrDefWidgetProc(hwnd,
+                            WM_CONTEXTMENU,
+                            mp1,
+                            mp2);
 }
 
 /*
@@ -1473,7 +1473,7 @@ STATIC MRESULT YwgtCommand(HWND hwnd, MPARAM mp1, MPARAM mp2)
                     // recompose setup string with new trays
                     YwgtSaveSetupAndSend(pPrivate);
 
-                    return ((MRESULT)TRUE);
+                    return (MRESULT)TRUE;
                 }
                 // is it one of the items in the "add widget" submenu?
                 else if (pClass = ctrpFindClassFromMenuCommand(usCommand))
@@ -1484,13 +1484,13 @@ STATIC MRESULT YwgtCommand(HWND hwnd, MPARAM mp1, MPARAM mp2)
                                         -1);        // add rightmost
 
                     // say "processed", do not call def. widget proc
-                    return ((MRESULT)TRUE);
+                    return (MRESULT)TRUE;
                 }
                 else
-                    return (ctrDefWidgetProc(hwnd,
-                                             WM_COMMAND,
-                                             mp1,
-                                             mp2));
+                    return ctrDefWidgetProc(hwnd,
+                                            WM_COMMAND,
+                                            mp1,
+                                            mp2);
         }
     }
 
@@ -1508,9 +1508,9 @@ STATIC MRESULT YwgtDragOver(HWND hwnd, MPARAM mp1)
     PXCENTERWIDGET pWidget;
     if (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
     {
-        return (ctrpDragOver(pWidget->pGlobals->hwndClient,
-                             hwnd,        // tray window
-                             (PDRAGINFO)mp1));
+        return ctrpDragOver(pWidget->pGlobals->hwndClient,
+                            hwnd,        // tray window
+                            (PDRAGINFO)mp1);
     }
 
     return 0;
@@ -1690,7 +1690,7 @@ STATIC MRESULT YwgtRemoveSubwidget(HWND hwnd,
                 // reformat widgets in tray
                 ReformatTray(pPrivate);
 
-                return ((MRESULT)TRUE);
+                return (MRESULT)TRUE;
             }
             else
                 cmnLog(__FILE__, __LINE__, __FUNCTION__,
@@ -1699,7 +1699,7 @@ STATIC MRESULT YwgtRemoveSubwidget(HWND hwnd,
         }
     }
 
-    return ((MRESULT)FALSE);
+    return (MRESULT)FALSE;
 }
 */
 

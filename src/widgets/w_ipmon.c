@@ -715,10 +715,10 @@ STATIC VOID SubclassAndSetColor(HWND hwndDlg,
 STATIC LONG GetColor(HWND hwndDlg,
                      ULONG ulID)
 {
-    return (pwinhQueryPresColor(WinWindowFromID(hwndDlg, ulID),
-                                PP_BACKGROUNDCOLOR,
-                                FALSE,
-                                SYSCLR_DIALOGBACKGROUND));
+    return pwinhQueryPresColor(WinWindowFromID(hwndDlg, ulID),
+                               PP_BACKGROUNDCOLOR,
+                               FALSE,
+                               SYSCLR_DIALOGBACKGROUND);
 }
 
 #define COLOR_WIDTH     50
@@ -2011,7 +2011,7 @@ ULONG EXPENTRY IwgtInitModule(HAB hab,         // XCenter's anchor block
         }
     }
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*

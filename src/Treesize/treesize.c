@@ -457,8 +457,8 @@ SHORT EXPENTRY fnCompareName(PRECORDCORE pmrc1, PRECORDCORE pmrc2, PVOID pStorag
             switch (WinCompareStrings(habDesktop, 0, 0,
                 pmrc1->pszIcon, pmrc2->pszIcon, 0))
             {
-                case WCS_LT: return (-1);
-                case WCS_GT: return (1);
+                case WCS_LT: return -1;
+                case WCS_GT: return 1;
             }
 
     return 0;
@@ -481,9 +481,9 @@ SHORT EXPENTRY fnCompareSize(PSIZERECORD pmrc1, PSIZERECORD pmrc2, PVOID pStorag
            )
         {
             if (pmrc1->dTotalSize > pmrc2->dTotalSize)
-                return (-1);
+                return -1;
             else if (pmrc1->dTotalSize < pmrc2->dTotalSize)
-                return (1);
+                return 1;
         }
     }
 
@@ -505,17 +505,17 @@ SHORT EXPENTRY fnCompareFilesCount(PSIZERECORD pmrc1, PSIZERECORD pmrc2, PVOID p
         if ((pmrc1->pdi) && (pmrc2->pdi))
         {
             if (pmrc1->pdi->ulFiles > pmrc2->pdi->ulFiles)
-                return (-1);
+                return -1;
             else if (pmrc1->pdi->ulFiles < pmrc2->pdi->ulFiles)
-                return (1);
+                return 1;
         }
         else if ((pmrc1->pFileEntry) && (pmrc2->pFileEntry))
         {
             // sort the file entries by size
             if (pmrc1->dTotalSize > pmrc2->dTotalSize)
-                return (-1);
+                return -1;
             else if (pmrc1->dTotalSize < pmrc2->dTotalSize)
-                return (1);
+                return 1;
         }
 
     return 0;
@@ -535,17 +535,17 @@ SHORT EXPENTRY fnCompareEASize(PSIZERECORD pmrc1, PSIZERECORD pmrc2, PVOID pStor
         if ((pmrc1->pdi) && (pmrc2->pdi))
         {
             if (pmrc1->pdi->dTotalEASize > pmrc2->pdi->dTotalEASize)
-                return (-1);
+                return -1;
             else if (pmrc1->pdi->dTotalEASize < pmrc2->pdi->dTotalEASize)
-                return (1);
+                return 1;
         }
         else if ((pmrc1->pFileEntry) && (pmrc2->pFileEntry))
         {
             // sort the file entries by size
             if (pmrc1->dTotalSize > pmrc2->dTotalSize)
-                return (-1);
+                return -1;
             else if (pmrc1->dTotalSize < pmrc2->dTotalSize)
-                return (1);
+                return 1;
         }
 
     return 0;
@@ -565,7 +565,7 @@ PSZ ComposeFilename(PSZ pszBuf,
             pFileEntry->pDir->szFullPath,
             pFileEntry->pszFilename);
 
-    return (pszBuf);
+    return pszBuf;
 }
 
 /*
@@ -1765,7 +1765,7 @@ BOOL LoadNLS(VOID)
 
         _Pmpf(("DosLoadModule: 0x%lX", G_hmodNLS));
     }
-    return (Proceed);
+    return Proceed;
 }
 
 /*

@@ -431,7 +431,7 @@ unsigned long _System _DLL_InitTerm(unsigned long hModule,
     }
 
     // a non-zero value must be returned to indicate success
-    return (1);
+    return 1;
 }
 
 /*
@@ -524,7 +524,7 @@ PHOOKDATA EXPENTRY hookInit(HWND hwndDaemonObject)  // in: daemon object window 
         _Pmpf(("Leaving hookInit"));
     }
 
-    return (&G_HookData);
+    return &G_HookData;
 }
 
 /*
@@ -1192,7 +1192,7 @@ HWND GetFrameWindow(HWND hwndTemp)
         hwndTemp = WinQueryWindow(hwndTemp, QW_PARENT);
     }
 
-    return (hwndPrevious);
+    return hwndPrevious;
 }
 
 /*

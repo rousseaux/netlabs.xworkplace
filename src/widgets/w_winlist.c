@@ -746,7 +746,7 @@ STATIC BOOL IsSwlistItemAddable(HWND hwndCombo,
         }
     }
 
-    return (fEnableComboAdd);
+    return fEnableComboAdd;
 }
 
 /*
@@ -1202,7 +1202,7 @@ STATIC PLISTNODE FindSwitchNodeFromHWND(PLINKLIST pll,
     {
         PSWCNTRL pCtrl = (PSWCNTRL)pNode->pItemData;
         if (pCtrl->hwnd == hwnd)
-            return (pNode);
+            return pNode;
     }
 
     return NULL;
@@ -1422,7 +1422,7 @@ STATIC LONG CalcButtonCX(PWINLISTPRIVATE pPrivate,
         }
     }
 
-    return (cxPerButton);
+    return cxPerButton;
 }
 
 /*
@@ -1743,7 +1743,7 @@ STATIC PWINLISTENTRY FindCtrlFromPoint(PWINLISTPRIVATE pPrivate,
         }
     }
 
-    return (pCtrl);
+    return pCtrl;
 }
 
 /*
@@ -3014,7 +3014,7 @@ ULONG EXPENTRY WwgtInitModule(HAB hab,         // XCenter's anchor block
         }
     }
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*

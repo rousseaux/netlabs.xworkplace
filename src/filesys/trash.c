@@ -230,8 +230,8 @@ static BYTE        G_abMappingDrivesDirty[CB_SUPPORTED_DRIVES] = {0};
 
 STATIC int TREEENTRY fnCompareStrings(ULONG ul1, ULONG ul2)
 {
-    return (strhicmp((PCSZ)ul1,
-                     (PCSZ)ul2));
+    return strhicmp((PCSZ)ul1,
+                    (PCSZ)ul2);
 }
 
 /*
@@ -280,7 +280,7 @@ STATIC PTRASHMAPPINGTREENODE CreateMapping(ULONG ulMappingIndex,      // in: dec
         }
     }
 
-    return (pMapping);
+    return pMapping;
 }
 
 /*
@@ -376,7 +376,7 @@ STATIC ULONG LoadMappingsForDrive(M_WPFolder *pFolderClass,
         free(pszDriveMappings);
     }
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*
@@ -539,7 +539,7 @@ STATIC PTRASHMAPPINGTREENODE trshGetMappingFromSource(XWPTrashCan *pTrashCan,
     if (pobjLock)
         _wpReleaseObjectMutexSem(pobjLock);
 
-    return (pMapping);
+    return pMapping;
 }
 
 /*
@@ -583,7 +583,7 @@ STATIC PTRASHMAPPINGTREENODE trshGetMappingFromTrashDir(XWPTrashCan *pTrashCan,
     if (pobjLock)
         _wpReleaseObjectMutexSem(pobjLock);
 
-    return (pMapping);
+    return pMapping;
 }
 
 /*
@@ -760,7 +760,7 @@ STATIC ULONG GetLowestTrashDirDecimal(VOID)
             pNode = (PTRASHMAPPINGTREENODE)treeNext((TREE*)pNode);
     }
 
-    return (ul);
+    return ul;
 }
 
 /*
@@ -845,7 +845,7 @@ WPFolder* trshGetOrCreateTrashDir(XWPTrashCan *pTrashCan,
             _wpReleaseObjectMutexSem(pobjLock);
     }
 
-    return (pFolderInTrash);
+    return pFolderInTrash;
 }
 
 /* ******************************************************************
@@ -904,7 +904,7 @@ PLINKLIST trshCreateTrashObjectsList(XWPTrashCan* somSelf,
     if (pulCount)
         *pulCount = cObjects;
 
-    return (pllTrashObjects);
+    return pllTrashObjects;
 }
 
 /*
@@ -985,7 +985,7 @@ XWPTrashObject* trshCreateTrashObject(M_XWPTrashObject *somSelf,
                                  TRUE);  // lock trash object too
     }
 
-    return (pTrashObject);
+    return pTrashObject;
 }
 
 /*
@@ -1171,7 +1171,7 @@ PSZ trshComposeRelatedPath(XWPTrashObject *somSelf)
         } // end if (pTrashDir)
     }
 
-    return (_pszSourcePath);
+    return _pszSourcePath;
 }
 
 /* ******************************************************************
@@ -1910,7 +1910,7 @@ MRESULT trshDragOver(XWPTrashCan *somSelf,
     }
 
     // compose 2SHORT return value
-    return (MRFROM2SHORT(usDrop, usDefaultOp));
+    return MRFROM2SHORT(usDrop, usDefaultOp);
 }
 
 /*
@@ -2101,7 +2101,7 @@ ULONG trshEmptyTrashCan(XWPTrashCan *somSelf,
     }
     CATCH(excpt1) { } END_CATCH();
 
-    return (frc);
+    return frc;
 }
 
 /*
@@ -2341,7 +2341,7 @@ APIRET trshIsOnSupportedDrive(WPObject *pObject)
     else
         frc = FOPSERR_WPQUERYFILENAME_FAILED;       // V0.9.16 (2001-11-10) [umoeller]
 
-    return (frc);
+    return frc;
 }
 
 /* ******************************************************************
