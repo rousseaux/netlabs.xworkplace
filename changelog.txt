@@ -31,6 +31,7 @@ Changes for V0.9.9
     -- ID_XFD_STARTUPPANIC changed.
     -- ID_OSDI_PATHEDIT added.
     -- ID_XCD_STATUS changed.
+    -- ID_CRD_SETTINGS_VIEW changed.
 
 
 Changes for V0.9.7

@@ -131,6 +131,7 @@ typedef struct _WPSAVELONGITEM
 /*
  *@@ xwpAddXCenterPages:
  *
+ *@@changed V0.9.9 (2001-03-09) [umoeller]: made second "view" page major "style" page
  */
 
 SOM_Scope ULONG  SOMLINK xctr_xwpAddXCenterPages(XCenter *somSelf,
@@ -159,15 +160,32 @@ SOM_Scope ULONG  SOMLINK xctr_xwpAddXCenterPages(XCenter *somSelf,
     pcnbp->pfncbItemChanged = ctrpWidgetsItemChanged;
     ntbInsertPage(pcnbp);
 
+    // add the "Classes" page
+    pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
+    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
+    pcnbp->somSelf = somSelf;
+    pcnbp->hwndNotebook = hwndNotebook;
+    pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
+    pcnbp->usPageStyleFlags = BKA_MAJOR;
+    pcnbp->pszName = pNLSStrings->pszClassesPage;
+    pcnbp->ulDlgID = ID_XFD_CONTAINERPAGE;
+    pcnbp->ulDefaultHelpPanel  = ID_XSH_XCENTER_CLASSES;
+    pcnbp->ulPageID = SP_XCENTER_CLASSES;
+    pcnbp->pampControlFlags = G_pampGenericCnrPage;
+    pcnbp->cControlFlags = G_cGenericCnrPage;
+    pcnbp->pfncbInitPage    = ctrpClassesInitPage;
+    pcnbp->pfncbItemChanged = ctrpClassesItemChanged;
+    ntbInsertPage(pcnbp);
+
     // add the "View2" page on top
     pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
     memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
     pcnbp->somSelf = somSelf;
     pcnbp->hwndNotebook = hwndNotebook;
     pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
-    pcnbp->usPageStyleFlags = BKA_MINOR;
+    pcnbp->usPageStyleFlags = BKA_MAJOR;
     pcnbp->fEnumerate = TRUE;
-    pcnbp->pszName = pNLSStrings->pszViewPage;
+    pcnbp->pszName = pNLSStrings->pszStylePage;
     pcnbp->ulDlgID = ID_CRD_SETTINGS_VIEW2;
     pcnbp->ulDefaultHelpPanel  = ID_XSH_XCENTER_VIEW2;
     pcnbp->ulPageID = SP_XCENTER_VIEW2;

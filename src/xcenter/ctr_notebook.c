@@ -759,6 +759,8 @@ static ULONG    G_aulView2SetupOffsets[]
             FIELDOFFSET(XCenterData, ulWidgetSpacing)
       };
 
+static BOOL     G_fSetting = FALSE;
+
 /*
  *@@ ctrpView1InitPage:
  *      notebook callback function (notebook.c) for the
@@ -768,6 +770,7 @@ static ULONG    G_aulView2SetupOffsets[]
  *
  *@@added V0.9.7 (2000-12-05) [umoeller]
  *@@changed V0.9.9 (2001-01-29) [umoeller]: "Undo" data wasn't working
+ *@@changed V0.9.9 (2001-03-09) [umoeller]: added auto-hide delay slider
  */
 
 VOID ctrpView1InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -777,8 +780,6 @@ VOID ctrpView1InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
     if (flFlags & CBI_INIT)
     {
-        HWND hwndSlider = WinWindowFromID(pcnbp->hwndDlgPage, ID_CRDI_VIEW_PRTY_SLIDER);
-
         // make backup of instance data
         if (pcnbp->pUser == NULL)
         {
@@ -791,15 +792,20 @@ VOID ctrpView1InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             pcnbp->pUser = pBackup;
         }
 
-        winhSetSliderTicks(hwndSlider,
+        winhSetSliderTicks(WinWindowFromID(pcnbp->hwndDlgPage,
+                                           ID_CRDI_VIEW_AUTOHIDE_SLIDER),
+                           MPFROM2SHORT(9, 10), 6,
+                           (MPARAM)-1, -1);
+
+        winhSetSliderTicks(WinWindowFromID(pcnbp->hwndDlgPage,
+                                           ID_CRDI_VIEW_PRTY_SLIDER),
                            (MPARAM)0, 3,
                            MPFROM2SHORT(9, 10), 6);
     }
 
     if (flFlags & CBI_SET)
     {
-        HWND hwndSlider = WinWindowFromID(pcnbp->hwndDlgPage, ID_CRDI_VIEW_PRTY_SLIDER);
-
+        LONG lSliderIndex = 0;
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_CRDI_VIEW_REDUCEWORKAREA,
                               _fReduceDesktopWorkarea);
 
@@ -807,28 +813,57 @@ VOID ctrpView1InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                               ((_ulWindowStyle & WS_TOPMOST) != 0));
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_CRDI_VIEW_ANIMATE,
                               ((_ulWindowStyle & WS_ANIMATE) != 0));
+
+        // autohide
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_CRDI_VIEW_AUTOHIDE,
                               (_ulAutoHide > 0));
+        if (_ulAutoHide)
+            lSliderIndex = (_ulAutoHide / 1000) - 1;
 
-        if (_ulPosition == XCENTER_TOP)
-            winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_CRDI_VIEW_TOPOFSCREEN, TRUE);
-        else
-            winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_CRDI_VIEW_BOTTOMOFSCREEN, TRUE);
+        // prevent the stupid slider control from interfering
+        G_fSetting = TRUE;
+        winhSetSliderArmPosition(WinWindowFromID(pcnbp->hwndDlgPage,
+                                                 ID_CRDI_VIEW_AUTOHIDE_SLIDER),
+                                 SMA_INCREMENTVALUE,
+                                 lSliderIndex);
+        G_fSetting = FALSE;
 
-        winhSetSliderArmPosition(hwndSlider,
+        WinSetDlgItemShort(pcnbp->hwndDlgPage,
+                           ID_CRDI_VIEW_AUTOHIDE_TXT2,
+                           _ulAutoHide / 1000,
+                           FALSE);      // unsigned
+
+        // priority
+        winhSetSliderArmPosition(WinWindowFromID(pcnbp->hwndDlgPage,
+                                                 ID_CRDI_VIEW_PRTY_SLIDER),
                                  SMA_INCREMENTVALUE,
                                  _lPriorityDelta);
         WinSetDlgItemShort(pcnbp->hwndDlgPage,
                            ID_CRDI_VIEW_PRTY_TEXT,
                            _lPriorityDelta,
                            FALSE);      // unsigned
+
+        if (_ulPosition == XCENTER_TOP)
+            winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_CRDI_VIEW_TOPOFSCREEN, TRUE);
+        else
+            winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_CRDI_VIEW_BOTTOMOFSCREEN, TRUE);
+
     }
 
     if (flFlags & CBI_ENABLE)
     {
+        BOOL fAutoHide =    (_fReduceDesktopWorkarea == FALSE)
+                         && (_ulAutoHide != 0);
+
         // disable auto-hide if workarea is to be reduced
         WinEnableControl(pcnbp->hwndDlgPage, ID_CRDI_VIEW_AUTOHIDE,
                          (_fReduceDesktopWorkarea == FALSE));
+        WinEnableControl(pcnbp->hwndDlgPage, ID_CRDI_VIEW_AUTOHIDE_TXT1,
+                         fAutoHide);
+        WinEnableControl(pcnbp->hwndDlgPage, ID_CRDI_VIEW_AUTOHIDE_SLIDER,
+                         fAutoHide);
+        WinEnableControl(pcnbp->hwndDlgPage, ID_CRDI_VIEW_AUTOHIDE_TXT2,
+                         fAutoHide);
     }
 }
 
@@ -840,6 +875,7 @@ VOID ctrpView1InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *
  *@@added V0.9.7 (2000-12-05) [umoeller]
  *@@changed V0.9.9 (2001-01-29) [umoeller]: now using cmnSetup* funcs
+ *@@changed V0.9.9 (2001-03-09) [umoeller]: added auto-hide delay slider
  */
 
 MRESULT ctrpView1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -848,8 +884,8 @@ MRESULT ctrpView1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 {
     MRESULT     mrc = 0;
     XCenterData *somThis = XCenterGetData(pcnbp->somSelf);
-    BOOL        fSave = TRUE,
-                fCallInitCallback = FALSE;
+    BOOL        fSave = TRUE;
+    ULONG       ulCallInitCallback = 0;
 
     ULONG       ulUpdateFlags = XFMF_DISPLAYSTYLECHANGED;
 
@@ -862,7 +898,7 @@ MRESULT ctrpView1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 // disable that.
                 _ulAutoHide = 0;
             // renable items
-            fCallInitCallback = TRUE;
+            ulCallInitCallback = CBI_SET | CBI_ENABLE;
         break;
 
         case ID_CRDI_VIEW_TOPOFSCREEN:
@@ -892,6 +928,25 @@ MRESULT ctrpView1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 _ulAutoHide = 4000;
             else
                 _ulAutoHide = 0;
+            ulCallInitCallback = CBI_SET | CBI_ENABLE;
+            ulUpdateFlags = 0;      // no complete reformat
+        break;
+
+        case ID_CRDI_VIEW_AUTOHIDE_SLIDER:
+            // we get this message even if the init callback is
+            // setting this... stupid, stupid slider control
+            if (!G_fSetting)
+            {
+                LONG lSliderIndex = winhQuerySliderArmPosition(pcnbp->hwndControl,
+                                                               SMA_INCREMENTVALUE);
+                WinSetDlgItemShort(pcnbp->hwndDlgPage,
+                                   ID_CRDI_VIEW_AUTOHIDE_TXT2,
+                                   lSliderIndex + 1,
+                                   FALSE);      // unsigned
+                _ulAutoHide = (lSliderIndex + 1) * 1000;
+                            // range is 0 thru 59
+                ulUpdateFlags = 0;      // no complete reformat
+            }
         break;
 
         case ID_CRDI_VIEW_PRTY_SLIDER:
@@ -906,6 +961,7 @@ MRESULT ctrpView1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             _xwpSetPriority(pcnbp->somSelf,
                             _ulPriorityClass,        // unchanged
                             lSliderIndex);
+            ulUpdateFlags = 0;
         break; }
 
         case DID_DEFAULT:
@@ -914,7 +970,7 @@ MRESULT ctrpView1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                 G_aulView1SetupOffsets,
                                 ARRAYITEMCOUNT(G_aulView1SetupOffsets),
                                 somThis);
-            fCallInitCallback = TRUE;
+            ulCallInitCallback = CBI_SET | CBI_ENABLE;
         break;
 
         case DID_UNDO:
@@ -924,16 +980,16 @@ MRESULT ctrpView1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                   ARRAYITEMCOUNT(G_aulView1SetupOffsets),
                                   somThis,
                                   pBackup);
-            fCallInitCallback = TRUE;
+            ulCallInitCallback = CBI_SET | CBI_ENABLE;
         break; }
 
         default:
             fSave = FALSE;
     }
 
-    if (fCallInitCallback)
+    if (ulCallInitCallback)
         // call the init callback to refresh the page controls
-        pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+        pcnbp->pfncbInitPage(pcnbp, ulCallInitCallback);
 
     if (fSave)
     {
@@ -1204,7 +1260,7 @@ typedef struct _WIDGETRECORD
  *      Sets the controls on the page according to the
  *      instance settings.
  *
- *@@added V0.9.7 (2000-12-05) [umoeller]
+ *@@added V0.9.9 (2001-03-09) [umoeller]
  */
 
 VOID ctrpWidgetsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -1327,7 +1383,7 @@ static PWIDGETRECORD G_precDragged = NULL,
  *      XCenter "Widgets" instance settings page.
  *      Reacts to changes of any of the dialog controls.
  *
- *@@added V0.9.7 (2000-12-05) [umoeller]
+ *@@added V0.9.9 (2001-03-09) [umoeller]
  */
 
 MRESULT ctrpWidgetsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -1525,6 +1581,112 @@ MRESULT ctrpWidgetsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             } // end switch (usNotifyCode)
         break;
     }
+
+    return (mrc);
+}
+
+/* ******************************************************************
+ *
+ *   "Classes" page notebook callbacks (notebook.c)
+ *
+ ********************************************************************/
+
+/*
+ *@@ XCLASSRECORD:
+ *      extended record core structure for "Classes" container.
+ *
+ *@@added V0.9.9 (2001-03-09) [umoeller]
+ */
+
+typedef struct _XCLASSRECORD
+{
+    RECORDCORE      recc;
+
+    PSZ             pszDLL;
+    PSZ             pszClass;
+
+} XCLASSRECORD, *PXCLASSRECORD;
+
+/*
+ *@@ ctrpClassesInitPage:
+ *      notebook callback function (notebook.c) for the
+ *      XCenter "Widgets" instance settings page.
+ *      Sets the controls on the page according to the
+ *      instance settings.
+ *
+ *@@added V0.9.7 (2000-12-05) [umoeller]
+ */
+
+VOID ctrpClassesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
+                         ULONG flFlags)        // CBI_* flags (notebook.h)
+{
+    XCenterData *somThis = XCenterGetData(pcnbp->somSelf);
+
+    if (flFlags & CBI_INIT)
+    {
+        PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
+        HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
+        XFIELDINFO      xfi[5];
+        PFIELDINFO      pfi = NULL;
+        int             i = 0;
+
+        // set group cnr title
+        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XFDI_CNR_GROUPTITLE,
+                          pNLSStrings->pszClassesPage);
+
+        // set up cnr details view
+        xfi[i].ulFieldOffset = FIELDOFFSET(XCLASSRECORD, pszDLL);
+        xfi[i].pszColumnTitle = "DLL";
+        xfi[i].ulDataType = CFA_STRING;
+        xfi[i++].ulOrientation = CFA_LEFT;
+
+        xfi[i].ulFieldOffset = FIELDOFFSET(XCLASSRECORD, pszClass);
+        xfi[i].pszColumnTitle = pNLSStrings->pszWidgetClass; // "Class";
+        xfi[i].ulDataType = CFA_STRING;
+        xfi[i++].ulOrientation = CFA_LEFT;
+
+        pfi = cnrhSetFieldInfos(hwndCnr,
+                                xfi,
+                                i,             // array item count
+                                TRUE,          // draw lines
+                                0);            // return second column
+
+        BEGIN_CNRINFO()
+        {
+            cnrhSetView(CV_DETAIL | CA_DETAILSVIEWTITLES);
+            cnrhSetSplitBarAfter(pfi);
+            cnrhSetSplitBarPos(100);
+        } END_CNRINFO(hwndCnr);
+
+    }
+
+    if (flFlags & CBI_SET)
+    {
+    }
+
+    if (flFlags & CBI_ENABLE)
+    {
+    }
+
+    if (flFlags & CBI_DESTROY)
+    {
+    }
+}
+
+/*
+ *@@ ctrpClassesItemChanged:
+ *      notebook callback function (notebook.c) for the
+ *      XCenter "Widgets" instance settings page.
+ *      Reacts to changes of any of the dialog controls.
+ *
+ *@@added V0.9.7 (2000-12-05) [umoeller]
+ */
+
+MRESULT ctrpClassesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+                               USHORT usItemID, USHORT usNotifyCode,
+                               ULONG ulExtra)      // for checkboxes: contains new state
+{
+    MRESULT     mrc = 0;
 
     return (mrc);
 }

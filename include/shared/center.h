@@ -68,7 +68,8 @@
      *      widgets so that they can access some things
      *      more quickly for convenience. This structure
      *      is fully initialized at the time the widgets
-     *      are created.
+     *      are created, but values may change while the
+     *      XCenter is open.
      *
      *      "Globals" isn't really a good name since
      *      one of these structures is created for
@@ -79,23 +80,37 @@
 
     typedef struct _XCENTERGLOBALS
     {
-        HAB                 hab;                // anchor block of frame and client
-        HWND                hwndFrame,          // XCenter frame window
-                            hwndClient;         // client (child of XCenter frame)
+        HAB                 hab;
+                    // anchor block of frame and client (constant)
+        HWND                hwndFrame,
+                    // XCenter frame window (constant)
+                            hwndClient;
+                    // client (child of XCenter frame) (constant)
 
         PVOID               pCountrySettings;
                     // country settings; this points to a COUNTRYSETTINGS
-                    // structure (prfh.h)
+                    // structure (prfh.h) (constant)
 
-        ULONG               cyTallestWidget;
-                    // height of client (same as height of all widgets!)
+        ULONG               cyInnerClient;
+                    // height of inner client (same as height of all widgets!).
+                    // This is normally == cyWidgetmax unless the user has
+                    // resized the XCenter, but it will always be >= cyWidgetMax.
+                    // The "inner client" plus the 3D border width plus the
+                    // border spacing make up the full height of the client.
+
+                    // This can change while the XCenter is open.
+                    // This was changed with V0.9.9 (2001-03-09) [umoeller];
+                    // this field still always has the client height, but this
+                    // is no longer neccessarily the same as the tallest
+                    // widget (see cyWidgetMax below).
 
         ULONG               cxMiniIcon;
                     // system mini-icon size (for convenience); either 16 or 20
+                    // (constant)
 
         LONG                lcol3DDark,
                             lcol3DLight;
-                    // system colors for 3D frames (for convenience; RGB!)
+                    // system colors for 3D frames (for convenience; RGB!) (constant)
 
         // the following are the width settings from the second "View"
         // settings page;
@@ -103,6 +118,7 @@
         ULONG               flDisplayStyle;
                     // XCenter display style flags;
                     // a widget may or may not want to consider these.
+                    // Can be changed by the user while the XCenter is open.
                     // These flags can be any combination of the following:
                     // -- XCS_FLATBUTTONS: paint buttons flat. If not set,
                     //      paint them raised.
@@ -116,25 +132,43 @@
 
         ULONG               ulPosition;
                     // XCenter position on screen, if a widget cares...
+                    // Can be changed by the user while the XCenter is open.
                     // This is _one_ of the following:
                     // -- XCENTER_BOTTOM
                     // -- XCENTER_TOP
                     // Left and right are not yet supported.
 
         ULONG               ul3DBorderWidth;
-                    // 3D border width
+                    // 3D border width; can change
         ULONG               ulBorderSpacing;
-                    // border spacing (added to 3D border width)
+                    // border spacing (added to 3D border width); can change
         ULONG               ulSpacing;
-                    // spacing between widgets
+                    // spacing between widgets; can change
+
+        /*
+         *      The following fields have been added with
+         *      releases later than V0.9.7. Since they have
+         *      been added at the bottom, the structure is
+         *      still backward-compatible with old plugin
+         *      binaries... but you cannot use these new
+         *      fields unless you also require the corresponding
+         *      XCenter revision by using the "version" export @3.
+         */
 
         PVOID               pvXTimerSet;
                     // XCenter timer set, which can be used by widgets
                     // to start XTimers instead of regular PM timers.
+                    // This was added V0.9.9 (2001-03-07) [umoeller].
                     // See src\helpers\timer.c for an introduction.
                     // This pointer is really an XTIMERSET pointer but
                     // has been declared as PVOID to avoid having to
                     // #include include\helpers\timer.h all the time.
+                    // This is constant while the XCenter is open.
+
+        ULONG               cyWidgetMax;
+                    // height of tallest widget == minimum height of client
+                    // V0.9.9 (2001-03-09) [umoeller]
+                    // This may change while the XCenter is open.
 
     } XCENTERGLOBALS, *PXCENTERGLOBALS;
 

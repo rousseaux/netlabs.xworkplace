@@ -468,47 +468,51 @@ void buildHealthString(PSZ szPaint,PSZ szViewString)
         {
             if(szViewString[i]=='%')
             {
-                if(strlen(szViewString) >= i+2)
+                number=szViewString[i+2]-'0';
+                if(strncmp(&(szViewString[i]),"%TF",3)==0)
                 {
-                    identifier=szViewString[i+1];
-                    number=szViewString[i+2]-'0';
-                    if (number > 9)
-                        number=9;
-                    switch(identifier)
+                    number=szViewString[i+3]-'0';
+                    if(t[number]==STHEALTH_NOT_PRESENT_ERROR)
+                        strcat(szPaint,"[ERR]");
+                    else
                     {
-                        case 'T':
-                            if(t[number]==STHEALTH_NOT_PRESENT_ERROR)
-                                strcat(szPaint,"[ERR]");
-                            else
-                            {
-                                sprintf(stringValue,"%.2f",t[number]);
-                                strcat(szPaint,stringValue);
-                            }
-                            i+=2;
-                        break;
-
-                        case 'V':
-                            if(v[number]==STHEALTH_NOT_PRESENT_ERROR)
-                                strcat(szPaint,"[ERR]");
-                            else
-                            {
-                                sprintf(stringValue,"%.2f",v[number]);
-                                strcat(szPaint,stringValue);
-                            }
-                            i+=2;
-                        break;
-
-                        case 'F':
-                            if(f[number]==STHEALTH_NOT_PRESENT_ERROR)
-                                strcat(szPaint,"[ERR]");
-                            else
-                            {
-                                sprintf(stringValue,"%d",f[number]);
-                                strcat(szPaint,stringValue);
-                            }
-                            i+=2;
-                        break;
+                        sprintf(stringValue,"%.2f",((t[number]*9)/5)+32);
+                        strcat(szPaint,stringValue);
                     }
+                    i+=3;
+                }
+                else if(strncmp(&(szViewString[i]),"%T",2)==0)
+                {
+                    if(t[number]==STHEALTH_NOT_PRESENT_ERROR)
+                        strcat(szPaint,"[ERR]");
+                    else
+                    {
+                        sprintf(stringValue,"%.2f",t[number]);
+                        strcat(szPaint,stringValue);
+                    }
+                    i+=2;
+                }
+                else if(strncmp(&(szViewString[i]),"%V",2)==0)
+                {
+                    if(v[number]==STHEALTH_NOT_PRESENT_ERROR)
+                        strcat(szPaint,"[ERR]");
+                    else
+                    {
+                        sprintf(stringValue,"%.2f",v[number]);
+                        strcat(szPaint,stringValue);
+                    }
+                    i+=2;
+                }
+                else if(strncmp(&(szViewString[i]),"%F",2)==0)
+                {
+                    if(f[number]==STHEALTH_NOT_PRESENT_ERROR)
+                        strcat(szPaint,"[ERR]");
+                    else
+                    {
+                        sprintf(stringValue,"%.2d",f[number]);
+                        strcat(szPaint,stringValue);
+                    }
+                    i+=2;
                 }
             }
             else

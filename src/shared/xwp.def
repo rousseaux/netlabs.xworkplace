@@ -66,6 +66,7 @@ EXPORTS
    tmrStopXTimer
    winhCenterWindow
    winhFree
+   winhMergeIntoSubMenu
    winhQueryPresColor
    winhQuerySwitchList
    winhQueryWindowFont

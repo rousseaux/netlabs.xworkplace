@@ -1,3 +1,4 @@
+
 /*
  * xfldr001.rc:
  *      this is the main resource file for the English NLS DLL.
@@ -103,6 +104,9 @@ BEGIN
     MENUITEM "", 1, MIS_SEPARATOR
     MENUITEM "~Drop", ID_XSMI_FILETYPES_DROP
     MENUITEM "~Cancel drag", ID_XSMI_FILETYPES_CANCELDRAG
+    MENUITEM "", 1, MIS_SEPARATOR
+    MENUITEM "~Export...", ID_XSMI_FILETYPES_EXPORT
+    MENUITEM "~Import...", ID_XSMI_FILETYPES_IMPORT
 END
 
 MENU ID_XSM_FILEFILTER_SEL LOADONCALL MOVEABLE DISCARDABLE
@@ -359,7 +363,8 @@ BEGIN
     ID_XSSI_LB_COPYFILENAME_FULL    "Copy filename (including path)"
 
     /* XShutdown: context menu items and messages for the
-       status window. Do not change the %d and %s keys, or
+       status window.
+       Do not change the %d and %s keys, or
        XShutdown might crash. These are needed for inserting
        variable data (sprintf). */
     ID_SDSI_SHUTDOWN                "Shut~down"
@@ -686,9 +691,11 @@ BEGIN
 END
 
 /* STILL more miscellaneous strings...
-    (added V0.9.9 (2001-03-07) [umoeller]) */
+    (all added V0.9.9 (2001-03-07) [umoeller]) */
 STRINGTABLE
 BEGIN
+    ID_XSSI_STYLEPAGE                   "~Style"
+    ID_XSSI_CLASSESPAGE                 "~Classes"
     ID_XSSI_WIDGETSPAGE                 "~Widgets"
     ID_XSSI_ADDWIDGET                   "~Add widget"
     ID_XSSI_WIDGETCLASS                 "Widget class"
@@ -732,9 +739,12 @@ BEGIN
     ID_XSSI_THREADSPRIORITY             "Priority"
     ID_XSSI_THREADSGROUPTITLE           "XWorkplace threads"
 
+    /* Do not leave our or change the order of the %d, %f and %%
+       keys, or XWP might crash. These are needed for inserting
+       variable data (sprintf). */
     ID_XSSI_ARCRESTORED                 "Archive was just restored."
-    ID_XSSI_ARCDAYSPASSED               "%d days passed since last backup."
-    ID_XSSI_ARCDAYSLIMIT                "Limit: %d days."
+    ID_XSSI_ARCDAYSPASSED               "%d day(s) passed since last backup."
+    ID_XSSI_ARCDAYSLIMIT                "Limit: %d day(s)."
     ID_XSSI_ARCINICHECKING              "Checking INI files..."
     ID_XSSI_ARCINICHANGED               "INI files changed %f %%."
     ID_XSSI_ARCINILIMIT                 "Limit: %f %%."

@@ -636,6 +636,7 @@ VOID OwgtButton1Down(HWND hwnd)
                         WPDesktop *pActiveDesktop = cmnQueryActiveDesktop();
                         PSZ pszDesktopTitle = _wpQueryTitle(pActiveDesktop);
                         PCKERNELGLOBALS  pKernelGlobals = krnQueryGlobals();
+                        BOOL fShutdownRunning = xsdIsShutdownRunning();
 
                         pPrivate->hwndMenuMain = WinLoadMenu(hwnd,
                                                              cmnQueryNLSModuleHandle(FALSE),
@@ -651,6 +652,13 @@ VOID OwgtButton1Down(HWND hwnd)
                                                   ID_CRMI_SHUTDOWN);
                         }
 
+                        WinEnableMenuItem(pPrivate->hwndMenuMain,
+                                          ID_CRMI_RESTARTWPS,
+                                          !fShutdownRunning);
+                        WinEnableMenuItem(pPrivate->hwndMenuMain,
+                                          ID_CRMI_SHUTDOWN,
+                                          !fShutdownRunning);
+
                         if (!pKernelGlobals->pXWPShellShared)
                         {
                             // XWPShell not running:
@@ -659,11 +667,16 @@ VOID OwgtButton1Down(HWND hwnd)
                                                ID_CRMI_LOGOFF);
                         }
                         else
+                        {
                             if ((pGlobalSettings->ulXShutdownFlags & XSD_CONFIRM) == 0)
                                 // if XShutdown confirmations have been disabled,
                                 // remove "..." from menu entry
                                 winhMenuRemoveEllipse(pPrivate->hwndMenuMain,
                                                       ID_CRMI_LOGOFF);
+                            WinEnableMenuItem(pPrivate->hwndMenuMain,
+                                              ID_CRMI_LOGOFF,
+                                              !fShutdownRunning);
+                        }
 
                         // check if we can find the "Power" object
                         if (pPrivate->pPower = wpshQueryObjectFromID("<WP_POWER>", NULL))
@@ -962,7 +975,8 @@ VOID OwgtMenuEnd(HWND hwnd, MPARAM mp2)
 
             if ((HWND)mp2 == pPrivate->hwndObjectPopup)
             {
-                // object popup (WPS context menu for object button):
+                // object popup (copy of WPS context menu for object button):
+                WinDestroyWindow(pPrivate->hwndObjectPopup);
                 pPrivate->hwndObjectPopup = NULLHANDLE;
                 // remove source emphasis
                 WinInvalidateRect(pWidget->pGlobals->hwndClient, NULL, FALSE);
@@ -1051,10 +1065,13 @@ BOOL OwgtCommand(HWND hwnd, MPARAM mp1)
                         fProcessed = FALSE;
                 }
             } // if (pPrivate->ulType == BTF_XBUTTON)
-            else
+
+            if (!fProcessed)
             {
-                // object button:
-                // fProcessed is still FALSE
+                // we get here...
+                // -- for object buttons; fProcessed is still FALSE
+                // -- for the x-button if none of the standard items
+                //    was selected; this can be a subitem of "desktop" folder contents too
                 PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
                 ULONG ulFirstVarMenuId = pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_VARIABLE;
                 if (     (ulMenuId >= ulFirstVarMenuId)
@@ -1077,10 +1094,13 @@ BOOL OwgtCommand(HWND hwnd, MPARAM mp1)
                 else
                     // other:
                     // this MIGHT be a command from a WPS context menu...
-                    if (    pPrivate->fOpenedWPSContextMenu
+                    if (    pPrivate->ulType == BTF_OBJBUTTON
+                         && pPrivate->fOpenedWPSContextMenu
                          && pPrivate->pobjButton
                        )
                     {
+                        // invoke the command on the object...
+                        // this is probably "open" or "help"
                         _wpMenuItemSelected(pPrivate->pobjButton,
                                             NULLHANDLE,     // hwndFrame
                                             ulMenuId);
@@ -1099,7 +1119,13 @@ BOOL OwgtCommand(HWND hwnd, MPARAM mp1)
  *@@ OwgtContextMenu:
  *      implementation for WM_CONTEXTMENU.
  *
- *@@added V0.9.9 (2001-02-06) [umoeller]
+ *      For object buttons, this does some major hacks to
+ *      display part of the object's WPS context menu on
+ *      the object button.
+ *
+ *      For X-buttons, this calls ctrDefWidgetProc only.
+ *
+ *@@added V0.9.9 (2001-03-07) [umoeller]
  */
 
 MRESULT OwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
@@ -1123,23 +1149,81 @@ MRESULT OwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
 
                 if (pPrivate->pobjButton)
                 {
+                    SHORT sIndex;
                     POINTL ptl;
+                    HWND hmenuTemp;
                     ptl.x = SHORT1FROMMP(mp1);
                     ptl.y = SHORT2FROMMP(mp1);
 
 #ifndef MENU_NODISPLAY
     #define MENU_NODISPLAY            0x40000000
 #endif
-                    pPrivate->hwndObjectPopup = _wpDisplayMenu(pPrivate->pobjButton,
-                                                               hwnd,            // owner
-                                                               NULLHANDLE,
-                                                               &ptl,
-                                                               MENU_OBJECTPOPUP | MENU_NODISPLAY,
-                                                               0);
-                    ctrShowContextMenu(pWidget, pPrivate->hwndObjectPopup);
+                    // compose the object menu... we can't let
+                    // the WPS display it because the WPS expects
+                    // the object to be in a PM container. But
+                    // the half-documented MENU_NODISPLAY flag
+                    // takes care of this: it will only build the
+                    // menu, but not display it.
+                    hmenuTemp = _wpDisplayMenu(pPrivate->pobjButton,
+                                               hwnd,            // owner
+                                               NULLHANDLE,
+                                               &ptl,
+                                               MENU_OBJECTPOPUP | MENU_NODISPLAY,
+                                               0);
 
-                    pPrivate->fOpenedWPSContextMenu = TRUE;
-                }
+                    // NOW... we still can't use this because there's
+                    // many menu items in there which will cause the
+                    // WPS to hang if the owner is not a container.
+                    // The WPS simply expects popups to show in containers
+                    // only, so there ain't much we can do about this.
+                    // While "copy", "move" etc. will simply not work,
+                    // "Pickup" will even hang the WPS solidly.
+
+                    // SOOOO.... what we do is make a COPY of the
+                    // WPS context menu with only the items that we support.
+                    pPrivate->hwndObjectPopup = WinCreateMenu(HWND_DESKTOP, NULL);
+                    if (pPrivate->hwndObjectPopup)
+                    {
+                        HWND hwndWidgetSubmenu;
+
+                        winhCopyMenuItem(pPrivate->hwndObjectPopup,
+                                         hmenuTemp,
+                                         WPMENUID_OPEN, // 1, "open" submenu
+                                         MIT_END);
+                        winhCopyMenuItem(pPrivate->hwndObjectPopup,
+                                         hmenuTemp,
+                                         WPMENUID_PROPERTIES, // 0x70, properties
+                                         MIT_END);
+                        winhCopyMenuItem(pPrivate->hwndObjectPopup,
+                                         hmenuTemp,
+                                         WPMENUID_HELP, // 2, "help" submenu
+                                         MIT_END);
+
+                        winhInsertMenuSeparator(pPrivate->hwndObjectPopup,
+                                                MIT_END,
+                                                1234);
+
+                        // add standard widget menu as submenu
+                        hwndWidgetSubmenu
+                            = winhMergeIntoSubMenu(pPrivate->hwndObjectPopup,
+                                                   MIT_END,
+                                                   "Object button widget",
+                                                   2000,
+                                                   pPrivate->pWidget->hwndContextMenu);
+                        if (hwndWidgetSubmenu)
+                            // disable "Properties"... we have none
+                            WinEnableMenuItem(hwndWidgetSubmenu,
+                                              ID_CRMI_PROPERTIES,
+                                              FALSE);
+
+                        ctrShowContextMenu(pWidget, pPrivate->hwndObjectPopup);
+                                // destroyed on WM_MENUEND;
+                                // we need not care about the WPS context
+                                // menu we built because the WPS has its
+                                // internal management for that
+                        pPrivate->fOpenedWPSContextMenu = TRUE;
+                    } // end if (pPrivate->hwndObjectPopup)
+                } // end if (pPrivate->pobjButton)
 
                 mrc = (MPARAM)TRUE;
             }

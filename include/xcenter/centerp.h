@@ -53,6 +53,35 @@
     #define MAX_UNFOLDFRAME         500     // ms total unfold time
     #define MAX_AUTOHIDE            500     // ms total autohide animation time
 
+    /*
+     *@@ PRIVATEWIDGETCLASS:
+     *      private wrapper around the public
+     *      XCENTERWIDGETCLASS struct which is
+     *      returned by plugin DLLs. This allows
+     *      us to store additional data that the
+     *      widgets should not see.
+     *
+     *@@added V0.9.9 (2001-03-09) [umoeller]
+     */
+
+    typedef struct _PRIVATEWIDGETCLASS
+    {
+        // public declaration
+        XCENTERWIDGETCLASS      Public;
+                // NOTE: THIS MUST BE THE FIRST FIELD
+                // or our private typecasts won't work
+
+        ULONG               ulInstancesGlobal;
+                // global count of widget instances which
+                // exist across all XCenters. This allows
+                // us to keep track of WGTF_UNIQUEGLOBAL.
+
+        HMODULE             hmod;
+                // plugin DLL this widget comes from or
+                // NULLHANDLE if built-in
+
+    } PRIVATEWIDGETCLASS, *PPRIVATEWIDGETCLASS;
+
     #ifdef LINKLIST_HEADER_INCLUDED
 
         /*
@@ -389,6 +418,13 @@
                                  ULONG flFlags);
 
         MRESULT ctrpWidgetsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+                                       USHORT usItemID, USHORT usNotifyCode,
+                                       ULONG ulExtra);
+
+        VOID ctrpClassesInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                 ULONG flFlags);
+
+        MRESULT ctrpClassesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                        USHORT usItemID, USHORT usNotifyCode,
                                        ULONG ulExtra);
     #endif

@@ -461,19 +461,7 @@ VOID _System krnExceptExplainXFolder(FILE *file,      // in: logfile from fopen(
 
             if (thrFindThread(&ti, tid))
                 fprintf(file, " (%s)", ti.pcszThreadName);
-            /* if (tid == thrQueryID(&pKernelGlobals->tiWorkerThread))
-                fprintf(file, " (XWorkplace Worker thread)");
-            else if (tid == thrQueryID(&pKernelGlobals->tiSpeedyThread))
-                fprintf(file, " (XWorkplace Speedy thread)");
-            else if (tid == thrQueryID(&pKernelGlobals->tiFileThread))
-                fprintf(file, " (XWorkplace File thread)");
-            else if (tid == thrQueryID(&pKernelGlobals->tiUpdateThread))
-                fprintf(file, " (XWorkplace Update thread)");
-            else if (tid == thrQueryID(&pKernelGlobals->tiShutdownThread))
-                fprintf(file, " (XWorkplace Shutdown thread)");
-            else if (tid == pKernelGlobals->tidWorkplaceThread)
-                fprintf(file, " (PMSHELL's Workplace thread)");
-            else */
+            else
                 fprintf(file, " (unknown thread)");
 
             fprintf(file,

@@ -1568,6 +1568,10 @@ static LOADSTRING G_aStringIDs[] =
                 FIELDOFFSET(NLSSTRINGS, pszResourcesPage),
 
     // miscellaneous new strings with V0.9.9 (2001-03-07) [umoeller]
+        ID_XSSI_STYLEPAGE,
+                FIELDOFFSET(NLSSTRINGS, pszStylePage),
+        ID_XSSI_CLASSESPAGE,
+                FIELDOFFSET(NLSSTRINGS, pszClassesPage),
         ID_XSSI_WIDGETSPAGE,
                 FIELDOFFSET(NLSSTRINGS, pszWidgetsPage),
         ID_XSSI_ADDWIDGET,

@@ -1017,6 +1017,9 @@
 #define ID_CRDI_VIEW_PRTY_SLIDER        3608
 #define ID_CRDI_VIEW_PRTY_TEXT          3609
 #define ID_CRDI_VIEW_REDUCEWORKAREA     3610
+#define ID_CRDI_VIEW_AUTOHIDE_TXT1      3611    // added V0.9.9 (2001-03-09) [umoeller]
+#define ID_CRDI_VIEW_AUTOHIDE_SLIDER    3612    // added V0.9.9 (2001-03-09) [umoeller]
+#define ID_CRDI_VIEW_AUTOHIDE_TXT2      3613    // added V0.9.9 (2001-03-09) [umoeller]
 
 #define ID_CRD_SETTINGS_VIEW2           3650
 #define ID_CRDI_VIEW2_3DBORDER_SLIDER   3651
@@ -1130,6 +1133,8 @@
 #define ID_XSMI_FILETYPES_PICKUP        (WPMENUID_USER+1024)
 #define ID_XSMI_FILETYPES_DROP          (WPMENUID_USER+1025)
 #define ID_XSMI_FILETYPES_CANCELDRAG    (WPMENUID_USER+1026)
+#define ID_XSMI_FILETYPES_EXPORT        (WPMENUID_USER+1027)
+#define ID_XSMI_FILETYPES_IMPORT        (WPMENUID_USER+1028)
 
 // "Filters" container on "File types" page
 #define ID_XSM_FILEFILTER_SEL           (WPMENUID_USER+1030)
@@ -1726,6 +1731,8 @@
  *  Still more string IDs                 *
  ******************************************/
 
+#define ID_XSSI_STYLEPAGE               6098
+#define ID_XSSI_CLASSESPAGE             6099
 #define ID_XSSI_WIDGETSPAGE             6100
 #define ID_XSSI_ADDWIDGET               6101        // "~ADD WIDGET"
 #define ID_XSSI_WIDGETCLASS             6102        // "Class";

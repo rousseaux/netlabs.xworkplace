@@ -194,6 +194,7 @@ PTMRSTOPXTIMER ptmrStopXTimer = NULL;
 
 PWINHCENTERWINDOW pwinhCenterWindow = NULL;
 PWINHFREE pwinhFree = NULL;
+PWINHMERGEINTOSUBMENU pwinhMergeIntoSubMenu = NULL;
 PWINHQUERYPRESCOLOR pwinhQueryPresColor = NULL;
 PWINHQUERYSWITCHLIST pwinhQuerySwitchList = NULL;
 PWINHQUERYWINDOWFONT pwinhQueryWindowFont = NULL;
@@ -229,6 +230,7 @@ RESOLVEFUNCTION G_aImports[] =
         "tmrStopXTimer", (PFN*)&ptmrStopXTimer,
         "winhCenterWindow", (PFN*)&pwinhCenterWindow,
         "winhFree", (PFN*)&pwinhFree,
+        "winhMergeIntoSubMenu", (PFN*)&pwinhMergeIntoSubMenu,
         "winhQueryPresColor", (PFN*)&pwinhQueryPresColor,
         "winhQuerySwitchList", (PFN*)&pwinhQuerySwitchList,
         "winhQueryWindowFont", (PFN*)&pwinhQueryWindowFont,
@@ -2117,11 +2119,10 @@ VOID HackContextMenu(PWINLISTPRIVATE pPrivate)
     pPrivate->hwndContextMenuHacked = WinCreateMenu(HWND_DESKTOP, NULL);
     if (pPrivate->hwndContextMenuHacked)
     {
-        // make existing menu a submenu of the new menu
+        // insert window-related menu items from above array
         MENUITEM mi = {0};
         SHORT src = 0;
         SHORT s = 0;
-        HWND hwndNewSubmenu = WinCreateMenu(pPrivate->hwndContextMenuHacked, NULL);
         mi.iPosition = MIT_END;
         mi.afStyle = MIS_TEXT;
 
@@ -2146,51 +2147,11 @@ VOID HackContextMenu(PWINLISTPRIVATE pPrivate)
         // we can't just use the old item and insert it
         // because we still display the original menu if
         // the window list is empty, and PMMERGE crashes then
-        mi.afStyle = MIS_TEXT | MIS_SUBMENU;
-        mi.id = 2000;
-        mi.hwndSubMenu = hwndNewSubmenu;
-
-        src = SHORT1FROMMR(WinSendMsg(pPrivate->hwndContextMenuHacked,
-                                      MM_INSERTITEM,
-                                      (MPARAM)&mi,
-                                      (MPARAM)"Window list widget"));
-        if (    (src != MIT_MEMERROR)
-            &&  (src != MIT_ERROR)
-           )
-        {
-            int i;
-            SHORT cMenuItems = (SHORT)WinSendMsg(pPrivate->pWidget->hwndContextMenu,
-                                                 MM_QUERYITEMCOUNT,
-                                                 0, 0);
-            WinSetWindowUShort(pPrivate->hwndContextMenuHacked,
-                               QWS_ID, 2000);
-
-            // loop through all entries in the original menu
-            for (i = 0; i < cMenuItems; i++)
-            {
-                CHAR szItemText[100];
-                SHORT id = (SHORT)WinSendMsg(pPrivate->pWidget->hwndContextMenu,
-                                             MM_ITEMIDFROMPOSITION,
-                                             MPFROMSHORT(i),
-                                             0);
-                // get this menu item into mi buffer
-                WinSendMsg(pPrivate->pWidget->hwndContextMenu,
-                           MM_QUERYITEM,
-                           MPFROM2SHORT(id, FALSE),
-                           MPFROMP(&mi));
-                // query text of this menu entry into our buffer
-                WinSendMsg(pPrivate->pWidget->hwndContextMenu,
-                           MM_QUERYITEMTEXT,
-                           MPFROM2SHORT(id, sizeof(szItemText)-1),
-                           MPFROMP(szItemText));
-                // add this entry to our new menu
-                mi.iPosition = MIT_END;
-                WinSendMsg(hwndNewSubmenu,
-                           MM_INSERTITEM,
-                           MPFROMP(&mi),
-                           MPFROMP(szItemText));
-            }
-        }
+        pwinhMergeIntoSubMenu(pPrivate->hwndContextMenuHacked,
+                              MIT_END,
+                              "Window list widget",
+                              2000,
+                              pPrivate->pWidget->hwndContextMenu);
     }
 }
 

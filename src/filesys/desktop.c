@@ -340,6 +340,7 @@ ULONG dtpQuerySetup(WPDesktop *somSelf,
  *@@changed V0.9.3 (2000-04-26) [umoeller]: changed shutdown menu IDs for launchpad
  *@@changed V0.9.7 (2000-12-13) [umoeller]: changed shutdown menu items
  *@@changed V0.9.7 (2000-12-13) [umoeller]: added "logoff network now"
+ *@@changed V0.9.9 (2001-03-09) [umoeller]: "shutdown" wasn't always disabled if running
  */
 
 VOID dtpModifyPopupMenu(WPDesktop *somSelf,
@@ -356,21 +357,14 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
                                                  MPFROM2SHORT(WPMENUID_SHUTDOWN, FALSE),
                                                  MPNULL);
 
-
-    BOOL fShutdownRunning = FALSE;
+    BOOL fShutdownRunning = xsdIsShutdownRunning();
     ULONG ulShutdownAttr = 0;
-
-    if (pKernelGlobals)
-    {
-        fShutdownRunning = xsdIsShutdownRunning();
-    }
 
     if (fShutdownRunning)
         // disable all those menu items if XShutdown is currently running
         ulShutdownAttr = MIA_DISABLED;
 
     if (    (pGlobalSettings->fXShutdown)    // XShutdown enabled?
-         // && (pGlobalSettings->fDTMShutdown)  // menu item enabled?
          && (!pGlobalSettings->NoWorkerThread)  // Worker thread enabled?
        )
     {
@@ -423,8 +417,14 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
             // append "restart WPS" to the end
             sOrigShutdownPos = MIT_END;
         } // end if (pGlobalSettings->DTMShutdownMenu)
-        // else no submenu:
-        // do nothing right now...
+        else
+            // no submenu:
+            // disable "shutdown" if shutdown is running
+            // V0.9.9 (2001-03-07) [umoeller]
+            if (fShutdownRunning)
+                WinEnableMenuItem(hwndMenu,
+                                  WPMENUID_SHUTDOWN,
+                                  FALSE);
 
     } // end if (pGlobalSettings->XShutdown) ...
 

@@ -314,7 +314,7 @@ typedef struct _WIDGETPRIVATE
                                     // to 10, but probably changed later if we need
                                     // more space
 
-    ULONG           ulTextWidth,
+    ULONG           ulTextWidth,    // space to be left clear for digits on the left
                     ulSpacing;      // spacing for current font
 
     ULONG           ulTotPhysMem;   // DosQuerySysinfo(QSV_TOTPHYSMEM);
@@ -503,7 +503,7 @@ VOID CalcTextSpacing(HWND hwnd, PWIDGETPRIVATE pPrivate)
 
         GpiQueryFontMetrics(hps, sizeof(fm), &fm);
 
-        pPrivate->ulTextWidth = aptl[TXTBOX_TOPRIGHT].x;
+        pPrivate->ulTextWidth = aptl[TXTBOX_TOPRIGHT].x + 3;
         pPrivate->ulSpacing = fm.lMaxAscender - fm.lInternalLeading + 1;
 
         pPrivate->cyNeeded = (pPrivate->ulSpacing * 3) + 1;

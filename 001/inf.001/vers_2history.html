@@ -24,8 +24,11 @@ The history of the previous XFolder packages are on a <A HREF="vers_2history2.ht
 plus the "toolkit" directory with the binary release.
 <P><LI>Added replacement <A HREF="file_8autorefresh.html">folder auto-refresh</A>.
 <P><LI>XCenter remembers fonts and colors for main XCenter painting also.
-<P><LI>Added "Sentinel", "Disk Usage", and "Health" standard widgets. Thanks to
-fonz and Stefan Mielcke for contributing.
+<P><LI>XCenters can be enlarged vertically now with the mouse.
+<P><LI>Added "Sentinel" widget.
+<P><LI>fonz contributed the "Disk Usage" widget.
+<P><LI>Stefan Mielcke contributed the "Health" widget.
+<P><LI>Object button widgets can display WPS context menus now... sort of.
 <P><LI>Added "Run" command to X-Button widget.
 <P><LI>Pressing "Shift+Delete" in a folder performs a "true delete" now, if enabled.
 <P><LI>File types can now be renamed on "File types" page in "Workplace Shell".
@@ -55,8 +58,9 @@ speeds up folder populating in some situations.
 out how to do it, go ahead. Otherwise don't. Thanks, Paul Ratcliffe.
 <P><LI>Changed the prototype for the "init" export of XCenter plug-in DLLs so that
 widgets can easily know about their own HMODULE.
-<P><LI>Worked some on the standard XCenter widgets.
+<P><LI>Worked some more on the standard XCenter widgets.
 <P><LI>Font settings weren't respected by "Import WPS filters" dialog.
+<P><LI>Further optimized string routines.
 
 </UL>Bugfixes:
 <UL><LI>Fixed problems if the trash can did not have the &lt;XWP_TRASHCAN&gt; ID.
@@ -79,6 +83,8 @@ wasn't such a good idea. This is now redirected to thread 1.
 Paul Ratcliffe.
 <P><LI>Object count on "Status" page in XWPSetup went below zero sometimes. Fixed by
 Paul Ratcliffe.
+<P><LI>"Shutdown" etc. menu items weren't disabled on XCenter X-button if shutdown
+was already running. Desktop "Shutdown" menu item wasn't either if submenu was disabled.
 
 </UL></H6><B>XWorkplace 0.9.8 (January 26, 2001)</B>
 <P>V0.9.7 was never officially released, but since some people got hold of it
