@@ -26,7 +26,6 @@
 #                       --  tools: compile TOOLS\ directory
 #                       --  idl: update SOM headers (include\classes\*)
 #                       --  cpl_main: compile *.c files for DLLs, no link
-#                       --  cpl_more: compile *.c files for EXEs, no link
 #                       --  link: link bin\*.obj to DLLs and copy to XWorkplace
 #                                 install directory
 #
@@ -61,6 +60,15 @@
 # tree. This is passed to the sub-makefiles.
 PROJECT_BASE_DIR = $(MAKEDIR)
 
+# MODULESDIR is used for mapfiles and final module (DLL, EXE) output.
+MODULESDIR=bin\modules
+
+# create output directory
+!if [@md $(bin) 2> NUL]
+!endif
+!if [@md $(MODULESDIR) 2> NUL]
+!endif
+
 # include setup (compiler options etc.)
 !include setup.in
 
@@ -74,17 +82,18 @@ OBJS = bin\xdebug.obj \
     bin\xfobj.obj bin\xfldr.obj bin\xfdesk.obj bin\xfsys.obj bin\xfwps.obj \
     bin\xfdisk.obj bin\xfdataf.obj bin\xfpgmf.obj bin\xfstart.obj \
     bin\xclslist.obj bin\xwpsound.obj bin\xtrash.obj \
-    bin\xwpkeybd.obj bin\xwpmouse.obj bin\xwpsetup.obj \
+    bin\xwpkeybd.obj bin\xwpmouse.obj bin\xwpsetup.obj bin\xwpscreen.obj \
 # code from shared \
-    bin\classes.obj bin\common.obj bin\notebook.obj bin\kernel.obj bin\xsetup.obj \
+    bin\classes.obj bin\cnrsort.obj bin\common.obj bin\notebook.obj bin\kernel.obj bin\xsetup.obj \
+# code from config\
+    bin\cfgsys.obj bin\classlst.obj bin\drivdlgs.obj bin\hookintf.obj \
+    bin\partitions.obj bin\sound.obj \
 # code from filesys\
-    bin\apm.obj bin\archives.obj bin\cfgsys.obj bin\classlst.obj bin\cnrsort.obj \
-    bin\disk.obj bin\drivdlgs.obj \
-    bin\fdrhotky.obj \
-    bin\fileops.obj bin\filesys.obj bin\filetype.obj bin\folder.obj \
-    bin\hookintf.obj bin\menus.obj \
-    bin\object.obj bin\desktop.obj bin\sound.obj bin\statbars.obj \
-    bin\shutdown.obj bin\trash.obj bin\xthreads.obj
+    bin\disk.obj bin\fdrhotky.obj bin\fileops.obj bin\filesys.obj bin\filetype.obj \
+    bin\folder.obj bin\menus.obj bin\object.obj bin\desktop.obj bin\statbars.obj \
+    bin\trash.obj bin\xthreads.obj \
+# code from startshut\
+    bin\apm.obj bin\archives.obj bin\shutdown.obj
 
 OBJS_ANISOM = bin\sominit.obj bin\wpwcur.obj
 # bin\wpwani.obj bin\wpand.obj bin\wpoptr.obj
@@ -107,7 +116,10 @@ HLPOBJS = bin\animate.obj bin\comctl.obj bin\cnrh.obj bin\datetime.obj \
     bin\winh.obj bin\wphandle.obj bin\wpsh.obj
 
 # The DMNOBJS macro contains all the .OBJ files for XWPDAEMN.EXE.
-DMNOBJS = bin\exes\xwpdaemn.obj
+DMNOBJS = bin\exes\xwpdaemn.obj \
+          bin\exes\pgmg_control.obj bin\exes\pgmg_move.obj bin\exes\pgmg_settings.obj \
+                bin\exes\pgmg_winscan.obj \
+          bin\exes\threads.obj
 
 # Define the suffixes for files which NMAKE will work on.
 # .SUFFIXES is a reserved NMAKE keyword ("pseudotarget") for
@@ -139,16 +151,13 @@ all: idl cpl_main link
     @echo ----- Leaving $(MAKEDIR)
 
 # "really_all" references "all".
-really_all: tools all cpl_more nls
+really_all: tools all nls
     @echo ----- Leaving $(MAKEDIR)
 
 # If you add a subdirectory to SRC\, add a target to
 # "cpl_main" also to have automatic recompiles.
-cpl_main: classes config filesys helpers shared startshut hook
+cpl_main: classes config filesys helpers shared startshut hook treesize netscdde xshutdwn
 #animouse
-
-cpl_more: treesize netscdde
-
 
 # COMPILER PSEUDOTARGETS
 # ----------------------
@@ -228,6 +237,12 @@ netscdde:
     @nmake -nologo all "MAINMAKERUNNING=YES" $(PROJECT_BASE_DIR_STRING)
     @cd ..\..
 
+xshutdwn:
+    @echo $(MAKEDIR)\makefile: Going for subdir src\xshutdwn
+    @cd src\xshutdwn
+    @nmake -nologo all "MAINMAKERUNNING=YES" $(PROJECT_BASE_DIR_STRING)
+    @cd ..\..
+
 nls:
     @echo $(MAKEDIR)\makefile: Going for subdir $(XWP_LANG_CODE)\dll
     @cd $(XWP_LANG_CODE)\dll
@@ -262,12 +277,12 @@ link: $(XWPRUNNING)\bin\xfldr.dll \
 #
 # XFLDR.DLL
 #
-$(XWPRUNNING)\bin\xfldr.dll: bin\$(@B).dll
+$(XWPRUNNING)\bin\xfldr.dll: $(MODULESDIR)\$(@B).dll
         unlock $(XWPRUNNING)\bin\$(@B).dll
-        cmd.exe /c copy bin\$(@B).dll $(XWPRUNNING)\bin
+        cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\bin
 !ifndef DEBUG
 # copy symbol file, which is only needed if debug code is disabled
-        cmd.exe /c copy bin\$(@B).sym $(XWPRUNNING)\bin
+        cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\bin
 !endif
 !ifdef DYNAMIC_TRACE
         @echo $(MAKEDIR)\makefile: Creating TRACE files for $(@B).dll
@@ -284,28 +299,27 @@ $(XWPRUNNING)\bin\xfldr.dll: bin\$(@B).dll
 src\shared\xwp.def: include\bldlevel.h
         cmd.exe /c BuildLevel.cmd src\shared\$(@B).def include\bldlevel.h "XWorkplace Main WPS Classes Module"
 
-bin\xfldr.dll: $(OBJS) $(HLPOBJS) $(ANIOBJS) src\shared\xwp.def bin\xwp.res
-        @echo $(MAKEDIR)\makefile: Linking bin\$(@B).dll
-        $(LINK) /OUT:bin\$(@B).dll src\shared\xwp.def @<<link.tmp
+$(MODULESDIR)\xfldr.dll: $(OBJS) $(HLPOBJS) $(ANIOBJS) src\shared\xwp.def bin\xwp.res
+        @echo $(MAKEDIR)\makefile: Linking $(MODULESDIR)\$(@B).dll
+        $(LINK) /OUT:$(MODULESDIR)\$(@B).dll src\shared\xwp.def @<<link.tmp
 $(OBJS) $(HLPOBJS) $(ANIOBJS) $(LIBS)
 <<
-        @cd bin
-        $(RC) xwp.res $(@B).dll
+        @cd $(MODULESDIR)
+        $(RC) ..\xwp.res $(@B).dll
 !ifndef DEBUG
 # create symbol file, which is only needed if debug code is disabled
-        mapsym /n $(OUTPUTDIR)\$(@B).map > NUL
+        mapsym /n $(@B).map > NUL
 !endif
-        @cd ..
+        @cd $(CURRENT_DIR)
 
 #
 # XWPDAEMN.EXE
 #
-$(XWPRUNNING)\bin\xwpdaemn.exe: bin\exes\$(@B).exe
-        unlock $(XWPRUNNING)\bin\exes\$(@B).exe
-        cmd.exe /c copy bin\exes\$(@B).exe $(XWPRUNNING)\bin
+$(XWPRUNNING)\bin\xwpdaemn.exe: $(MODULESDIR)\$(@B).exe
+        cmd.exe /c copy $(MODULESDIR)\$(@B).exe $(XWPRUNNING)\bin
 !ifndef DEBUG
 # copy symbol file, which is only needed if debug code is disabled
-        cmd.exe /c copy bin\exes\$(@B).sym $(XWPRUNNING)\bin
+        cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\bin
 !endif
 
 # update DEF file if buildlevel has changed
@@ -313,29 +327,29 @@ src\hook\xwpdaemn.def: include\bldlevel.h
         cmd.exe /c BuildLevel.cmd src\hook\$(@B).def include\bldlevel.h "XWorkplace PM Daemon"
 
 # create import library from XWPHOOK.DLL
-bin\xwphook.lib: bin\$(@B).dll src\hook\$(@B).def
-        implib /nologo bin\$(@B).lib bin\$(@B).dll
+bin\xwphook.lib: $(MODULESDIR)\$(@B).dll src\hook\$(@B).def
+        implib /nologo bin\$(@B).lib $(MODULESDIR)\$(@B).dll
 
-bin\exes\xwpdaemn.exe: src\hook\$(@B).def bin\xwphook.lib $(DMNOBJS) bin\exes\$(@B).res
-        @echo $(MAKEDIR)\makefile: Linking bin\exes\$(@B).exe
-        $(LINK) /OUT:bin\exes\$(@B).exe src\hook\$(@B).def $(DMNOBJS) bin\xwphook.lib $(PMPRINTF_LIB)
-        @cd bin\exes
-        $(RC) $(@B).res $(@B).exe
+$(MODULESDIR)\xwpdaemn.exe: src\hook\$(@B).def bin\xwphook.lib $(DMNOBJS) bin\exes\$(@B).res
+        @echo $(MAKEDIR)\makefile: Linking $(MODULESDIR)\$(@B).exe
+        $(LINK) /OUT:$(MODULESDIR)\$(@B).exe src\hook\$(@B).def $(DMNOBJS) bin\xwphook.lib $(PMPRINTF_LIB)
+        @cd $(MODULESDIR)
+        $(RC) ..\exes\$(@B).res $(@B).exe
 !ifndef DEBUG
 # create symbol file, which is only needed if debug code is disabled
-        mapsym /n $(OUTPUTDIR)\$(@B).map > NUL
+        mapsym /n $(@B).map > NUL
 !endif
-        @cd ..\..
+        @cd $(CURRENT_DIR)
 
 #
 # XWPHOOK.DLL
 #
-$(XWPRUNNING)\bin\xwphook.dll: bin\$(@B).dll
+$(XWPRUNNING)\bin\xwphook.dll: $(MODULESDIR)\$(@B).dll
 # no unlock, this is a hook        unlock $(XWPRUNNING)\bin\$(@B).dll
-        cmd.exe /c copy bin\$(@B).dll $(XWPRUNNING)\bin
+        cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\bin
 !ifndef DEBUG
 # copy symbol file, which is only needed if debug code is disabled
-        cmd.exe /c copy bin\$(@B).sym $(XWPRUNNING)\bin
+        cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\bin
 !endif
 !ifdef DYNAMIC_TRACE
         @echo $(MAKEDIR)\makefile: Creating TRACE files for $(@B).dll
@@ -352,50 +366,50 @@ $(XWPRUNNING)\bin\xwphook.dll: bin\$(@B).dll
 src\hook\xwphook.def: include\bldlevel.h
         cmd.exe /c BuildLevel.cmd src\hook\$(@B).def include\bldlevel.h "XWorkplace PM Hook Module"
 
-bin\xwphook.dll: src\hook\$(@B).def bin\$(@B).obj
-        @echo $(MAKEDIR)\makefile: Linking bin\$(@B).dll
-        $(LINK) /OUT:bin\$(@B).dll src\hook\$(@B).def bin\$(@B).obj $(PMPRINTF_LIB)
-        @cd bin
+$(MODULESDIR)\xwphook.dll: src\hook\$(@B).def bin\$(@B).obj
+        @echo $(MAKEDIR)\makefile: Linking $(MODULESDIR)\$(@B).dll
+        $(LINK) /OUT:$(MODULESDIR)\$(@B).dll src\hook\$(@B).def bin\$(@B).obj $(PMPRINTF_LIB)
+        @cd $(MODULESDIR)
 !ifndef DEBUG
 # create symbol file, which is only needed if debug code is disabled
-        mapsym /n $(OUTPUTDIR)\$(@B).map > NUL
+        mapsym /n $(@B).map > NUL
 !endif
-        @cd ..
+        @cd $(CURRENT_DIR)
 
 #
 # SOUND.DLL
 #
-$(XWPRUNNING)\bin\sound.dll: bin\$(@B).dll
+$(XWPRUNNING)\bin\sound.dll: $(MODULESDIR)\$(@B).dll
         unlock $(XWPRUNNING)\bin\$(@B).dll
-        cmd.exe /c copy bin\$(@B).dll $(XWPRUNNING)\bin
+        cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\bin
 !ifndef DEBUG
 # copy symbol file, which is only needed if debug code is disabled
-        cmd.exe /c copy bin\$(@B).sym $(XWPRUNNING)\bin
+        cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\bin
 !endif
 
 # update DEF file if buildlevel has changed
 src\shared\sounddll.def: include\bldlevel.h
         cmd.exe /c BuildLevel.cmd src\shared\$(@B).def include\bldlevel.h "XWorkplace Sound Support Module"
 
-bin\sound.dll: src\shared\sounddll.def bin\sounddll.obj
-        @echo $(MAKEDIR)\makefile: Linking bin\$(@B).dll
-        $(LINK) /OUT:bin\$(@B).dll bin\sounddll.obj src\shared\sounddll.def mmpm2.lib $(PMPRINTF_LIB)
-        @cd bin
+$(MODULESDIR)\sound.dll: src\shared\sounddll.def bin\sounddll.obj
+        @echo $(MAKEDIR)\makefile: Linking $(MODULESDIR)\$(@B).dll
+        $(LINK) /OUT:$(MODULESDIR)\$(@B).dll bin\sounddll.obj src\shared\sounddll.def mmpm2.lib $(PMPRINTF_LIB)
+        @cd $(MODULESDIR)
 !ifndef DEBUG
 # create symbol file, which is only needed if debug code is disabled
-        mapsym /n $(OUTPUTDIR)\$(@B).map > NUL
+        mapsym /n $(@B).map > NUL
 !endif
-        @cd ..
+        @cd $(CURRENT_DIR)
 
 #
 # XDEBUG.DLL
 #
-$(XWPRUNNING)\bin\xdebug.dll: bin\$(@B).dll
+$(XWPRUNNING)\bin\xdebug.dll: $(MODULESDIR)\$(@B).dll
         unlock $(XWPRUNNING)\bin\$(@B).dll
-        cmd.exe /c copy bin\$(@B).dll $(XWPRUNNING)\bin
+        cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\bin
 
-bin\xdebug.dll: src\shared\$(@B).def bin\$(@B).obj $(HLPOBJS)
-        $(LINK) /OUT:bin\$(@B).dll src\shared\$(@B).def bin\$(@B).obj $(HLPOBJS) $(LIBS)
+$(MODULESDIR)\xdebug.dll: src\shared\$(@B).def bin\$(@B).obj $(HLPOBJS)
+        $(LINK) /OUT:$(MODULESDIR)\$(@B).dll src\shared\$(@B).def bin\$(@B).obj $(HLPOBJS) $(LIBS)
 
 #
 # Special target "dlgedit": this is not called by "all",
@@ -468,14 +482,14 @@ release: really_all
 !if [@md $(XWPRELEASE_NLS)\bin 2> NUL]
 !endif
     $(COPY) release\bin\* $(XWPRELEASE_MAIN)\bin
-    $(COPY) bin\sound.dll $(XWPRELEASE_MAIN)\bin
-    $(COPY) bin\sound.sym $(XWPRELEASE_MAIN)\bin
-    $(COPY) bin\xfldr.dll $(XWPRELEASE_MAIN)\bin
-    $(COPY) bin\xfldr.sym $(XWPRELEASE_MAIN)\bin
-    $(COPY) bin\xwphook.dll $(XWPRELEASE_MAIN)\bin
-    $(COPY) bin\xwphook.sym $(XWPRELEASE_MAIN)\bin
-    $(COPY) bin\exes\*.exe $(XWPRELEASE_MAIN)\bin
-    $(COPY) bin\exes\*.sym $(XWPRELEASE_MAIN)\bin
+    $(COPY) $(MODULESDIR)\sound.dll $(XWPRELEASE_MAIN)\bin
+    $(COPY) $(MODULESDIR)\sound.sym $(XWPRELEASE_MAIN)\bin
+    $(COPY) $(MODULESDIR)\xfldr.dll $(XWPRELEASE_MAIN)\bin
+    $(COPY) $(MODULESDIR)\xfldr.sym $(XWPRELEASE_MAIN)\bin
+    $(COPY) $(MODULESDIR)\xwphook.dll $(XWPRELEASE_MAIN)\bin
+    $(COPY) $(MODULESDIR)\xwphook.sym $(XWPRELEASE_MAIN)\bin
+    $(COPY) $(MODULESDIR)\*.exe $(XWPRELEASE_MAIN)\bin
+    $(COPY) $(MODULESDIR)\*.sym $(XWPRELEASE_MAIN)\bin
     $(COPY) tools\repclass.exe $(XWPRELEASE_MAIN)\bin
     $(COPY) tools\wpsreset.exe $(XWPRELEASE_MAIN)\bin
 #    b) NLS

@@ -281,7 +281,7 @@ CC_HELPERS = $(CC_DLL)
 #
 # No need to change this. Change the variables above instead.
 
-LINK_BASE = ilink /nologo /noe /map:$(OUTPUTDIR)\$(@B).map /linenumbers
+LINK_BASE = ilink /nologo /noe /map:$(MODULESDIR)\$(@B).map /linenumbers
 
 !ifdef XWP_DEBUG
 LINK =  $(LINK_BASE) /linenumbers /debug

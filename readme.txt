@@ -1,6 +1,6 @@
 XWorkplace 0.9.2 README
 (W) Ulrich M”ller, July 2, 1999
-Last updated Feb 18, 2000, Ulrich M”ller
+Last updated March 3, 2000, Ulrich M”ller
 
 
 0. CONTENTS OF THIS FILE
@@ -8,7 +8,7 @@ Last updated Feb 18, 2000, Ulrich M”ller
 
     1. LICENSE, COPYRIGHT, DISCLAIMER
     2. INTRODUCTION
-    3. INSTALLATION
+    3. COMPILATION/INSTALLATION
     4. GETTING STARTED
     5. KNOWN LIMITATIONS
 
@@ -46,8 +46,9 @@ Last updated Feb 18, 2000, Ulrich M”ller
     The most current release information (for developer versions)
     is in the "001\readme" file.
 
-3. INSTALLATION
-===============
+
+3. COMPILATION/INSTALLATION
+===========================
 
     To install this thing, you need to build it first. This requires
     IBM VAC++ 3.0, fixpak 8 installed.
@@ -96,7 +97,7 @@ Last updated Feb 18, 2000, Ulrich M”ller
 
     4)  Run RELEASE\INSTALL.CMD to install XWorkplace. This is only
         a slightly modified new version of the ole XFolder install
-        script. Future versions will be installed using WarpIN.
+        script. The binary release is installed using WarpIN.
 
     Optionally, you can replace the WPDataFile class with the DbgDataFile
     class in BIN\XDEBUG.DLL, which is created by MAKE.CMD. See

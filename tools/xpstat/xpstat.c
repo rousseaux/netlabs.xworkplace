@@ -432,6 +432,7 @@ VOID InsertProcessList(HWND hwndCnr,
         cnrhInsertRecords(hwndCnr,
                           NULL,         // parent recc
                           (PRECORDCORE)precFirst,
+                          TRUE,
                           NULL,
                           CRA_RECORDREADONLY,
                           cProcesses);
@@ -775,6 +776,7 @@ PPROCRECORD InsertProcTreeRecord(HWND hwndCnr,
     cnrhInsertRecords(hwndCnr,
                       (PRECORDCORE)precParent,  // parent recc
                       (PRECORDCORE)prec,
+                      FALSE,
                       NULL,
                       CRA_RECORDREADONLY | CRA_EXPANDED,
                       1);
@@ -885,6 +887,7 @@ VOID InsertProcessTree(HWND hwndCnr)
                                   0,
                                   NULL);     // preccParent
 
+        cnrhInvalidateAll(hwndCnr);
     }
 }
 
@@ -930,6 +933,7 @@ PMODRECORD InsertModule2Parent(HWND hwndCnr,
     cnrhInsertRecords(hwndCnr,
                       (PRECORDCORE)precParent,  // parent recc
                       (PRECORDCORE)prec,
+                      FALSE,
                       NULL,
                       CRA_RECORDREADONLY | CRA_COLLAPSED,
                       1);
@@ -1382,12 +1386,12 @@ BOOL LoadNLS(VOID)
 
     {
         WinMessageBox(HWND_DESKTOP, HWND_DESKTOP,
-                      "Treesize was unable to determine the location of the "
+                      "xpstat was unable to determine the location of the "
                       "XWorkplace National Language Support DLL, which is "
                       "required for operation. The OS2.INI file does not contain "
                       "this information. "
-                      "Treesize cannot proceed. Please re-install XWorkplace.",
-                      "Treesize: Fatal Error",
+                      "xpstat cannot proceed. Please re-install XWorkplace.",
+                      "xpstat: Fatal Error",
                       0, MB_OK | MB_MOVEABLE);
         Proceed = FALSE;
     }

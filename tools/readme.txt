@@ -9,7 +9,7 @@ somewhere on your PATH.
      html2ipf has been moved to 001/tools because it's
      really language-dependent.
 
-BuildLevel.cmd (W) Roman Stangl has been added with V0.9.0
+BuildLevel.cmd (C) Roman Stangl has been added with V0.9.0
 and is used to write build  level information into module
 definition files.
 See EDM/2 5/06 for details.

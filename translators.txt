@@ -4,6 +4,9 @@ This is the list of people who have offered to translate XFolder
 Chinese:
 "Chun-Hung Chen" <u840201@oz.nthu.edu.tw>
 
+Czech:
+"Tomas Hajny" <XHajT03@mbox.vol.cz>
+
 Dutch:
 "Arjen Meijer" <arjen@hacom.nl>
 

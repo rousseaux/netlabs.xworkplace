@@ -1,0 +1,30 @@
+
+make setup strings editable
+
+System paths page:
+    -- add other paths (TEMP,...)
+
+File page:
+    -- allow changing dates
+
+status bars:
+    -- make status bar droppable
+    -- add "drive label" mnemonic
+
+special keys
+
+trash can:
+    -- support DELDIR
+    -- max space used
+    -- true delete
+
+configure color for fly-over help
+
+folder hotkey for deleting THIS folder
+
+archives.:
+    -- second page with os2.key file which files are 2be archived
+
+
+
+
