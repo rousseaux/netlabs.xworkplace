@@ -176,6 +176,12 @@ static VOID SavePagerConfig(PAGERCONFIG* pPagerCfg,
 static VOID UpdateValueSet(HWND hwndPage,
                            PAGERCONFIG *pPagerCfg)
 {
+    // the stupid value set control only accepts the
+    // rows and columns count on creation via the
+    // control data, so we have no choice but to
+    // destroy and recreate the value set whenever
+    // the rows/columns change
+    // V0.9.19 (2002-05-07) [umoeller]
     HWND hwndValueSet = WinWindowFromID(hwndPage,
                                         ID_SCDI_PGMG1_VALUESET);
 
@@ -247,6 +253,7 @@ static VOID UpdateValueSet(HWND hwndPage,
  *@@changed V0.9.4 (2000-07-11) [umoeller]: fixed window flashing
  *@@changed V0.9.4 (2000-07-11) [umoeller]: added window flashing delay
  *@@changed V0.9.9 (2001-03-15) [lafaix]: "window" part moved to pgmiXPagerWindowInitPage
+ *@@changed V0.9.19 (2002-05-07) [umoeller]: adjusted for pager rework
  */
 
 static VOID pgmiXPagerGeneralInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
@@ -282,9 +289,13 @@ static VOID pgmiXPagerGeneralInitPage(PNOTEBOOKPAGE pnbp,   // notebook info str
         winhSetSliderArmPosition(WinWindowFromID(pnbp->hwndDlgPage, ID_SCDI_PGMG1_X_SLIDER),
                                  SMA_INCREMENTVALUE,
                                  pPagerCfg->cDesktopsX - 1);
+        // Y slider has 10 positions (0-9) where 0 is top;
+        // if we have position 0, we should have 10 desktops,
+        // if we have position 9, we should have 1 desktop
+        // V0.9.19 (2002-05-07) [umoeller]
         winhSetSliderArmPosition(WinWindowFromID(pnbp->hwndDlgPage, ID_SCDI_PGMG1_Y_SLIDER),
                                  SMA_INCREMENTVALUE,
-                                 pPagerCfg->cDesktopsY - 1);
+                                 10 - pPagerCfg->cDesktopsY);
 
         // valueset
         UpdateValueSet(pnbp->hwndDlgPage,
@@ -361,16 +372,20 @@ static MRESULT pgmiXPagerGeneralItemChanged(PNOTEBOOKPAGE pnbp,
 
         case ID_SCDI_PGMG1_Y_SLIDER:
         {
-            LONG lSliderIndex = winhQuerySliderArmPosition(pnbp->hwndControl,
-                                                           SMA_INCREMENTVALUE);
+            // Y slider has 10 positions (0-9) where 0 is top;
+            // if we have position 0, we should have 10 desktops,
+            // if we have position 9, we should have 1 desktop
+            // V0.9.19 (2002-05-07) [umoeller]
+            LONG lSliderIndex = 10 - winhQuerySliderArmPosition(pnbp->hwndControl,
+                                                                SMA_INCREMENTVALUE);
 
             WinSetDlgItemShort(pnbp->hwndDlgPage,
                                ID_SCDI_PGMG1_Y_TEXT2,
-                               lSliderIndex + 1,
+                               lSliderIndex,
                                FALSE);      // unsigned
 
             LoadPagerConfig(pnbp->pUser);
-            pPagerCfg->cDesktopsY = lSliderIndex + 1;
+            pPagerCfg->cDesktopsY = lSliderIndex;
             ulPgmgChangedFlags = PGRCFG_REPAINT | PGRCFG_REFORMAT;
             UpdateValueSet(pnbp->hwndDlgPage,
                            pPagerCfg);
@@ -388,9 +403,16 @@ static MRESULT pgmiXPagerGeneralItemChanged(PNOTEBOOKPAGE pnbp,
         case ID_SCDI_PGMG1_VALUESET:
             if (usNotifyCode == VN_ENTER)
             {
+                // double-click on value set item:
+                // refresh startup desktop
                 LoadPagerConfig(pnbp->pUser);  // V0.9.19 (2002-04-23) [pr]
                 pPagerCfg->bStartX = SHORT2FROMMP((MPARAM)ulExtra);
-                pPagerCfg->bStartY = SHORT1FROMMP((MPARAM)ulExtra);
+                // value set row 1 is on top; if we get row 1,
+                // it is really the top row (cDesktopsY)
+                // V0.9.19 (2002-05-07) [umoeller]
+                pPagerCfg->bStartY =   pPagerCfg->cDesktopsY
+                                     - SHORT1FROMMP((MPARAM)ulExtra)
+                                     + 1;
                 UpdateValueSet(pnbp->hwndDlgPage,
                                pPagerCfg);
             }

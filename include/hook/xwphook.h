@@ -268,8 +268,8 @@
 
         // XPager configuration
         BOOL            fRemoved1, // _fXPagerStayOnTop,
-                        __fSlidingIgnoreXPager;
-                                // on sliding focus
+                        fRemoved2; //__fSlidingIgnoreXPager;
+                                // removed V0.9.19 (2002-05-07) [umoeller]
 
         // Sliding menus
         BOOL            fSlidingMenus;
@@ -332,8 +332,8 @@
         BOOL            fConditionalCascadeSensitive;
 
         // more XPager configuration V0.9.7 (2000-12-08) [umoeller]
-        BOOL            __fSlidingIgnoreXCenter;
-                            // on sliding focus
+        BOOL            fRemoved3; // __fSlidingIgnoreXCenter;
+                            // removed V0.9.19 (2002-05-07) [umoeller]
 
         // screen corner objects sensitivity; in percent of the
         // adjacents borders.  0 = off, 50 = borders objects disabled

@@ -1238,8 +1238,10 @@ BEGIN
     ID_XSDI_MOUSE_BRING2TOP             "Bring windows to ~top"
     ID_XSDI_MOUSE_IGNORESEAMLESS        "Ignore seamless ~Win-OS/2"
     ID_XSDI_MOUSE_IGNOREDESKTOP         "~Ignore Desktop"
-    ID_XSDI_MOUSE_IGNOREPAGER           "Ignore XPa~ger"
-    ID_XSDI_MOUSE_IGNOREXCENTER         "Ignore ~XCenter"
+/*    ID_XSDI_MOUSE_IGNOREPAGER           "Ignore XPa~ger"
+      ID_XSDI_MOUSE_IGNOREXCENTER         "Ignore ~XCenter"
+        removed V0.9.19 (2002-05-07) [umoeller]
+        */
     ID_XSDI_MOUSE_SLIDINGMENU_GRP       "Sliding menu selection"
     ID_XSDI_MOUSE_SLIDINGMENU           "E~nable"
     ID_XSDI_MOUSE_MENUDELAY_TXT1        "Su~bmenu delay:"

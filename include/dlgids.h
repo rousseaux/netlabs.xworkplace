@@ -1214,8 +1214,9 @@
 #define ID_XSDI_MOUSE_BRING2TOP         3405
 #define ID_XSDI_MOUSE_IGNORESEAMLESS    3406
 #define ID_XSDI_MOUSE_IGNOREDESKTOP     3407
-#define ID_XSDI_MOUSE_IGNOREPAGER    3408
-#define ID_XSDI_MOUSE_IGNOREXCENTER     3409    // V0.9.7 (2000-12-08) [umoeller]
+// #define ID_XSDI_MOUSE_IGNOREPAGER    3408    // removed V0.9.19 (2002-05-07) [umoeller]
+// #define ID_XSDI_MOUSE_IGNOREXCENTER     3409    // V0.9.7 (2000-12-08) [umoeller]
+                                                // removed V0.9.19 (2002-05-07) [umoeller]
 #endif
 // ID_XSDI_MOUSE_AUTOHIDE_* moved to ID_XSD_MOUSE_MOVEMENT2
 // V0.9.14 (2001-08-02) [lafaix]

@@ -1962,8 +1962,8 @@ static const CONTROLDEF
     BringToTopCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_MOUSE_BRING2TOP),
     IgnoreSeamlessCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_MOUSE_IGNORESEAMLESS),
     IgnoreDesktopCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_MOUSE_IGNOREDESKTOP),
-    IgnoreXPagerCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_MOUSE_IGNOREPAGER),
-    IgnoreXCenterCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_MOUSE_IGNOREXCENTER),
+    // IgnoreXPagerCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_MOUSE_IGNOREPAGER),
+    // IgnoreXCenterCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_MOUSE_IGNOREXCENTER),
 #endif
     SlidingMenusGroup = LOADDEF_GROUP(ID_XSDI_MOUSE_SLIDINGMENU_GRP, SZL_AUTOSIZE),
     SlidingMenusCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_MOUSE_SLIDINGMENU),
@@ -2010,10 +2010,10 @@ static const DLGHITEM dlgMovement1[] =
                         CONTROL_DEF(&IgnoreSeamlessCB),
                     START_ROW(0),
                         CONTROL_DEF(&IgnoreDesktopCB),
-                    START_ROW(0),
-                        CONTROL_DEF(&IgnoreXPagerCB),
-                    START_ROW(0),
-                        CONTROL_DEF(&IgnoreXCenterCB),
+//                     START_ROW(0),
+//                         CONTROL_DEF(&IgnoreXPagerCB),        // removed V0.9.19 (2002-05-07) [umoeller]
+//                     START_ROW(0),
+//                         CONTROL_DEF(&IgnoreXCenterCB),
                 END_TABLE,
 #endif
             START_ROW(0),
@@ -2047,6 +2047,7 @@ static const DLGHITEM dlgMovement1[] =
  *@@changed V0.9.7 (2000-12-08) [umoeller]: added "ignore XCenter"
  *@@changed V0.9.14 (2001-08-02) [lafaix]: moved the autohide stuff to movement page 2
  *@@changed V0.9.16 (2001-12-06) [umoeller]: now using dialog formatter
+ *@@changed V0.9.19 (2002-05-07) [umoeller]: removed "ignore pager", "ignore XCenter"
  */
 
 VOID hifMouseMovementInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
@@ -2098,10 +2099,11 @@ VOID hifMouseMovementInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                               pdc->__fSlidingIgnoreSeamless);
         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_MOUSE_IGNOREDESKTOP,
                               pdc->__fSlidingIgnoreDesktop);
-        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_MOUSE_IGNOREPAGER,
-                              pdc->__fSlidingIgnoreXPager);
-        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_MOUSE_IGNOREXCENTER,
-                              pdc->__fSlidingIgnoreXCenter);
+//         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_MOUSE_IGNOREPAGER,
+//                               pdc->__fSlidingIgnoreXPager);
+//         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_MOUSE_IGNOREXCENTER,
+//                               pdc->__fSlidingIgnoreXCenter);
+// removed V0.9.19 (2002-05-07) [umoeller]
 
         winhSetSliderArmPosition(WinWindowFromID(pnbp->hwndDlgPage,
                                                  ID_XSDI_MOUSE_FOCUSDELAY_SLIDER),
@@ -2135,12 +2137,12 @@ VOID hifMouseMovementInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                           pdc->__fSlidingFocus);
         winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_MOUSE_IGNOREDESKTOP,
                           pdc->__fSlidingFocus);
-        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_MOUSE_IGNOREPAGER,
-                          (pdc->__fSlidingFocus)
-                          && (cmnQuerySetting(sfEnableXPager))
-                         );
-        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_MOUSE_IGNOREXCENTER,
-                          pdc->__fSlidingFocus);
+//         winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_MOUSE_IGNOREPAGER,
+//                           (pdc->__fSlidingFocus)
+//                           && (cmnQuerySetting(sfEnableXPager))
+//                          );
+//         winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_MOUSE_IGNOREXCENTER,
+//                           pdc->__fSlidingFocus);
 
         winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_MOUSE_FOCUSDELAY_TXT1,
                           pdc->__fSlidingFocus);
@@ -2216,15 +2218,15 @@ MRESULT hifMouseMovementItemChanged(PNOTEBOOKPAGE pnbp,
             pdc->__fSlidingIgnoreDesktop = ulExtra;
         break;
 
-        case ID_XSDI_MOUSE_IGNOREPAGER:
-            hifLoadHookConfig(pdc);
-            pdc->__fSlidingIgnoreXPager = ulExtra;
-        break;
+//         case ID_XSDI_MOUSE_IGNOREPAGER:      V0.9.19 (2002-05-07) [umoeller]
+//             hifLoadHookConfig(pdc);
+//             pdc->__fSlidingIgnoreXPager = ulExtra;
+//         break;
 
-        case ID_XSDI_MOUSE_IGNOREXCENTER:
-            hifLoadHookConfig(pdc);
-            pdc->__fSlidingIgnoreXCenter = ulExtra;
-        break;
+//         case ID_XSDI_MOUSE_IGNOREXCENTER:    V0.9.19 (2002-05-07) [umoeller]
+//             hifLoadHookConfig(pdc);
+//             pdc->__fSlidingIgnoreXCenter = ulExtra;
+//         break;
 
         case ID_XSDI_MOUSE_FOCUSDELAY_SLIDER:
         {
@@ -2290,8 +2292,8 @@ MRESULT hifMouseMovementItemChanged(PNOTEBOOKPAGE pnbp,
             pdc->__fSlidingBring2Top = 0;
             pdc->__fSlidingIgnoreSeamless = 0;
             pdc->__fSlidingIgnoreDesktop = 0;
-            pdc->__fSlidingIgnoreXPager = 0;
-            pdc->__fSlidingIgnoreXCenter = 0;  // V0.9.9 (2001-04-07) [pr]
+//             pdc->__fSlidingIgnoreXPager = 0;
+//             pdc->__fSlidingIgnoreXCenter = 0;  // V0.9.9 (2001-04-07) [pr]
             pdc->__ulSlidingFocusDelay = 0;
 #endif
             pdc->fSlidingMenus = 0;
@@ -2323,8 +2325,8 @@ MRESULT hifMouseMovementItemChanged(PNOTEBOOKPAGE pnbp,
                 pdc->__fSlidingBring2Top = pBackup->__fSlidingBring2Top;
                 pdc->__fSlidingIgnoreSeamless = pBackup->__fSlidingIgnoreSeamless;
                 pdc->__fSlidingIgnoreDesktop = pBackup->__fSlidingIgnoreDesktop;
-                pdc->__fSlidingIgnoreXPager = pBackup->__fSlidingIgnoreXPager;
-                pdc->__fSlidingIgnoreXCenter = pBackup->__fSlidingIgnoreXCenter;  // V0.9.9 (2001-04-07) [pr]
+//                 pdc->__fSlidingIgnoreXPager = pBackup->__fSlidingIgnoreXPager;
+//                 pdc->__fSlidingIgnoreXCenter = pBackup->__fSlidingIgnoreXCenter;  // V0.9.9 (2001-04-07) [pr]
                 pdc->__ulSlidingFocusDelay = pBackup->__ulSlidingFocusDelay;
 #endif
                 pdc->fSlidingMenus = pBackup->fSlidingMenus;

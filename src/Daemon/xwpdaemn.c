@@ -41,18 +41,19 @@
  *             WPS (PMSHELL.EXE).
  *
  *          b) When the WPS is started for the first time (after
- *             a reboot), initMain (XFLDR.DLL)
- *             checks for whether an XWPGLOBALSHARED structure (xwphook.h)
- *             has already been allocated as a block of shared memory.
+ *             a reboot), initMain (XFLDR.DLL) checks for whether
+ *             an XWPGLOBALSHARED structure (xwphook.h) has already
+ *             been allocated as a block of shared memory.
  *
  *             At system startup, this is not the case. As a result,
- *             initMain allocates that block and then
- *             starts XWPDAEMN.EXE using WinStartApp.
+ *             initMain allocates that block and then starts
+ *             XWPDAEMN.EXE using WinStartApp.
  *
  *          c) The daemon then requests access to that block of
- *             shared memory, creates the daemon object window
- *             (fnwpDaemonObject) and posts T1M_DAEMONREADY to
- *             krn_fnwpThread1Object in XFLDR.DLL.
+ *             shared memory so that the usage count of that
+ *             block is then 2. It then creates the daemon object
+ *             window (fnwpDaemonObject) and posts T1M_DAEMONREADY
+ *             to krn_fnwpThread1Object in XFLDR.DLL.
  *
  *             krn_fnwpThread1Object will then send XDM_HOOKINSTALL
  *             to the daemon object window to install the hook (if
@@ -66,26 +67,28 @@
  *             of the currently active Desktop.
  *
  *             This situation persists while the WPS is running
- *             (unless the hook is explicitly disabled by the user or
- *             the daemon gets killed). If any configuration data
- *             changes, XFLDR.DLL notifies the daemon by posting
- *             messages to the daemon's object window (fnwpDaemonObject),
- *             which in turn notifies the hook.
+ *             (unless the hook is explicitly disabled by the
+ *             user or the daemon gets killed for some reason).
+ *             If any hook configuration data changes, e.g. via
+ *             the WPS Keyboard, Mouse, or Screen settings
+ *             objects, XFLDR.DLL notifies the daemon by posting
+ *             messages to the daemon's object window
+ *             (fnwpDaemonObject), which in turn notifies the hook.
  *
  *          d) If the WPS is restarted for any reason (because
  *             of a crash or explicitly by the user), the daemon
- *             (and thus the hook) is not terminated, but stays
- *             active. Since OS/2 maintains a reference count
+ *             (and thus the hook) is not terminated, but keeps
+ *             running. Since OS/2 maintains a reference count
  *             for shared memory, the XWPGLOBALSHARED structure
  *             is not freed, because the daemon is still using
- *             it.
+ *             it (its usage count is now 1).
  *
  *          e) When the WPS is re-initializing, initMain
- *             this time realizes that the XWPGLOBALSHARED structure is
- *             still in use and will thus find out that the WPS is not
- *             started for the first time. Instead, access to the
- *             existing XWPGLOBALSHARED structure is requested (so
- *             we have a reference count of two again).
+ *             this time realizes that the XWPGLOBALSHARED structure
+ *             exists already and will thus find out that the WPS is
+ *             not started for the first time. Instead, access to
+ *             the existing XWPGLOBALSHARED structure is requested
+ *             (so we have a reference count of 2 again).
  *
  *             XFLDR.DLL then posts the new Desktop window handle with
  *             XDM_DESKTOPREADY so the daemon data can be updated.
@@ -111,6 +114,10 @@
  *              restart, which saves PM resources. Apparently, system
  *              hooks can only be installed a limited number of times
  *              before the system hangs (I get around 10-15 tries).
+ *              I have added a workaround to the daemon to properly
+ *              deregister the hook on process termination so I get
+ *              around 40 tries now, but this still looks like a PM
+ *              bug to me.
  *
  *          c)  While programming on the hook, I can simply restart
  *              the daemon to have the hook reloaded, instead of
@@ -380,9 +387,7 @@ VOID APIENTRY dmnExceptError(const char *pcszFile,
     DATETIME    DT;
 
     sprintf(szFileName, "%c:\\%s", doshQueryBootDrive(), XFOLDER_DMNCRASHLOG);
-    file = fopen(szFileName, "a");
-
-    if (file)
+    if (file = fopen(szFileName, "a"))
     {
         DosGetDateTime(&DT);
         fprintf(file, "\nXWorkplace Daemon trap message -- Date: %04d-%02d-%02d, Time: %02d:%02d:%02d\n",
@@ -435,7 +440,7 @@ BOOL dmnStartXPager(VOID)
            )
         {
             brc = pgrCreatePager();
-               // this sets the global window handles;
+               // this sets the global window handles in HOOKDATA;
                // the hook sees this and will start processing
                // XPager messages
         }
@@ -770,47 +775,38 @@ BOOL LoadHookConfig(BOOL fHook,         // in: reload hook settings
  *      hookInit in XWPHOOK.DLL and then loads the configuration
  *      by calling LoadHotkeysForHook and LoadHookConfig.
  *
- *      This gets called when fnwpDaemonObject receives XDM_HOOKINSTALL.
+ *      This sets the global G_pHookData variable which
+ *      points to the shared HOOKDATA structure in
+ *      XWPHOOK.DLL.
  *
- *      At this point, if this is the first call, only the daemon
- *      object window has been created in main(). XPager
- *      doesn't exist yet and will only be started later
- *      when a separate XDM_STARTSTOPPAGER message is
- *      received by fnwpDaemonObject.
+ *      This gets called when fnwpDaemonObject receives
+ *      XDM_HOOKINSTALL.
+ *
+ *      At this point, if this is the first call, only the
+ *      daemon object window has been created in main().
+ *      XPager doesn't exist yet and will only be started
+ *      later when a separate XDM_STARTSTOPPAGER message
+ *      is received by fnwpDaemonObject.
  */
 
 VOID InstallHook(VOID)
 {
     if (!G_pXwpGlobalShared->fAllHooksInstalled)
     {
-        /* HMTX hmtx;
-        if (NO_ERROR == DosCreateMutexSem(NULL,  // unnamed
-                                          &hmtx,
-                                          DC_SEM_SHARED,
-                                                // shared mutex; the hook requests
-                                                // this, so this is needed by every
-                                                // PM process
-                                          FALSE))    // unowned
-        { */
-            // install hook
-            G_pHookData = hookInit(G_pXwpGlobalShared->hwndDaemonObject);
-
-            // _Pmpf(("XWPDAEMON: hookInit called, pHookData: 0x%lX", G_pHookData));
-
-            if (G_pHookData)
-                if (    (G_pHookData->fInputHooked)
-                     && (G_pHookData->fPreAccelHooked)
-                   )
-                {
-                    // success:
-                    G_pXwpGlobalShared->fAllHooksInstalled = TRUE;
-                    // load hotkeys list from OS2.INI
-                    LoadHotkeysForHook();
-                    // load config from OS2.INI
-                    LoadHookConfig(TRUE,
-                                   TRUE);
-                }
-        // }
+        // install hook
+        if (    (G_pHookData = hookInit(G_pXwpGlobalShared->hwndDaemonObject))
+             && (G_pHookData->fInputHooked)
+             && (G_pHookData->fPreAccelHooked)
+           )
+        {
+            // success:
+            G_pXwpGlobalShared->fAllHooksInstalled = TRUE;
+            // load hotkeys list from OS2.INI
+            LoadHotkeysForHook();
+            // load config from OS2.INI
+            LoadHookConfig(TRUE,
+                           TRUE);
+        }
     }
 }
 
@@ -1000,6 +996,7 @@ static VOID ProcessAutoScroll(PSCROLLDATA pScrollData,
  *@@changed V0.9.4 (2000-06-12) [umoeller]: fixed Win-OS/2 handling, which broke with 0.9.3
  *@@changed V0.9.7 (2000-12-08) [umoeller]: added "ignore XCenter"
  *@@changed V0.9.16 (2002-01-05) [umoeller]: now disabling sliding focus while "move ptr to button" is in progress
+ *@@changed V0.9.19 (2002-05-07) [umoeller]: now always ignoring pager
  */
 
 static VOID ProcessSlidingFocus(HWND hwndFrameInBetween, // in: != NULLHANDLE if hook has detected another frame
@@ -1022,9 +1019,10 @@ static VOID ProcessSlidingFocus(HWND hwndFrameInBetween, // in: != NULLHANDLE if
 
 #ifndef __NOPAGER__
     // rule out XPager, if "ignore XPager" is on
-    if (G_pHookData->HookConfig.__fSlidingIgnoreXPager)
-        if (hwnd2Activate == G_pHookData->hwndPagerFrame)
-            return;
+    // if (G_pHookData->HookConfig.__fSlidingIgnoreXPager)
+    // always ignoring pager now V0.9.19 (2002-05-07) [umoeller]
+    if (hwnd2Activate == G_pHookData->hwndPagerFrame)
+        return;
 #endif
 
     // stop if "move ptr to button" is in progress
@@ -1034,20 +1032,18 @@ static VOID ProcessSlidingFocus(HWND hwndFrameInBetween, // in: != NULLHANDLE if
 
     // V0.9.7 (2000-12-08) [umoeller]:
     // rule out XCenter, if "ignore XCenter" is on
+    // now always ignoring XCenter V0.9.19 (2002-05-07) [umoeller]
     hwndClient = WinWindowFromID(hwnd2Activate, FID_CLIENT);
             // also needed below for seamless
-    if (G_pHookData->HookConfig.__fSlidingIgnoreXCenter)
+    // Is-XCenter check: the window must have an FID_CLIENT
+    // whose class name is WC_XCENTER_CLIENT
+    if (hwndClient)
     {
-        // Is-XCenter check: the window must have an FID_CLIENT
-        // whose class name is WC_XCENTER_CLIENT
-        if (hwndClient)
-        {
-            CHAR szClass[100];
-            WinQueryClassName(hwndClient, sizeof(szClass), szClass);
-            if (!strcmp(szClass, WC_XCENTER_CLIENT))
-                // target is XCenter:
-                return;
-        }
+        CHAR szClass[100];
+        WinQueryClassName(hwndClient, sizeof(szClass), szClass);
+        if (!strcmp(szClass, WC_XCENTER_CLIENT))
+            // target is XCenter:
+            return;
     }
 
     // always ignore window list

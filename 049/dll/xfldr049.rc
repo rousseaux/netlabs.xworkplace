@@ -1232,8 +1232,10 @@ BEGIN
     ID_XSDI_MOUSE_BRING2TOP             "Fens~ter nach vorne holen"
     ID_XSDI_MOUSE_IGNORESEAMLESS        "~Win-OS/2-Fenster ignorieren"
     ID_XSDI_MOUSE_IGNOREDESKTOP         "ArbeitsoberflÑche ~ignorieren"
-    ID_XSDI_MOUSE_IGNOREPAGER        "Pa~geMage ignorieren"
-    ID_XSDI_MOUSE_IGNOREXCENTER         "~XCenter ignorieren"
+/*    ID_XSDI_MOUSE_IGNOREPAGER        "Pa~geMage ignorieren"
+      ID_XSDI_MOUSE_IGNOREXCENTER         "~XCenter ignorieren"
+        removed V0.9.19 (2002-05-07) [umoeller]
+        */
     ID_XSDI_MOUSE_SLIDINGMENU_GRP       "MenÅauswahl folgt Mauszeiger"
     ID_XSDI_MOUSE_SLIDINGMENU           "Aktiviere~n"
     ID_XSDI_MOUSE_MENUDELAY_TXT1        "Verz~îgerung fÅr UntermenÅs:"
