@@ -253,7 +253,8 @@
 
     // misc
     #define XM_UPDATE               (WM_USER+93) // in dlgs
-    #define XM_SETLONGTEXT          (WM_USER+94) // for cmnMessageBox
+    // #define XM_SETLONGTEXT          (WM_USER+94) // for cmnMessageBox
+            // removed V0.9.13 (2001-06-23) [umoeller]
     #define XM_CRASH                (WM_USER+95) // test exception handlers
 
     // fill container; used with class list dialogs

@@ -1,15 +1,16 @@
 
 /*
  *@@sourcefile drivdlgs.h:
- *      header file for drivdlgs.c. See remarks there.
+ *      header file for driver configuration dialogs on
+ *      the "Drivers" page in the "OS/2 kernel" object.
  *
  *@@added V0.9.0
  *@@include #include <os2.h>
- *@@include #include "setup\drivdlgs.h"
+ *@@include #include "config\drivdlgs.h"
  */
 
 /*
- *      Copyright (C) 1999-2000 Ulrich M”ller.
+ *      Copyright (C) 1999-2001 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -46,7 +47,7 @@
 typedef struct _DRIVERSPEC
 {
     PSZ        pszKeyword;          // e.g. "BASEDEV="
-    PSZ        pszFilename;         // e.g. "IBM1S506.ADD", without path
+    PSZ        pszFilename;         // e.g. "IBM1S506.ADD", without path, upper-cased
     PSZ        pszDescription;      // e.g. "IBM IDE driver"
     PSZ        pszVersion;          // driver version or NULL if n/a
     ULONG      ulFlags;             // DRVF_* flags
@@ -67,17 +68,38 @@ typedef struct _DRIVERSPEC
 
 typedef struct _DRIVERDLGDATA
 {
+    PVOID       pvKernel;
     const DRIVERSPEC *pDriverSpec;              // in: driver specs; do not modify
     CHAR        szParams[500];                  // in/out: as in CONFIG.SYS
     PVOID       pvUser;                         // for data needed in dialog
 } DRIVERDLGDATA, *PDRIVERDLGDATA;
 
-VOID drvConfigSupported(PDRIVERSPEC pSpec);
+typedef ULONG EXPENTRY FNCHECKDRIVERNAME(HMODULE hmodPlugin,
+                                         HMODULE hmodXFLDR,
+                                         PDRIVERSPEC pSpec,
+                                         PSZ pszErrorMsg);
+typedef FNCHECKDRIVERNAME *PFNCHECKDRIVERNAME;
 
-// driver configuration dialogs
-MRESULT EXPENTRY drv_fnwpConfigHPFS(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2);
-MRESULT EXPENTRY drv_fnwpConfigHPFS386(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2);
-MRESULT EXPENTRY drv_fnwpConfigCDFS(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2);
-MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2);
+BOOL APIENTRY drvLoadPlugins(HAB hab);
+VOID APIENTRY drvUnloadPlugins(VOID);
+BOOL APIENTRY drvConfigSupported(PDRIVERSPEC pSpec);
+
+// exports
+
+BOOL APIENTRY drvDisplayHelp(PVOID pvKernel,
+                             const char *pcszHelpFile,
+                             ULONG ulHelpPanel);
+typedef BOOL APIENTRY DRVDISPLAYHELP(PVOID pvKernel,
+                                     const char *pcszHelpFile,
+                                     ULONG ulHelpPanel);
+typedef DRVDISPLAYHELP *PDRVDISPLAYHELP;
+
+char* APIENTRY drv_strtok(char *string1, const char *string2);
+typedef char* APIENTRY DRV_STRTOK(char *string1, const char *string2);
+typedef DRV_STRTOK *PDRV_STRTOK;
+
+int APIENTRY drv_memicmp(void *buf1, void *buf2, unsigned int cnt);
+typedef int APIENTRY DRV_MEMICMP(void *buf1, void *buf2, unsigned int cnt);
+typedef DRV_MEMICMP *PDRV_MEMICMP;
 
 

@@ -157,7 +157,8 @@ typedef struct _XWPTYPEWITHFILTERS
 typedef struct _WPSTYPEASSOCTREENODE
 {
     TREE        Tree;
-    PSZ         pszType;
+        // we use Tree.ulKey for
+        // PSZ         pszType;
     PSZ         pszObjectHandles;
     ULONG       cbObjectHandles;
 } WPSTYPEASSOCTREENODE, *PWPSTYPEASSOCTREENODE;
@@ -310,10 +311,10 @@ VOID ftypInvalidateCaches(VOID)
                 for (ul = 0; ul < cItems; ul++)
                 {
                     PWPSTYPEASSOCTREENODE pWPSType = (PWPSTYPEASSOCTREENODE)papNodes[ul];
-                    if (pWPSType->pszType)
+                    if (pWPSType->Tree.ulKey) // pszType)
                     {
-                        free(pWPSType->pszType);
-                        pWPSType->pszType = NULL;
+                        free((PSZ)pWPSType->Tree.ulKey); // pszType);
+                        pWPSType->Tree.ulKey = 0; // pszType = NULL;
                     }
                     if (pWPSType->pszObjectHandles)
                     {
@@ -417,14 +418,14 @@ PLINKLIST GetCachedTypesWithFilters(VOID)
  *@@added V0.9.9 (2001-02-06) [umoeller]
  */
 
-int TREEENTRY CompareWPSTypes(TREE *t1, TREE *t2)
+/* int TREEENTRY CompareWPSTypes(TREE *t1, TREE *t2)
 {
     int i = strcmp(((PWPSTYPEASSOCTREENODE)t1)->pszType,
                    ((PWPSTYPEASSOCTREENODE)t2)->pszType);
     if (i < 0) return -1;
     if (i > 0) return +1;
     return (0);
-}
+} */
 
 /*
  *@@ CompareWPSTypeData:
@@ -433,13 +434,25 @@ int TREEENTRY CompareWPSTypes(TREE *t1, TREE *t2)
  *@@added V0.9.9 (2001-02-06) [umoeller]
  */
 
-int TREEENTRY CompareWPSTypeData(TREE *t1, void *pData)
+/* int TREEENTRY CompareWPSTypeData(TREE *t1, void *pData)
 {
     int i = strcmp(((PWPSTYPEASSOCTREENODE)t1)->pszType,
                    (const char*)pData);
     if (i < 0) return -1;
     if (i > 0) return +1;
     return (0);
+} */
+
+/*
+ *@@ CompareTypeStrings:
+ *
+ *@@added V0.9.13 (2001-06-27) [umoeller]
+ */
+
+int TREEENTRY CompareTypeStrings(ULONG ul1, ULONG ul2)
+{
+    return (strcmp((const char *)ul1,
+                   (const char *)ul2));
 }
 
 /*
@@ -467,7 +480,7 @@ VOID BuildWPSTypesCache(VOID)
             PWPSTYPEASSOCTREENODE pNewNode = malloc(sizeof(WPSTYPEASSOCTREENODE));
             if (pNewNode)
             {
-                pNewNode->pszType = strdup(pTypeThis);
+                pNewNode->Tree.ulKey = (ULONG)strdup(pTypeThis);
                 pNewNode->pszObjectHandles = prfhQueryProfileData(HINI_USER,
                                                                   WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE"
                                                                   pTypeThis,
@@ -478,10 +491,9 @@ VOID BuildWPSTypesCache(VOID)
                 #endif
 
                 // insert into binary tree
-                treeInsertNode(&G_WPSTypeAssocsTreeRoot,
-                               (TREE*)pNewNode,
-                               CompareWPSTypes,
-                               FALSE);
+                treeInsert(&G_WPSTypeAssocsTreeRoot,
+                          (TREE*)pNewNode,
+                          CompareTypeStrings);
                 G_cWPSTypeAssocsTreeItems++; // V0.9.12 (2001-05-22) [umoeller]
             }
             else
@@ -513,8 +525,6 @@ VOID BuildWPSTypesCache(VOID)
 
 PWPSTYPEASSOCTREENODE FindWPSTypeAssoc(const char *pcszType)
 {
-    PWPSTYPEASSOCTREENODE pWPSType = NULL;
-
     if (!G_fWPSTypesValid)
         // create a copy of the data from OS2.INI... this
         // is much faster than using the Prf* functions all
@@ -527,15 +537,15 @@ PWPSTYPEASSOCTREENODE FindWPSTypeAssoc(const char *pcszType)
             _Pmpf((__FUNCTION__ ": looking for %s now...", pcszType));
         #endif
 
-        pWPSType = treeFindEQData(&G_WPSTypeAssocsTreeRoot,
-                                  (PVOID)pcszType,
-                                  CompareWPSTypeData);
+        return ((PWPSTYPEASSOCTREENODE)treeFind(G_WPSTypeAssocsTreeRoot,
+                                                (ULONG)pcszType,
+                                                CompareTypeStrings));
         #ifdef DEBUG_ASSOCS
             _Pmpf(("    got 0x%lX", pWPSType));
         #endif
     }
 
-    return (pWPSType);
+    return (NULL);
 }
 
 /* ******************************************************************

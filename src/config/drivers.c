@@ -100,9 +100,9 @@
 #pragma hdrstop                 // VAC++ keeps crashing otherwise
 
 /* ******************************************************************
- *                                                                  *
- *   Global variables                                               *
- *                                                                  *
+ *
+ *   Global variables
+ *
  ********************************************************************/
 
 /*
@@ -125,9 +125,9 @@ typedef struct _DRIVERPAGEDATA
 } DRIVERPAGEDATA, *PDRIVERPAGEDATA;
 
 /* ******************************************************************
- *                                                                  *
- *   OS/2 Kernel "Drivers" page                                     *
- *                                                                  *
+ *
+ *   OS/2 Kernel "Drivers" page
+ *
  ********************************************************************/
 
 /*
@@ -421,8 +421,12 @@ PLINKLIST InsertDriverCategories(HWND hwndCnr,
 
     PSZ     pSearch = pszDriverSpecsFile;
 
+    BOOL    fCrashed = FALSE;
+
     // parse the thing
-    while (pSearch = strstr(pSearch, "CATEGORY"))
+    while (    (pSearch = strstr(pSearch, "CATEGORY"))
+            && (!fCrashed)
+          )
     {
         // category found:
         // go for the drivers
@@ -449,7 +453,7 @@ PLINKLIST InsertDriverCategories(HWND hwndCnr,
             ULONG       ulDriversFound = 0;
 
             // for-each-DRIVER loop
-            while (pSearch2)
+            while ((pSearch2) && (!fCrashed))
             {
                 PSZ pszDriverSpec = strhExtract(pSearch2,
                                                 '(',
@@ -510,7 +514,12 @@ PLINKLIST InsertDriverCategories(HWND hwndCnr,
                     // based on the filename, if one
                     // exists; this is in drivdlgs.c
                     // so it can be extended more easily
-                    drvConfigSupported(pSpec);
+                    if (!drvConfigSupported(pSpec))
+                    {
+                        // crash:
+                        fCrashed = TRUE;
+                        break;
+                    }
 
                     lstAppendItem(pllDriverSpecsForCategory, pSpec);
 
@@ -524,7 +533,7 @@ PLINKLIST InsertDriverCategories(HWND hwndCnr,
 
             } // end while (pSearch2) (DRIVER loop)
 
-            if (ulDriversFound)
+            if ((ulDriversFound) && (!fCrashed))
             {
                 // any drivers found for this category:
                 // insert into container
@@ -550,9 +559,8 @@ PLINKLIST InsertDriverCategories(HWND hwndCnr,
         } // end if (pszBlock)
         else
         {
-            winhDebugBox(HWND_DESKTOP,
-                     "Drivers",
-                     "Block after DRIVERSPEC not found.");
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                   "Block after DRIVERSPEC not found.");
             pSearch++;
         }
 
@@ -709,6 +717,9 @@ VOID cfgDriversInitPage(PCREATENOTEBOOKPAGE pcnbp,
         XTEXTVIEWCDATA xtxCData;
         PDRIVERPAGEDATA pPageData = 0;
 
+        // load the driver dialog definitions
+        drvLoadPlugins(WinQueryAnchorBlock(pcnbp->hwndDlgPage));
+
         BEGIN_CNRINFO()
         {
             cnrhSetView(CV_TREE | CA_TREELINE | CV_TEXT
@@ -786,9 +797,11 @@ VOID cfgDriversInitPage(PCREATENOTEBOOKPAGE pcnbp,
 
             lstFree(&pPageData->pllLists);
         }
-        // pcnbp->pUser = NULL;        // avoid notebook.c freeing this
 
         WinDestroyWindow(pPageData->hwndDriverPopupMenu);
+
+        // unload the driver plugins
+        drvUnloadPlugins();
     }
 }
 
@@ -1027,6 +1040,7 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                         CHAR szTitle[300];
 
                         // set up DRIVERDLGDATA structure
+                        ddd.pvKernel = (PVOID)pcnbp->somSelf;
                         ddd.pDriverSpec = precc->pDriverSpec;
                         WinQueryWindowText(hwndMLE,
                                            sizeof(ddd.szParams),

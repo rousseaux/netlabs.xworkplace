@@ -150,9 +150,8 @@
 typedef struct _TRASHMAPPINGTREENODE
 {
     TREE            Tree;
-                // base tree node. ID is NOT used.
-
-    PSZ             pszSourceRealName;
+                // base tree node; we use ulKey for pszSourceRealName
+    // PSZ             pszSourceRealName;
                 // full path of where that folder originally was;
                 // for example, if pFolderInTrash is "C:\TRASH\01234567",
                 // this could be "C:\Documents\Important".
@@ -218,29 +217,16 @@ static BYTE        G_abMappingDrivesDirty[CB_SUPPORTED_DRIVES] = {0};
  ********************************************************************/
 
 /*
- *@@ fnCompareMappingNodes:
+ *@@ fnCompareStrings:
  *      tree comparison func (src\helpers\tree.c).
  *
- *@@added V0.9.9 (2001-04-07) [umoeller]
+ *@@added V0.9.13 (2001-06-27) [umoeller]
  */
 
-int TREEENTRY fnCompareMappingNodes(TREE *t1, TREE *t2)
+int TREEENTRY fnCompareStrings(ULONG ul1, ULONG ul2)
 {
-    return (strhicmp(((PTRASHMAPPINGTREENODE)t1)->pszSourceRealName,
-                     ((PTRASHMAPPINGTREENODE)t2)->pszSourceRealName));
-}
-
-/*
- *@@ fnCompareMappingsData:
- *      tree comparison func (src\helpers\tree.c).
- *
- *@@added V0.9.9 (2001-04-07) [umoeller]
- */
-
-int TREEENTRY fnCompareMappingsData(TREE *t1, void *pData)
-{
-    return (strhicmp(((PTRASHMAPPINGTREENODE)t1)->pszSourceRealName,
-                     (const char*)pData));
+    return (strhicmp((PCSZ)ul1,
+                     (PCSZ)ul2));
 }
 
 /*
@@ -270,12 +256,11 @@ PTRASHMAPPINGTREENODE CreateMapping(ULONG ulMappingIndex,      // in: decimal in
         ULONG   ulDriveOfs = 0;
         pMapping->ulIndex = ulMappingIndex;
         pMapping->pFolderInTrash  = pFolderInTrash;
-        pMapping->pszSourceRealName = strdup(pcszSourceRealName);
-        if (treeInsertNode(&G_MappingsTreeRoot,
-                           (TREE*)pMapping,
-                           fnCompareMappingNodes,
-                           FALSE)      // no duplicates
-                == TREE_OK)
+        pMapping->Tree.ulKey // pszSourceRealName
+            = (ULONG)strdup(pcszSourceRealName);
+        if (!treeInsert(&G_MappingsTreeRoot,
+                        (TREE*)pMapping,
+                        fnCompareStrings))
         {
             if (pfNeedSave)
             {
@@ -530,9 +515,9 @@ PTRASHMAPPINGTREENODE trshGetMappingFromSource(XWPTrashCan *pTrashCan,
     WPSHLOCKSTRUCT Lock;
     if (wpshLockObject(&Lock, pTrashCan))
     {
-        pMapping = treeFindEQData(&G_MappingsTreeRoot,
-                                  (VOID*)pcszSourceFolder,
-                                  fnCompareMappingsData);
+        pMapping = (PTRASHMAPPINGTREENODE)treeFind(G_MappingsTreeRoot,
+                                                   (ULONG)pcszSourceFolder,
+                                                   fnCompareStrings);
     }
     wpshUnlockObject(&Lock);
 
@@ -560,7 +545,7 @@ PTRASHMAPPINGTREENODE trshGetMappingFromTrashDir(XWPTrashCan *pTrashCan,
     WPSHLOCKSTRUCT Lock;
     if (wpshLockObject(&Lock, pTrashCan))
     {
-        PTRASHMAPPINGTREENODE pNode = treeFirst(G_MappingsTreeRoot);
+        PTRASHMAPPINGTREENODE pNode = (PTRASHMAPPINGTREENODE)treeFirst(G_MappingsTreeRoot);
         while (pNode)
         {
             if (pNode->pFolderInTrash == pFolderInTrash)
@@ -569,7 +554,7 @@ PTRASHMAPPINGTREENODE trshGetMappingFromTrashDir(XWPTrashCan *pTrashCan,
                 break;
             }
 
-            pNode = treeNext((TREE*)pNode);
+            pNode = (PTRASHMAPPINGTREENODE)treeNext((TREE*)pNode);
         }
     }
     wpshUnlockObject(&Lock);
@@ -600,17 +585,18 @@ VOID trshFreeMapping(XWPTrashCan *pTrashCan,
     {
         treeDelete(&G_MappingsTreeRoot,
                    (TREE*)pMapping);
-        if (pMapping->pszSourceRealName)
+        if (pMapping->Tree.ulKey) // pszSourceRealName)
         {
             // set the corresponding drive to "dirty"
-            ULONG ulDriveOfs = pMapping->pszSourceRealName[0] - 'C';
+            PSZ pszSourceRealName = (PSZ)pMapping->Tree.ulKey;
+            ULONG ulDriveOfs = pszSourceRealName[0] - 'C';
                     // 0 for C:, 1 for D:, ...
             _Pmpf((__FUNCTION__ ": setting drive ofs %d dirty", ulDriveOfs));
             G_abMappingDrivesDirty[ulDriveOfs] = 1;
 
             // now clean up
-            free(pMapping->pszSourceRealName);
-            pMapping->pszSourceRealName = NULL;
+            free((PSZ)pMapping->Tree.ulKey); // pMapping->pszSourceRealName);
+            pMapping->Tree.ulKey = 0; // pMapping->pszSourceRealName = NULL;
 
             *pfNeedSave = TRUE;
         }
@@ -662,10 +648,11 @@ VOID trshSaveMappings(XWPTrashCan *pTrashCan)
 
                     // now traverse the tree and add all mappings which
                     // belong to this drive
-                    pNode = treeFirst(G_MappingsTreeRoot);
+                    pNode = (PTRASHMAPPINGTREENODE)treeFirst(G_MappingsTreeRoot);
                     while (pNode)
                     {
-                        if (toupper(pNode->pszSourceRealName[0]) == cDrive)
+                        PSZ pszSourceRealName = (PSZ)pNode->Tree.ulKey;
+                        if (toupper(pszSourceRealName[0]) == cDrive)
                         {
                             // this mapping is for our drive:
                             xstrcat(&strMappings,
@@ -674,14 +661,14 @@ VOID trshSaveMappings(XWPTrashCan *pTrashCan)
                                     0);
                             xstrcatc(&strMappings, ' ');
                             xstrcat(&strMappings,
-                                    pNode->pszSourceRealName,
+                                    pszSourceRealName,
                                     0);
                             xstrcatc(&strMappings, '\n');
 
                             cEntries++;
                         }
 
-                        pNode = treeNext((TREE*)pNode);
+                        pNode = (PTRASHMAPPINGTREENODE)treeNext((TREE*)pNode);
                     }
 
                     sprintf(szMappingsFile,
@@ -725,7 +712,7 @@ VOID trshSaveMappings(XWPTrashCan *pTrashCan)
 ULONG GetLowestTrashDirDecimal(VOID)
 {
     ULONG ul = 0;
-    PTRASHMAPPINGTREENODE pNode = treeFirst(G_MappingsTreeRoot);
+    PTRASHMAPPINGTREENODE pNode = (PTRASHMAPPINGTREENODE)treeFirst(G_MappingsTreeRoot);
     while (pNode)
     {
         if (pNode->ulIndex == ul)
@@ -734,10 +721,10 @@ ULONG GetLowestTrashDirDecimal(VOID)
             // try next
             ul++;
             // start over
-            pNode = treeFirst(G_MappingsTreeRoot);
+            pNode = (PTRASHMAPPINGTREENODE)treeFirst(G_MappingsTreeRoot);
         }
         else
-            pNode = treeNext((TREE*)pNode);
+            pNode = (PTRASHMAPPINGTREENODE)treeNext((TREE*)pNode);
     }
 
     return (ul);
@@ -1126,7 +1113,7 @@ PSZ trshComposeRelatedPath(XWPTrashObject *somSelf)
             if (pMapping)
             {
                 // we have a mapping: use that
-                _pszSourcePath = strdup(pMapping->pszSourceRealName);
+                _pszSourcePath = strdup((PSZ)pMapping->Tree.ulKey); // pszSourceRealName);
             }
             else
             {

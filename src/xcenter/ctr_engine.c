@@ -1532,10 +1532,11 @@ VOID ctrpRemoveDragoverEmphasis(HWND hwndClient)
  *      May only run on the XCenter GUI thread.
  *
  *@@added V0.9.9 (2001-03-09) [umoeller]
+ *@@changed V0.9.13 (2001-06-27) [umoeller]: fixes for tray widgets
  */
 
 HWND ctrpDragWidget(HWND hwnd,
-                    PXCENTERWIDGET pWidget)
+                    PXCENTERWIDGET pWidget)     // in: widget or subwidget
 {
     HWND hwndDrop = NULLHANDLE;
     HWND hwndClient = pWidget->pGlobals->hwndClient;
@@ -1548,13 +1549,16 @@ HWND ctrpDragWidget(HWND hwnd,
             SWP swpWidget;
             RECTL rclWidget;
             HBITMAP hbmWidget;
+
+            HWND hwndParent = WinQueryWindow(hwnd, QW_PARENT);  // XCenter client or tray
+
             WinQueryWindowPos(hwnd, &swpWidget);
             rclWidget.xLeft = swpWidget.x;
             rclWidget.xRight = swpWidget.x + swpWidget.cx;
             rclWidget.yBottom = swpWidget.y;
             rclWidget.yTop = swpWidget.y + swpWidget.cy;
 
-            WinMapWindowPoints(pXCenterData->Globals.hwndClient,
+            WinMapWindowPoints(hwndParent,
                                HWND_DESKTOP,
                                (PPOINTL)&rclWidget,
                                2);
@@ -1602,8 +1606,8 @@ HWND ctrpDragWidget(HWND hwnd,
                         drgImage.cxOffset = 0;           // Offset of the origin of
                         drgImage.cyOffset = 0;           // the image from the pointer
 
-                        // source is always XCenter client
-                        pdrgInfo->hwndSource = pXCenterData->Globals.hwndClient;
+                        // source is always XCenter client (or tray)
+                        pdrgInfo->hwndSource = hwndParent;
 
                         hwndDrop = DrgDrag(pdrgInfo->hwndSource,
                                            pdrgInfo,        // Pointer to DRAGINFO structure

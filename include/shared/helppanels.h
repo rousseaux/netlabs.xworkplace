@@ -7,8 +7,42 @@
  *      rid of the stupid hand calculations for getting
  *      the help panels right. However, this must be
  *      in a separate file because h2i isn't good at
- *      fully parsing C syntax.
+ *      fully parsing C syntax. So the help panel IDs
+ *      have been extracted from common.h into this file.
  *
+ *      To reference (show) a help panel from the XWorkplace
+ *      sources, do the following:
+ *
+ *      --  For each new help panel, add a unique resid
+ *          definition below. The only requirement is that
+ *          this be < 10000 because h2i.exe will assign
+ *          automatic resids with values 10000 and higher.
+ *
+ *      --  Write a new HTML file in 001\xwphelp.
+ *
+ *      --  Add a link to the new help file from
+ *          001\xwphelp\xfldr001.html. Otherwise your file
+ *          won't be translated by h2i.exe.
+ *
+ *      --  To the top <HTML> tag in your new help file,
+ *          add a "RESID=&resid;" attribute to explicitly
+ *          assign the resid for that file (with resid
+ *          being the identifier used in the #define below).
+ *
+ *          Example:
+ *
+ +              <HTML RESID=&ID_XFH_BORED;>
+ *
+ *      --  In the C sources, call cmnDisplayHelp(ID_XFH_BORED)
+ *          to display the help panel (or specify ID_XFH_BORED
+ *          in the callbacks to ntbInsertPage).
+ *
+ *      For historical reasons, the resids below are defined
+ *      in ascending order. Since some external scripts rely
+ *      on certain resids, do not change the existing ones.
+ *      However, there is no requirement for new resids to
+ *      be in ascending order any more, as long as they are
+ *      unique.
  */
 
 /*

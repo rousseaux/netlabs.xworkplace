@@ -8,7 +8,8 @@
  *      plugin DLLs.
  *
  *      WARNING: The XCenter is still work in progress. The
- *      definitions in this file are still subject to change.
+ *      definitions in this file are still subject to change,
+ *      even though I try to maintain backwards compatibility.
  *
  *      If you are looking at this file from the "toolkit\shared"
  *      directory of a binary XWorkplace release, this is an
@@ -375,8 +376,9 @@
      *         --  XN_HITTEST:  for transparent widgets, the XCenter
      *             wants to know if the specified location is covered.
      *
-     *         All unprocessed notifications should be routed
-     *         to ctrDefWidgetProc instead of being swallowed.
+     *      -- All unprocessed notifications must be routed
+     *         to ctrDefWidgetProc instead of WinDefWindowProc.
+     *         Do not swallow unprocessed messages.
      *
      *      -- You must never use WinSetWindowPos on your widget
      *         window yourself because this will solidly confuse
@@ -430,11 +432,6 @@
      *         your widget really is the XCenter client. It can
      *         also be a tray widget.
      *
-     *      -- Your widget must be prepared for being created or
-     *         destroyed at times other than XCenter creation or
-     *         destruction because the tray widget will do this
-     *         when the current tray is switched.
-     *
      *      -- If you use XCM_* messages, never post them to the
      *         XCenter client window (whose handle is available
      *         thru XCENTERGLOBALS). All XCM_* essages are understood
@@ -443,6 +440,11 @@
      *         As a result, always use WinQueryWindow(QW_PARENT),
      *         which will properly give you either the XCenter
      *         client or the tray widget.
+     *
+     *      -- Your widget must be prepared for being created or
+     *         destroyed at times other than XCenter creation or
+     *         destruction because the tray widget will do this
+     *         when the current tray is switched.
      */
 
     typedef struct _XCENTERWIDGETCLASS
@@ -482,39 +484,47 @@
 
         ULONG           ulClassFlags;
                 // WGTF_* flags; any combination of the following:
+
                 // -- WGTF_SIZEABLE: widget window can be resized with
                 //    the mouse by the user. A sizing bar is automatically
                 //    painted by the XCenter engine then.
+
                 // -- WGTF_NOUSERCREATE: do not show this class in
                 //    the "add widget" menu, and do not allow creating
                 //    instances of this in the XCenter settings notebook.
                 //    This is used for the object button widget, which
                 //    can only be created through drag'n'drop.
+
                 // -- WGTF_UNIQUEPERXCENTER: only one widget of this class
                 //    should be created per XCenter.
+
                 // -- WGTF_UNIQUEGLOBAL: only one widget of this class
                 //    should be created in all XCenters on the system.
                 //    This implies WGTF_UNIQUEPERXCENTER.
+
                 // -- WGTF_TOOLTIP: if set, the widget has a tooltip
                 //    and will receive WM_CONTROL messages with the
                 //    TTN_NEEDTEXT, TTN_SHOW, or TTN_POP notification codes
                 //    (see helpers\comctl.h).
                 //    The window ID of the tooltip control is ID_XCENTER_TOOLTIP.
                 //    See XCENTERWIDGETCLASS for tooltip handling.
+
                 // -- WGTF_TOOLTIP_AT_MOUSE: like WGTF_TOOPTIP, but the
                 //    tooltip is not centered above the widget, but put
                 //    at the mouse position instead.
                 //    This implies WGTF_TOOLTIP.
+
                 // -- WGTF_TRANSPARENT: some parts of the widget window
                 //    are transparent.  The widget will receive WM_CONTROL
                 //    messages with the XN_HITTEST notification code.
                 //    If the widget returns FALSE to the notification,
-                //    the action will be forwarded to its parent (the XCenter
-                //    or a tray widget).
+                //    the action will be forwarded to its parent (the
+                //    XCenter client or a tray widget).
+
                 // -- WGTF_TRAYABLE: widget is "trayable", that is, it
                 //    supports being created inside a tray widget.
                 //    Note: Restrictions apply if you want your widget
-                //    to be trayable.
+                //    to be trayable. See above.
 
         PWGTSHOWSETTINGSDLG pShowSettingsDlg;
                 // if the widget supports a settings dialog,

@@ -365,11 +365,11 @@ VOID WorkerAddObject(WPObject *pObj2Store)
                                         sizeof(TREE));
                 if (pNode)
                 {
-                    pNode->id = (ULONG)pObj2Store;
+                    pNode->ulKey = (ULONG)pObj2Store;
 
-                    if (TREE_OK == treeInsertID(&G_AwakeObjectsTree,
-                                                pNode,
-                                                FALSE))     // no duplicates
+                    if (!treeInsert(&G_AwakeObjectsTree,
+                                    pNode,
+                                    treeCompareKeys))
                         // increment global count
                         G_lAwakeObjectsCount++;
                     #ifdef DEBUG_AWAKEOBJECTS
@@ -431,8 +431,9 @@ VOID WorkerRemoveObject(WPObject *pObj)
                            pObj));
                 #endif
 
-                if (pNode = treeFindEQID(&G_AwakeObjectsTree,
-                                         (ULONG)pObj))
+                if (pNode = treeFind(G_AwakeObjectsTree,
+                                     (ULONG)pObj,
+                                     treeCompareKeys))
                 {
                     treeDelete(&G_AwakeObjectsTree,
                                pNode);

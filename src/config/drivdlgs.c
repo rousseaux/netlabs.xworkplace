@@ -74,7 +74,7 @@
  */
 
 /*
- *      Copyright (C) 1999-2000 Ulrich M”ller.
+ *      Copyright (C) 1999-2001 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -100,10 +100,15 @@
  *  8)  #pragma hdrstop and then more SOM headers which crash with precompiled headers
  */
 
-#define INCL_DOSERRORS
+#define INCL_DOSEXCEPTIONS
+#define INCL_DOSPROCESS
+#define INCL_DOSSEMAPHORES
+#define INCL_DOSMODULEMGR
 #define INCL_DOSMISC
+#define INCL_DOSERRORS
 
 #define INCL_WINWINDOWMGR
+#define INCL_WINMESSAGEMGR
 #define INCL_WINSYS
 #define INCL_WINDIALOGS
 #define INCL_WINENTRYFIELDS
@@ -116,6 +121,8 @@
 
 // C library headers
 #include <stdio.h>
+#include <setjmp.h>             // needed for except.h
+#include <assert.h>             // needed for except.h
 
 // generic headers
 #include "setup.h"                      // code generation and debugging options
@@ -123,8 +130,10 @@
 // headers in /helpers
 #include "helpers\cnrh.h"               // container helper routines
 #include "helpers\comctl.h"             // common controls (window procs)
+#include "helpers\except.h"             // exception handling
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\linklist.h"           // linked list helper routines
+#include "helpers\standards.h"          // some standard macros
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\tmsgfile.h"           // "text message file" handling
 #include "helpers\winh.h"               // PM helper routines
@@ -144,6 +153,305 @@
 // other SOM headers
 #include <wpfsys.h>                     // WPFileSystem
 
+/* ******************************************************************
+ *
+ *   Definitions
+ *
+ ********************************************************************/
+
+/*
+ *@@ DRIVERPLUGIN:
+ *
+ *@@added V0.9.13 (2001-06-27) [umoeller]
+ */
+
+typedef struct _DRIVERPLUGIN
+{
+    HMODULE     hmodPlugin;         // NULLHANDLE if built-in
+    PFNCHECKDRIVERNAME  pfnCheckDriverName;
+} DRIVERPLUGIN, *PDRIVERPLUGIN;
+
+/* ******************************************************************
+ *
+ *   Private prototypes
+ *
+ ********************************************************************/
+
+BOOL APIENTRY CheckHPFSDriverName(HMODULE hmodPlugin, HMODULE hmodXFLDR, PDRIVERSPEC pSpec, PSZ psz);
+BOOL APIENTRY CheckHPFS386DriverName(HMODULE hmodPlugin, HMODULE hmodXFLDR, PDRIVERSPEC pSpec, PSZ psz);
+BOOL APIENTRY CheckIBM1S506DriverName(HMODULE hmodPlugin, HMODULE hmodXFLDR, PDRIVERSPEC pSpec, PSZ psz);
+
+// built-in driver configuration dialogs
+MRESULT EXPENTRY drv_fnwpConfigHPFS(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2);
+MRESULT EXPENTRY drv_fnwpConfigHPFS386(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2);
+MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2);
+
+/* ******************************************************************
+ *
+ *   Global variables
+ *
+ ********************************************************************/
+
+static HMTX         G_hmxPlugins = NULLHANDLE;
+
+static LINKLIST     G_llCheckDrivers,       // linked list of DRIVERPLUGIN structs, auto-free
+                    G_llModules;            // linked list of HMODULE's, no auto-free
+static BOOL         G_fModulesInitialized = FALSE,
+                    G_fDriverProcsLoaded = FALSE;
+
+static ULONG        G_ulDriverLoadsCount = 0;
+
+static PFNCHECKDRIVERNAME G_aBuiltInDriverProcs[] =
+    {
+            CheckHPFSDriverName,
+            CheckHPFS386DriverName,
+            CheckIBM1S506DriverName
+    };
+
+/* ******************************************************************
+ *
+ *   Plugin DLL Management
+ *
+ ********************************************************************/
+
+/*
+ *@@ LockPlugins:
+ *
+ *@@added V0.9.13 (2001-06-27) [umoeller]
+ */
+
+BOOL LockPlugins(VOID)
+{
+    if (!G_hmxPlugins)
+        return (!DosCreateMutexSem(NULL,
+                                   &G_hmxPlugins,
+                                   0,
+                                   TRUE));      // request!
+
+    return (!WinRequestMutexSem(G_hmxPlugins, SEM_INDEFINITE_WAIT));
+}
+
+/*
+ *@@ UnlockPlugins:
+ *
+ *@@added V0.9.13 (2001-06-27) [umoeller]
+ */
+
+VOID UnlockPlugins(VOID)
+{
+    DosReleaseMutexSem(G_hmxPlugins);
+}
+
+/* ******************************************************************
+ *
+ *   APIs
+ *
+ ********************************************************************/
+
+/*
+ *@@ drvLoadPlugins:
+ *
+ *@@added V0.9.13 (2001-06-27) [umoeller]
+ */
+
+BOOL drvLoadPlugins(HAB hab)
+{
+    BOOL rc = FALSE;
+    BOOL fLocked = FALSE;
+
+    TRY_LOUD(excpt1)
+    {
+        if (fLocked = LockPlugins())
+        {
+            if (!G_fModulesInitialized)
+            {
+                // very first call:
+                lstInit(&G_llCheckDrivers, TRUE);
+                lstInit(&G_llModules, FALSE);
+                G_fModulesInitialized = TRUE;
+            }
+
+            if (!G_fDriverProcsLoaded)
+            {
+                // widget classes not loaded yet (or have been released again):
+
+                HMODULE         hmodXFLDR = cmnQueryMainCodeModuleHandle();
+
+                // built-in widget classes:
+                APIRET          arc = NO_ERROR;
+                CHAR            szPluginsDir[2*CCHMAXPATH],
+                                szSearchMask[2*CCHMAXPATH];
+                HDIR            hdirFindHandle = HDIR_CREATE;
+                FILEFINDBUF3    ffb3 = {0};      // returned from FindFirst/Next
+                ULONG           cbFFB3 = sizeof(FILEFINDBUF3);
+                ULONG           ulFindCount = 1;  // look for 1 file at a time
+                ULONG           ul;
+
+                // step 1: append built-in widgets to list
+                for (ul = 0;
+                     ul < ARRAYITEMCOUNT(G_aBuiltInDriverProcs);
+                     ul++)
+                {
+                    PDRIVERPLUGIN pDef = NEW(DRIVERPLUGIN);
+                    if (pDef)
+                    {
+                        pDef->hmodPlugin = NULLHANDLE;      // built-in
+                        pDef->pfnCheckDriverName = G_aBuiltInDriverProcs[ul];
+                        lstAppendItem(&G_llCheckDrivers,
+                                      (PVOID)pDef);
+                    }
+                }
+
+                // step 2: append plugin DLLs to list
+                // compose path for widget plugin DLLs
+                cmnQueryXWPBasePath(szPluginsDir);
+                strcat(szPluginsDir, "\\plugins\\drvdlgs");
+                sprintf(szSearchMask, "%s\\%s", szPluginsDir, "*.dll");
+
+                // _Pmpf((__FUNCTION__ ": searching for '%s'", szSearchMask));
+
+                arc = DosFindFirst(szSearchMask,
+                                   &hdirFindHandle,
+                                   // find everything except directories
+                                   FILE_ARCHIVED | FILE_HIDDEN | FILE_SYSTEM | FILE_READONLY,
+                                   &ffb3,
+                                   cbFFB3,
+                                   &ulFindCount,
+                                   FIL_STANDARD);
+                // and start looping...
+                while (arc == NO_ERROR)
+                {
+                    // alright... we got the file's name in ffb3.achName
+                    CHAR            szDLL[2*CCHMAXPATH],
+                                    szError[CCHMAXPATH] = "";
+                    HMODULE         hmod = NULLHANDLE;
+                    APIRET          arc2 = NO_ERROR;
+
+                    sprintf(szDLL, "%s\\%s", szPluginsDir, ffb3.achName);
+
+                    if (arc2 = DosLoadModule(szError,
+                                             sizeof(szError),
+                                             szDLL,
+                                             &hmod))
+                    {
+                        // error loading module:
+                        // log this, but we'd rather not have a message box here
+                        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                               "Unable to load plugin DLL \"%s\"."
+                               "\n    DosLoadModule returned code %d and string: \"%s\"",
+                               szDLL,
+                               arc2,
+                               szError);
+                    }
+                    else
+                    {
+                        // Check if the widget has the "CheckDriverName" export.
+                        PFNCHECKDRIVERNAME pfnCheckDriverName = NULL;
+                        if (!(arc2 = DosQueryProcAddr(hmod,
+                                                      0,
+                                                      "CheckDriverName",
+                                                      (PFN*)(&pfnCheckDriverName))))
+                        {
+                            // plugin DLL seems OK:
+                            // create an entry for this
+                            PDRIVERPLUGIN pDef = NEW(DRIVERPLUGIN);
+                            if (pDef)
+                            {
+                                pDef->hmodPlugin = hmod;
+                                pDef->pfnCheckDriverName = pfnCheckDriverName;
+                                lstAppendItem(&G_llCheckDrivers,
+                                              (PVOID)pDef);
+
+                                _Pmpf((__FUNCTION__ ": got CheckDriverName 0x%lX for module 0x%lX",
+                                            pDef->pfnCheckDriverName,
+                                            pDef->hmodPlugin));
+
+                                // and store the module too
+                                lstAppendItem(&G_llModules,
+                                              (PVOID)hmod);
+                            }
+                        }
+                        else
+                            DosFreeModule(hmod);
+                    } // end if DosLoadModule
+
+                    // find next DLL
+                    ulFindCount = 1;
+                    arc = DosFindNext(hdirFindHandle,
+                                      &ffb3,
+                                      cbFFB3,
+                                      &ulFindCount);
+                } // while (arc == NO_ERROR)
+
+                DosFindClose(hdirFindHandle);
+
+                rc = (lstCountItems(&G_llCheckDrivers) > 0);
+
+                G_fDriverProcsLoaded = TRUE;
+            }
+
+            G_ulDriverLoadsCount++;
+        }
+    }
+    CATCH(excpt1) {} END_CATCH();
+
+    if (fLocked)
+        UnlockPlugins();
+
+    return (rc);
+}
+
+/*
+ *@@ drvUnloadPlugins:
+ *
+ *@@added V0.9.13 (2001-06-27) [umoeller]
+ */
+
+VOID drvUnloadPlugins(VOID)
+{
+    BOOL fLocked = FALSE;
+    TRY_LOUD(excpt2)
+    {
+        if (fLocked = LockPlugins())
+        {
+            if (G_ulDriverLoadsCount == 0)
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                               "G_ulDriverLoadsCount is already 0!");
+            else
+            {
+                G_ulDriverLoadsCount--;
+                if (G_ulDriverLoadsCount == 0)
+                {
+                    // no more references to the data:
+
+                    // unload modules
+                    PLISTNODE pNode = lstQueryFirstNode(&G_llModules);
+                    while (pNode)
+                    {
+                        HMODULE hmod = (HMODULE)pNode->pItemData;
+
+                        _Pmpf((__FUNCTION__ ": unloading hmod 0x%lX",
+                                    hmod));
+
+                        DosFreeModule(hmod);
+
+                        pNode = pNode->pNext;
+                    }
+
+                    lstClear(&G_llModules);
+                    lstClear(&G_llCheckDrivers);
+
+                    G_fDriverProcsLoaded = FALSE;
+                }
+            }
+        }
+    }
+    CATCH(excpt2) {} END_CATCH();
+
+    if (fLocked)
+        UnlockPlugins();
+}
+
 /*
  *@@ drvConfigSupported:
  *      this function gets called from cfgDriversInitPage
@@ -152,54 +460,192 @@
  *      dialog exists for that driver and, if so, set the
  *      fields in the DRIVERSPEC structure accordingly.
  *
- *      If you add a new driver config dialog, add a check
- *      to this function.
+ *      This was rewritten with V0.9.13. Instead of
+ *      explicitly checking for driver names, this now
+ *      runs through the list of driver configuration
+ *      dialogs (either built-in or from the plugins dir)
+ *      and calls the "check driver name" func for each.
+ *
+ *      Returns FALSE if a fatal error occured.
  *
  *@@added V0.9.1 (99-11-29) [umoeller]
  *@@changed V0.9.3 (2000-04-10) [umoeller]: added IBM1S506.ADD support
  *@@changed V0.9.5 (2000-08-10) [umoeller]: added HPFS386 support
+ *@@changed V0.9.13 (2001-06-27) [umoeller]: rewritten for plugin support
  */
 
-VOID drvConfigSupported(PDRIVERSPEC pSpec)
+BOOL drvConfigSupported(PDRIVERSPEC pSpec)
 {
-    HMODULE hmodNLS = cmnQueryNLSModuleHandle(FALSE);
+    BOOL    brc = TRUE,
+            fLocked = FALSE;
 
+    TRY_LOUD(excpt1)
+    {
+        HMODULE hmodXFLDR = cmnQueryMainCodeModuleHandle();
+        PLISTNODE pNode;
+
+        pSpec->hmodConfigDlg = 0;
+        pSpec->idConfigDlg = 0;
+        pSpec->pfnwpConfigure = 0;
+
+        // go thru the driver dlg defs that were loaded
+        // and call each callback for whether it can handle
+        // this driver
+        if (fLocked = LockPlugins())
+        {
+            CHAR szErrorMsg[500];
+            pNode = lstQueryFirstNode(&G_llCheckDrivers);
+            while (pNode)
+            {
+                PDRIVERPLUGIN pDef = (PDRIVERPLUGIN)pNode->pItemData;
+
+                ULONG ul = pDef->pfnCheckDriverName(pDef->hmodPlugin,
+                                                    hmodXFLDR,
+                                                    pSpec,
+                                                    szErrorMsg);
+                if (ul == 1)
+                    // this func returned TRUE:
+                    // stop searching
+                    break;
+                else
+                    if (ul == -1)
+                    {
+                        CHAR szModule[CCHMAXPATH];
+                        DosQueryModuleName(pDef->hmodPlugin,
+                                           sizeof(szModule),
+                                           szModule);
+                        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                               "CheckDriverName call failed for plugin DLL"
+                               "\n        \"%s\"."
+                               "\n    DLL returned error msg:"
+                               "\n        %s",
+                               szModule,
+                               szErrorMsg);
+                    }
+
+                pNode = pNode->pNext;
+            }
+        }
+    }
+    CATCH(excpt1)
+    {
+        brc = FALSE;
+    } END_CATCH();
+
+    if (fLocked)
+        UnlockPlugins();
+
+    return (brc);
+}
+
+/*
+ *@@ drvDisplayHelp:
+ *      little helper for driver dialogs to display
+ *      a help panel.
+ *
+ *@@added V0.9.13 (2001-06-27) [umoeller]
+ */
+
+BOOL drvDisplayHelp(PVOID pvKernel,
+                    const char *pcszHelpFile,
+                    ULONG ulHelpPanel)
+{
+    return (_wpDisplayHelp((WPObject*)pvKernel,
+                           ulHelpPanel,
+                           (PSZ)pcszHelpFile));
+}
+
+/*
+ *@@ drv_strtok:
+ *      little helper for driver plugins since
+ *      the subsystem library won't support
+ *      strtok.
+ *
+ *@@added V0.9.13 (2001-06-27) [umoeller]
+ */
+
+char* drv_strtok(char *string1, const char *string2)
+{
+    return (strtok(string1, string2));
+}
+
+/*
+ *@@ drv_memicmp:
+ *      little helper for driver plugins since
+ *      the subsystem library won't support
+ *      memicmp.
+ *
+ *@@added V0.9.13 (2001-06-27) [umoeller]
+ */
+
+int drv_memicmp(void *buf1, void *buf2, unsigned int cnt)
+{
+    return (memicmp(buf1, buf2, cnt));
+}
+
+/* ******************************************************************
+ *
+ *   Built-in dialogs
+ *
+ ********************************************************************/
+
+/*
+ *@@ CheckHPFSDriverName:
+ *
+ *@@added V0.9.13 (2001-06-27) [umoeller]
+ */
+
+BOOL EXPENTRY CheckHPFSDriverName(HMODULE hmodPlugin, HMODULE hmodXFLDR, PDRIVERSPEC pSpec, PSZ psz)
+{
+    if (stricmp(pSpec->pszFilename, "HPFS.IFS") == 0)
+    {
+        pSpec->hmodConfigDlg = cmnQueryNLSModuleHandle(FALSE);
+        pSpec->idConfigDlg = ID_OSD_DRIVER_HPFS;        // dialog ID
+        pSpec->pfnwpConfigure = drv_fnwpConfigHPFS;     // window procedure
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+/*
+ *@@ CheckHPFS386DriverName:
+ *
+ *@@added V0.9.13 (2001-06-27) [umoeller]
+ */
+
+BOOL EXPENTRY CheckHPFS386DriverName(HMODULE hmodPlugin, HMODULE hmodXFLDR, PDRIVERSPEC pSpec, PSZ psz)
+{
+    if (stricmp(pSpec->pszFilename, "HPFS386.IFS") == 0)
+    {
+        pSpec->hmodConfigDlg = cmnQueryNLSModuleHandle(FALSE);
+        pSpec->idConfigDlg = ID_OSD_DRIVER_HPFS386;     // dialog ID
+        pSpec->pfnwpConfigure = drv_fnwpConfigHPFS386;  // window procedure
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+/*
+ *@@ CheckIBM1S506DriverName:
+ *
+ *@@added V0.9.13 (2001-06-27) [umoeller]
+ */
+
+BOOL EXPENTRY CheckIBM1S506DriverName(HMODULE hmodPlugin, HMODULE hmodXFLDR, PDRIVERSPEC pSpec, PSZ psz)
+{
     if (    (stricmp(pSpec->pszFilename, "IBM1S506.ADD") == 0)
          || (stricmp(pSpec->pszFilename, "DANIS506.ADD") == 0)
        )
     {
-        pSpec->hmodConfigDlg = hmodNLS;
+        pSpec->hmodConfigDlg = cmnQueryNLSModuleHandle(FALSE);
         pSpec->idConfigDlg = ID_OSD_DRIVER_IBM1S506;
         pSpec->pfnwpConfigure = drv_fnwpConfigIBM1S506;
+        return TRUE;
     }
-    else if (stricmp(pSpec->pszFilename, "HPFS.IFS") == 0)
-    {
-        pSpec->hmodConfigDlg = hmodNLS;                 // module handle
-        pSpec->idConfigDlg = ID_OSD_DRIVER_HPFS;        // dialog ID
-        pSpec->pfnwpConfigure = drv_fnwpConfigHPFS;     // window procedure
-    }
-    else if (stricmp(pSpec->pszFilename, "HPFS386.IFS") == 0)
-    {
-        pSpec->hmodConfigDlg = hmodNLS;                 // module handle
-        pSpec->idConfigDlg = ID_OSD_DRIVER_HPFS386;     // dialog ID
-        pSpec->pfnwpConfigure = drv_fnwpConfigHPFS386;  // window procedure
-    }
-    else if (stricmp(pSpec->pszFilename, "CDFS.IFS") == 0)
-    {
-        pSpec->hmodConfigDlg = hmodNLS;
-        pSpec->idConfigDlg = ID_OSD_DRIVER_CDFS;
-        pSpec->pfnwpConfigure = drv_fnwpConfigCDFS;
-    }
-    // add new driver checks here:
-    // else if ...
-    // ...
-    else
-    {
-        // no config: disable "Configure" button
-        pSpec->hmodConfigDlg = 0;
-        pSpec->idConfigDlg = 0;
-        pSpec->pfnwpConfigure = 0;
-    }
+
+    return FALSE;
 }
 
 /*
@@ -569,208 +1015,6 @@ MRESULT EXPENTRY drv_fnwpConfigHPFS386(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
             }
 
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
-        break;
-
-        default:
-            mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
-    }
-
-    return (mrc);
-}
-
-/*
- *@@ drv_fnwpConfigCDFS:
- *      dialog procedure for the "Configure CDFS.IFS" dialog.
- *
- *      This gets called automatically from cfgDriversItemChanged
- *      (xfsys.c) when the "Configure" button is pressed.
- *
- *      As with all driver dialogs, this gets a DRIVERDLGDATA
- *      structure with mp2 in WM_INITDLG.
- *
- *@@added V0.9.0 [umoeller]
- *@@changed V0.9.4 (2000-06-05) [umoeller]: "Optimize" and "Default" didn't work
- *@@changed V0.9.4 (2000-06-05) [umoeller]: crashed if params line was empty
- */
-
-MRESULT EXPENTRY drv_fnwpConfigCDFS(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
-{
-    PDRIVERDLGDATA pddd = WinQueryWindowPtr(hwndDlg, QWL_USER);
-    MRESULT mrc = 0;
-
-    switch (msg)
-    {
-        case WM_INITDLG:
-        {
-            PSZ     pszParamsCopy = 0,
-                    pszToken = 0;
-            // defaults
-            BOOL    fJoliet = FALSE,
-                    fKanji = FALSE;
-            ULONG   ulInit = 0,             // default
-                    ulCacheX64 = 2,
-                    ulSectors = 8;
-
-            HWND    hwndCacheSlider = WinWindowFromID(hwndDlg, ID_OSDI_CDFS_CACHESLIDER),
-                    hwndSectorsSlider = WinWindowFromID(hwndDlg, ID_OSDI_CDFS_SECTORSSLIDER);
-
-            // store DRIVERDLGDATA in window words
-            pddd = (PDRIVERDLGDATA)mp2;
-            WinSetWindowPtr(hwndDlg, QWL_USER, pddd);
-            mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
-
-            // now parse the parameters
-            pszParamsCopy = strdup(pddd->szParams);
-            if (pszParamsCopy)
-            {
-                pszToken = strtok(pszParamsCopy, " ");
-                if (pszToken) // V0.9.4 (2000-06-11) [umoeller]
-                    do {
-                        if (memicmp(pszToken, "/W", 2) == 0)
-                            fJoliet = TRUE;
-                        else if (memicmp(pszToken, "/K", 2) == 0)
-                            fKanji = TRUE;
-                        else if (memicmp(pszToken, "/Q", 2) == 0)
-                            ulInit = 1;         // quiet
-                        else if (memicmp(pszToken, "/V", 2) == 0)
-                            ulInit = 2;         // verbose
-                        else if (memicmp(pszToken, "/C:", 3) == 0)
-                            ulCacheX64 = strtoul(pszToken + 3, NULL, 10);
-                        else if (memicmp(pszToken, "/M:", 3) == 0)
-                            ulSectors = strtoul(pszToken + 3, NULL, 10);
-                    } while (pszToken = strtok(NULL, " "));
-
-                free(pszParamsCopy);
-            }
-
-            // set dialog items
-            winhSetDlgItemChecked(hwndDlg, ID_OSDI_CDFS_JOLIET, fJoliet);
-            winhSetDlgItemChecked(hwndDlg, ID_OSDI_CDFS_KANJI, fKanji);
-
-            // sliders
-            winhSetSliderTicks(hwndCacheSlider,
-                               (MPARAM)0, 4,
-                               (MPARAM)-1, -1);
-            winhSetSliderArmPosition(hwndCacheSlider, SMA_INCREMENTVALUE, ulCacheX64);
-            winhSetSliderTicks(hwndSectorsSlider,
-                               (MPARAM)0, 4,
-                               (MPARAM)-1, -1);
-            winhSetSliderArmPosition(hwndSectorsSlider, SMA_INCREMENTVALUE, ulSectors);
-
-            // initialization
-            switch(ulInit)
-            {
-                case 1:
-                    winhSetDlgItemChecked(hwndDlg, ID_OSDI_CDFS_INITQUIET, TRUE); break;
-                case 2:
-                    winhSetDlgItemChecked(hwndDlg, ID_OSDI_CDFS_INITVERBOSE, TRUE); break;
-                default:
-                    winhSetDlgItemChecked(hwndDlg, ID_OSDI_CDFS_INITDEFAULT, TRUE); break;
-            }
-        break; }
-
-        case WM_CONTROL:
-        {
-            USHORT  usItemID = SHORT1FROMMP(mp1),
-                    usNotifyCode = SHORT2FROMMP(mp1);
-            switch (usItemID)
-            {
-                // sliders changed:
-                case ID_OSDI_CDFS_CACHESLIDER:
-                case ID_OSDI_CDFS_SECTORSSLIDER:
-                    if (    (usNotifyCode == SLN_CHANGE)
-                         || (usNotifyCode == SLN_SLIDERTRACK)
-                       )
-                    {
-                        HWND hwndSlider = WinWindowFromID(hwndDlg,
-                                                          usItemID);
-                        LONG lSliderIndex
-                            = winhQuerySliderArmPosition(hwndSlider,
-                                                         SMA_INCREMENTVALUE);
-                        if (usItemID == ID_OSDI_CDFS_CACHESLIDER)
-                        {
-                            // cache slider: update text on the right
-                            CHAR szTemp[100];
-                            sprintf(szTemp, "%d KB", lSliderIndex * 64);
-                            WinSetDlgItemText(hwndDlg, ID_OSDI_CDFS_CACHETXT, szTemp);
-                        }
-                        else
-                        {
-                            // sectors slider: update text on the right
-                            CHAR szTemp[100];
-                            sprintf(szTemp, "%d", lSliderIndex);
-                            WinSetDlgItemText(hwndDlg, ID_OSDI_CDFS_SECTORSTXT, szTemp);
-                        }
-                    }
-                break;
-            }
-        break; }
-
-        case WM_COMMAND:
-            switch ((USHORT)mp1)
-            {
-                case DID_OK:
-                {
-                    // recompose params string
-                    LONG lSliderIndex;
-                    pddd->szParams[0] = 0;
-                    if (winhIsDlgItemChecked(hwndDlg, ID_OSDI_CDFS_JOLIET))
-                        strcpy(pddd->szParams, "/W ");
-                    if (winhIsDlgItemChecked(hwndDlg, ID_OSDI_CDFS_KANJI))
-                        strcat(pddd->szParams, "/K ");
-                    lSliderIndex = winhQuerySliderArmPosition(WinWindowFromID(hwndDlg,
-                                                                              ID_OSDI_CDFS_CACHESLIDER),
-                                                              SMA_INCREMENTVALUE);
-                    if (lSliderIndex != 2)
-                        // non-default cache:
-                        sprintf(pddd->szParams + strlen(pddd->szParams),
-                                "/C:%d ", lSliderIndex);
-                    lSliderIndex = winhQuerySliderArmPosition(WinWindowFromID(hwndDlg,
-                                                                              ID_OSDI_CDFS_SECTORSSLIDER),
-                                                              SMA_INCREMENTVALUE);
-                    if (lSliderIndex != 8)
-                        // non-default sectors:
-                        sprintf(pddd->szParams + strlen(pddd->szParams),
-                                "/M:%d ", lSliderIndex);
-                    if (winhIsDlgItemChecked(hwndDlg, ID_OSDI_CDFS_INITQUIET))
-                        strcat(pddd->szParams, "/Q ");
-                    else if (winhIsDlgItemChecked(hwndDlg, ID_OSDI_CDFS_INITVERBOSE))
-                        strcat(pddd->szParams, "/V ");
-
-                    // dismiss
-                    mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
-                break; }
-
-                case DID_OPTIMIZE:
-                {
-                    HWND    hwndCacheSlider = WinWindowFromID(hwndDlg, ID_OSDI_CDFS_CACHESLIDER),
-                            hwndSectorsSlider = WinWindowFromID(hwndDlg, ID_OSDI_CDFS_SECTORSSLIDER);
-                    winhSetDlgItemChecked(hwndDlg, ID_OSDI_CDFS_JOLIET, TRUE);
-                    winhSetDlgItemChecked(hwndDlg, ID_OSDI_CDFS_KANJI, FALSE);
-                    winhSetSliderArmPosition(hwndCacheSlider, SMA_INCREMENTVALUE, 8); // 512 KB
-                    winhSetSliderArmPosition(hwndSectorsSlider, SMA_INCREMENTVALUE, 32); // sectors
-                    winhSetDlgItemChecked(hwndDlg, ID_OSDI_CDFS_INITDEFAULT, TRUE);
-                break; }
-
-                case DID_DEFAULT:
-                {
-                    HWND    hwndCacheSlider = WinWindowFromID(hwndDlg, ID_OSDI_CDFS_CACHESLIDER),
-                            hwndSectorsSlider = WinWindowFromID(hwndDlg, ID_OSDI_CDFS_SECTORSSLIDER);
-                    winhSetDlgItemChecked(hwndDlg, ID_OSDI_CDFS_JOLIET, FALSE);
-                    winhSetDlgItemChecked(hwndDlg, ID_OSDI_CDFS_KANJI, FALSE);
-                    winhSetSliderArmPosition(hwndCacheSlider, SMA_INCREMENTVALUE, 2); // 128 KB
-                    winhSetSliderArmPosition(hwndSectorsSlider, SMA_INCREMENTVALUE, 8); // sectors
-                    winhSetDlgItemChecked(hwndDlg, ID_OSDI_CDFS_INITDEFAULT, TRUE);
-                break; }
-
-                default:
-                    mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
-            }
-        break;
-
-        case WM_HELP:
-            cmnDisplayHelp(NULL,        // active Desktop
-                           ID_XSH_DRIVER_CDFS);
         break;
 
         default:

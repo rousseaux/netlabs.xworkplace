@@ -773,8 +773,9 @@ PSZ cmnGetString(ULONG ulStringID)
         {
             PSTRINGTREENODE pNode;
 
-            if (pNode = (PSTRINGTREENODE)treeFindEQID(&G_StringsCache,
-                                                      ulStringID))
+            if (pNode = (PSTRINGTREENODE)treeFind(G_StringsCache,
+                                                  ulStringID,
+                                                  treeCompareKeys))
                 // already loaded:
                 pszReturn = pNode->pszLoaded;
             else
@@ -789,16 +790,16 @@ PSZ cmnGetString(ULONG ulStringID)
                         // NLS DLL not loaded yet:
                         cmnQueryNLSModuleHandle(FALSE);
 
-                    pNode->Tree.id = ulStringID;
+                    pNode->Tree.ulKey = ulStringID;
                     pNode->pszLoaded = NULL;
                         // otherwise cmnLoadString frees the string
                     cmnLoadString(G_habThread1,     // kernel.c
                                   G_hmodNLS,
                                   ulStringID,
                                   &pNode->pszLoaded);
-                    treeInsertID(&G_StringsCache,
-                                 (TREE*)pNode,
-                                 FALSE);            // no duplicates
+                    treeInsert(&G_StringsCache,
+                               (TREE*)pNode,
+                               treeCompareKeys);
                     pszReturn = pNode->pszLoaded;
                 }
             }

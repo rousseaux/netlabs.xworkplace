@@ -476,36 +476,10 @@ VOID UpdateStatusDescr(PNODERECORD prec)
  *@@added V0.9.9 (2001-04-07) [umoeller]
  */
 
-int TREEENTRY CompareFolderPosNodes(TREE *t1, TREE *t2)
+int TREEENTRY CompareStrings(ULONG ul1, ULONG ul2)
 {
-    return (strhcmp((const char*)(t1->id),
-                    (const char*)(t2->id)));
-}
-
-/*
- *@@ CompareFolderNodesData:
- *
- *@@added V0.9.9 (2001-04-07) [umoeller]
- */
-
-int TREEENTRY CompareFolderNodesData(TREE *t1,
-                                     void *pData)
-{
-    char *pcsz = (char*)pData;
-    if (pcsz)
-    {
-        ULONG cbLength = min(strlen((const char*)(t1->id)),
-                             strlen(pcsz));
-        int i = memicmp((void*)(t1->id),
-                        pcsz,
-                        cbLength);
-        if (i < 0)
-            return -1;
-        if (i > 0)
-            return +1;
-    }
-
-    return (0);
+    return (strhcmp((const char*)(ul1),
+                    (const char*)(ul2)));
 }
 
 /*
@@ -514,12 +488,12 @@ int TREEENTRY CompareFolderNodesData(TREE *t1,
  *@@added V0.9.9 (2001-04-07) [umoeller]
  */
 
-BOOL HasFolderPos(TREE **pFolderPosTree,
+BOOL HasFolderPos(TREE *pFolderPosTree,
                   char *pcszDecimalHandle)
 {
-    return (!!treeFindEQData(pFolderPosTree,
-                             pcszDecimalHandle,
-                             CompareFolderNodesData));
+    return (!!treeFind(pFolderPosTree,
+                       (ULONG)pcszDecimalHandle,
+                       CompareStrings));
 }
 
 /*
@@ -623,11 +597,10 @@ void _Optlink fntInsertHandles(PTHREADINFO ptiMyself)
                     while (*pcszFolderPosThis)
                     {
                         TREE    *pNewNode = NEW(TREE);
-                        pNewNode->id = (ULONG)pcszFolderPosThis;
-                        treeInsertNode(&FolderPosTree,
-                                       pNewNode,
-                                       CompareFolderPosNodes,
-                                       FALSE);       // no duplicates
+                        pNewNode->ulKey = (ULONG)pcszFolderPosThis;
+                        treeInsert(&FolderPosTree,
+                                   pNewNode,
+                                   CompareStrings);
                                 // @@ free the tree nodes
                         pcszFolderPosThis += strlen(pcszFolderPosThis) + 1;   // next type/filter
                     }
@@ -790,7 +763,7 @@ void _Optlink fntInsertHandles(PTHREADINFO ptiMyself)
                                         (ULONG)(pNode->usHandle)
                                               | (G_ulHiwordFileSystem << 16L));
 
-                                preccThis->fFolderPos = HasFolderPos(&FolderPosTree,
+                                preccThis->fFolderPos = HasFolderPos(FolderPosTree,
                                                                      szDecimalHandle);
 
                                 pCur += sizeof (NODE) + pNode->usNameSize;

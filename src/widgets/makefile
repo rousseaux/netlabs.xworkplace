@@ -69,6 +69,7 @@ OUTPUTDIR = $(BASE_OUTPUTDIR)\widgets
 # These will be put into BIN\.
 # If you add a new source, add the corresponding .OBJ file here.
 OBJS = \
+    $(OUTPUTDIR)\d_cdfs.obj \
     $(OUTPUTDIR)\miniwdgt.obj \
     $(OUTPUTDIR)\w_diskfree.obj \
     $(OUTPUTDIR)\w_monitors.obj \

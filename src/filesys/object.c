@@ -940,7 +940,7 @@ ULONG CheckShrinkCache(VOID)
     {
         while (lObjectsToDelete--)
         {
-            POBJTREENODE    pOldest = treeFirst(G_HandlesCache),
+            POBJTREENODE    pOldest = (POBJTREENODE)treeFirst(G_HandlesCache),
                             pNode = pOldest;
             while (pNode)
             {
@@ -948,14 +948,15 @@ ULONG CheckShrinkCache(VOID)
                     // this node is older:
                     pOldest = pNode;
 
-                pNode = treeNext((TREE*)pNode);
+                pNode = (POBJTREENODE)treeNext((TREE*)pNode);
             }
 
             // now we know the oldest node;
             // delete it
             if (pOldest)
             {
-                treeDelete(&G_HandlesCache, (TREE*)pNode);
+                treeDelete(&G_HandlesCache,
+                           (TREE*)pNode);
                 G_ulHandlesCacheItemsCount--;
                 // unset list notify flag
                 _xwpModifyListNotify(pNode->pObject,
@@ -1005,8 +1006,9 @@ WPObject* objFindObjFromHandle(HOBJECT hobj)
     // lock the cache
     if (LockHandlesCache())
     {
-        POBJTREENODE pNode = treeFindEQID(&G_HandlesCache,
-                                          hobj);
+        POBJTREENODE pNode = (POBJTREENODE)treeFind(G_HandlesCache,
+                                                    hobj,
+                                                    treeCompareKeys);
         if (pNode)
         {
             // was in cache:
@@ -1036,14 +1038,14 @@ WPObject* objFindObjFromHandle(HOBJECT hobj)
                 pNode = NEW(OBJTREENODE);
                 if (pNode)
                 {
-                    pNode->Tree.id = hobj;
+                    pNode->Tree.ulKey = hobj;
                     pNode->pObject = pobjReturn;
                     // store system uptime as last reference
                     pNode->ulReferenced = doshQuerySysUptime();
 
-                    treeInsertID(&G_HandlesCache,
-                                 (TREE*)pNode,
-                                 FALSE);        // no duplicates
+                    treeInsert(&G_HandlesCache,
+                               (TREE*)pNode,
+                               treeCompareKeys);
                     G_ulHandlesCacheItemsCount++;
 
                     // set list-notify flag so we can
@@ -1078,18 +1080,19 @@ VOID objRemoveFromHandlesCache(WPObject *somSelf)
     {
         // this is terminally slow, but what the heck...
         // this rarely gets called
-        POBJTREENODE pNode = treeFirst(G_HandlesCache);
+        POBJTREENODE pNode = (POBJTREENODE)treeFirst(G_HandlesCache);
         while (pNode)
         {
             if (pNode->pObject == somSelf)
             {
-                treeDelete(&G_HandlesCache, (TREE*)pNode);
+                treeDelete(&G_HandlesCache,
+                           (TREE*)pNode);
                 G_ulHandlesCacheItemsCount--;
                 free(pNode);
                 break;
             }
 
-            pNode = treeNext((TREE*)pNode);
+            pNode = (POBJTREENODE)treeNext((TREE*)pNode);
         }
 
         UnlockHandlesCache();
@@ -1175,11 +1178,11 @@ BOOL objAddToDirtyList(WPObject *pobj)
                 TREE *pNode = NEW(TREE);
                 if (pNode)
                 {
-                    pNode->id = (ULONG)pobj;
+                    pNode->ulKey = (ULONG)pobj;
 
-                    brc = (TREE_OK == treeInsertID(&G_DirtyList,
-                                                   pNode,
-                                                   FALSE));        // no duplicates
+                    brc = (!treeInsert(&G_DirtyList,
+                                       pNode,
+                                       treeCompareKeys));        // no duplicates
                     if (brc)
                     {
                         G_ulDirtyListItemsCount++;
@@ -1249,8 +1252,9 @@ BOOL objRemoveFromDirtyList(WPObject *pobj)
     {
         if (fLocked = LockDirtyList())
         {
-            TREE *pNode = treeFindEQID(&G_DirtyList,
-                                       (ULONG)pobj);
+            TREE *pNode = treeFind(G_DirtyList,
+                                   (ULONG)pobj,
+                                   treeCompareKeys);
             if (pNode)
             {
                 // was on list:
@@ -1373,7 +1377,7 @@ ULONG objForAllDirtyObjects(FNFORALLDIRTIESCALLBACK *pCallback,  // in: callback
                          ul < cObjects;
                          ul++)
                     {
-                        if (pCallback((WPObject*)(papNodes[ul]->id),    // object ptr
+                        if (pCallback((WPObject*)(papNodes[ul]->ulKey),    // object ptr
                                       ul,
                                       cObjects,
                                       pvUserForCallback))
