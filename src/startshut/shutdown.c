@@ -2905,8 +2905,8 @@ STATIC VOID CloseOneItem(PSHUTDOWNDATA pShutdownData,
 
             WinPostMsg(pItem->swctl.hwnd,
                        WM_QUIT,
-                       MPNULL,);
-                       (MPARAM) pItem->swctl.hwnd); // V1.0.3 (2004-5-9) [pr]:Required for WarpCenter
+                       MPNULL,      // V1.0.3 (2004-5-9) [umoeller]: fixed compile stopper
+                       (MPARAM)pItem->swctl.hwnd); // V1.0.3 (2004-5-9) [pr]:Required for WarpCenter
         }
     }
     else
