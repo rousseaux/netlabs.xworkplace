@@ -1484,15 +1484,16 @@ BOOL wpshCheckIfPopulated(WPFolder *somSelf,
                           BOOL fFoldersOnly)
 {
     BOOL        brc = FALSE;
-    CHAR        szRealName[CCHMAXPATH];
+    CHAR        szRealName[2*CCHMAXPATH];       // V0.9.16 (2001-10-15) [umoeller]
 
     ULONG       ulPopulateFlag = (fFoldersOnly)
                                     ? FOI_POPULATEDWITHFOLDERS
                                     : FOI_POPULATEDWITHALL;
 
-    if ((_wpQueryFldrFlags(somSelf) & ulPopulateFlag) != ulPopulateFlag)
+    if (    ((_wpQueryFldrFlags(somSelf) & ulPopulateFlag) != ulPopulateFlag)
+         && (_wpQueryFilename(somSelf, szRealName, TRUE))
+       )
     {
-        _wpQueryFilename(somSelf, szRealName, TRUE);
         brc = _wpPopulate(somSelf,
                           0,
                           szRealName,

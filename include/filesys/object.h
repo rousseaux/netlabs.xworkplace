@@ -128,7 +128,42 @@
      *
      ********************************************************************/
 
-    MRESULT EXPENTRY obj_fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2);
+    // MRESULT EXPENTRY obj_fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2);
+
+    /* ******************************************************************
+     *
+     *   Notebook callbacks (notebook.c) for new XFldObject "Icon" page
+     *
+     ********************************************************************/
+
+    #ifdef NOTEBOOK_HEADER_INCLUDED
+
+        #define ICONFL_TITLE            0x0001
+        #define ICONFL_ICON             0x0002
+        #define ICONFL_TEMPLATE         0x0004
+        #define ICONFL_LOCKEDINPLACE    0x0008
+        #define ICONFL_HOTKEY           0x0010
+        #define ICONFL_DETAILS          0x0020
+
+        VOID objFormatIconPage(PCREATENOTEBOOKPAGE pcnbp,
+                               ULONG flFlags);
+
+        VOID XWPENTRY objIcon1InitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                       ULONG flFlags);
+
+        MRESULT XWPENTRY objIcon1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+                                             ULONG ulItemID, USHORT usNotifyCode,
+                                             ULONG ulExtra);
+    #endif
+
+    /* ******************************************************************
+     *
+     *   Object details dialog
+     *
+     ********************************************************************/
+
+    VOID objShowObjectDetails(HWND hwndOwner,
+                              WPObject *pobj);
 
     /* ******************************************************************
      *
@@ -142,15 +177,13 @@
                                 HOBJECT hobj);
     #endif
 
-    BOOL objQueryObjectHotkey(WPObject *somSelf,
-                              PUSHORT pusFlags,
-                              PUCHAR  pucScanCode,
-                              PUSHORT pusKeyCode);
+    #ifdef SOM_XFldObject_h
+        BOOL objQueryObjectHotkey(WPObject *somSelf,
+                                  XFldObject_POBJECTHOTKEY pHotkey);
 
-    BOOL objSetObjectHotkey(WPObject *somSelf,
-                            USHORT usFlags,
-                            UCHAR ucScanCode,
-                            USHORT usKeyCode);
+        BOOL objSetObjectHotkey(WPObject *somSelf,
+                                XFldObject_POBJECTHOTKEY pHotkey);
+    #endif
 
     BOOL objRemoveObjectHotkey(HOBJECT hobj);
 

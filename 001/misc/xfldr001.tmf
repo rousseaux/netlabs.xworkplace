@@ -110,8 +110,6 @@
 
 <--XFL0133-->: You have chosen to have all folders on your system sorted by default. This will include the Desktop. Do you wish to disable auto-sort for the Desktop?
 
-<--XFL0134-->: &xwp; could not find the requested help topic. Either you have moved the &xwp; help file (XFLDR001.HLP) to a different folder, or the author of &xwp; has confused something. Try to reinstall &xwp;.
-
 <--XFL0135-->: You have opened a submenu which contains no menu items because the corresponding &xwp; configuration folder contains no objects. Place objects into the configuration folders to create menu items.
 
 <--XFL0136-->: The CONFIG.SYS file has been changed. In order to let the settings take effect, you will need to shut down and reboot your system. A WPS restart will not suffice for this.
@@ -266,8 +264,6 @@ Should we do this now?
 ;
 ; the following items are new with V0.9.4
 ;
-
-<--XFL0187-->: The trash can must have a name. The old name has been restored.
 
 <--XFL0188-->: You have just restored a WPS archive. &xwp;'s automatic archiving has been disabled in order to prevent archive overwrites. You can turn archiving back on in the Desktop's settings notebook.
 
@@ -432,6 +428,14 @@ WARNING: This feature is still slightly unstable. It will probably not hang your
 This widget class cannot be used in a tray.
 
 Do you wish to remove this widget from the &xcenter;'s widget list?
+
+;
+; the following items changed with V0.9.16
+;
+
+<--XFL0134-->: The help panel with the ID "%1" was not found in "%2". No help is available.
+
+<--XFL0187-->: The object title you have entered is invalid. Since every object must have a valid title, the old name has been restored.
 
 ; ---------------------------------------------------------------------------------
 ;

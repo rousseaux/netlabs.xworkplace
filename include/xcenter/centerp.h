@@ -31,29 +31,15 @@
         #error shared\center.h must be included before config\centerp.h.
     #endif
 
-    // PM window class names for built-in widgets
-    #define WNDCLASS_WIDGET_OBJBUTTON   "XWPCenterObjButtonWidget"
-    #define WNDCLASS_WIDGET_PULSE       "XWPCenterPulseWidget"
-    #define WNDCLASS_WIDGET_TRAY        "XWPCenterTrayWidget"
-
-    MRESULT EXPENTRY fnwpObjButtonWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2);
-    MRESULT EXPENTRY fnwpPulseWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2);
-    MRESULT EXPENTRY fnwpTrayWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2);
-
-    // undocumented window style for "topmost"
-    #ifndef WS_TOPMOST
-        #define WS_TOPMOST  0x00200000L
+    #ifndef SOM_XCenter_h
+        #error classes\xcenter.h must be included before config\centerp.h.
     #endif
 
-    #define TIMERID_XTIMERSET       1
-
-    #define TIMERID_UNFOLDFRAME     2
-    #define TIMERID_SHOWWIDGETS     3
-    #define TIMERID_AUTOHIDE_START  4
-    #define TIMERID_AUTOHIDE_RUN    5
-
-    #define MAX_UNFOLDFRAME         500     // ms total unfold time
-    #define MAX_AUTOHIDE            500     // ms total autohide animation time
+    /* ******************************************************************
+     *
+     *   XCenter model (ctr_model.c)
+     *
+     ********************************************************************/
 
     /*
      *@@ PRIVATEWIDGETCLASS:
@@ -127,7 +113,7 @@
                         // if this != NULL, this is a subwidget
                         // setting and this contains the owning
                         // tray;
-                        // otherwise this is NULL
+                        // otherwise (for root widgets) this is NULL
 
             ULONG                   ulCurrentTray;
                         // for tray widgets only: the current tray
@@ -155,26 +141,126 @@
         {
             PSZ         pszTrayName;    // tray name (malloc'd)
 
-            LINKLIST    llSubwidgets;   // linked list of PRIVATEWIDGETSETTING structs,
-                                        // no auto-free
+            LINKLIST    llSubwidgetSettings;
+                                    // linked list of PRIVATEWIDGETSETTING structs,
+                                    // no auto-free
 
         } TRAYSETTING;
 
-        /*
-         *@@ TRAYSUBWIDGET:
-         *      describes a subwidget in a tray. A linked
-         *      list of these exists in TRAYSETTING.
-         */
+    #endif
 
-        /* typedef struct _TRAYSUBWIDGET
-        {
-            PTRAYSETTING pOwningTray;       // tray which owns this subwidget,
-                                            // always valid
+    /* ******************************************************************
+     *
+     *   XCenter widget class management
+     *
+     ********************************************************************/
 
-            PRIVATEWIDGETSETTING Setting;   // subwidget setting to create widget from,
-                                            // always valid
+    BOOL ctrpLockClasses(VOID);
 
-        } TRAYSUBWIDGET, *PTRAYSUBWIDGET;
+    VOID ctrpUnlockClasses(VOID);
+
+    VOID ctrpLoadClasses(VOID);
+
+    #ifdef LINKLIST_HEADER_INCLUDED
+        PLINKLIST ctrpQueryClasses(VOID);
+    #endif
+
+    VOID ctrpFreeClasses(VOID);
+
+    PXCENTERWIDGETCLASS ctrpFindClass(const char *pcszWidgetClass);
+
+    HWND ctrpAddWidgetsMenu(XCenter *somSelf,
+                            HWND hwndMenu,
+                            SHORT sPosition,
+                            BOOL fTrayableOnly);
+
+    PPRIVATEWIDGETCLASS ctrpFindClassFromMenuCommand(USHORT usCmd);
+
+    /* ******************************************************************
+     *
+     *   Widget settings management
+     *
+     ********************************************************************/
+
+    #ifdef LINKLIST_HEADER_INCLUDED
+
+        XCRET XWPENTRY ctrpCreateWidgetSetting(XCenter *somSelf,
+                                               PTRAYSETTING pTray,
+                                               const char *pcszWidgetClass,
+                                               const char *pcszSetupString,
+                                               ULONG ulBeforeIndex,
+                                               PPRIVATEWIDGETSETTING *ppNewSetting,
+                                               PULONG pulNewItemCount,
+                                               PULONG pulNewWidgetIndex);
+
+        XCRET ctrpFindWidgetSetting(XCenter *somSelf,
+                                    ULONG ulTrayWidgetIndex,
+                                    ULONG ulTrayIndex,
+                                    ULONG ulWidgetIndex,
+                                    PPRIVATEWIDGETSETTING *ppSetting,
+                                    PXCENTERWIDGET *ppViewData);
+
+        VOID XWPENTRY ctrpFreeSettingData(PPRIVATEWIDGETSETTING *ppSetting);
+
+        BOOL XWPENTRY ctrpDeleteWidgetSetting(PPRIVATEWIDGETSETTING pSubwidget);
+
+        PTRAYSETTING XWPENTRY ctrpCreateTray(PPRIVATEWIDGETSETTING ppws,
+                                             const char *pcszTrayName,
+                                             PULONG pulIndex);
+
+        BOOL XWPENTRY ctrpDeleteTray(PPRIVATEWIDGETSETTING ppws,
+                                     ULONG ulIndex);
+
+        PLINKLIST ctrpQuerySettingsList(XCenter *somSelf);
+
+    #endif
+
+    ULONG ctrpQueryWidgetsCount(XCenter *somSelf);
+
+    VOID ctrpFreeWidgets(XCenter *somSelf);
+
+    PVOID ctrpQueryWidgets(XCenter *somSelf,
+                           PULONG pulCount);
+
+    VOID ctrpFreeWidgetsBuf(PVOID pBuf,
+                            ULONG ulCount);
+
+    PSZ ctrpStuffSettings(XCenter *somSelf,
+                          PULONG pcbSettingsArray);
+
+    ULONG ctrpUnstuffSettings(XCenter *somSelf);
+
+    /* ******************************************************************
+     *
+     *   XCenter views (ctr_engine.c)
+     *
+     ********************************************************************/
+
+    // PM window class names for built-in widgets
+    #define WNDCLASS_WIDGET_OBJBUTTON   "XWPCenterObjButtonWidget"
+    #define WNDCLASS_WIDGET_PULSE       "XWPCenterPulseWidget"
+    #define WNDCLASS_WIDGET_TRAY        "XWPCenterTrayWidget"
+
+    MRESULT EXPENTRY fnwpObjButtonWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2);
+    MRESULT EXPENTRY fnwpPulseWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2);
+    MRESULT EXPENTRY fnwpTrayWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2);
+
+    // undocumented window style for "topmost"
+    #ifndef WS_TOPMOST
+        #define WS_TOPMOST  0x00200000L
+    #endif
+
+    #define TIMERID_XTIMERSET       1
+
+    #define TIMERID_UNFOLDFRAME     2
+    #define TIMERID_SHOWWIDGETS     3
+    #define TIMERID_AUTOHIDE_START  4
+    #define TIMERID_AUTOHIDE_RUN    5
+
+    #define MAX_UNFOLDFRAME         500     // ms total unfold time
+    #define MAX_AUTOHIDE            500     // ms total autohide animation time
+
+    #ifdef LINKLIST_HEADER_INCLUDED
 
         /*
          *@@ PRIVATEWIDGETVIEW:
@@ -223,12 +309,13 @@
                         // widget, if Widget.fSizeable == TRUE;
                         // otherwise this is 0
 
-            struct _PRIVATEWIDGETVIEW *pOwningTray;
+            struct _PRIVATEWIDGETVIEW *pOwningTrayWidget;
                         // NULL if this widget is a direct child
                         // of the XCenter client; otherwise this
                         // has a pointer to the tray widget which
                         // owns this widget
                         // V0.9.13 (2001-06-19) [umoeller]
+                        // renamed V0.9.16 (2001-10-18) [umoeller]
 
             PLINKLIST        pllSubwidgetViews;
                         // if this is a tray widget, linked list of
@@ -446,120 +533,39 @@
 
     /* ******************************************************************
      *
-     *   XCenter widget class management
-     *
-     ********************************************************************/
-
-    BOOL ctrpLockClasses(VOID);
-
-    VOID ctrpUnlockClasses(VOID);
-
-    VOID ctrpLoadClasses(VOID);
-
-    #ifdef LINKLIST_HEADER_INCLUDED
-        PLINKLIST ctrpQueryClasses(VOID);
-    #endif
-
-    VOID ctrpFreeClasses(VOID);
-
-    PXCENTERWIDGETCLASS ctrpFindClass(const char *pcszWidgetClass);
-
-    /* ******************************************************************
-     *
-     *   Widget settings management
-     *
-     ********************************************************************/
-
-    #ifdef LINKLIST_HEADER_INCLUDED
-
-        PTRAYSETTING XWPENTRY ctrpCreateTray(PPRIVATEWIDGETSETTING ppws,
-                                             const char *pcszTrayName,
-                                             PULONG pulIndex);
-
-        BOOL XWPENTRY ctrpDeleteTray(PPRIVATEWIDGETSETTING ppws,
-                                     ULONG ulIndex);
-
-        PPRIVATEWIDGETSETTING XWPENTRY ctrpFindWidgetSetting(XCenter *somSelf,
-                                                             ULONG ulTrayWidgetIndex,
-                                                             ULONG ulTrayIndex,
-                                                             ULONG ulWidgetIndex,
-                                                             PXCENTERWIDGET *ppViewData);
-
-        PPRIVATEWIDGETSETTING XWPENTRY ctrpCreateWidgetSetting(PTRAYSETTING pTray,
-                                                               const char *pcszWidgetClass,
-                                                               const char *pcszSetupString,
-                                                               ULONG ulIndex);
-
-        BOOL XWPENTRY ctrpDeleteWidgetSetting(PPRIVATEWIDGETSETTING pSubwidget);
-
-    #endif
-
-    #ifdef SOM_XCenter_h
-
-        PSZ ctrpStuffSettings(XCenter *somSelf,
-                              PULONG pcbSettingsArray);
-
-        ULONG ctrpUnstuffSettings(XCenter *somSelf);
-
-        #ifdef LINKLIST_HEADER_INCLUDED
-            PLINKLIST ctrpQuerySettingsList(XCenter *somSelf);
-        #endif
-
-    #endif
-
-    /* ******************************************************************
-     *
      *   XCenter view implementation
      *
      ********************************************************************/
 
-    #ifdef SOM_XCenter_h
+    ULONG ctrpQueryWidgetIndexFromHWND(XCenter *somSelf,
+                                       HWND hwndWidget,
+                                       PULONG pulTrayWidgetIndex,
+                                       PULONG pulTrayIndex,
+                                       PULONG pulWidgetIndex);
 
-        ULONG ctrpQueryWidgetIndexFromHWND(XCenter *somSelf,
-                                           HWND hwndWidget,
-                                           PULONG pulTrayWidgetIndex,
-                                           PULONG pulTrayIndex,
-                                           PULONG pulWidgetIndex);
+    BOOL ctrpInsertWidget(XCenter *somSelf,
+                          ULONG ulBeforeIndex,
+                          const char *pcszWidgetClass,
+                          const char *pcszSetupString);
 
-        VOID ctrpFreeWidgets(XCenter *somSelf);
+    BOOL ctrpRemoveWidget(XCenter *somSelf,
+                          ULONG ulIndex);
 
-        PVOID ctrpQueryWidgets(XCenter *somSelf,
-                               PULONG pulCount);
+    BOOL ctrpMoveWidget(XCenter *somSelf,
+                        ULONG ulIndex2Move,
+                        ULONG ulBeforeIndex);
 
-        VOID ctrpFreeWidgetsBuf(PVOID pBuf,
-                                ULONG ulCount);
+    BOOL ctrpSetPriority(XCenter *somSelf,
+                         ULONG ulClass,
+                         LONG lDelta);
 
-        BOOL ctrpInsertWidget(XCenter *somSelf,
-                              ULONG ulBeforeIndex,
-                              const char *pcszWidgetClass,
-                              const char *pcszSetupString);
+    BOOL ctrpModifyPopupMenu(XCenter *somSelf,
+                            HWND hwndMenu);
 
-        BOOL ctrpRemoveWidget(XCenter *somSelf,
-                              ULONG ulIndex);
-
-        BOOL ctrpMoveWidget(XCenter *somSelf,
-                            ULONG ulIndex2Move,
-                            ULONG ulBeforeIndex);
-
-        BOOL ctrpSetPriority(XCenter *somSelf,
-                             ULONG ulClass,
-                             LONG lDelta);
-
-        HWND ctrpAddWidgetsMenu(XCenter *somSelf,
-                                HWND hwndMenu,
-                                SHORT sPosition,
-                                BOOL fTrayableOnly);
-
-        BOOL ctrpModifyPopupMenu(XCenter *somSelf,
-                                HWND hwndMenu);
-
-        PPRIVATEWIDGETCLASS ctrpFindClassFromMenuCommand(USHORT usCmd);
-
-        HWND ctrpCreateXCenterView(XCenter *somSelf,
-                                   HAB hab,
-                                   ULONG ulView,
-                                   PVOID *ppvOpenView);
-    #endif // SOM_XCenter_h
+    HWND ctrpCreateXCenterView(XCenter *somSelf,
+                               HAB hab,
+                               ULONG ulView,
+                               PVOID *ppvOpenView);
 
     /* ******************************************************************
      *
@@ -700,25 +706,25 @@
      *
      ********************************************************************/
 
-    #ifdef SOM_XCenter_h
+    VOID ctrpInitData(XCenter *somSelf);
 
-        VOID ctrpInitData(XCenter *somSelf);
+    BOOL ctrpQuerySetup(XCenter *somSelf,
+                         PVOID pstrSetup);
 
-        BOOL ctrpQuerySetup(XCenter *somSelf,
-                             PVOID pstrSetup);
+    BOOL ctrpSetup(XCenter *somSelf,
+                   PSZ pszSetupString);
 
-        BOOL ctrpSetup(XCenter *somSelf,
+    BOOL ctrpSetupOnce(XCenter *somSelf,
                        PSZ pszSetupString);
 
-        BOOL ctrpRestoreState(XCenter *somSelf);
+    BOOL ctrpRestoreState(XCenter *somSelf);
 
-        BOOL ctrpSaveState(XCenter *somSelf);
-
-    #endif
+    BOOL ctrpSaveState(XCenter *somSelf);
 
     #define DRT_WIDGET "Widget settings"
 
     BOOL ctrpSaveToFile(PCSZ pszDest, PCSZ pszClass, PCSZ pszSetup);
+
     BOOL ctrpReadFromFile(PCSZ pszSource, PSZ *ppszSetup);
 
     /* ******************************************************************

@@ -977,6 +977,31 @@ const char* cmnQueryHelpLibrary(VOID)
 }
 
 /*
+ *@@ cmnHelpNotFound:
+ *      displays an error msg that the given help panel
+ *      could not be found.
+ *
+ *@@added V0.9.16 (2001-10-15) [umoeller]
+ */
+
+VOID cmnHelpNotFound(ULONG ulPanelID)
+{
+    CHAR sz[100];
+    PSZ psz = (PSZ)cmnQueryHelpLibrary();
+    PSZ apsz[] =
+        {  sz,
+           psz };
+    sprintf(sz, "%d", ulPanelID);
+
+    cmnMessageBoxMsgExt(NULLHANDLE,
+                        104,            // title
+                        apsz,
+                        2,
+                        134,
+                        MB_OK);
+}
+
+/*
  *@@ cmnDisplayHelp:
  *      displays an XWorkplace help panel,
  *      using wpDisplayHelp.
@@ -993,12 +1018,12 @@ BOOL cmnDisplayHelp(WPObject *somSelf,
 
     if (somSelf)
     {
-        brc = _wpDisplayHelp(somSelf,
-                             ulPanelID,
-                             (PSZ)cmnQueryHelpLibrary());
-        if (!brc)
+        if (!(brc = _wpDisplayHelp(somSelf,
+                                   ulPanelID,
+                                   (PSZ)cmnQueryHelpLibrary())))
             // complain
-            cmnMessageBoxMsg(HWND_DESKTOP, 104, 134, MB_OK);
+            cmnHelpNotFound(ulPanelID);
+
     }
     return (brc);
 }
@@ -2195,7 +2220,7 @@ BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
         case SP_SETUP_FEATURES:   // all new with V0.9.0
             G_GlobalSettings.__fIconReplacements = 0;
             G_GlobalSettings.__fResizeSettingsPages = 0;
-            G_GlobalSettings.AddObjectPage = 0;
+            G_GlobalSettings.__fReplaceIconPage = 0;
             G_GlobalSettings.__fReplaceFilePage = 0;
             G_GlobalSettings.fXSystemSounds = 0;
             G_GlobalSettings.fFixClassTitles = 0;     // added V0.9.12 (2001-05-22) [umoeller]
@@ -2272,33 +2297,50 @@ BOOL cmnIsFeatureEnabled(XWPFEATURE f)
 {
     switch (f)
     {
+
 #ifndef __NOICONREPLACEMENTS__
         case IconReplacements: return G_GlobalSettings.__fIconReplacements;
 #endif
+
 #ifndef __NOMOVEREFRESHNOW__
         case MoveRefreshNow: return G_GlobalSettings.__fMoveRefreshNow;
 #endif
+
 #ifndef __ALWAYSSUBCLASS__
         case NoSubclassing: return G_GlobalSettings.__fNoSubclassing;
 #endif
+
 #ifndef __NOFOLDERCONTENTS__
         case AddFolderContentItem: return G_GlobalSettings.__fAddFolderContentItem;
         case FolderContentShowIcons: return G_GlobalSettings.__fFolderContentShowIcons;
 #endif
+
 #ifndef __NOBOOTLOGO__
         case BootLogo: return G_GlobalSettings.__fBootLogo;
 #endif
+
 #ifndef __ALWAYSREPLACEFILEPAGE__
         case ReplaceFilePage: return G_GlobalSettings.__fReplaceFilePage;
 #endif
+
 #ifndef __NOCFGSTATUSBARS__
         case StatusBars: return G_GlobalSettings.__fEnableStatusBars;
 #endif
+
 #ifndef __NOSNAPTOGRID__
         case Snap2Grid: return G_GlobalSettings.__fEnableSnap2Grid;
 #endif
+
 #ifndef __ALWAYSFDRHOTKEYS__
         case FolderHotkeys: return G_GlobalSettings.__fEnableFolderHotkeys;
+#endif
+
+#ifndef __ALWAYSRESIZESETTINGSPAGES__
+        case ResizeSettingsPages: return G_GlobalSettings.__fResizeSettingsPages;
+#endif
+
+#ifndef __ALWAYSREPLACEICONPAGE__
+        case ReplaceIconPage: return G_GlobalSettings.__fReplaceIconPage;
 #endif
 
         default:
@@ -4488,15 +4530,18 @@ MRESULT EXPENTRY cmn_fnwpDlgWithHelp(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp
             // HMODULE hmodResource = cmnQueryNLSModuleHandle(FALSE);
             /* WM_HELP is received by this function when F1 or a "help" button
                is pressed in a dialog window. */
+            // ulCurHelpPanel is set by instance methods before creating a
+            // dialog box in order to link help topics to the displayed
+            // dialog box. Possible values are:
+            //      0: open online reference ("<XWP_REF>", INF book)
+            //    > 0: open help topic in xfldr.hlp
+            //     -1: ignore WM_HELP */
+
             if (G_ulCurHelpPanel > 0)
             {
-                WPObject    *pHelpSomSelf = cmnQueryActiveDesktop();
-                /* ulCurHelpPanel is set by instance methods before creating a
-                   dialog box in order to link help topics to the displayed
-                   dialog box. Possible values are:
-                        0: open online reference ("<XWP_REF>", INF book)
-                      > 0: open help topic in xfldr.hlp
-                       -1: ignore WM_HELP */
+                // replaced all the following V0.9.16 (2001-10-15) [umoeller]
+                cmnDisplayHelp(NULL, G_ulCurHelpPanel);
+                /* WPObject    *pHelpSomSelf = cmnQueryActiveDesktop();
                 if (pHelpSomSelf)
                 {
                     const char* pszHelpLibrary;
@@ -4508,7 +4553,7 @@ MRESULT EXPENTRY cmn_fnwpDlgWithHelp(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp
 
                     if (!fProcessed)
                         cmnMessageBoxMsg(HWND_DESKTOP, 104, 134, MB_OK);
-                }
+                } */
             }
             else if (G_ulCurHelpPanel == 0)
             {

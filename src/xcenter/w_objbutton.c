@@ -61,6 +61,7 @@
 #define INCL_WINSTATICS
 #define INCL_WINBUTTONS
 #define INCL_WINSTDDRAG
+#define INCL_WINSHELLDATA
 
 #define INCL_GPICONTROL
 #define INCL_GPIPRIMITIVES
@@ -227,21 +228,34 @@ VOID OwgtClearSetup(POBJBUTTONSETUP pSetup)
  *      out. We do not clean up previous data here.
  *
  *@@added V0.9.7 (2000-12-07) [umoeller]
+ *@@changed V0.9.16 (2001-10-15) [umoeller]: added support for OBJECTHANDLE=<OBJID>
  */
 
 VOID OwgtScanSetup(const char *pcszSetupString,
                    POBJBUTTONSETUP pSetup)
 {
     PSZ p;
+    pSetup->hobj = 0;
     if (p = ctrScanSetupString(pcszSetupString,
                                "OBJECTHANDLE"))
     {
-        // scan hex object handle
-        pSetup->hobj = strtol(p, NULL, 16);
+        // is this an object ID?
+        if (*p == '<')
+        {
+            // yes: find the object handle from OS2.INI
+            ULONG cb = sizeof(pSetup->hobj);
+            PrfQueryProfileData(HINI_USER,
+                                "PM_Workplace:Location",
+                                p,
+                                &pSetup->hobj,
+                                &cb);
+        }
+        else
+            // scan hex object handle
+            pSetup->hobj = strtol(p, NULL, 16);
+
         ctrFreeSetupValue(p);
     }
-    else
-        pSetup->hobj = 0;
 
     if (p = ctrScanSetupString(pcszSetupString,
                                "MENUITEMS"))

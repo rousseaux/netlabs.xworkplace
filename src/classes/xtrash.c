@@ -1267,7 +1267,9 @@ SOM_Scope BOOL  SOMLINK xtrc_wpDeleteFromContent(XWPTrashCan *somSelf,
 /*
  *@@ wpDeleteContents:
  *      this WPFolder method gets called when a folder is
- *      being deleted to first delete the contents of a
+ *      bein<UL>#ifndef __ALWAYSREPLACEICONPAGE__
+</UL>
+g deleted to first delete the contents of a
  *      folder before the folder can be deleted. From my
  *      testing, BOTH WPFolder::wpDelete and WPFolder::wpFree
  *      call this method to nuke the folder contents.
@@ -1404,8 +1406,9 @@ SOM_Scope ULONG  SOMLINK xtrc_wpAddObjectGeneralPage2(XWPTrashCan *somSelf,
     /* XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf); */
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_wpAddObjectGeneralPage2");
 
-    if (pGlobalSettings->AddObjectPage)
-        _xwpAddObjectInternalsPage(somSelf, hwndNotebook);
+    /* if (pGlobalSettings->AddObjectPage)
+        _xwpAddObjectInternalsPage(somSelf, hwndNotebook); */
+            // @@todo
 
     return (SETTINGS_PAGE_REMOVED);
 }

@@ -172,6 +172,8 @@
 #define DID_REFRESH            93
 #define DID_SHOWTOOLTIPS       92           // always used for tooltip controls, V0.9.0
 #define DID_TOOLTIP            91           // always used for tooltip controls, V0.9.0
+#define DID_DETAILS            90           // V0.9.16 (2001-10-15) [umoeller]
+#define DID_CLOSE              89
 
 /* DID_OK and DID_CANCEL are def'd somewhere in os2.h */
 
@@ -179,6 +181,12 @@
 // #define ID_XSD_SET5INTERNALS        409  // removed (V0.9.0)
 // #define ID_XSD_SETTINGS_DTP2        407  // removed (V0.9.0)
 // #define ID_XCD_FILEOPS              412  // removed (V0.9.0)
+
+/******************************************
+ *  common controls which are _not_ notebook buttons
+ ******************************************/
+
+#define DID_BROWSE             101
 
 /******************************************
  *  "real" dialogs                >= 200  *
@@ -466,13 +474,14 @@
 #endif
 
 // "Internals" page in all object notebooks
-#define ID_XSD_OBJECTDETAILS            720
+/* #define ID_XSD_OBJECTDETAILS            720
 #define ID_XSDI_DTL_CNR                 721
 #define ID_XSDI_DTL_HOTKEY              722
 #define ID_XSDI_DTL_HOTKEY_TXT          723
 #define ID_XSDI_DTL_CLEAR               724
 #define ID_XSDI_DTL_SETUP_ENTRY         725
 #define ID_XSDI_DTL_SET                 726
+*/  // all removed V0.9.16 (2001-10-15) [umoeller]
 
 // "File" page replacement (XFolder, XFldDataFile, V0.9.0)
 #define ID_XSD_FILESPAGE1               730
@@ -533,6 +542,28 @@
 #define ID_XSDI_DATAF_AVAILABLE_TXT     821
 #define ID_XSDI_DATAF_AVAILABLE_CNR     822
 #define ID_XSDI_DATAF_GROUP             825
+
+// new "Icon" page for XFldObject V0.9.16 (2001-10-15) [umoeller]
+#define ID_XSDI_ICON_TITLE_TEXT         840
+#define ID_XSDI_ICON_TITLE_EF           841
+#define ID_XSDI_ICON_GROUP              842
+#define ID_XSDI_ICON_STATIC             843
+#define ID_XSDI_ICON_EXPLANATION_TXT    844
+#define ID_XSDI_ICON_RESET_BUTTON       845
+#define ID_XSDI_ICON_LOCKPOSITION_CB    846
+#define ID_XSDI_ICON_TEMPLATE_CB        847
+#define ID_XSDI_ICON_HOTKEY_TEXT        848
+#define ID_XSDI_ICON_HOTKEY_EF          849
+#define ID_XSDI_ICON_HOTKEY_CLEAR       850
+#define ID_XSDI_ICON_HOTKEY_SET         851
+#define ID_XSDI_ICON_EXTRAS_GROUP       852
+
+// object "Details" dialog V0.9.16 (2001-10-15) [umoeller]
+#define ID_XSDI_DETAILS_DIALOG          880
+#define ID_XSDI_DETAILS_GROUP           881
+#define ID_XSDI_DETAILS_CONTAINER       882
+#define ID_XSDI_DETAILS_SETUPSTR_GROUP  883
+#define ID_XSDI_DETAILS_SETUPSTR_EF     884
 
 /******************************************
  * XWPSound (V0.9.0)              >= 1000  *
@@ -954,7 +985,7 @@
 #ifndef __NOBOOTLOGO__
 #define ID_XSDI_DTP_LOGOFILETXT         2118
 #define ID_XSDI_DTP_LOGOFILE            2119
-#define ID_XSDI_DTP_LOGO_BROWSE         2120
+// #define ID_XSDI_DTP_LOGO_BROWSE         2120     // removed V0.9.16 (2001-10-15) [umoeller]
 #endif
 #ifndef __NOBOOTUPSTATUS__
 #define ID_XSDI_DTP_BOOTUPSTATUS        2121
@@ -1888,12 +1919,14 @@
 #ifndef __ALWAYSRESIZESETTINGSPAGES__
 #define ID_XCSI_RESIZESETTINGSPAGES     6001
 #endif
-#define ID_XCSI_ADDOBJECTPAGE           6002
+#ifndef __ALWAYSREPLACEICONPAGE__
+#define ID_XCSI_REPLACEICONPAGE         6002        // renamed V0.9.16 (2001-10-15) [umoeller]
+#endif
 #ifndef __ALWAYSREPLACEFILEPAGE__
 #define ID_XCSI_REPLACEFILEPAGE         6003
 #endif
 #define ID_XCSI_XSYSTEMSOUNDS           6004
-#define ID_XCSI_FIXCLASSTITLES          6005 // V0.9.12 (2001-05-22) [umoeller]
+#define ID_XCSI_FIXCLASSTITLES          6005        // V0.9.12 (2001-05-22) [umoeller]
 
 #define ID_XCSI_FOLDERFEATURES          6010
 #ifndef __NOCFGSTATUSBARS__

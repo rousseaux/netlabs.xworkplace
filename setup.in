@@ -218,7 +218,13 @@ INCLUDE_TEMP1=$(DDKBASE)\h;
 INCLUDE_TEMP2=$(SESBASE)\h;
 !endif
 
-PROJECT_INCLUDE = $(TKBASE)\h;$(TKBASE)\som\include;$(VACBASE)\include;$(PROJECT_BASE_DIR)\include;$(PROJECT_BASE_DIR)\include\classes;$(HELPERS_BASE)\include;$(INCLUDE_TEMP1)$(INCLUDE_TEMP2)
+#!ifndef XWPLITE
+LIBC_HEADERS = $(VACBASE)\include
+#!else
+#LIBC_HEADERS = $(TKBASE)\include\libc
+#!endif
+
+PROJECT_INCLUDE = $(TKBASE)\h;$(TKBASE)\som\include;$(LIBC_HEADERS);$(PROJECT_BASE_DIR)\include;$(PROJECT_BASE_DIR)\include\classes;$(HELPERS_BASE)\include;$(INCLUDE_TEMP1)$(INCLUDE_TEMP2)
 
 
 # TOOLS SETUP

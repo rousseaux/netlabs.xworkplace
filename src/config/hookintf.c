@@ -937,7 +937,7 @@ MRESULT hifKeybdHotkeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                    ULONG ulItemID, USHORT usNotifyCode,
                                    ULONG ulExtra)      // for checkboxes: contains new state
 {
-    MRESULT mrc = (MPARAM)0;
+    MRESULT mrc = (MRESULT)0;
 
     switch (ulItemID)
     {
@@ -1368,7 +1368,7 @@ MRESULT hifKeybdFunctionKeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                         ULONG ulItemID, USHORT usNotifyCode,
                                         ULONG ulExtra)      // for checkboxes: contains new state
 {
-    MRESULT mrc = (MPARAM)0;
+    MRESULT mrc = (MRESULT)0;
 
     switch (ulItemID)
     {

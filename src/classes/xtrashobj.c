@@ -464,10 +464,13 @@ SOM_Scope void  SOMLINK xtro_wpUnInitData(XWPTrashObject *somSelf)
 
 /*
  *@@ wpSetupOnce:
- *      this WPObject method allows an object which is being
- *      created to parse its setup string. As opposed to
- *      wpSetup, this only gets called during object creation.
- *      If we return FALSE here, object creation is aborted.
+ *      this WPObject method allows special object handling
+ *      based on a creation setup string after an object has
+ *      been fully created.
+ *      As opposed to WPObject::wpSetup, this method _only_
+ *      gets called during object creation. The WPObject
+ *      implementation calls wpSetup in turn.
+ *      If FALSE is returned, object creation is aborted.
  *
  *      This is where we need to set the "related object"
  *      which this trash object points to, because this

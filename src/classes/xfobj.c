@@ -99,6 +99,7 @@
 #include "shared\helppanels.h"          // all XWorkplace help panel IDs
 #include "shared\init.h"                // XWorkplace initialization
 #include "shared\kernel.h"              // XWorkplace Kernel
+#include "shared\notebook.h"            // generic XWorkplace notebook handling
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 #include "shared\center.h"              // public XCenter interfaces
@@ -177,13 +178,13 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpNukePhysical(XFldObject *somSelf)
  *      if the Global Settings allow it
  */
 
-SOM_Scope ULONG  SOMLINK xfobj_xwpAddObjectInternalsPage(XFldObject *somSelf,
+/* SOM_Scope ULONG  SOMLINK xfobj_xwpAddObjectInternalsPage(XFldObject *somSelf,
                                                             HWND hwndNotebook)
 {
     PAGEINFO pi;
     const char* pszHelpLibrary = cmnQueryHelpLibrary();
 
-    /* XFldObjectData *somThis = XFldObjectGetData(somSelf); */
+    // XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xfobj_xwpAddObjectInternalsPages");
 
     // insert Shutdown settings page
@@ -204,7 +205,7 @@ SOM_Scope ULONG  SOMLINK xfobj_xwpAddObjectInternalsPage(XFldObject *somSelf,
     pi.idDefaultHelpPanel  = ID_XSH_SETTINGS_OBJINTERNALS;
 
     return (_wpInsertSettingsPage(somSelf, hwndNotebook, &pi));
-}
+} */
 
 /*
  *@@ xwpQueryRealDefaultView:
@@ -626,19 +627,28 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpRemoveDestroyNotify(XFldObject *somSelf,
  *      to be monitored for in the XWorkplace hook.
  *
  *      If this object has been assigned a hotkey to, TRUE is returned,
- *      and the hotkey data is stored in the two USHORT variables.
+ *      and the hotkey data is stored in the OBJECTHOTKEY struct.
  *
- *      *pusFlags contains the flags for the fsFlags parameter of
+ *      xfobj.idl defines OBJECTHOTKEY as follows:
+ *
+ +          struct OBJECTHOTKEY
+ +          {
+ +              USHORT  usFlags;
+ +              UCHAR   ucScanCode;
+ +              USHORT  usKeyCode;
+ +          };
+ *
+ *      usFlags contains the flags for the fsFlags parameter of
  *      the WM_CHAR message (SHORT1FROMMP(mp1)). Those flags have
  *      been filtered. See GLOBALHOTKEY for the valid flags.
  *
- *      *pucScanCode contains the hardware scan code which is used
+ *      ucScanCode contains the hardware scan code which is used
  *      to identify the hotkey in the XWorkplace hook. Since the
  *      char and virtual codes are not valid when a VIO session
  *      currently has the input focus, only the scan code can be
  *      used to identify keystrokes in the hook.
  *
- *      If *pusFlags has the KC_VIRTUALKEY flag set, *pusKeyCode has
+ *      If usFlags has the KC_VIRTUALKEY flag set, usKeyCode has
  *      the usvk parameter of WM_CHAR; otherwise, it has the usch
  *      parameter (SHORT1/2FROMMP(mp2)). This will only be used to
  *      be able to describe the key on the dialogs, not to identify
@@ -647,21 +657,21 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpRemoveDestroyNotify(XFldObject *somSelf,
  *      If no hotkey has been assigned, FALSE is returned only.
  *
  *@@added V0.9.0 [umoeller]
+ *@@changed V0.9.16 (2001-10-15) [umoeller]: switched prototype to using struct
  */
 
 SOM_Scope BOOL  SOMLINK xfobj_xwpQueryObjectHotkey(XFldObject *somSelf,
-                                                   PUSHORT pusFlags,
-                                                   PUCHAR pucScanCode,
-                                                   PUSHORT pusKeyCode)
+                                                   XFldObject_POBJECTHOTKEY pHotkey)
 {
     XFldObjectMethodDebug("XFldObject","xfobj_xwpQueryObjectHotkey");
 
-    return (objQueryObjectHotkey(somSelf, pusFlags, pucScanCode, pusKeyCode));
+    return (objQueryObjectHotkey(somSelf, pHotkey));
 }
 
 /*
  *@@ xwpSetObjectHotkey:
  *      this sets a new global object hotkey for the object.
+ *
  *      See XFldObject::xwpQueryObjectHotkey for the description
  *      of the hotkey parameters.
  *
@@ -673,8 +683,8 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpQueryObjectHotkey(XFldObject *somSelf,
  *      because only each object must have a unique hotkey
  *      definition, if any.
  *
- *      As a special exception, if all three hotkey parameters
- *      are null, the hotkey for the object is removed from
+ *      As a special exception, if the pHotkey pointer is
+ *      NULL, the hotkey for the object is removed from
  *      the internal hotkeys list (i.e. somSelf loses its
  *      hotkey).
  *
@@ -686,13 +696,11 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpQueryObjectHotkey(XFldObject *somSelf,
  */
 
 SOM_Scope BOOL  SOMLINK xfobj_xwpSetObjectHotkey(XFldObject *somSelf,
-                                                 USHORT usFlags,
-                                                 UCHAR ucScanCode,
-                                                 USHORT usKeyCode)
+                                                 XFldObject_POBJECTHOTKEY pHotkey)
 {
     XFldObjectMethodDebug("XFldObject","xfobj_xwpSetObjectHotkey");
 
-    return (objSetObjectHotkey(somSelf, usFlags, ucScanCode, usKeyCode));
+    return (objSetObjectHotkey(somSelf, pHotkey));
 }
 
 /*
@@ -1703,16 +1711,11 @@ SOM_Scope BOOL  SOMLINK xfobj_wpMenuItemSelected(XFldObject *somSelf,
  *@@ wpAddObjectGeneralPage:
  *      this WPObject instance method adds the "Icon"
  *      page to an object's settings notebook.
- *      We'll insert the object's "Internals" page here
- *      (now called "Object" page).
  *
- *      Starting with V0.9.1, we override this method
- *      instead of wpAddSettingsPages, because e.g.
- *      the spooler doesn't call WPObject::wpAddSettingsPages.
- *
- *      Starting with V0.9.2, we add the page for all
- *      objects except folders, where XFolder::wpAddObjectGeneralPage2
- *      will do the job.
+ *      Starting with V0.9.16, we completely replace
+ *      the "Icon" page to add support for object
+ *      hotkeys and object details. The "Object"
+ *      page is gone.
  *
  *@@added V0.9.1 (2000-02-17) [umoeller]
  */
@@ -1724,16 +1727,42 @@ SOM_Scope ULONG  SOMLINK xfobj_wpAddObjectGeneralPage(XFldObject *somSelf,
     // XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xfobj_wpAddObjectGeneralPage");
 
-    if (pGlobalSettings->AddObjectPage)
-        // check if this is a folder;
-        // if so, XFolder will insert the page
-        // because otherwise this would be between
-        // the two "Icon" pages...
-        if (!_somIsA(somSelf, _WPFolder))
-            _xwpAddObjectInternalsPage(somSelf, hwndNotebook);
 
+#ifndef __ALWAYSREPLACEICONPAGE__
+    if (    (cmnIsFeatureEnabled(ReplaceIconPage))
+            // check if this is a folder;
+            // if so, XFolder will insert the page
+            // because otherwise this would be between
+            // the two "Icon" pages...
+         // && (!_somIsA(somSelf, _WPFolder))
+                // removed V0.9.16 (2001-10-15) [umoeller]
+        )
+#endif
+    {
+        PCREATENOTEBOOKPAGE pcnbp;
+
+        pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
+        memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
+        pcnbp->somSelf = somSelf;
+        pcnbp->hwndNotebook = hwndNotebook;
+        pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
+        pcnbp->ulDlgID = ID_XFD_EMPTYDLG;
+        pcnbp->ulPageID = SP_OBJECT_ICONPAGE1;
+        pcnbp->usPageStyleFlags = BKA_MAJOR;
+        pcnbp->fEnumerate = TRUE;
+        pcnbp->pszName = cmnGetString(ID_XSSI_ICONPAGE);
+                    // no new string needed, was defined for trash can already
+        pcnbp->ulDefaultHelpPanel  = ID_XSH_OBJICONPAGE1;
+        pcnbp->pfncbInitPage    = objIcon1InitPage;
+        pcnbp->pfncbItemChanged = objIcon1ItemChanged;
+
+        return (ntbInsertPage(pcnbp));
+    }
+
+#ifndef __ALWAYSREPLACEICONPAGE__
     return (XFldObject_parent_WPObject_wpAddObjectGeneralPage(somSelf,
                                                               hwndNotebook));
+#endif
 }
 
 /*

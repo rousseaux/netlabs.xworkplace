@@ -887,11 +887,11 @@ VOID DwgtCommand(HWND hwnd,
 
             case ID_CRMI_REMOVEWGT:
             {
-                PPRIVATEWIDGETVIEW pOwningTray = ((PPRIVATEWIDGETVIEW)pWidget)->pOwningTray;
-                if (pOwningTray)
+                PPRIVATEWIDGETVIEW pOwningTrayWidget;
+                if (pOwningTrayWidget = ((PPRIVATEWIDGETVIEW)pWidget)->pOwningTrayWidget)
                 {
                     // this widget resides in a tray:
-                    WinSendMsg(pOwningTray->Widget.hwndWidget,
+                    WinSendMsg(pOwningTrayWidget->Widget.hwndWidget,
                                XCM_REMOVESUBWIDGET,
                                (MPARAM)pWidget,     // ptr is same as PPRIVATEWIDGETVIEW
                                0);
@@ -975,7 +975,7 @@ VOID DwgtDestroy(HWND hwnd)
                         // XCENTERWIDGET is first member in PRIVATEWIDGETVIEW,
                         // so this typecast works
                         PPRIVATEWIDGETVIEW pView = (PPRIVATEWIDGETVIEW)pWidget;
-                        if (!pView->pOwningTray)
+                        if (!pView->pOwningTrayWidget)
                             if (!lstRemoveItem(&pXCenterData->llWidgets,
                                                pView))
                                 cmnLog(__FILE__, __LINE__, __FUNCTION__,
@@ -1078,11 +1078,12 @@ BOOL DwgtRender(HWND hwnd,
                                                           &ulTrayWidgetIndex,
                                                           &ulTrayIndex,
                                                           &ulWidgetIndex))
-                         && (pSetting = ctrpFindWidgetSetting(pXCenterData->somSelf,
-                                                              ulTrayWidgetIndex,
-                                                              ulTrayIndex,
-                                                              ulWidgetIndex,
-                                                              NULL))
+                         && (!ctrpFindWidgetSetting(pXCenterData->somSelf,
+                                                    ulTrayWidgetIndex,
+                                                    ulTrayIndex,
+                                                    ulWidgetIndex,
+                                                    &pSetting,
+                                                    NULL))
                        )
                     {
                         CHAR ach[CCHMAXPATH];

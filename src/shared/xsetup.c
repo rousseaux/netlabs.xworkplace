@@ -162,7 +162,9 @@ static FEATURESITEM G_FeatureItemsList[] =
 #ifndef __ALWAYSRESIZESETTINGSPAGES__
             ID_XCSI_RESIZESETTINGSPAGES, ID_XCSI_GENERALFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
 #endif
-            ID_XCSI_ADDOBJECTPAGE, ID_XCSI_GENERALFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+#ifndef __ALWAYSREPLACEICONPAGE__
+            ID_XCSI_REPLACEICONPAGE, ID_XCSI_GENERALFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+#endif
 #ifndef __ALWAYSREPLACEFILEPAGE__
             ID_XCSI_REPLACEFILEPAGE, ID_XCSI_GENERALFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
 #endif
@@ -1792,8 +1794,10 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_RESIZESETTINGSPAGES,
                 cmnIsFeatureEnabled(ResizeSettingsPages));
 #endif
-        ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_ADDOBJECTPAGE,
-                pGlobalSettings->AddObjectPage);
+#ifndef __ALWAYSREPLACEICONPAGE__
+        ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_REPLACEICONPAGE,
+                pGlobalSettings->__fReplaceIconPage);
+#endif
 #ifndef __ALWAYSREPLACEFILEPAGE__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_REPLACEFILEPAGE,
                 cmnIsFeatureEnabled(ReplaceFilePage));
@@ -1981,9 +1985,12 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 pGlobalSettings->__fResizeSettingsPages = precc->usCheckState;
             break;
 #endif
-            case ID_XCSI_ADDOBJECTPAGE:
-                pGlobalSettings->AddObjectPage = precc->usCheckState;
+
+#ifndef __ALWAYSREPLACEICONPAGE__
+            case ID_XCSI_REPLACEICONPAGE:
+                pGlobalSettings->__fReplaceIconPage = precc->usCheckState;
             break;
+#endif
 
             case ID_XCSI_XWPHOOK:
             {
@@ -2065,9 +2072,11 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
             case ID_XCSI_GLOBALHOTKEYS:
                 hifEnableObjectHotkeys(precc->usCheckState);
+#ifndef __ALWAYSREPLACEICONPAGE__
                 if (precc->usCheckState)
                     // enable object page also, or user can't find hotkeys
-                    pGlobalSettings->AddObjectPage = TRUE;
+                    pGlobalSettings->__fReplaceIconPage = TRUE;
+#endif
                 ulUpdateFlags = CBI_SET | CBI_ENABLE;
             break;
 
@@ -2174,7 +2183,9 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 #ifndef __ALWAYSRESIZESETTINGSPAGES__
             pGlobalSettings->__fResizeSettingsPages = pGSBackup->__fResizeSettingsPages;
 #endif
-            pGlobalSettings->AddObjectPage = pGSBackup->AddObjectPage;
+#ifndef __ALWAYSREPLACEICONPAGE__
+            pGlobalSettings->__fReplaceIconPage = pGSBackup->__fReplaceIconPage;
+#endif
 #ifndef __ALWAYSREPLACEFILEPAGE__
             pGlobalSettings->__fReplaceFilePage = pGSBackup->__fReplaceFilePage;
 #endif
@@ -2194,8 +2205,10 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 pGlobalSettings->fEnableXWPHook = pGSBackup->fEnableXWPHook;
 
             hifEnableObjectHotkeys(pFeaturesData->bObjectHotkeys);
+#ifndef __ALWAYSREPLACEICONPAGE__
             if (pFeaturesData->bObjectHotkeys)
-                pGlobalSettings->AddObjectPage = TRUE;
+                pGlobalSettings->__fReplaceIconPage = TRUE;
+#endif
 
             if (hifEnablePageMage(pGSBackup->fEnablePageMage) == pGSBackup->fEnablePageMage)
             {

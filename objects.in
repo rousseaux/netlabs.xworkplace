@@ -116,6 +116,7 @@ $(OUTPUTDIR)\winlist.obj
 # code from xcenter\
 XFLDR_OBJS_XCENTER = \
 $(OUTPUTDIR)\ctr_engine.obj \
+$(OUTPUTDIR)\ctr_model.obj \
 $(OUTPUTDIR)\ctr_notebook.obj \
 $(OUTPUTDIR)\w_objbutton.obj \
 $(OUTPUTDIR)\w_pulse.obj \

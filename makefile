@@ -143,13 +143,13 @@ CURRENT_DIR = $(MAKEDIR)
 # out the not-so-important stuff such as netscdee and treesize.
 # Basically, this is for updating XFLDR.DLL and the hook/daemon
 # for speed.
-all:            idl helpers helpers_exe_mt compile_all link
+all:            compile_all link
     @echo ----- Leaving $(MAKEDIR)
     @echo Yo, done!
 
 # "really_all" references "all" and compiles really everything.
 # This must be used for the release version.
-really_all:     idl helpers helpers_exe_mt compile_really_all tools link nls
+really_all:     compile_really_all tools link nls
     @echo ----- Leaving $(MAKEDIR)
     @echo Yo, done!
 
@@ -205,14 +205,14 @@ helpers_exe_mt:
     @cd $(CURRENT_DIR)
 
 # compile_all: compile main (without treesize etc.)
-compile_all:
+compile_all: idl helpers helpers_exe_mt
     @echo $(MAKEDIR)\makefile [$@]: Going for subdir src
     @cd src
     $(MAKE) -nologo "SUBTARGET=all"
     @cd $(CURRENT_DIR)
 
 # compile_really_all: compile really_all
-compile_really_all:
+compile_really_all: idl helpers helpers_exe_mt
     @echo $(MAKEDIR)\makefile [$@]: Going for subdir src (REALLY_ALL)
     @cd src
     $(MAKE) -nologo "SUBTARGET=all" "REALLYALL=1"
@@ -648,10 +648,13 @@ release: really_all
 !ifndef XWPRELEASE
 !error XWPRELEASE must be set before calling "make release". Terminating.
 !endif
+# nuke old directories
 # create directories
 !if [@md $(XWPRELEASE) 2> NUL]
 !endif
+!ifndef XWPLITE
 !if [@md $(XWPRELEASE_HEALTH) 2> NUL]
+!endif
 !endif
 !if [@md $(XWPRELEASE_MAIN) 2> NUL]
 !endif
@@ -662,12 +665,19 @@ release: really_all
 !if [@md $(XWPRELEASE_MAP) 2> NUL]
 !endif
     @echo $(MAKEDIR)\makefile [$@]: Now copying files to $(XWPRELEASE).
-    $(COPY) release\* $(XWPRELEASE_MAIN)
+!ifndef XWPLITE
+    $(COPY) release\COPYING $(XWPRELEASE_MAIN)
+    $(COPY) release\install.cmd $(XWPRELEASE_MAIN)
+    $(COPY) release\file_id.diz $(XWPRELEASE_MAIN)
+    $(COPY) release\install.ico $(XWPRELEASE_MAIN)
     $(COPY) $(XWP_LANG_CODE)\readme $(XWPRELEASE_NLSDOC)
     $(COPY) $(MODULESDIR)\xfldr$(XWP_LANG_CODE).inf $(XWPRELEASE_NLSDOC)
     $(COPY) BUGS $(XWPRELEASE_NLSDOC)
     $(COPY) FEATURES $(XWPRELEASE_NLSDOC)
     $(COPY) cvs.txt $(XWPRELEASE_MAIN)
+!else
+    $(COPY) _private\eWorkplace.txt $(XWPRELEASE_MAIN)
+!endif
 #
 # 2) bin
 #    a) kernel
@@ -675,7 +685,30 @@ release: really_all
 !endif
 !if [@md $(XWPRELEASE_NLS)\bin 2> NUL]
 !endif
-    $(COPY) release\bin\* $(XWPRELEASE_MAIN)\bin
+!ifndef XWPLITE
+    $(COPY) release\bin\alwssort.cmd $(XWPRELEASE_MAIN)\bin
+    $(COPY) release\bin\bm-lvm.cmd $(XWPRELEASE_MAIN)\bin
+    $(COPY) release\bin\bootmgr.cmd $(XWPRELEASE_MAIN)\bin
+!endif
+    $(COPY) release\bin\defdetls.cmd $(XWPRELEASE_MAIN)\bin
+    $(COPY) release\bin\deficon.cmd $(XWPRELEASE_MAIN)\bin
+    $(COPY) release\bin\deftree.cmd $(XWPRELEASE_MAIN)\bin
+    $(COPY) release\bin\iconorm.cmd $(XWPRELEASE_MAIN)\bin
+    $(COPY) release\bin\icosmall.cmd $(XWPRELEASE_MAIN)\bin
+!ifndef XWPLITE
+    $(COPY) release\bin\newobj.cmd $(XWPRELEASE_MAIN)\bin
+!endif
+    $(COPY) release\bin\packtree.cmd $(XWPRELEASE_MAIN)\bin
+    $(COPY) release\bin\showall.cmd $(XWPRELEASE_MAIN)\bin
+!ifndef XWPLITE
+    $(COPY) release\bin\xhelp.cmd $(XWPRELEASE_MAIN)\bin
+    $(COPY) release\bin\xshutdwn.cmd $(XWPRELEASE_MAIN)\bin
+    $(COPY) release\bin\xshutdwn.ico
+!endif
+    $(COPY) release\bin\icons.dll
+!ifndef XWPLITE
+    $(COPY) release\bin\files.txt
+!endif
     $(COPY) $(MODULESDIR)\xfldr.dll $(XWPRELEASE_MAIN)\bin
     $(COPY) $(MODULESDIR)\xfldr.sym $(XWPRELEASE_MAIN)\bin
     $(COPY) $(MODULESDIR)\xwpres.dll $(XWPRELEASE_MAIN)\bin
@@ -688,8 +721,10 @@ release: really_all
     $(COPY) $(MODULESDIR)\xfldr.sym $(XWPRELEASE_MAIN)\bin
     $(COPY) $(MODULESDIR)\xwpdaemn.sym $(XWPRELEASE_MAIN)\bin
     $(COPY) $(MODULESDIR)\xwphook.sym $(XWPRELEASE_MAIN)\bin
+!ifndef XWPLITE
     $(COPY) $(MODULESDIR)\repclass.exe $(XWPRELEASE_MAIN)\bin
     $(COPY) $(MODULESDIR)\wpsreset.exe $(XWPRELEASE_MAIN)\bin
+!endif
 #    b) NLS
     $(COPY) $(MODULESDIR)\xfldr$(XWP_LANG_CODE).dll $(XWPRELEASE_NLS)\bin
 #    $(COPY) $(XWP_LANG_CODE)\misc\*.sgs $(XWPRELEASE_NLS)\bin
@@ -697,9 +732,11 @@ release: really_all
     $(COPY) $(MODULESDIR)\*.map $(XWPRELEASE_MAP)
 #
 # 3) bootlogo
+!ifndef XWPLITE
 !if [@md $(XWPRELEASE_MAIN)\bootlogo 2> NUL]
 !endif
     $(COPY) release\bootlogo\* $(XWPRELEASE_MAIN)\bootlogo
+!endif
 #
 # 4) help
 !if [@md $(XWPRELEASE_NLS)\help 2> NUL]
@@ -717,9 +754,25 @@ release: really_all
 !endif
 !if [@md $(XWPRELEASE_NLS)\install 2> NUL]
 !endif
-    $(COPY) release\install\* $(XWPRELEASE_MAIN)\install
+#    $(COPY) release\install\xwpusers.acc $(XWPRELEASE_MAIN)\install
+    $(COPY) release\install\deinst.cmd $(XWPRELEASE_MAIN)\install
+    $(COPY) release\install\delobjs.cmd $(XWPRELEASE_MAIN)\install
+!ifdef XWPLITE
+    $(COPY) release\install\freshini_lite.cmd $(XWPRELEASE_MAIN)\install\freshini.cmd
+!else
+    $(COPY) release\install\freshini.cmd $(XWPRELEASE_MAIN)\install
+!endif
+    $(COPY) release\install\od.cmd $(XWPRELEASE_MAIN)\install
+    $(COPY) release\install\soundoff.cmd $(XWPRELEASE_MAIN)\install
+#   $(COPY) release\install\test.cmd $(XWPRELEASE_MAIN)\install
+    $(COPY) release\install\xfolder.ico $(XWPRELEASE_MAIN)\install
+    $(COPY) release\install\xwp.ico $(XWPRELEASE_MAIN)\install
+    $(COPY) release\install\xwp_o.ico $(XWPRELEASE_MAIN)\install
+#    $(COPY) release\install\xwpusers.xml $(XWPRELEASE_MAIN)\install
     $(COPY) $(XWP_LANG_CODE)\misc\*.cmd $(XWPRELEASE_NLS)\install
+!ifndef XWPLITE
     $(COPY) $(XWP_LANG_CODE)\misc\*.msg $(XWPRELEASE_NLS)\install
+!endif
 # 7) wav
 !if [@md $(XWPRELEASE_MAIN)\wav 2> NUL]
 !endif
@@ -732,9 +785,11 @@ release: really_all
 !endif
 !if [@md $(XWPRELEASE_MAIN)\plugins\drvdlgs 2> NUL]
 !endif
+!ifndef XWPLITE
 !if [@md $(XWPRELEASE_HEALTH)\plugins 2> NUL]
 !endif
 !if [@md $(XWPRELEASE_HEALTH)\plugins\xcenter 2> NUL]
+!endif
 !endif
     $(COPY) $(MODULESDIR)\diskfree.dll $(XWPRELEASE_MAIN)\plugins\xcenter
     $(COPY) $(MODULESDIR)\diskfree.sym $(XWPRELEASE_MAIN)\plugins\xcenter
@@ -746,8 +801,10 @@ release: really_all
     $(COPY) $(MODULESDIR)\sentinel.sym $(XWPRELEASE_MAIN)\plugins\xcenter
     $(COPY) $(MODULESDIR)\d_cdfs.dll $(XWPRELEASE_MAIN)\plugins\drvdlgs
     $(COPY) $(MODULESDIR)\d_cdfs.sym $(XWPRELEASE_MAIN)\plugins\drvdlgs
+!ifndef XWPLITE
     $(COPY) $(MODULESDIR)\xwHealth.dll $(XWPRELEASE_HEALTH)\plugins\xcenter
     $(COPY) $(MODULESDIR)\xwHealth.sym $(XWPRELEASE_HEALTH)\plugins\xcenter
+!endif
 # 9) toolkit
 !if [@md $(XWPRELEASE_MAIN)\toolkit 2> NUL]
 !endif
@@ -768,7 +825,9 @@ $(XWPRELEASE_MAIN)\bin\*.exe \
 $(XWPRELEASE_NLS)\bin\*.dll
     $(LXLITEPATH)\lxlite \
 $(XWPRELEASE_MAIN)\plugins\xcenter\*.dll \
-$(XWPRELEASE_HEALTH)\plugins\xcenter\*.dll \
+!ifndef XWPLITE
+$(XWPRELEASE_HEALTH)\plugins\xcenter\*.dll
+!endif
 !endif
 !endif
 

@@ -680,7 +680,8 @@ BEGIN
 #endif
     /* this item added with V0.9.4 V0.9.4 (2000-08-08) [umoeller] */
     ID_XCSI_RESIZESETTINGSPAGES         "Adjust settings pages on notebook resize"
-    ID_XCSI_ADDOBJECTPAGE               "Add ""Object"" page to all settings notebooks"
+    /* this item's ID and string changed with V0.9.16 (2001-10-15) [umoeller] */
+    ID_XCSI_REPLACEICONPAGE             "Replace ""Icon"" page in all settings notebooks"
     ID_XCSI_REPLACEFILEPAGE             "Replace ""File"" and ""Details"" pages"
     ID_XCSI_XSYSTEMSOUNDS               "Extended system sounds"
     /* this item added with V0.9.12 (2001-05-22) [umoeller] */
@@ -915,6 +916,9 @@ BEGIN
     DID_UNDO                            "~Undo"
     DID_DEFAULT                         "~Default"
     DID_HELP                            "~Help"
+    DID_BROWSE                          "Bro~wse..."
+    DID_DETAILS                         "De~tails..."
+    DID_CLOSE                           "~Close"
 
     /* strings formerly in ID_XSD_SET25ADDMENUS */
     ID_XSDI_FILEMENUS_GROUP             "File menus"
@@ -966,7 +970,6 @@ BEGIN
     ID_XSDI_DTP_LOGO_TRANSPARENT        "~Transparent style"
     ID_XSDI_DTP_LOGO_BLOWUP             "B~low-up style"
     ID_XSDI_DTP_LOGOFILETXT             "OS/2 1.3 BMP ~file for boot logo:"
-    ID_XSDI_DTP_LOGO_BROWSE             "Bro~wse..."
     ID_XSDI_DTP_TESTLOGO                "T~est logo"
     ID_XSDI_DTP_WRITEXWPSTARTLOG        "Write XWP~START.LOG file"
     ID_XSDI_DTP_BOOTUPSTATUS            "Show W~PS class initialization"
@@ -1009,6 +1012,23 @@ BEGIN
     ID_XSDI_FDRVIEW_ICON                "~Icon"
     ID_XSDI_FDRVIEW_TREE                "T~ree"
     ID_XSDI_FDRVIEW_DETAILS             "Detail~s"
+
+    /* new "Icon" page replacement */
+    ID_XSDI_ICON_TITLE_TEXT             "T~itle:"
+    ID_XSDI_ICON_GROUP                  "Current icon"
+    ID_XSDI_ICON_EXPLANATION_TXT        "Drag any object into the rectangle on the left, or find an icon file using the ""Browse"" button."
+    ID_XSDI_ICON_RESET_BUTTON           "~Reset icon"
+    ID_XSDI_ICON_LOCKPOSITION_CB        "~Lock position"
+    ID_XSDI_ICON_TEMPLATE_CB            "~Template"
+    ID_XSDI_ICON_HOTKEY_TEXT            "Object hot~key:"
+    ID_XSDI_ICON_HOTKEY_CLEAR           "~Clear"
+    ID_XSDI_ICON_HOTKEY_SET             "~Set"
+    ID_XSDI_ICON_EXTRAS_GROUP           "Extras"
+
+    /* new "Object details" dialog */
+    ID_XSDI_DETAILS_DIALOG              "Object details"
+    ID_XSDI_DETAILS_GROUP               "~Details"
+    ID_XSDI_DETAILS_SETUPSTR_GROUP      "~Setup string"
 END
 
 /* Treesize definitions; added V0.9.0 */

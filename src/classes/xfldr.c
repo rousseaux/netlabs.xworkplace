@@ -2779,6 +2779,7 @@ SOM_Scope BOOL  SOMLINK xf_wpRefresh(XFolder *somSelf, ULONG ulView,
  *      the two icon pages.
  *
  *@@added V0.9.2 (2000-02-27) [umoeller]
+ *@@changed V0.9.16 (2001-10-15) [umoeller]: now replacing animation icon page too
  */
 
 SOM_Scope ULONG  SOMLINK xf_wpAddObjectGeneralPage2(XFolder *somSelf,
@@ -2788,11 +2789,34 @@ SOM_Scope ULONG  SOMLINK xf_wpAddObjectGeneralPage2(XFolder *somSelf,
     // XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_wpAddObjectGeneralPage2");
 
-    if (pGlobalSettings->AddObjectPage)
-        _xwpAddObjectInternalsPage(somSelf, hwndNotebook);
+#ifndef __ALWAYSREPLACEICONPAGE__
+    if (cmnIsFeatureEnabled(ReplaceIconPage))
+#endif
+    {
+        PCREATENOTEBOOKPAGE pcnbp;
 
+        pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
+        memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
+        pcnbp->somSelf = somSelf;
+        pcnbp->hwndNotebook = hwndNotebook;
+        pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
+        pcnbp->ulDlgID = ID_XFD_EMPTYDLG;
+        pcnbp->ulPageID = SP_OBJECT_ICONPAGE2;      // page 2!
+        pcnbp->usPageStyleFlags = BKA_MINOR;
+        pcnbp->fEnumerate = TRUE;
+        pcnbp->pszName = cmnGetString(ID_XSSI_ICONPAGE);    // @@todo
+                    // no new string needed, was defined for trash can already
+        pcnbp->ulDefaultHelpPanel  = ID_XSH_OBJICONPAGE2;
+        pcnbp->pfncbInitPage    = objIcon1InitPage;
+        pcnbp->pfncbItemChanged = objIcon1ItemChanged;
+
+        return (ntbInsertPage(pcnbp));
+    }
+
+#ifndef __ALWAYSREPLACEICONPAGE__
     return (XFolder_parent_WPFolder_wpAddObjectGeneralPage2(somSelf,
                                                             hwndNotebook));
+#endif
 }
 
 /*

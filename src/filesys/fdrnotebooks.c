@@ -338,7 +338,7 @@ MRESULT fdrViewItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                            ULONG ulExtra)      // for checkboxes: contains new state
 {
     GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
-    MRESULT mrc = (MPARAM)0;
+    MRESULT mrc = (MRESULT)0;
     BOOL fSave = TRUE,
          fUpdate = FALSE;
 
@@ -523,7 +523,7 @@ MRESULT fdrGridItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                            ULONG ulExtra)      // for checkboxes: contains new state
 {
     GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
-    MRESULT mrc = (MPARAM)0;
+    MRESULT mrc = (MRESULT)0;
     BOOL fSave = TRUE;
 
     switch (ulItemID)

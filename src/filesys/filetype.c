@@ -2746,7 +2746,7 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                  ULONG ulExtra)      // for checkboxes: contains new state
 {
     // PGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    MRESULT mrc = (MPARAM)0;
+    MRESULT mrc = (MRESULT)0;
 
     PFILETYPESPAGEDATA pftpd = (PFILETYPESPAGEDATA)pcnbp->pUser;
 

@@ -469,6 +469,38 @@ SOM_Scope BOOL  SOMLINK xctr_wpSetup(XCenter *somSelf, PSZ pszSetupString)
 }
 
 /*
+ *@@ wpSetupOnce:
+ *      this WPObject method allows special object handling
+ *      based on a creation setup string after an object has
+ *      been fully created.
+ *      As opposed to WPObject::wpSetup, this method _only_
+ *      gets called during object creation. The WPObject
+ *      implementation calls wpSetup in turn.
+ *      If FALSE is returned, object creation is aborted.
+ *
+ *      After having parsed the setup string, we check if
+ *      we have any widgets in the XCenter already. If not,
+ *      this probably means that no initial WIDGETS setup
+ *      string was given with the object, and we create
+ *      some standard XCenter widgets.
+ *
+ *@@added V0.9.16 (2001-10-15) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xctr_wpSetupOnce(XCenter *somSelf, PSZ pszSetupString)
+{
+    XCenterData *somThis = XCenterGetData(somSelf);
+    XCenterMethodDebug("XCenter","xctr_wpSetupOnce");
+
+    if (XCenter_parent_WPAbstract_wpSetupOnce(somSelf, pszSetupString))
+    {
+        return (ctrpSetupOnce(somSelf, pszSetupString));
+    }
+
+    return FALSE;
+}
+
+/*
  *@@ wpSaveState:
  *      this WPObject instance method saves an object's state
  *      persistently so that it can later be re-initialized

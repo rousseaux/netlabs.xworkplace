@@ -97,7 +97,8 @@ typedef struct _DEFINENODE
                         // Tree.ulKey has the (PSZ) identifier
     PSZ         pszValue;
                         // value without quotes
-
+    ULONG       ulValueLength;
+                        // strlen(pszValue)
 } DEFINENODE, *PDEFINENODE;
 
 /*
@@ -397,11 +398,11 @@ APIRET ResolveEntities(PARTICLETREENODE pFile2Process,
                 if (pDef = FindDefinition(p + 1))
                 {
                     if (G_ulVerbosity > 2)
-                        printf("\n   found entity \"%s\" --> \"%s\"\n",
+                        printf("\n   found entity \"%s\" --> \"%s\"",
                                p + 1, pDef->pszValue);
                     *p2 = ';';
                     ULONG ulPos = (p - pstrSource->psz),
-                          ulReplLen = strlen(pDef->pszValue);
+                          ulReplLen = pDef->ulValueLength;
                     xstrrpl(pstrSource,
                             // first ofs to replace:
                             ulPos,
@@ -410,6 +411,7 @@ APIRET ResolveEntities(PARTICLETREENODE pFile2Process,
                             // replacement string:
                             pDef->pszValue,
                             ulReplLen);
+
                     // pointer has changed, adjust source position
                     p = pstrSource->psz + ulPos; //  + ulReplLen;
 
@@ -450,9 +452,9 @@ APIRET ResolveEntities(PARTICLETREENODE pFile2Process,
                     }
 
                     *p2 = ';';
-                }
 
-                p = p2 + 1;
+                    p = p2 + 1;
+                }
             }
         }
     }
@@ -728,6 +730,9 @@ PCSZ HandleTITLE(PARTICLETREENODE pFile2Process,
     return (0);
 }
 
+#define START_KEY  "@#!LINK1@#!"
+#define END_KEY    "@#!LINK2@#!"
+
 /*
  *@@ HandleA:
  *
@@ -759,7 +764,7 @@ PCSZ HandleA(PARTICLETREENODE pFile2Process,
                            // hack in the @#!LINK@#! for now;
                            // this is later replaced with the
                            // resid in ParseFiles
-                           ":link reftype=hd res=@#!LINK@#!%s@#!LINK@#! auto dependent.",
+                           ":link reftype=hd res=" START_KEY "%s" END_KEY " auto dependent.",
                            pszAttrib);
                 pstat->ulInLink = 2;        // special, do not close
             }
@@ -794,7 +799,7 @@ PCSZ HandleA(PARTICLETREENODE pFile2Process,
                                // hack in the @#!LINK@#! string for now;
                                // this is later replaced with the
                                // resid in ParseFiles
-                               ":link reftype=hd res=@#!LINK@#!%s@#!LINK@#!.",
+                               ":link reftype=hd res=" START_KEY "%s" END_KEY ".",
                                pszAttrib);
                 }
 
@@ -1729,6 +1734,9 @@ APIRET ProcessFiles(PXSTRING pxstrIPF)           // out: one huge IPF file
         // special link strings with the good resids,
         // which are known by now
 
+        ULONG ulStartKeyLen = strlen(START_KEY),
+              ulEndKeyLen = strlen(END_KEY);
+
         pNode = lstQueryFirstNode(&G_llFiles2Process);
         while (pNode && !arc)
         {
@@ -1742,15 +1750,35 @@ APIRET ProcessFiles(PXSTRING pxstrIPF)           // out: one huge IPF file
                 // now, find the special ugly link keys
                 // we hacked in before; for each string
                 // target filename now, find the resid
+
                 while (p = (strstr(pStart,
-                                   "@#!LINK@#!")))
+                                   START_KEY)))
                 {
-                    #define KEYLEN (sizeof("@#!LINK@#!") - 1)
-                    PSZ p2 = strstr(p + KEYLEN, "@#!LINK@#!");
-                    CHAR szResID[30];
+                    PSZ pFirst = pFile2Process->strIPF.psz;
+
+                    PSZ p2 = strstr(p + ulStartKeyLen,
+                                    END_KEY);
+                    if (!p2)
+                    {
+                        Error(2,
+                              __FILE__, __LINE__, __FUNCTION__,
+                              "Cannot find second LINK string for \"%s\"\nFile: \"%s\"\n",
+                              p,
+                              (PSZ)pFile2Process->Tree.ulKey); // pszFilename);
+                        arc = 1;
+                        break;
+                    }
+
                     CHAR cSaved = *p2;
                     *p2 = '\0';
-                    PARTICLETREENODE pTarget = GetOrCreateArticle(p + KEYLEN,   // filename
+
+                    if (G_ulVerbosity > 2)
+                        printf("   encountered link \"%s\" at %d (len %d), searching resid\n",
+                               p + ulStartKeyLen,
+                               p - pFirst,
+                               p2 - pFirst);
+
+                    PARTICLETREENODE pTarget = GetOrCreateArticle(p + ulStartKeyLen, // filename
                                                                   -1,   // do not create
                                                                   NULL);
 
@@ -1759,7 +1787,7 @@ APIRET ProcessFiles(PXSTRING pxstrIPF)           // out: one huge IPF file
                         Error(2,
                               __FILE__, __LINE__, __FUNCTION__,
                               "Cannot resolve cross reference for \"%s\"\nFile: \"%s\"\n",
-                              p + KEYLEN,
+                              p + ulStartKeyLen,
                               (PSZ)pFile2Process->Tree.ulKey); // pszFilename);
                         arc = 1;
                         break;
@@ -1767,17 +1795,26 @@ APIRET ProcessFiles(PXSTRING pxstrIPF)           // out: one huge IPF file
 
                     *p2 = cSaved;
 
+                    CHAR szResID[30];
                     sprintf(szResID, "%d", pTarget->ulResID);
+                    ULONG ulResIDLen = strlen(szResID);
+                    ULONG   ulFirst = p - pFirst,
+                            cReplace = (p2 + ulStartKeyLen) - p;
+                    if (G_ulVerbosity > 2)
+                        printf("     ofs %d, cReplace %d, replacing with \"%s\"\n",
+                               ulFirst,
+                               cReplace,
+                               szResID);
                     xstrrpl(&pFile2Process->strIPF,
                             // ofs of first char to replace:
-                            p - pStart,
+                            ulFirst,
                             // count of chars to replace:
-                            (p2 + KEYLEN) - p,
+                            cReplace, // (p2 + KEYLEN) - p,
                             // replace this with the resid
                             szResID,
-                            strlen(szResID));
+                            ulResIDLen);
 
-                    pStart = pFile2Process->strIPF.psz + (p - pStart);
+                    pStart = pFile2Process->strIPF.psz + ulFirst;
                 }
             }
 
@@ -2019,6 +2056,7 @@ BOOL AddDefine(const char *pcszDefine)      // in: first char after #define
         PDEFINENODE pMapping = NEW(DEFINENODE);
         pMapping->Tree.ulKey = (ULONG)pszIdentifier;
         pMapping->pszValue = pszValue;
+        pMapping->ulValueLength = strlen(pszValue);
 
         if (AddDefinition(pMapping))
         {

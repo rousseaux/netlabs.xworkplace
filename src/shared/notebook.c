@@ -1915,7 +1915,7 @@ BOOL ntbDisplayFocusHelp(WPObject *somSelf,         // in: input for wpDisplayHe
                                 (PSZ)pszHelpLibrary))
             {
                 // still errors: complain
-                cmnMessageBoxMsg(HWND_DESKTOP, 104, 134, MB_OK);
+                cmnHelpNotFound(ulPanelIfNotFound);
                 brc = FALSE;
             }
         }

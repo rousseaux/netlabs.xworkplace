@@ -2839,7 +2839,7 @@ MRESULT trshTrashCanSettingsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                         ULONG ulExtra)      // for checkboxes: contains new state
 {
     GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
-    MRESULT mrc = (MPARAM)0;
+    MRESULT mrc = (MRESULT)0;
     BOOL fSave = TRUE;
 
     switch (ulItemID)
@@ -3041,7 +3041,7 @@ MRESULT trshTrashCanDrivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                       ULONG ulItemID, USHORT usNotifyCode,
                                       ULONG ulExtra)      // for checkboxes: contains new state
 {
-    MRESULT mrc = (MPARAM)0;
+    MRESULT mrc = (MRESULT)0;
     BOOL fSave = TRUE;
 
     static BOOL fNoDeselection = FALSE;
@@ -3204,16 +3204,17 @@ VOID trshTrashCanIconInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
             // backup object title for "Undo" button
             pcnbp->pUser = strdup(_wpQueryTitle(pcnbp->somSelf));
         }
+
+        WinSendDlgItemMsg(pcnbp->hwndDlgPage, ID_XTDI_ICON_TITLEMLE,
+                          MLM_SETTEXTLIMIT,
+                          (MPARAM)255,
+                          0);
     }
 
     if (flFlags & CBI_SET)
     {
-        HWND hwndMLE = WinWindowFromID(pcnbp->hwndDlgPage, ID_XTDI_ICON_TITLEMLE);
-        WinSendMsg(hwndMLE,
-                   MLM_SETTEXTLIMIT,
-                   (MPARAM)255,
-                   0);
-        WinSetWindowText(hwndMLE, _wpQueryTitle(pcnbp->somSelf));
+        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XTDI_ICON_TITLEMLE,
+                          _wpQueryTitle(pcnbp->somSelf));
     }
 }
 
@@ -3230,7 +3231,7 @@ MRESULT trshTrashCanIconItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                     ULONG ulItemID, USHORT usNotifyCode,
                                     ULONG ulExtra)      // for checkboxes: contains new state
 {
-    MRESULT mrc = (MPARAM)0;
+    MRESULT mrc = (MRESULT)0;
 
     switch (ulItemID)
     {

@@ -46,6 +46,7 @@
         #define __NOICONREPLACEMENTS__
         #define __ALWAYSRESIZESETTINGSPAGES__
         #define __ALWAYSREPLACEFILEPAGE__
+        #define __ALWAYSREPLACEICONPAGE__
 
         // folder features
         #define __ALWAYSSUBCLASS__

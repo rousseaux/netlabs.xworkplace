@@ -61,6 +61,7 @@
 #include "setup.h"                      // code generation and debugging options
 
 // headers in /helpers
+#include "helpers\apmh.h"               // Advanced Power Management helpers
 #include "helpers\cnrh.h"               // container helper routines
 #include "helpers\except.h"             // exception handling
 #include "helpers\linklist.h"           // linked list helper routines
@@ -121,6 +122,7 @@
  +
  *@@added V0.9.9 (2001-01-29) [umoeller]
  *@@changed V0.9.14 (2001-08-21) [umoeller]: added "hide on click"
+ *@@changed V0.9.16 (2001-10-15) [umoeller]: changed defaults
  */
 
 static XWPSETUPENTRY    G_XCenterSetupSet[] =
@@ -175,7 +177,8 @@ static XWPSETUPENTRY    G_XCenterSetupSet[] =
         //     key for wpSaveState/wpRestoreState
                0,      // bitfield! only first item!
         //     default, ulExtra,            min, max
-               XCS_SUNKBORDERS, XCS_SUNKBORDERS, 0,   0,
+               0, XCS_SUNKBORDERS, 0,   0,
+                    // default changed V0.9.16 (2001-10-15) [umoeller]
 
         // type,  setup string,     offset,
         STG_BITFLAG, "SIZINGBARS",    FIELDOFFSET(XCenterData, flDisplayStyle),
@@ -196,7 +199,8 @@ static XWPSETUPENTRY    G_XCenterSetupSet[] =
         //     key for wpSaveState/wpRestoreState
                0,      // bitfield! only first item!
         //     default, ulExtra,            min, max
-               0, XCS_SPACINGLINES, 0,   0,
+               XCS_SPACINGLINES, XCS_SPACINGLINES, 0,   0,
+                    // default changed V0.9.16 (2001-10-15) [umoeller]
 
         /*
          * other LONGs
@@ -439,6 +443,7 @@ BOOL ctrpQuerySetup(XCenter *somSelf,
  *      implementation for XCenter::wpSetup.
  *
  *@@added V0.9.7 (2001-01-25) [umoeller]
+ *@@changed V0.9.16 (2001-10-15) [umoeller]: fixed widget clearing which caused a log entry for empty XCenter
  */
 
 BOOL ctrpSetup(XCenter *somSelf,
@@ -513,60 +518,67 @@ BOOL ctrpSetup(XCenter *somSelf,
 
                     // first of all, remove all existing widgets,
                     // we have a replacement here
-                    while (_xwpRemoveWidget(somSelf,
-                                            0))
-                               ;
-
-                    // now take the widgets
-                    do
-                    {
-                        // pszToken now has one widget
-                        PSZ pszWidgetClass = NULL;
-                        PSZ pszWidgetSetup = NULL;
-                        // check if this has brackets with the setup string
-                        PSZ pBracket = strchr(pszToken, '(');
-
-                        _Pmpf(("processing token \"%s\"", pszToken));
-
-                        if (pBracket)
+                    while (ctrpQueryWidgetsCount(somSelf))       // V0.9.16 (2001-10-15) [umoeller]
+                        if (!_xwpRemoveWidget(somSelf,
+                                              0))
                         {
-                            pszWidgetClass = strhSubstr(pszToken, pBracket);
-                            // extract setup
-                            pszWidgetSetup = strhExtract(pszToken, '(', ')', NULL);
-
-                            // V0.9.9 (2001-03-03) [pr]
-                            if (pszWidgetSetup)
-                            {
-                                XSTRING strSetup2;
-                                // copy widget setup string to temporary
-                                // buffer for decoding...
-                                xstrInitSet(&strSetup2,
-                                            pszWidgetSetup);
-                                xstrDecode(&strSetup2);
-                                pszWidgetSetup = strSetup2.psz;
-                            } // end // V0.9.9 (2001-03-03) [pr]
-                        }
-                        else
-                            // no setup string:
-                            pszWidgetClass = strdup(pszToken);
-
-                        // OK... set up the widget now
-
-                        if (!_xwpInsertWidget(somSelf,
-                                              -1,            // to the right
-                                              pszWidgetClass,
-                                              pszWidgetSetup))
+                            // error:
                             brc = FALSE;
+                            break;
+                        }
 
-                        // V0.9.9 (2001-03-03) [pr]: fix memory leak
-                        if (pszWidgetClass)
-                            free(pszWidgetClass);
+                    if (brc)
+                    {
+                        // now take the widgets
+                        do
+                        {
+                            // pszToken now has one widget
+                            PSZ pszWidgetClass = NULL;
+                            PSZ pszWidgetSetup = NULL;
+                            // check if this has brackets with the setup string
+                            PSZ pBracket = strchr(pszToken, '(');
 
-                        if (pszWidgetSetup)
-                            free(pszWidgetSetup);
+                            _Pmpf(("processing token \"%s\"", pszToken));
 
-                    } while (brc && (pszToken = strtok(NULL, ",")));
+                            if (pBracket)
+                            {
+                                pszWidgetClass = strhSubstr(pszToken, pBracket);
+                                // extract setup
+                                pszWidgetSetup = strhExtract(pszToken, '(', ')', NULL);
 
+                                // V0.9.9 (2001-03-03) [pr]
+                                if (pszWidgetSetup)
+                                {
+                                    XSTRING strSetup2;
+                                    // copy widget setup string to temporary
+                                    // buffer for decoding...
+                                    xstrInitSet(&strSetup2,
+                                                pszWidgetSetup);
+                                    xstrDecode(&strSetup2);
+                                    pszWidgetSetup = strSetup2.psz;
+                                } // end // V0.9.9 (2001-03-03) [pr]
+                            }
+                            else
+                                // no setup string:
+                                pszWidgetClass = strdup(pszToken);
+
+                            // OK... set up the widget now
+
+                            if (!_xwpInsertWidget(somSelf,
+                                                  -1,            // to the right
+                                                  pszWidgetClass,
+                                                  pszWidgetSetup))
+                                brc = FALSE;
+
+                            // V0.9.9 (2001-03-03) [pr]: fix memory leak
+                            if (pszWidgetClass)
+                                free(pszWidgetClass);
+
+                            if (pszWidgetSetup)
+                                free(pszWidgetSetup);
+
+                        } while (brc && (pszToken = strtok(NULL, ",")));
+                    }
                 } // if (pszToken)
 
                 free(pszWidgets);
@@ -575,6 +587,57 @@ BOOL ctrpSetup(XCenter *somSelf,
     }
 
     return (brc);
+}
+
+/*
+ *@@ ctrpSetupOnce:
+ *      implementation for XCenter::wpSetupOnce.
+ *
+ *@@added V0.9.16 (2001-10-15) [umoeller]
+ */
+
+BOOL ctrpSetupOnce(XCenter *somSelf,
+                   PSZ pszSetupString)
+{
+    BOOL brc = TRUE;
+
+    WPSHLOCKSTRUCT Lock;
+    TRY_LOUD(excpt1)
+    {
+        if (LOCK_OBJECT(Lock, somSelf))
+        {
+            PLINKLIST pllSettings = ctrpQuerySettingsList(somSelf);
+            if (!lstCountItems(pllSettings))
+            {
+                // we have no widgets:
+                // create some
+
+                XSTRING str;
+                xstrInitCopy(&str,
+                             "WIDGETS=XButton,"
+                             "Pulse,"
+                             "Tray(WIDTH%3D141%3BCURRENTTRAY%3D0%3B),"
+                             "WindowList",
+                             0);
+                // on laptops, add battery widget too
+                if (apmhHasBattery())
+                    xstrcat(&str,
+                             ",Power",
+                             0);
+                xstrcatc(&str, ';');
+
+                ctrpSetup(somSelf,
+                          str.psz);
+                xstrClear(&str);
+            }
+        }
+    }
+    CATCH(excpt1) {} END_CATCH();
+
+    if (Lock.fLocked)
+        _wpReleaseObjectMutexSem(Lock.pObject);
+
+    return brc;
 }
 
 /*
@@ -1692,7 +1755,7 @@ VOID ctrpWidgetsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                 {
                     PTRAYSETTING pTray = (PTRAYSETTING)pTrayNode->pItemData;
                     ULONG ulSubwidget = 0;
-                    PLISTNODE pSubwidgetNode = lstQueryFirstNode(&pTray->llSubwidgets);
+                    PLISTNODE pSubwidgetNode = lstQueryFirstNode(&pTray->llSubwidgetSettings);
                     while (pSubwidgetNode)
                     {
                         PPRIVATEWIDGETSETTING pSubwidget = (PPRIVATEWIDGETSETTING)pSubwidgetNode->pItemData;

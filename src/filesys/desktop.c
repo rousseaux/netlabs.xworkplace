@@ -874,7 +874,7 @@ CONTROLDEF
             ID_XSDI_DTP_LOGOBITMAP,
             CTL_COMMON_FONT,
             0,
-            {200, 100},
+            {133, 100},
             COMMON_SPACING
         },
     LogoFileText = CONTROLDEF_TEXT(
@@ -886,16 +886,16 @@ CONTROLDEF
                             NULL,
                             ID_XSDI_DTP_LOGOFILE,
                             200,
-                            30),
+                            -1),
     LogoFileBrowseButton = CONTROLDEF_PUSHBUTTON(
                             LOAD_STRING, // "Bro~wse..."
-                            ID_XSDI_DTP_LOGO_BROWSE,
-                            200,
+                            DID_BROWSE,
+                            -1,
                             30),
     LogoFileTestButton = CONTROLDEF_PUSHBUTTON(
                             LOAD_STRING, // "T~est logo",
                             ID_XSDI_DTP_TESTLOGO,
-                            200,
+                            -1,
                             30),
 #endif
     WriteXWPStartLogCB = CONTROLDEF_AUTOCHECKBOX(
@@ -929,26 +929,28 @@ DLGHITEM dlgDesktopStartup[] =
                 START_GROUP_TABLE(&BootLogoGroup),
                     START_ROW(0),
                         CONTROL_DEF(&BootLogoCB),
-                    START_ROW(0),
-                        START_GROUP_TABLE(&LogoStyleGroup),
-                            START_ROW(0),
-                                CONTROL_DEF(&LogoTransparentRadio),
-                            START_ROW(0),
-                                CONTROL_DEF(&LogoBlowUpRadio),
-                        END_TABLE,      // logo style group
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&LogoFileText),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&LogoFileEF),
                     // START_ROW(0),
+                        CONTROL_DEF(&LogoFileBrowseButton),
+                    START_ROW(0),
                         START_GROUP_TABLE(&LogoFrameGroup),
                             START_ROW(0),
                                 CONTROL_DEF(&LogoBitmap),
                         END_TABLE,      // logo frame group
-                    START_ROW(0),
-                        CONTROL_DEF(&LogoFileText),
-                    START_ROW(0),
-                        CONTROL_DEF(&LogoFileEF),
-                    START_ROW(0),
-                        CONTROL_DEF(&LogoFileBrowseButton),
-                    START_ROW(0),
-                        CONTROL_DEF(&LogoFileTestButton),
+                        START_TABLE,
+                            START_ROW(0),
+                                START_GROUP_TABLE(&LogoStyleGroup),
+                                    START_ROW(0),
+                                        CONTROL_DEF(&LogoTransparentRadio),
+                                    START_ROW(0),
+                                        CONTROL_DEF(&LogoBlowUpRadio),
+                                END_TABLE,      // logo style group
+                            START_ROW(0),
+                                CONTROL_DEF(&LogoFileTestButton),
+                        END_TABLE,
                 END_TABLE,      // end of boot logo group
 #endif
             START_ROW(0),
@@ -1282,11 +1284,11 @@ MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             break; }
 
             /*
-             * ID_XSDI_DTP_LOGO_BROWSE:
+             * DID_BROWSE:
              *      "Browse" button: open file dialog
              */
 
-            case ID_XSDI_DTP_LOGO_BROWSE:
+            case DID_BROWSE:
             {
                 FILEDLG fd;
                 PSZ pszNewBootLogoFile = winhQueryWindowText(WinWindowFromID(pcnbp->hwndDlgPage,

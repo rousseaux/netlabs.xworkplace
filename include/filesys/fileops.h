@@ -33,63 +33,6 @@
 
     /* ******************************************************************
      *                                                                  *
-     *   FOPSRET: file operations error codes                           *
-     *                                                                  *
-     ********************************************************************/
-
-    #define FOPSERR_FIRST_CODE 30000
-
-    #define FOPSERR_NOT_HANDLED_ABORT         (FOPSERR_FIRST_CODE + 1)
-    #define FOPSERR_INVALID_OBJECT            (FOPSERR_FIRST_CODE + 2)
-    #define FOPSERR_NO_OBJECTS_FOUND          (FOPSERR_FIRST_CODE + 3)
-            // no objects found to process
-    #define FOPSERR_INTEGRITY_ABORT           (FOPSERR_FIRST_CODE + 4)
-    #define FOPSERR_FILE_THREAD_CRASHED       (FOPSERR_FIRST_CODE + 5)
-            // fopsFileThreadProcessing crashed
-    #define FOPSERR_CANCELLEDBYUSER           (FOPSERR_FIRST_CODE + 6)
-    #define FOPSERR_MOVE2TRASH_READONLY       (FOPSERR_FIRST_CODE + 7)
-            // moving WPFileSystem which has read-only:
-            // this should prompt the user
-    #define FOPSERR_MOVE2TRASH_NOT_DELETABLE  (FOPSERR_FIRST_CODE + 8)
-            // moving non-deletable to trash can: this should abort
-    #define FOPSERR_DELETE_READONLY           (FOPSERR_FIRST_CODE + 9)
-            // deleting WPFileSystem which has read-only flag;
-            // this should prompt the user
-    #define FOPSERR_DELETE_NOT_DELETABLE      (FOPSERR_FIRST_CODE + 10)
-            // deleting not-deletable; this should abort
-    #define FOPSERR_TRASHDRIVENOTSUPPORTED    (FOPSERR_FIRST_CODE + 11)
-    #define FOPSERR_WPFREE_FAILED             (FOPSERR_FIRST_CODE + 12)
-    #define FOPSERR_LOCK_FAILED               (FOPSERR_FIRST_CODE + 13)
-            // requesting object mutex failed
-    #define FOPSERR_START_FAILED              (FOPSERR_FIRST_CODE + 14)
-            // fopsStartTask failed
-    #define FOPSERR_POPULATE_FOLDERS_ONLY     (FOPSERR_FIRST_CODE + 15)
-            // fopsAddObjectToTask works on folders only with XFT_POPULATE
-    #define FOPSERR_POPULATE_FAILED           (FOPSERR_FIRST_CODE + 16)
-            // wpPopulate failed on folder during XFT_POPULATE
-    #define FOPSERR_WPQUERYFILENAME_FAILED    (FOPSERR_FIRST_CODE + 17)
-            // wpQueryFilename failed
-    #define FOPSERR_WPSETATTR_FAILED          (FOPSERR_FIRST_CODE + 18)
-            // wpSetAttr failed
-    #define FOPSERR_GETNOTIFYSEM_FAILED       (FOPSERR_FIRST_CODE + 19)
-            // wpshGetNotifySem failed
-    #define FOPSERR_REQUESTFOLDERMUTEX_FAILED (FOPSERR_FIRST_CODE + 20)
-            // wpshRequestFolderSem failed
-    #define FOPSERR_NOT_FONT_FILE             (FOPSERR_FIRST_CODE + 21)
-            // with XFT_INSTALLFONTS: non-XWPFontFile passed
-    #define FOPSERR_FONT_ALREADY_INSTALLED    (FOPSERR_FIRST_CODE + 22)
-            // with XFT_INSTALLFONTS: XWPFontFile is already installed
-    #define FOPSERR_NOT_FONT_OBJECT           (FOPSERR_FIRST_CODE + 23)
-            // with XFT_DEINSTALLFONTS: non-XWPFontObject passed
-    #define FOPSERR_FONT_ALREADY_DELETED      (FOPSERR_FIRST_CODE + 24)
-            // with XFT_DEINSTALLFONTS: font no longer present in OS2.INI.
-    #define FOPSERR_FONT_STILL_IN_USE         (FOPSERR_FIRST_CODE + 25)
-            // with XFT_DEINSTALLFONTS: font is still in use;
-            // this is only a warning, it will be gone after a reboot
-    typedef unsigned long FOPSRET;
-
-    /* ******************************************************************
-     *                                                                  *
      *   Expanded object lists                                          *
      *                                                                  *
      ********************************************************************/

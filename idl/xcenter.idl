@@ -165,6 +165,7 @@ interface XCenter : WPAbstract
     // wpObjectReady: override;     removed V0.9.9 (2001-03-13) [umoeller]
 
     wpSetup: override;
+    wpSetupOnce: override;
 
     wpSaveState: override;
     wpRestoreState: override;

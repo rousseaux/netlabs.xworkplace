@@ -1392,7 +1392,7 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                              USHORT usNotifyCode,
                              ULONG ulExtra)      // for checkboxes: contains new state
 {
-    MRESULT mrc = (MPARAM)0;
+    MRESULT mrc = (MRESULT)0;
     LONG    lGrid = 0;
     HWND    hwndDlgPage = pcnbp->hwndDlgPage;
     CHAR    szTemp[500] = "";
@@ -2807,7 +2807,7 @@ MRESULT cfgSyslevelItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                USHORT usNotifyCode,
                                ULONG ulExtra)
 {
-    MRESULT mrc = (MPARAM)0;
+    MRESULT mrc = (MRESULT)0;
 
     /* switch (usItemID)
     {

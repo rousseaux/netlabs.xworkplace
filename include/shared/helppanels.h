@@ -235,5 +235,8 @@
 
     #define ID_XSH_NETSCAPEDDE              136     // V0.9.16 (2001-10-02) [umoeller]
 
+    #define ID_XSH_OBJICONPAGE1             137     // V0.9.16 (2001-10-15) [umoeller]
+    #define ID_XSH_OBJICONPAGE2             138     // V0.9.16 (2001-10-15) [umoeller]
+
 #endif
 

@@ -1733,30 +1733,6 @@ BEGIN
     END
 END
 
-DLGTEMPLATE ID_XSD_OBJECTDETAILS LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "", ID_XSD_OBJECTDETAILS, 0, 0, 275, 180, NOT FS_DLGBORDER |
-            WS_VISIBLE
-    BEGIN
-        CONTAINER       ID_XSDI_DTL_CNR, 12, 66, 212, 76, CCS_SINGLESEL |
-                        CCS_VERIFYPOINTERS
-        GROUPBOX        "Internals", -1, 6, 46, 225, 106, NOT WS_GROUP
-        LTEXT           "Setu~p:", -1, 12, 52, 24, 12, DT_VCENTER |
-                        DT_MNEMONIC
-        ENTRYFIELD      "", ID_XSDI_DTL_SETUP_ENTRY, 40, 54, 182, 8,
-                        ES_MARGIN | ES_READONLY
-        GROUPBOX        "Object settings", -1, 6, 22, 226, 22
-        LTEXT           "H~otkey:", ID_XSDI_DTL_HOTKEY_TXT, 12, 24, 30, 12,
-                        DT_VCENTER | DT_MNEMONIC
-        ENTRYFIELD      "", ID_XSDI_DTL_HOTKEY, 48, 26, 104, 8, ES_MARGIN
-                        PRESPARAMS PP_BACKGROUNDCOLOR, 0x00FF8080L
-        PUSHBUTTON      "~Set", ID_XSDI_DTL_SET, 160, 24, 32, 12
-        PUSHBUTTON      "~Clear", ID_XSDI_DTL_CLEAR, 196, 24, 32, 12
-        PUSHBUTTON      "~Refresh", DID_REFRESH, 5, 6, 85, 12, WS_GROUP
-        PUSHBUTTON      "~Help", DID_HELP, 148, 6, 85, 12, BS_HELP
-    END
-END
-
 DLGTEMPLATE ID_XSD_REBOOTEXT LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     DIALOG  "XShutdown: Reboot Actions", ID_XSD_REBOOTEXT, 55, 33, 240, 174, ,

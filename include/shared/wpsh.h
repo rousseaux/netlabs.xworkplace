@@ -505,6 +505,42 @@
     BOOL wpshGetNotifySem(ULONG ulTimeout);
     VOID wpshReleaseNotifySem(VOID);
 
+    /*
+     *@@ xfTP_wpQueryIconN:
+     *      prototype for WPFolder::wpQueryIconN.
+     *
+     *@@added V0.9.16 (2001-10-15) [umoeller]
+     */
+
+    typedef HPOINTER _System xfTP_wpQueryIconN(WPFolder *somSelf,
+                                               ULONG ulIndex);
+    typedef xfTP_wpQueryIconN *xfTD_wpQueryIconN;
+
+    /*
+     *@@ xfTP_wpQueryIconDataN:
+     *      prototype for WPFolder::wpQueryIconDataN.
+     *
+     *@@added V0.9.16 (2001-10-15) [umoeller]
+     */
+
+    typedef ULONG _System xfTP_wpQueryIconDataN(WPFolder *somSelf,
+                                                PICONINFO pData,
+                                                ULONG ulIndex);
+    typedef xfTP_wpQueryIconDataN *xfTD_wpQueryIconDataN;
+
+
+    /*
+     *@@ xfTP_wpSetIconDataN:
+     *      prototype for WPFolder::wpSetIconDataN.
+     *
+     *@@added V0.9.16 (2001-10-15) [umoeller]
+     */
+
+    typedef BOOL _System xfTP_wpSetIconDataN(WPFolder *somSelf,
+                                             PICONINFO pData,
+                                             ULONG ulIndex);
+    typedef xfTP_wpSetIconDataN *xfTD_wpSetIconDataN;
+
     #endif // SOM_WPFolder_h
 
 #endif
