@@ -3804,6 +3804,7 @@ static VOID FrameDestroy(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
  *@@changed V0.9.16 (2001-10-23) [umoeller]: removed all activation message handling as a temporary fix for Mozilla problems
  *@@changed V0.9.16 (2002-01-13) [umoeller]: fixed bad WPS object reports for this frame
  *@@changed V0.9.16 (2002-01-13) [umoeller]: context menu emphasis was never removed, fixed
+ *@@changed V0.9.19 (2002-06-02) [umoeller]: fixed missing WM_QUIT after WM_CLOSE
  */
 
 static MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)

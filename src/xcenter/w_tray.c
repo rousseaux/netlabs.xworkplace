@@ -356,7 +356,7 @@ static PTRAYSETTING FindCurrentTray(PTRAYWIDGETPRIVATE pPrivate)
     PPRIVATEWIDGETSETTING ppws = (PPRIVATEWIDGETSETTING)pPrivate->pWidget->pvWidgetSetting;
 
     if (pPrivate->Setup.pPrivateSetting->ulCurrentTray == -1)
-        return (NULL);
+        return NULL;
 
     return (lstItemFromIndex(ppws->pllTraySettings,
                              pPrivate->Setup.pPrivateSetting->ulCurrentTray));
