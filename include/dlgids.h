@@ -1447,7 +1447,8 @@
     //#define ID_SCD_PAGER_NEWSTICKY       1460
     //#define ID_SCD_PAGER_COMBO_STICKIES  1461
 
-    #define ID_SCD_PAGER_WINDOW             4600
+    // #define ID_SCD_PAGER_WINDOW             4600 removed V0.9.19 (2002-04-17) [umoeller]
+    #define ID_SCDI_PGMG1_WINDOW_GROUP      4600
     #define ID_SCDI_PGMG1_SHOWWINDOWS       4601
     #define ID_SCDI_PGMG1_SHOWWINTITLES     4602
     #define ID_SCDI_PGMG1_CLICK2ACTIVATE    4603

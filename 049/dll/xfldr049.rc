@@ -1289,7 +1289,22 @@ BEGIN
     ID_XFDI_SOME_SELECTALL              "Alles aus~wÑhlen"
     ID_XFDI_SOME_DESELECTALL            "A~lles zurÅcknehmen"
     ID_XFDI_SOME_REGEXP_CP              "~RegulÑrer Ausdruck"
+
+    /* strings formerly in ID_SCD_PAGER_WINDOW */
+    ID_SCDI_PGMG1_WINDOW_GROUP          "XPager-Kontrollfenster"
+    ID_SCDI_PGMG1_TITLEBAR              "T~itelleiste"
+    ID_SCDI_PGMG1_PRESERVEPROPS         "Bildschirmpr~oportionen erzwingen"
+    ID_SCDI_PGMG1_STAYONTOP             "Immer im ~Vordergrund"
+    ID_SCDI_PGMG1_FLASHTOTOP            "Kurz na~ch vorne holen"
+    ID_SCDI_PGMG1_FLASH_TXT1            "Verzîgerung:"
+    ID_SCDI_PGMG1_FLASH_TXT2            "s"
+    ID_SCDI_PGMG1_SHOWWINDOWS           "~Mini-Fenster"
+    ID_SCDI_PGMG1_SHOWWINTITLES         "Fenster~titel anzeigen"
+    ID_SCDI_PGMG1_CLICK2ACTIVATE        "~Mausoperationen fÅr Mini-Fenster"
+    ID_SCDI_PGMG1_SHOWSECONDARY         "Show ~secondary windows"
+    ID_SCDI_PGMG1_SHOWSTICKY            "Ha~ftfenster anzeigen"
 END
+
 
 /* Treesize definitions; added V0.9.0 */
 

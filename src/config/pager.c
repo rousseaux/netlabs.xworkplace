@@ -53,6 +53,7 @@
 #define INCL_WINENTRYFIELDS
 #define INCL_WINSTDCNR
 #define INCL_WINSTDSLIDER
+#define INCL_WINSTDSPIN
 #define INCL_WINSTDVALSET
 #define INCL_WINSWITCHLIST
 #define INCL_GPILOGCOLORTABLE
@@ -483,6 +484,110 @@ static MRESULT pgmiXPagerGeneralItemChanged(PNOTEBOOKPAGE pnbp,
  *
  ********************************************************************/
 
+static const CONTROLDEF
+    ControlWindowGroup = CONTROLDEF_GROUP(
+                            LOAD_STRING,
+                            ID_SCDI_PGMG1_WINDOW_GROUP,
+                            -1,
+                            -1),
+    TitlebarCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_SCDI_PGMG1_TITLEBAR,
+                            -1,
+                            -1),
+    PreservePropsCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_SCDI_PGMG1_PRESERVEPROPS,
+                            -1,
+                            -1),
+    StayOnTopCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_SCDI_PGMG1_STAYONTOP,
+                            -1,
+                            -1),
+    FlashToTopCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_SCDI_PGMG1_FLASHTOTOP,
+                            -1,
+                            -1),
+    DelayTxt1 = CONTROLDEF_TEXT(
+                            LOAD_STRING,
+                            ID_SCDI_PGMG1_FLASH_TXT1,
+                            -1,
+                            -1),
+    DelaySpin = CONTROLDEF_SPINBUTTON(
+                            ID_SCDI_PGMG1_FLASH_SPIN,
+                            50,
+                            -1),
+    DelayTxt2 = CONTROLDEF_TEXT(
+                            LOAD_STRING,
+                            ID_SCDI_PGMG1_FLASH_TXT2,
+                            -1,
+                            -1),
+    MiniWindowsCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_SCDI_PGMG1_SHOWWINDOWS,
+                            -1,
+                            -1),
+    ShowWinTitlesCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_SCDI_PGMG1_SHOWWINTITLES,
+                            -1,
+                            -1),
+    Click2ActivateCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_SCDI_PGMG1_CLICK2ACTIVATE,
+                            -1,
+                            -1),
+    ShowSecondaryCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_SCDI_PGMG1_SHOWSECONDARY,
+                            -1,
+                            -1),
+    ShowStickyCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_SCDI_PGMG1_SHOWSTICKY,
+                            -1,
+                            -1);
+
+static const DLGHITEM dlgXPagerWindow[] =
+    {
+        START_TABLE,
+            START_ROW(0),
+                START_GROUP_TABLE(&ControlWindowGroup),
+                    START_ROW(0),
+                        CONTROL_DEF(&TitlebarCB),
+                    START_ROW(0),
+                        CONTROL_DEF(&PreservePropsCB),
+                    START_ROW(0),
+                        CONTROL_DEF(&StayOnTopCB),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&FlashToTopCB),
+                        CONTROL_DEF(&DelayTxt1),
+                        CONTROL_DEF(&DelaySpin),
+                        CONTROL_DEF(&DelayTxt2),
+                    START_ROW(0),
+                        CONTROL_DEF(&MiniWindowsCB),
+                    START_ROW(0),
+                        CONTROL_DEF(&G_Spacing),
+                        CONTROL_DEF(&ShowWinTitlesCB),
+                    START_ROW(0),
+                        CONTROL_DEF(&G_Spacing),
+                        CONTROL_DEF(&Click2ActivateCB),
+                    START_ROW(0),
+                        CONTROL_DEF(&G_Spacing),
+                        CONTROL_DEF(&ShowSecondaryCB),
+                    START_ROW(0),
+                        CONTROL_DEF(&G_Spacing),
+                        CONTROL_DEF(&ShowStickyCB),
+                END_TABLE,
+            START_ROW(0),       // notebook buttons (will be moved)
+                CONTROL_DEF(&G_UndoButton),         // common.c
+                CONTROL_DEF(&G_DefaultButton),      // common.c
+                CONTROL_DEF(&G_HelpButton),         // common.c
+        END_TABLE,
+    };
+
 /*
  *@@ pgmiXPagerWindowInitPage:
  *      notebook callback function (notebook.c) for the
@@ -514,8 +619,13 @@ static VOID pgmiXPagerWindowInitPage(PNOTEBOOKPAGE pnbp,   // notebook info stru
             pnbp->pUser2 = malloc(sizeof(PAGERCONFIG));
             if (pnbp->pUser2)
                 memcpy(pnbp->pUser2, pnbp->pUser, sizeof(PAGERCONFIG));
-        }
 
+            // insert the controls using the dialog formatter
+            // V0.9.19 (2002-04-17) [umoeller]
+            ntbFormatPage(pnbp->hwndDlgPage,
+                          dlgXPagerWindow,
+                          ARRAYITEMCOUNT(dlgXPagerWindow));
+        }
     }
 
     if (flFlags & CBI_SET)
@@ -768,6 +878,7 @@ typedef struct _STICKYRECORD
  *      adjusts the pcsz* values in the STICKYRECORD
  *
  *@@added V0.9.19 (2002-04-15) [lafaix]
+ *@@changed V0.9.19 (2002-04-17) [umoeller]: added regexp support
  */
 
 static VOID AdjustStickyRecord(PSTICKYRECORD pRec)
@@ -795,7 +906,7 @@ static VOID AdjustStickyRecord(PSTICKYRECORD pRec)
         case SF_EQUALS:
             pRec->pcszOperator = cmnGetString(ID_SCDI_STICKY_EQUALS);
         break;
-        case SF_MATCHES:
+        case SF_MATCHES: // V0.9.19 (2002-04-17) [umoeller]
             pRec->pcszOperator = cmnGetString(ID_SCDI_STICKY_MATCHES);
         break;
     }
@@ -1055,7 +1166,7 @@ static MRESULT EXPENTRY fnwpEditStickyRecord(HWND hwndDlg, ULONG msg, MPARAM mp1
  *      edit and possibly inserts a STICKYRECORD.
  *
  *@@added V0.9.19 (2002-04-14) [lafaix]
- *@@changed V0.9.19 (2002-04-17) [umoeller]: now using dialog formatter
+ *@@changed V0.9.19 (2002-04-17) [umoeller]: now using dialog formatter, added regexps
  */
 
 static VOID EditStickyRecord(PSTICKYRECORD pRec,
@@ -1275,6 +1386,7 @@ MPARAM G_ampStickies[] =
  *
  *@@added V0.9.4 (2000-07-10) [umoeller]
  *@@changed V0.9.19 (2002-04-14) [lafaix]: modified container view
+ *@@changed V0.9.19 (2002-04-17) [umoeller]: now using dialog formatter
  */
 
 static VOID pgmiXPagerStickyInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
@@ -1972,7 +2084,7 @@ ULONG pgmiInsertPagerPages(WPObject *somSelf,       // in: screen object
     inbp.usPageStyleFlags = BKA_MINOR;
     inbp.fEnumerate = TRUE;
     inbp.pcszName = "~XPager";
-    inbp.ulDlgID = ID_XFD_EMPTYDLG; // ID_SCD_PAGER_STICKY;
+    inbp.ulDlgID = ID_XFD_EMPTYDLG; // ID_SCD_PAGER_STICKY; V0.9.19 (2002-04-17) [umoeller]
     inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_PAGER_STICKY;
     inbp.pampControlFlags = G_ampStickies;
     inbp.cControlFlags = ARRAYITEMCOUNT(G_ampStickies);
@@ -1991,7 +2103,7 @@ ULONG pgmiInsertPagerPages(WPObject *somSelf,       // in: screen object
     inbp.usPageStyleFlags = BKA_MINOR;
     inbp.fEnumerate = TRUE;
     inbp.pcszName = "~XPager";
-    inbp.ulDlgID = ID_SCD_PAGER_WINDOW;
+    inbp.ulDlgID = ID_XFD_EMPTYDLG; // ID_SCD_PAGER_WINDOW; V0.9.19 (2002-04-17) [umoeller]
     inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_PAGER_WINDOW;
     // give this page a unique ID, which is
     // passed to the common config.sys callbacks

@@ -716,42 +716,6 @@ BEGIN
     END
 END
 
-DLGTEMPLATE ID_SCD_PAGER_WINDOW LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "", ID_SCD_PAGER_WINDOW, 0, 0, 224, 180, NOT FS_DLGBORDER |
-            WS_VISIBLE
-    BEGIN
-        GROUPBOX        "XPager control window", -1, 4, 19, 192, 109
-        AUTOCHECKBOX    "T~itlebar", ID_SCDI_PGMG1_TITLEBAR, 13, 104, 154, 8
-        AUTOCHECKBOX    "F~orce screen proportions",
-                        ID_SCDI_PGMG1_PRESERVEPROPS, 13, 96, 154, 8
-        AUTOCHECKBOX    "Stay on to~p", ID_SCDI_PGMG1_STAYONTOP, 13, 88, 70,
-                        8
-        AUTOCHECKBOX    "~Flash to top", ID_SCDI_PGMG1_FLASHTOTOP, 13, 80,
-                        70, 8
-        LTEXT           "Delay:", ID_SCDI_PGMG1_FLASH_TXT1, 71, 80, 20, 8,
-                        DT_VCENTER
-        SPINBUTTON      ID_SCDI_PGMG1_FLASH_SPIN, 93, 78, 40, 12,
-                        SPBS_NUMERICONLY | SPBS_MASTER | SPBS_JUSTLEFT |
-                        SPBS_JUSTRIGHT | SPBS_JUSTCENTER | WS_GROUP
-        LTEXT           "s", ID_SCDI_PGMG1_FLASH_TXT2, 135, 80, 20, 8,
-                        DT_VCENTER
-        AUTOCHECKBOX    "~Mini-windows", ID_SCDI_PGMG1_SHOWWINDOWS, 13, 60,
-                        158, 8
-        AUTOCHECKBOX    "Show window ~titles", ID_SCDI_PGMG1_SHOWWINTITLES,
-                        23, 50, 142, 8
-        AUTOCHECKBOX    "~Mini-window mouse actions",
-                        ID_SCDI_PGMG1_CLICK2ACTIVATE, 23, 42, 144, 8
-        AUTOCHECKBOX    "Show ~secondary windows", ID_SCDI_PGMG1_SHOWSECONDARY,
-                        23, 34, 121, 8
-        AUTOCHECKBOX    "Show stic~ky windows", ID_SCDI_PGMG1_SHOWSTICKY,
-                        23, 26, 103, 8
-        PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 55, 12, WS_GROUP
-        PUSHBUTTON      "~Default", DID_DEFAULT, 65, 6, 55, 12
-        PUSHBUTTON      "~Help", DID_HELP, 125, 6, 55, 12, BS_HELP
-    END
-END
-
 DLGTEMPLATE ID_SDD_CAD LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     DIALOG  "Dialog Title", ID_SDD_CAD, 10, 50, 220, 40,

@@ -738,7 +738,7 @@ BEGIN
     ID_XCSI_ANIMOUSE                    "Animated Mouse Pointers"
     ID_XCSI_XWPHOOK                     "Enable &xwp; Hook"
     ID_XCSI_GLOBALHOTKEYS               "Enable global object hotkeys"
-    ID_XCSI_PAGER                       "XPager: virtual desktops"
+    ID_XCSI_PAGER                       "&pgr;: virtual desktops"
 
     ID_XCSI_STARTSHUTFEATURES           "Startup/shutdown features"
     ID_XCSI_ARCHIVING                   "Replace Desktop archiving"
@@ -1295,6 +1295,20 @@ BEGIN
     ID_XFDI_SOME_SELECTALL              "Select ~all"
     ID_XFDI_SOME_DESELECTALL            "Deselect a~ll"
     ID_XFDI_SOME_REGEXP_CP              "~Regular expression"
+
+    /* strings formerly in ID_SCD_PAGER_WINDOW */
+    ID_SCDI_PGMG1_WINDOW_GROUP          "&pgr; control window"
+    ID_SCDI_PGMG1_TITLEBAR              "T~itlebar"
+    ID_SCDI_PGMG1_PRESERVEPROPS         "F~orce screen proportions"
+    ID_SCDI_PGMG1_STAYONTOP             "Stay on to~p"
+    ID_SCDI_PGMG1_FLASHTOTOP            "~Flash to top"
+    ID_SCDI_PGMG1_FLASH_TXT1            "Delay:"
+    ID_SCDI_PGMG1_FLASH_TXT2            "s"
+    ID_SCDI_PGMG1_SHOWWINDOWS           "~Mini-windows"
+    ID_SCDI_PGMG1_SHOWWINTITLES         "Show window ~titles"
+    ID_SCDI_PGMG1_CLICK2ACTIVATE        "~Mini-window mouse actions"
+    ID_SCDI_PGMG1_SHOWSECONDARY         "Show ~secondary windows"
+    ID_SCDI_PGMG1_SHOWSTICKY            "Show stic~ky windows"
 END
 
 /* Treesize definitions; added V0.9.0 */
