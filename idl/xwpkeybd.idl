@@ -69,6 +69,8 @@ interface XWPKeyboard : WPKeyboard
      *
      */
 
+    wpFilterPopupMenu: override;
+
     wpAddKeyboardSpecialNeedsPage: override;
 
 #ifdef __PRIVATE__

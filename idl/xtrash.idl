@@ -57,6 +57,7 @@ interface XWPTrashCan : WPFolder
     ULONG xwpAddTrashCanDrivesPage(in HWND hwndDlg);
     ULONG xwpAddTrashCanGeneralPage(in HWND hwndDlg);
 
+    VOID xwpAddObjectSize(in ULONG ulNewSize);
     ULONG xwpQueryTrashObjectsCount();
 
     BOOL xwpSetCorrectTrashIcon(in BOOL fForce);
@@ -73,6 +74,7 @@ interface XWPTrashCan : WPFolder
             xwpAddTrashCanSettingsPage,
             xwpAddTrashCanDrivesPage,
             xwpAddTrashCanGeneralPage,
+            xwpAddObjectSize,
             xwpQueryTrashObjectsCount,
             xwpSetCorrectTrashIcon,
             xwpEmptyTrashCan,
@@ -103,7 +105,7 @@ interface XWPTrashCan : WPFolder
     ULONG   ulTrashObjectCount;     // no. of trash objects in trash can;
                                     // initialized to 0, updated by wpPopulate
 
-    double  dTotalSize;             // size of all objects in trash can
+    double  dSizeOfAllObjects;      // size of all objects in trash can
 
     CHAR    cCurrentDrivePopulating; // if this is != 0, a drive is currently
                                     // being populated; set by wpPopulate and
@@ -239,6 +241,9 @@ interface XWPTrashObject : WPTransient
     BOOL xwpSetRelatedObject(in WPObject pObject);
     WPObject xwpQueryRelatedObject();
     PSZ xwpQueryRelatedPath();
+    VOID xwpSetExpandedObjectData(in PVOID pvData,
+                                  in ULONG ulNewSize,
+                                  in XWPTrashCan pTrashCan);
     ULONG xwpQueryRelatedSize();
     APIRET xwpValidateTrashObject();
     BOOL xwpDestroyTrashObject();
@@ -251,6 +256,7 @@ interface XWPTrashObject : WPTransient
             xwpSetRelatedObject,
             xwpQueryRelatedObject,
             xwpQueryRelatedPath,
+            xwpSetExpandedObjectData,
             xwpQueryRelatedSize,
             xwpValidateTrashObject,
             xwpDestroyTrashObject,
@@ -279,7 +285,17 @@ interface XWPTrashObject : WPTransient
                                 // (xwpQueryRelatedObject)
     PSZ      pszSourcePath;     // where the related object was deleted from
                                 // (xwpQuerySourcePath)
-    ULONG    ulSize;            // size of related object (0 if not WPFileSystem)
+    ULONG    ulTotalSize;       // total size of object;
+                                // this is 0 for non-file-system objects,
+                                // but calculated on the File thread if we
+                                // have a folder and will then include all
+                                // subfolders;
+                                // if it's a regular file, it's its size
+
+    CHAR     szTotalSize[30];   // string with total size; initially, this
+                                // is set to "calculating"
+
+    PVOID    pvExpandedObject;  // points to a EXPANDEDOBJECT (fileops.h)
 
     /*
      * WPTransient methods overridden by XWPTrashObject:
@@ -287,7 +303,6 @@ interface XWPTrashObject : WPTransient
      */
 
     wpInitData: override;
-    wpSetup: override;
     wpUnInitData: override;
 
     wpQueryDetailsData: override;

@@ -53,6 +53,7 @@ all: $(OUTPUTDIR)\xclslist.h \
      $(OUTPUTDIR)\xwpkeybd.h \
      $(OUTPUTDIR)\xwpmouse.h \
      $(OUTPUTDIR)\xwpsetup.h \
+     $(OUTPUTDIR)\xwpscreen.h \
      $(OUTPUTDIR)\xwpsound.h
     @echo ----- Leaving $(MAKEDIR)
 
@@ -108,6 +109,8 @@ $(OUTPUTDIR)\xtrash.h:           $(@B).idl
 $(OUTPUTDIR)\xwpkeybd.h:         $(@B).idl
 
 $(OUTPUTDIR)\xwpmouse.h:         $(@B).idl
+
+$(OUTPUTDIR)\xwpscreen.h:        $(@B).idl
 
 $(OUTPUTDIR)\xwpsetup.h:         $(@B).idl
 

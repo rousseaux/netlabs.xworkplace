@@ -72,11 +72,15 @@ interface XFldWPS : WPSystem
      *
      */
 
+    wpFilterPopupMenu: override;
+
     wpQueryDefaultHelp: override;
 
     wpAddSystemScreenPage: override;
 
     wpAddDMQSDisplayTypePage: override;
+
+    wpAddSystemPrintScreenPage: override;
 
     wpAddSettingsPages: override;
 

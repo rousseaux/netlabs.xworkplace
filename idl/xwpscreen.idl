@@ -1,14 +1,16 @@
 
 /*
- * xwpsetup.idl:
+ * xwpscreen.idl:
  *      SOM interface description file for the following
  *      XWorkplace classes (in this order):
- *          XWPSetup
+ *          XWPScreen ("Screen" settings object)
  *      and the respective metaclasses.
  *
- *      See src\classes\xwpsetup.c for details.
+ *      See src\classes\xwpscreen.c for details.
  *
- *      Copyright (C) 1999-2000 Ulrich M”ller.
+ *      This is new with V0.9.2 (2000-02-23) [umoeller].
+ *
+ *      Copyright (C) 2000 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -20,62 +22,64 @@
  *      GNU General Public License for more details.
  */
 
-#include <wpabs.idl>         // this is SOM for WPAbstract
+#include <wpsystem.idl>         // this is SOM for WPSystem
 
 /*
-   CLASS: XWPSetup
+   CLASS: XWPScreen
 
    CLASS HIERARCHY:
 
        SOMObject
          ÀÄÄ WPObject
                ÀÄÄ WPAbstract
-                     ÀÄÄ XWPSetup
+                     ÀÄÄ WPSystem
+                           ÀÄÄ  XWPScreen
 */
 
-interface M_XWPSetup;            // forward reference to metaclass
+interface M_XWPScreen;            // forward reference to metaclass
 
-interface XWPSetup : WPAbstract
+interface XWPScreen : WPSystem
 {
     /*
-     * New instance methods for XWPSetup:
+     * New instance methods for XWPScreen:
      *
      */
 
-    ULONG xwpAddXWPSetupPages(in HWND hwndDlg);
+    ULONG xwpAddXWPScreenPages(in HWND hwndDlg);
 
 #ifdef __SOMIDL__
   implementation {
 
-    releaseorder: xwpAddXWPSetupPages;
+    releaseorder: xwpAddXWPScreenPages;
 
     /*
      * Class Modifiers:
      *
      */
 
-    externalprefix = xwset_;
-    externalstem = xwset;
+    externalprefix = xwpscr_;
+    externalstem = xwpscr;
     majorversion = 1;
     minorversion = 1;
-    filestem = xwpsetup;           //# specifies the filestem for sc-generated files
-    metaclass = M_XWPSetup;
+    filestem = xwpscreen;           //# specifies the filestem for sc-generated files
+    metaclass = M_XWPScreen;
     dllname = "xfldr.dll";
     callstyle = oidl;           //# forget CORBA stuff (*ev and such)
 
     /*
-     * WPAbstract methods overridden by XWPSetup:
+     * WPSystem methods overridden by XWPScreen:
      *
      */
 
     wpFilterPopupMenu: override;
 
     wpQueryDefaultHelp: override;
-    wpQueryDefaultView: override;
-
-    wpAddObjectWindowPage: override;
 
     wpAddSettingsPages: override;
+
+#ifdef __PRIVATE__
+
+#endif
 
   }; // implementation
 #endif /* __SOMIDL__ */
@@ -87,7 +91,7 @@ interface XWPSetup : WPAbstract
 //# ---------------------
 //#
 
-interface M_XWPSetup : M_WPAbstract
+interface M_XWPScreen : M_WPSystem
 {
 
 #ifdef __SOMIDL__
@@ -98,32 +102,29 @@ interface M_XWPSetup : M_WPAbstract
      *
      */
 
-    externalprefix = xwsetM_;
-    externalstem = xwsetM;
-    functionprefix = xwsetM_;
+    externalprefix = xwpscrM_;
+    externalstem = xwpscrM;
+    functionprefix = xwpscrM_;
     majorversion = 1;
     minorversion = 1;
-    filestem = xwpsetup;           //# specifies the filestem for sc-generated files
+    filestem = xwpscreen;           //# specifies the filestem for sc-generated files
     dllname = "xfldr.dll";
     callstyle = oidl;
 
     /*
-     * Internal class variables:
+     * Internal class variables for M_XWPScreen:
      *
      */
 
     /*
-     * M_WPAbstract methods overridden by M_XWPSetup:
+     * M_WPSystem methods overridden by M_XWPScreen:
      *
      */
 
     wpclsInitData: override;
-    wpclsQueryStyle: override;
-    wpclsQueryTitle: override;
-
-    wpclsQueryIconData: override;
-
     wpclsQuerySettingsPageSize: override;
+    wpclsQueryTitle: override;
+    wpclsQueryIconData: override;
   };
 #endif /* __SOMIDL__ */
 };

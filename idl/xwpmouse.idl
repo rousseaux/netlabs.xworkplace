@@ -81,6 +81,8 @@ interface XWPMouse : WPMouse
     wpSaveState: override;
     wpRestoreState: override;
 
+    wpFilterPopupMenu: override;
+
     wpAddMouseCometPage: override;
     wpAddMousePtrPage: override;
     wpAddMouseMappingsPage: override;

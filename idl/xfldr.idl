@@ -353,6 +353,8 @@ interface XFolder : WPFolder
     wpRestoreString: override;
     wpRestoreData: override;
 
+    wpAddObjectGeneralPage2: override;
+
     wpAddFile1Page: override;
     wpAddFile2Page: override;
     wpAddFile3Page: override;

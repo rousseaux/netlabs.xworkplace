@@ -106,7 +106,7 @@ interface M_XFldDisk : M_WPDisk
      *
      */
 
-    XFldDisk xwpclsQueryDiskObject(in WPObject pObject);
+    // XFldDisk xwpclsQueryDiskObject(in WPObject pObject);
 
 #ifdef __SOMIDL__
   implementation {

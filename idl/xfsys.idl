@@ -71,6 +71,8 @@ interface XFldSystem : WPSystem
      *
      */
 
+    wpFilterPopupMenu: override;
+
     wpQueryDefaultHelp: override;
 
     wpAddSettingsPages: override;

@@ -85,6 +85,7 @@ interface XFldStartup : XFolder
      *
      */
 
+    wpFilterPopupMenu: override;
     wpModifyPopupMenu: override;
     wpMenuItemSelected: override;
     wpMenuItemHelpSelected: override;
