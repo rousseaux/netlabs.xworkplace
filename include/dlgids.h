@@ -2330,6 +2330,8 @@
 #define ID_CRSI_DISKFREECONDTOOLTIP     6297        // V0.9.21 (2002-08-21) [umoeller]
 #define ID_CRMI_IPWIDGET_SOURCE         6298        // V0.9.21 (2002-08-21) [umoeller]
 
+#define ID_XFSI_FDR_SPLITVIEW           6299        // V0.9.21 (2002-08-21) [umoeller]
+
 /* ******************************************************************
  *
  *   String IDs for status bar mnemonics        >= 7000
@@ -2405,7 +2407,7 @@
 
 /* ******************************************************************
  *
- *   Treesize                           >= 10100
+ *   Netscape DDE                       >= 10100
  *
  ********************************************************************/
 

@@ -90,6 +90,7 @@ $(OUTPUTDIR)\fdrcontent.obj \
 $(OUTPUTDIR)\fdrhotky.obj \
 $(OUTPUTDIR)\fdrnotebooks.obj \
 $(OUTPUTDIR)\fdrsort.obj \
+$(OUTPUTDIR)\fdrsplit.obj \
 $(OUTPUTDIR)\fdrsubclass.obj \
 $(OUTPUTDIR)\fdrmenus.obj \
 #$(OUTPUTDIR)\fhandles.obj \

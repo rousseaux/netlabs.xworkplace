@@ -3270,19 +3270,18 @@ HWND cllCreateClassListView(WPObject *somSelf,
         ClientCData.cb = sizeof(ClientCData);
         ClientCData.somSelf = somSelf;
         ClientCData.ulView = ulView;
-        hwndFrame = winhCreateStdWindow(HWND_DESKTOP,           // frame parent
-                                        &swpFrame,
-                                        flCreate,
-                                        WS_ANIMATE,
-                                        _wpQueryTitle(somSelf), // title bar
-                                        0,                      // res IDs
-                                        WC_CLASSLISTCLIENT,     // client class
-                                        0L,                     // client wnd style
-                                        ID_CLASSFRAME,          // ID
-                                        &ClientCData,
-                                        &hwndClient);
 
-        if (hwndFrame)
+        if (hwndFrame = winhCreateStdWindow(HWND_DESKTOP,           // frame parent
+                                            &swpFrame,
+                                            flCreate,
+                                            WS_ANIMATE,
+                                            _wpQueryTitle(somSelf), // title bar
+                                            0,                      // res IDs
+                                            WC_CLASSLISTCLIENT,     // client class
+                                            0L,                     // client wnd style
+                                            ID_CLASSFRAME,          // ID
+                                            &ClientCData,
+                                            &hwndClient))
         {
             // get client data window pointer; this has been allocated
             // by WM_CREATE in fnwpClassListClient

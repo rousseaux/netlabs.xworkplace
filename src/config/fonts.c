@@ -366,11 +366,10 @@ APIRET fonInstallFont(HAB hab,
                 CHAR    szFamily[100],
                         szFace[100];
                 // OK, get font information.
-                arc = fonGetFontDescription(hab,
-                                            szFilename,
-                                            szFamily,
-                                            szFace);
-                if (arc == NO_ERROR)
+                if (!(arc = fonGetFontDescription(hab,
+                                                  szFilename,
+                                                  szFamily,
+                                                  szFace)))
                 {
                     // LOAD THE FONT INTO THE SYSTEM
                     if (!GpiLoadPublicFonts(hab,
@@ -390,8 +389,7 @@ APIRET fonInstallFont(HAB hab,
                                  0,         // standard country
                                  szFilename);
                         // extract short filename
-                        pLastBackslash = strrchr(szFilename, '\\');
-                        if (!pLastBackslash)
+                        if (!(pLastBackslash = strrchr(szFilename, '\\')))
                             arc = ERROR_INVALID_NAME;
                         else
                         {
@@ -931,7 +929,7 @@ VOID fonSampleTextInitPage(PNOTEBOOKPAGE pnbp,
                                        NULL);
         WinSetDlgItemText(pnbp->hwndDlgPage,
                           ID_FNDI_SAMPLETEXT_MLE,
-                          ((psz) && strlen(psz))
+                          ((psz) && (*psz))
                             ? psz
                             : "The Quick Brown Fox Jumps Over The Lazy Dog.");
         if (psz)
@@ -1188,10 +1186,9 @@ static VOID FontSamplePaint(HWND hwnd,
     HRGN hrgnUpdate,
          hrgnOld;
 
-    hrgnUpdate = GpiCreateRegion(pWinData->hps,
-                                 0,
-                                 NULL);
-    if (hrgnUpdate)
+    if (hrgnUpdate = GpiCreateRegion(pWinData->hps,
+                                     0,
+                                     NULL))
         if (RGN_NULL != WinQueryUpdateRegion(hwnd, hrgnUpdate))
             hps = pWinData->hps;
 

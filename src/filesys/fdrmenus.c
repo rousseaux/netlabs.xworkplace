@@ -1460,7 +1460,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
          *
          */
 
-        /*if (WinSendMsg(hwndMenu,
+        if (WinSendMsg(hwndMenu,
                        MM_QUERYITEM,
                        MPFROM2SHORT(WPMENUID_OPEN, TRUE),
                        (MPARAM)&mi))
@@ -1468,9 +1468,9 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
             winhInsertMenuItem(mi.hwndSubMenu,
                                MIT_END,
                                ulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW,
-                               "Split view", // @@todo localize
+                               cmnGetString(ID_XFSI_FDR_SPLITVIEW),
                                MIS_TEXT, 0);
-        } */
+        }
 
         /* if (_somIsA(somSelf, _WPDrives))
         {
@@ -3031,10 +3031,6 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
                                              ulMenuId);
                 break; */ // disabled V0.9.12 (2001-05-03) [umoeller]
 
-                case ID_XFMI_OFS_SPLITVIEW:
-                    // fdrCreateSplitView(somSelf);
-                break;
-
                 /*
                  * ID_XFMI_OFS_FDRDEFAULTDOC:
                  *      open folder's default document
@@ -3175,7 +3171,8 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
                 {
                     HWND hwndCnr = WinWindowFromID(hwndFrame, FID_CLIENT);
                     POINTS pts = {0, 0};
-                    WinPostMsg(hwndCnr, WM_CONTEXTMENU,
+                    WinPostMsg(hwndCnr,
+                               WM_CONTEXTMENU,
                                (MPARAM)&pts,
                                MPFROM2SHORT(0, TRUE));
                     brc = TRUE;
@@ -3250,6 +3247,21 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
                 case ID_XFMI_OFS_RUN:
                     cmnRunCommandLine(NULLHANDLE, NULL);
                     brc = TRUE;
+                break;
+
+                /*
+                 * ID_XFMI_OFS_SPLITVIEW:
+                 *      "Open" -> "split view".
+                 *
+                 * V0.9.21 (2002-08-21) [umoeller]
+                 */
+
+                case ID_XFMI_OFS_SPLITVIEW:
+                    _wpViewObject(somSelf,
+                                  WinWindowFromID(hwndFrame, FID_CLIENT),
+                                                // hwndCnr
+                                  ulMenuId,     // varmenuofs + ID_XFMI_OFS_SPLITVIEW
+                                  NULLHANDLE);
                 break;
 
                 /*

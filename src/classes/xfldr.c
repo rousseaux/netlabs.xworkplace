@@ -2615,7 +2615,7 @@ SOM_Scope HWND  SOMLINK xf_wpOpen(XFolder *somSelf,
 {
     HWND        hwndNewFrame; // return HWND
     BOOL        fOpenDefaultDoc = FALSE;
-
+    ULONG       ulVarMenuOfs = cmnQuerySetting(sulVarMenuOffset);
     // XFolderMethodDebug("XFolder","xf_wpOpen");
     #ifdef DEBUG_SOMMETHODS
         _Pmpf(("XFolder::wpOpen for 0x%lX (%s): ulView = 0x%lX, param = 0x%lX",
@@ -2637,7 +2637,7 @@ SOM_Scope HWND  SOMLINK xf_wpOpen(XFolder *somSelf,
             fOpenDefaultDoc = TRUE;
         }
     }
-    else if (ulView == (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_FDRDEFAULTDOC))
+    else if (ulView == ulVarMenuOfs + ID_XFMI_OFS_FDRDEFAULTDOC)
         fOpenDefaultDoc = TRUE;
 
     if (fOpenDefaultDoc)
@@ -2649,40 +2649,49 @@ SOM_Scope HWND  SOMLINK xf_wpOpen(XFolder *somSelf,
     else
 #endif
     {
-        // not default document:
-        TRY_LOUD(excpt1)
+        // added split view
+        // V0.9.21 (2002-08-21) [umoeller]
+        if (ulView == ulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW)
         {
-            // request object mutex;
-            // parent_wpOpen starts the Populate thread, and we
-            // don't want that one to start until we are done
-            // with our folder manipulations
-            /* fFolderLocked = !_wpRequestObjectMutexSem(somSelf, 5000);
-            if (fFolderLocked) */
-            // V0.9.2 (2000-03-04) [umoeller]: no, don't do this, this
-            // prevents work areas from re-opening
-
-            // have parent do the window creation
-            hwndNewFrame = XFolder_parent_WPFolder_wpOpen(somSelf,
-                                                          hwndCnr,
-                                                          ulView,
-                                                          param);
-
-            if (   (ulView == OPEN_CONTENTS)
-                || (ulView == OPEN_TREE)
-                || (ulView == OPEN_DETAILS)
-               )
-            {
-                fdrManipulateNewView(somSelf,
-                                     hwndNewFrame,
-                                     ulView);
-            }
+            hwndNewFrame = fdrCreateSplitView(somSelf,
+                                              ulView);
         }
-        CATCH(excpt1) { } END_CATCH();
+        else
+        {
+            // not default document, not split view:
+            TRY_LOUD(excpt1)
+            {
+                // request object mutex;
+                // parent_wpOpen starts the Populate thread, and we
+                // don't want that one to start until we are done
+                // with our folder manipulations
+                /* fFolderLocked = !_wpRequestObjectMutexSem(somSelf, 5000);
+                if (fFolderLocked) */
+                // V0.9.2 (2000-03-04) [umoeller]: no, don't do this, this
+                // prevents work areas from re-opening
 
-        /* if (fFolderLocked)
-            _wpReleaseObjectMutexSem(somSelf); */
-                    // this will unblock the Populate thread
+                // have parent do the window creation
+                hwndNewFrame = XFolder_parent_WPFolder_wpOpen(somSelf,
+                                                              hwndCnr,
+                                                              ulView,
+                                                              param);
 
+                if (   (ulView == OPEN_CONTENTS)
+                    || (ulView == OPEN_TREE)
+                    || (ulView == OPEN_DETAILS)
+                   )
+                {
+                    fdrManipulateNewView(somSelf,
+                                         hwndNewFrame,
+                                         ulView);
+                }
+            }
+            CATCH(excpt1) { } END_CATCH();
+
+            /* if (fFolderLocked)
+                _wpReleaseObjectMutexSem(somSelf); */
+                        // this will unblock the Populate thread
+        }
     }
 
     #ifdef DEBUG_SOMMETHODS
