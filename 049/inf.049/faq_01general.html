@@ -1,0 +1,163 @@
+<HTML NOSUBLINKS="xices" NOSUBLINKS="vers_" XPOS=right WIDTH=70%>
+<HEAD>
+    <TITLE>
+        FAQ: Allgemeine Fragen
+    </TITLE>
+</HEAD>
+<!-- This file is all new with V0.82. -->
+<!-- Changes for V0.84: see notes below -->
+<!-- Changed with V0.9.0: replace XFolder with &xwp;;
+                          also see notes below -->
+<BODY>
+Zuerst einmal: Werfen Sie einen Blick in das Objekt
+<A HREF="sys_2global.html">"Workplace Shell"</A>, Sie werden dort eine Menge
+n&uuml;tzlicher Schalter vorfinden, mit denen Sie &xwp; Benehmen beibringen k&ouml;nnen.
+<P>Falls Sie hier keine Antwort auf Ihre Frage finden, sehen Sie bitte auch einmal
+auf der <A HREF="notices_3comments.html">&xwp; Website</A> nach. Ich pflege nun
+auch ein &ouml;ffentliches Fehlerverzeichnis, das Ihre Frage auch beantworten k&ouml;nnte.
+ 
+<OL>
+<LI><B>Macht &xwp; die WPS langsamer?</B>
+<P>Ich denke nicht, da&szlig; dies allgemein zutrifft. Ich habe keine Tests durchgef&uuml;hrt,
+aber im allgemeinen verlangsamt &xwp; nur <I>bestimmte</I> WPS-Funktionen, aber nicht die
+WPS allgemein.
+<!-- V0.9.0: changed the following -->
+<P>Die offensichtlichste Verlangsamung erfolgt beim &Ouml;ffnen eines Ordnerkontextmen&uuml;s,
+da der Konfigurationsordner (inklusive aller Unterordner) eingelesen werden mu&szlig;, damit
+das Kontextmen&uuml; entsprechend aufgebaut werden kann.
+<P>Seit V0.9.0 jedoch h&auml;lt &xwp; den Inhalt des Konfigurationsordners vor, so da&szlig;
+der Inhalt nur einmal eingelesen wird, bis Sie den Konfigurationsordner oder einen seiner
+Unterordner modifizieren. Dies sollte zu einiger Geschwindigkeitszunahme f&uuml;hren. Mit
+V0.9.0 habe ich auch meine internen Funktionen f&uuml;r verkettete Listen &uuml;berarbeitet,
+was ebenfalls in einer Geschwindigkeitszunahme resultieren sollte.
+<!-- V0.9.13: changed the following -->
+<P>Was andere Funktionen von &xwp; angeht, es h&auml;ngt davon ab. Einige Dinge k&ouml;nnen
+das System tats&auml;chlich verlangsamen (wie etwa das Heraussuchen der Informationen f&uuml;r
+die Statuszeile), aber es gibt andere Bereiche, in denen die &xwp;-Routinen tats&auml;chlich
+schneller sind als der WPS-Code. Beispielsweise werden Ordner viel schneller bev&ouml;lkert,
+wenn die erweiterten Dateizuordnungen aktiviert sind, da &xwp; intern sehr effiziente
+Cacheroutinen f&uuml;r Objekt-Handles verwendet.
+<!-- end V0.9.13 -->
+<P>Im Gegensatz zu manchen anderen WPS-Erweiterungen weist &xwp; auch keinen exzessiven
+Speicherverbrauch auf. Ich habe dies einmal bei meinem System &uuml;berpr&uuml;ft, und
+zus&auml;tzlich zur Gr&ouml;&szlig;e der &xwp;-DLLs selbst alloziert &xwp; nur ein paar 100 KBs
+und gibt Speicher dynamisch frei, wenn er nicht mehr ben&ouml;tigt wird.
+ 
+<!-- this item added with V0.82 -->
+<P><LI><B>Warum sehen die &xwp;-Dialogfenster unter Warp 3 so h&auml;&szlig;lich aus?</B>
+<P>&xwp; verwendet f&uuml;r die meisten seiner Dialoge die Schriftart <B>WarpSans</B>, da sie
+um soviel sch&ouml;ner ist als "System Proportional". Diese Schriftart wird jedoch nur mit
+&warp4; und neueren Versionen ausgeliefert, weswegen sie unter Warp 3 nicht gefunden wird
+und das System stattdessen die Standardsystemschriftart (System Proportional) benutzt.
+<P>Wenn Sie an eine Datei <CITE>\OS2\DLL\DSPRES.DLL</CITE> aus &warp4; herankommen,
+kopieren Sie diese einfach &uuml;ber die gleichnamige Datei im Verzeichnis
+<CITE>\OS2\DLL</CITE> Ihres Warp 3. Diese Datei beinhaltet viele Systemressourcen,
+unter anderem die Schriftart WarpSans. Warp 3 funktioniert mit der Warp 4-Version ohne
+Probleme. (Dies funktioniert nur, nachdem Sie einen Systemneustart zu einer Befehlszeile
+durchgef&uuml;hrt haben, z.B. durch Verwendung von Alt-F1 beim Systemstart,
+<!-- the following added with V0.9.0 -->
+da diese DLL gesperrt wird, sobald das System in den Grafikmodus schaltet.)
+<P>Seit &xwp; V0.9.0 besitzt die Seite "Paranoia" der "&xwp;-Konfiguration" ein
+Markierungsfeld, mit dem Sie die Verwendung der Schriftart "8.Helv" in den meisten F&auml;llen
+erzwingen k&ouml;nnen.
+ 
+<!-- this item added with V0.82 -->
+<P><LI><B>Warum funktionieren die neuen Systemkl&auml;nge nicht?</B>
+<P>Sie m&uuml;ssen zuerst installiert werden. Mehr erfahren Sie auf der
+<!-- V0.9.3: link changed -->
+<A HREF="mm_2sounds.html">entsprechenden Seite</A>.
+<!-- V0.9.6: added the following -->
+<P>Einige Personen haben berichtet, da&szlig; die &xwp;-Systemkl&auml;nge nicht
+mehr funktionierten, nachdem sie ihre Soundkarte aufger&uuml;stet hatten. Es
+hat sich herausgestellt, da&szlig; es sich um ein Problem mit der
+Multimedia-Konfiguration handelt. &Ouml;ffnen Sie das Standardobjekt "Multimedia
+Konfiguration", w&auml;hlen Sie die Indexzunge "Digital Audio" und stellen Sie
+sicher, da&szlig; die Erweiterung "WAV" in der Liste der erweiterten Zuordnungen
+auftaucht.
+ 
+<P><LI><B>Warum kommt es dauernd zu Abst&uuml;rzen in SOM.DLL?</B>
+<P>Falls Sie <B>VisualAge C++</B> oder irgendeine andere Software verwenden, die
+SOM-Laufzeitumgebungen installiert, stellen Sie sicher, da&szlig;
+<CITE>SOM.DLL</CITE> aus dem Verzeichnis <CITE>\OS2\DLL</CITE> geladen wird. Diese
+DLL wurde in neueren FixPaks aktualisiert. VAC++ f&uuml;gt am Anfang der Anweisung
+<CITE>LIBPATH</CITE> in der &cfgsys; zus&auml;tzliche Verzeichnisse ein, was dazu
+f&uuml;hrt, da&szlig; die alte DLL geladen wird.
+Verschieben Sie diese Verzeichnisse hinter <CITE>\OS2\DLL</CITE> im <CITE>LIBPATH</CITE>.
+ 
+<!-- this item added with V0.9.0 -->
+<P><LI><B>Warum startet meine WPS neu, wenn ich das Medium in Wechsellaufwerken
+auswechsele (MO, ZIP, ...)?</B>
+<P>Ich habe keine Ahnung. Mehrere Personen haben von sehr seltsamem Verhalten der WPS beim
+&Ouml;ffnen des Ordners nach Austausch des Wechselmediums berichtet. Danach arbeitet die
+WPS wieder ohne Probleme (bis das Medium wieder ausgetauscht wird).
+<!-- V0.9.6: added this -->
+<P>Beachten Sie bitte, da&szlig; ich abgesehen von einem CD-ROM-Laufwerk und einem CD-Brenner
+keine Wechsellaufwerke habe. Deshalb kann ich diese Probleme hier nicht reproduzieren. Wenn
+jemand einmal einen Blick auf den &xwp;-Quellcode werfen und versuchen k&ouml;nnte herauszufinden,
+was dies verursacht, w&auml;re das sehr hilfreich.
+ 
+<P>IBM hat mit Warp 4 Fixpak 6 Unterst&uuml;tzung f&uuml;r Wechsellaufwerke neu eingef&uuml;hrt,
+vielleicht haben wir da das Problem. Christian Hennecke &lt;christian.hennecke@ruhr-uni-bochum.de&gt;
+schrieb in einer Newsgruppe, da&szlig; es zu helfen scheint, wenn man <CODE>PMWP.DLL</CODE> mit einer
+Version von vor FixPak 6 ersetzt. Au&szlig;erdem m&uuml;ssen Sie dann NEWDASD installieren, das
+noch bei Hobbes und Leo verf&uuml;gbar sein sollte.
+ 
+<P><LI><B>Warum funktionieren &xwp;s Funktionen bei manchen Ordnern und bei anderen nicht?</B>
+<P>Das ist knifflig. Einige Personen haben davon in allen Variationen berichtet, d.h.
+Tastenk&uuml;rzel funktionieren nur bei der Arbeitsoberfl&auml;che, oder nicht in URL-Ordnern,
+oder nicht in Group Folders (ein IBM EWS Hilfsprogramm), etc.pp. Dasgleiche gilt f&uuml;r
+Statuszeilen.
+<P>Soweit ich sehen kann, hat dies mit der Subklassierung von Ordnern zu tun. &xwp; ben&ouml;tigt
+bestimmte Fensternachrichten, um diese Funktionen einzuf&uuml;hren, und wenn irgendeine andere
+WPS-Klasse diese Nachrichten abf&auml;ngt, verhalten sich &xwp;s Funktionen seltsam oder
+verursachen Abst&uuml;rze oder funktionieren einfach nicht.
+<P>Allgemein gilt, da&szlig; diese Fehler umso eher auftauchen, je mehr WPS-Klassen-Ersetzungpakete
+installiert sind. Mit einer "sauberen" WPS arbeitet &xwp; gew&ouml;hnlich gut zusammen, aber
+die Personen, die von diesen Fehlern berichtet haben, hatten manchmal vier Klassenersetzungen
+installiert, und es ist wirklich schwierig, in so einem Fall die Fehler zu finden. Deinstallieren
+Sie versuchsweise einige WPS-Erweiterungen, die Sie nicht unbedingt brauchen.
+<P>Auch gilt allgemein, da&szlig; die WPS umso instabiler wird, je mehr die INI-Dateien
+durcheinandergebracht sind. Ich empfehle dringend Henk Kelders Paket <CITE>WPTOOLS</CITE>,
+das Sie sowieso von Zeit zu Zeit verwenden sollten, um die INI-Dateien sauberzuhalten. Es wird
+nach wie vor gepflegt und ist bei Hobbes erh&auml;ltlich.
+<P>Ich habe auch herausgefunden, da&szlig; die Installationsreihenfolge eine Rolle spielt. Einige
+WPS-Erweiterungen scheinen Nachrichten, die sie nicht brauchen, einfach zu "verschlucken", da sie
+annehmen, die einzige WPS-Erweiterung in System zu sein. (Das trifft m&ouml;glichweise auch auf
+&xwp; zu, aber ich habe versucht, es zu vermeiden.) Wenn nun &xwp; in der WPS-Klassenliste vor
+dieser gierigen WPS-Erweiterung kommt, was der Fall ist, wenn &xwp; zuerst installiert wurde,
+erh&auml;lt es die Nachricht vor der anderen WPS-Erweiterung.
+ 
+<P><LI><B>Arbeitet &xwp; mit Object Desktop zusammen?</B>
+<P>Theoretisch ja. Praktisch manchmal. Detaillierte Informationen hierzu (und zu
+anderen WPS-Hilfsprogrammen) entnehmen Sie bitte der separaten Seite
+<A HREF="vers_1compat.html">"Kompatibilit&auml;t"</A>.
+ 
+<!-- this item added with V0.84 -->
+<P><LI><B>Warum h&ouml;re ich die Diskettenlaufwerke jedesmal laufen, wenn ich den Ordner
+"Laufwerke" &ouml;ffne?</B>
+<P>Der Grund hierf&uuml;r ist, da&szlig; die &xwp;-Statuszeile den freien
+Speicherplatz auf einem Laufwerk abfragt. Wenn das erste Objekt in Ihrem Ordner
+"Laufwerke" ein Diskettenlaufwerk repr&auml;sentiert, wird dieses Laufwerk abgefragt.
+<P>Um dies zu vermeiden, k&ouml;nnen Sie die Statuszeilen-Informationen f&uuml;r
+WPDisk-Objekte im Objekt "Workplace Shell" auf der zweiten Seite der Indexzunge "Statuszeilen"
+&auml;ndern. Dann wird diese Information nicht abgefragt.
+<P>Alternativ k&ouml;nnen Sie auch die Statuszeile nur f&uuml;r den Ordner "Laufwerke"
+auf der Seite "XFolder" in dessen Einstellungsnotizbuch deaktivieren.
+ 
+<P><LI><B>L&auml;uft &xwp; auf Macintosh-Systemen?</B>
+<P>Nein.
+</OL>
+ 
+Schamlose Eigenwerbung: &xwp; arbeitet perfekt mit dem fantastischen
+<STRONG>CommandPak</STRONG> vom selben Autoren zusammen, das ebenso bei
+<!-- V0.9.13: replaced link -->
+<A HREF="http://www.xworkplace.org">xworkplace.org</A> erh&auml;ltlich ist. Dieses
+Paket verbessert die &os2;-Befehlszeile dramatisch und bietet unter anderem
+WPS-Unterst&uuml;tzung auch von der Befehlzeile aus.
+ 
+<BR>
+</BODY>
+</HTML>
+ 
+ 
+ 
