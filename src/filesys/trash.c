@@ -2118,8 +2118,9 @@ ULONG trshEmptyTrashCan(XWPTrashCan *somSelf,
     {
         if (hwndConfirmOwner)
             // confirmations desired:
-            if (cmnMessageBoxMsg(hwndConfirmOwner,
+            if (cmnMessageBoxExt(hwndConfirmOwner,
                                  168,      // "trash can"
+                                 NULL, 0,
                                  169,      // "really empty?"
                                  MB_YESNO | MB_DEFBUTTON2)
                        != MBID_YES)
@@ -2511,26 +2512,10 @@ static const XWPSETTING G_TrashCanSettingsBackup[] =
     };
 
 static const CONTROLDEF
-    OptionsGroup = CONTROLDEF_GROUP(
-                            LOAD_STRING,
-                            ID_XTDI_OPTIONSGROUP,
-                            -1,
-                            -1),
-    AlwaysTrueDeleteCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,
-                            ID_XTDI_ALWAYSTRUEDELETE,
-                            -1,
-                            -1),
-    ConfirmEmptyCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,
-                            ID_XTDI_CONFIRMEMPTY,
-                            -1,
-                            -1),
-    ConfirmDestroyCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,
-                            ID_XTDI_CONFIRMDESTROY,
-                            -1,
-                            -1);
+    OptionsGroup = LOADDEF_GROUP(ID_XTDI_OPTIONSGROUP, SZL_AUTOSIZE),
+    AlwaysTrueDeleteCB = LOADDEF_AUTOCHECKBOX(ID_XTDI_ALWAYSTRUEDELETE),
+    ConfirmEmptyCB = LOADDEF_AUTOCHECKBOX(ID_XTDI_CONFIRMEMPTY),
+    ConfirmDestroyCB = LOADDEF_AUTOCHECKBOX(ID_XTDI_CONFIRMDESTROY);
 
 static const DLGHITEM dlgTrashSettings[] =
     {
@@ -2631,14 +2616,8 @@ MRESULT trshTrashCanSettingsItemChanged(PNOTEBOOKPAGE pnbp,
         break;
 
         case DID_UNDO:
-            // "Undo" button: get pointer to backed-up Global Settings
-            // GLOBALSETTINGS *pGSBackup = (GLOBALSETTINGS*)(pnbp->pUser);
-
-            // and restore the settings for this page
-            // cmnSetSetting(sfTrashDelete, pGSBackup->fTrashDelete);
-            // cmnSetSetting(sfTrashEmptyStartup, pGSBackup->fTrashEmptyStartup);
-            // cmnSetSetting(sfTrashEmptyShutdown, pGSBackup->fTrashEmptyShutdown);
-            // cmnSetSetting(sulTrashConfirmEmpty, pGSBackup->ulTrashConfirmEmpty);
+            // "Undo" button:
+            // restore the settings for this page
             cmnRestoreSettings(pnbp->pUser,
                                ARRAYITEMCOUNT(G_TrashCanSettingsBackup));
 
@@ -2945,9 +2924,6 @@ MRESULT trshTrashCanDrivesItemChanged(PNOTEBOOKPAGE pnbp,
             fSave = FALSE;
     }
 
-    /* if (fSave)
-        cmnStoreGlobalSettings(); */
-
     return (mrc);
 }
 
@@ -3017,8 +2993,9 @@ MRESULT trshTrashCanIconItemChanged(PNOTEBOOKPAGE pnbp,
                         // no title: restore old
                         WinSetWindowText(pnbp->hwndControl,
                                          _wpQueryTitle(pnbp->inbp.somSelf));
-                        cmnMessageBoxMsg(pnbp->hwndDlgPage,
+                        cmnMessageBoxExt(pnbp->hwndDlgPage,
                                          104,   // error
+                                         NULL, 0,
                                          187,   // old name restored
                                          MB_OK);
                     }

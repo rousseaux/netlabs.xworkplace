@@ -120,6 +120,8 @@
  *
  ********************************************************************/
 
+#ifndef __NOXWPSETUP__
+
 /*
  *@@ FEATURESITEM:
  *      structure used for feature checkboxes
@@ -255,6 +257,8 @@ static FEATURESITEM G_FeatureItemsList[] =
 
 static PCHECKBOXRECORDCORE G_pFeatureRecordsList = NULL;
 
+#endif // __NOXWPSETUP__
+
 /*
  *@@ STANDARDOBJECT:
  *      structure used for XWPSetup "Objects" page.
@@ -374,6 +378,8 @@ static STANDARDOBJECT G_WPSObjects[] =
  *   XWPSetup helper functions
  *
  ********************************************************************/
+
+#ifndef __NOXWPSETUP__
 
 /*
  *@@ AddResourceDLLToLB:
@@ -933,6 +939,7 @@ static BOOL HandleOKButton(HWND hwndDlg)
         if (cmnMessageBox(hwndDlg,
                           "XWorkplace Setup",
                           strMessage.psz,
+                          NULLHANDLE, // no help
                           MB_YESNO) == MBID_YES)
         {
             // "Yes" pressed: go!!
@@ -1076,15 +1083,16 @@ static BOOL HandleOKButton(HWND hwndDlg)
             if (strFailing.ulLength)
             {
                 PCSZ pcsz = strFailing.psz;
-                cmnMessageBoxMsgExt(hwndDlg,
+                cmnMessageBoxExt(hwndDlg,
                                     148, // "XWorkplace Setup",
                                     &pcsz, 1,
                                     149,  // "errors... %1"
                                     MB_OK);
             }
             else
-                cmnMessageBoxMsg(hwndDlg,
+                cmnMessageBoxExt(hwndDlg,
                                  148, // "XWorkplace Setup",
+                                 NULL, 0,
                                  150, // "restart Desktop"
                                  MB_OK);
 
@@ -1344,8 +1352,8 @@ static CONTROLDEF
                         DID_OK,
                         CTL_COMMON_FONT,
                         0,
-                        { 100, 30 },    // size
-                        5               // spacing
+                        { STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT },    // size
+                        COMMON_SPACING,
                      },
             CancelButton = {
                         WC_BUTTON,
@@ -1354,8 +1362,8 @@ static CONTROLDEF
                         DID_CANCEL,
                         CTL_COMMON_FONT,
                         0,
-                        { 100, 30 },    // size
-                        5               // spacing
+                        { STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT },    // size
+                        COMMON_SPACING,
                      },
             HelpButton = {
                         WC_BUTTON,
@@ -1364,8 +1372,8 @@ static CONTROLDEF
                         DID_HELP,
                         CTL_COMMON_FONT,
                         0,
-                        { 100, 30 },    // size
-                        5               // spacing
+                        { STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT },    // size
+                        COMMON_SPACING,
                      },
             ReplGroup = {
                          WC_STATIC,
@@ -1375,7 +1383,7 @@ static CONTROLDEF
                          CTL_COMMON_FONT,
                          0,
                          { -1, -1 },       // size
-                         0               // spacing
+                         COMMON_SPACING,
                     },
             NewGroup = {
                          WC_STATIC,
@@ -1385,7 +1393,7 @@ static CONTROLDEF
                          CTL_COMMON_FONT,
                          0,
                          { -1, -1 },       // size
-                         0               // spacing
+                         COMMON_SPACING,
                     },
             OneClass = {
                         WC_BUTTON,
@@ -1396,7 +1404,7 @@ static CONTROLDEF
                         CTL_COMMON_FONT,
                         0,
                         { -1, -1 },       // size
-                        0               // spacing
+                        COMMON_SPACING,
                      };
 
 static const DLGHITEM
@@ -2163,22 +2171,11 @@ MRESULT setFeaturesItemChanged(PNOTEBOOKPAGE pnbp,
                                ULONG ulItemID, USHORT usNotifyCode,
                                ULONG ulExtra)      // for checkboxes: contains new state
 {
-    // lock global settings to get write access;
-    // WARNING: do not show any dialogs when reacting to
-    // controls BEFORE these are not unlocked!!!
-    // GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
-
     BOOL fSave = TRUE;
 
     // flags for delayed dialog showing (after unlocking)
-    BOOL // fShowHookInstalled = FALSE,
-         // fShowHookDeinstalled = FALSE,
-         fShowClassesSetup = FALSE,
-         // fShowWarnXShutdown = FALSE,
+    BOOL fShowClassesSetup = FALSE,
          fUpdateMouseMovementPage = FALSE;
-         // fShowRefreshEnabled = FALSE,
-         // fShowRefreshDisabled = FALSE,
-         // fShowExtAssocsWarning = FALSE;
 
     ULONG       ulNotifyMsg = 0;            // if set, a message is displayed
                                             // after unlocking
@@ -2449,88 +2446,6 @@ MRESULT setFeaturesItemChanged(PNOTEBOOKPAGE pnbp,
             cmnRestoreSettings(pFeaturesData->pBackup,
                                ARRAYITEMCOUNT(G_FeaturesBackup));
 
-            /*
-            PCGLOBALSETTINGS pGSBackup = (PCGLOBALSETTINGS) &pFeaturesData->GlobalSettings;
-
-            // and restore the settings for this page
-#ifndef __NOICONREPLACEMENTS__
-            cmnSetSetting(s__fIconReplacements, pGSBackup->__fIconReplacements);
-#endif
-#ifndef __ALWAYSRESIZESETTINGSPAGES__
-            cmnSetSetting(s__fResizeSettingsPages, pGSBackup->__fResizeSettingsPages);
-#endif
-#ifndef __ALWAYSREPLACEICONPAGE__
-            cmnSetSetting(s__fReplaceIconPage, pGSBackup->__fReplaceIconPage);
-#endif
-#ifndef __ALWAYSREPLACEFILEPAGE__
-            cmnSetSetting(s__fReplaceFilePage, pGSBackup->__fReplaceFilePage);
-#endif
-            cmnSetSetting(sfXSystemSounds, pGSBackup->fXSystemSounds);
-
-#ifndef __NOCFGSTATUSBARS__
-            cmnSetSetting(s__fEnableStatusBars, pGSBackup->__fEnableStatusBars);
-#endif
-            cmnSetSetting(s__fEnableSnap2Grid, pGSBackup->__fEnableSnap2Grid);
-            cmnSetSetting(s__fEnableFolderHotkeys, pGSBackup->__fEnableFolderHotkeys);
-#ifndef __ALWAYSEXTSORT__
-            cmnSetSetting(s__fExtFolderSort, pGSBackup->__fExtFolderSort);
-#endif
-            // cmnSetSetting(sfMonitorCDRoms, pGSBackup->fMonitorCDRoms);
-
-            cmnSetSetting(sfAniMouse, pGSBackup->fAniMouse);
-
-#ifndef __ALWAYSHOOK__
-            if (hifEnableHook(pGSBackup->__fEnableXWPHook) == pGSBackup->__fEnableXWPHook)
-                cmnSetSetting(s__fEnableXWPHook, pGSBackup->__fEnableXWPHook);
-#endif
-
-#ifndef __ALWAYSOBJHOTKEYS__
-            hifEnableObjectHotkeys(pFeaturesData->bObjectHotkeys);
-#endif
-#ifndef __ALWAYSREPLACEICONPAGE__
-            if (pFeaturesData->bObjectHotkeys)
-                cmnSetSetting(s__fReplaceIconPage, TRUE);
-#endif
-
-#ifndef __NOPAGER__
-            if (hifEnableXPager(pGSBackup->fEnableXPager) == pGSBackup->fEnableXPager)
-            {
-                cmnSetSetting(sfEnableXPager, pGSBackup->fEnableXPager);
-                // update "Mouse movement" page
-                fUpdateMouseMovementPage = TRUE;
-            }
-#endif
-
-#ifndef __ALWAYSREPLACEARCHIVING__
-            cmnSetSetting(s__fReplaceArchiving, pGSBackup->__fReplaceArchiving);
-#endif
-#ifndef __NOXSHUTDOWN__
-            cmnSetSetting(s__fRestartWPS, pGSBackup->__fRestartWPS);
-            cmnSetSetting(s__fXShutdown, pGSBackup->__fXShutdown);
-#endif
-
-#ifndef __NEVEREXTASSOCS__
-            cmnSetSetting(s__fExtAssocs, pGSBackup->__fExtAssocs);
-#endif
-            // cmnSetSetting(sCleanupINIs, pGSBackup->CleanupINIs);
-                    // removed for now V0.9.12 (2001-05-15) [umoeller]
-    #ifdef __REPLHANDLES__
-            cmnSetSetting(sfReplaceHandles, pGSBackup->fReplaceHandles);
-    #endif
-#ifndef __ALWAYSREPLACEFILEEXISTS__
-            cmnSetSetting(s__fReplFileExists, pGSBackup->__fReplFileExists);
-#endif
-#ifndef __NEVERREPLACEDRIVENOTREADY__
-            cmnSetSetting(s__fReplDriveNotReady, pGSBackup->__fReplDriveNotReady);
-#endif
-#ifndef __ALWAYSTRASHANDTRUEDELETE__
-            cEnableTrashCan = pGSBackup->__fTrashDelete;
-            cmnSetSetting(s__fReplaceTrueDelete, pGSBackup->__fReplaceTrueDelete);
-#endif
-            krnEnableReplaceRefresh(pFeaturesData->bReplaceRefresh);
-
-            */
-
             // update the display by calling the INIT callback
             ulUpdateFlags = CBI_SET | CBI_ENABLE;
         }
@@ -2570,28 +2485,22 @@ MRESULT setFeaturesItemChanged(PNOTEBOOKPAGE pnbp,
         break;
     }
 
-    // now unlock the global settings for the following
-    // stuff; otherwise we block other threads
-    // cmnUnlockGlobalSettings();
-
-    /* if (fSave)
-        // settings need to be saved:
-        cmnStoreGlobalSettings(); */
-
     if (fShowClassesSetup)
         // "classes" dialog to be shown (classes button):
         ShowClassesDlg(pnbp->hwndFrame);
     else if (ulNotifyMsg)
         // show a notification msg:
-        cmnMessageBoxMsg(pnbp->hwndFrame,
+        cmnMessageBoxExt(pnbp->hwndFrame,
                          148,       // "XWorkplace Setup"
+                         NULL, 0,
                          ulNotifyMsg,
                          MB_OK);
 #ifndef __NOXSYSTEMSOUNDS__
     else if (cAskSoundsInstallMsg != -1)
     {
-        if (cmnMessageBoxMsg(pnbp->hwndFrame,
+        if (cmnMessageBoxExt(pnbp->hwndFrame,
                              148,       // "XWorkplace Setup"
+                             NULL, 0,
                              (cAskSoundsInstallMsg)
                                 ? 166   // "install?"
                                 : 167,  // "de-install?"
@@ -3168,8 +3077,10 @@ MRESULT setStatusItemChanged(PNOTEBOOKPAGE pnbp,
                                                         NULLHANDLE);
 
                         // "closing system window"
-                        cmnMessageBoxMsg(pnbp->hwndFrame,
-                                         102, 103,
+                        cmnMessageBoxExt(pnbp->hwndFrame,
+                                         102,
+                                         NULL, 0,
+                                         103,
                                          MB_OK);
 
                         // find frame window handle of "Workplace Shell" window
@@ -3306,6 +3217,8 @@ VOID setFindExistingObjects(BOOL fStandardObj)      // in: if FALSE, XWorkplace 
     }
 }
 
+#endif // __NOXWPSETUP__
+
 /*
  *@@ setCreateStandardObject:
  *      this creates a default WPS/XWP object from the
@@ -3319,10 +3232,12 @@ VOID setFindExistingObjects(BOOL fStandardObj)      // in: if FALSE, XWorkplace 
  *@@changed V0.9.10 (2001-04-09) [pr]: modified location handling, fixed message box location
  *@@changed V0.9.19 (2002-04-02) [umoeller]: added error checking for class object
  *@@changed V0.9.19 (2002-04-02) [umoeller]: fixed empty titles
+ *@@changed V0.9.19 (2002-04-24) [umoeller]: added fConfirm
  */
 
 BOOL setCreateStandardObject(HWND hwndOwner,         // in: for dialogs
                              USHORT usMenuID,        // in: selected menu item
+                             BOOL fConfirm,          // in: confirm creation?
                              BOOL fStandardObj)      // in: if FALSE, XWorkplace object;
                                                      // if TRUE, standard Desktop object
 {
@@ -3371,12 +3286,12 @@ BOOL setCreateStandardObject(HWND hwndOwner,         // in: for dialogs
                 // class object is dead:
                 // V0.9.19 (2002-04-02) [umoeller]
                 apsz[0] = pcszClassName;
-                cmnMessageBoxMsgExt(hwndOwner,
-                                    148, // "XWorkplace Setup",
-                                    apsz,
-                                    1,
-                                    233,
-                                    MB_CANCEL);
+                cmnMessageBoxExt(hwndOwner,
+                                 148, // "XWorkplace Setup",
+                                 apsz,
+                                 1,
+                                 233,
+                                 MB_CANCEL);
             }
             else
             {
@@ -3408,21 +3323,23 @@ BOOL setCreateStandardObject(HWND hwndOwner,         // in: for dialogs
                                      szLocationPath,
                                      TRUE);
 
-                if (cmnMessageBoxMsgExt(hwndOwner,
-                                        148, // "XWorkplace Setup",
-                                        apsz,
-                                        3,
-                                        163,        // "create object?"
-                                        MB_YESNO)
-                             == MBID_YES)
+                if (    (!fConfirm)     // V0.9.19 (2002-04-24) [umoeller]
+                     || (cmnMessageBoxExt(hwndOwner,
+                                          148, // "XWorkplace Setup",
+                                          apsz,
+                                          3,
+                                          163,        // "create object?"
+                                          MB_YESNO)
+                               == MBID_YES)
+                   )
                 {
-                    HOBJECT hobj = WinCreateObject((PSZ)pcszClassName,
-                                                   (PSZ)apsz[0],                     // title
-                                                   szSetupString,               // setup
-                                                   (PSZ)pcszLocation,           // location
-                                                   CO_FAILIFEXISTS);
+                    HOBJECT hobj;
 
-                    if (hobj)
+                    if (hobj = WinCreateObject((PSZ)pcszClassName,
+                                               (PSZ)apsz[0],                     // title
+                                               szSetupString,               // setup
+                                               (PSZ)pcszLocation,           // location
+                                               CO_REPLACEIFEXISTS)) // CO_FAILIFEXISTS))
                     {
                         // alright, got it:
                         // store in array so the menu item will be
@@ -3430,15 +3347,17 @@ BOOL setCreateStandardObject(HWND hwndOwner,         // in: for dialogs
                         pso2->pExists = _wpclsQueryObject(_WPObject,
                                                           hobj);
 
-                        cmnMessageBoxMsg(hwndOwner,
+                        cmnMessageBoxExt(hwndOwner,
                                          148, // "XWorkplace Setup",
+                                         apsz, 1,
                                          164, // "success"
                                          MB_OK);
                         brc = TRUE;
                     }
                     else
-                        cmnMessageBoxMsg(hwndOwner,
+                        cmnMessageBoxExt(hwndOwner,
                                          148, // "XWorkplace Setup",
+                                         apsz, 1,
                                          165, // "failed!"
                                          MB_OK);
                 }
@@ -3453,6 +3372,8 @@ BOOL setCreateStandardObject(HWND hwndOwner,         // in: for dialogs
 
     return (brc);
 }
+
+#ifndef __NOXWPSETUP__
 
 /*
  *@@ DisableObjectMenuItems:
@@ -3506,7 +3427,7 @@ static VOID DisableObjectMenuItems(HWND hwndMenu,          // in: button menu ha
             xstrcat(&strMenuItemText, "...", 0);
 
         // on Warp 3, disable WarpCenter also
-        if (   (!doshIsWarp4())
+        if (   (!G_fIsWarp4)
             && (!strcmp(*(pso2->ppcszDefaultID), WPOBJID_WARPCENTER))
            )
             WinEnableMenuItem(hwndMenu, pso2->usMenuID, FALSE);
@@ -3604,8 +3525,9 @@ MRESULT setObjectsItemChanged(PNOTEBOOKPAGE pnbp,
          */
 
         case ID_XCD_OBJECTS_CONFIGFOLDER:
-            if (cmnMessageBoxMsg(pnbp->hwndFrame,
+            if (cmnMessageBoxExt(pnbp->hwndFrame,
                                  148,       // XWorkplace Setup
+                                 NULL, 0,
                                  161,       // config folder?
                                  MB_YESNO)
                     == MBID_YES)
@@ -3626,11 +3548,13 @@ MRESULT setObjectsItemChanged(PNOTEBOOKPAGE pnbp,
             {
                 if (!setCreateStandardObject(pnbp->hwndFrame,
                                              ulItemID,
+                                             TRUE,      // confirm
                                              FALSE))
                     // Desktop objects not found:
                     // try XDesktop objects
                     setCreateStandardObject(pnbp->hwndFrame,
                                             ulItemID,
+                                            TRUE,   // confirm
                                             TRUE);
             }
     }
@@ -3668,70 +3592,38 @@ SLDCDATA
              };
 
 static const CONTROLDEF
-    ParanoiaGroup = CONTROLDEF_GROUP(
-                            LOAD_STRING,
-                            ID_XCDI_PARANOIA_GROUP,
-                            -1,
-                            -1),
+    ParanoiaGroup = LOADDEF_GROUP(ID_XCDI_PARANOIA_GROUP, SZL_AUTOSIZE),
     ParanoiaIntro = CONTROLDEF_TEXT_WORDBREAK(
                             LOAD_STRING,
                             ID_XCDI_PARANOIA_INTRO,
-                            400),
-    VarMenuOfsTxt = CONTROLDEF_TEXT(
-                            LOAD_STRING,
-                            ID_XCDI_VARMENUOFFSET_TXT,
-                            -1,
-                            -1),
+                            64),
+    VarMenuOfsTxt = LOADDEF_TEXT(ID_XCDI_VARMENUOFFSET_TXT),
     VarMenuSpin = CONTROLDEF_SPINBUTTON(
                             ID_XCDI_VARMENUOFFSET,
-                            100,
-                            -1),
+                            50,
+                            STD_SPIN_HEIGHT),
 #ifndef __ALWAYSSUBCLASS__
-    NoSubclassingCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,
-                            ID_XCDI_NOSUBCLASSING,
-                            -1,
-                            -1),
+    NoSubclassingCB = LOADDEF_AUTOCHECKBOX(ID_XCDI_NOSUBCLASSING),
 #endif
-    NoFreakyMenusCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,
-                            ID_XCDI_NOFREAKYMENUS,
-                            -1,
-                            -1),
-    Use8HelvCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,
-                            ID_XCDI_USE8HELVFONT,
-                            -1,
-                            -1),
-    NoExcptBeepsCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,
-                            ID_XCDI_NOEXCPTBEEPS,
-                            -1,
-                            -1),
-    WorkerPrtyGroup = CONTROLDEF_GROUP(
-                            LOAD_STRING,
-                            ID_XCDI_WORKERPRTY_GROUP,
-                            -1,
-                            -1),
-    WorkerPrtyTxt1 = CONTROLDEF_TEXT(
-                            LOAD_STRING,
-                            ID_XCDI_WORKERPRTY_TEXT1,
-                            -1,
-                            -1),
+    NoFreakyMenusCB = LOADDEF_AUTOCHECKBOX(ID_XCDI_NOFREAKYMENUS),
+    Use8HelvCB = LOADDEF_AUTOCHECKBOX(ID_XCDI_USE8HELVFONT),
+    NoExcptBeepsCB = LOADDEF_AUTOCHECKBOX(ID_XCDI_NOEXCPTBEEPS),
+    WorkerPrtyGroup = LOADDEF_GROUP(ID_XCDI_WORKERPRTY_GROUP, SZL_AUTOSIZE),
+    WorkerPrtyTxt1 = LOADDEF_TEXT(ID_XCDI_WORKERPRTY_TEXT1),
     WorkerPrtySlider = CONTROLDEF_SLIDER(
                             ID_XCDI_WORKERPRTY_SLIDER,
-                            100,
-                            30,
+                            50,
+                            12,
                             &WorkerPrtyCData),
     WorkerPrtyTxt2 = CONTROLDEF_TEXT(
                             "A",
                             ID_XCDI_WORKERPRTY_TEXT2,
-                            50,
+                            25,
                             -1),
     WorkerPrtyBeepCB = CONTROLDEF_AUTOCHECKBOX(
                             LOAD_STRING,
                             ID_XCDI_WORKERPRTY_BEEP,
-                            400,
+                            200,
                             -1);
 
 static const DLGHITEM dlgParanoia[] =
@@ -3859,7 +3751,6 @@ MRESULT setParanoiaItemChanged(PNOTEBOOKPAGE pnbp,
                                ULONG ulItemID, USHORT usNotifyCode,
                                ULONG ulExtra)      // for checkboxes: contains new state
 {
-    // GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
     BOOL fSave = TRUE,
          fUpdateOtherPages = FALSE;
 
@@ -3880,16 +3771,6 @@ MRESULT setParanoiaItemChanged(PNOTEBOOKPAGE pnbp,
             fUpdateOtherPages = TRUE;
         break;
 #endif
-
-        /*
-        case ID_XCDI_NOWORKERTHREAD:
-            cmnSetSetting(sNoWorkerThread, ulExtra);
-            // update the display by calling the INIT callback
-            pnbp->inbp.pfncbInitPage(pnbp, CBI_ENABLE);
-            // set flag to iterate over other notebook pages
-            fUpdateOtherPages = TRUE;
-        break;
-        */
 
         case ID_XCDI_USE8HELVFONT:
             cmnSetSetting(sfUse8HelvFont, ulExtra);
@@ -3979,25 +3860,22 @@ MRESULT setParanoiaItemChanged(PNOTEBOOKPAGE pnbp,
             fSave = FALSE;
     }
 
-    // cmnUnlockGlobalSettings();
-
-    /* if (fSave)
-        cmnStoreGlobalSettings(); */
-
     if (fUpdateOtherPages)
     {
         PNOTEBOOKPAGE pnbp2 = NULL;
         // iterate over all currently open notebook pages
         while (pnbp2 = ntbQueryOpenPages(pnbp2))
         {
-            if (pnbp2->fPageVisible)
-                if (pnbp2->inbp.pfncbInitPage)
-                    // enable/disable items on visible page
-                    pnbp2->inbp.pfncbInitPage(pnbp2, CBI_ENABLE);
+            if (    (pnbp2->flPage & NBFL_PAGE_INITED)
+                 && (pnbp2->inbp.pfncbInitPage)
+               )
+                // enable/disable items on visible page
+                pnbp2->inbp.pfncbInitPage(pnbp2, CBI_ENABLE);
         }
     }
 
     return ((MPARAM)-1);
 }
 
+#endif // __NOXWPSETUP__
 

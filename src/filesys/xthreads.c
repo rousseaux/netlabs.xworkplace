@@ -1044,44 +1044,6 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
         }
         break;
 
-        /*
-         *@@ WOM_STOREGLOBALSETTINGS:
-         *      writes the GLOBALSETTINGS structure back to
-         *      OS2.INI. This gets posted from cmnStoreGlobalSettings.
-         *
-         *      Parameters: none.
-         *
-         *@@changed V0.9.4 (2000-06-16) [umoeller]: moved this to Worker thread from File thread
-         */
-
-        /* case WOM_STOREGLOBALSETTINGS:
-        {
-            // GLOBALSETTINGS *pGlobalSettings = NULL;
-            // ULONG ulNesting;
-            // DosEnterMustComplete(&ulNesting);
-            TRY_LOUD(excpt1)
-            {
-                // LOCK the global settings while we're writing
-                pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
-                if (pGlobalSettings)
-                {
-                    PrfWriteProfileData(HINI_USERPROFILE,
-                                        (PSZ)INIAPP_XWORKPLACE,
-                                        (PSZ)INIKEY_GLOBALSETTINGS,
-                                        pGlobalSettings, sizeof(GLOBALSETTINGS));
-                }
-                else
-                    cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                           "Unable to lock GLOBALSETTINGS.");
-            }
-            CATCH(excpt1) {} END_CATCH();
-            if (pGlobalSettings)
-                // cmnUnlockGlobalSettings();
-            // DosExitMustComplete(&ulNesting);
-        }
-        break;
-           */
-
         #ifdef __DEBUG__
         case XM_CRASH:          // posted by debugging context menu of XFldDesktop
             CRASH;
@@ -1515,9 +1477,8 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                             cmnQueryLanguageCode());
 
                     // "creating config" window
-                    hwndCreating = WinLoadDlg(HWND_DESKTOP, HWND_DESKTOP,
+                    hwndCreating = cmnLoadDlg(HWND_DESKTOP,
                                               WinDefDlgProc,
-                                              cmnQueryNLSModuleHandle(FALSE),
                                               ID_XFD_CREATINGCONFIG,
                                               0);
                     WinShowWindow(hwndCreating, TRUE);
@@ -1924,11 +1885,10 @@ MRESULT EXPENTRY fnwpBushObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                 // window currently not visible:
                 // create it
                 strcpy(G_szBootupStatus, "Loaded %s");
-                G_hwndBootupStatus = WinLoadDlg(HWND_DESKTOP, HWND_DESKTOP,
-                                              fnwpGenericStatus,
-                                              cmnQueryNLSModuleHandle(FALSE),
-                                              ID_XFD_BOOTUPSTATUS,
-                                              NULL);
+                G_hwndBootupStatus = cmnLoadDlg(HWND_DESKTOP,
+                                                fnwpGenericStatus,
+                                                ID_XFD_BOOTUPSTATUS,
+                                                NULL);
                 WinSetWindowPos(G_hwndBootupStatus,
                                 HWND_TOP,
                                 0, 0, 0, 0,

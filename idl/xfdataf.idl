@@ -110,6 +110,7 @@ interface XFldDataFile : WPDataFile
     wpSetIconData: override;
 
     wpCreateFromTemplate: override;
+    wpSetRealName: override;
 
 #ifdef __PRIVATE__
 

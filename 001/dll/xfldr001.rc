@@ -23,7 +23,7 @@
  *
  *          --  &os2;       "OS/2" or "eComStation"
  *
- *          --  &warpcenter;    "WarpCenter" or "eComCenter"
+ *          --  &warpcenter; "WarpCenter" or "eComCenter"
  *
  *          --  &xcenter;   "XCenter" or "eCenter"
  *
@@ -1073,17 +1073,8 @@ BEGIN
     DID_EDIT                            "~Edit..."
     DID_REMOVE                          "~Remove"
 
-    /* strings formerly in ID_XSD_SET25ADDMENUS */
-    /* the ones in this group have been redone with V0.9.19 */
-    ID_XSDI_FILEMENUS_GROUP             "File menu items"
-    ID_XSDI_FILEATTRIBS                 """A~ttributes"" menu"
-    ID_XSDI_COPYFILENAME                """Copy filen~ame"""
-    ID_XSDI_FOLDERMENUS_GROUP           "Folder menus"
-    ID_XSDI_MOVE4REFRESH                """~Refresh now"" in main menu"
-    ID_XSDI_SELECTSOME                  """Se~lect by name"""
-    ID_XSDI_FLDRVIEWS                   "La~yout items"
-    ID_XSDI_FOLDERCONTENT               "Add f~older content menu"
-    ID_XSDI_FC_SHOWICONS                "Display ~icons"
+    /* strings formerly in ID_XSD_SET25ADDMENUS
+        all removed V0.9.19 */
 
     /* strings formerly in ID_XSD_SETTINGS_FLDR1 */
     ID_XSSI_GENERALVIEWPAGE             "General view settings"
@@ -1095,16 +1086,8 @@ BEGIN
     ID_XSDI_ACCELERATORS                "React to folder h~otkeys"
     ID_XSDI_ENABLESTATUSBAR             "Display ~status bar"
 
-    /* strings formerly in ID_XSD_DTP_MENUITEMS */
-    /* the ones in this group have been redone with V0.9.19 */
-    ID_XSDI_DTP_MENUITEMSGROUP          "Visible standard menu items"
-    ID_XSDI_DTP_SORT                    """S~ort"""
-    ID_XSDI_DTP_ARRANGE                 """~Arrange"""
-    ID_XSDI_DTP_LOCKUP                  """~Lockup now"""
-    ID_XSDI_DTP_LOGOFFNETWORKNOW        """Lo~goff network now"""
-    ID_XSDI_DTP_SHUTDOWN                """Shu~tdown"""
-    ID_XSDI_DTP_SHUTDOWNMENU            "Add su~bmenu"
-    ID_XSDI_DTP_SYSTEMSETUP             """System ~setup"""
+    /* strings formerly in ID_XSD_DTP_MENUITEMS
+        all removed with V0.9.19  */
 
     /* strings formerly in ID_XSD_DTP_SHUTDOWN */
     ID_SDDI_SHAREDGROUP                 "Common settings"
@@ -1307,7 +1290,7 @@ BEGIN
     ID_XFDI_SOME_SELECT                 "~Select"
     ID_XFDI_SOME_DESELECT               "~Deselect"
     ID_XFDI_SOME_SELECTALL              "Select ~all"
-    ID_XFDI_SOME_DESELECTALL            "Deselect a~ll"
+    ID_XFDI_SOME_DESELECTALL            "Dese~lect all"
     ID_XFDI_SOME_REGEXP_CP              "~Regular expression"
 
     /* strings formerly in ID_SCD_PAGER_WINDOW */
@@ -1336,40 +1319,90 @@ BEGIN
     ID_XCDI_WORKERPRTY_TEXT1            "De~fault Worker thread priority:"
     ID_XCDI_WORKERPRTY_BEEP             "~Beep on priority change"
 
-    /* strings for XFldWPS menu pages */
+    /* strings formerly in ID_XSD_SET26CONFIGMENUS */
+    ID_XSDI_MENUS_CONFIGFDR_GROUP       "Configuration folder menus"
+    ID_XSDI_CASCADE                     """~Conditional cascade"" submenus"
+    ID_XSDI_REMOVEX                     "~Suppress ""~"" in window titles"
+    ID_XSDI_APPDPARAM                   "Change param~eter list"
+    ID_XSDI_TPL_GROUP                   "After creating from templates..."
+    ID_XSDI_TPL_DONOTHING               "do ~nothing"
+    ID_XSDI_TPL_EDITTITLE               "~make title editable"
+    ID_XSDI_TPL_OPENSETTINGS            "~open properties"
+    ID_XSDI_TPL_POSITION                "C~reate object at mouse position"
 
-    /* new ones first: */
-    ID_XSDI_MENUS_COMMON                "Common menu settings"
-    ID_XSDI_MENUS_SPECIFIC              "Specific menu settings"
+    /* strings formerly in ID_XSD_SET27STATUSBARS */
+    ID_XSDI_VISIBLEIN_GROUP             "Visible in..."
+    ID_XSDI_SBFORICONVIEWS              "~Icon views"
+    ID_XSDI_SBFORTREEVIEWS              "~Tree views"
+    ID_XSDI_SBFORDETAILSVIEWS           "Det~ails views"
+    ID_XSDI_STYLE_GROUP                 "Style"
+    ID_XSDI_SBSTYLE_3RAISED             "Raised bo~x"
+    ID_XSDI_SBSTYLE_3SUNKEN             "~Sunk box"
+    ID_XSDI_SBSTYLE_4RECT               "~Button"
+    ID_XSDI_SBSTYLE_4MENU               "~Menu"
+
+    /* strings for XFldWPS menu pages  (all new with V0.9.19) */
+    ID_XSDI_MENU_SETTINGS               "Common menu settings"
+    ID_XSDI_MENU_ITEMS                  "Menu items"
+
     ID_XSDI_MENU_STYLE_GROUP            "Menu style"
     ID_XSDI_MENUS_BARS                  "Displa~y folder menu bars"
     ID_XSDI_MENUS_SHORT                 "Shor~t menus"
     ID_XSDI_MENUS_LONG                  "Lo~ng menus"
+    ID_XSDI_FC_SHOWICONS                "Display ~icons in folder content menus"
+    ID_XSDI_LOCKINPLACE_NOSUB           "No su~bmenu for ""Lock in place"""
 
-    /* strings formerly in ID_XSD_SET2REMOVEMENUS */
-    ID_XSDI_COMMON_GROUP                "Common menu items"
-    ID_XSDI_HELP                        """H~elp"""
-    ID_XSDI_CRANOTHER                   """~Create another"""
-    ID_XSDI_COPY                        """C~opy"""
-    ID_XSDI_MOVE                        """~Move"""
-    ID_XSDI_SHADOW                      """Create ~shadow"""
-    ID_XSDI_DELETE                      """De~lete"""
-    ID_XSDI_PICKUP                      """~Pickup"""
-    ID_XSDI_LOCKINPLACE                 """Loc~k in place"""
-    ID_XSDI_LOCKINPLACE_NOSUB           "No su~bmenu"
-    ID_XSDI_PRINT                       """Pr~int"""
+    ID_XSDI_MENU_EDIT_GROUP             "~Menu items"
+    ID_XSDI_MENU_EDIT_CAT_TXT           "~Edit menu items for"
 
-    ID_XSDI_FOLDER_GROUP                "Folder menu items"
-    ID_XSDI_FIND                        """~Find"""
-    ID_XSDI_SORT                        """Sort "" ~menu"
-    ID_XSDI_SELECT                      """~Select"" menu"
-    ID_XSDI_WARP4DISPLAY                """~View"" menu"
-    ID_XSDI_ARRANGE                     """Arra~nge"" menu"
-    ID_XSDI_INSERT                      """~Paste"""
+    ID_XSDI_MENU_EDIT_CAT_FOLDERS       "folders"
+    ID_XSDI_MENU_EDIT_CAT_DESKTOP       "Desktop"
+    ID_XSDI_MENU_EDIT_CAT_DISKS         "disks"
+    ID_XSDI_MENU_EDIT_CAT_FILES         "files"
+    ID_XSDI_MENU_EDIT_CAT_OBJECTS       "all other objects"
 
-    ID_XSDI_DISK_GROUP                  "Disk menu items"
-    ID_XSDI_CHECKDISK                   """Check dis~k"""
-    ID_XSDI_FORMATDISK                  """For~mat disk"""
+    /* "menu" wrapper; %s will be replaced with menu item name */
+    ID_XSDI_MENU_MENUSTRING             """%s"" submenu"
+
+    /* strings for menu items... note, please use the
+       same keyboard accelerators as in the default WPS
+       menu items when translating for your language */
+
+    ID_XSDI_MENU_OPENAS                 "~Open as"
+    ID_XSDI_MENU_PROPERTIES             "Propertie~s"
+    ID_XSDI_MENU_OPENPARENT             "Open parent"
+    ID_XSDI_MENU_CREATEANOTHER          "Create a~nother"
+
+    ID_XSDI_MENU_MOVE                   "~Move..."
+    ID_XSDI_MENU_COPY                   "~Copy..."
+    ID_XSDI_MENU_PASTE                  "Paste..."
+    ID_XSDI_MENU_CREATESHADOW           "Create shado~w..."
+    ID_XSDI_MENU_DELETE                 "~Delete..."
+    ID_XSDI_MENU_PICKUP                 "P~ickup"
+    ID_XSDI_MENU_FIND                   "~Find..."
+
+    ID_XSDI_MENU_VIEW                   "~View"
+    ID_XSDI_MENU_ICONVIEW               "~Icon view"
+    ID_XSDI_MENU_TREEVIEW               "~Tree view"
+    ID_XSDI_MENU_DETAILSVIEW            "~Details view"
+    ID_XSDI_FLDRVIEWS                   "Layout items"
+
+    ID_XSDI_MENU_SORT                   "Sor~t"
+    ID_XSDI_MENU_ARRANGE                "~Arrange"
+
+    ID_XSDI_MENU_PRINT                  "~Print"
+
+    ID_XSDI_MENU_LOCKUP                 "~Lockup now"
+    ID_XSDI_MENU_LOGOFFNETWORKNOW       "Lo~goff network now"
+    ID_XSDI_MENU_SHUTDOWN               "Shut ~down..."
+    ID_XSDI_MENU_SYSTEMSETUP            "S~ystem setup"
+
+    ID_XSDI_MENU_CHKDSK                 "Chec~k disk..."
+    ID_XSDI_MENU_FORMAT                 "Fo~rmat disk..."
+    ID_XSDI_MENU_COPYDSK                "Co~py disk..."
+    ID_XSDI_MENU_LOCKDISK               "~Lock disk"
+    ID_XSDI_MENU_EJECTDISK              "~Eject disk"
+    ID_XSDI_MENU_UNLOCKDISK             "~Unlock disk"
 
 END
 

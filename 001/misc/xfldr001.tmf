@@ -203,7 +203,8 @@ Do you wish to continue?
 Do you wish to continue?
 
 ; the following one has changed with V0.9.10
-<--XFL0164-->: The object was successfully created.
+; and again with V0.9.19
+<--XFL0164-->: The object "%1" was successfully created.
 
 <--XFL0165-->: Error: The object could not be created. Make sure you have the corresponding WPS class installed.
 
@@ -445,6 +446,10 @@ Do you wish to restart the daemon now?
 <--XFL0234-->: The regular expression you have specified is invalid. The following error occured:
 
 %1
+
+<--XFL0235-->: The menu item you selected is supposed to pass text data from the clipboard as a parameter. However, the clipboard currently holds no text data.
+
+Do you wish to start the program anyway?
 
 ; ---------------------------------------------------------------------------------
 ;

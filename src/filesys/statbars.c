@@ -101,6 +101,7 @@
 
 // headers in /helpers
 #include "helpers\comctl.h"             // common controls (window procs)
+#include "helpers\dialog.h"             // dialog helpers
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
 #include "helpers\linklist.h"           // linked list helper routines
@@ -259,7 +260,7 @@ BOOL stbViewHasStatusBars(WPFolder *somSelf,
  *
  *      Parameters:
  *
- *      --  psfv:      pointer to SUBCLASSEDFOLDERVIEW structure of
+ *      --  psfv:      pointer to SUBCLFOLDERVIEW structure of
  *                     current folder frame; this contains the
  *                     folder frame window handle
  *
@@ -288,7 +289,7 @@ BOOL stbViewHasStatusBars(WPFolder *somSelf,
  *@@changed V0.9.19 (2002-04-17) [umoeller]: renamed from fdrCreateStatusBar, extracted stbDestroy
  */
 
-HWND stbCreate(PSUBCLASSEDFOLDERVIEW psli2)
+HWND stbCreate(PSUBCLFOLDERVIEW psli2)
 {
     HWND hrc = NULLHANDLE;
 
@@ -482,7 +483,7 @@ HWND stbCreate(PSUBCLASSEDFOLDERVIEW psli2)
  *@@added V0.9.19 (2002-04-17) [umoeller]
  */
 
-VOID stbDestroy(PSUBCLASSEDFOLDERVIEW psli2)
+VOID stbDestroy(PSUBCLFOLDERVIEW psli2)
 {
     // hide status bar:
     if (psli2->hwndStatusBar)
@@ -568,7 +569,7 @@ MRESULT EXPENTRY stb_UpdateCallback(HWND hwndView,        // folder frame
                                     MPARAM mpFolder)                    // folder object
 {
     MRESULT                 mrc = (MPARAM)FALSE;
-    PSUBCLASSEDFOLDERVIEW   psfv;
+    PSUBCLFOLDERVIEW        psfv;
 
     #ifdef DEBUG_STATUSBARS
         _Pmpf(("stb_UpdateCallback ulActivate = %d", ulActivate));
@@ -662,11 +663,11 @@ MRESULT EXPENTRY stb_PostCallback(HWND hwndView,        // folder frame
                                    MPARAM mpView,        // OPEN_xxx flag
                                    MPARAM mpFolder)      // folder object
 {
-    PSUBCLASSEDFOLDERVIEW psfv;
+    PSUBCLFOLDERVIEW psfv;
 
-    if (    ((ULONG) mpView == OPEN_CONTENTS)
-         || ((ULONG) mpView == OPEN_DETAILS)
-         || ((ULONG) mpView == OPEN_TREE)
+    if (    ((ULONG)mpView == OPEN_CONTENTS)
+         || ((ULONG)mpView == OPEN_DETAILS)
+         || ((ULONG)mpView == OPEN_TREE)
        )
     {
         if (    (psfv = fdrQuerySFV(hwndView, NULL))
@@ -698,7 +699,7 @@ static VOID CallResolvedUpdateStatusBar(WPFolder *pFolder,
                                         HWND hwndStatusBar,
                                         HWND hwndCnr)
 {
-    BOOL fObjectInitialized = _wpIsObjectInitialized(pFolder);
+    BOOL fObjectInitialized = objIsObjectInitialized(pFolder);
     XFolderData *somThis = XFolderGetData(pFolder);
     somTD_XFolder_xwpUpdateStatusBar pfnResolvedUpdateStatusBar = NULL;
 
@@ -3176,6 +3177,50 @@ static MRESULT EXPENTRY fncbWPSStatusBarClassSelected(HWND hwndCnr,
 
 #endif
 
+static const CONTROLDEF
+    StatusEnable = LOADDEF_AUTOCHECKBOX(ID_XSDI_ENABLESTATUSBAR),
+    VisibleInGroup = LOADDEF_GROUP(ID_XSDI_VISIBLEIN_GROUP, DEFAULT_TABLE_WIDTH),
+    VisIconCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_SBFORICONVIEWS),
+    VisTreeCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_SBFORTREEVIEWS),
+    VisDetailsCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_SBFORDETAILSVIEWS),
+    StyleGroup = LOADDEF_GROUP(ID_XSDI_STYLE_GROUP, DEFAULT_TABLE_WIDTH),
+    RaisedRadio = LOADDEF_FIRST_AUTORADIO(ID_XSDI_SBSTYLE_3RAISED),
+    SunkenRadio = LOADDEF_NEXT_AUTORADIO(ID_XSDI_SBSTYLE_3SUNKEN),
+    ButtonRadio = LOADDEF_NEXT_AUTORADIO(ID_XSDI_SBSTYLE_4RECT),
+    MenuRadio = LOADDEF_NEXT_AUTORADIO(ID_XSDI_SBSTYLE_4MENU);
+
+static const DLGHITEM G_dlgStatusBar1[] =
+    {
+        START_TABLE,
+            START_ROW(0),
+                CONTROL_DEF(&StatusEnable),
+            START_ROW(0),
+                START_GROUP_TABLE(&VisibleInGroup),
+                    START_ROW(0),
+                        CONTROL_DEF(&VisIconCB),
+                    START_ROW(0),
+                        CONTROL_DEF(&VisTreeCB),
+                    START_ROW(0),
+                        CONTROL_DEF(&VisDetailsCB),
+                END_TABLE,
+            START_ROW(0),
+                START_GROUP_TABLE(&StyleGroup),
+                    START_ROW(0),
+                        CONTROL_DEF(&RaisedRadio),
+                    START_ROW(0),
+                        CONTROL_DEF(&SunkenRadio),
+                    START_ROW(0),
+                        CONTROL_DEF(&ButtonRadio),
+                    START_ROW(0),
+                        CONTROL_DEF(&MenuRadio),
+                END_TABLE,
+            START_ROW(0),       // notebook buttons (will be moved)
+                CONTROL_DEF(&G_UndoButton),         // common.c
+                CONTROL_DEF(&G_DefaultButton),      // common.c
+                CONTROL_DEF(&G_HelpButton),         // common.c
+        END_TABLE,
+    };
+
 static const XWPSETTING G_StatusBar1Backup[] =
     {
         sfDefaultStatusBarVisibility,
@@ -3192,6 +3237,7 @@ static const XWPSETTING G_StatusBar1Backup[] =
  *
  *@@changed V0.9.0 [umoeller]: adjusted function prototype
  *@@changed V0.9.0 [umoeller]: moved this func here from xfwps.c
+ *@@changed V0.9.19 (2002-04-24) [umoeller]: now using dialog formatter
  */
 
 VOID stbStatusBar1InitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
@@ -3205,6 +3251,12 @@ VOID stbStatusBar1InitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
         // the notebook page is destroyed
         pnbp->pUser = cmnBackupSettings(G_StatusBar1Backup,
                                          ARRAYITEMCOUNT(G_StatusBar1Backup));
+
+        // insert the controls using the dialog formatter
+        // V0.9.19 (2002-04-24) [umoeller]
+        ntbFormatPage(pnbp->hwndDlgPage,
+                      G_dlgStatusBar1,
+                      ARRAYITEMCOUNT(G_dlgStatusBar1));
     }
 
     if (flFlags & CBI_SET)
@@ -3273,7 +3325,6 @@ MRESULT stbStatusBar1ItemChanged(PNOTEBOOKPAGE pnbp,
                                  USHORT usNotifyCode,
                                  ULONG ulExtra)      // for checkboxes: contains new state
 {
-    // GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
     MRESULT mrc = (MRESULT)0;
     BOOL    fSave = TRUE,
             fShowStatusBars = FALSE,
@@ -3361,11 +3412,6 @@ MRESULT stbStatusBar1ItemChanged(PNOTEBOOKPAGE pnbp,
             fl &= ~flStyleChanged;
         cmnSetSetting(sflSBForViews, fl);
     }
-
-    // cmnUnlockGlobalSettings();
-
-    /* if (fSave)
-        cmnStoreGlobalSettings(); */
 
     // have the Worker thread update the
     // status bars for all currently open
@@ -3909,14 +3955,6 @@ MRESULT stbStatusBar2ItemChanged(PNOTEBOOKPAGE pnbp,
         case DID_UNDO:
         {
             // "Undo" button: get pointer to backed-up Global Settings
-            // GLOBALSETTINGS *pGSBackup = (GLOBALSETTINGS*)(pnbp->pUser);
-
-            // and restore the settings for this page
-            // GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
-            // cmnSetSetting(sflDereferenceShadows, pGSBackup->bDereferenceShadows);
-                        // V0.9.14 (2001-07-31) [umoeller]
-            // cmnUnlockGlobalSettings();
-
             cmnRestoreSettings(pnbp->pUser,
                                ARRAYITEMCOUNT(G_StatusBar2Backup));
 
@@ -3942,14 +3980,11 @@ MRESULT stbStatusBar2ItemChanged(PNOTEBOOKPAGE pnbp,
             // set the default settings for this settings page
             // (this is in common.c because it's also used at
             // Desktop startup)
-            // GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
-
             cmnSetStatusBarSetting(SBS_TEXTNONESEL, NULL);  // load default
             cmnSetStatusBarSetting(SBS_TEXTMULTISEL, NULL); // load default
 
             cmnSetSetting(sflDereferenceShadows, STBF_DEREFSHADOWS_SINGLE);
                         // V0.9.14 (2001-07-31) [umoeller]
-            // cmnUnlockGlobalSettings();
 
             if (!psbpd->pSBClassObjectSelected)
                 RefreshClassObject(psbpd);
@@ -4096,8 +4131,6 @@ MRESULT stbStatusBar2ItemChanged(PNOTEBOOKPAGE pnbp,
                                 sizeof(szDummy)-1, szDummy);
             cmnSetStatusBarSetting(SBS_TEXTMULTISEL, szDummy);
         }
-
-        // cmnStoreGlobalSettings();
 
         // have the Worker thread update the
         // status bars for all currently open

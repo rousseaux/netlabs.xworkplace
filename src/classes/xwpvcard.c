@@ -108,8 +108,8 @@
  *
  ********************************************************************/
 
-#define TEXT_WIDTH  120
-#define EF_WIDTH    200
+#define TEXT_WIDTH  60
+#define EF_WIDTH    100
 #define EF_HEIGHT   -1
 
 #define TEXT_AND_ENTRYFIELD(varname, string, idbase) \
@@ -463,7 +463,7 @@ static VOID vcfNameInitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
 static const CONTROLDEF
     PhoneLB = CONTROLDEF_LISTBOX(
                             ID_XSDI_VCARD_PHONE_LISTBOX,
-                            60,
+                            30,
                             200),
     PhoneGroup = CONTROLDEF_GROUP(
                             "Current phone number settings",

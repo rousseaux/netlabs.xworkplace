@@ -463,7 +463,7 @@ static MRESULT pgmiXPagerGeneralItemChanged(PNOTEBOOKPAGE pnbp,
     }
 
     if (    (fSave)
-         && (pnbp->fPageInitialized)   // page initialized yet?
+         && (pnbp->flPage & NBFL_PAGE_INITED) // page initialized yet?
        )
     {
         SaveXPagerConfig(pPgmgConfig,
@@ -480,70 +480,22 @@ static MRESULT pgmiXPagerGeneralItemChanged(PNOTEBOOKPAGE pnbp,
  ********************************************************************/
 
 static const CONTROLDEF
-    ControlWindowGroup = CONTROLDEF_GROUP(
-                            LOAD_STRING,
-                            ID_SCDI_PGMG1_WINDOW_GROUP,
-                            -1,
-                            -1),
-    TitlebarCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,
-                            ID_SCDI_PGMG1_TITLEBAR,
-                            -1,
-                            -1),
-    PreservePropsCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,
-                            ID_SCDI_PGMG1_PRESERVEPROPS,
-                            -1,
-                            -1),
-    StayOnTopCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,
-                            ID_SCDI_PGMG1_STAYONTOP,
-                            -1,
-                            -1),
-    FlashToTopCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,
-                            ID_SCDI_PGMG1_FLASHTOTOP,
-                            -1,
-                            -1),
-    DelayTxt1 = CONTROLDEF_TEXT(
-                            LOAD_STRING,
-                            ID_SCDI_PGMG1_FLASH_TXT1,
-                            -1,
-                            -1),
+    ControlWindowGroup = LOADDEF_GROUP(ID_SCDI_PGMG1_WINDOW_GROUP, SZL_AUTOSIZE),
+    TitlebarCB = LOADDEF_AUTOCHECKBOX(ID_SCDI_PGMG1_TITLEBAR),
+    PreservePropsCB = LOADDEF_AUTOCHECKBOX(ID_SCDI_PGMG1_PRESERVEPROPS),
+    StayOnTopCB = LOADDEF_AUTOCHECKBOX(ID_SCDI_PGMG1_STAYONTOP),
+    FlashToTopCB = LOADDEF_AUTOCHECKBOX(ID_SCDI_PGMG1_FLASHTOTOP),
+    DelayTxt1 = LOADDEF_TEXT(ID_SCDI_PGMG1_FLASH_TXT1),
     DelaySpin = CONTROLDEF_SPINBUTTON(
                             ID_SCDI_PGMG1_FLASH_SPIN,
-                            50,
-                            -1),
-    DelayTxt2 = CONTROLDEF_TEXT(
-                            LOAD_STRING,
-                            ID_SCDI_PGMG1_FLASH_TXT2,
-                            -1,
-                            -1),
-    MiniWindowsCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,
-                            ID_SCDI_PGMG1_SHOWWINDOWS,
-                            -1,
-                            -1),
-    ShowWinTitlesCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,
-                            ID_SCDI_PGMG1_SHOWWINTITLES,
-                            -1,
-                            -1),
-    Click2ActivateCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,
-                            ID_SCDI_PGMG1_CLICK2ACTIVATE,
-                            -1,
-                            -1),
-    ShowSecondaryCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,
-                            ID_SCDI_PGMG1_SHOWSECONDARY,
-                            -1,
-                            -1),
-    ShowStickyCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,
-                            ID_SCDI_PGMG1_SHOWSTICKY,
-                            -1,
-                            -1);
+                            25,
+                            STD_SPIN_HEIGHT),
+    DelayTxt2 = LOADDEF_TEXT(ID_SCDI_PGMG1_FLASH_TXT2),
+    MiniWindowsCB = LOADDEF_AUTOCHECKBOX(ID_SCDI_PGMG1_SHOWWINDOWS),
+    ShowWinTitlesCB = LOADDEF_AUTOCHECKBOX(ID_SCDI_PGMG1_SHOWWINTITLES),
+    Click2ActivateCB = LOADDEF_AUTOCHECKBOX(ID_SCDI_PGMG1_CLICK2ACTIVATE),
+    ShowSecondaryCB = LOADDEF_AUTOCHECKBOX(ID_SCDI_PGMG1_SHOWSECONDARY),
+    ShowStickyCB = LOADDEF_AUTOCHECKBOX(ID_SCDI_PGMG1_SHOWSTICKY);
 
 static const DLGHITEM dlgXPagerWindow[] =
     {
@@ -828,7 +780,7 @@ static MRESULT pgmiXPagerWindowItemChanged(PNOTEBOOKPAGE pnbp,
     }
 
     if (    (fSave)
-         && (pnbp->fPageInitialized)   // page initialized yet?
+         && (pnbp->flPage & NBFL_PAGE_INITED)   // page initialized yet?
        )
     {
         SaveXPagerConfig(pPgmgConfig,
@@ -989,16 +941,12 @@ static VOID SaveStickies(HWND hwndCnr,
                          | PGMGCFG_STICKIES);
 }
 
-#define ATTRWIDTH       100
-#define OPERWIDTH       100
-#define VALUEWIDTH      200
+#define ATTRWIDTH       50
+#define OPERWIDTH       50
+#define VALUEWIDTH      100
 
 static const CONTROLDEF
-    CriteriaGroup = CONTROLDEF_GROUP(
-                            LOAD_STRING,
-                            ID_SCDI_STICKY_CRITERIAGROUP,
-                            -1,
-                            -1),
+    CriteriaGroup = LOADDEF_GROUP(ID_SCDI_STICKY_CRITERIAGROUP, SZL_AUTOSIZE),
     AttrTxt = CONTROLDEF_TEXT_CENTER(
                             LOAD_STRING,
                             ID_SCDI_STICKY_ATTRIBUTE,
@@ -1026,21 +974,9 @@ static const CONTROLDEF
                             ID_SCDI_STICKY_VALUE_DROP,
                             VALUEWIDTH,
                             400),
-    MatchingGroup = CONTROLDEF_GROUP(
-                            LOAD_STRING, // ""Folder view settings"
-                            ID_SCDI_STICKY_MATCHINGGROUP,
-                            -1,
-                            -1),
-    IncludeRadio = CONTROLDEF_FIRST_AUTORADIO(
-                            LOAD_STRING,
-                            ID_SCDI_STICKY_RADIO_INCLUDE,
-                            -1,
-                            -1),
-    ExcludeRadio = CONTROLDEF_NEXT_AUTORADIO(
-                            LOAD_STRING,
-                            ID_SCDI_STICKY_RADIO_EXCLUDE,
-                            -1,
-                            -1);
+    MatchingGroup = LOADDEF_GROUP(ID_SCDI_STICKY_MATCHINGGROUP, SZL_AUTOSIZE),
+    IncludeRadio = LOADDEF_FIRST_AUTORADIO(ID_SCDI_STICKY_RADIO_INCLUDE),
+    ExcludeRadio = LOADDEF_NEXT_AUTORADIO(ID_SCDI_STICKY_RADIO_EXCLUDE);
 
 static const DLGHITEM dlgAddSticky[] =
     {
@@ -1316,30 +1252,14 @@ static VOID EditStickyRecord(PSTICKYRECORD pRec,
 }
 
 static const CONTROLDEF
-    StickiesGroup = CONTROLDEF_GROUP(
-                            LOAD_STRING,
-                            ID_SCDI_STICKY_GROUP,
-                            -1,
-                            -1),
+    StickiesGroup = LOADDEF_GROUP(ID_SCDI_STICKY_GROUP, SZL_AUTOSIZE),
     StickiesCnr = CONTROLDEF_CONTAINER(
                             ID_SCDI_STICKY_CNR,
-                            400,        // for now, will be resized
-                            200),       // for now, will be resized
-    AddButton = CONTROLDEF_PUSHBUTTON(
-                            LOAD_STRING,
-                            DID_ADD,
-                            100,
-                            30),
-    EditButton = CONTROLDEF_PUSHBUTTON(
-                            LOAD_STRING,
-                            DID_EDIT,
-                            100,
-                            30),
-    RemoveButton = CONTROLDEF_PUSHBUTTON(
-                            LOAD_STRING,
-                            DID_REMOVE,
-                            100,
-                            30);
+                            200,        // for now, will be resized
+                            100),       // for now, will be resized
+    AddButton = LOADDEF_PUSHBUTTON(DID_ADD),
+    EditButton = LOADDEF_PUSHBUTTON(DID_EDIT),
+    RemoveButton = LOADDEF_PUSHBUTTON(DID_REMOVE);
 
 static const DLGHITEM dlgStickies[] =
     {
@@ -1858,7 +1778,7 @@ static MRESULT EXPENTRY pgmi_fnwpSubclassedStaticRect(HWND hwndStatic, ULONG msg
                         WinInvalidateRect(hwndStatic,
                                           NULL, FALSE);
 
-                        if (pnbp->fPageInitialized)   // page initialized yet?
+                        if (pnbp->flPage & NBFL_PAGE_INITED)   // page initialized yet?
                             SaveXPagerConfig(pPgmgConfig,
                                                PGMGCFG_REPAINT);
                     }

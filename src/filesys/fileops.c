@@ -373,8 +373,7 @@ PEXPANDEDOBJECT fopsExpandObjectDeep(WPObject *pObject,
     if (wpshCheckObject(pObject))
     {
         // create object item
-        pSOI = (PEXPANDEDOBJECT)malloc(sizeof(EXPANDEDOBJECT));
-        if (pSOI)
+        if (pSOI = (PEXPANDEDOBJECT)malloc(sizeof(EXPANDEDOBJECT)))
         {
             #ifdef DEBUG_TRASHCAN
                 _Pmpf(("SOI for object %s", _wpQueryTitle(pObject) ));
@@ -960,9 +959,8 @@ static HWND PrepareFileExistsDlg(WPObject *somSelf,
     HWND    hwndConfirm;
 
     // load confirmation dialog
-    if (hwndConfirm = WinLoadDlg(HWND_DESKTOP, HWND_DESKTOP,
+    if (hwndConfirm = cmnLoadDlg(HWND_DESKTOP,
                                  fnwpTitleClashDlg,
-                                 cmnQueryNLSModuleHandle(FALSE),
                                  ID_XFD_TITLECLASH,
                                  NULL))
     {
@@ -1294,12 +1292,14 @@ static ULONG ConfirmObjectTitle(WPFolder *Folder,          // in: target folder 
 /*
  *@@ fopsConfirmObjectTitle:
  *      this gets called from XFldObject::wpConfirmObjectTitle
- *      to actually implement the "File exists" dialog. This
- *      performs a number of checks and loads a dialog from
+ *      to actually implement the "File exists" dialog, if the
+ *      replacement has been enabled.
+ *
+ *      This performs a number of  checks and loads a dialog from
  *      the NLS resources, if necessary, using fnwpTitleClashDlg.
  *
  *      See XFldObject::wpConfirmObjectTitle for a detailed
- *      description. The parameters are exactly the same.
+ *      description of the highly confusing parameters.
  *
  *@@changed V0.9.1 (2000-01-30) [umoeller]: extracted some functions for clarity; this was a total mess
  *@@changed V0.9.3 (2000-04-08) [umoeller]: fixed "Create another" problem

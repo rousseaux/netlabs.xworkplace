@@ -118,20 +118,16 @@
 #include "setup.h"                      // code generation and debugging options
 
 // headers in /helpers
-#include "helpers\cnrh.h"               // container helper routines
-#include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\eah.h"                // extended attributes helper routines
 #include "helpers\except.h"             // exception handling
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\prfh.h"               // INI file helper routines
+#include "helpers\standards.h"          // some standard macros
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\tree.h"               // red-black binary trees
-#include "helpers\winh.h"               // PM helper routines
-#include "helpers\wphandle.h"           // file-system object handles
 
 // SOM headers which don't crash with prec. header files
 #include "xfobj.ih"                     // XFldObject
-#include "xfdisk.ih"                    // XFldDisk
 #include "xfldr.ih"
 
 // XWorkplace implementation headers
@@ -237,7 +233,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpDestroyStorage(XFolder *somSelf)
  *      USHORT variables.
  *
  *      Either can be set to SET_DEFAULT if no instance data has been
- *      defined; you will then need to query the GLOBALSETTINGS values.
+ *      defined; you will then need to query global settings.
  *
  *      See XFolder::xwpSortViewOnce for the values of pusDefaultSort.
  *
@@ -395,58 +391,10 @@ SOM_Scope BOOL  SOMLINK xf_xwpSortViewOnce(XFolder *somSelf,
                                            HWND hwndFrame,
                                            long lSort)
 {
-    BOOL        rc = FALSE;
+    // XFolderData *somThis = XFolderGetData(somSelf);
+    XFolderMethodDebug("XFolder","xf_xwpSortViewOnce");
 
-#ifndef __ALWAYSEXTSORT__
-    if (cmnQuerySetting(sfExtendedSorting))
-#endif
-    {
-        WPSHLOCKSTRUCT Lock = {0};
-        TRY_LOUD(excpt1)
-        {
-            if (LOCK_OBJECT(Lock, somSelf))
-            {
-                HWND hwndCnr = wpshQueryCnrFromFrame(hwndFrame);
-                // XFolderData *somThis = XFolderGetData(somSelf);
-                XFolderMethodDebug("XFolder","xf_xfSortByExt");
-
-                if (hwndCnr)
-                {
-                    CNRINFO CnrInfo;
-                    ULONG   ulStyle = 0;
-
-                    cnrhQueryCnrInfo(hwndCnr, &CnrInfo);
-
-                    if ((CnrInfo.flWindowAttr & (CV_ICON | CV_TREE)) == CV_ICON)
-                    {
-                        // for some reason, icon views need to have "auto arrange" on,
-                        // or nothing will happen
-                        ulStyle = winhQueryWindowStyle(hwndCnr);
-                        WinSetWindowULong(hwndCnr, QWL_STYLE, ulStyle | CCS_AUTOPOSITION);
-                    }
-
-                    // send sort msg with proper sort (comparison) func
-                    WinSendMsg(hwndCnr,
-                               CM_SORTRECORD,
-                               (MPARAM)fdrQuerySortFunc(somSelf,
-                                                        lSort),
-                               MPNULL);
-
-                    if ((CnrInfo.flWindowAttr & (CV_ICON | CV_TREE)) == CV_ICON)
-                        // restore old cnr style
-                        WinSetWindowULong(hwndCnr, QWL_STYLE, ulStyle);
-
-                    rc = TRUE;
-                }
-            } // end if (fFolderLocked)
-        }
-        CATCH(excpt1) {} END_CATCH();
-
-        if (Lock.fLocked)
-            _wpReleaseObjectMutexSem(Lock.pObject);
-    }
-
-    return (rc);
+    return fdrSortViewOnce(somSelf, hwndFrame, lSort);
 }
 
 /*
@@ -474,6 +422,8 @@ SOM_Scope BOOL  SOMLINK xf_xwpGetIconPos(XFolder *somSelf,
 
     PSZ      pszClass = _somGetClassName(pObject);
 
+    ULONG    fl = objQueryFlags(pObject);       // V0.9.19 (2002-04-24) [umoeller]
+
     // XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_xwpGetIconPos");
 
@@ -483,20 +433,21 @@ SOM_Scope BOOL  SOMLINK xf_xwpGetIconPos(XFolder *somSelf,
        .ICONPOS EA starts with a string identifying the object; so
        first, we need to compose this string depending on the type
        of the passed object */
-    if (!_somIsA(pObject, _WPFileSystem))
+    if (fl & OBJFL_WPABSTRACT)
     {
         // abstract object:
         HOBJECT  hObject = _wpQueryHandle(pObject);
         sprintf(szKey, "%s:A%lX", pszClass, LOUSHORT(hObject));
     }
-    else
-    {   // file system object
+    else if (fl & OBJFL_WPFILESYSTEM)
+    {
+        // file system object
         if (_wpQueryFilename(pObject, szPath, FALSE))
         {
             sprintf(szKey,
                     "%s:%c%s",
                     pszClass,
-                    (_somIsA(pObject, _WPFolder) ? 'D' : 'F'),
+                    (fl & OBJFL_WPFOLDER) ? 'D' : 'F',
                     szPath);
         }
         else
@@ -510,8 +461,9 @@ SOM_Scope BOOL  SOMLINK xf_xwpGetIconPos(XFolder *somSelf,
         /* now we go through the .ICONPOS data that was given to us
            and check each item in there if it matches the key we
            composed above */
-        for (pip = (PICONPOS)( pICONPOS + usStartPos );
-            (PBYTE)pip < pICONPOS + usICONPOSSize; )
+        for (pip = (PICONPOS)(pICONPOS + usStartPos);
+             (PBYTE)pip < pICONPOS + usICONPOSSize;
+            )
         {
             if (!stricmp(pip->szIdentity, szKey))
             {
@@ -602,6 +554,7 @@ SOM_Scope ULONG  SOMLINK xf_xwpBeginEnumContent(XFolder *somSelf)
                 {
                     // create new list item
                     PORDEREDLISTITEM poliNew = malloc(sizeof(ORDEREDLISTITEM));
+                    ULONG fl = objQueryFlags(pObj);
                     fItemsFound = TRUE;
 
                     // store object
@@ -615,18 +568,18 @@ SOM_Scope ULONG  SOMLINK xf_xwpBeginEnumContent(XFolder *somSelf)
                     //                  for file-system objects: the filename
 
                     // now create the identity string for the search object
-                    if (_somIsA(pObj, _WPAbstract))
+                    if (fl & OBJFL_WPABSTRACT)
                     {
                         // for abstract objects, this is the low word
                         // of the object handle
                         HOBJECT hobjSearch = _wpQueryHandle(pObj);
                         sprintf(poliNew->szIdentity, ":A%lX", (hobjSearch & 0xFFFF));
                     }
-                    else
+                    else if (fl & OBJFL_WPFILESYSTEM)
                     {
                         // for file-system objects, this is the object's real name
                         ULONG   ulSize = sizeof(poliNew->szIdentity)-2;
-                        if (_somIsA(pObj, _WPFolder))
+                        if (fl & OBJFL_WPFOLDER)
                             strcpy(poliNew->szIdentity, ":D");
                         else
                             strcpy(poliNew->szIdentity, ":F");
@@ -674,9 +627,8 @@ SOM_Scope ULONG  SOMLINK xf_xwpBeginEnumContent(XFolder *somSelf)
                 //    PSZ pszValue;
                 //  } EABINDING, *PEABINDING;
 
-                PBYTE pICONPOS = malloc(peab->usValueLength+100);
-
-                if (pICONPOS)
+                PBYTE pICONPOS;
+                if (pICONPOS = malloc(peab->usValueLength+100))
                 {
                     ULONG ulICONPOSSize = (peab->usValueLength)-5;
                     memcpy(pICONPOS, peab->pszValue+4, peab->usValueLength-3);
@@ -743,8 +695,8 @@ SOM_Scope WPObject*  SOMLINK xf_xwpEnumNext(XFolder *somSelf,
         if (pec->pnodeLastQueried)
         {
             // another item found:
-            PORDEREDLISTITEM poli = (PORDEREDLISTITEM)pec->pnodeLastQueried->pItemData;
-            if (poli)
+            PORDEREDLISTITEM poli;
+            if (poli = (PORDEREDLISTITEM)pec->pnodeLastQueried->pItemData)
                 pObject = poli->pObj;
         }
     }
@@ -1035,14 +987,14 @@ SOM_Scope BOOL  SOMLINK xf_xwpQueryMenuBarVisibility(XFolder *somSelf)
     BOOL        brc = FALSE;
     XFolderMethodDebug("XFolder","xf_xwpQueryMenuBarVisibility");
 
-    if (doshIsWarp4())
+    if (G_fIsWarp4)
     {
         XFolderData *somThis = XFolderGetData(somSelf);
         // to find out whether the menu bar has been enabled,
         // check the FDRLONGARRAY (xfldr.idl) to which we have
         // obtained a pointer using the ugly kludge in
         // XFolder::wpRestoreData
-        if (_wpIsObjectInitialized(somSelf)) // V0.9.3 (2000-04-29) [umoeller]
+        if (objIsObjectInitialized(somSelf)) // V0.9.3 (2000-04-29) [umoeller]
             if (_pFolderLongArray)
             {
                 ULONG   ulMenuBarVisibility = _pFolderLongArray->ulMenuBarVisibility;
@@ -1068,7 +1020,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpQueryMenuBarVisibility(XFolder *somSelf)
  *      ulVisibility may be:
  *      -- STATUSBAR_ON:        show status bars
  *      -- STATUSBAR_OFF:       hide status bars
- *      -- STATUSBAR_DEFAULT:   use GLOBALSETTINGS for this folder
+ *      -- STATUSBAR_DEFAULT:   use global setting for this folder
  *
  *      If fUpdate is TRUE, XFolder will have the Worker thread search
  *      for open folder views and update their frame controls accordingly.
@@ -1102,7 +1054,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpSetStatusBarVisibility(XFolder *somSelf,
             // open folder window
             xthrPostWorkerMsg(WOM_UPDATEALLSTATUSBARS,
                              (MPARAM)1,      // show/hide flag
-                             MPNULL);
+                             0);
             // update "XFolder" notebook page, if open
             ntbUpdateVisiblePage(somSelf, SP_XFOLDER_FLDR);
         }
@@ -1117,7 +1069,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpSetStatusBarVisibility(XFolder *somSelf,
  *      a folder:
  *      -- STATUSBAR_ON:        status bars visible
  *      -- STATUSBAR_OFF:       status bars invisible
- *      -- STATUSBAR_DEFAULT:   GLOBALSETTINGS used for this folder
+ *      -- STATUSBAR_DEFAULT:   use global setting for this folder
  *
  *@@changed V0.9.0 [umoeller]: function prototype changed
  */
@@ -1368,7 +1320,6 @@ SOM_Scope void  SOMLINK xf_xwpSetDisableCnrAdd(XFolder *somSelf,
 
 SOM_Scope void  SOMLINK xf_wpInitData(XFolder *somSelf)
 {
-    // PGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_wpInitData");
 
@@ -2227,6 +2178,7 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreData(XFolder *somSelf,
  *      global menu settings.
  *
  *@@changed V0.9.5 (2000-09-20) [pr]: fixed context menu flags
+ *@@changed V0.9.19 (2002-04-17) [umoeller]: adjusted for new menu handling
  */
 
 SOM_Scope ULONG  SOMLINK xf_wpFilterPopupMenu(XFolder *somSelf,
@@ -2259,7 +2211,7 @@ SOM_Scope ULONG  SOMLINK xf_wpFilterPopupMenu(XFolder *somSelf,
     // notebook page for removing menu items sets this field with
     // the proper CTXT_xxx flags
     return ((ulMenuFilter)
-            & ~(cmnQuerySetting(sflDefaultMenuItems))
+            & ~(cmnQuerySetting(mnuQueryMenuWPSSetting(somSelf)))
         );
 }
 
@@ -2439,7 +2391,7 @@ SOM_Scope ULONG  SOMLINK xf_wpQueryDefaultView(XFolder *somSelf)
 
     XFolderMethodDebug("XFolder","xf_wpQueryDefaultView");
 
-    if (    (_wpIsObjectInitialized(somSelf))    // wpPopulate hangs otherwise
+    if (    (objIsObjectInitialized(somSelf))    // wpPopulate hangs otherwise
          && (!cmnIsADesktop(somSelf))
        )
     {
@@ -2780,7 +2732,7 @@ SOM_Scope BOOL  SOMLINK xf_wpRefresh(XFolder *somSelf,
                               (ULONG)2,           // update
                               (PFNWP)stb_UpdateCallback);
 
-    xthrPostWorkerMsg(WOM_REFRESHFOLDERVIEWS, (MPARAM)somSelf, MPNULL);
+    xthrPostWorkerMsg(WOM_REFRESHFOLDERVIEWS, (MPARAM)somSelf, 0);
 
     return rc;
 }
@@ -3450,7 +3402,7 @@ SOM_Scope BOOL  SOMLINK xf_wpMoveObject(XFolder *somSelf,
     // call the parent method first, which will actually move the folder
     rc = XFolder_parent_WPFolder_wpMoveObject(somSelf, Folder);
 
-    xthrPostWorkerMsg(WOM_REFRESHFOLDERVIEWS, (MPARAM)somSelf, MPNULL);
+    xthrPostWorkerMsg(WOM_REFRESHFOLDERVIEWS, (MPARAM)somSelf, 0);
 
     return rc;
 }
@@ -3529,7 +3481,7 @@ SOM_Scope BOOL  SOMLINK xf_wpSetTitle(XFolder *somSelf, PSZ pszNewTitle)
 
     if (_wpFindUseItem(somSelf, USAGE_OPENVIEW, NULL))
         // any open views: update titles
-        xthrPostWorkerMsg(WOM_REFRESHFOLDERVIEWS, (MPARAM)somSelf, MPNULL);
+        xthrPostWorkerMsg(WOM_REFRESHFOLDERVIEWS, (MPARAM)somSelf, 0);
 
     return (rc);
 }
@@ -3718,7 +3670,7 @@ SOM_Scope BOOL  SOMLINK xfM_xwpclsQueryMenuBarVisibility(M_XFolder *somSelf)
     // M_XFolderData *somThis = M_XFolderGetData(somSelf);
     M_XFolderMethodDebug("M_XFolder","xfM_xwpclsQueryMenuBarVisibility");
 
-    if (doshIsWarp4())
+    if (G_fIsWarp4)
     {
         CHAR szValue[10];
         if (PrfQueryProfileString(HINI_USER,
@@ -3781,7 +3733,7 @@ SOM_Scope void  SOMLINK xfM_wpclsInitData(M_XFolder *somSelf)
                              (PSZ)WNDCLASS_SUPPLOBJECT,    // class name
                              (PFNWP)fdr_fnwpSupplFolderObject,    // Window procedure
                              0,       // class style
-                             4);      // extra window words for SUBCLASSEDFOLDERVIEW
+                             4);      // extra window words for SUBCLFOLDERVIEW
                                       // pointer (see fdrSubclassFolderView)
 
             // install local hook (fdrsubclass.c)

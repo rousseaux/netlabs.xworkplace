@@ -75,6 +75,7 @@
 // headers in /helpers
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\winh.h"               // PM helper routines
+#include "helpers\standards.h"          // some standard macros
 
 // SOM headers which don't crash with prec. header files
 #include "xfdisk.ih"
@@ -91,6 +92,7 @@
 #include "filesys\disk.h"               // XFldDisk implementation
 #include "filesys\folder.h"             // XFolder implementation
 #include "filesys\fdrmenus.h"           // shared folder menu logic
+#include "filesys\object.h"             // XFldObject implementation
 #include "filesys\statbars.h"           // status bar translation logic
 
 // other SOM headers
@@ -119,6 +121,7 @@
  *      global menu settings.
  *
  *@@changed V0.9.5 (2000-09-18) [umoeller]: now removing "Create another" always
+ *@@changed V0.9.19 (2002-04-17) [umoeller]: adjusted for new menu handling
  */
 
 SOM_Scope ULONG  SOMLINK xfdisk_wpFilterPopupMenu(XFldDisk *somSelf,
@@ -130,16 +133,17 @@ SOM_Scope ULONG  SOMLINK xfdisk_wpFilterPopupMenu(XFldDisk *somSelf,
     // XFldDiskData *somThis = XFldDiskGetData(somSelf);
     XFldDiskMethodDebug("XFldDisk","xfdisk_wpFilterPopupMenu");
 
-    _Pmpf((__FUNCTION__ ": entering"));
-
     ulrc = (    XFldDisk_parent_WPDisk_wpFilterPopupMenu(somSelf,
                                                          ulFlags,
                                                          hwndCnr,
                                                          fMultiSelect)
-             &  ~( cmnQuerySetting(sflDefaultMenuItems) | CTXT_NEW )
+             &  ~(
+                    // hack out items where the CTXT_* flag is
+                    // set for disks V0.9.19 (2002-04-17) [umoeller]
+                    cmnQuerySetting(mnuQueryMenuWPSSetting(somSelf))
+                  | CTXT_NEW
+                 )
            );
-
-    _Pmpf((__FUNCTION__ ": leaving"));
 
     return (ulrc);
 }
@@ -177,11 +181,19 @@ SOM_Scope BOOL  SOMLINK xfdisk_wpModifyPopupMenu(XFldDisk *somSelf,
     {
         WPFolder *pFolder = _wpQueryRootFolder(somSelf);
 
-        if (cmnQuerySetting(sfRemoveFormatDiskItem))
-            winhRemoveMenuItem(hwndMenu, ID_WPMI_FORMATDISK);
-
-        if (cmnQuerySetting(sfRemoveCheckDiskItem))
-            winhRemoveMenuItem(hwndMenu, ID_WPMI_CHECKDISK);
+        static const ULONG aSuppressFlags[] =
+            {
+                XWPCTXT_CHKDSK,
+                XWPCTXT_FORMAT,
+                XWPCTXT_COPYDSK,
+                XWPCTXT_LOCKDISK,
+                XWPCTXT_EJECTDISK,
+                XWPCTXT_UNLOCKDISK,
+            };
+        mnuRemoveMenuItems(somSelf,
+                           hwndMenu,
+                           aSuppressFlags,
+                           ARRAYITEMCOUNT(aSuppressFlags));
 
         if (pFolder)
             // drive ready:
@@ -389,7 +401,7 @@ SOM_Scope HWND  SOMLINK xfdisk_wpOpen(XFldDisk *somSelf,
                  && (ulView != OPEN_SETTINGS)
                )
             {
-                PSUBCLASSEDFOLDERVIEW psfv = NULL;
+                PSUBCLFOLDERVIEW psfv = NULL;
 
                 hwndCnr = wpshQueryCnrFromFrame(hwndNewFrame);
 

@@ -48,7 +48,7 @@
  *      Note that all these three threads are started on WPS
  *      startup if folder auto-refresh has been replaced in
  *      XWPSetup. By contrast, the "Folder auto-refresh" setting
- *      in "Workplace shell" (which is in GLOBALSETTINGS) is only
+ *      in "Workplace shell" (which is in the global settings) is only
  *      respected by the Sentinel thread. Disabling that setting
  *      does not stop the threads from running... it will only
  *      disable posting messages from the Sentinel to the

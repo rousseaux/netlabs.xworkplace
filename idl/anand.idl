@@ -7,7 +7,7 @@
 #ifndef anand_idl
 #define anand_idl
 
-#include "wpdataf.idl"
+#include <wpdataf.idl>
 #include <somcls.idl>
 
 interface M_XWPAnimouse;

@@ -43,7 +43,9 @@ $(OUTPUTDIR)\xwpmouse.obj \
 $(OUTPUTDIR)\xwpnetwork.obj \
 $(OUTPUTDIR)\xwpnetsrv.obj \
 $(OUTPUTDIR)\xwppgm.obj \
+!ifndef XWPLITE
 $(OUTPUTDIR)\xwpsetup.obj \
+!endif
 $(OUTPUTDIR)\xwpscreen.obj \
 $(OUTPUTDIR)\xwpsound.obj \
 $(OUTPUTDIR)\xwpstring.obj \

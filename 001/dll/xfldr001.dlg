@@ -1012,24 +1012,6 @@ BEGIN
     END
 END
 
-DLGTEMPLATE ID_XFD_NOTEXTCLIP LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "XWorkplace Warning: Clipboard", ID_XFD_NOTEXTCLIP, -205, -15,
-            260, 69, FS_MOUSEALIGN | WS_VISIBLE, FCF_SYSMENU | FCF_TITLEBAR
-    BEGIN
-        PUSHBUTTON      "~Yes", DID_OK, 10, 6, 65, 12
-        ICON            ID_ICONDLG, -1, 225, 46, 20, 16, WS_GROUP
-        LTEXT           "The menu item you selected is supposed to pass text"
-                        " data in the clipboard as a parameter. However, the"
-                        " clipboard currently holds no text data. Do you wis"
-                        "h to start the program anyway?", -1, 10, 25, 205,
-                        38, DT_WORDBREAK
-        PUSHBUTTON      "~Help", DID_HELP, 185, 6, 65, 12, BS_HELP |
-                        BS_NOPOINTERFOCUS
-        DEFPUSHBUTTON   "~No", DID_CANCEL, 85, 6, 65, 12
-    END
-END
-
 DLGTEMPLATE ID_XFD_RUN LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     DIALOG  "Run", ID_XFD_RUN, 0, 4, 230, 103, , FCF_SYSMENU | FCF_TITLEBAR
@@ -1127,26 +1109,6 @@ BEGIN
         PUSHBUTTON      "~Cancel", DID_CANCEL, 80, 3, 65, 12
                         PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
         PUSHBUTTON      "~Help", DID_HELP, 165, 3, 75, 12, BS_HELP
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-    END
-END
-
-DLGTEMPLATE ID_XFD_WRONGVERSION LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "XWorkplace Warning: NLS DLL Outdated", ID_XFD_WRONGVERSION, 15,
-            18, 260, 63, WS_VISIBLE, FCF_SYSMENU | FCF_TITLEBAR
-    BEGIN
-        DEFPUSHBUTTON   "~No", DID_CANCEL, 95, 6, 70, 12
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        ICON            ID_ICONDLG, -1, 225, 38, 20, 16, WS_GROUP
-        LTEXT           "The National Language Support DLL you have requeste"
-                        "d is older than the XWorkplace version you are usin"
-                        "g. Loading this module might lead to serious proble"
-                        "ms or frequent error messages. Do you wish to load "
-                        "the module anyway?", -1, 10, 20, 205, 36,
-                        DT_WORDBREAK
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        PUSHBUTTON      "~Yes", DID_OK, 10, 6, 70, 12
                         PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
     END
 END
@@ -1728,63 +1690,6 @@ BEGIN
                         PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
         PUSHBUTTON      "~Help", -1, 170, 6, 60, 12, BS_HELP
                         PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-    END
-END
-
-DLGTEMPLATE ID_XSD_SET26CONFIGMENUS LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "", ID_XSD_SET26CONFIGMENUS, 0, 0, 224, 180, NOT FS_DLGBORDER |
-            WS_VISIBLE
-    BEGIN
-        GROUPBOX        "Configuration folder menus", -1, 5, 78, 175, 39
-        AUTOCHECKBOX    """~Conditional cascade"" submenus", ID_XSDI_CASCADE,
-                        10, 99, 165, 10
-        AUTOCHECKBOX    "~Suppress ""~"" in window titles", ID_XSDI_REMOVEX,
-                        10, 90, 165, 10
-        AUTOCHECKBOX    "Change param~eter list", ID_XSDI_APPDPARAM, 10, 81,
-                        150, 10
-        GROUPBOX        "After creating from templates...", -1, 5, 24, 175,
-                        51, DT_MNEMONIC
-        AUTORADIOBUTTON "do ~nothing", ID_XSDI_TPL_DONOTHING, 10, 57, 165,
-                        10, WS_GROUP | WS_TABSTOP
-        AUTORADIOBUTTON "~make title editable", ID_XSDI_TPL_EDITTITLE, 10,
-                        48, 165, 10, WS_TABSTOP
-        AUTORADIOBUTTON "~open settings", ID_XSDI_TPL_OPENSETTINGS, 10, 39,
-                        165, 10, WS_TABSTOP
-        AUTOCHECKBOX    "C~reate object at mouse position",
-                        ID_XSDI_TPL_POSITION, 10, 27, 165, 10
-        PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 55, 12, WS_GROUP
-        PUSHBUTTON      "~Default", DID_DEFAULT, 65, 6, 55, 12
-        PUSHBUTTON      "~Help", DID_HELP, 125, 6, 55, 12, BS_HELP
-    END
-END
-
-DLGTEMPLATE ID_XSD_SET27STATUSBARS LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "", ID_XSD_SET27STATUSBARS, 0, 0, 224, 180, NOT FS_DLGBORDER |
-            WS_VISIBLE
-    BEGIN
-        AUTOCHECKBOX    "~Enable folder status bars",
-                        ID_XSDI_ENABLESTATUSBAR, 5, 123, 165, 10
-        GROUPBOX        "Visible in...", -1, 5, 78, 175, 40
-        AUTOCHECKBOX    "~Icon views", ID_XSDI_SBFORICONVIEWS, 10, 99, 165,
-                        10, WS_GROUP
-        AUTOCHECKBOX    "~Tree views", ID_XSDI_SBFORTREEVIEWS, 10, 90, 165,
-                        10
-        AUTOCHECKBOX    "Det~ails views", ID_XSDI_SBFORDETAILSVIEWS, 10, 81,
-                        165, 10
-        GROUPBOX        "Style", -1, 5, 24, 175, 48, NOT WS_GROUP
-        AUTORADIOBUTTON "Raised bo~x", ID_XSDI_SBSTYLE_3RAISED, 10, 54, 160,
-                        10, WS_GROUP | WS_TABSTOP
-        AUTORADIOBUTTON "~Sunk box", ID_XSDI_SBSTYLE_3SUNKEN, 10, 45, 160,
-                        10, WS_TABSTOP
-        AUTORADIOBUTTON "~Button", ID_XSDI_SBSTYLE_4RECT, 10, 36, 160, 10,
-                        WS_TABSTOP
-        AUTORADIOBUTTON "~Menu", ID_XSDI_SBSTYLE_4MENU, 10, 27, 160, 10,
-                        WS_TABSTOP
-        PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 55, 12, WS_GROUP
-        PUSHBUTTON      "~Default", DID_DEFAULT, 65, 6, 55, 12
-        PUSHBUTTON      "~Help", DID_HELP, 125, 6, 55, 12, BS_HELP
     END
 END
 

@@ -48,7 +48,7 @@ rc = SysCreateObject("XWPScreen", Screen, "<WP_CONFIG>", "OBJECTID=<XWP_SCREEN>;
 rc = SysCreateObject("XWPString", String, "<WP_TEMPS>", "TEMPLATE=YES;OBJECTID=<XWP_STRINGTPL>;", "U");
 
 /* create trash can on desktop */
-rc = SysCreateObject("XWPTrashCan", String, "<WP_DESKTOP>", "DEFAULTVIEW=DETAILS;ALWAYSSORT=YES;DETAILSCLASS=XWPTrashObject;SORTCLASS=XWPTrashObject;", "U");
+rc = SysCreateObject("XWPTrashCan", TrashCan, "<WP_DESKTOP>", "DEFAULTVIEW=DETAILS;ALWAYSSORT=YES;DETAILSCLASS=XWPTrashObject;SORTCLASS=XWPTrashObject;", "U");
 
 "@call "idir"crobj"LanguageCode
 

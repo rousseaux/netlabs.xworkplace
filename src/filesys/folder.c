@@ -423,11 +423,9 @@ BOOL fdrQuerySetup(WPObject *somSelf,
 
         CHAR    szTemp[1000] = "";
 
-        BOOL    fIsWarp4 = doshIsWarp4();
-
         // some settings better have this extra check,
         // not sure if it's really needed
-        BOOL    fInitialized = _wpIsObjectInitialized(somSelf);
+        BOOL    fInitialized = objIsObjectInitialized(somSelf);
 
         // xstrInit(pstrSetup, 400);
         xstrInit(&strView, 200);
@@ -684,7 +682,7 @@ BOOL fdrQuerySetup(WPObject *somSelf,
             break;
         }
 
-        if (fIsWarp4)
+        if (G_fIsWarp4)
         {
             // on Warp 4, mini icons in Tree view are the default
             if ((ulValue & CV_MINI) == 0)
@@ -1270,7 +1268,7 @@ BOOL fdrQuickOpen(WPFolder *pFolder,
 /*
  *@@ fdrSnapToGrid:
  *      makes all objects in the folder "snap" on a grid whose
- *      coordinates are to be defined in the GLOBALSETTINGS.
+ *      coordinates are to be defined in the global settings.
  *
  *      This function checks if an Icon view of the folder is
  *      currently open; if not and fNotify == TRUE, it displays
@@ -1712,7 +1710,7 @@ static MRESULT EXPENTRY fdr_fnwpSelectSome(HWND hwndDlg, ULONG msg, MPARAM mp1, 
     return (mrc);
 }
 
-#define BUTTON_WIDTH        150
+#define BUTTON_WIDTH        75
 
 static const CONTROLDEF
     IntroText = CONTROLDEF_TEXT_WORDBREAK(
@@ -1722,7 +1720,7 @@ static const CONTROLDEF
     MaskEF = CONTROLDEF_DROPDOWN(
                             ID_XFDI_SOME_ENTRYFIELD,
                             -100,
-                            300),
+                            175),
     RegExpCB = CONTROLDEF_AUTOCHECKBOX(
                             LOAD_STRING,
                             ID_XFDI_SOME_REGEXP_CP,
@@ -1732,32 +1730,32 @@ static const CONTROLDEF
                             LOAD_STRING,
                             ID_XFDI_SOME_SELECT,
                             BUTTON_WIDTH,
-                            30),
+                            STD_BUTTON_HEIGHT),
     DeselectButton = CONTROLDEF_NOFOCUSBUTTON(
                             LOAD_STRING,
                             ID_XFDI_SOME_DESELECT,
                             BUTTON_WIDTH,
-                            30),
+                            STD_BUTTON_HEIGHT),
     SelectAllButton = CONTROLDEF_NOFOCUSBUTTON(
                             LOAD_STRING,
                             ID_XFDI_SOME_SELECTALL,
                             BUTTON_WIDTH,
-                            30),
+                            STD_BUTTON_HEIGHT),
     DeselectAllButton = CONTROLDEF_NOFOCUSBUTTON(
                             LOAD_STRING,
                             ID_XFDI_SOME_DESELECTALL,
                             BUTTON_WIDTH,
-                            30),
+                            STD_BUTTON_HEIGHT),
     CloseButton = CONTROLDEF_NOFOCUSBUTTON(
                             LOAD_STRING,
                             DID_CLOSE,
                             BUTTON_WIDTH,
-                            30),
+                            STD_BUTTON_HEIGHT),
     HelpButton = CONTROLDEF_HELPPUSHBUTTON(
                             LOAD_STRING,
                             DID_HELP,
                             BUTTON_WIDTH,
-                            30);
+                            STD_BUTTON_HEIGHT);
 
 static const DLGHITEM dlgSelectSome[] =
     {
@@ -2206,9 +2204,8 @@ ULONG fdrStartFolderContents(WPFolder *pFolder,
 
     pf.ulTiming = ulTiming;
 
-    pf.hwndStatus = WinLoadDlg(HWND_DESKTOP, NULLHANDLE,
+    pf.hwndStatus = cmnLoadDlg(NULLHANDLE,
                                fnwpStartupDlg,
-                               cmnQueryNLSModuleHandle(FALSE),
                                ID_XFD_STARTUPSTATUS,
                                NULL);
     // store struct in window words so the dialog can cancel

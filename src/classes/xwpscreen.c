@@ -296,7 +296,7 @@ SOM_Scope BOOL  SOMLINK xwpscrM_wpclsQuerySettingsPageSize(M_XWPScreen *somSelf,
     {
         LONG lCompCY = 160;     // this is the height of the "XPager General" page
                                 // which seems to be the largest
-        if (doshIsWarp4())
+        if (G_fIsWarp4)
             // on Warp 4, reduce again, because we're moving
             // the notebook buttons to the bottom
             lCompCY -= WARP4_NOTEBOOK_OFFSET;

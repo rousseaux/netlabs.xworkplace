@@ -635,7 +635,7 @@ BOOL pgmwIsSticky(HWND hwnd,
                 {
                     int             pos, length;
                     ERE_MATCHINFO   mi;
-                    _Pmpf((__FUNCTION__ ": checking %s", pcszSwitchName));
+                    // _Pmpf((__FUNCTION__ ": checking %s", pcszSwitchName));
                     if (rxpMatch_fwd(pERE,
                                      0,
                                      pcszSwitchName,
@@ -644,8 +644,9 @@ BOOL pgmwIsSticky(HWND hwnd,
                                      &length,
                                      &mi))
                     {
-                        _Pmpf(("regexp matched, pos %d, len %d, namelen %d",
-                                pos, length, strlen(pcszSwitchName)));
+                        // _Pmpf(("regexp matched, pos %d, len %d, namelen %d",
+                           //      pos, length, strlen(pcszSwitchName)));
+
                          // make sure we don't just have a substring
                          if (    (pos == 0)
                               && (    (length >= PGMG_TEXTLEN - 1)

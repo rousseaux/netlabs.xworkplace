@@ -6,7 +6,7 @@
 #ifndef anos2ptr_idl
 #define anos2ptr_idl
 
-#include "wpdataf.idl"
+#include <wpdataf.idl>
 #include <somcls.idl>
 
 interface M_XWPOS2Pointer;

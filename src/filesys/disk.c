@@ -279,8 +279,6 @@ BOOL dskQueryInfo(PXDISKINFO paDiskInfos,
 VOID dskDetailsInitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
                         ULONG flFlags)                // CBI_* flags (notebook.h)
 {
-    // PGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-
     if (flFlags & CBI_INIT)
     {
         // prepare chart control

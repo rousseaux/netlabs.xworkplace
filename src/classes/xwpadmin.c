@@ -115,6 +115,7 @@ static VOID Error(WPObject *somSelf,
     cmnMessageBox(hwndOwner,
                   _wpQueryTitle(somSelf),
                   str.psz,
+                  NULLHANDLE, // no help
                   MB_CANCEL);
 }
 
@@ -124,51 +125,50 @@ static VOID Error(WPObject *somSelf,
  *
  ********************************************************************/
 
+#define LEFT_COLUMN     100
+#define RIGHT_COLUMN    50
+
 static const CONTROLDEF
-    LocalUserGroup = CONTROLDEF_GROUP(
-                            LOAD_STRING,
-                            ID_AMDI_USER_LOCAL_GROUP,
-                            -1,
-                            -1),
+    LocalUserGroup = LOADDEF_GROUP(ID_AMDI_USER_LOCAL_GROUP, SZL_AUTOSIZE),
     LocalUserNameTxt = CONTROLDEF_TEXT(
                             LOAD_STRING,
                             ID_AMDI_USER_USERNAME_TXT,
-                            200,
+                            LEFT_COLUMN,
                             -1),
     LocalUserNameData = CONTROLDEF_TEXT(
                             LOAD_STRING,
                             ID_AMDI_USER_USERNAME_DATA,
-                            100,
+                            RIGHT_COLUMN,
                             -1),
     LocalUserIDTxt = CONTROLDEF_TEXT(
                             LOAD_STRING,
                             ID_AMDI_USER_USERID_TXT,
-                            200,
+                            LEFT_COLUMN,
                             -1),
     LocalUserIDData = CONTROLDEF_TEXT(
                             LOAD_STRING,
                             ID_AMDI_USER_USERID_DATA,
-                            100,
+                            RIGHT_COLUMN,
                             -1),
     LocalGroupNameTxt = CONTROLDEF_TEXT(
                             LOAD_STRING,
                             ID_AMDI_USER_GROUPNAME_TXT,
-                            200,
+                            LEFT_COLUMN,
                             -1),
     LocalGroupNameData = CONTROLDEF_TEXT(
                             LOAD_STRING,
                             ID_AMDI_USER_GROUPNAME_DATA,
-                            100,
+                            RIGHT_COLUMN,
                             -1),
     LocalGroupIDTxt = CONTROLDEF_TEXT(
                             LOAD_STRING,
                             ID_AMDI_USER_GROUPID_TXT,
-                            200,
+                            LEFT_COLUMN,
                             -1),
     LocalGroupIDData = CONTROLDEF_TEXT(
                             LOAD_STRING,
                             ID_AMDI_USER_GROUPID_DATA,
-                            100,
+                            RIGHT_COLUMN,
                             -1);
 
 static const DLGHITEM dlgLocalUser[] =

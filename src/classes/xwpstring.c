@@ -632,7 +632,7 @@ SOM_Scope BOOL  SOMLINK xwstr_xwpInvokeString(XWPString *somSelf,
                                 ulMsg = 193;        // multiple objects msg
                             }
 
-                            fInvoke = (cmnMessageBoxMsgExt(NULLHANDLE,
+                            fInvoke = (cmnMessageBoxExt(NULLHANDLE,
                                                            191,     // XWPString
                                                            apsz,
                                                            2,

@@ -626,7 +626,7 @@ SOM_Scope BOOL  SOMLINK xmsM_wpclsQuerySettingsPageSize(M_XWPMouse *somSelf,
 
                             // this is the height of the "Movement" page,
                             // which is pretty large
-        /* if (doshIsWarp4())
+        /* if (G_fIsWarp4)
             // on Warp 4, reduce again, because we're moving
             // the notebook buttons to the bottom
             lCompCY -= WARP4_NOTEBOOK_OFFSET; */

@@ -922,6 +922,7 @@ BOOL fdrAddToContent(WPFolder *somSelf,
 
     XFolderData *somThis = XFolderGetData(somSelf);
     PFDRCONTENTITEM pNew;
+    ULONG flObject = objQueryFlags(pObject);
 
     if (_fDisableAutoCnrAdd)
     {
@@ -935,7 +936,7 @@ BOOL fdrAddToContent(WPFolder *somSelf,
     _cObjects++;
 
     // add to contents tree
-    if (_somIsA(pObject, _WPFileSystem))
+    if (flObject & OBJFL_WPFILESYSTEM)
     {
         // WPFileSystem added:
         // add a new tree node and sort it according
@@ -953,13 +954,14 @@ BOOL fdrAddToContent(WPFolder *somSelf,
                            (TREE*)pNew,
                            treeCompareStrings))
             {
-                PFDRCONTENTITEM pExisting;
-
                 // wow, this failed:
+                PFDRCONTENTITEM pExisting;
+                CHAR sz[CCHMAXPATH];
+                _wpQueryFilename(pObject, sz, TRUE);
                 cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "treeInsert failed for %s %s (0x%lX, %s)",
+                       "treeInsert failed for %s \"%s\" (adr 0x%lX, title \"%s\")",
                        _somGetClassName(pObject),
-                       pszUpperRealName,
+                       sz,
                        pObject,
                        _wpQueryTitle(pObject));
 
@@ -977,10 +979,12 @@ BOOL fdrAddToContent(WPFolder *somSelf,
                 else
                     cmnLog(__FILE__, __LINE__, __FUNCTION__,
                            "cannot find existing object!");
+
+                brc = FALSE;        // V0.9.19 (2002-04-17) [umoeller]
             }
         }
     }
-    else if (_somIsA(pObject, _WPAbstract))
+    else if (flObject & OBJFL_WPABSTRACT)
     {
         // WPAbstract added:
         // add a new tree node and sort it according
@@ -1007,6 +1011,8 @@ BOOL fdrAddToContent(WPFolder *somSelf,
                        hobj,
                        pObject,
                        _wpQueryTitle(pObject));
+
+                brc = FALSE;        // V0.9.19 (2002-04-17) [umoeller]
             }
         }
     }
@@ -1016,7 +1022,7 @@ BOOL fdrAddToContent(WPFolder *somSelf,
 
 /*
  *@@ fdrRealNameChanged:
- *      called by XWPFileSystem::wpSetTitleAndRenameFile
+ *      called by XWPFileSystem::wpSetRealName
  *      when an object's real name has changed. We then
  *      need to update our tree of FS objects which is
  *      sorted by real names.
@@ -1034,8 +1040,8 @@ BOOL fdrAddToContent(WPFolder *somSelf,
 BOOL fdrRealNameChanged(WPFolder *somSelf,          // in: folder of pFSObject
                         WPObject *pFSObject)        // in: FS object who is changing
 {
-    BOOL    brc = FALSE,
-            fFailed = 0;
+    BOOL    brc = FALSE;
+    PCSZ    pcszFailed = NULL;
 
     PSZ     pszOldRealName;
 
@@ -1048,8 +1054,13 @@ BOOL fdrRealNameChanged(WPFolder *somSelf,          // in: folder of pFSObject
         _wpQueryFilename(pFSObject, szNewUpperRealName, FALSE);
         nlsUpper(szNewUpperRealName, 0);
 
+        #ifdef DEBUG_TURBOFOLDERS
+        _Pmpf((__FUNCTION__ ": old %s, new %s", pszOldRealName, szNewUpperRealName));
+        #endif
+
         if (strcmp(pszOldRealName, szNewUpperRealName))
         {
+            // real name changed:
             // find the old real name in the tree
             if (pNode = (PFDRCONTENTITEM)treeFind(
                              _FileSystemsTreeRoot,
@@ -1081,20 +1092,25 @@ BOOL fdrRealNameChanged(WPFolder *somSelf,          // in: folder of pFSObject
                         brc = TRUE;
                     }
                     else
-                        fFailed = 3;
+                        pcszFailed = "treeInsert new";
                 }
                 else
-                    fFailed = 2;
+                    pcszFailed = "treeDelete old";
             }
             else
-                fFailed = 1;
+                pcszFailed = "treeFind old";
 
-            if (!brc)
+            if (pcszFailed)
+            {
+                CHAR sz[CCHMAXPATH];
+                _wpQueryFilename(pFSObject, sz, TRUE);
                 cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "tree funcs failed (%d), for old \"%s\", new \"%s\"",
-                       fFailed,
+                       "tree funcs failed (%s), for %s (old \"%s\", new \"%s\")",
+                       pcszFailed,
+                       sz,
                        pszOldRealName,
                        szNewUpperRealName);
+            }
         } // end if (strcmp(pszOldRealName, szNewUpperRealName))
     }
 
@@ -1115,11 +1131,12 @@ BOOL fdrDeleteFromContent(WPFolder *somSelf,
 
     XFolderData *somThis = XFolderGetData(somSelf);
     PFDRCONTENTITEM pNode;
+    ULONG flObject = objQueryFlags(pObject);
 
     _cObjects--;
 
     // remove from contents tree
-    if (_somIsA(pObject, _WPFileSystem))
+    if (flObject & OBJFL_WPFILESYSTEM)
     {
         // removing WPFileSystem:
         PCSZ pcszUpperRealName;
@@ -1134,7 +1151,7 @@ BOOL fdrDeleteFromContent(WPFolder *somSelf,
                 brc = TRUE;
         }
     }
-    else if (_somIsA(pObject, _WPAbstract))
+    else if (flObject & OBJFL_WPABSTRACT)
     {
         // removing WPAbstract:
         if (pNode = (PFDRCONTENTITEM)treeFind(
@@ -1198,10 +1215,6 @@ BOOL fdrIsObjectFiltered(WPFolder *pFolder,
     static xfTD_wpQueryFldrFilter pwpQueryFldrFilter = NULL;
     static xfTD_wpMatchesFilter pwpMatchesFilter = NULL;
 
-    _Pmpf((__FUNCTION__ "_:  obj %s in folder %s",
-                    _wpQueryTitle(pObject),
-                    _wpQueryTitle(pFolder) ));
-
     if (_wpQueryStyle(pObject) & OBJSTYLE_NOTVISIBLE)
         return TRUE;
 
@@ -1219,8 +1232,6 @@ BOOL fdrIsObjectFiltered(WPFolder *pFolder,
     {
         ULONG rc = -1;
 
-        _Pmpf(("   fdr has filter 0x%lX", pFilter));
-
         // now that we have the WPFilter object, we can try
         // to resolve the wpMatchesFilter method
         if (!pwpMatchesFilter)
@@ -1237,8 +1248,6 @@ BOOL fdrIsObjectFiltered(WPFolder *pFolder,
         {
             brc = FALSE;
         }
-
-        _Pmpf(("  pwpMatchesFilter returned %d", rc));
     }
 
     return (brc);
@@ -1283,8 +1292,8 @@ WPObject* fdrQueryContent(WPFolder *somSelf,
                 case QC_NEXT:
                     if (pobjFind)
                     {
-                        WPObject **ppObjNext = wpshGetNextObjPointer(pobjFind);
-                        if (ppObjNext)
+                        WPObject **ppObjNext;
+                        if (ppObjNext = wpshGetNextObjPointer(pobjFind))
                             pobjReturn = *ppObjNext;
                     }
                 break;
@@ -1342,8 +1351,7 @@ WPObject** fdrQueryContentArray(WPFolder *pFolder,
         XFolderData *somThis = XFolderGetData(pFolder);
         if (_cObjects)
         {
-            paObjects = (WPObject**)malloc(sizeof(WPObject*) * _cObjects);
-            if (paObjects)
+            if (paObjects = (WPObject**)malloc(sizeof(WPObject*) * _cObjects))
             {
                 WPObject **ppThis = paObjects;
                 WPObject *pObject;
@@ -2150,7 +2158,9 @@ BOOL fdrPopulate(WPFolder *somSelf,
 
     TRY_LOUD(excpt1)
     {
-        // _Pmpf((__FUNCTION__ ": POPULATING %s", pcszFolderFullPath));
+        #ifdef DEBUG_TURBOFOLDERS
+        _Pmpf((__FUNCTION__ ": POPULATING %s", pcszFolderFullPath));
+        #endif
 
         // there can only be one populate at a time
         if (fFindSem = !fdrRequestFindMutexSem(somSelf, SEM_INDEFINITE_WAIT))
@@ -2253,7 +2263,9 @@ BOOL fdrPopulate(WPFolder *somSelf,
     if (fFindSem)
         fdrReleaseFindMutexSem(somSelf);
 
-    // _Pmpf((__FUNCTION__ ": returning %d", fSuccess));
+    #ifdef DEBUG_TURBOFOLDERS
+    _Pmpf((__FUNCTION__ ": returning %d", fSuccess));
+    #endif
 
     return (fSuccess);
 }

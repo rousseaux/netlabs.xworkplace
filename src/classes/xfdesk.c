@@ -125,42 +125,6 @@ static BOOL    G_DesktopPopulated = FALSE;
  ********************************************************************/
 
 /*
- *@@ xwpInsertXFldDesktopMenuItemsPage:
- *      this actually adds the new "Menu items" page replacement
- *      to the Desktop's settings notebook.
- *
- *      This used to get called from XFldDesktop::wpAddSettingsPages,
- *      but with V0.9.19 we have overridden XFldDesktop::wpAddFileMenuPage
- *      instead.
- *
- *@@added V0.9.0
- */
-
-SOM_Scope ULONG  SOMLINK xfdesk_xwpInsertXFldDesktopMenuItemsPage(XFldDesktop *somSelf,
-                                                                  HWND hwndNotebook)
-{
-    INSERTNOTEBOOKPAGE inbp;
-    HMODULE         savehmod = cmnQueryNLSModuleHandle(FALSE);
-
-    // XFldDesktopData *somThis = XFldDesktopGetData(somSelf);
-    XFldDesktopMethodDebug("XFldDesktop","xfdesk_xwpInsertXFldDesktopMenuItemsPage");
-
-    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
-    inbp.somSelf = somSelf;
-    inbp.hwndNotebook = hwndNotebook;
-    inbp.hmod = savehmod;
-    inbp.usPageStyleFlags = 0; // BKA_MAJOR;    V0.9.19 (2002-04-17) [umoeller]
-    inbp.fEnumerate = TRUE;
-    inbp.pcszName = cmnGetString(ID_XSSI_DTPMENUPAGE);  // pszDtpMenuPage
-    inbp.ulDlgID = ID_XFD_EMPTYDLG; // ID_XSD_DTP_MENUITEMS; V0.9.16 (2002-01-09) [umoeller]
-    inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_DTP_MENUITEMS;
-    inbp.ulPageID = SP_DTP_MENUITEMS;
-    inbp.pfncbInitPage    = dtpMenuItemsInitPage;
-    inbp.pfncbItemChanged = dtpMenuItemsItemChanged;
-    return (ntbInsertPage(&inbp));
-}
-
-/*
  *@@ xwpInsertXFldDesktopStartupPage:
  *      this actually adds the new "Startup" page replacement
  *      to the Desktop's settings notebook.
@@ -362,6 +326,8 @@ SOM_Scope BOOL  SOMLINK xfdesk_wpSetup(XFldDesktop *somSelf,
  *      doesn't seem to be working right with XFolder,
  *      so we need to add all this manually (see
  *      XFldObject::wpFilterPopupMenu).
+ *
+ *@@changed V0.9.19 (2002-04-17) [umoeller]: adjusted for new menu handling
  */
 
 SOM_Scope ULONG  SOMLINK xfdesk_wpFilterPopupMenu(XFldDesktop *somSelf,
@@ -369,23 +335,16 @@ SOM_Scope ULONG  SOMLINK xfdesk_wpFilterPopupMenu(XFldDesktop *somSelf,
                                                   HWND hwndCnr,
                                                   BOOL fMultiSelect)
 {
-    // items to suppress
-    ULONG   ulSuppress = CTXT_CRANOTHER;
-
     // XFldDesktopData *somThis = XFldDesktopGetData(somSelf);
     XFldDesktopMethodDebug("XFldDesktop","xfdesk_wpFilterPopupMenu");
-
-    // suppress sort menu?
-    if (!cmnQuerySetting(sfDTMSort))
-        ulSuppress |= CTXT_SORT;
-    if (!cmnQuerySetting(sfDTMArrange))
-        ulSuppress |= CTXT_ARRANGE;
 
     return (XFldDesktop_parent_WPDesktop_wpFilterPopupMenu(somSelf,
                                                            ulFlags,
                                                            hwndCnr,
                                                            fMultiSelect)
-            & ~(ulSuppress));
+            & ~(    cmnQuerySetting(sflMenuDesktopWPS)
+                  | CTXT_CRANOTHER      // always filter this one out
+           ));
 }
 
 /*
@@ -648,38 +607,18 @@ SOM_Scope ULONG  SOMLINK xfdesk_wpAddDesktopArcRest1Page(XFldDesktop *somSelf,
 }
 
 /*
- *@@ wpAddFileMenuPage:
- *
- *      We add the menu items page below the other two menu
- *      pages.
- *
- *@@added V0.9.19 (2002-04-17) [umoeller]
- */
-
-SOM_Scope ULONG  SOMLINK xfdesk_wpAddFileMenuPage(XFldDesktop *somSelf,
-                                                  HWND hwndNotebook)
-{
-    XFldDesktopData *somThis = XFldDesktopGetData(somSelf);
-    XFldDesktopMethodDebug("XFldDesktop","xfdesk_wpAddFileMenuPage");
-
-    _xwpInsertXFldDesktopMenuItemsPage(somSelf, hwndNotebook);
-
-    return (XFldDesktop_parent_WPDesktop_wpAddFileMenuPage(somSelf,
-                                                           hwndNotebook));
-}
-
-/*
  *@@ wpAddSettingsPages:
  *      this WPObject instance method gets called by the WPS
  *      when the Settings view is opened to have all the
  *      settings page inserted into hwndNotebook.
  *
  *      As opposed to the "XFolder" page, which deals with instance
- *      data, we save the Desktop settings in the GLOBALSETTINGS
- *      structure, because there should ever be only one active
+ *      data, we save the Desktop settings with the global
+ *      settings, because there should ever be only one active
  *      Desktop.
  *
  *@@changed V0.9.0 [umoeller]: reworked settings pages
+ *@@changed V0.9.19 (2002-04-17) [umoeller]: removed menu page, this is now handled by XFldWPS
  */
 
 SOM_Scope BOOL  SOMLINK xfdesk_wpAddSettingsPages(XFldDesktop *somSelf,
@@ -767,7 +706,7 @@ SOM_Scope BOOL  SOMLINK xfdeskM_wpclsQuerySettingsPageSize(M_XFldDesktop *somSel
     {
         LONG lCompCY = 153; // this is the height of the "XDesktop" page,
                             // which is pretty large
-        if (doshIsWarp4())
+        if (G_fIsWarp4)
             // on Warp 4, reduce again, because we're moving
             // the notebook buttons to the bottom
             lCompCY -= WARP4_NOTEBOOK_OFFSET;

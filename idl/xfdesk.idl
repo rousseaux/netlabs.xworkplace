@@ -45,7 +45,9 @@ interface XFldDesktop : WPDesktop
      *
      */
 
-    ULONG xwpInsertXFldDesktopMenuItemsPage(in HWND hwndNotebook);
+    //# ULONG xwpInsertXFldDesktopMenuItemsPage(in HWND hwndNotebook);
+    //# removed V0.9.19 (2002-04-17) [umoeller]
+
     ULONG xwpInsertXFldDesktopStartupPage(in HWND hwndNotebook);
     ULONG xwpInsertXFldDesktopArchivesPage(in HWND hwndNotebook);
     ULONG xwpInsertXFldDesktopShutdownPage(in HWND hwndNotebook);
@@ -56,7 +58,6 @@ interface XFldDesktop : WPDesktop
   implementation {
 
     releaseorder:
-            xwpInsertXFldDesktopMenuItemsPage,
             xwpInsertXFldDesktopStartupPage,
             xwpInsertXFldDesktopArchivesPage,
             xwpInsertXFldDesktopShutdownPage,
@@ -101,7 +102,6 @@ interface XFldDesktop : WPDesktop
     wpPopulate: override;
 
     wpAddDesktopArcRest1Page: override;
-    wpAddFileMenuPage: override;
     wpAddSettingsPages: override;
 
 #ifdef __PRIVATE__

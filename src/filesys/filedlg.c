@@ -180,9 +180,9 @@ typedef struct _FILEDLGDATA
     LINKLIST    llDialogControls;       // list of dialog controls for focus etc.
 
     // data for drives view (left)
-    PSUBCLASSEDFOLDERVIEW psfvDrives;   // XFolder subclassed view data (needed
+    PSUBCLFOLDERVIEW psfvDrives;        // XFolder subclassed view data (needed
                                         // for cnr owner subclassing with XFolder's
-                                        // cooperation;
+                                        // cooperation);
                                         // created in fdlgFileDlg only once
 
     WPFolder    *pDrivesFolder;         // root folder to populate, whose contents
@@ -194,7 +194,7 @@ typedef struct _FILEDLGDATA
     PMINIRECORDCORE precFolderContentsShowing;   // currently selected record
 
     // data for files view (right)
-    PSUBCLASSEDFOLDERVIEW psfvFiles;    // XFolder subclassed view data (see above)
+    PSUBCLFOLDERVIEW psfvFiles;    // XFolder subclassed view data (see above)
     BOOL        fFilesFrameSubclassed;  // TRUE after first insert
 
     // transient "insert contents" thread, restarted on every selection
@@ -2498,7 +2498,7 @@ static MRESULT EXPENTRY fnwpSubclassedDrivesFrame(HWND hwndFrame, ULONG msg, MPA
 {
     MRESULT                 mrc = 0;
     BOOL                    fCallDefault = FALSE;
-    PSUBCLASSEDFOLDERVIEW   psfv = WinQueryWindowPtr(hwndFrame, QWL_USER);
+    PSUBCLFOLDERVIEW        psfv = WinQueryWindowPtr(hwndFrame, QWL_USER);
 
     switch (msg)
     {
@@ -2677,7 +2677,7 @@ static MRESULT EXPENTRY fnwpSubclassedFilesFrame(HWND hwndFrame, ULONG msg, MPAR
 {
     MRESULT                 mrc = 0;
     BOOL                    fCallDefault = FALSE;
-    PSUBCLASSEDFOLDERVIEW   psfv = WinQueryWindowPtr(hwndFrame, QWL_USER);
+    PSUBCLFOLDERVIEW        psfv = WinQueryWindowPtr(hwndFrame, QWL_USER);
 
     switch (msg)
     {

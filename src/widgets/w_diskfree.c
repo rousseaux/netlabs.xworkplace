@@ -128,7 +128,9 @@ static const XCENTERWIDGETCLASS G_WidgetClasses[]
  */
 
 // resolved function pointers from XFLDR.DLL
+PCMNLOADDLG pcmnLoadDlg = NULL;
 PCMNQUERYDEFAULTFONT pcmnQueryDefaultFont = NULL;
+PCMNQUERYHELPLIBRARY pcmnQueryHelpLibrary = NULL;
 PCMNQUERYMAINRESMODULEHANDLE pcmnQueryMainResModuleHandle = NULL;
 PCMNQUERYNLSMODULEHANDLE pcmnQueryNLSModuleHandle = NULL;
 PCMNSETCONTROLSFONT pcmnSetControlsFont = NULL;
@@ -164,7 +166,9 @@ PXSTRINIT pxstrInit = NULL;
 
 static const RESOLVEFUNCTION G_aImports[] =
     {
+        "cmnLoadDlg", (PFN*)&pcmnLoadDlg,
         "cmnQueryDefaultFont", (PFN*)&pcmnQueryDefaultFont,
+        "cmnQueryHelpLibrary", (PFN*)&pcmnQueryHelpLibrary,
         "cmnQueryMainResModuleHandle", (PFN*)&pcmnQueryMainResModuleHandle,
         "cmnQueryNLSModuleHandle", (PFN*)&pcmnQueryNLSModuleHandle,
         "cmnSetControlsFont", (PFN*)&pcmnSetControlsFont,
@@ -486,7 +490,7 @@ MRESULT EXPENTRY fnwpSettingsDlg(HWND hwnd,
                               MPFROMSHORT(1),
                               (MPARAM)0);
 
-            if(pSetup)
+            if (pSetup)
             {
                 memset(pSetup, 0, sizeof(SAMPLESETUP));
                 // store this in WIDGETSETTINGSDLGDATA
@@ -494,7 +498,7 @@ MRESULT EXPENTRY fnwpSettingsDlg(HWND hwnd,
 
                 WgtScanSetup(pData->pcszSetupString, pSetup);
 
-                if(pSetup->chDrive=='*')
+                if (pSetup->chDrive=='*')
                     WinSendDlgItemMsg(hwnd, 101,
                                       BM_CLICK,
                                       MPFROMSHORT(TRUE),
@@ -513,46 +517,49 @@ MRESULT EXPENTRY fnwpSettingsDlg(HWND hwnd,
                     WinSetDlgItemText(hwnd, 106, sz);
                 }
 
-                if(pSetup->lShow & DISKFREE_SHOW_FS)
+                if (pSetup->lShow & DISKFREE_SHOW_FS)
                     WinCheckButton(hwnd, 107, 1);
                 else
                     WinCheckButton(hwnd, 107, 0);
             }
-        break; }
+        }
+        break;
 
         case WM_DESTROY:
         {
-            if(pData)
+            if (pData)
             {
                 PSAMPLESETUP pSetup = (PSAMPLESETUP)pData->pUser;
-                if(pSetup)
+                if (pSetup)
                 {
                     WgtClearSetup(pSetup);
                     free(pSetup);
                 } // end if (pSetup)
              } // end if (pData)
-        break; }
+        }
+        break;
 
 
         case WM_CONTROL:
         {
-            if(SHORT2FROMMP(mp1)==BN_CLICKED)
+            if (SHORT2FROMMP(mp1)==BN_CLICKED)
             {
-                if(SHORT1FROMMP(mp1)==101) // multi-view
+                if (SHORT1FROMMP(mp1)==101) // multi-view
                 {
                     // disable groupbox+children
                     WinEnableWindow(WinWindowFromID(hwnd, 104), FALSE);
                     WinEnableWindow(WinWindowFromID(hwnd, 105), FALSE);
                     WinEnableWindow(WinWindowFromID(hwnd, 106), FALSE);
                 }
-                else if(SHORT1FROMMP(mp1)==102) // single-view
+                else if (SHORT1FROMMP(mp1)==102) // single-view
                 {
                     WinEnableWindow(WinWindowFromID(hwnd, 104), TRUE);
                     WinEnableWindow(WinWindowFromID(hwnd, 105), TRUE);
                     WinEnableWindow(WinWindowFromID(hwnd, 106), TRUE);
                 }
             }
-        break; }
+        }
+        break;
 
         case WM_COMMAND:
         {
@@ -563,7 +570,7 @@ MRESULT EXPENTRY fnwpSettingsDlg(HWND hwnd,
                     XSTRING strSetup;
                     PSAMPLESETUP pSetup=(PSAMPLESETUP)pData->pUser;
                     // 'store' settings in pSetup
-                    if(0==(long)WinSendDlgItemMsg(hwnd, 101,
+                    if (0==(long)WinSendDlgItemMsg(hwnd, 101,
                                                   BM_QUERYCHECKINDEX,
                                                   (MPARAM)0,
                                                   (MPARAM)0))
@@ -590,9 +597,11 @@ MRESULT EXPENTRY fnwpSettingsDlg(HWND hwnd,
                     pxstrClear(&strSetup);
 
                     WinDismissDlg(hwnd, TRUE);
-                break; }
+                }
+                break;
             }
-        break; }
+        }
+        break;
 
         default:
             mrc=WinDefDlgProc(hwnd, msg, mp1, mp2);
@@ -621,17 +630,13 @@ MRESULT EXPENTRY fnwpSettingsDlg(HWND hwnd,
 
 void EXPENTRY WgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
 {
-    HWND hwnd = WinLoadDlg(HWND_DESKTOP,         // parent
-                           pData->hwndOwner,
+    HWND hwnd;
+
+    if (hwnd = pcmnLoadDlg(pData->hwndOwner,
                            fnwpSettingsDlg,
-                           // hmod,
-                           pcmnQueryNLSModuleHandle(FALSE), // V0.9.11 (2001-04-18) [umoeller]
-                           // 1200,
                            ID_CRD_DISKFREEWGT_SETTINGS, // V0.9.11 (2001-04-18) [umoeller]
                            // pass original setup string with WM_INITDLG
-                           (PVOID)pData);
-
-    if(hwnd)
+                           (PVOID)pData))
     {
         pcmnSetControlsFont(hwnd,
                             1,
@@ -672,6 +677,7 @@ void EXPENTRY WgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
  *      implementation for WM_CREATE.
  *
  *@@changed V0.9.11 (2001-04-18) [umoeller]: moved icons to XWPRES.DLL
+ *@@changed V0.9.19 (2002-04-17) [umoeller]: "Help" context menu item was disabled, fixed
  */
 
 MRESULT WgtCreate(HWND hwnd,
@@ -689,6 +695,10 @@ MRESULT WgtCreate(HWND hwnd,
     // initialize binary setup structure from setup string
     WgtScanSetup(pWidget->pcszSetupString,
                  &pPrivate->Setup);
+
+    // help was missing V0.9.19 (2002-04-17) [umoeller]
+    pWidget->pcszHelpLibrary = pcmnQueryHelpLibrary();
+    pWidget->ulHelpPanelID = ID_XSH_WIDGET_DISKFREE_WC;
 
     // set window font (this affects all the cached presentation
     // spaces we use)
@@ -725,7 +735,7 @@ MRESULT WgtCreate(HWND hwnd,
 
     pPrivate->lCX = 10;          // we'll resize ourselves later
 
-    if(pPrivate->Setup.chDrive=='*')
+    if (pPrivate->Setup.chDrive=='*')
         pPrivate->chAktDrive = *pPrivate->szDrives;
     else
         pPrivate->chAktDrive = pPrivate->Setup.chDrive;
@@ -789,7 +799,8 @@ BOOL WgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
                         pszl->cx = pPrivate->lCX;      // desired width
                         pszl->cy = 20;                 // desired minimum height
                         brc = TRUE;
-                    break; }
+                    }
+                    break;
 
                     /*
                      * XN_SETUPCHANGED:
@@ -810,7 +821,7 @@ BOOL WgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
                         WgtScanSetup(pcszNewSetupString, &pPrivate->Setup);
 
                         // V0.9.11 (2001-04-19) [pr]: Don't change drive when selecting multi-view
-                        if(pPrivate->Setup.chDrive != '*')
+                        if (pPrivate->Setup.chDrive != '*')
                             pPrivate->chAktDrive=pPrivate->Setup.chDrive;
 
 
@@ -818,7 +829,8 @@ BOOL WgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
 
                         pPrivate->lCX=10;
                         WinInvalidateRect(pWidget->hwndWidget, NULL, FALSE);
-                    break; }
+                    }
+                    break;
                 }
             }
         } // end if (pPrivate)
@@ -860,7 +872,7 @@ void WgtPaint(HWND hwnd,
 
 
             // draw border
-            if(pPrivate->pWidget->pGlobals->flDisplayStyle & XCS_SUNKBORDERS)
+            if (pPrivate->pWidget->pGlobals->flDisplayStyle & XCS_SUNKBORDERS)
             {
                  ULONG ulBorder=1;
                  RECTL rcl2;
@@ -885,7 +897,7 @@ void WgtPaint(HWND hwnd,
             // calculate percent
             dPercentFree=pPrivate->dAktDriveFree*100/pPrivate->dAktDriveSize;
 
-            if(pPrivate->Setup.chDrive=='*') // == multi-view-clickable
+            if (pPrivate->Setup.chDrive=='*') // == multi-view-clickable
             {
                 // draw drive-icon
                 WinStretchPointer(hps,
@@ -898,7 +910,7 @@ void WgtPaint(HWND hwnd,
                                                              // pPrivate->dAktDriveSize/1024/1024...100%
                 // print drive-data                             pPrivate->dAktDriveFree/1024/1024...x%
                 // V0.9.11 (2001-04-19) [pr]: Fixed show drive type
-                if(pPrivate->Setup.lShow & DISKFREE_SHOW_FS)
+                if (pPrivate->Setup.lShow & DISKFREE_SHOW_FS)
                   pdrv_sprintf(szText, "%c: (%s)  %.fMB (%.f%%) free", pPrivate->chAktDrive,
                                                                   pPrivate->szAktDriveType,
                                                                   pPrivate->dAktDriveFree/1024/1024,
@@ -921,7 +933,7 @@ void WgtPaint(HWND hwnd,
                                   pPrivate->hptrDrives[pPrivate->bFSIcon],
                                   DP_NORMAL);
 
-                if(pPrivate->Setup.lShow & DISKFREE_SHOW_FS)
+                if (pPrivate->Setup.lShow & DISKFREE_SHOW_FS)
                   pdrv_sprintf(szText, "%c: (%s)  %.fMB", pPrivate->chAktDrive,
                                                      pPrivate->szAktDriveType,
                                                      pPrivate->dAktDriveFree/1024/1024);
@@ -941,7 +953,7 @@ void WgtPaint(HWND hwnd,
                             TXTBOX_COUNT,
                             aptlText);
 
-            if(((aptlText[TXTBOX_TOPRIGHT].x+bxCorr) > (rclWin.xRight+2)) || pPrivate->lCX==10)
+            if (((aptlText[TXTBOX_TOPRIGHT].x+bxCorr) > (rclWin.xRight+2)) || pPrivate->lCX==10)
             {
                 // we need more space: tell XCenter client
                 pPrivate->lCX = (aptlText[TXTBOX_TOPRIGHT].x + bxCorr+6);
@@ -1025,7 +1037,8 @@ void WgtPresParamChanged(HWND hwnd,
                     pPrivate->Setup.pszFont = strdup(pszFont);
                     pwinhFree(pszFont);
                 }
-            break; }
+            }
+            break;
 
             default:
                 fInvalidate = FALSE;
@@ -1076,7 +1089,7 @@ BOOL GetDriveInfo(PDISKFREEPRIVATE pPrivate)
     {
         if (!strcmp("LAN", pPrivate->szAktDriveType))
             pPrivate->bFSIcon = 1;
-        else if(!strcmp("CDFS", pPrivate->szAktDriveType))
+        else if (!strcmp("CDFS", pPrivate->szAktDriveType))
             pPrivate->bFSIcon = 2;
         else
             pPrivate->bFSIcon = 0;
@@ -1097,7 +1110,7 @@ void GetDrive(HWND hwnd,
               BOOL fNext)
 {
     PDISKFREEPRIVATE pPrivate = (PDISKFREEPRIVATE)pWidget->pUser;
-    if(pPrivate)
+    if (pPrivate)
     {
          // V0.9.11 (2001-04-19) [pr]: Rewrite to use drive char. rather than pointers
          CHAR *pCurrent = strchr(pPrivate->szDrives, pPrivate->chAktDrive);
@@ -1106,10 +1119,10 @@ void GetDrive(HWND hwnd,
              pPrivate->chAktDrive = *pPrivate->szDrives;
          else
          {
-            if(fNext)
+            if (fNext)
             {
                 // return the next drive
-                if(pCurrent >= pPrivate->szDrives+strlen(pPrivate->szDrives)-1)
+                if (pCurrent >= pPrivate->szDrives+strlen(pPrivate->szDrives)-1)
                     pPrivate->chAktDrive = *pPrivate->szDrives;
                 else
                     pPrivate->chAktDrive = *(pCurrent+1);
@@ -1117,7 +1130,7 @@ void GetDrive(HWND hwnd,
             else
             {
                 // return the prev drive
-                if(pCurrent == pPrivate->szDrives)
+                if (pCurrent == pPrivate->szDrives)
                     pPrivate->chAktDrive = *(pPrivate->szDrives+strlen(pPrivate->szDrives)-1);
                 else
                     pPrivate->chAktDrive = *(pCurrent-1);
@@ -1142,16 +1155,16 @@ void GetDrive(HWND hwnd,
 
 CHAR ValidateDrive(CHAR chDrive)
 {
-    if(   (chDrive >= 'a')
-       && (chDrive <= 'z')
-      )
+    if (    (chDrive >= 'a')
+         && (chDrive <= 'z')
+       )
         chDrive &= ~0x20;
 
-    if(   (chDrive != '*')
-       && (   (chDrive < 'A')
-           || (chDrive > 'Z')
-          )
-      )
+    if (    (chDrive != '*')
+         && (    (chDrive < 'A')
+              || (chDrive > 'Z')
+            )
+       )
         chDrive = 'C';
 
     return(chDrive);
@@ -1171,7 +1184,7 @@ void WgtDestroy(HWND hwnd,
     PDISKFREEPRIVATE pPrivate = (PDISKFREEPRIVATE)pWidget->pUser;
     if (pPrivate)
     {
-        if(pPrivate->ulTimerID)
+        if (pPrivate->ulTimerID)
            ptmrStopXTimer((PXTIMERSET)pPrivate->pWidget->pGlobals->pvXTimerSet,
                           hwnd,
                           pPrivate->ulTimerID);
@@ -1251,11 +1264,11 @@ MRESULT EXPENTRY fnwpSampleWidget(HWND hwnd,
         {
             // This was wrong. You must call the default window procedure unless you
             // handle all cases.  V0.9.11 (2001-04-27) [pr]
-            if(pWidget)
+            if (pWidget)
             {
                 PDISKFREEPRIVATE pPrivate = (PDISKFREEPRIVATE)pWidget->pUser;
 
-                if(pPrivate->Setup.chDrive=='*')
+                if (pPrivate->Setup.chDrive=='*')
                 {
                     WinSetPointer(HWND_DESKTOP, pPrivate->hptrHand);
                     mrc = (MRESULT)TRUE;        // V0.9.11 (2001-04-18) [umoeller]
@@ -1264,15 +1277,16 @@ MRESULT EXPENTRY fnwpSampleWidget(HWND hwnd,
             if (!mrc)
                 mrc = pWidget->pfnwpDefWidgetProc(hwnd, msg, mp1, mp2);
 
-        break; }
+        }
+        break;
 
         case WM_BUTTON1CLICK:
         case WM_BUTTON1DBLCLK:  // V0.9.11 (2001-04-19) [pr]
         {
-            if(pWidget)
+            if (pWidget)
             {
                 PDISKFREEPRIVATE pPrivate = (PDISKFREEPRIVATE)pWidget->pUser;
-                if(pPrivate->Setup.chDrive=='*')
+                if (pPrivate->Setup.chDrive=='*')
                 {
                     if ((long)WinGetKeyState(HWND_DESKTOP, VK_CTRL) & 0x8000)
                         GetDrive(hwnd, pWidget, FALSE);
@@ -1283,7 +1297,8 @@ MRESULT EXPENTRY fnwpSampleWidget(HWND hwnd,
 
             mrc = (MRESULT)TRUE;        // V0.9.11 (2001-04-18) [umoeller]
                                         // you processed the msg, so return TRUE
-        break; }
+        }
+        break;
 
 
         case WM_PAINT:
@@ -1292,7 +1307,7 @@ MRESULT EXPENTRY fnwpSampleWidget(HWND hwnd,
 
         case WM_TIMER:
         {
-            if(pWidget)
+            if (pWidget)
             {
                 // get private data from that widget data
                 PDISKFREEPRIVATE pPrivate = (PDISKFREEPRIVATE)pWidget->pUser;
@@ -1310,7 +1325,8 @@ MRESULT EXPENTRY fnwpSampleWidget(HWND hwnd,
                 if (GetDriveInfo(pPrivate)) // if values have changed update, display
                     WinInvalidateRect(hwnd, NULLHANDLE, TRUE);
             }
-        break; }
+        }
+        break;
 
         /*
          * WM_PRESPARAMCHANGED:

@@ -105,82 +105,26 @@
  ********************************************************************/
 
 static const CONTROLDEF
-    FolderViewGroup = CONTROLDEF_GROUP(
-                            LOAD_STRING, // ""Folder view settings"
-                            ID_XSD_FOLDERVIEWGROUP,
-                            -1,
-                            -1),
-    FullPathCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING, // "Show full path in folder ~title",
-                            ID_XSDI_FULLPATH,
-                            -1,
-                            -1),
-    KeepTitleCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING, // "Kee~p original title",
-                            ID_XSDI_KEEPTITLE,
-                            -1,
-                            -1),
-    MaxPathCharsText1 = CONTROLDEF_TEXT(
-                            LOAD_STRING, // "~Limit path to",
-                            ID_XSDI_MAXPATHCHARS_TX1,
-                            -1,
-                            -1),
+    FolderViewGroup = LOADDEF_GROUP(ID_XSD_FOLDERVIEWGROUP, DEFAULT_TABLE_WIDTH),
+    FullPathCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_FULLPATH),
+    KeepTitleCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_KEEPTITLE),
+    MaxPathCharsText1 = LOADDEF_TEXT(ID_XSDI_MAXPATHCHARS_TX1),
     MaxPathCharsSpin = CONTROLDEF_SPINBUTTON(
                             ID_XSDI_MAXPATHCHARS,
-                            60,
-                            -1),
-    MaxPathCharsText2 = CONTROLDEF_TEXT(
-                            LOAD_STRING, // "characters",
-                            ID_XSDI_MAXPATHCHARS_TX2,
-                            -1,
-                            -1),
-    TreeViewAutoScrollCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING, // "Auto-scroll Tree vie~ws"
-                            ID_XSDI_TREEVIEWAUTOSCROLL,
-                            -1,
-                            -1),
+                            30,
+                            STD_SPIN_HEIGHT),
+    MaxPathCharsText2 = LOADDEF_TEXT(ID_XSDI_MAXPATHCHARS_TX2),
+    TreeViewAutoScrollCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_TREEVIEWAUTOSCROLL),
 #ifndef __NOFDRDEFAULTDOCS__
-    FdrDefaultDocCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING, // "~Enable default documents in folders"
-                            ID_XSDI_FDRDEFAULTDOC,
-                            -1,
-                            -1),
-    FdrDefaultDocViewCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING, // "De~fault document = default folder view",
-                            ID_XSDI_FDRDEFAULTDOCVIEW,
-                            -1,
-                            -1),
+    FdrDefaultDocCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_FDRDEFAULTDOC),
+    FdrDefaultDocViewCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_FDRDEFAULTDOCVIEW),
 #endif
-    FdrAutoRefreshCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING, // "Enable folder ~auto-refresh"
-                            ID_XSDI_FDRAUTOREFRESH,
-                            -1,
-                            -1),
-    FdrDefaultViewGroup = CONTROLDEF_GROUP(
-                            LOAD_STRING, // "Default folder view"
-                            ID_XSDI_FDRVIEWDEFAULT_GROUP,
-                            -1,
-                            -1),
-    FdrViewInheritCB = CONTROLDEF_FIRST_AUTORADIO(
-                            LOAD_STRING, // "Use pare~nt folder's default view",
-                            ID_XSDI_FDRVIEW_INHERIT,
-                            -1,
-                            -1),
-    FdrViewIconCB = CONTROLDEF_NEXT_AUTORADIO(
-                            LOAD_STRING, // "~Icon",
-                            ID_XSDI_FDRVIEW_ICON,
-                            -1,
-                            -1),
-    FdrViewTreeCB = CONTROLDEF_NEXT_AUTORADIO(
-                            LOAD_STRING, // "T~ree",
-                            ID_XSDI_FDRVIEW_TREE,
-                            -1,
-                            -1),
-    FdrViewDetailsCB = CONTROLDEF_NEXT_AUTORADIO(
-                            LOAD_STRING, // "Detail~s",
-                            ID_XSDI_FDRVIEW_DETAILS,
-                            -1,
-                            -1);
+    FdrAutoRefreshCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_FDRAUTOREFRESH),
+    FdrDefaultViewGroup = LOADDEF_GROUP(ID_XSDI_FDRVIEWDEFAULT_GROUP, DEFAULT_TABLE_WIDTH),
+    FdrViewInheritCB = LOADDEF_FIRST_AUTORADIO(ID_XSDI_FDRVIEW_INHERIT),
+    FdrViewIconCB = LOADDEF_NEXT_AUTORADIO(ID_XSDI_FDRVIEW_ICON),
+    FdrViewTreeCB = LOADDEF_NEXT_AUTORADIO(ID_XSDI_FDRVIEW_TREE),
+    FdrViewDetailsCB = LOADDEF_NEXT_AUTORADIO(ID_XSDI_FDRVIEW_DETAILS);
 
 static const DLGHITEM dlgView[] =
     {
@@ -515,7 +459,6 @@ MRESULT fdrGridItemChanged(PNOTEBOOKPAGE pnbp,
                            USHORT usNotifyCode,
                            ULONG ulExtra)      // for checkboxes: contains new state
 {
-    // GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
     MRESULT mrc = (MRESULT)0;
     BOOL fSave = TRUE;
 
@@ -565,11 +508,6 @@ MRESULT fdrGridItemChanged(PNOTEBOOKPAGE pnbp,
             fSave = FALSE;
     }
 
-    // cmnUnlockGlobalSettings();
-
-    /* if (fSave)
-        cmnStoreGlobalSettings(); */
-
     return (mrc);
 }
 
@@ -583,18 +521,10 @@ MRESULT fdrGridItemChanged(PNOTEBOOKPAGE pnbp,
 
 static const CONTROLDEF
 #ifndef __NOFOLDERCONTENTS__
-    FavoriteFolderCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,
-                            ID_XSDI_FAVORITEFOLDER,
-                            -1,
-                            -1),
+    FavoriteFolderCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_FAVORITEFOLDER),
 #endif
 #ifndef __NOQUICKOPEN__
-    QuickOpenCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,
-                            ID_XSDI_QUICKOPEN,
-                            -1,
-                            -1),
+    QuickOpenCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_QUICKOPEN),
 #endif
     /* FullPathCB = CONTROLDEF_AUTOCHECKBOX(
                             LOAD_STRING,
@@ -608,22 +538,10 @@ static const CONTROLDEF
                             -1), */
             // already defined in "View" page above
 #ifndef __NOSNAPTOGRID__
-    SnapToGridCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,
-                            ID_XSDI_SNAPTOGRID,
-                            -1,
-                            -1),
+    SnapToGridCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_SNAPTOGRID),
 #endif
-    FdrHotkeysCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,
-                            ID_XSDI_ACCELERATORS,
-                            -1,
-                            -1),
-    StatusBarCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,
-                            ID_XSDI_ENABLESTATUSBAR,
-                            -1,
-                            -1);
+    FdrHotkeysCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_ACCELERATORS),
+    StatusBarCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_ENABLESTATUSBAR);
 
 
 static const DLGHITEM dlgXFolder[] =
@@ -986,7 +904,6 @@ MRESULT fdrStartupFolderItemChanged(PNOTEBOOKPAGE pnbp,
                                     ULONG ulItemID, USHORT usNotifyCode,
                                     ULONG ulExtra)      // for checkboxes: contains new state
 {
-    // GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
     ULONG   ulChange = 1;
     BOOL fUpdate = TRUE;
     XFldStartupData *somThis = XFldStartupGetData(pnbp->inbp.somSelf);
@@ -1066,11 +983,6 @@ MRESULT fdrStartupFolderItemChanged(PNOTEBOOKPAGE pnbp,
         default:
             ulChange = 0;
     }
-
-    // cmnUnlockGlobalSettings();
-
-    /* if (ulChange)
-        cmnStoreGlobalSettings(); */
 
     if (fUpdate)
         _wpSaveDeferred(pnbp->inbp.somSelf);

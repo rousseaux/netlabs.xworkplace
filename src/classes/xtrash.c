@@ -141,6 +141,7 @@
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
+#include "filesys\fdrmenus.h"           // shared folder menu logic
 #include "filesys\folder.h"             // XFolder implementation
 #include "filesys\icons.h"              // icons handling
 #include "filesys\trash.h"              // trash can implementation
@@ -900,6 +901,7 @@ SOM_Scope BOOL  SOMLINK xtrc_wpSetup(XWPTrashCan *somSelf, PSZ pszSetupString)
  *      We remove the "Open tree view" and "Create another" items.
  *
  *@@changed V0.9.1 (2000-01-31) [umoeller]: now removing "Create another" also
+ *@@changed V0.9.19 (2002-04-17) [umoeller]: now removing "switch to tree" also
  */
 
 SOM_Scope ULONG  SOMLINK xtrc_wpFilterPopupMenu(XWPTrashCan *somSelf,
@@ -914,7 +916,11 @@ SOM_Scope ULONG  SOMLINK xtrc_wpFilterPopupMenu(XWPTrashCan *somSelf,
                                                           ulFlags,
                                                           hwndCnr,
                                                           fMultiSelect)
-                    &~ (CTXT_TREE | CTXT_NEW));
+                    &~ (CTXT_TREE | CTXT_NEW
+                            // do not allow switching to Tree view
+                            // V0.9.19 (2002-04-17) [umoeller]
+                        | CTXT_CHANGETOTREE)
+           );
 }
 
 /*

@@ -6,7 +6,7 @@
 #ifndef anwcur_idl
 #define anwcur_idl
 
-#include "wpdataf.idl"
+#include <wpdataf.idl>
 #include <somcls.idl>
 
 interface M_XWPWinCursor;

@@ -53,6 +53,7 @@
 #define INCL_WINSHELLDATA       // Prf* functions
 #define INCL_WININPUT
 #define INCL_WINWINDOWMGR
+#define INCL_WINMENUS
 #define INCL_WINDIALOGS
 #define INCL_WINBUTTONS
 #define INCL_WINLISTBOXES
@@ -78,6 +79,7 @@
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
+#include "filesys\fdrmenus.h"           // shared folder menu logic
 #include "filesys\folder.h"
 
 // other SOM headers
@@ -307,6 +309,7 @@ BOOL fdrFindHotkey(USHORT usCommand,
  *@@changed V0.9.1 (2000-01-31) [umoeller]: changed prototype; this was using MPARAMS previously
  *@@changed V0.9.9 (2001-02-28) [pr]: allow multiple actions on same hotkey
  *@@changed V0.9.14 (2001-07-28) [umoeller]: now disabling sort and arrange hotkeys for desktop, if those menu items are disabled
+ *@@changed V0.9.19 (2002-04-17) [umoeller]: adjusted for new menu handling
  */
 
 BOOL fdrProcessFldrHotkey(WPFolder *somSelf,
@@ -386,19 +389,19 @@ BOOL fdrProcessFldrHotkey(WPFolder *somSelf,
                         case ID_XFMI_OFS_SORTBYEXT:
                         case ID_XFMI_OFS_SORTFOLDERSFIRST:
                         case ID_XFMI_OFS_SORTBYCLASS:
-                            if (!cmnQuerySetting(sfDTMSort))
+                            if (cmnQuerySetting(sflMenuDesktopWPS) & CTXT_SORT)
                                 fPost = FALSE;
                         break;
 
                         case WPMENUID_ARRANGE:
-                        case ID_WPMI_ARRANGEFROMTOP:
-                        case ID_WPMI_ARRANGEFROMLEFT:
-                        case ID_WPMI_ARRANGEFROMRIGHT:
-                        case ID_WPMI_ARRANGEFROMBOTTOM:
-                        case ID_WPMI_ARRANGEPERIMETER:
-                        case ID_WPMI_ARRANGEHORIZONTALLY:
-                        case ID_WPMI_ARRANGEVERTICALLY:
-                            if (!cmnQuerySetting(sfDTMArrange))
+                        case WPMENUID_ARRANGETOP: // ID_WPMI_ARRANGEFROMTOP:
+                        case WPMENUID_ARRANGELEFT: // ID_WPMI_ARRANGEFROMLEFT:
+                        case WPMENUID_ARRANGERIGHT: // ID_WPMI_ARRANGEFROMRIGHT:
+                        case WPMENUID_ARRANGEBOTTOM: // ID_WPMI_ARRANGEFROMBOTTOM:
+                        case WPMENUID_PERIMETER: // ID_WPMI_ARRANGEPERIMETER:
+                        case WPMENUID_SELECTEDHORZ: // ID_WPMI_ARRANGEHORIZONTALLY:
+                        case WPMENUID_SELECTEDVERT: // ID_WPMI_ARRANGEVERTICALLY:
+                            if (cmnQuerySetting(sflMenuDesktopWPS) & CTXT_ARRANGE)
                                 fPost = FALSE;
                         break;
 
@@ -512,20 +515,31 @@ FLDRHOTKEYDESC G_aDescriptions[FLDRHOTKEYCOUNT] =
          ID_XSSI_LB_SORTBYACCESSDATE, ID_WPMI_SORTBYACCESSDATE, ID_WPMI_SORTBYACCESSDATE, FALSE,
          ID_XSSI_LB_SORTBYCREATIONDATE, ID_WPMI_SORTBYCREATIONDATE, ID_WPMI_SORTBYCREATIONDATE, FALSE,
 
-         ID_XSSI_LB_SWITCHTOICONVIEW, ID_WPMI_SHOWICONVIEW, ID_WPMI_SHOWICONVIEW, TRUE,
-         ID_XSSI_LB_SWITCHTODETAILSVIEW, ID_WPMI_SHOWDETAILSVIEW, ID_WPMI_SHOWDETAILSVIEW, TRUE,
-         ID_XSSI_LB_SWITCHTOTREEVIEW, ID_WPMI_SHOWTREEVIEW, ID_WPMI_SHOWTREEVIEW, TRUE,
+         ID_XSSI_LB_SWITCHTOICONVIEW, WPMENUID_CHANGETOICON, WPMENUID_CHANGETOICON, // ID_WPMI_SHOWICONVIEW, ID_WPMI_SHOWICONVIEW,
+            TRUE,
+         ID_XSSI_LB_SWITCHTODETAILSVIEW, WPMENUID_CHANGETODETAILS, WPMENUID_CHANGETODETAILS, // ID_WPMI_SHOWDETAILSVIEW, ID_WPMI_SHOWDETAILSVIEW,
+            TRUE,
+         ID_XSSI_LB_SWITCHTOTREEVIEW, WPMENUID_CHANGETOTREE, WPMENUID_CHANGETOTREE, // ID_WPMI_SHOWTREEVIEW, ID_WPMI_SHOWTREEVIEW,
+            TRUE,
 
          ID_XSSI_LB_ARRANGEDEFAULT, WPMENUID_ARRANGE, WPMENUID_ARRANGE, FALSE,
-         ID_XSSI_LB_ARRANGEFROMTOP, ID_WPMI_ARRANGEFROMTOP, ID_WPMI_ARRANGEFROMTOP, TRUE,
-         ID_XSSI_LB_ARRANGEFROMLEFT, ID_WPMI_ARRANGEFROMLEFT, ID_WPMI_ARRANGEFROMLEFT, TRUE,
-         ID_XSSI_LB_ARRANGEFROMRIGHT, ID_WPMI_ARRANGEFROMRIGHT, ID_WPMI_ARRANGEFROMRIGHT, TRUE,
-         ID_XSSI_LB_ARRANGEFROMBOTTOM, ID_WPMI_ARRANGEFROMBOTTOM, ID_WPMI_ARRANGEFROMBOTTOM, TRUE,
-         ID_XSSI_LB_ARRANGEPERIMETER, ID_WPMI_ARRANGEPERIMETER, ID_WPMI_ARRANGEPERIMETER, TRUE,
-         ID_XSSI_LB_ARRANGEHORIZONTALLY, ID_WPMI_ARRANGEHORIZONTALLY, ID_WPMI_ARRANGEHORIZONTALLY, TRUE,
-         ID_XSSI_LB_ARRANGEVERTICALLY, ID_WPMI_ARRANGEVERTICALLY, ID_WPMI_ARRANGEVERTICALLY, TRUE,
+         ID_XSSI_LB_ARRANGEFROMTOP, WPMENUID_ARRANGETOP, WPMENUID_ARRANGETOP, // ID_WPMI_ARRANGEFROMTOP, ID_WPMI_ARRANGEFROMTOP,
+            TRUE,
+         ID_XSSI_LB_ARRANGEFROMLEFT, WPMENUID_ARRANGELEFT, WPMENUID_ARRANGELEFT, // ID_WPMI_ARRANGEFROMLEFT, ID_WPMI_ARRANGEFROMLEFT,
+            TRUE,
+         ID_XSSI_LB_ARRANGEFROMRIGHT, WPMENUID_ARRANGERIGHT, WPMENUID_ARRANGERIGHT, // ID_WPMI_ARRANGEFROMRIGHT, ID_WPMI_ARRANGEFROMRIGHT,
+            TRUE,
+         ID_XSSI_LB_ARRANGEFROMBOTTOM, WPMENUID_ARRANGEBOTTOM, WPMENUID_ARRANGEBOTTOM, // ID_WPMI_ARRANGEFROMBOTTOM, ID_WPMI_ARRANGEFROMBOTTOM,
+            TRUE,
+         ID_XSSI_LB_ARRANGEPERIMETER, WPMENUID_PERIMETER, WPMENUID_PERIMETER, // ID_WPMI_ARRANGEPERIMETER, ID_WPMI_ARRANGEPERIMETER,
+            TRUE,
+         ID_XSSI_LB_ARRANGEHORIZONTALLY, WPMENUID_SELECTEDHORZ, WPMENUID_SELECTEDHORZ, // ID_WPMI_ARRANGEHORIZONTALLY, ID_WPMI_ARRANGEHORIZONTALLY,
+            TRUE,
+         ID_XSSI_LB_ARRANGEVERTICALLY, WPMENUID_SELECTEDVERT, WPMENUID_SELECTEDVERT, // ID_WPMI_ARRANGEVERTICALLY, ID_WPMI_ARRANGEVERTICALLY,
+            TRUE,
 
-         ID_XSSI_LB_INSERT, ID_WPMI_PASTE, ID_WPMI_PASTE, TRUE,
+         ID_XSSI_LB_INSERT, WPMENUID_PASTE, WPMENUID_PASTE, // ID_WPMI_PASTE, ID_WPMI_PASTE,
+            TRUE,
 
          ID_XSSI_LB_SORTBYEXTENSION, ID_XFMI_OFS_SORTBYEXT, ID_XFMI_OFS_SORTBYEXT, FALSE,
          ID_XSSI_LB_OPENPARENTFOLDERANDCLOSE, ID_XFMI_OFS_OPENPARENTANDCLOSE, ID_XFMI_OFS_OPENPARENTANDCLOSE, FALSE,
@@ -629,6 +643,7 @@ static PXFLDHOTKEY FindHotkeyFromLBSel(HWND hwndDlg,
  *@@ AddHotkeyToMenuItem:
  *
  *@@added V0.9.2 (2000-03-08) [umoeller]
+ *@@changed V0.9.19 (2002-04-17) [umoeller]: adjusted for new menu
  */
 
 static VOID AddHotkeyToMenuItem(HWND hwndMenu,
@@ -671,12 +686,15 @@ static VOID AddHotkeyToMenuItem(HWND hwndMenu,
  *
  *@@added V0.9.2 (2000-03-06) [umoeller]
  *@@changed V0.9.4 (2000-06-11) [umoeller]: hotkeys showed up even if hotkeys were globally disabled; fixed
+ *@@changed V0.9.19 (2002-04-17) [umoeller]: adjusted for new menu handling
  */
 
 VOID fdrAddHotkeysToMenu(WPObject *somSelf,
                          HWND hwndCnr,
                          HWND hwndMenu) // in: menu created by wpDisplayMenu
 {
+    ULONG flMenuXWP = cmnQuerySetting(mnuQueryMenuXWPSetting(somSelf));
+                    // V0.9.19 (2002-04-17) [umoeller]
     if (
 #ifndef __ALWAYSFDRHOTKEYS__
             (cmnQuerySetting(sfFolderHotkeys)) // V0.9.4 (2000-06-11) [umoeller]
@@ -685,10 +703,10 @@ VOID fdrAddHotkeysToMenu(WPObject *somSelf,
             (cmnQuerySetting(sfShowHotkeysInMenus))
        )
     {
-        CHAR        szDescription[100];
-        // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
-        BOOL        // fIsFolder = _somIsA(somSelf, _WPFolder),
-                    fCnrWhitespace = wpshIsViewCnr(somSelf, hwndCnr);
+        CHAR    szDescription[100];
+        BOOL    fCnrWhitespace = wpshIsViewCnr(somSelf, hwndCnr);
+
+        ULONG   ulVarMenuOffset = cmnQuerySetting(sulVarMenuOffset);
 
         if (!fCnrWhitespace)
         {
@@ -720,16 +738,16 @@ VOID fdrAddHotkeysToMenu(WPObject *somSelf,
                                     TRUE);
 
             // copy filename
-            if (cmnQuerySetting(sfAddCopyFilenameItem))
+            if (!(flMenuXWP & XWPCTXT_COPYFILENAME))
             {
                 AddHotkeyToMenuItem(hwndMenu,
                                     ID_XFMI_OFS_COPYFILENAME_SHORT,
                                     ID_XFMI_OFS_COPYFILENAME_MENU,
-                                    cmnQuerySetting(sulVarMenuOffset));
+                                    ulVarMenuOffset);
                 AddHotkeyToMenuItem(hwndMenu,
                                     ID_XFMI_OFS_COPYFILENAME_FULL,
                                     ID_XFMI_OFS_COPYFILENAME_MENU, // same menu item!
-                                    cmnQuerySetting(sulVarMenuOffset));
+                                    ulVarMenuOffset);
             }
         }
         else
@@ -738,10 +756,8 @@ VOID fdrAddHotkeysToMenu(WPObject *somSelf,
             ULONG       ul;
 
             for (ul = 0;
-                 ul < (     sizeof(G_aDescriptions)
-                          / sizeof(G_aDescriptions[0])
-                      );
-                 ul++)
+                 ul < ARRAYITEMCOUNT(G_aDescriptions);
+                 ++ul)
             {
                 // menu modification allowed for this command?
                 if (G_aDescriptions[ul].usMenuCommand)
@@ -749,18 +765,16 @@ VOID fdrAddHotkeysToMenu(WPObject *somSelf,
                     AddHotkeyToMenuItem(hwndMenu,
                                         G_aDescriptions[ul].usPostCommand, // usPostCommand2Find
                                         G_aDescriptions[ul].usMenuCommand, // usMenuCommand
-                                        cmnQuerySetting(sulVarMenuOffset));
+                                        ulVarMenuOffset);
                 }
             }
 
-            // OK, now we got most menu items;
-            // we need a few more special checks
 #ifndef __NOMOVEREFRESHNOW__
-            if (cmnQuerySetting(sfMoveRefreshNow))
+            if (!(flMenuXWP & XWPCTXT_REFRESH_IN_MAIN))
                 AddHotkeyToMenuItem(hwndMenu,
                                     WPMENUID_REFRESH,
                                     ID_XFMI_OFS_REFRESH,
-                                    cmnQuerySetting(sulVarMenuOffset));
+                                    ulVarMenuOffset);
 #endif
         }
     } // end if (cmnQuerySetting(sfShowHotkeysInMenus))
@@ -881,8 +895,8 @@ static MRESULT EXPENTRY fnwpFolderHotkeyEntryField(HWND hwndEdit, ULONG msg, MPA
             }
 
             mrc = (MPARAM)TRUE;     // processed
-
-        break; }
+        }
+        break;
 
         case WM_DESTROY:
             free(pshef);
@@ -967,7 +981,6 @@ VOID fdrHotkeysInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
 
     if (flFlags & CBI_SET)
     {
-        BOOL fWarp4 = doshIsWarp4();
         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_ACCELERATORS,
                               cmnQuerySetting(sfFolderHotkeysDefault));
 
@@ -982,7 +995,7 @@ VOID fdrHotkeysInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
             if (    G_szLBEntries[i]
                     // skip Warp 4 entries on Warp 3
                     // V0.9.19 (2002-04-17) [umoeller]
-                 && (    (fWarp4)
+                 && (    (G_fIsWarp4)
                       || (!G_aDescriptions[i].bWarp4)
                     )
                )
@@ -1022,7 +1035,6 @@ MRESULT fdrHotkeysItemChanged(PNOTEBOOKPAGE pnbp,
                               USHORT usNotifyCode,
                               ULONG ulExtra)      // for checkboxes: contains new state
 {
-    // GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
     MRESULT mrc = (MRESULT)0;
 
     switch (ulItemID)
@@ -1127,7 +1139,8 @@ MRESULT fdrHotkeysItemChanged(PNOTEBOOKPAGE pnbp,
                 // save hotkeys to INIs
                 fdrStoreFldrHotkeys();
             }
-        break; }
+        }
+        break;
 
         case ID_XSDI_CLEARACCEL:
         {
@@ -1157,10 +1170,10 @@ MRESULT fdrHotkeysItemChanged(PNOTEBOOKPAGE pnbp,
                 winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_CLEARACCEL, FALSE);
                 fdrStoreFldrHotkeys();
             }
-        break; }
+        }
+        break;
 
         case DID_UNDO:
-        {
             // "Undo" button: restore the settings for this page
             cmnRestoreSettings(pnbp->pUser,
                                ARRAYITEMCOUNT(G_HotkeysBackup));
@@ -1172,10 +1185,9 @@ MRESULT fdrHotkeysItemChanged(PNOTEBOOKPAGE pnbp,
             // update the display by calling the INIT callback
             pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
             fdrStoreFldrHotkeys();
-        break; }
+        break;
 
         case DID_DEFAULT:
-        {
             // set the default settings for this settings page
             // (this is in common.c because it's also used at
             // Desktop startup)
@@ -1185,10 +1197,8 @@ MRESULT fdrHotkeysItemChanged(PNOTEBOOKPAGE pnbp,
             pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
             // cmnStoreGlobalSettings();
             fdrStoreFldrHotkeys();
-        break; }
+        break;
     }
-
-    // cmnUnlockGlobalSettings();
 
     return (mrc);
 }

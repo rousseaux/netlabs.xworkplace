@@ -1147,8 +1147,12 @@ SOM_Scope void  SOMLINK xo_wpInitData(XFldObject *somSelf)
             _flFlags |= OBJFL_WPFOLDER;
         }
     }
-    else if (_somIsA(somSelf, _WPShadow))
-        _flFlags = OBJFL_WPSHADOW;
+    else if (_somIsA(somSelf, _WPAbstract))
+    {
+        _flFlags = OBJFL_WPABSTRACT;
+        if (_somIsA(somSelf, _WPShadow))
+            _flFlags = OBJFL_WPSHADOW;
+    }
 
     // _fDeleted = FALSE;
     _cdateDeleted.year = 0;     // V0.9.16 (2001-12-06) [umoeller]
@@ -1660,7 +1664,7 @@ SOM_Scope BOOL  SOMLINK xo_wpSetTitle(XFldObject *somSelf,
                     // this was missing V0.9.17 (2002-02-05) [umoeller]
                     // abstracts don't save themselves otherwise
                     if (    (fIsInitialized)
-                         && (_somIsA(somSelf, _WPAbstract))
+                         && (_flFlags & OBJFL_WPABSTRACT)
                        )
                         _wpSaveDeferred(somSelf);
 
@@ -2110,6 +2114,7 @@ SOM_Scope BOOL  SOMLINK xo_wpRestoreData(XFldObject *somSelf,
  *      We remove default entries according to global settings.
  *
  *@@changed V0.9.5 (2000-09-20) [pr]: fixed context menu flags
+ *@@changed V0.9.19 (2002-04-17) [umoeller]: adjusted for new menu handling
  */
 
 SOM_Scope ULONG  SOMLINK xo_wpFilterPopupMenu(XFldObject *somSelf,
@@ -2149,7 +2154,7 @@ SOM_Scope ULONG  SOMLINK xo_wpFilterPopupMenu(XFldObject *somSelf,
             // with objects wrongly having Create Another options.
             /*| CTXT_CRANOTHER*/ ) // V0.9.5 (2000-09-20) [pr]
             // then disable items, this may include CTXT_CRANOTHER
-            & ~(cmnQuerySetting(sflDefaultMenuItems))
+            & ~(cmnQuerySetting(mnuQueryMenuWPSSetting(somSelf)))
         );
 }
 
@@ -2241,7 +2246,6 @@ SOM_Scope BOOL  SOMLINK xo_wpMenuItemSelected(XFldObject *somSelf,
     BOOL        brc = FALSE,
                 fCallDefault = FALSE;
 
-    // PGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
     // XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xo_wpMenuItemSelected");
 
@@ -2317,7 +2321,6 @@ SOM_Scope BOOL  SOMLINK xo_wpMenuItemSelected(XFldObject *somSelf,
             into the trash can as well... sigh
         case WPMENUID_DELETE:
         {
-            PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
             // this is never reached, because the subclassed folder
             // frame winproc already intercepts this
 
@@ -2337,7 +2340,7 @@ SOM_Scope BOOL  SOMLINK xo_wpMenuItemSelected(XFldObject *somSelf,
         break;
         */
 
-        case ID_WPM_LOCKINPLACE:    // V0.9.7 (2000-12-10) [umoeller]
+        case WPMENUID_LOCKEDINPLACE:    // V0.9.7 (2000-12-10) [umoeller]
             if (cmnQuerySetting(sfFixLockInPlace))
             {
                 // we have replaced the "lock in place" submenu:

@@ -423,7 +423,7 @@ SOM_Scope HWND  SOMLINK xdf_wpDisplayMenu(XFldDataFile *somSelf,
                                                                 ulReserved);
 
 #ifndef __NEVEREXTASSOCS__
-        if (!doshIsWarp4())
+        if (!G_fIsWarp4)
         {
             // on Warp 3, manipulate the "Open" submenu...
             if (cmnQuerySetting(sfExtAssocs))
@@ -465,6 +465,8 @@ SOM_Scope HWND  SOMLINK xdf_wpDisplayMenu(XFldDataFile *somSelf,
  *
  *      Also we need to do some fiddling with the "Open"
  *      submenu for the extended associations mechanism.
+ *
+ *@@changed V0.9.19 (2002-04-17) [umoeller]: adjusted for new menu handling
  */
 
 SOM_Scope ULONG  SOMLINK xdf_wpFilterPopupMenu(XFldDataFile *somSelf,
@@ -487,7 +489,7 @@ SOM_Scope ULONG  SOMLINK xdf_wpFilterPopupMenu(XFldDataFile *somSelf,
     // ready-made for this function; the "Workplace Shell"
     // notebook page for removing menu items sets this field with
     // the proper CTXT_xxx flags
-    ulMenuFilter &= ~cmnQuerySetting(sflDefaultMenuItems);
+    ulMenuFilter &= ~(cmnQuerySetting(mnuQueryMenuWPSSetting(somSelf)));
 
     return (ulMenuFilter);
 }
@@ -1547,6 +1549,50 @@ SOM_Scope WPObject*  SOMLINK xdf_wpCreateFromTemplate(XFldDataFile *somSelf,
                                                                 fLock));
 }
 
+/*
+ *@@ wpSetRealName:
+ *      this WPFileSystem instance method sets the real name
+ *      for the object.
+ *
+ *      This code normally only gets called by WPS-internal
+ *      implementations to update the internal representation
+ *      of the file. When this gets called, the file has
+ *      already been renamed on disk, I think.
+ *
+ *      See XWPFileSystem::wpSetRealName for details.
+ *
+ *      We might need to update the associated file icon
+ *      here, which previously didn't work.
+ *
+ *@@added V0.9.19 (2002-04-17) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xdf_wpSetRealName(XFldDataFile *somSelf,
+                                          PSZ pszName)
+{
+    BOOL brc;
+    PMINIRECORDCORE prec;
+
+    XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
+    XFldDataFileMethodDebug("XFldDataFile","xdf_wpSetRealName");
+
+    if (brc = XFldDataFile_parent_WPDataFile_wpSetRealName(somSelf,
+                                                           pszName))
+#ifndef __NEVEREXTASSOCS__
+        if (    (cmnQuerySetting(sfExtAssocs))
+             && (prec = _wpQueryCoreRecord(somSelf))
+             && (prec->hptrIcon)
+             // avoid this if we have an .ICON EA
+             && (!_fHasIconEA)
+           )
+            _wpSetAssociatedFileIcon(somSelf)
+#endif
+        ;
+
+    return brc;
+}
+
+
 /* ******************************************************************
  *
  *   XFldDataFile class methods
@@ -1588,7 +1634,7 @@ SOM_Scope void  SOMLINK xdfM_wpclsInitData(M_XFldDataFile *somSelf)
     // descendant classes will inherit this anyway
     // if (somSelf == _XFldDataFile)
     {
-        if (doshIsWarp4())
+        if (G_fIsWarp4)
         {
             // on Warp 4, override wpModifyMenu (Warp 4-specific method)
             wpshOverrideStaticMethod(somSelf, // _XFldDataFile,

@@ -2160,7 +2160,7 @@ HPOINTER icoQueryIconN(WPObject *pobj,    // in: object
         return (_wpQueryIcon(pobj));
 
     // index specified: this better be a folder, and we better be Warp 4
-    if (    (doshIsWarp4())
+    if (    (G_fIsWarp4)
          && (_somIsA(pobj, _WPFolder))
        )
     {
@@ -2218,7 +2218,7 @@ ULONG icoQueryIconDataN(WPObject *pobj,    // in: object
         return (_wpQueryIconData(pobj, pData));
 
     // index specified: this better be a folder, and we better be Warp 4
-    if (    (doshIsWarp4())
+    if (    (G_fIsWarp4)
          && (_somIsA(pobj, _WPFolder))
        )
     {
@@ -2265,7 +2265,7 @@ BOOL icoSetIconDataN(WPObject *pobj,    // in: object
         return (_wpSetIconData(pobj, pData));
 
     // index specified: this better be a folder, and we better be Warp 4
-    if (    (doshIsWarp4())
+    if (    (G_fIsWarp4)
          && (_somIsA(pobj, _WPFolder))
        )
     {
@@ -2300,7 +2300,7 @@ HPOINTER icoClsQueryIconN(SOMClass *pClassObject,
         return (_wpclsQueryIcon(pClassObject));
 
     // index specified: this better be a folder, and we better be Warp 4
-    if (    (doshIsWarp4())
+    if (    (G_fIsWarp4)
          && (_somDescendedFrom(pClassObject, _WPFolder))
        )
     {
@@ -2647,25 +2647,19 @@ BOOL icoIsUsingDefaultIcon(WPObject *pobj,
  *
  ********************************************************************/
 
+#define ICON_WIDTH          40
+#define BUTTON_WIDTH        45
+#define GROUPS_WIDTH       175
+#define EF_HEIGHT           25
+#define HOTKEY_EF_WIDTH     50
+
 static const CONTROLDEF
-    /* TitleText = CONTROLDEF_TEXT(
-                            LOAD_STRING,
-                            ID_XSDI_ICON_TITLE_TEXT,
-                            -1,
-                            -1), */
-    TitleGroup = CONTROLDEF_GROUP(
-                            LOAD_STRING,
-                            ID_XSDI_ICON_TITLE_TEXT,
-                            -1,
-                            -1),
-#define ICON_WIDTH 80
-#define BUTTON_WIDTH 90
-#define GROUPS_WIDTH 350
+    TitleGroup = LOADDEF_GROUP(ID_XSDI_ICON_TITLE_TEXT, SZL_AUTOSIZE),
     TitleEF = CONTROLDEF_MLE(
                             NULL,
                             ID_XSDI_ICON_TITLE_EF,
                             GROUPS_WIDTH - 2 * COMMON_SPACING,
-                            50),
+                            MAKE_SQUARE_CY(EF_HEIGHT)),
     IconGroup = CONTROLDEF_GROUP(
                             LOAD_STRING,
                             ID_XSDI_ICON_GROUP,
@@ -2679,7 +2673,7 @@ static const CONTROLDEF
             ID_XSDI_ICON_STATIC,
             CTL_COMMON_FONT,
             0,
-            {ICON_WIDTH, ICON_WIDTH},
+            {ICON_WIDTH, MAKE_SQUARE_CY(ICON_WIDTH)},
             COMMON_SPACING
         },
     IconExplanationText = CONTROLDEF_TEXT_WORDBREAK(
@@ -2690,17 +2684,17 @@ static const CONTROLDEF
                             LOAD_STRING,
                             ID_XSDI_ICON_EDIT_BUTTON,
                             -1,
-                            30),
+                            STD_BUTTON_HEIGHT),
     IconBrowseButton = CONTROLDEF_PUSHBUTTON(
                             LOAD_STRING,
                             DID_BROWSE,
                             -1,
-                            30),
+                            STD_BUTTON_HEIGHT),
     IconResetButton = CONTROLDEF_PUSHBUTTON(
                             LOAD_STRING,
                             ID_XSDI_ICON_RESET_BUTTON,
                             -1,
-                            30),
+                            STD_BUTTON_HEIGHT),
     ExtrasGroup = CONTROLDEF_GROUP(
                             LOAD_STRING,
                             ID_XSDI_ICON_EXTRAS_GROUP,
@@ -2714,33 +2708,25 @@ static const CONTROLDEF
     HotkeyEF = CONTROLDEF_ENTRYFIELD(
                             NULL,
                             ID_XSDI_ICON_HOTKEY_EF,
-                            100,
+                            HOTKEY_EF_WIDTH,
                             -1),
     HotkeyClearButton = CONTROLDEF_PUSHBUTTON(
                             LOAD_STRING,
                             ID_XSDI_ICON_HOTKEY_CLEAR,
                             -1,
-                            30),
+                            STD_BUTTON_HEIGHT),
     HotkeySetButton = CONTROLDEF_PUSHBUTTON(
                             LOAD_STRING,
                             ID_XSDI_ICON_HOTKEY_SET,
                             -1,
-                            30),
-    LockPositionCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,
-                            ID_XSDI_ICON_LOCKPOSITION_CB,
-                            -1,
-                            -1),
-    TemplateCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,
-                            ID_XSDI_ICON_TEMPLATE_CB,
-                            -1,
-                            -1),
+                            STD_BUTTON_HEIGHT),
+    LockPositionCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_ICON_LOCKPOSITION_CB),
+    TemplateCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_ICON_TEMPLATE_CB),
     DetailsButton = CONTROLDEF_PUSHBUTTON(
                             LOAD_STRING,
                             DID_DETAILS,
                             -1,
-                            30);
+                            STD_BUTTON_HEIGHT);
 
 static const DLGHITEM dlgObjIconFront[] =
     {
@@ -3383,7 +3369,7 @@ VOID XWPENTRY icoIcon1InitPage(PNOTEBOOKPAGE pnbp,
             // now rule out invalid flags:
 
             // disable "lock in place" on Warp 3
-            if (!doshIsWarp4())
+            if (!G_fIsWarp4)
                 pData->flIconPageFlags &= ~ICONFL_LOCKEDINPLACE;
             else
                 // backup old "locked in place" for "undo"
@@ -3753,8 +3739,9 @@ MRESULT XWPENTRY icoIcon1ItemChanged(PNOTEBOOKPAGE pnbp,
                     if (!(pszNewTitle = winhQueryWindowText(pnbp->hwndControl)))
                     {
                         // no title: restore old
-                        cmnMessageBoxMsg(pnbp->hwndDlgPage,
+                        cmnMessageBoxExt(pnbp->hwndDlgPage,
                                          104,   // error
+                                         NULL, 0,
                                          187,   // old name restored
                                          MB_OK);
                     }

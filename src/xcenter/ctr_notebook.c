@@ -1329,16 +1329,12 @@ static SLDCDATA
                      0           // scale 2 spacing
              };
 
-#define STYLE_SLIDERS_WIDTH        150
-#define STYLE_SLIDERS_HEIGHT        30
-#define STYLE_SLIDERTEXT_WIDTH      30
+#define STYLE_SLIDERS_WIDTH         75
+#define STYLE_SLIDERS_HEIGHT        15
+#define STYLE_SLIDERTEXT_WIDTH      15
 
 static const CONTROLDEF
-    BorderWidthGroup = CONTROLDEF_GROUP(
-                            LOAD_STRING,
-                            ID_CRDI_VIEW2_3DBORDER_GROUP,
-                            -1,
-                            -1),
+    BorderWidthGroup = LOADDEF_GROUP(ID_CRDI_VIEW2_3DBORDER_GROUP, SZL_AUTOSIZE),
     BorderWidthSlider =
         {
                 WC_SLIDER,
@@ -1352,7 +1348,7 @@ static const CONTROLDEF
                 CTL_COMMON_FONT,
                 0,
                 { STYLE_SLIDERS_WIDTH, STYLE_SLIDERS_HEIGHT },     // size
-                5,               // spacing
+                COMMON_SPACING,
                 &BorderWidthSliderCData
         },
     BorderWidthText = CONTROLDEF_TEXT(
@@ -1360,16 +1356,8 @@ static const CONTROLDEF
                             ID_CRDI_VIEW2_3DBORDER_TEXT,
                             STYLE_SLIDERTEXT_WIDTH,
                             -1),
-    DrawAll3DBordersCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,
-                            ID_CRDI_VIEW2_ALL3DBORDERS,
-                            -1,
-                            -1),
-    BorderSpacingGroup = CONTROLDEF_GROUP(
-                            LOAD_STRING,
-                            ID_CRDI_VIEW2_BDRSPACE_GROUP,
-                            -1,
-                            -1),
+    DrawAll3DBordersCB = LOADDEF_AUTOCHECKBOX(ID_CRDI_VIEW2_ALL3DBORDERS),
+    BorderSpacingGroup = LOADDEF_GROUP(ID_CRDI_VIEW2_BDRSPACE_GROUP, SZL_AUTOSIZE),
     BorderSpacingSlider =
         {
                 WC_SLIDER,
@@ -1383,7 +1371,7 @@ static const CONTROLDEF
                 CTL_COMMON_FONT,
                 0,
                 { STYLE_SLIDERS_WIDTH, STYLE_SLIDERS_HEIGHT },     // size
-                5,               // spacing
+                COMMON_SPACING,
                 &BorderSpacingSliderCData
         },
     BorderSpacingText = CONTROLDEF_TEXT(
@@ -1391,11 +1379,7 @@ static const CONTROLDEF
                             ID_CRDI_VIEW2_BDRSPACE_TEXT,
                             STYLE_SLIDERTEXT_WIDTH,
                             -1),
-    WidgetSpacingGroup = CONTROLDEF_GROUP(
-                            LOAD_STRING,
-                            ID_CRDI_VIEW2_WGTSPACE_GROUP,
-                            -1,
-                            -1),
+    WidgetSpacingGroup = LOADDEF_GROUP(ID_CRDI_VIEW2_WGTSPACE_GROUP, SZL_AUTOSIZE),
     WidgetSpacingSlider =
         {
                 WC_SLIDER,
@@ -1409,7 +1393,7 @@ static const CONTROLDEF
                 CTL_COMMON_FONT,
                 0,
                 { STYLE_SLIDERS_WIDTH, STYLE_SLIDERS_HEIGHT },     // size
-                5,               // spacing
+                COMMON_SPACING,
                 &WidgetSpacingSliderCData
         },
     WidgetSpacingText = CONTROLDEF_TEXT(
@@ -1417,37 +1401,13 @@ static const CONTROLDEF
                             ID_CRDI_VIEW2_WGTSPACE_TEXT,
                             STYLE_SLIDERTEXT_WIDTH,
                             -1),
-    SizingBarsCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,
-                            ID_CRDI_VIEW2_SIZINGBARS,
-                            -1,
-                            -1),
-    SpacingLinesCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,
-                            ID_CRDI_VIEW2_SPACINGLINES,
-                            -1,
-                            -1),
-    DefWidgetStylesGroup = CONTROLDEF_GROUP(
-                            LOAD_STRING,
-                            ID_CRDI_VIEW2_DEFSTYLES_GROUP,
-                            -1,
-                            -1),
+    SizingBarsCB = LOADDEF_AUTOCHECKBOX(ID_CRDI_VIEW2_SIZINGBARS),
+    SpacingLinesCB = LOADDEF_AUTOCHECKBOX(ID_CRDI_VIEW2_SPACINGLINES),
+    DefWidgetStylesGroup = LOADDEF_GROUP(ID_CRDI_VIEW2_DEFSTYLES_GROUP, SZL_AUTOSIZE),
 
-    FlatButtonsCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,
-                            ID_CRDI_VIEW2_FLATBUTTONS,
-                            -1,
-                            -1),
-    SunkBordersCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,
-                            ID_CRDI_VIEW2_SUNKBORDERS,
-                            -1,
-                            -1),
-    HatchInUseCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,
-                            ID_CRDI_VIEW2_HATCHINUSE,
-                            -1,
-                            -1);
+    FlatButtonsCB = LOADDEF_AUTOCHECKBOX(ID_CRDI_VIEW2_FLATBUTTONS),
+    SunkBordersCB = LOADDEF_AUTOCHECKBOX(ID_CRDI_VIEW2_SUNKBORDERS),
+    HatchInUseCB = LOADDEF_AUTOCHECKBOX(ID_CRDI_VIEW2_HATCHINUSE);
 
 static const DLGHITEM dlgXCenterStyle[] =
     {

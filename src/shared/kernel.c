@@ -672,7 +672,7 @@ VOID krnEnableReplaceRefresh(BOOL fEnable)
  *      returns TRUE if "replace folder refresh" has been
  *      enabled.
  *
- *      This setting is not in the GLOBALSETTINGS because
+ *      This setting is not in the global settings because
  *      it has a separate entry in OS2.INI.
  *
  *      Note that this returns the current value of the
@@ -1034,6 +1034,7 @@ static VOID T1M_DaemonReady(VOID)
  *@@changed V0.9.7 (2000-11-29) [umoeller]: fixed memory leak
  *@@changed V0.9.13 (2001-06-23) [umoeller]: now using winhQuerySwitchList
  *@@changed V0.9.16 (2001-11-22) [umoeller]: now disallowing object open during startup and shutdown
+ *@@changed V0.9.19 (2002-04-24) [umoeller]: fixed major screwups during startup and shutdown
  */
 
 static VOID T1M_OpenObjectFromHandle(HWND hwndObject,
@@ -1042,21 +1043,40 @@ static VOID T1M_OpenObjectFromHandle(HWND hwndObject,
 {
     TRY_LOUD(excpt1)
     {
-        HOBJECT hobjStart;
+        HOBJECT hobjStart = (HOBJECT)mp1;
 
         // make sure the desktop is already fully populated
         // V0.9.16 (2001-10-25) [umoeller]
-        if (!G_KernelGlobals.fDesktopPopulated)
-            return;
+        // if (!G_KernelGlobals.fDesktopPopulated)
+           //  return;      // ouch, we have an exception handler V0.9.19 (2002-04-24) [umoeller]
 
         // make sure we're not shutting down,
         // but allow object hotkeys while confirmation
         // dialogs are open
         // V0.9.16 (2001-11-22) [umoeller]
-        if (xsdIsShutdownRunning() > 1)
-            return;
+        /* if (xsdIsShutdownRunning() > 1)
+            return;     // ouch we have an exception handler here
+                        // V0.9.19 (2002-04-24) [umoeller]
+        */
 
-        if (hobjStart = (HOBJECT)mp1)
+        if (!G_KernelGlobals.fDesktopPopulated)
+            hobjStart = NULLHANDLE;
+        // now, allow objects while we're still shuttting windows
+        // down, but not after all windows have been closed
+        // V0.9.19 (2002-04-24) [umoeller]
+        else switch (xsdQueryShutdownState())
+        {
+            // case XSD_IDLE: // this is OK
+            case XSD_CONFIRMING: // this is not
+            case XSD_INITIALIZING: // this is not
+            // case XSD_CLOSINGWINDOWS: // this is OK
+            // case XSD_CANCELLED: // this is OK
+            case XSD_ALLCLOSED_SAVING: // this is not
+            case XSD_SAVEDONE_FLUSHING: // this is not
+                hobjStart = NULLHANDLE;
+        }
+
+        if (hobjStart)
         {
             if ((ULONG)hobjStart >= SPECIALOBJ_FIRST)
             {
@@ -1075,9 +1095,11 @@ static VOID T1M_OpenObjectFromHandle(HWND hwndObject,
                     case SPECIALOBJ_DESKTOPCONTEXTMENU: // 0xFFFF0001
                     {
                         // show Desktop's context menu V0.9.1 (99-12-19) [umoeller]
-                        WPObject* pActiveDesktop = cmnQueryActiveDesktop();
-                        HWND hwndFrame = cmnQueryActiveDesktopHWND();
-                        if ((pActiveDesktop) && (hwndFrame))
+                        WPObject* pActiveDesktop;
+                        HWND hwndFrame;
+                        if (    (pActiveDesktop = cmnQueryActiveDesktop())
+                             && (hwndFrame = cmnQueryActiveDesktopHWND())
+                           )
                         {
                             HWND hwndClient = wpshQueryCnrFromFrame(hwndFrame);
                             POINTL ptlPopup = { 0, 0 }; // default: lower left
@@ -1535,7 +1557,7 @@ static MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1
          *@@ T1M_PAGERCLOSED:
          *      this gets posted by dmnKillXPager when
          *      the user has closed the XPager window.
-         *      We then disable XPager in the GLOBALSETTINGS.
+         *      We then disable XPager in the global settings.
          *
          *      Parameters:
          *      -- BOOL mp1: if TRUE, XPager will be disabled
@@ -1603,8 +1625,9 @@ static MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1
          */
 
         case T1M_WELCOME:
-            if (cmnMessageBoxMsg(NULLHANDLE,
+            if (cmnMessageBoxExt(NULLHANDLE,
                                  121,
+                                 NULL, 0,
                                  211,       // create objects?
                                  MB_OKCANCEL)
                     == MBID_OK)

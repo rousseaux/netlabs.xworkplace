@@ -655,42 +655,42 @@ SOM_Scope BOOL  SOMLINK xtro_wpModifyPopupMenu(XWPTrashObject *somSelf,
                                                               iPosition);
     if (brc)
     {
-        // PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
         ULONG           ulAttr = 0;
 
-        XWPTrashCan     *pTrashCan = _wpQueryFolder(somSelf);
-        if (pTrashCan)
-            if (_somIsA(pTrashCan, _XWPTrashCan))
-            {
-                ULONG   ulOfs = cmnQuerySetting(sulVarMenuOffset);
-                CHAR    szDestroyItem[300];
-                if (_xwpTrashCanBusy(pTrashCan,
-                                     0))     // query busy
-                    // currently populating:
-                    ulAttr = MIA_DISABLED;
+        XWPTrashCan     *pTrashCan;
+        if (    (pTrashCan = _wpQueryFolder(somSelf))
+             && (_somIsA(pTrashCan, _XWPTrashCan))
+           )
+        {
+            ULONG   ulOfs = cmnQuerySetting(sulVarMenuOffset);
+            CHAR    szDestroyItem[300];
+            if (_xwpTrashCanBusy(pTrashCan,
+                                 0))     // query busy
+                // currently populating:
+                ulAttr = MIA_DISABLED;
 
-                // insert separator
-                winhInsertMenuSeparator(hwndMenu, MIT_END,
-                                        (ulOfs + ID_XFMI_OFS_SEPARATOR));
+            // insert separator
+            winhInsertMenuSeparator(hwndMenu, MIT_END,
+                                    (ulOfs + ID_XFMI_OFS_SEPARATOR));
 
-                // insert "Restore object"
-                winhInsertMenuItem(hwndMenu, MIT_END,
-                                   (ulOfs + ID_XFMI_OFS_TRASHRESTORE),
-                                   cmnGetString(ID_XTSI_TRASHRESTORE),  // pszTrashRestore
-                                   MIS_TEXT,   // style
-                                   ulAttr);    // attributes, can be "disabled"
+            // insert "Restore object"
+            winhInsertMenuItem(hwndMenu, MIT_END,
+                               (ulOfs + ID_XFMI_OFS_TRASHRESTORE),
+                               cmnGetString(ID_XTSI_TRASHRESTORE),  // pszTrashRestore
+                               MIS_TEXT,   // style
+                               ulAttr);    // attributes, can be "disabled"
 
-                // insert "Destroy object"
-                strcpy(szDestroyItem, cmnGetString(ID_XTSI_TRASHDESTROY)) ; // pszTrashDestroy
-                if (cmnQuerySetting(sflTrashConfirmEmpty) & TRSHCONF_DESTROYOBJ)
-                    // confirm destroy on:
-                    strcat(szDestroyItem, "...");
-                winhInsertMenuItem(hwndMenu, MIT_END,
-                                   (ulOfs + ID_XFMI_OFS_TRASHDESTROY),
-                                   szDestroyItem,
-                                   MIS_TEXT,   // style
-                                   ulAttr);    // attributes, can be "disabled"
-            }
+            // insert "Destroy object"
+            strcpy(szDestroyItem, cmnGetString(ID_XTSI_TRASHDESTROY)) ; // pszTrashDestroy
+            if (cmnQuerySetting(sflTrashConfirmEmpty) & TRSHCONF_DESTROYOBJ)
+                // confirm destroy on:
+                strcat(szDestroyItem, "...");
+            winhInsertMenuItem(hwndMenu, MIT_END,
+                               (ulOfs + ID_XFMI_OFS_TRASHDESTROY),
+                               szDestroyItem,
+                               MIS_TEXT,   // style
+                               ulAttr);    // attributes, can be "disabled"
+        }
     }
 
     return (brc);

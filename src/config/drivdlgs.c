@@ -560,12 +560,9 @@ static BOOL ShowDriverDlg(HWND hwndOwner,
 {
     BOOL brc = FALSE;
     HWND hwndDlg;
-    if (hwndDlg = WinLoadDlg(HWND_DESKTOP,     // parent
-                             hwndOwner,
+    if (hwndDlg = cmnLoadDlg(hwndOwner,
                              pfnwp,
                                 // dlg proc as in DRIVERSPEC
-                             cmnQueryNLSModuleHandle(FALSE),
-                                // dlg module as in DRIVERSPEC
                              ulID,
                                 // resource ID as in DRIVERSPEC
                              pDlgData))

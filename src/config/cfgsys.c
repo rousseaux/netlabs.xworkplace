@@ -753,7 +753,7 @@ VOID cfgConfigInitPage(PNOTEBOOKPAGE pnbp,
                                                (ulMinFree / 1024));
                     }
 
-                    if (doshIsWarp4() > 1) // V0.9.13 (2001-06-23) [umoeller]
+                    if (G_fIsWarp4 > 1) // V0.9.13 (2001-06-23) [umoeller]
                     {
                         BOOL fSet = FALSE;
                         // Warp 4.5 (WSeB kernel) running:
@@ -1195,8 +1195,8 @@ VOID cfgConfigInitPage(PNOTEBOOKPAGE pnbp,
         }
         else if (pnbp->inbp.ulPageID == SP_WPS)
         {
-            winhEnableDlgItem(hwndDlgPage, ID_OSDI_AUTO_WARPCENTER, (doshIsWarp4()));
-            winhEnableDlgItem(hwndDlgPage, ID_OSDI_AUTOREFRESHFOLDERS, (doshIsWarp4()));
+            winhEnableDlgItem(hwndDlgPage, ID_OSDI_AUTO_WARPCENTER, !!G_fIsWarp4);
+            winhEnableDlgItem(hwndDlgPage, ID_OSDI_AUTOREFRESHFOLDERS, !!G_fIsWarp4);
         }
         else if (pnbp->inbp.ulPageID == SP_ERRORS)
         {
@@ -1630,13 +1630,10 @@ MRESULT cfgConfigItemChanged(PNOTEBOOKPAGE pnbp,
             if (G_pSysPathSelected)
             {
                 // V0.9.9 (2001-02-28) [pr]
-                G_hwndDlgDoubleFiles = WinLoadDlg(HWND_DESKTOP,        // parent
-                                                  pnbp->hwndFrame, // inbp.hwndPage,     // owner
-                                                  fnwpDoubleFilesDlg,
-                                                  cmnQueryNLSModuleHandle(FALSE),
-                                                  ID_OSD_FILELIST,
-                                                  (PVOID) hwndDlgPage);
-                if (G_hwndDlgDoubleFiles)
+                if (G_hwndDlgDoubleFiles = cmnLoadDlg(pnbp->hwndFrame, // inbp.hwndPage,     // owner
+                                                      fnwpDoubleFilesDlg,
+                                                      ID_OSD_FILELIST,
+                                                      (PVOID)hwndDlgPage))
                 {
                     winhCenterWindow(G_hwndDlgDoubleFiles);
                     cmnSetControlsFont(G_hwndDlgDoubleFiles, 0, 5000);
@@ -1654,10 +1651,11 @@ MRESULT cfgConfigItemChanged(PNOTEBOOKPAGE pnbp,
          */
 
         case DID_APPLY:
-            // PCKERNELGLOBALS   pKernelGlobals = krnQueryGlobals();
             // have the user confirm this
-            if (cmnMessageBoxMsg(pnbp->hwndFrame, // inbp.hwndPage,
-                                 100, 101,
+            if (cmnMessageBoxExt(pnbp->hwndFrame, // inbp.hwndPage,
+                                 100,
+                                 NULL, 0,
+                                 101,
                                  MB_YESNO | MB_DEFBUTTON2)
                               == MBID_YES)
             {
@@ -1732,7 +1730,7 @@ MRESULT cfgConfigItemChanged(PNOTEBOOKPAGE pnbp,
                             csysSetParameter(&pszConfigSys, "SWAPPATH=", szTemp,
                                              TRUE); // convert to upper case if necessary
 
-                            if (doshIsWarp4() > 1) // V0.9.13 (2001-06-23) [umoeller]
+                            if (G_fIsWarp4 > 1) // V0.9.13 (2001-06-23) [umoeller]
                             {
                                 // Warp 4.5 (WSeB kernel) running:
                                 LONG l;
@@ -1962,7 +1960,7 @@ MRESULT cfgConfigItemChanged(PNOTEBOOKPAGE pnbp,
                             csysSetParameter(&pszConfigSys, "SET RESTARTOBJECTS=", szTemp,
                                     TRUE); // convert to upper case if necessary
 
-                            if (doshIsWarp4())
+                            if (G_fIsWarp4)
                                 if (winhIsDlgItemChecked(hwndDlgPage, ID_OSDI_AUTOREFRESHFOLDERS))
                                     csysDeleteLine(pszConfigSys, "SET AUTOREFRESHFOLDERS=");
                                 else
@@ -2056,7 +2054,7 @@ MRESULT cfgConfigItemChanged(PNOTEBOOKPAGE pnbp,
                     {
                         // "file written" msg
                         PCSZ apsz = szBackup;
-                        cmnMessageBoxMsgExt(pnbp->hwndFrame,
+                        cmnMessageBoxExt(pnbp->hwndFrame,
                                             100,
                                             &apsz, 1,
                                             136,              // backup created as %1
@@ -2126,7 +2124,7 @@ MRESULT cfgConfigItemChanged(PNOTEBOOKPAGE pnbp,
                                            2, 1000,
                                            2);
 
-                    if (doshIsWarp4() > 1) // V0.9.13 (2001-06-23) [umoeller]
+                    if (G_fIsWarp4 > 1) // V0.9.13 (2001-06-23) [umoeller]
                     {
                         // Warp 4.5 (WSeB kernel) running:
                         winhSetDlgItemChecked(hwndDlgPage, ID_OSDI_HIMEM_DLLBASINGOFF, TRUE);
@@ -2241,7 +2239,7 @@ MRESULT cfgConfigItemChanged(PNOTEBOOKPAGE pnbp,
                 case SP_SCHEDULER:
                     winhSetDlgItemSpinData(hwndDlgPage, ID_OSDI_MAXTHREADS,
                                            128, 4096,
-                                           (doshIsWarp4())
+                                           (G_fIsWarp4)
                                                 ? 512
                                                 : 256);
                     winhSetDlgItemSpinData(hwndDlgPage, ID_OSDI_MAXWAIT,
@@ -2323,11 +2321,11 @@ MRESULT cfgConfigItemChanged(PNOTEBOOKPAGE pnbp,
                     winhSetDlgItemChecked(hwndDlgPage, ID_OSDI_AUTO_CONNECTIONS, TRUE);
                     winhSetDlgItemChecked(hwndDlgPage, ID_OSDI_AUTO_LAUNCHPAD, TRUE);
                     winhSetDlgItemChecked(hwndDlgPage, ID_OSDI_AUTO_WARPCENTER,
-                                    (doshIsWarp4()));
+                                    !!G_fIsWarp4);
                     winhSetDlgItemChecked(hwndDlgPage, ID_OSDI_RESTART_YES, TRUE);
                     winhSetDlgItemChecked(hwndDlgPage, ID_OSDI_RESTART_REBOOT, FALSE);
                     winhSetDlgItemChecked(hwndDlgPage, ID_OSDI_AUTOREFRESHFOLDERS,
-                                    (doshIsWarp4()));
+                                    !!G_fIsWarp4);
                 break;
 
                 case SP_ERRORS:

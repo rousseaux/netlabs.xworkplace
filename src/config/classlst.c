@@ -2037,7 +2037,7 @@ static MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1,
                                 if ( pscd->preccSource->pwps->pszReplacedWithClasses)
                                 {
                                     // show warning
-                                    cmnMessageBoxMsgExt(hwndDlg,
+                                    cmnMessageBoxExt(hwndDlg,
                                                 116,
                                                 pTable, 2, 139,
                                                 MB_OK);
@@ -2053,14 +2053,14 @@ static MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1,
                                    )
                                 {
                                     // XFolder class
-                                    if (cmnMessageBoxMsgExt(hwndDlg,
+                                    if (cmnMessageBoxExt(hwndDlg,
                                                 116,
                                                 pTable, 1, 120,
                                                 MB_YESNO | MB_DEFBUTTON2)
                                             == MBID_YES)
                                         fAllow = TRUE;
                                 } else
-                                    if (cmnMessageBoxMsgExt(hwndDlg,
+                                    if (cmnMessageBoxExt(hwndDlg,
                                                 116,
                                                 pTable, 1, 118,
                                                 MB_YESNO | MB_DEFBUTTON2)
@@ -2084,13 +2084,13 @@ static MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1,
 
                                         // free(pscd->pRecordSelected->pwps);
 
-                                        cmnMessageBoxMsgExt(hwndDlg,
+                                        cmnMessageBoxExt(hwndDlg,
                                                 121,
                                                 pTable, 1, 122,
                                                 MB_OK);
                                     } else
                                         // error
-                                        cmnMessageBoxMsgExt(hwndDlg,
+                                        cmnMessageBoxExt(hwndDlg,
                                                 104,
                                                 pTable, 1, 119,
                                                 MB_OK);
@@ -2141,7 +2141,7 @@ static MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1,
                                 PCSZ pTable[2];
                                 pTable[0] = pscd->preccSource->pwps->pszClassName;
                                 pTable[1] = scd.szClassSelected;
-                                if (cmnMessageBoxMsgExt(hwndDlg,
+                                if (cmnMessageBoxExt(hwndDlg,
                                             116,
                                             pTable, 2, 124,
                                             MB_YESNO | MB_DEFBUTTON2)
@@ -2151,13 +2151,13 @@ static MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1,
                                             scd.szClassSelected,
                                             TRUE))
                                         // success
-                                        cmnMessageBoxMsgExt(hwndDlg,
+                                        cmnMessageBoxExt(hwndDlg,
                                                 121,
                                                 pTable, 2, 129,
                                                 MB_OK);
                                     else
                                         // error
-                                        cmnMessageBoxMsgExt(hwndDlg,
+                                        cmnMessageBoxExt(hwndDlg,
                                                 104,
                                                 pTable, 2, 130,
                                                 MB_OK);
@@ -2187,7 +2187,7 @@ static MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1,
                                    )
                                 {
                                     // some XFolder class
-                                    if (cmnMessageBoxMsgExt(hwndDlg,
+                                    if (cmnMessageBoxExt(hwndDlg,
                                                 116,
                                                 pTable, 2, 125,
                                                 MB_YESNO | MB_DEFBUTTON2)
@@ -2195,7 +2195,7 @@ static MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1,
                                         fAllow = TRUE;
                                 }
                                 else
-                                    if (cmnMessageBoxMsgExt(hwndDlg,
+                                    if (cmnMessageBoxExt(hwndDlg,
                                                 116,
                                                 pTable, 2, 126,
                                                 MB_YESNO | MB_DEFBUTTON2)
@@ -2209,13 +2209,13 @@ static MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1,
                                             pscd->preccSource->pwps->pszClassName,
                                             FALSE))
                                         // success
-                                        cmnMessageBoxMsgExt(hwndDlg,
+                                        cmnMessageBoxExt(hwndDlg,
                                                 121,
                                                 pTable, 2, 127,
                                                 MB_OK);
                                     else
                                         // error
-                                        cmnMessageBoxMsgExt(hwndDlg,
+                                        cmnMessageBoxExt(hwndDlg,
                                                 104,
                                                 pTable, 2, 128,
                                                 MB_OK);
@@ -2235,7 +2235,7 @@ static MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1,
                                 pTable[0] = pscd->preccSource->pwps->pszClassName;
                                 pTable[1] = _wpclsQueryTitle(pscd->preccSource->pwps->pClassObject);
 
-                                if (cmnMessageBoxMsgExt(hwndDlg,
+                                if (cmnMessageBoxExt(hwndDlg,
                                             116,
                                             pTable, 2, 141,
                                             MB_YESNO | MB_DEFBUTTON2)
@@ -3128,7 +3128,7 @@ BOOL cllMenuItemSelected(XWPClassList *somSelf,
 
                 if (arc == NO_ERROR)
                     // success
-                    cmnMessageBoxMsgExt(hwndDlg,
+                    cmnMessageBoxExt(hwndDlg,
                                         121,
                                         pTable, 1, 131,
                                         MB_OK);
@@ -3136,7 +3136,7 @@ BOOL cllMenuItemSelected(XWPClassList *somSelf,
                 {
                     // error:
                     sprintf(szErrorCode, "%d", arc);
-                    cmnMessageBoxMsgExt(hwndDlg,
+                    cmnMessageBoxExt(hwndDlg,
                                         104,
                                         pTable, 3, 132,
                                         MB_OK);

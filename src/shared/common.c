@@ -198,6 +198,8 @@ static CHAR             G_szRunDirectory[CCHMAXPATH]; // V0.9.14
 
 static PTMFMSGFILE      G_pXWPMsgFile = NULL;        // V0.9.16 (2001-10-08) [umoeller]
 
+extern BOOL             G_fIsWarp4 = FALSE;     // V0.9.19 (2002-04-24) [umoeller]
+
 // Declare C runtime prototypes, because there are no headers
 // for these:
 
@@ -498,7 +500,7 @@ PCSZ cmnQueryLanguageCode(VOID)
  *@@changed V0.9.0 (99-11-14) [umoeller]: made this reentrant, finally
  */
 
-BOOL cmnSetLanguageCode(PSZ pszLanguage)
+BOOL cmnSetLanguageCode(PCSZ pcszLanguage)
 {
     BOOL brc = FALSE;
 
@@ -508,7 +510,10 @@ BOOL cmnSetLanguageCode(PSZ pszLanguage)
     {
         if (fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__))
         {
-            strcpy(G_szLanguageCode, pszLanguage);
+            if (!pcszLanguage)
+                pcszLanguage = DEFAULT_LANGUAGECODE;
+
+            strcpy(G_szLanguageCode, pcszLanguage);
             G_szLanguageCode[3] = 0;
 
             brc = PrfWriteProfileString(HINI_USERPROFILE,
@@ -585,7 +590,7 @@ VOID cmnHelpNotFound(ULONG ulPanelID)
            psz };
     sprintf(sz, "%d", ulPanelID);
 
-    cmnMessageBoxMsgExt(NULLHANDLE,
+    cmnMessageBoxExt(NULLHANDLE,
                         104,            // title
                         apsz,
                         2,
@@ -724,6 +729,8 @@ PSZ cmnQueryBootLogoFile(VOID)
  *@@changed V0.9.7 (2000-12-09) [umoeller]: restructured to fix mutex hangs with load errors
  *@@changed V0.9.9 (2001-03-07) [umoeller]: now loading strings from array
  *@@changed V0.9.19 (2002-04-02) [umoeller]: msg file wasn't reloaded on NLS change, fixed
+ *@@changed V0.9.19 (2002-04-24) [umoeller]: version checks never worked, fixed
+ *@@changed V0.9.19 (2002-04-24) [umoeller]: reverting to 001 on errors now
  */
 
 HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
@@ -736,44 +743,44 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
          || (fEnforceReload)
        )
     {
+        BOOL    fRetry = TRUE;
         CHAR    szResourceModuleName[CCHMAXPATH];
+        CHAR    szError[1000] = "";
 
-        // get the XFolder path first
-        if (!cmnQueryXWPBasePath(szResourceModuleName))
-            cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                   "cmnQueryXWPBasePath failed.");
-        else
+        while (fRetry)      // V0.9.19 (2002-04-24) [umoeller]
         {
-            APIRET arc = NO_ERROR;
-            // now compose module name from language code
-            strcat(szResourceModuleName, "\\bin\\xfldr");
-            strcat(szResourceModuleName, cmnQueryLanguageCode());
-            strcat(szResourceModuleName, ".dll");
+            fRetry = FALSE;
 
-            // try to load the module
-            if (arc = DosLoadModule(NULL,
-                                    0,
-                                    szResourceModuleName,
-                                    (PHMODULE)&hmodLoaded))
-            {
-                // error:
-                // display an error string;
-                // since we don't have NLS, this must be in English...
-                CHAR szError[1000];
-                sprintf(szError, "XWorkplace was unable to load its National "
-                                 "Language Support DLL \"%s\". DosLoadModule returned "
-                                 "error %d.",
-                        szResourceModuleName,
-                        arc);
-                // log
-                cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       szError);
-                // and display
-                winhDebugBox(HWND_DESKTOP,
-                             "XWorkplace: Error",
-                             szError);
-            }
+            // get the XFolder path first
+            if (!cmnQueryXWPBasePath(szResourceModuleName))
+                strcpy(szError, "cmnQueryXWPBasePath failed.");
             else
+            {
+                APIRET arc = NO_ERROR;
+                // now compose module name from language code
+                strcat(szResourceModuleName, "\\bin\\xfldr");
+                strcat(szResourceModuleName, cmnQueryLanguageCode());
+                strcat(szResourceModuleName, ".dll");
+
+                // try to load the module
+                if (arc = DosLoadModule(NULL,
+                                        0,
+                                        szResourceModuleName,
+                                        &hmodLoaded))
+                {
+                    // error:
+                    // display an error string;
+                    // since we don't have NLS, this must be in English...
+                    sprintf(szError,
+                            "XWorkplace was unable to load its National "
+                            "Language Support DLL \"%s\". DosLoadModule returned "
+                            "error %d.",
+                            szResourceModuleName,
+                            arc);
+                }
+            }
+
+            if (hmodLoaded)
             {
                 // module loaded alright!
                 // hmodLoaded has the new module handle
@@ -789,11 +796,12 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
                     // so we always have the versions in there automatically.
                     // MINIMUM_NLS_VERSION (dlgids.h too) contains the minimum
                     // NLS version level that this XFolder version requires.
-                    CHAR   szTest[30] = "";
-                    LONG   lLength;
+                    CHAR    szTest[30] = "";
+                    LONG    lLength;
+                    ULONG   ulMajor, ulMinor, ulRevision;
                     cmnSetDlgHelpPanel(-1);
                     lLength = WinLoadString(habDesktop,
-                                            G_hmodNLS,
+                                            hmodLoaded, // bullshit G_hmodNLS,
                                             ID_XSSI_XFOLDERVERSION,
                                             sizeof(szTest), szTest);
                     #ifdef DEBUG_LANGCODES
@@ -803,34 +811,47 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
                     if (lLength == 0)
                     {
                         // version string not found: complain
-                        winhDebugBox(HWND_DESKTOP,
-                                     "XWorkplace",
-                                     "The requested file is not an XWorkplace National Language Support DLL.");
+                        sprintf(szError,
+                                "The requested file \"%s\" is not an XWorkplace National Language Support DLL.",
+                                szResourceModuleName);
                     }
-                    else if (memcmp(szTest, MINIMUM_NLS_VERSION, 4) < 0)
-                            // szTest has NLS version (e.g. "0.81 beta"),
-                            // MINIMUM_NLS_VERSION has minimum version required
-                            // (e.g. "0.9.0")
+                    // V0.9.19 (2002-04-24) [umoeller]
+                    else if (strcmp(szTest, MINIMUM_NLS_VERSION))
                     {
                         // version level not sufficient:
                         // load dialog from _old_ NLS DLL which says
                         // that the DLL is too old; if user presses
                         // "Cancel", we abort loading the DLL
-                        if (WinDlgBox(HWND_DESKTOP,
-                                      HWND_DESKTOP,
-                                      (PFNWP)cmn_fnwpDlgWithHelp,
-                                      G_hmodNLS,        // still the old one
-                                      ID_XFD_WRONGVERSION,
-                                      (PVOID)NULL)
-                                == DID_CANCEL)
+                        // V0.9.19 (2002-04-24) [umoeller]
+                        // no, this is not working on startup since we
+                        // have no old NLS DLL
+                        sprintf(szError,
+                                "The version number of the National Language Support DLL \"%s\" "
+                                "(%s) does not match the XWorkplace version that is running "
+                                "(%s). Loading this module might lead to serious problems or "
+                                "frequent error messages. Do you wish to load the module anyway?",
+                                szResourceModuleName,
+                                szTest,
+                                MINIMUM_NLS_VERSION);
+                        if (WinMessageBox(HWND_DESKTOP,
+                                          NULLHANDLE,
+                                          szError,
+                                          "XWorkplace: NLS Warning",
+                                          0,
+                                          MB_MOVEABLE | MB_YESNO)
+                                == MBID_NO)
                         {
-                            winhDebugBox(HWND_DESKTOP,
-                                         "XWorkplace",
-                                         "The new National Language Support DLL was not loaded.");
+                            sprintf(szError,
+                                    "The new National Language Support DLL \"%s\" was not loaded.",
+                                    szResourceModuleName);
+                            // revert to English below
                         }
                         else
+                        {
                             // user wants outdated module:
                             hmodReturn = hmodLoaded;
+                            szError[0] = '\0';
+                        }
                     }
                     else
                     {
@@ -841,8 +862,28 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
                 else
                     // no enfore reload: that's OK always
                     hmodReturn = hmodLoaded;
-            } // end else if (arc != NO_ERROR)
-        } // end if (cmnQueryXWPBasePath(szResourceModuleName))
+            } // end if (hmodLoaded)
+
+            if (szError[0])
+            {
+                // error occured:
+                // if current language is not English, revert to 001
+                // and retry V0.9.19 (2002-04-24) [umoeller]
+                if (strcmp(DEFAULT_LANGUAGECODE, cmnQueryLanguageCode()))
+                {
+                    strcat(szError, " Reverting to 001 for US English.");
+                    cmnSetLanguageCode(DEFAULT_LANGUAGECODE);
+                    fRetry = TRUE;
+                }
+
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       szError);
+
+                winhDebugBox(NULLHANDLE,
+                             "XWorkplace: NLS Error",
+                             szError);
+            }
+        } // while (fRetry)      // V0.9.19 (2002-04-24) [umoeller]
     } // end if (    (G_hmodNLS == NULLHANDLE)  || (fEnforceReload) )
     else
         // no (re)load neccessary:
@@ -867,49 +908,40 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
             HMODULE hmodOld = G_hmodNLS;
             BOOL fLocked = FALSE;
 
-            TRY_LOUD(excpt1)
+            if (krnLock(__FILE__, __LINE__, __FUNCTION__))
             {
-                if (fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__))
-                {
-                    G_hmodNLS = hmodLoaded;
-                }
-            }
-            CATCH(excpt1) { } END_CATCH();
-
-            if (fLocked)
-            {
+                G_hmodNLS = hmodLoaded;
                 krnUnlock();
-                fLocked = FALSE;
-            }
-
-            // DosExitMustComplete(&ulNesting);
-
-            // free all NLS strings we ever used;
-            // they will be dynamically re-loaded
-            // with the new NLS module
-            UnloadAllStrings();
-
-            // close TMF message file to force reload
-            // V0.9.19 (2002-04-02) [umoeller]
-            TRY_LOUD(excpt1)
-            {
-                if (fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__))
-                {
-                    if (G_pXWPMsgFile)
-                        tmfCloseMessageFile(&G_pXWPMsgFile);
-                }
-            }
-            CATCH(excpt1) { } END_CATCH();
-
-            if (fLocked)
-            {
-                krnUnlock();
-                fLocked = FALSE;
             }
 
             if (hmodOld)
+            {
+                // free all NLS strings we ever used;
+                // they will be dynamically re-loaded
+                // with the new NLS module
+                UnloadAllStrings();
+
+                // close TMF message file to force reload
+                // V0.9.19 (2002-04-02) [umoeller]
+                TRY_LOUD(excpt1)
+                {
+                    if (fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__))
+                    {
+                        if (G_pXWPMsgFile)
+                            tmfCloseMessageFile(&G_pXWPMsgFile);
+                    }
+                }
+                CATCH(excpt1) { } END_CATCH();
+
+                if (fLocked)
+                {
+                    krnUnlock();
+                    fLocked = FALSE;
+                }
+
                 // after all this, unload the old resource module
                 DosFreeModule(hmodOld);
+            }
         }
     }
 
@@ -920,6 +952,46 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
 
     // return (new?) module handle
     return (hmodReturn);
+}
+
+/*
+ *@@ cmnLoadDlg:
+ *      wrapper around WinLoadDlg to load something
+ *      from the NLS resource DLL. This will also display
+ *      a message box if loading the dialog failed...
+ *      might be useful for NLS translators to receive
+ *      a meaningful message if the resource DLLs are
+ *      not working correctly.
+ *
+ *@@added V0.9.19 (2002-04-24) [umoeller]
+ */
+
+HWND cmnLoadDlg(HWND hwndOwner,
+                PFNWP pfnwp,
+                ULONG idResource,
+                PVOID pvCreateParam)
+{
+    HWND hwnd;
+
+    if (!(hwnd = WinLoadDlg(HWND_DESKTOP,           // parent
+                            hwndOwner,
+                            pfnwp,
+                            cmnQueryNLSModuleHandle(FALSE),
+                            idResource,
+                            pvCreateParam)))
+    {
+        CHAR sz[100];
+        sprintf(sz,
+                "Error loading dialog %d from NLS resource DLL.",
+                idResource);
+        cmnMessageBox(hwndOwner,
+                      "NLS Error",
+                      sz,
+                      NULLHANDLE, // no help
+                      MB_CANCEL);
+    }
+
+    return hwnd;
 }
 
 /* ******************************************************************
@@ -1078,7 +1150,7 @@ void cmnLoadString(HAB habDesktop,
                        szBuf))
         // loading failed:
         sprintf(szBuf,
-                "cmnLoadString error: string resource %d not found in module 0x%lX",
+                "string resource %d not found in module 0x%lX",
                 ulID,
                 hmodResource);
 
@@ -1330,36 +1402,18 @@ static VOID UnloadAllStrings(VOID)
 // V0.9.16 (2001-10-08) [umoeller]
 
 const CONTROLDEF
-    G_OKButton = CONTROLDEF_DEFPUSHBUTTON(     // added V0.9.19 (2002-04-17) [umoeller]
-                            LOAD_STRING,
-                            DID_OK,
-                            100,
-                            30),
-    G_CancelButton = CONTROLDEF_PUSHBUTTON( // added V0.9.19 (2002-04-17) [umoeller]
-                            LOAD_STRING,
-                            DID_CANCEL,
-                            100,
-                            30),
-    G_UndoButton = CONTROLDEF_PUSHBUTTON(
-                            LOAD_STRING, // "~Undo",
-                            DID_UNDO,
-                            100,
-                            30),
-    G_DefaultButton = CONTROLDEF_PUSHBUTTON(
-                            LOAD_STRING, // "~Default",
-                            DID_DEFAULT,
-                            100,
-                            30),
-    G_HelpButton = CONTROLDEF_HELPPUSHBUTTON(
-                            LOAD_STRING, // "~Help",
-                            DID_HELP,
-                            100,
-                            30),
+    G_OKButton = LOADDEF_DEFPUSHBUTTON(DID_OK),
+            // added V0.9.19 (2002-04-17) [umoeller]
+    G_CancelButton = LOADDEF_PUSHBUTTON(DID_CANCEL),
+            // added V0.9.19 (2002-04-17) [umoeller]
+    G_UndoButton = LOADDEF_PUSHBUTTON(DID_UNDO),
+    G_DefaultButton = LOADDEF_PUSHBUTTON(DID_DEFAULT),
+    G_HelpButton = LOADDEF_HELPPUSHBUTTON(DID_HELP),
     G_Spacing = CONTROLDEF_TEXT(
-                            "",
+                            NULL,
                             -1,
-                            20,
-                            2);
+                            8,
+                            1);
 
 /*
  *@@ cmnLoadDialogStrings:
@@ -1503,7 +1557,7 @@ PCSZ cmnQueryThemeDirectory(VOID)
                     ;
                 else if (cmnQueryXWPBasePath(G_szXWPThemeDir))
                 {
-                    if (doshIsWarp4())
+                    if (G_fIsWarp4)
                         strcat(G_szXWPThemeDir, "\\themes\\warp4");
                     else
                         strcat(G_szXWPThemeDir, "\\themes\\warp3");
@@ -2625,6 +2679,7 @@ typedef const struct _SETTINGINFO *PCSETTINGINFO;
  *      will blow up.
  *
  *@@added V0.9.16 (2002-01-05) [umoeller]
+ *@@changed V0.9.19 (2002-04-17) [umoeller]: adjusted for new menu handling
  */
 
 static const SETTINGINFO G_aSettingInfos[] =
@@ -2635,11 +2690,11 @@ static const SETTINGINFO G_aSettingInfos[] =
             "fIconReplacements",
 #endif
 
-#ifndef __NOMOVEREFRESHNOW__
+/* #ifndef __NOMOVEREFRESHNOW__
         sfMoveRefreshNow, FIELDOFFSET(OLDGLOBALSETTINGS, __fMoveRefreshNow), 4,
             SP_MENUS_FILE, 0,
             "fMoveRefreshNow",
-#endif
+#endif */
 
 #ifndef __ALWAYSSUBCLASS__
         sfNoSubclassing, FIELDOFFSET(OLDGLOBALSETTINGS, __fNoSubclassing), 4,
@@ -2648,11 +2703,8 @@ static const SETTINGINFO G_aSettingInfos[] =
 #endif
 
 #ifndef __NOFOLDERCONTENTS__
-        sfAddFolderContentItem, FIELDOFFSET(OLDGLOBALSETTINGS, __fAddFolderContentItem), 4,
-            SP_MENUS_FILE, 1,
-            "fAddFolderContentItem",
         sfFolderContentShowIcons, FIELDOFFSET(OLDGLOBALSETTINGS, __fFolderContentShowIcons), 4,
-            SP_MENUS_FILE, 1,
+            SP_MENUSETTINGS, 1,
             "fFolderContentShowIcons",
 #endif
 
@@ -2833,66 +2885,10 @@ static const SETTINGINFO G_aSettingInfos[] =
         sfMenuCascadeMode, FIELDOFFSET(OLDGLOBALSETTINGS, MenuCascadeMode), 4,
             SP_26CONFIGITEMS, 1,
             "fMenuCascadeMode",
-        sflDefaultMenuItems, FIELDOFFSET(OLDGLOBALSETTINGS, DefaultMenuItems), 4,
-            SP_MENUS_COMMON, 0,         // @@todo settings page is wrong
-            "flDefaultMenuItems",
 
-        sfFileAttribs, FIELDOFFSET(OLDGLOBALSETTINGS, FileAttribs), 4,
-            SP_MENUS_FILE, 1,
-            "fFileAttribs",
-
-        sfRemoveLockInPlaceItem, FIELDOFFSET(OLDGLOBALSETTINGS, RemoveLockInPlaceItem), 4,
-            SP_MENUS_COMMON, 0,
-            "fRemoveLockInPlaceItem",
-        sfRemoveFormatDiskItem, FIELDOFFSET(OLDGLOBALSETTINGS, RemoveFormatDiskItem), 4,
-            SP_MENUS_FILE, 0,
-            "fRemoveFormatDiskItem",
-        sfRemoveCheckDiskItem, FIELDOFFSET(OLDGLOBALSETTINGS, RemoveCheckDiskItem), 4,
-            SP_MENUS_FILE, 0,
-            "fRemoveCheckDiskItem",
-        sfRemoveViewMenu, FIELDOFFSET(OLDGLOBALSETTINGS, RemoveViewMenu), 4,
-            SP_MENUS_FILE, 0,
-            "fRemoveViewMenu",
-        sfRemovePasteItem, FIELDOFFSET(OLDGLOBALSETTINGS, RemovePasteItem), 4,
-            SP_MENUS_FILE, 0,
-            "fRemovePasteItem",
-        sfAddCopyFilenameItem, FIELDOFFSET(OLDGLOBALSETTINGS, AddCopyFilenameItem), 4,
-            SP_MENUS_FILE, 1,
-            "fAddCopyFilenameItem",
-        sfAddSelectSomeItem, FIELDOFFSET(OLDGLOBALSETTINGS, AddSelectSomeItem), 4,
-            SP_MENUS_FILE, 1,
-            "fAddSelectSomeItem",
-        sfExtendFldrViewMenu, FIELDOFFSET(OLDGLOBALSETTINGS, ExtendFldrViewMenu), 4,
-            SP_MENUS_FILE, 1,
-            "fExtendFldrViewMenu",
         sfFixLockInPlace, FIELDOFFSET(OLDGLOBALSETTINGS, fFixLockInPlace), 1,
-            SP_MENUS_COMMON, 0,
+            SP_MENUSETTINGS, 0,
             "fFixLockInPlace",
-
-        // Desktop menu items
-        sfDTMSort, FIELDOFFSET(OLDGLOBALSETTINGS, fDTMSort), 4,
-            SP_DTP_MENUITEMS, 1,
-            "fDTMSort",
-        sfDTMArrange, FIELDOFFSET(OLDGLOBALSETTINGS, fDTMArrange), 4,
-            SP_DTP_MENUITEMS, 1,
-            "fDTMArrange",
-        sfDTMSystemSetup, FIELDOFFSET(OLDGLOBALSETTINGS, fDTMSystemSetup), 4,
-            SP_DTP_MENUITEMS, 1,
-            "fDTMSystemSetup",
-        sfDTMLockup, FIELDOFFSET(OLDGLOBALSETTINGS, fDTMLockup), 4,
-            SP_DTP_MENUITEMS, 1,
-            "fDTMLockup",
-#ifndef __NOXSHUTDOWN__
-        sfDTMShutdown, FIELDOFFSET(OLDGLOBALSETTINGS, fDTMShutdown), 4,
-            SP_DTP_MENUITEMS, 1,
-            "fDTMShutdown",
-        sfDTMShutdownMenu, FIELDOFFSET(OLDGLOBALSETTINGS, fDTMShutdownMenu), 4,
-            SP_DTP_MENUITEMS, 1,
-            "fDTMShutdownMenu",
-#endif
-        sfDTMLogoffNetwork, FIELDOFFSET(OLDGLOBALSETTINGS, fDTMLogoffNetwork), 1,
-            SP_DTP_MENUITEMS, 1,
-            "fDTMLogoffNetwork",
 
         // folder view settings
         sfFullPath, FIELDOFFSET(OLDGLOBALSETTINGS, FullPath), 4,
@@ -2926,7 +2922,7 @@ static const SETTINGINFO G_aSettingInfos[] =
             "fDefaultStatusBarVisibility",
         sulSBStyle, FIELDOFFSET(OLDGLOBALSETTINGS, SBStyle), 4,
             SP_27STATUSBAR, SBSTYLE_WARP4MENU,
-            // @@todo G_GlobalSettings.SBStyle = (doshIsWarp4() ? SBSTYLE_WARP4MENU : SBSTYLE_WARP3RAISED);
+            // @@todo G_GlobalSettings.SBStyle = (G_fIsWarp4 ? SBSTYLE_WARP4MENU : SBSTYLE_WARP3RAISED);
             "ulSBStyle",
         slSBBgndColor, FIELDOFFSET(OLDGLOBALSETTINGS, lSBBgndColor), 4,
             SP_27STATUSBAR, RGBCOL_GRAY,
@@ -2979,7 +2975,7 @@ static const SETTINGINFO G_aSettingInfos[] =
             "fNoExcptBeeps",
         sfUse8HelvFont, FIELDOFFSET(OLDGLOBALSETTINGS, fUse8HelvFont), 4,
             SP_SETUP_PARANOIA, 0,
-            // @@todo G_GlobalSettings.fUse8HelvFont   = (!doshIsWarp4());
+            // @@todo G_GlobalSettings.fUse8HelvFont   = (!G_fIsWarp4);
             "fUse8HelvFont",
         sulDefaultWorkerThreadPriority, FIELDOFFSET(OLDGLOBALSETTINGS, bDefaultWorkerThreadPriority), 1,
             SP_SETUP_PARANOIA, 1, // idle +31
@@ -3014,6 +3010,38 @@ static const SETTINGINFO G_aSettingInfos[] =
         sulDefaultFolderView, FIELDOFFSET(OLDGLOBALSETTINGS, bDefaultFolderView), 1,
             SP_1GENERIC, 0,
             "ulDefaultFolderView",
+
+        // the following are new with V0.9.19
+        sflMenuObjectWPS, -1, 0,
+            SP_MENUITEMS, 0,
+            "flMenuObjectWPS",
+        sflMenuObjectXWP, -1, 0,
+            SP_MENUITEMS, 0,
+            "flMenuObjectXWP",
+        sflMenuFileWPS, -1, 0,
+            SP_MENUITEMS, 0,
+            "flMenuFileWPS",
+        sflMenuFileXWP, -1, 0,
+            SP_MENUITEMS, 0,
+            "flMenuFileXWP",
+        sflMenuFolderWPS, -1, 0,
+            SP_MENUITEMS, 0,
+            "flMenuFolderWPS",
+        sflMenuFolderXWP, -1, 0,
+            SP_MENUITEMS, 0,
+            "flMenuFolderXWP",
+        sflMenuDesktopWPS, -1, 0,
+            SP_MENUITEMS, 0,
+            "flMenuDesktopWPS",
+        sflMenuDesktopXWP, -1, 0,
+            SP_MENUITEMS, 0,
+            "flMenuDesktopXWP",
+        sflMenuDiskWPS, -1, 0,
+            SP_MENUITEMS, 0,
+            "flMenuDiskWPS",
+        sflMenuDiskXWP, -1, 0,
+            SP_MENUITEMS, 0,
+            "flMenuDiskXWP",
     };
 
 /*
@@ -4156,8 +4184,8 @@ ULONG cmnSetupRestoreBackup(PULONG paulOffsets,
  *      installed and the default trash can exists.
  *
  *      This does not check for whether "delete to
- *      trash can" is enabled. Query
- *      GLOBALSETTINGS.fTrashDelete to find out.
+ *      trash can" is enabled. Query the
+ *      global settings to find out.
  *
  *@@added V0.9.1 (2000-02-01) [umoeller]
  *@@changed V0.9.4 (2000-08-03) [umoeller]: moved this here from fileops.c
@@ -4167,8 +4195,8 @@ BOOL cmnTrashCanReady(VOID)
 {
     BOOL brc = FALSE;
     // PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
-    M_XWPTrashCan *pTrashCanClass = _XWPTrashCan;
-    if (pTrashCanClass)
+    M_XWPTrashCan *pTrashCanClass;
+    if (pTrashCanClass = _XWPTrashCan)
     {
         if (_xwpclsQueryDefaultTrashCan(pTrashCanClass))
             brc = TRUE;
@@ -4200,8 +4228,6 @@ BOOL cmnEnableTrashCan(HWND hwndOwner,     // for message boxes
     if (fEnable)
     {
         // enable:
-        // M_XWPTrashCan       *pXWPTrashCanClass = _XWPTrashCan;
-
         BOOL    fCreateObject = FALSE;
 
         if (    (!winhIsClassRegistered(G_pcszXWPTrashCan))
@@ -4209,8 +4235,9 @@ BOOL cmnEnableTrashCan(HWND hwndOwner,     // for message boxes
            )
         {
             // classes not registered yet:
-            if (cmnMessageBoxMsg(hwndOwner,
+            if (cmnMessageBoxExt(hwndOwner,
                                  148,       // XWPSetup
+                                 NULL, 0,
                                  170,       // "register trash can?"
                                  MB_YESNO)
                     == MBID_YES)
@@ -4232,8 +4259,9 @@ BOOL cmnEnableTrashCan(HWND hwndOwner,     // for message boxes
 
                 if (!brc)
                     // error:
-                    cmnMessageBoxMsg(hwndOwner,
+                    cmnMessageBoxExt(hwndOwner,
                                      148,
+                                     NULL, 0,
                                      171, // "error"
                                      MB_CANCEL);
             }
@@ -4247,8 +4275,7 @@ BOOL cmnEnableTrashCan(HWND hwndOwner,     // for message boxes
             {
                 brc = setCreateStandardObject(hwndOwner,
                                               220,        // XWPTrashCan
-                                                    // yo, this needed to be updated
-                                                    // V0.9.9 (2001-04-08) [umoeller]
+                                              FALSE,      // no confirm
                                               FALSE);     // XWP object
             }
             else
@@ -4272,27 +4299,27 @@ BOOL cmnEnableTrashCan(HWND hwndOwner,     // for message boxes
         else
         {
             // disable:
-            if (cmnMessageBoxMsg(hwndOwner,
+            if (cmnMessageBoxExt(hwndOwner,
                                  148,       // XWPSetup
+                                 NULL, 0,
                                  172,       // "deregister trash can?"
                                  MB_YESNO | MB_DEFBUTTON2)
                     == MBID_YES)
             {
-                XWPTrashCan *pDefaultTrashCan = _xwpclsQueryDefaultTrashCan(_XWPTrashCan);
-                if (pDefaultTrashCan)
+                XWPTrashCan *pDefaultTrashCan;
+                if (pDefaultTrashCan = _xwpclsQueryDefaultTrashCan(_XWPTrashCan))
                     _wpFree(pDefaultTrashCan);
                 WinDeregisterObjectClass((PSZ)G_pcszXWPTrashCan);
                 WinDeregisterObjectClass((PSZ)G_pcszXWPTrashObject);
 
-                cmnMessageBoxMsg(hwndOwner,
+                cmnMessageBoxExt(hwndOwner,
                                  148,       // XWPSetup
+                                 NULL, 0,
                                  173,       // "done, restart Desktop"
                                  MB_OK);
             }
         }
     }
-
-    // cmnStoreGlobalSettings();
 
     return (brc);
 }
@@ -4361,46 +4388,44 @@ APIRET cmnEmptyDefTrashCan(HAB hab,        // in: synchronously?
  *@@added V0.9.9 (2001-04-05) [umoeller]
  */
 
-BOOL cmnAddProductInfoMenuItem(HWND hwndMenu)   // in: main menu with "Help" submenu
+BOOL cmnAddProductInfoMenuItem(WPFolder *somSelf,
+                               HWND hwndMenu)   // in: main menu with "Help" submenu
 {
     BOOL brc = FALSE;
 
-    if ((cmnQuerySetting(sflDefaultMenuItems) & CTXT_HELP) == 0)
-    {
-        MENUITEM mi;
+    MENUITEM mi;
 
-        #ifdef DEBUG_MENUS
-            _Pmpf(("  Inserting 'Product info'"));
-        #endif
-        // get handle to the WPObject's "Help" submenu in the
-        // the folder's popup menu
-        if (winhQueryMenuItem(hwndMenu,
-                              WPMENUID_HELP,
-                              TRUE,
-                              &mi))
-        {
-            // mi.hwndSubMenu now contains "Help" submenu handle,
-            // which we add items to now
-            winhInsertMenuSeparator(mi.hwndSubMenu,
-                                    MIT_END,
-                                    (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_SEPARATOR));
-            winhInsertMenuItem(mi.hwndSubMenu,
-                               MIT_END,
-                               (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_PRODINFO),
-                               cmnGetString(ID_XSSI_PRODUCTINFO),  // pszProductInfo
-                               MIS_TEXT, 0);
-            brc = TRUE;
-        }
-        // else: "Help" menu not found, but this can
-        // happen in Warp 4 folder menu bars
+    #ifdef DEBUG_MENUS
+        _Pmpf(("  Inserting 'Product info'"));
+    #endif
+    // get handle to the WPObject's "Help" submenu in the
+    // the folder's popup menu
+    if (winhQueryMenuItem(hwndMenu,
+                          WPMENUID_HELP,
+                          TRUE,
+                          &mi))
+    {
+        // mi.hwndSubMenu now contains "Help" submenu handle,
+        // which we add items to now
+        winhInsertMenuSeparator(mi.hwndSubMenu,
+                                MIT_END,
+                                (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_SEPARATOR));
+        winhInsertMenuItem(mi.hwndSubMenu,
+                           MIT_END,
+                           (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_PRODINFO),
+                           cmnGetString(ID_XSSI_PRODUCTINFO),  // pszProductInfo
+                           MIS_TEXT, 0);
+        brc = TRUE;
     }
+    // else: "Help" menu not found, but this can
+    // happen in Warp 4 folder menu bars
 
     return (brc);
 }
 
 #endif
 
-#define INFO_WIDTH  400
+#define INFO_WIDTH  200
 
 
 static CONTROLDEF
@@ -4804,8 +4829,8 @@ BOOL cmnRegisterView(WPObject *somSelf,
         else
         {
             // create view title: remove ~ char
-            PSZ p = strchr(pszViewTitle, '~');
-            if (p)
+            PSZ p;
+            if (p = strchr(pszViewTitle, '~'))
                 // found: remove that
                 strcpy(p, p+1);
 
@@ -5465,6 +5490,7 @@ HAPP cmnRunCommandLine(HWND hwndOwner,              // in: owner window or NULLH
                             cmnMessageBox(hwndOwner,
                                           pszCommand,
                                           pszError,
+                                          NULLHANDLE, // no help
                                           MB_CANCEL);
                             free(pszError);
                         }
@@ -5590,6 +5616,21 @@ HPOINTER cmnQueryDlgIcon(VOID)
     return (G_hptrDlgIcon);
 }
 
+ULONG   G_MsgBoxHelpPanel = NULLHANDLE;
+
+/*
+ *@@ fnHelpCallback:
+ *      help callback specified with
+ *
+ *@@added V0.9.19 (2002-04-24) [umoeller]
+ */
+
+VOID APIENTRY fnHelpCallback(HWND hwndDlg)
+{
+    if (G_MsgBoxHelpPanel)
+        cmnDisplayHelp(NULL, G_MsgBoxHelpPanel);
+}
+
 /*
  *@@ cmnMessageBox:
  *      this is the generic function for displaying XFolder
@@ -5627,11 +5668,13 @@ HPOINTER cmnQueryDlgIcon(VOID)
  *@@changed V0.9.0 [umoeller]: added WinAlarm sound support
  *@@changed V0.9.3 (2000-05-05) [umoeller]: extracted cmnLoadMessageBoxDlg
  *@@changed V0.9.13 (2001-06-23) [umoeller]: completely rewritten, now using dlghMessageBox
+ *@@changed V0.9.19 (2002-04-24) [umoeller]: added help panel
  */
 
 ULONG cmnMessageBox(HWND hwndOwner,     // in: owner
-                    PCSZ pcszTitle,       // in: msgbox title
-                    PCSZ pcszMessage,     // in: msgbox text
+                    PCSZ pcszTitle,     // in: msgbox title
+                    PCSZ pcszMessage,   // in: msgbox text
+                    ULONG ulHelpPanel,  // in: help panel or null
                     ULONG flStyle)      // in: MB_* flags
 {
     ULONG   ulrc = DID_CANCEL;
@@ -5653,6 +5696,10 @@ ULONG cmnMessageBox(HWND hwndOwner,     // in: owner
         Strings.pcszIgnore = cmnGetString(DID_IGNORE);
         Strings.pcszEnter = "Enter"; // never used anyway
         Strings.pcszYesToAll = cmnGetString(DID_YES2ALL);
+        Strings.pcszHelp = cmnGetString(DID_HELP);      // V0.9.19 (2002-04-24) [umoeller]
+
+        if (ulHelpPanel)
+            G_MsgBoxHelpPanel = ulHelpPanel;
 
         // now using new dynamic dialog routines
         // V0.9.13 (2001-06-23) [umoeller]
@@ -5660,9 +5707,15 @@ ULONG cmnMessageBox(HWND hwndOwner,     // in: owner
                               cmnQueryDlgIcon(),
                               pcszTitle,
                               pcszMessage,
+                              (ulHelpPanel)
+                                ? fnHelpCallback
+                                : NULL,
                               flStyle,
                               cmnQueryDefaultFont(),
                               &Strings);
+
+        if (ulHelpPanel)
+            G_MsgBoxHelpPanel = NULLHANDLE;
 
     }
     CATCH(excpt1) { } END_CATCH();
@@ -5772,56 +5825,21 @@ APIRET cmnGetMessage(PCSZ *pTable,     // in: replacement PSZ table or NULL
 }
 
 /*
- *@@ cmnMessageBoxMsg:
- *      calls cmnMessageBox, but this one accepts ULONG indices
- *      into the XFolder message file (XFLDRxxx.MSG) instead
- *      of real PSZs. This calls cmnGetMessage for retrieving
- *      the messages, but placeholder replacement does not work
- *      here (use cmnMessageBoxMsgExt for that).
- *
- *@@changed V0.9.16 (2001-10-08) [umoeller]: now using XSTRINGs
- */
-
-ULONG cmnMessageBoxMsg(HWND hwndOwner,
-                       ULONG ulTitle,       // in: msg index for dlg title
-                       ULONG ulMessage,     // in: msg index for message
-                       ULONG flStyle)       // in: like cmnMsgBox
-{
-    ULONG ulrc;
-
-    XSTRING strTitle, strMessage;
-    xstrInit(&strTitle, 0);
-    xstrInit(&strMessage, 0);
-
-    cmnGetMessage(NULL, 0,
-                  &strTitle,
-                  ulTitle);
-    cmnGetMessage(NULL, 0,
-                  &strMessage,
-                  ulMessage);
-
-    ulrc = cmnMessageBox(hwndOwner, strTitle.psz, strMessage.psz, flStyle);
-
-    xstrClear(&strTitle);
-    xstrClear(&strMessage);
-
-    return (ulrc);
-}
-
-/*
- *@@ cmnMessageBoxMsgExt:
- *      like cmnMessageBoxMsg, but with string substitution
+ *@@ cmnMessageBoxHelp:
+ *      like cmnMessageBoxExt, but with string substitution
  *      (see cmnGetMessage for more); substitution only
  *      takes place for the message specified with ulMessage,
  *      not for the title.
+ *
  */
 
-ULONG cmnMessageBoxMsgExt(HWND hwndOwner,   // in: owner window
-                          ULONG ulTitle,    // in: msg number for title
-                          PCSZ *pTable,    // in: replacement table for ulMessage
-                          ULONG ulTable,    // in: array count in *pTable
-                          ULONG ulMessage,  // in: msg number for message
-                          ULONG flStyle)    // in: msg box style flags (cmnMessageBox)
+ULONG cmnMessageBoxHelp(HWND hwndOwner,   // in: owner window
+                        ULONG ulTitle,    // in: msg number for title
+                        PCSZ *pTable,     // in: replacement table for ulMessage
+                        ULONG ulTable,    // in: array count in *pTable
+                        ULONG ulMessage,  // in: msg number for message
+                        ULONG ulHelpPanel,  // in: help panel or NULLHANDLE
+                        ULONG flStyle)    // in: msg box style flags (cmnMessageBox)
 {
     ULONG ulrc;
 
@@ -5836,12 +5854,44 @@ ULONG cmnMessageBoxMsgExt(HWND hwndOwner,   // in: owner window
                   &strMessage,
                   ulMessage);
 
-    ulrc = cmnMessageBox(hwndOwner, strTitle.psz, strMessage.psz, flStyle);
+    ulrc = cmnMessageBox(hwndOwner,
+                         strTitle.psz,
+                         strMessage.psz,
+                         ulHelpPanel,
+                         flStyle);
 
     xstrClear(&strTitle);
     xstrClear(&strMessage);
 
     return (ulrc);
+}
+
+/*
+ *@@ cmnMessageBoxExt:
+ *      like cmnMessageBoxExt, but with string substitution
+ *      (see cmnGetMessage for more); substitution only
+ *      takes place for the message specified with ulMessage,
+ *      not for the title.
+ *
+ *      Now calls cmnMessageBoxHelp in turn.
+ *
+ *@@added V0.9.19 (2002-04-24) [umoeller]
+ */
+
+ULONG cmnMessageBoxExt(HWND hwndOwner,   // in: owner window
+                       ULONG ulTitle,    // in: msg number for title
+                       PCSZ *pTable,     // in: replacement table for ulMessage
+                       ULONG ulTable,    // in: array count in *pTable
+                       ULONG ulMessage,  // in: msg number for message
+                       ULONG flStyle)    // in: msg box style flags (cmnMessageBox)
+{
+    return cmnMessageBoxHelp(hwndOwner,
+                             ulTitle,
+                             pTable,
+                             ulTable,
+                             ulMessage,
+                             NULLHANDLE,     // no help
+                             flStyle);
 }
 
 /*
@@ -6330,7 +6380,7 @@ VOID cmnDescribeError(PXSTRING pstr,        // in/out: string buffer (must be in
  *      This expects a TMF message number whose %1 placeholder
  *      will be replaced with the error description.
  *
- *      Returns the return value from cmnMessageBoxMsgExt.
+ *      Returns the return value from cmnMessageBoxExt.
  *
  *@@added V0.9.19 (2002-04-17) [umoeller]
  */
@@ -6349,7 +6399,7 @@ ULONG cmnErrorMsgBox(HWND hwndOwner,        // in: owner window
     if (ulMsg)
     {
         PCSZ pcsz = str.psz;
-        ulrc = cmnMessageBoxMsgExt(hwndOwner,
+        ulrc = cmnMessageBoxExt(hwndOwner,
                                    104,
                                    &pcsz,
                                    1,
@@ -6360,6 +6410,7 @@ ULONG cmnErrorMsgBox(HWND hwndOwner,        // in: owner window
         ulrc = cmnMessageBox(hwndOwner,
                              "XWorkplace",
                              str.psz,
+                             NULLHANDLE, // no help
                              flFlags);
 
     xstrClear(&str);
@@ -6376,7 +6427,7 @@ ULONG cmnErrorMsgBox(HWND hwndOwner,        // in: owner window
  *      As opposed to cmnErrorMsgBox, this allows you to
  *      specify strings as C strings.
  *
- *      Returns the return value from cmnMessageBoxMsgExt.
+ *      Returns the return value from cmnMessageBoxExt.
  *
  *@@added V0.9.1 (2000-02-08) [umoeller]
  *@@changed V0.9.3 (2000-04-09) [umoeller]: added error explanation
@@ -6421,6 +6472,7 @@ ULONG cmnDosErrorMsgBox(HWND hwndOwner,     // in: owner window
     mbrc = cmnMessageBox(hwndOwner,     // fixed V0.9.16 (2001-12-18) [umoeller]
                          pcszTitle,
                          strError.psz,
+                         NULLHANDLE, // no help
                          ulFlags);
     xstrClear(&strError);
     xstrClear(&str2);
@@ -6464,8 +6516,9 @@ ULONG cmnProgramErrorMsgBox(HWND hwndOwner,
         break;
 
         case BASEERR_DAEMON_DEAD:     // V0.9.19 (2002-03-28) [umoeller]
-            if (cmnMessageBoxMsg(hwndOwner,
+            if (cmnMessageBoxExt(hwndOwner,
                                  104,
+                                 NULL, 0,
                                  232,       // cannot contact daemn, restart now?
                                  MB_YESNO)
                     == MBID_YES)
@@ -6589,7 +6642,7 @@ MRESULT EXPENTRY cmn_fnwpDlgWithHelp(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp
                             fProcessed = TRUE;
 
                     if (!fProcessed)
-                        cmnMessageBoxMsg(HWND_DESKTOP, 104, 134, MB_OK);
+                        cmnMessageBoxExt(HWND_DESKTOP, 104, 134, MB_OK);
                 } */
             }
             else if (G_ulCurHelpPanel == 0)
@@ -6601,7 +6654,11 @@ MRESULT EXPENTRY cmn_fnwpDlgWithHelp(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp
                 if (hobjRef)
                     WinOpenObject(hobjRef, OPEN_DEFAULT, TRUE);
                 else
-                    cmnMessageBoxMsg(HWND_DESKTOP, 104, 137, MB_OK);
+                    cmnMessageBoxExt(HWND_DESKTOP,
+                                     104,
+                                     NULL, 0,
+                                     137,
+                                     MB_OK);
 
             } // end else; if ulCurHelpPanel is < 0, nothing happens
             mrc = NULL;
@@ -6617,23 +6674,22 @@ MRESULT EXPENTRY cmn_fnwpDlgWithHelp(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp
 }
 
 /*
- *@@ cmnFileDlg:
- *      same as winhFileDlg, but uses fdlgFileDlg
- *      instead.
+ *@@ cmnFileDlg2:
  *
- *@@added V0.9.9 (2001-03-10) [umoeller]
+ *@@added V0.9.19 (2002-04-24) [umoeller]
  */
 
-BOOL cmnFileDlg(HWND hwndOwner,    // in: owner for file dlg
-                PSZ pszFile,       // in: file mask; out: fully q'd filename
-                                   //    (should be CCHMAXPATH in size)
-                ULONG flFlags,     // in: any combination of the following:
-                                   // -- WINH_FOD_SAVEDLG: save dlg; else open dlg
-                                   // -- WINH_FOD_INILOADDIR: load FOD path from INI
-                                   // -- WINH_FOD_INISAVEDIR: store FOD path to INI on OK
-                HINI hini,         // in: INI file to load/store last path from (can be HINI_USER)
-                PCSZ pcszApplication, // in: INI application to load/store last path from
-                PCSZ pcszKey)        // in: INI key to load/store last path from
+BOOL cmnFileDlg2(HWND hwndOwner,    // in: owner for file dlg
+                 PSZ pszFile,       // in: file mask; out: fully q'd filename
+                                    //    (should be CCHMAXPATH in size)
+                 ULONG flFlags,     // in: any combination of the following:
+                                    // -- WINH_FOD_SAVEDLG: save dlg; else open dlg
+                                    // -- WINH_FOD_INILOADDIR: load FOD path from INI
+                                    // -- WINH_FOD_INISAVEDIR: store FOD path to INI on OK
+                 HINI hini,         // in: INI file to load/store last path from (can be HINI_USER)
+                 PCSZ pcszApplication, // in: INI application to load/store last path from
+                 PCSZ pcszKey,        // in: INI key to load/store last path from
+                 BOOL fUseNewFileDlg)   // in: if TRUE, use filedlg.c
 {
     HWND hwndFileDlg;
     FILEDLG fd;
@@ -6685,13 +6741,11 @@ BOOL cmnFileDlg(HWND hwndOwner,    // in: owner for file dlg
 
     // _Pmpf((__FUNCTION__ ": fd.szFullFile now = %s", fd.szFullFile));
 
-#ifndef __NEVERNEWFILEDLG__
-    if (cmnQuerySetting(sfNewFileDlg))
+    if (fUseNewFileDlg)
         hwndFileDlg = fdlgFileDlg(hwndOwner, // owner
                                   NULL,
                                   &fd);
     else
-#endif
         hwndFileDlg = WinFileDlg(HWND_DESKTOP,
                                  hwndOwner,
                                  &fd);
@@ -6731,5 +6785,39 @@ BOOL cmnFileDlg(HWND hwndOwner,    // in: owner for file dlg
     }
 
     return (FALSE);
+}
+
+/*
+ *@@ cmnFileDlg:
+ *      same as winhFileDlg, but uses fdlgFileDlg
+ *      instead.
+ *
+ *@@added V0.9.9 (2001-03-10) [umoeller]
+ */
+
+BOOL cmnFileDlg(HWND hwndOwner,    // in: owner for file dlg
+                PSZ pszFile,       // in: file mask; out: fully q'd filename
+                                   //    (should be CCHMAXPATH in size)
+                ULONG flFlags,     // in: any combination of the following:
+                                   // -- WINH_FOD_SAVEDLG: save dlg; else open dlg
+                                   // -- WINH_FOD_INILOADDIR: load FOD path from INI
+                                   // -- WINH_FOD_INISAVEDIR: store FOD path to INI on OK
+                HINI hini,         // in: INI file to load/store last path from (can be HINI_USER)
+                PCSZ pcszApplication, // in: INI application to load/store last path from
+                PCSZ pcszKey)        // in: INI key to load/store last path from
+{
+    BOOL fUseNewFileDlg = FALSE;
+
+#ifndef __NEVERNEWFILEDLG__
+    fUseNewFileDlg = cmnQuerySetting(sfNewFileDlg);
+#endif
+
+    return cmnFileDlg2(hwndOwner,
+                       pszFile,
+                       flFlags,
+                       hini,
+                       pcszApplication,
+                       pcszKey,
+                       fUseNewFileDlg);
 }
 

@@ -552,6 +552,7 @@ ULONG MessageBox(HWND hwndOwner,
                            G_hptrMain,
                            "xfix",
                            szBuf,
+                           NULL,
                            flFlags,
                            "9.WarpSans",
                            &Strings));
@@ -3074,8 +3075,8 @@ VOID SelectByName(HWND hwndCnr)
                             -1,
                             CTL_COMMON_FONT,
                             0,
-                            { 300, SZL_AUTOSIZE },     // size
-                            5               // spacing
+                            { 150, SZL_AUTOSIZE },     // size
+                            COMMON_SPACING,
                          },
                 Entry = {
                             WC_ENTRYFIELD,
@@ -3084,8 +3085,8 @@ VOID SelectByName(HWND hwndCnr)
                             IDDI_FILEMASK,
                             CTL_COMMON_FONT,
                             0,
-                            { 300, 20 },     // size
-                            5               // spacing
+                            { 150, -1 },     // size
+                            COMMON_SPACING,
                          },
                 SelectButton = {
                             WC_BUTTON,
@@ -3094,8 +3095,8 @@ VOID SelectByName(HWND hwndCnr)
                             IDDI_SELECT,
                             CTL_COMMON_FONT,
                             0,
-                            { 100, 30 },    // size
-                            5               // spacing
+                            { STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT },    // size
+                            COMMON_SPACING,
                          },
                 DeselectButton = {
                             WC_BUTTON,
@@ -3104,8 +3105,8 @@ VOID SelectByName(HWND hwndCnr)
                             IDDI_DESELECT,
                             CTL_COMMON_FONT,
                             0,
-                            { 100, 30 },    // size
-                            5               // spacing
+                            { STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT },    // size
+                            COMMON_SPACING,
                          },
                 SelectAllButton = {
                             WC_BUTTON,
@@ -3114,8 +3115,8 @@ VOID SelectByName(HWND hwndCnr)
                             IDDI_SELECTALL,
                             CTL_COMMON_FONT,
                             0,
-                            { 100, 30 },    // size
-                            5               // spacing
+                            { STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT },    // size
+                            COMMON_SPACING,
                          },
                 DeselectAllButton = {
                             WC_BUTTON,
@@ -3124,8 +3125,8 @@ VOID SelectByName(HWND hwndCnr)
                             IDDI_DESELECTALL,
                             CTL_COMMON_FONT,
                             0,
-                            { 100, 30 },    // size
-                            5               // spacing
+                            { STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT },    // size
+                            COMMON_SPACING,
                          },
                 CloseButton = {
                             WC_BUTTON,
@@ -3134,9 +3135,10 @@ VOID SelectByName(HWND hwndCnr)
                             DID_CANCEL,
                             CTL_COMMON_FONT,
                             0,
-                            { 100, 30 },    // size
-                            5               // spacing
+                            { STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT },    // size
+                            COMMON_SPACING,
                          };
+
     static const DLGHITEM dlgSelect[] =
         {
             START_TABLE,

@@ -205,7 +205,7 @@ static VOID PageInit(PNOTEBOOKPAGE pnbp,
         _Pmpf(("fnwpPageCommon: WM_INITDLG"));
     #endif
 
-    if (!pnbp->fPageInitialized)        // V0.9.19 (2002-04-17) [umoeller]
+    if (!(pnbp->flPage & NBFL_PAGE_INITED))        // V0.9.19 (2002-04-17) [umoeller]
     {
         // store the dlg hwnd in notebook structure
         pnbp->hwndDlgPage = hwndDlg;
@@ -218,8 +218,8 @@ static VOID PageInit(PNOTEBOOKPAGE pnbp,
 
         // make Warp 4 notebook buttons and move controls
         winhAssertWarp4Notebook(hwndDlg,
-                                100,         // ID threshold
-                                14);
+                                100);         // ID threshold
+                                // 14);
 
         // set controls font to 8.Helv, if global settings
         // want this (paranoia page, V0.9.0)
@@ -269,7 +269,7 @@ static VOID PageInit(PNOTEBOOKPAGE pnbp,
             }
         }
 
-        pnbp->fPageInitialized = TRUE;
+        pnbp->flPage |= NBFL_PAGE_INITED; // V0.9.19 (2002-04-24) [umoeller]
     }
 }
 
@@ -723,7 +723,7 @@ static VOID PageWindowPosChanged(PNOTEBOOKPAGE pnbp,
         if (pnbp->inbp.pfncbInitPage)
         {
             WinEnableWindowUpdate(pnbp->hwndDlgPage, FALSE);
-            pnbp->fPageVisible = TRUE;
+            pnbp->flPage |= NBFL_PAGE_SHOWING;
             pnbp->inbp.pfncbInitPage(pnbp,
                                  CBI_SHOW | CBI_ENABLE);
                     // we also set the ENABLE flag so
@@ -740,7 +740,7 @@ static VOID PageWindowPosChanged(PNOTEBOOKPAGE pnbp,
         // call "initialize" callback
         if (pnbp->inbp.pfncbInitPage)
         {
-            pnbp->fPageVisible = FALSE;
+            pnbp->flPage &= ~NBFL_PAGE_SHOWING;
             pnbp->inbp.pfncbInitPage(pnbp, CBI_HIDE);
         }
     }
@@ -1318,10 +1318,11 @@ static VOID DestroyNBLI(HWND hwndNotebook,
             {
                 PLISTNODE pNext = pPageNode->pNext; // V0.9.14 (2001-08-23) [umoeller]
                 PNOTEBOOKPAGELISTITEM pPageLI;
+                PNOTEBOOKPAGE pnbp;
                 if (    (pPageLI = (PNOTEBOOKPAGELISTITEM)pPageNode->pItemData)
-                     && (pPageLI->pnbp)
-                     && (pPageLI->pnbp->inbp.hwndNotebook == hwndNotebook) // our page?
-                     && (!pPageLI->pnbp->fPageInitialized)
+                     && (pnbp = pPageLI->pnbp)
+                     && (pnbp->inbp.hwndNotebook == hwndNotebook) // our page?
+                     && (!(pnbp->flPage  & NBFL_PAGE_INITED))
                             // page has NOT been initialized
                             // (this flag is set by fnwpPageCommon):
                    )
@@ -1330,8 +1331,8 @@ static VOID DestroyNBLI(HWND hwndNotebook,
                     #ifdef DEBUG_NOTEBOOKS
                         _Pmpf(("  removed page ID %d", pPageLI->inbp.ulPageID));
                     #endif
-                    _wpFreeMem(pPageLI->pnbp->inbp.somSelf,
-                               (PBYTE)pPageLI->pnbp);
+                    _wpFreeMem(pnbp->inbp.somSelf,
+                               (PBYTE)pnbp);
                     lstRemoveNode(&G_llOpenPages,
                                   pPageNode);
                 }
@@ -1810,15 +1811,19 @@ APIRET ntbFormatPage(HWND hwndDlg,              // in: dialog frame to work on
             // (this was already called in PageInit on WM_INITDLG,
             // but at that point the init callback wasn't called yet...)
             winhAssertWarp4Notebook(hwndDlg,
-                                    100,         // ID threshold
-                                    14);
+                                    100);         // ID threshold
+                                    // 14);
         }
         else
+        {
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                   "dlghFormatDlg returned %d", arc);
             cmnErrorMsgBox(hwndDlg,
                            arc,
                            0,
                            MB_OK,
                            TRUE);
+        }
 
         free(paNew);
     }
@@ -1937,16 +1942,18 @@ PNOTEBOOKPAGE ntbQueryOpenPages(PNOTEBOOKPAGE pnbp)
  *      Returns the number of pages that were updated.
  *
  *@@changed V0.9.3 (2000-04-24) [umoeller]: finally made this thread-safe; now sending XNTBM_UPDATE
+ *@@changed V0.9.19 (2002-04-24) [umoeller]: this only refreshed currently visible pages, fixed
  */
 
-ULONG ntbUpdateVisiblePage(WPObject *somSelf, ULONG ulPageID)
+ULONG ntbUpdateVisiblePage(WPObject *somSelf,
+                           ULONG ulPageID)
 {
     ULONG ulrc = 0;
     PNOTEBOOKPAGE pnbp = NULL;
 
     while (pnbp = ntbQueryOpenPages(pnbp))
     {
-        if (pnbp->fPageVisible)
+        if (pnbp->flPage  & NBFL_PAGE_INITED)       // fixed V0.9.19 (2002-04-24) [umoeller]
         {
             if (    (    (ulPageID == 0)     // don't care?
                       || (pnbp->inbp.ulPageID == ulPageID)

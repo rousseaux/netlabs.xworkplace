@@ -79,12 +79,12 @@
  *      that window class again when the first WM_CREATE for a
  *      folder view comes in. See fdr_SendMsgHook. Basically,
  *      this adds more bytes for the window words so we can store
- *      a SUBCLASSEDFOLDERVIEW structure for each folder view in
+ *      a SUBCLFOLDERVIEW structure for each folder view in
  *      the window words, instead of having to maintain a global
  *      linked list.
  *
  *      When a folder view is subclassed (during XFolder::wpOpen
- *      processing) by fdrSubclassFolderView, a SUBCLASSEDFOLDERVIEW is
+ *      processing) by fdrSubclassFolderView, a SUBCLFOLDERVIEW is
  *      created and stored in the new window words. Appears to
  *      work fine so far.
  *
@@ -263,7 +263,7 @@ VOID EXPENTRY fdr_SendMsgHook(HAB hab,
 
             // OK, window class successfully re-registered:
             // store the offset of our window word for the
-            // SUBCLASSEDFOLDERVIEW's in a global variable
+            // SUBCLFOLDERVIEW's in a global variable
             G_SFVOffset = G_WPFolderWinClassInfo.cbWindowData + 12;
 
             // don't do this again
@@ -292,7 +292,7 @@ VOID EXPENTRY fdr_SendMsgHook(HAB hab,
 
 /*
  *@@ fdrSubclassFolderView:
- *      creates a SUBCLASSEDFOLDERVIEW for the given folder
+ *      creates a SUBCLFOLDERVIEW for the given folder
  *      view.
  *
  *      We also create a supplementary folder object window
@@ -324,30 +324,30 @@ VOID EXPENTRY fdr_SendMsgHook(HAB hab,
  *@@changed V0.9.9 (2001-03-11) [umoeller]: renamed from fdrSubclassFolderView
  */
 
-PSUBCLASSEDFOLDERVIEW fdrCreateSFV(HWND hwndFrame,
-                                   HWND hwndCnr,
-                                   ULONG ulWindowWordOffset,
-                                       // in: offset at which to store
-                                       // SUBCLASSEDFOLDERVIEW ptr in
-                                       // frame's window words, or -1
-                                       // for safe default
-                                   WPFolder *somSelf,
-                                        // in: folder; either XFolder's somSelf
-                                        // or XFldDisk's root folder
-                                   WPObject *pRealObject)
-                                        // in: the "real" object; for XFolder, this is == somSelf,
-                                        // for XFldDisk, this is the disk object (needed for object handles)
+PSUBCLFOLDERVIEW fdrCreateSFV(HWND hwndFrame,
+                              HWND hwndCnr,
+                              ULONG ulWindowWordOffset,
+                                  // in: offset at which to store
+                                  // SUBCLFOLDERVIEW ptr in
+                                  // frame's window words, or -1
+                                  // for safe default
+                              WPFolder *somSelf,
+                                   // in: folder; either XFolder's somSelf
+                                   // or XFldDisk's root folder
+                              WPObject *pRealObject)
+                                   // in: the "real" object; for XFolder, this is == somSelf,
+                                   // for XFldDisk, this is the disk object (needed for object handles)
 {
-    PSUBCLASSEDFOLDERVIEW psliNew;
+    PSUBCLFOLDERVIEW psliNew;
 
-    if (psliNew = NEW(SUBCLASSEDFOLDERVIEW))
+    if (psliNew = NEW(SUBCLFOLDERVIEW))
     {
         ZERO(psliNew);
 
         if (hwndCnr == NULLHANDLE)
             cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "hwndCnr is NULLHANDLE for folder %s.",
-                      _wpQueryTitle(somSelf));
+                   "hwndCnr is NULLHANDLE for folder %s.",
+                   _wpQueryTitle(somSelf));
 
         // store various other data here
         psliNew->hwndFrame = hwndFrame;
@@ -395,16 +395,16 @@ PSUBCLASSEDFOLDERVIEW fdrCreateSFV(HWND hwndFrame,
  *@@added V0.9.9 (2001-03-11) [umoeller]
  */
 
-PSUBCLASSEDFOLDERVIEW fdrSubclassFolderView(HWND hwndFrame,
-                                            HWND hwndCnr,
-                                            WPFolder *somSelf,
-                                                 // in: folder; either XFolder's somSelf
-                                                 // or XFldDisk's root folder
-                                            WPObject *pRealObject)
-                                                 // in: the "real" object; for XFolder, this is == somSelf,
-                                                 // for XFldDisk, this is the disk object (needed for object handles)
+PSUBCLFOLDERVIEW fdrSubclassFolderView(HWND hwndFrame,
+                                       HWND hwndCnr,
+                                       WPFolder *somSelf,
+                                            // in: folder; either XFolder's somSelf
+                                            // or XFldDisk's root folder
+                                       WPObject *pRealObject)
+                                            // in: the "real" object; for XFolder, this is == somSelf,
+                                            // for XFldDisk, this is the disk object (needed for object handles)
 {
-    PSUBCLASSEDFOLDERVIEW psfv;
+    PSUBCLFOLDERVIEW psfv;
     if (psfv = fdrCreateSFV(hwndFrame,
                             hwndCnr,
                             -1,    // default window word V0.9.9 (2001-03-11) [umoeller]
@@ -420,7 +420,7 @@ PSUBCLASSEDFOLDERVIEW fdrSubclassFolderView(HWND hwndFrame,
 
 /*
  *@@ fdrQuerySFV:
- *      this retrieves the PSUBCLASSEDFOLDERVIEW from the
+ *      this retrieves the PSUBCLFOLDERVIEW from the
  *      specified subclassed folder frame. One of these
  *      structs is maintained for each open folder view
  *      to store window data which is needed everywhere.
@@ -437,17 +437,17 @@ PSUBCLASSEDFOLDERVIEW fdrSubclassFolderView(HWND hwndFrame,
  *@@changed V0.9.3 (2000-04-08) [umoeller]: completely replaced
  */
 
-PSUBCLASSEDFOLDERVIEW fdrQuerySFV(HWND hwndFrame,        // in: folder frame to find
-                                  PULONG pulIndex)       // out: index in linked list if found
+PSUBCLFOLDERVIEW fdrQuerySFV(HWND hwndFrame,        // in: folder frame to find
+                             PULONG pulIndex)       // out: index in linked list if found
 {
-    return ((PSUBCLASSEDFOLDERVIEW)WinQueryWindowPtr(hwndFrame,
-                                                     G_SFVOffset));
+    return ((PSUBCLFOLDERVIEW)WinQueryWindowPtr(hwndFrame,
+                                                G_SFVOffset));
 }
 
 /*
  *@@ fdrRemoveSFV:
  *      reverse to fdrSubclassFolderView, this removes
- *      a PSUBCLASSEDFOLDERVIEW from the folder frame again.
+ *      a PSUBCLFOLDERVIEW from the folder frame again.
  *      Called upon WM_DESTROY in folder frames.
  *
  *@@changed V0.9.0 [umoeller]: adjusted for new linklist functions
@@ -455,7 +455,7 @@ PSUBCLASSEDFOLDERVIEW fdrQuerySFV(HWND hwndFrame,        // in: folder frame to 
  *@@changed V0.9.3 (2000-04-08) [umoeller]: completely replaced
  */
 
-VOID fdrRemoveSFV(PSUBCLASSEDFOLDERVIEW psfv)
+VOID fdrRemoveSFV(PSUBCLFOLDERVIEW psfv)
 {
     WinSetWindowPtr(psfv->hwndFrame,
                     psfv->ulWindowWordOffset, // V0.9.9 (2001-03-11) [umoeller]
@@ -465,17 +465,18 @@ VOID fdrRemoveSFV(PSUBCLASSEDFOLDERVIEW psfv)
 
 /*
  *@@ fdrManipulateNewView:
- *      this gets called from XFolder::wpOpen
- *      after a new Icon, Tree, or Details view
- *      has been successfully opened by the parent
- *      method (WPFolder::wpOpen).
+ *      this gets called from XFolder::wpOpen after a new
+ *      Icon, Tree, or Details view has been successfully
+ *      opened by WPFolder::wpOpen.
  *
- *      This manipulates the view according to
- *      our needs (subclassing, sorting, full
- *      status bar, path in title etc.).
+ *      This is the one place that hacks all the XWorkplace
+ *      enhancements into the folder. It manipulates the
+ *      view according to the global or instance settings
+ *      (subclassing the frame, sorting, full status bar,
+ *      path in title etc.).
  *
- *      This is ONLY used for folders, not for
- *      WPDisk's. This calls fdrSubclassFolderView in turn.
+ *      This is ONLY used for folders, not for WPDisk's.
+ *      This calls fdrSubclassFolderView in turn.
  *
  *@@added V0.9.0 (99-11-27) [umoeller]
  *@@changed V0.9.1 (2000-02-08) [umoeller]: status bars were added even if globally disabled; fixed.
@@ -487,7 +488,7 @@ VOID fdrManipulateNewView(WPFolder *somSelf,        // in: folder with new view
                           HWND hwndNewFrame,        // in: new view (frame) of folder
                           ULONG ulView)             // in: OPEN_CONTENTS, OPEN_TREE, or OPEN_DETAILS
 {
-    PSUBCLASSEDFOLDERVIEW psfv = 0;
+    PSUBCLFOLDERVIEW    psfv = 0;
     XFolderData         *somThis = XFolderGetData(somSelf);
     HWND                hwndCnr = wpshQueryCnrFromFrame(hwndNewFrame);
 
@@ -498,7 +499,7 @@ VOID fdrManipulateNewView(WPFolder *somSelf,        // in: folder with new view
         ULONG flViews;
 
         // subclass the new folder frame window;
-        // this creates a SUBCLASSEDFOLDERVIEW for the view
+        // this creates a SUBCLFOLDERVIEW for the view
         psfv = fdrSubclassFolderView(hwndNewFrame,
                                      hwndCnr,
                                      somSelf,
@@ -542,15 +543,15 @@ VOID fdrManipulateNewView(WPFolder *somSelf,        // in: folder with new view
 
 /*
  * FormatFrame:
- *      this gets called from fdr_fnwpSubclassedFolderFrame
- *      when WM_FORMATFRAME is received. This implements
- *      folder status bars.
+ *      implementation WM_FORMATFRAME in fdr_fnwpSubclassedFolderFrame.
+ *
+ *      Part of the needed frame hacks for folder status bars.
  *
  *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
  *@@changed V0.9.18 (2002-03-24) [umoeller]: fixed stupid scroll bars when always sort is off
  */
 
-static VOID FormatFrame(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
+static VOID FormatFrame(PSUBCLFOLDERVIEW psfv, // in: frame information
                         MPARAM mp1,            // in: mp1 from WM_FORMATFRAME (points to SWP array)
                         ULONG ulCount)         // in: frame control count (returned from default wnd proc)
 {
@@ -666,9 +667,9 @@ static VOID FormatFrame(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
 
 /*
  * CalcFrameRect:
- *      this gets called from fdr_fnwpSubclassedFolderFrame
- *      when WM_CALCFRAMERECT is received. This implements
- *      folder status bars.
+ *      implementation for WM_CALCFRAMERECT in fdr_fnwpSubclassedFolderFrame.
+ *
+ *      Part of the needed frame hacks for folder status bars.
  *
  *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
  */
@@ -716,9 +717,8 @@ static VOID CalcFrameRect(MPARAM mp1, MPARAM mp2)
 
 /*
  * InitMenu:
- *      this gets called from fdr_fnwpSubclassedFolderFrame
- *      when WM_INITMENU is received, _after_ the parent
- *      window proc has been given a chance to process this.
+ *      implementation for WM_INITMENU in fdr_fnwpSubclassedFolderFrame.
+ *      Note that the parent winproc was called first.
  *
  *      WM_INITMENU is sent to a menu owner right before a
  *      menu is about to be displayed. This applies to both
@@ -735,7 +735,7 @@ static VOID CalcFrameRect(MPARAM mp1, MPARAM mp2)
  *          This is needed for file operations on all selected
  *          objects in the container. We call wpshQuerySourceObject
  *          to find out more about this and store the result in
- *          our SUBCLASSEDFOLDERVIEW.
+ *          our SUBCLFOLDERVIEW.
  *
  *      2)  for folder content menus, because these are
  *          inserted as empty stubs only in wpModifyPopupMenu
@@ -762,9 +762,9 @@ static VOID CalcFrameRect(MPARAM mp1, MPARAM mp2)
  *@@changed V0.9.12 (2001-05-29) [umoeller]: fixed broken source object with folder menu bars, which broke new "View" menu items
  */
 
-static VOID InitMenu(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
-                     ULONG sMenuIDMsg,         // in: mp1 from WM_INITMENU
-                     HWND hwndMenuMsg)         // in: mp2 from WM_INITMENU
+static VOID InitMenu(PSUBCLFOLDERVIEW psfv,     // in: frame information
+                     ULONG sMenuIDMsg,          // in: mp1 from WM_INITMENU
+                     HWND hwndMenuMsg)          // in: mp2 from WM_INITMENU
 {
     // get XFolder instance data
     XFolderData     *somThis = XFolderGetData(psfv->somSelf);
@@ -834,7 +834,7 @@ static VOID InitMenu(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
         // no folder content menu:
 
         // on Warp 4, check if the folder has a menu bar
-        if (doshIsWarp4())
+        if (G_fIsWarp4)
         {
             #ifdef DEBUG_MENUS
                 _Pmpf(( "  checking for menu bar"));
@@ -939,7 +939,7 @@ static VOID InitMenu(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
 
                 } // end switch (psfv->usLastSelMenuItem)
             } // end if (SHORT1FROMMP(mp1) == 0x8005)
-        } // end if (doshIsWarp4())
+        } // end if (G_fIsWarp4)
     }
 }
 
@@ -980,10 +980,10 @@ static VOID InitMenu(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
  *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
  */
 
-static BOOL MenuSelect(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
-                       MPARAM mp1,               // in: mp1 from WM_MENUSELECT
-                       MPARAM mp2,               // in: mp2 from WM_MENUSELECT
-                       BOOL *pfDismiss)          // out: dismissal flag
+static BOOL MenuSelect(PSUBCLFOLDERVIEW psfv,   // in: frame information
+                       MPARAM mp1,              // in: mp1 from WM_MENUSELECT
+                       MPARAM mp2,              // in: mp2 from WM_MENUSELECT
+                       BOOL *pfDismiss)         // out: dismissal flag
 {
     BOOL fHandled = FALSE;
     // return value for WM_MENUSELECT;
@@ -1087,7 +1087,7 @@ static BOOL MenuSelect(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
  *@@changed V0.9.19 (2002-04-02) [umoeller]: fixed broken true delete if trashcan is disabled
  */
 
-static VOID WMChar_Delete(PSUBCLASSEDFOLDERVIEW psfv,
+static VOID WMChar_Delete(PSUBCLFOLDERVIEW psfv,
                           BOOL fTrueDelete)             // in: do true delete instead of trash?
 {
     ULONG       ulSelection = 0;
@@ -1132,7 +1132,7 @@ static VOID WMChar_Delete(PSUBCLASSEDFOLDERVIEW psfv,
  */
 
 static BOOL WMChar(HWND hwndFrame,
-                   PSUBCLASSEDFOLDERVIEW psfv,
+                   PSUBCLFOLDERVIEW psfv,
                    MPARAM mp1,
                    MPARAM mp2)
 {
@@ -1283,7 +1283,7 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
                              ULONG msg,
                              MPARAM mp1,
                              MPARAM mp2,
-                             PSUBCLASSEDFOLDERVIEW psfv,  // in: folder view data
+                             PSUBCLFOLDERVIEW psfv,     // in: folder view data
                              PFNWP pfnwpOriginal)       // in: original frame window proc
 {
     MRESULT         mrc = 0;
@@ -1309,7 +1309,7 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
              *
              *  Note that wpOpen has created the status bar window (which
              *  is a static control subclassed with fdr_fnwpStatusBar) already
-             *  and stored the HWND in the SUBCLASSEDFOLDERVIEW.hwndStatusBar
+             *  and stored the HWND in the SUBCLFOLDERVIEW.hwndStatusBar
              *  structure member (which psfv points to now).
              *
              *  Here we only relate the status bar to the frame. The actual
@@ -1929,7 +1929,7 @@ MRESULT EXPENTRY fdr_fnwpSubclassedFolderFrame(HWND hwndFrame,
                                                MPARAM mp1,
                                                MPARAM mp2)
 {
-    PSUBCLASSEDFOLDERVIEW psfv;
+    PSUBCLFOLDERVIEW psfv;
 
     if (psfv = fdrQuerySFV(hwndFrame,
                            NULL))
@@ -1944,7 +1944,7 @@ MRESULT EXPENTRY fdr_fnwpSubclassedFolderFrame(HWND hwndFrame,
     // folder window procedure, but issue
     // a warning to the log
     cmnLog(__FILE__, __LINE__, __FUNCTION__,
-           "Folder SUBCLASSEDFOLDERVIEW not found.");
+           "Folder SUBCLFOLDERVIEW not found.");
 
     return (G_WPFolderWinClassInfo.pfnWindowProc(hwndFrame, msg, mp1, mp2));
 }
@@ -1984,17 +1984,16 @@ MRESULT EXPENTRY fdr_fnwpSubclassedFolderFrame(HWND hwndFrame,
 MRESULT EXPENTRY fdr_fnwpSupplFolderObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MPARAM mrc = NULL;
-    PSUBCLASSEDFOLDERVIEW psfv = (PSUBCLASSEDFOLDERVIEW)
-                WinQueryWindowPtr(hwndObject, QWL_USER);
+    PSUBCLFOLDERVIEW psfv = (PSUBCLFOLDERVIEW)WinQueryWindowPtr(hwndObject, QWL_USER);
 
     switch (msg)
     {
         case WM_CREATE:
-            // set the USER window word to the SUBCLASSEDFOLDERVIEW
+            // set the USER window word to the SUBCLFOLDERVIEW
             // structure which is passed to us upon window
             // creation (see cmnSubclassFrameWnd, which creates us)
             mrc = WinDefWindowProc(hwndObject, msg, mp1, mp2);
-            psfv = (PSUBCLASSEDFOLDERVIEW)mp1;
+            psfv = (PSUBCLFOLDERVIEW)mp1;
             WinSetWindowULong(hwndObject, QWL_USER, (ULONG)psfv);
         break;
 

@@ -926,18 +926,18 @@ SHORT EXPENTRY fnCompareDetailsColumn(PMINIRECORDCORE pmrc1,
         // (watch out, _wpQueryShadowedObject can return NULL)
         WPObject *pobjDeref1 = objResolveIfShadow(pobj1);
         WPObject *pobjDeref2 = objResolveIfShadow(pobj2);
-        BOOL IsFldr1 = (pobjDeref1)
+        BOOL fIsFldr1 = (pobjDeref1)
                           ? objIsAFolder(pobjDeref1)
                           : FALSE;      // treat broken shadows as non-folders
-        BOOL IsFldr2 = (pobjDeref2)
+        BOOL fIsFldr2 = (pobjDeref2)
                           ? objIsAFolder(pobjDeref2)
                           : FALSE;      // treat broken shadows as non-folders
 
-        if (IsFldr1 != IsFldr2)
+        if (fIsFldr1 != fIsFldr2)
         {
             // only one of the two is a folder:
 
-            if (IsFldr1)
+            if (fIsFldr1)
                 // 1 is folder, but 2 is not:
                 return (-1);
 
@@ -1235,9 +1235,9 @@ MRESULT EXPENTRY fdrSortAllViews(HWND hwndView,    // open folder view frame hwn
     XFolder     *somSelf = (XFolder*)mpFolder;
     MRESULT     mrc = (MPARAM)FALSE;
 
-    if (   ((ULONG)mpView == OPEN_CONTENTS)
-        || ((ULONG)mpView == OPEN_TREE)
-        || ((ULONG)mpView == OPEN_DETAILS)
+    if (    ((ULONG)mpView == OPEN_CONTENTS)
+         || ((ULONG)mpView == OPEN_TREE)
+         || ((ULONG)mpView == OPEN_DETAILS)
        )
     {
         _xwpSortViewOnce(somSelf,
@@ -1246,6 +1246,69 @@ MRESULT EXPENTRY fdrSortAllViews(HWND hwndView,    // open folder view frame hwn
         mrc = (MPARAM)TRUE;
     }
     return (mrc);
+}
+
+/*
+ *@@ fdrSortViewOnce:
+ *      implementation for XFolder::xwpSortViewOnce.
+ *
+ *@@added V0.9.19 (2002-04-24) [umoeller]
+ */
+
+BOOL fdrSortViewOnce(WPFolder *somSelf,
+                     HWND hwndFrame,
+                     long lSort)
+{
+    BOOL        rc = FALSE;
+
+#ifndef __ALWAYSEXTSORT__
+    if (cmnQuerySetting(sfExtendedSorting))
+#endif
+    {
+        WPSHLOCKSTRUCT Lock = {0};
+        TRY_LOUD(excpt1)
+        {
+            if (LOCK_OBJECT(Lock, somSelf))
+            {
+                HWND hwndCnr;
+
+                if (hwndCnr = wpshQueryCnrFromFrame(hwndFrame))
+                {
+                    CNRINFO CnrInfo;
+                    ULONG   ulStyle = 0;
+
+                    cnrhQueryCnrInfo(hwndCnr, &CnrInfo);
+
+                    if ((CnrInfo.flWindowAttr & (CV_ICON | CV_TREE)) == CV_ICON)
+                    {
+                        // for some reason, icon views need to have "auto arrange" on,
+                        // or nothing will happen
+                        ulStyle = winhQueryWindowStyle(hwndCnr);
+                        WinSetWindowULong(hwndCnr, QWL_STYLE, ulStyle | CCS_AUTOPOSITION);
+                    }
+
+                    // send sort msg with proper sort (comparison) func
+                    WinSendMsg(hwndCnr,
+                               CM_SORTRECORD,
+                               (MPARAM)fdrQuerySortFunc(somSelf,
+                                                        lSort),
+                               MPNULL);
+
+                    if ((CnrInfo.flWindowAttr & (CV_ICON | CV_TREE)) == CV_ICON)
+                        // restore old cnr style
+                        WinSetWindowULong(hwndCnr, QWL_STYLE, ulStyle);
+
+                    rc = TRUE;
+                }
+            } // end if (fFolderLocked)
+        }
+        CATCH(excpt1) {} END_CATCH();
+
+        if (Lock.fLocked)
+            _wpReleaseObjectMutexSem(Lock.pObject);
+    }
+
+    return (rc);
 }
 
 /*
@@ -1316,7 +1379,6 @@ VOID fdrSetFldrCnrSort(WPFolder *somSelf,      // in: folder to sort
                                                                      : _lDefSortCrit)
                                                : NULL;
                 CNRINFO         CnrInfo = {0};
-                // BOOL            Update = FALSE;
 
                 cnrhQueryCnrInfo(hwndCnr, &CnrInfo);
 
@@ -1369,7 +1431,7 @@ VOID fdrSetFldrCnrSort(WPFolder *somSelf,      // in: folder to sort
                 // now also update the internal WPFolder sort info, because otherwise
                 // the WPS will keep reverting the cnr attrs; we have obtained the pointer
                 // to this structure in wpRestoreData
-                if (_wpIsObjectInitialized(somSelf))
+                if (objIsObjectInitialized(somSelf))
                     if (_pFolderSortInfo)
                         ((PIBMSORTINFO)_pFolderSortInfo)->fAlwaysSort = AlwaysSort;
 
@@ -1683,7 +1745,7 @@ MRESULT fdrSortItemChanged(PNOTEBOOKPAGE pnbp,
                            USHORT usNotifyCode,
                            ULONG ulExtra)      // for checkboxes: contains new state
 {
-    if (pnbp->fPageInitialized)        // V0.9.12 (2001-05-22) [umoeller]
+    if (pnbp->flPage & NBFL_PAGE_INITED)        // V0.9.12 (2001-05-22) [umoeller]
     {
         BOOL fGlobalRefreshViews = FALSE;
 
@@ -1724,9 +1786,7 @@ MRESULT fdrSortItemChanged(PNOTEBOOKPAGE pnbp,
                 }
                 else
                 {
-                    // change global data
-                    // GLOBALSETTINGS *pGlobalSettings;
-
+                    // change global data:
                     // if the user enabled "always sort", check if
                     // the desktop would be sorted
                     if (fAlways)
@@ -1741,8 +1801,10 @@ MRESULT fdrSortItemChanged(PNOTEBOOKPAGE pnbp,
                         if (lDtpAlwaysSort != 0)
                         {
                             // issue warning that this might also sort the Desktop
-                            if (cmnMessageBoxMsg(pnbp->hwndFrame,
-                                                 116, 133,
+                            if (cmnMessageBoxExt(pnbp->hwndFrame,
+                                                 116,
+                                                 NULL, 0,
+                                                 133,
                                                  MB_YESNO)
                                            == MBID_YES)
                                 _xwpSetFldrSort(cmnQueryActiveDesktop(),
@@ -1755,11 +1817,9 @@ MRESULT fdrSortItemChanged(PNOTEBOOKPAGE pnbp,
                     _Pmpf(("  updating global sort settings, new defsort: %d", lDefaultSort));
 
                     // moved lock down V0.9.12 (2001-05-20) [umoeller]
-                    // pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
                     cmnSetSetting(sfFoldersFirst, fFoldersFirst);
                     cmnSetSetting(slDefSortCrit, lDefaultSort);
                     cmnSetSetting(sfAlwaysSort, fAlways);
-                    // cmnUnlockGlobalSettings();
 
                     fGlobalRefreshViews = TRUE;
                 }
@@ -1785,9 +1845,6 @@ MRESULT fdrSortItemChanged(PNOTEBOOKPAGE pnbp,
                 else
                 {
                     // global sort page:
-                    // GLOBALSETTINGS *pBackup = (GLOBALSETTINGS*)pnbp->pUser;
-                    // fixed undo V0.9.12 (2001-05-22) [umoeller]
-                    // GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
                     cmnRestoreSettings(pnbp->pUser, ARRAYITEMCOUNT(G_SortBackup));
                     fGlobalRefreshViews = TRUE;
                 }

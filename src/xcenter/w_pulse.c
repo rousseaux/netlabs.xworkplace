@@ -640,9 +640,12 @@ static LONG GetColor(HWND hwndDlg,
                                SYSCLR_DIALOGBACKGROUND));
 }
 
+#define COLOR_WIDTH     50
+#define COLOR_HEIGHT    16
+
 static CONTROLDEF
-    OKButton = CONTROLDEF_DEFPUSHBUTTON(NULL, DID_OK, 100, 30),
-    CancelButton = CONTROLDEF_PUSHBUTTON(NULL, DID_CANCEL, 100, 30),
+    OKButton = CONTROLDEF_DEFPUSHBUTTON(NULL, DID_OK, STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT),
+    CancelButton = CONTROLDEF_PUSHBUTTON(NULL, DID_CANCEL, STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT),
 
     ProcessorsGroup = CONTROLDEF_GROUP(
                             NULL,
@@ -653,15 +656,16 @@ static CONTROLDEF
     IRQLoadColor
                 = CONTROLDEF_TEXT(NULL,
                                   1000 + INDEX_IRQLOAD,
-                                  100,
-                                  40),
+                                  COLOR_WIDTH,
+                                  COLOR_HEIGHT),
 
     ProcessorColor
                 = CONTROLDEF_TEXT(NULL,
                                   1000,
-                                  100,
-                                  40),
-    * paProcessorColor = NULL,          /* kso: Pointer to an array of colors. Inited on first call. */
+                                  COLOR_WIDTH,
+                                  COLOR_HEIGHT),
+    *paProcessorColor = NULL,
+            // kso: Pointer to an array of colors. Inited on first call.
 
     OthersGroup = CONTROLDEF_GROUP(
                             NULL,
@@ -672,13 +676,13 @@ static CONTROLDEF
     BackgroundColor
                 = CONTROLDEF_TEXT(NULL,
                                   1000 + INDEX_BACKGROUND,
-                                  100,
-                                  40),
+                                  COLOR_WIDTH,
+                                  COLOR_HEIGHT),
     TextColor
                 = CONTROLDEF_TEXT(NULL,
                                   1000 + INDEX_TEXT,
-                                  100,
-                                  40);
+                                  COLOR_WIDTH,
+                                  COLOR_HEIGHT);
 
 static const DLGHITEM
     dlgPulseFront[] =
@@ -749,7 +753,8 @@ VOID EXPENTRY PwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
                                           ARRAYITEMCOUNT(dlgPulseFront))))
             {
                 //kso: we'll have to make unique CONTROLDEF for each processor...
-                //     do it the first time only, assuming that noone adds cpus while running.
+                //     do it the first time only, assuming that noone adds cpus
+                //     while running.
                 if (!paProcessorColor)
                 {
                     paProcessorColor = malloc(  sizeof(ProcessorColor)

@@ -469,8 +469,8 @@ static CONTROLDEF
                         -1,
                         CTL_COMMON_FONT,
                         0,
-                        { 30, 20 },     // size
-                        5               // spacing
+                        { 15, 5 },     // size
+                        COMMON_SPACING
                      },
             SecondsTxt = {
                         WC_STATIC,
@@ -480,8 +480,8 @@ static CONTROLDEF
                         -1,
                         CTL_COMMON_FONT,
                         0,
-                        { -1, 20 },     // size
-                        5               // spacing
+                        { -1, -1 },     // size
+                        COMMON_SPACING
                      },
 
     // cache size
@@ -493,8 +493,8 @@ static CONTROLDEF
                         -1,
                         CTL_COMMON_FONT,
                         0,
-                        { 120, 30 },     // size
-                        5               // spacing
+                        { 60, -1 },     // size
+                        COMMON_SPACING
                      },
             CachesizeSlider = {
                         WC_SLIDER,
@@ -507,8 +507,8 @@ static CONTROLDEF
                         ID_OSDI_CDFS_CACHESLIDER,
                         CTL_COMMON_FONT,
                         0,
-                        { 300, 30 },     // size
-                        5,               // spacing
+                        { 150, STD_BUTTON_HEIGHT },     // size
+                        COMMON_SPACING,
                         &SliderCData
                      },
             CachesizeTxt2 = {
@@ -519,8 +519,8 @@ static CONTROLDEF
                         ID_OSDI_CDFS_CACHETXT,
                         CTL_COMMON_FONT,
                         0,
-                        { 80, 30 },     // size
-                        5               // spacing
+                        { 40, -1 },     // size
+                        COMMON_SPACING,
                      },
     // autocheck
             AutocheckTxt = {
@@ -531,8 +531,8 @@ static CONTROLDEF
                         -1,
                         CTL_COMMON_FONT,
                         0,
-                        { 120, 20 },     // size
-                        5               // spacing
+                        { 60, 5 },     // size
+                        COMMON_SPACING,
                      },
             AutocheckEntry = {
                         WC_ENTRYFIELD,
@@ -541,8 +541,8 @@ static CONTROLDEF
                         ID_OSDI_AUTOCHECK,
                         CTL_COMMON_FONT,
                         0,
-                        { 300, 20 },     // size
-                        5               // spacing
+                        { 150, -1 },     // size
+                        COMMON_SPACING,
                      },
     // lazywrite
             LazywriteCheckbox = {
@@ -553,8 +553,8 @@ static CONTROLDEF
                         ID_OSDI_CACHE_LAZYWRITE,
                         CTL_COMMON_FONT,
                         0,
-                        { -1, 20 },
-                        5
+                        { -1, -1 },
+                        COMMON_SPACING,
                      },
             LWSyncText = {
                         WC_STATIC,
@@ -564,8 +564,8 @@ static CONTROLDEF
                         -1,
                         CTL_COMMON_FONT,
                         0,
-                        { 80, 20 },     // size
-                        5               // spacing
+                        { 40, -1 },     // size
+                        COMMON_SPACING,
                      },
             LWSyncSpin = {
                         WC_SPINBUTTON,
@@ -575,8 +575,8 @@ static CONTROLDEF
                         ID_OSDI_CACHE_SYNCHTIME,
                         CTL_COMMON_FONT,
                         0,
-                        { 100, 20 },     // size
-                        5               // spacing
+                        { 50, STD_SPIN_HEIGHT },     // size
+                        COMMON_SPACING,
                      },
             LWMaxageText = {
                         WC_STATIC,
@@ -586,8 +586,8 @@ static CONTROLDEF
                         -1,
                         CTL_COMMON_FONT,
                         0,
-                        { 80, 20 },     // size
-                        5               // spacing
+                        { 40, 5 },     // size
+                        COMMON_SPACING,
                      },
             LWMaxageSpin = {
                         WC_SPINBUTTON,
@@ -597,8 +597,8 @@ static CONTROLDEF
                         ID_OSDI_CACHE_MAXAGE,
                         CTL_COMMON_FONT,
                         0,
-                        { 100, 20 },     // size
-                        5               // spacing
+                        { 50, STD_SPIN_HEIGHT },     // size
+                        COMMON_SPACING,
                      },
             LWBufferidleText = {
                         WC_STATIC,
@@ -608,8 +608,8 @@ static CONTROLDEF
                         -1,
                         CTL_COMMON_FONT,
                         0,
-                        { 80, 20 },     // size
-                        5               // spacing
+                        { 50, 5 },     // size
+                        COMMON_SPACING,
                      },
             LWBufferidleSpin = {
                         WC_SPINBUTTON,
@@ -619,8 +619,8 @@ static CONTROLDEF
                         ID_OSDI_CACHE_BUFFERIDLE,
                         CTL_COMMON_FONT,
                         0,
-                        { 100, 20 },     // size
-                        5               // spacing
+                        { 50, STD_SPIN_HEIGHT },     // size
+                        COMMON_SPACING,
                      },
     // buttons
             OKButton = {
@@ -630,8 +630,8 @@ static CONTROLDEF
                         DID_OK,
                         CTL_COMMON_FONT,
                         0,
-                        { 100, 30 },    // size
-                        5               // spacing
+                        { STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT },    // size
+                        COMMON_SPACING,
                      },
             CancelButton = {
                         WC_BUTTON,
@@ -640,8 +640,8 @@ static CONTROLDEF
                         DID_CANCEL,
                         CTL_COMMON_FONT,
                         0,
-                        { 100, 30 },    // size
-                        5               // spacing
+                        { STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT },    // size
+                        COMMON_SPACING,
                      },
             DefaultButton = {
                         WC_BUTTON,
@@ -650,8 +650,8 @@ static CONTROLDEF
                         DID_DEFAULT,
                         CTL_COMMON_FONT,
                         0,
-                        { 100, 30 },    // size
-                        5               // spacing
+                        { STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT },    // size
+                        COMMON_SPACING,
                      },
             HelpButton = {
                         WC_BUTTON,
@@ -660,8 +660,8 @@ static CONTROLDEF
                         DID_HELP,
                         CTL_COMMON_FONT,
                         0,
-                        { 100, 30 },    // size
-                        5               // spacing
+                        { STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT },    // size
+                        COMMON_SPACING,
                      };
 
 static const DLGHITEM dlgCDFS[] =

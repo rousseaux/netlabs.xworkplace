@@ -100,6 +100,7 @@
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\errors.h"              // private XWorkplace error codes
+#include "shared\helppanels.h"          // all XWorkplace help panel IDs
 #include "shared\kernel.h"              // XWorkplace Kernel
 
 #include "filesys\fileops.h"            // file operations implementation
@@ -300,7 +301,7 @@ FOPSRET APIENTRY fopsGenericErrorCallback(ULONG ulOperation,
 
     if (flFlags)
     {
-        ULONG ulrc = cmnMessageBoxMsgExt(NULLHANDLE,
+        ULONG ulrc = cmnMessageBoxExt(NULLHANDLE,
                                          175,
                                          apsz,
                                          cpsz,
@@ -389,7 +390,7 @@ MRESULT EXPENTRY fops_fnwpGenericProgress(HWND hwndProgress, ULONG msg, MPARAM m
                 {
                     CHAR    szTargetFolder[CCHMAXPATH] = "";
                     PSZ     pszTargetFolder = NULL;
-                    PSZ     pszSubObject = NULL;
+                    PCSZ    pcszSubObject = NULL;
 
                     // update source folder?
                     if (pfu->flChanged & FOPSUPD_SOURCEFOLDER_CHANGED)
@@ -435,18 +436,18 @@ MRESULT EXPENTRY fops_fnwpGenericProgress(HWND hwndProgress, ULONG msg, MPARAM m
                     if (pfu->flChanged & FOPSUPD_EXPANDING_SOURCEOBJECT_1ST)
                     {
                         // expanding source objects list:
-                        pszSubObject = cmnGetString(ID_XSSI_POPULATING);  // pszPopulating
+                        pcszSubObject = cmnGetString(ID_XSSI_POPULATING);  // pszPopulating
                                             // "Collecting objects..."
                     }
 
                     if (pfu->flChanged & FOPSUPD_SUBOBJECT_CHANGED)
                     {
-                        if (pfu->pszSubObject)
+                        if (pfu->pcszSubObject)
                             // can be null!
-                            pszSubObject = pfu->pszSubObject;
+                            pcszSubObject = pfu->pcszSubObject;
                         else
                             // clear:
-                            pszSubObject = "";
+                            pcszSubObject = "";
                     }
 
                     // set controls text composed above
@@ -455,10 +456,10 @@ MRESULT EXPENTRY fops_fnwpGenericProgress(HWND hwndProgress, ULONG msg, MPARAM m
                                           ID_XSDI_TARGETFOLDER,
                                           pszTargetFolder);
 
-                    if (pszSubObject)
+                    if (pcszSubObject)
                         WinSetDlgItemText(hwndProgress,
                                           ID_XSDI_SUBOBJECT,
-                                          pszSubObject);
+                                          (PSZ)pcszSubObject);
                     // update status bar?
                     if (pfu->flChanged & FOPSPROG_UPDATE_PROGRESS)
                         WinSendDlgItemMsg(hwndProgress, ID_SDDI_PROGRESSBAR,
@@ -484,6 +485,7 @@ MRESULT EXPENTRY fops_fnwpGenericProgress(HWND hwndProgress, ULONG msg, MPARAM m
                         if (cmnMessageBox(hwndProgress, // owner
                                           pszTitle,
                                           strMsg.psz,
+                                          NULLHANDLE, // no help
                                           MB_RETRYCANCEL)
                                 != MBID_RETRY)
                         {
@@ -581,10 +583,8 @@ static FOPSRET StartWithGenericProgress(HFILETASKLIST hftl,
     if (_wpQueryConfirmations(pSourceFolder) & CONFIRM_PROGRESS)
     {
         // load progress dialog
-        ppwd->hwndProgress = WinLoadDlg(HWND_DESKTOP,        // parent
-                                        NULLHANDLE, // owner
+        ppwd->hwndProgress = cmnLoadDlg(NULLHANDLE, // owner
                                         fops_fnwpGenericProgress,
-                                        cmnQueryNLSModuleHandle(FALSE),
                                         ID_XFD_FILEOPSSTATUS,
                                         NULL);
 
@@ -667,7 +667,7 @@ static FOPSRET StartWithGenericProgress(HFILETASKLIST hftl,
  *      (XFLDRxxx.TMF).
  *
  *      -- If a single object is selected in the container,
- *         FOPSCONFIRM.ulMsgSingle will be used. The "%1" parameter in the
+ *         &ouml;FOPSCONFIRM.ulMsgSingle will be used. The "%1" parameter in the
  *         message will be replaced with the object's title.
  *
  *      -- If multiple objects are selected in the container,
@@ -688,6 +688,7 @@ static FOPSRET StartWithGenericProgress(HFILETASKLIST hftl,
  *@@changed V0.9.4 (2000-08-03) [umoeller]: now checking for "no objects"
  *@@changed V0.9.12 (2001-05-17) [pr]: beautified object title
  *@@changed V0.9.16 (2001-10-28) [pr]: prevent trap on null title
+ *@@changed V0.9.19 (2002-04-24) [umoeller]: added help support for confirmations
  */
 
 FOPSRET fopsStartTaskFromCnr(ULONG ulOperation,       // in: operation; see fopsCreateFileTaskList
@@ -773,12 +774,11 @@ FOPSRET fopsStartTaskFromCnr(ULONG ulOperation,       // in: operation; see fops
                     else
                     {
                         // confirmations?
-
                         if (pConfirm)
                         {
+                            // yes:
                             PCSZ     apsz = NULL;
                             ULONG   ulMsg;
-                            // yes:
                             if (cObjects == 1)
                             {
                                 // single object:
@@ -795,12 +795,13 @@ FOPSRET fopsStartTaskFromCnr(ULONG ulOperation,       // in: operation; see fops
                                 ulMsg = pConfirm->ulMsgMultiple;
                             }
 
-                            if (cmnMessageBoxMsgExt(pConfirm->hwndOwner,  // owner
-                                                    121, // "XWorkplace"
-                                                    &apsz,
-                                                    1,
-                                                    ulMsg,
-                                                    MB_YESNO)
+                            if (cmnMessageBoxHelp(pConfirm->hwndOwner,  // owner
+                                                  121, // "XWorkplace"
+                                                  &apsz,
+                                                  1,
+                                                  ulMsg,
+                                                  pConfirm->ulHelpPanel,  // V0.9.19 (2002-04-24) [umoeller]
+                                                  MB_YESNO)
                                         != MBID_YES)
                                 frc = FOPSERR_CANCELLEDBYUSER;
 
@@ -987,6 +988,7 @@ FOPSRET fopsStartTaskFromList(ULONG ulOperation,
  *@@changed V0.9.3 (2000-04-30) [umoeller]: removed pSourceFolder parameter
  *@@changed V0.9.5 (2000-08-11) [umoeller]: confirmations use cnr's frame as owner now
  *@@changed V0.9.9 (2001-02-18) [pr]: fix trap when pSourceObject is NULL
+ *@@changed V0.9.19 (2002-04-24) [umoeller]: added help to some confirmations
  */
 
 FOPSRET fopsStartDeleteFromCnr(HAB hab,                 // in: as with fopsStartTask
@@ -1061,12 +1063,13 @@ FOPSRET fopsStartDeleteFromCnr(HAB hab,                 // in: as with fopsStart
                 switch (frc)
                 {
                     case FOPSERR_TRASHDRIVENOTSUPPORTED:
-                        Confirm.ulMsgSingle = 180;
-                        Confirm.ulMsgMultiple = 181;
-
                         // source folder is not supported by trash can:
                         // start a "delete" job instead, with the proper
                         // confirmation messages ("Drive not supported, delete instead?")
+                        Confirm.ulMsgSingle = 180;
+                        Confirm.ulMsgMultiple = 181;
+                        Confirm.ulHelpPanel = ID_XSH_TRASH_NODRIVESUPPORT;
+                                // V0.9.19 (2002-04-24) [umoeller]
                         frc = fopsStartTaskFromCnr(XFT_TRUEDELETE,
                                                    hab,
                                                    pSourceFolder,
@@ -1079,10 +1082,13 @@ FOPSRET fopsStartDeleteFromCnr(HAB hab,                 // in: as with fopsStart
                     break;
 
                     case FOPSERR_NO_TRASHCAN:
-                        if (cmnMessageBoxMsg(Confirm.hwndOwner,
-                                             121, // "XWorkplace"
-                                             225,   // "trash can disappeared"
-                                             MB_YESNO)
+                        if (cmnMessageBoxHelp(Confirm.hwndOwner,
+                                              121, // "XWorkplace"
+                                              NULL, 0,
+                                              225,   // "trash can disappeared"
+                                              ID_XSH_CANNOT_FIND_TRASHCAN,
+                                                    // V0.9.19 (2002-04-24) [umoeller]
+                                              MB_YESNO)
                                 == MBID_YES)
                         {
                             cmnEnableTrashCan(Confirm.hwndOwner,

@@ -3110,8 +3110,6 @@ extern ULONG G_cFileTypesPage = sizeof(G_ampFileTypesPage) / sizeof(G_ampFileTyp
 VOID ftypFileTypesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                            ULONG flFlags)        // CBI_* flags (notebook.h)
 {
-    // PGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-
     HWND hwndCnr = WinWindowFromID(pnbp->hwndDlgPage, ID_XSDI_FT_CONTAINER);
 
     /*
@@ -3289,7 +3287,7 @@ static VOID ImportNewTypes(PNOTEBOOKPAGE pnbp)
             // call "init" callback to reinitialize the page
             pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
 
-            cmnMessageBoxMsgExt(pnbp->hwndDlgPage,
+            cmnMessageBoxExt(pnbp->hwndDlgPage,
                                 121,            // xwp
                                 apsz,
                                 1,
@@ -3299,7 +3297,7 @@ static VOID ImportNewTypes(PNOTEBOOKPAGE pnbp)
         else
         {
             apsz[1] = strError.psz;
-            cmnMessageBoxMsgExt(pnbp->hwndDlgPage,
+            cmnMessageBoxExt(pnbp->hwndDlgPage,
                                 104,            // xwp: error
                                 apsz,
                                 2,
@@ -3336,7 +3334,6 @@ MRESULT ftypFileTypesItemChanged(PNOTEBOOKPAGE pnbp,
                                  USHORT usNotifyCode,
                                  ULONG ulExtra)      // for checkboxes: contains new state
 {
-    // PGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     MRESULT mrc = (MRESULT)0;
 
     PFILETYPESPAGEDATA pftpd = (PFILETYPESPAGEDATA)pnbp->pUser;
@@ -3738,7 +3735,7 @@ MRESULT ftypFileTypesItemChanged(PNOTEBOOKPAGE pnbp,
 
                         if (ulMsg)
                         {
-                            cmnMessageBoxMsgExt(pnbp->hwndDlgPage,
+                            cmnMessageBoxExt(pnbp->hwndDlgPage,
                                                 104,        // error
                                                 &pszMsg,
                                                 1,
@@ -3823,12 +3820,10 @@ MRESULT ftypFileTypesItemChanged(PNOTEBOOKPAGE pnbp,
         case ID_XSMI_FILETYPES_NEW:
         {
             HWND hwndDlg;
-            if (hwndDlg = WinLoadDlg(HWND_DESKTOP,     // parent
-                                      pnbp->hwndFrame,  // owner
-                                      WinDefDlgProc,
-                                      cmnQueryNLSModuleHandle(FALSE),
-                                      ID_XSD_NEWFILETYPE,   // "New File Type" dlg
-                                      NULL))
+            if (hwndDlg = cmnLoadDlg(pnbp->hwndFrame,  // owner
+                                     WinDefDlgProc,
+                                     ID_XSD_NEWFILETYPE,   // "New File Type" dlg
+                                     NULL))
             {
                 winhSetEntryFieldLimit(WinWindowFromID(hwndDlg, ID_XSDI_FT_ENTRYFIELD),
                                        50);
@@ -3848,7 +3843,7 @@ MRESULT ftypFileTypesItemChanged(PNOTEBOOKPAGE pnbp,
                                                  // can be NULL
                         {
                             PCSZ pTable = pszNewType;
-                            cmnMessageBoxMsgExt(pnbp->hwndFrame,  // owner
+                            cmnMessageBoxExt(pnbp->hwndFrame,  // owner
                                                 104,        // xwp error
                                                 &pTable,
                                                 1,
@@ -4016,13 +4011,11 @@ MRESULT ftypFileTypesItemChanged(PNOTEBOOKPAGE pnbp,
 
         case ID_XSMI_FILEFILTER_NEW:
         {
-            HWND hwndDlg = WinLoadDlg(HWND_DESKTOP,     // parent
-                                      pnbp->hwndFrame,  // owner
-                                      WinDefDlgProc,
-                                      cmnQueryNLSModuleHandle(FALSE),
-                                      ID_XSD_NEWFILTER, // "New Filter" dlg
-                                      NULL);            // pCreateParams
-            if (hwndDlg)
+            HWND hwndDlg;
+            if (hwndDlg = cmnLoadDlg(pnbp->hwndFrame,  // owner
+                                     WinDefDlgProc,
+                                     ID_XSD_NEWFILTER, // "New Filter" dlg
+                                     NULL))
             {
                 WinSendDlgItemMsg(hwndDlg, ID_XSDI_FT_ENTRYFIELD,
                                     EM_SETTEXTLIMIT,
@@ -4051,16 +4044,13 @@ MRESULT ftypFileTypesItemChanged(PNOTEBOOKPAGE pnbp,
 
         case ID_XSMI_FILEFILTER_IMPORTWPS:
         {
-            if (pftpd->hwndWPSImportDlg == NULLHANDLE)
+            if (!pftpd->hwndWPSImportDlg)
             {
                 // dialog not presently open:
-                pftpd->hwndWPSImportDlg = WinLoadDlg(
-                               HWND_DESKTOP,     // parent
-                               pnbp->hwndFrame,  // owner
-                               fnwpImportWPSFilters,
-                               cmnQueryNLSModuleHandle(FALSE),
-                               ID_XSD_IMPORTWPS, // "Import WPS Filters" dlg
-                               pftpd);           // FILETYPESPAGEDATA for the dlg
+                pftpd->hwndWPSImportDlg = cmnLoadDlg(pnbp->hwndFrame,  // owner
+                                                     fnwpImportWPSFilters,
+                                                     ID_XSD_IMPORTWPS, // "Import WPS Filters" dlg
+                                                     pftpd);           // FILETYPESPAGEDATA for the dlg
             }
             WinShowWindow(pftpd->hwndWPSImportDlg, TRUE);
         }
@@ -4462,7 +4452,7 @@ MRESULT ftypFileTypesItemChanged(PNOTEBOOKPAGE pnbp,
 
                 if (    (access(szFilename, 0) != 0)
                         // confirm if file exists
-                     || (cmnMessageBoxMsgExt(pnbp->hwndDlgPage,
+                     || (cmnMessageBoxExt(pnbp->hwndDlgPage,
                                              121,            // xwp
                                              apsz,
                                              1,
@@ -4477,7 +4467,7 @@ MRESULT ftypFileTypesItemChanged(PNOTEBOOKPAGE pnbp,
                     WinSetPointer(HWND_DESKTOP, hptrOld);
 
                     if (!arc)
-                        cmnMessageBoxMsgExt(pnbp->hwndDlgPage,
+                        cmnMessageBoxExt(pnbp->hwndDlgPage,
                                             121,            // xwp
                                             apsz,
                                             1,
@@ -4486,7 +4476,7 @@ MRESULT ftypFileTypesItemChanged(PNOTEBOOKPAGE pnbp,
                     else
                     {
                         sprintf(szError, "%u", arc);
-                        cmnMessageBoxMsgExt(pnbp->hwndDlgPage,
+                        cmnMessageBoxExt(pnbp->hwndDlgPage,
                                             104,            // xwp: error
                                             apsz,
                                             2,

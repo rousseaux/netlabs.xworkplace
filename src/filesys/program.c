@@ -1281,10 +1281,8 @@ static BOOL DisplayParamsPrompt(PXSTRING pstrPrompt)   // in: prompt string,
     BOOL brc = FALSE;
 
     HWND hwndDlg;
-    if (hwndDlg = WinLoadDlg(HWND_DESKTOP,     // parent
-                             NULLHANDLE,       // owner
+    if (hwndDlg = cmnLoadDlg(NULLHANDLE,       // owner
                              WinDefDlgProc,
-                             cmnQueryNLSModuleHandle(FALSE),
                              ID_XSD_NEWFILETYPE,   // "New File Type" dlg
                              NULL))
     {
@@ -2169,8 +2167,6 @@ APIRET progOpenProgram(WPObject *pProgObject,       // in: WPProgram or WPProgra
 VOID progFileInitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
                       ULONG flFlags)                // CBI_* flags (notebook.h)
 {
-    // PGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-
     if (flFlags & CBI_INIT)
     {
         // replace the static "description" control
@@ -2497,7 +2493,6 @@ static void _Optlink fntInsertModules(PTHREADINFO pti)
 VOID progFile1InitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
                           ULONG flFlags)                // CBI_* flags (notebook.h)
 {
-    // PGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     HWND hwndCnr = WinWindowFromID(pnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
 
     /*
@@ -2715,7 +2710,6 @@ static void _Optlink fntInsertFunctions(PTHREADINFO pti)
 VOID progFile2InitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
                        ULONG flFlags)                // CBI_* flags (notebook.h)
 {
-    // PGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     HWND hwndCnr = WinWindowFromID(pnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
 
     /*
@@ -3112,7 +3106,6 @@ static ULONG EXPENTRY KillPointersInRecords(HWND hwndCnr,
 VOID progResourcesInitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
                            ULONG flFlags)                // CBI_* flags (notebook.h)
 {
-    // PGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     HWND hwndCnr = WinWindowFromID(pnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
 
     /*

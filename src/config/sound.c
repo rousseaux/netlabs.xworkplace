@@ -428,13 +428,11 @@ static BOOL SaveSoundSchemeAs(PNOTEBOOKPAGE pnbp,
     BOOL    brc = FALSE;
     PSOUNDPAGEDATA pspd = (PSOUNDPAGEDATA)pnbp->pUser;
 
-    HWND hwndDlg = WinLoadDlg(HWND_DESKTOP,     // parent
-                              pnbp->hwndFrame,  // owner
-                              WinDefDlgProc,
-                              cmnQueryNLSModuleHandle(FALSE),
-                              ID_XSD_NEWSOUNDSCHEME,   // "New Sound Scheme" dlg
-                              NULL);            // pCreateParams
-    if (hwndDlg)
+    HWND hwndDlg;
+    if (hwndDlg = cmnLoadDlg(pnbp->hwndFrame,  // owner
+                             WinDefDlgProc,
+                             ID_XSD_NEWSOUNDSCHEME,   // "New Sound Scheme" dlg
+                             NULL))
     {
         WinSendDlgItemMsg(hwndDlg, ID_XSDI_FT_ENTRYFIELD,
                           EM_SETTEXTLIMIT,
@@ -467,7 +465,7 @@ static BOOL SaveSoundSchemeAs(PNOTEBOOKPAGE pnbp,
             {
                 PCSZ     psz = szNewScheme;
                 // exists: have user confirm this
-                if (cmnMessageBoxMsgExt(pnbp->hwndFrame,
+                if (cmnMessageBoxExt(pnbp->hwndFrame,
                                         151,  // "Sound"
                                         &psz, 1,
                                         152,
@@ -798,8 +796,6 @@ static MRESULT EXPENTRY fnwpSubclassedSoundFile(HWND hwndEntryField,
 VOID sndSoundsInitPage(PNOTEBOOKPAGE pnbp,           // notebook info struct
                        ULONG flFlags)        // CBI_* flags (notebook.h)
 {
-    // PGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-
     if (flFlags & CBI_INIT)
     {
         // create SOUNDPAGEDATA structure;
@@ -1121,8 +1117,9 @@ MRESULT sndSoundsItemChanged(PNOTEBOOKPAGE pnbp,  // notebook info
                             // in a sound scheme yet, so we better have the
                             // user confirm this
 
-                            ULONG ulAnswer = cmnMessageBoxMsg(pnbp->hwndFrame,
+                            ULONG ulAnswer = cmnMessageBoxExt(pnbp->hwndFrame,
                                                               151,
+                                                              NULL, 0,
                                                               153, // "save first"?
                                                               MB_YESNOCANCEL);
 
@@ -1223,7 +1220,7 @@ MRESULT sndSoundsItemChanged(PNOTEBOOKPAGE pnbp,  // notebook info
                                sizeof(szCurrentScheme),
                                szCurrentScheme);
 
-            if (cmnMessageBoxMsgExt(pnbp->hwndFrame,
+            if (cmnMessageBoxExt(pnbp->hwndFrame,
                                     151,
                                     &pszTemp, 1,
                                     154,    // "sure?"

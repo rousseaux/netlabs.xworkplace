@@ -1,64 +1,44 @@
-<HTML RESID=&ID_XSH_SETTINGS_ADDMENUS;>
+<HTML RESID=&ID_XSH_SETTINGS_MENUITEMS;>
 <HEAD>
     <TITLE>
-        Specific Menu Settings
+        Menu Items
     </TITLE>
 </HEAD>
-<!-- rewritten with V0.9.19 -->
+<!-- rewritten with V0.9.19; resid changed on top! -->
 <BODY>
-On this notebook page you can set more global options for
-certain object menus on the system. However, while the options
-on the previous page affect all object menus, the items on
-this page affect folders, files, and disk objects only.
+On this notebook page you can determine in great detail
+what menu items should be visible for all objects on the
+system.
+
+<P>You can determine the visible menu items differently
+for several <B>object categories.</B> To determine the menu items
+for a certain category, first select the category from
+the drop-down box on the top of the page. Then select or
+deselect the menu items that you would like to be visible.
+
+<P>Note that the category settings do not inherit from
+each other. That is, for example, even though the Desktop
+is really a special folder, this does not mean that disabling
+an item for the "folders" category will also disable the item
+for the Desktop. This allows you, for example, to disable the
+"Sort" and "Arrange" menu items for the Desktop only in order
+to avoid accidentally sorting the Desktop.
+
+<P>Certain menu items are <B>disabled</B> if you cannot remove
+them from the menus, either because they are required for
+the proper operation of the Workplace Shell or because you
+have enabled the "Short menu" style on the first "Menu" page.
+
 <P>Press <B>"Undo"</B> to restore the settings
-that were in use before you opened this notebook page.
+for all categories that were in use before you opened this notebook page.
 <P>Press <B>"Default"</B> to restore the settings
-to the installation state.
+to the installation state, which will enable
+all menu items for all categories.
 
-<P>For a detailed explanation of each field, select from the lists below.
-
-<UL><LI><B>Folder menu items</B> affect all
-<A HREF="objects/obj_fdr_main.html">folder</A>
-menus on the
-system. <B>Note:</B> "Sort" and "Arrange" have no effect
-on the Desktop because the Desktop has its own settings for
-these two menu items in its
-<A HREF="glossary/gls_notebook.html">properties notebook</A>.
-<BR><UL>
-<LI><A HREF="wps/wps_v2_paste.html">"Paste"</A>
-<LI><A HREF="wps/wps_v2_find.html">"Find"</A>
-<IFNDEF __EWORKPLACE__>
-<LI><A HREF="wps/wps_v2_select.html">"Select" menu</A>
-</IFNDEF>
-<LI><A HREF="wps/wps_v2_view.html">"View" menu</A>
-<LI><A HREF="wps/wps_v3_xviewmenu.html">Layout items</A>
-<LI><A HREF="dlg_selsome.html">"Select by name"</A>
-<LI><A HREF="wps/wps_v2_sort.html">"Sort" menu</A>
-<LI><A HREF="wps/wps_v2_arrng.html">"Arrange" menu</A>
-<IFNDEF __NOMOVEREFRESHNOW__>
-<LI><A HREF="wps/wps_v3_moverefresh.html">"Refresh now" in main menu</A>
-</IFNDEF>
-<IFNDEF __NOFOLDERCONTENTS__>
-<LI><A HREF="wps/wps_v3_fdrcontents.html">Add folder content menus</A>
-<LI><A HREF="wps/wps_v3_fdrc_icons.html">Display icons</A>
-</IFNDEF>
-
-</UL><P>Note that more menu items may be added to folder menus according to
+<P>Note that more menu items may be added to folder menus according to
 the contents of the special &cfgfdr;.
 See <A HREF="menus/menu_3config.html">Configuring &popmenu;s</A> for details.
 
-<P><LI><B>File menu items</B> affect all file menus.
-<BR><UL><LI><A HREF="wps/wps_v3_fattrs.html">"Attributes" menu</A>
-<LI><A HREF="wps/wps_v3_cpyfname.html">"Copy filename"</A>
-
-</UL><LI><B>Disk menu items</B> affect disk objects
-in the "Drives" folder only.
-
-<BR><UL>
-<LI><A HREF="wps/wps_v2_chkdsk.html">"Check disk"</A>
-<LI><A HREF="wps/wps_v2_format.html">"Format disk"</A>
-</UL>
-</UL>
 <BR>
 </BODY>
 </HTML>

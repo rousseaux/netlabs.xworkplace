@@ -182,6 +182,7 @@ static const XCENTERWIDGETCLASS G_WidgetClasses[]
  */
 
 // resolved function pointers from XFLDR.DLL
+PCMNLOADDLG pcmnLoadDlg = NULL;
 PCMNQUERYDEFAULTFONT pcmnQueryDefaultFont = NULL;
 PCMNQUERYHELPLIBRARY pcmnQueryHelpLibrary = NULL;
 PCMNQUERYNLSMODULEHANDLE pcmnQueryNLSModuleHandle = NULL;
@@ -232,6 +233,7 @@ PXSTRINIT pxstrInit = NULL;
 
 static const RESOLVEFUNCTION G_aImports[] =
     {
+        "cmnLoadDlg", (PFN*)&pcmnLoadDlg,
         "cmnQueryDefaultFont", (PFN*)&pcmnQueryDefaultFont,
         "cmnQueryHelpLibrary", (PFN*)&pcmnQueryHelpLibrary,
         "cmnQueryNLSModuleHandle", (PFN*)&pcmnQueryNLSModuleHandle,
@@ -985,14 +987,12 @@ static MRESULT EXPENTRY fnwpSettingsDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM
 
 VOID EXPENTRY WwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
 {
-    HWND hwnd = WinLoadDlg(HWND_DESKTOP,         // parent
-                           pData->hwndOwner,
+    HWND hwnd;
+    if (hwnd = pcmnLoadDlg(pData->hwndOwner,
                            fnwpSettingsDlg,
-                           pcmnQueryNLSModuleHandle(FALSE),
                            ID_CRD_WINLISTWGT_SETTINGS,
                            // pass original setup string with WM_INITDLG
-                           (PVOID)pData);
-    if (hwnd)
+                           (PVOID)pData))
     {
         pcmnSetControlsFont(hwnd,
                             1,

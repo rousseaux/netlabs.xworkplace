@@ -433,6 +433,23 @@ Dies muá nicht notwendigerweise bedeuten, daá die Arbeitsoberfl„che defekt ist, 
 
 Soll &xwp; nun den "Panik"-Dialog anzeigen? Andernfalls wird normal mit dem Systemstart fortgefahren.
 
+;
+; the following items are new with V0.9.19
+;
+
+<--XFL0232-->: &xwp; konnte den &xwp;-D„mon nicht erreichen, der unter anderem ben”tigt wird, um Programme zu starten.
+Soll der D„mon nunmehr neu gestartet werden?
+
+<--XFL0233-->: &xwp; konnte die WPS-Klasse "%1" nicht finden. Wahrscheinlich ist die Klasse nicht installiert.
+
+<--XFL0234-->: Der regul„re Ausdruck, den Sie angegeben haben, ist ungltig. Der folgende Fehler trat auf:
+
+%1
+
+<--XFL0235-->: Der ausgew„hlte Menpunkt soll Textdaten aus der Zwischenablage als Parameter weiterverwenden. In der Zwischenablage befinden sich jedoch keine Textdaten.
+
+Soll das Programm trotzdem gestartet werden?
+
 ; ---------------------------------------------------------------------------------
 ;
 ; V0.9.0:

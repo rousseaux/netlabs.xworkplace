@@ -76,6 +76,7 @@
 // headers in /helpers
 #include "helpers\except.h"             // exception handling
 #include "helpers\nls.h"                // National Language Support helpers
+#include "helpers\standards.h"          // some standard macros
 #include "helpers\stringh.h"            // string helper routines
 
 // SOM headers which don't crash with prec. header files
@@ -93,6 +94,7 @@
 #include "filesys\filetype.h"           // extended file types implementation
 #include "filesys\folder.h"             // XFolder implementation
 #include "filesys\icons.h"              // icons handling
+#include "filesys\object.h"             // XFldObject implementation
 
 // other SOM headers
 #pragma hdrstop
@@ -306,6 +308,7 @@ SOM_Scope HWND  SOMLINK xfs_wpOpen(XWPFileSystem *somSelf, HWND hwndCnr,
  *      content tree of our folder.
  *
  *@@added V0.9.16 (2001-10-25) [umoeller]
+ *@@changed V0.9.19 (2002-04-17) [umoeller]: moved code to XWPFileSystem::wpSetRealName to fix rename cases
  */
 
 SOM_Scope BOOL  SOMLINK xfs_wpSetTitleAndRenameFile(XWPFileSystem *somSelf,
@@ -319,11 +322,16 @@ SOM_Scope BOOL  SOMLINK xfs_wpSetTitleAndRenameFile(XWPFileSystem *somSelf,
 
     XWPFileSystemMethodDebug("XWPFileSystem","xfs_wpSetTitleAndRenameFile");
 
+    #ifdef DEBUG_TURBOFOLDERS
+    _Pmpf((__FUNCTION__ ": new title is \"%s\"", STRINGORNULL(pszNewTitle)));
+    #endif
+
+/*
 #ifndef __NOTURBOFOLDERS__
     if (    (cmnQuerySetting(sfTurboFolders))
             // we only need to handle the case where the object's name
             // is being changed, so skip if we aren't even initialized yet
-         && (_wpIsObjectInitialized(somSelf))
+         && (objIsObjectInitialized(somSelf))
             // we can't handle UNC yet
          && (pMyFolder = _wpQueryFolder(somSelf))
          && (_wpQueryFilename(pMyFolder, szFolder, TRUE))
@@ -356,10 +364,123 @@ SOM_Scope BOOL  SOMLINK xfs_wpSetTitleAndRenameFile(XWPFileSystem *somSelf,
         return (brc);
     } // end if (cmnQuerySetting(sfTurboFolders))
 #endif
+*/
 
-    return (XWPFileSystem_parent_WPFileSystem_wpSetTitleAndRenameFile(somSelf,
-                                                                      pszNewTitle,
-                                                                      fConfirmations));
+    brc = XWPFileSystem_parent_WPFileSystem_wpSetTitleAndRenameFile(somSelf,
+                                                                    pszNewTitle,
+                                                                    fConfirmations);
+
+    #ifdef DEBUG_TURBOFOLDERS
+    _Pmpf((__FUNCTION__ ": exiting, rc = %d", brc));
+    #endif
+
+    return brc;
+}
+
+/*
+ *@@ wpSetRealName:
+ *      this WPFileSystem instance method sets the real name
+ *      for the object.
+ *
+ *      This code normally only gets called by WPS-internal
+ *      implementations to update the internal representation
+ *      of the file. When this gets called, the file has
+ *      already been renamed on disk, I think.
+ *
+ *      In detail, I think the following code calls this:
+ *
+ *      --  WPFileSystem::wpRestoreState (during initialization);
+ *
+ *      --  WPFileSystem::wpMoveObject if wpConfirmObjectTitle
+ *          returned with NAMECLASH_RENAME during a move
+ *          operation;
+ *
+ *      --  WPFileSystem::wpSetTitleAndRenameFile to set the
+ *          new real name for the object on rename.
+ *
+ *      Be warned, WPDataFile also overrides this to reset
+ *      the association icon, so we have added
+ *      XFldDataFile::wpSetRealName as well.
+ *
+ *      If "turbo folders" are enabled, we must update the
+ *      content tree of our folder which is based on real
+ *      names.
+ *
+ *      Before V0.9.19, we used to override wpSetTitleAndRenameFile
+ *      which worked for 95% of the cases, but not when a file
+ *      conflict occured because in that case, this method got
+ *      called behind our back, rendering our tree all wrong and
+ *      leading to duplicate entries sometimes.
+ *      WPFileSystem::wpSetTitleAndRenameFile calls this in turn,
+ *      so apparently we're safe here too.
+ *
+ *@@added V0.9.19 (2002-04-17) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xfs_wpSetRealName(XWPFileSystem *somSelf,
+                                          PSZ pszName)
+{
+    BOOL        brc;
+    BOOL        fFolderLocked = FALSE;
+    WPFolder    *pMyFolder;
+    CHAR        szFolder[CCHMAXPATH];
+
+    // XWPFileSystemData *somThis = XWPFileSystemGetData(somSelf);
+    XWPFileSystemMethodDebug("XWPFileSystem","xfs_wpSetRealName");
+
+    #ifdef DEBUG_TURBOFOLDERS
+    _Pmpf((__FUNCTION__ ": new real name is \"%s\"", STRINGORNULL(pszName)));
+    #endif
+
+#ifndef __NOTURBOFOLDERS__
+    if (    (cmnQuerySetting(sfTurboFolders))
+            // we only need to handle the case where the object's name
+            // is being changed, so skip if we aren't even initialized yet
+         && (objIsObjectInitialized(somSelf))
+            // we can't handle UNC yet
+         && (pMyFolder = _wpQueryFolder(somSelf))
+         && (_wpQueryFilename(pMyFolder, szFolder, TRUE))
+         && (szFolder[0] != '\\')
+         && (szFolder[1] != '\\')
+       )
+    {
+        #ifdef DEBUG_TURBOFOLDERS
+        _Pmpf(("    obj is inited, calling fdrRealNameChanged"));
+        #endif
+
+        TRY_LOUD(excpt1)
+        {
+            if (    (brc = XWPFileSystem_parent_WPFileSystem_wpSetRealName(somSelf,
+                                                                           pszName))
+                 && (fFolderLocked = !fdrRequestFolderWriteMutexSem(pMyFolder))
+               )
+            {
+                // update the folder's contents tree
+                // (this also changes our instance data!)
+                fdrRealNameChanged(pMyFolder,
+                                   somSelf);
+            }
+        }
+        CATCH(excpt1)
+        {
+            brc = FALSE;
+        } END_CATCH();
+
+        if (fFolderLocked)
+            fdrReleaseFolderWriteMutexSem(pMyFolder);
+
+        return (brc);
+    } // end if (cmnQuerySetting(sfTurboFolders))
+#endif
+
+    brc = XWPFileSystem_parent_WPFileSystem_wpSetRealName(somSelf,
+                                                          pszName);
+
+    #ifdef DEBUG_TURBOFOLDERS
+    _Pmpf((__FUNCTION__ ": exiting, rc = %d", brc));
+    #endif
+
+    return brc;
 }
 
 /*

@@ -1148,7 +1148,7 @@ MRESULT cfgDriversItemChanged(PNOTEBOOKPAGE pnbp,
             {
                 // no changes made:
                 PCSZ  apszTable = precc->szDriverNameOnly;
-                cmnMessageBoxMsgExt(pnbp->hwndFrame, // inbp.hwndPage,
+                cmnMessageBoxExt(pnbp->hwndFrame, // inbp.hwndPage,
                                     100,
                                     &apszTable,
                                     1,
@@ -1162,7 +1162,7 @@ MRESULT cfgDriversItemChanged(PNOTEBOOKPAGE pnbp,
                 apszTable[0] = precc->szConfigSysLine;
                 apszTable[1] = szNewLine;
 
-                if (cmnMessageBoxMsgExt(pnbp->hwndFrame, // inbp.hwndPage,
+                if (cmnMessageBoxExt(pnbp->hwndFrame, // inbp.hwndPage,
                                         100,
                                         apszTable,
                                         2,   // entries
@@ -1195,7 +1195,7 @@ MRESULT cfgDriversItemChanged(PNOTEBOOKPAGE pnbp,
                         {
                             // "file written" msg
                             PCSZ apsz = szBackup;
-                            cmnMessageBoxMsgExt(pnbp->hwndFrame, // inbp.hwndPage,
+                            cmnMessageBoxExt(pnbp->hwndFrame, // inbp.hwndPage,
                                                 100,
                                                 &apsz, 1,
                                                 136,

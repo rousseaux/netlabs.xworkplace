@@ -59,11 +59,14 @@ differentiates between four <B>priority classes:</B>
 <OL><LI><B>"Idle time priority"</B> is the lowest priority class. This means that a
 thread only gets processor time if no threads of higher priority classes
 are running. Such threads are helpful for offloading work that needs to be
-done, but can be delayed until the computer has time for it. An example
-of such a thread is &xwp;'s own
+done, but can be delayed until the computer has time for it.
+<!-- V0.9.19: added ifdef -->
+<IFNDEF __EWORKPLACE__>
+An example of such a thread is &xwp;'s own
 <A HREF="glossary/gls_workerthr.html">Worker thread</A>, which keeps track of
 the awake Desktop objects on your system. This is fairly time-consuming,
 but not time-critical, so it's done with idle-time priority.
+</IFNDEF>
 
 <P><LI><B>"Regular priority"</B> is the priority class that most threads use. It is
 also the default &os2; priority class if a thread does not explicitly change its
@@ -103,8 +106,11 @@ currently doing I/O.
 
 <P>These dynamic adjustments are only then performed if &cfgsys; does
 not contain the command <CODE>PRIORITY=ABSOLUTE,</CODE> which is not
-recommended. (This is why you will not find that setting in the
-"&os2; Kernel" object.)
+recommended.
+<!-- V0.9.19: added ifdef -->
+<IFNDEF __NOOS2KERNEL__>
+(This is why you will not find that setting in the "&os2; Kernel" object.)
+</IFNDEF>
 
 <P><LI>A "time-critical" thread with priority level 0 still supercedes a
 "regular" thread with priority level +31 because it belongs to a higher

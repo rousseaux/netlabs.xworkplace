@@ -46,11 +46,11 @@
 #define INCL_DOSSEMAPHORES
 #define INCL_DOSPROCESS
 #define INCL_DOSEXCEPTIONS
-#define INCL_WINSTDCNR
 #define INCL_DOSRESOURCES
 #define INCL_DOSERRORS
 
 #define INCL_WINMESSAGEMGR
+#define INCL_WINPOINTERS
 #define INCL_WINDIALOGS
 #define INCL_WINSTATICS
 #define INCL_WINBUTTONS
@@ -58,6 +58,7 @@
 #define INCL_WINLISTBOXES
 #define INCL_WINMENUS
 #define INCL_WINMLE
+#define INCL_WINSTDCNR
 #define INCL_WINPROGRAMLIST     // needed for PROGDETAILS, wppgm.h
 #include <os2.h>
 
@@ -1984,18 +1985,29 @@ APIRET fsysRefresh(WPFileSystem *somSelf,
 #define INIT_DATE_TBR     "00.00.0000  "
 #define INIT_TIME_TBR     "00:00:00"
 
-#define LEFT_COLUMN_WIDTH         100
+#define LEFT_COLUMN_WIDTH           50
 
-#define DATETIMEGROUP_WIDTH     250
-#define DATETIME_ACTUAL_WIDTH   (DATETIMEGROUP_WIDTH + (2 * COMMON_SPACING))
+#define DATETIME_TABLE_WIDTH        125
+            // specified with the datetime group; dialog.c adds spacing around that
+#define DATETIME_ACTUAL_WIDTH   (DATETIME_TABLE_WIDTH + (2 * COMMON_SPACING) + (2 * GROUP_INNER_SPACING_X))
+            // this is the actual size produced by the dialog formatter
 
-#define ATTRGROUP_WIDTH         130
-#define ATTR_ACTUAL_WIDTH       (ATTRGROUP_WIDTH + (2 * COMMON_SPACING))
+#define ATTR_TABLE_WIDTH            65
+            // specified with the attribs group; dialog.c adds spacing around that
+#define ATTR_ACTUAL_WIDTH       (ATTR_TABLE_WIDTH + (2 * COMMON_SPACING) + (2 * GROUP_INNER_SPACING_X))
+            // this is the actual size produced by the dialog formatter
 
-#define INFO_GROUP_WIDTH        (DATETIMEGROUP_WIDTH + ATTRGROUP_WIDTH + (2 * PM_GROUP_SPACING_X))
-#define INFO_TABLE_WIDTH        (INFO_GROUP_WIDTH - (2 * COMMON_SPACING))
+// now calculate the size of the "information" table; we must specify
+// the size of the table, not of the PM group control, so calc reversely
+// 1) actual width of the group is the same as the above two actual width
+#define INFO_ACTUAL_WIDTH        (DATETIME_ACTUAL_WIDTH + ATTR_ACTUAL_WIDTH)
+// 2) inner table width (to be specified) is that without the group spacings
+#define INFO_TABLE_WIDTH        (INFO_ACTUAL_WIDTH - (4 * COMMON_SPACING) - (2 * GROUP_INNER_SPACING_X))
 
 #define MLE_WIDTH               ((INFO_TABLE_WIDTH - 2 * COMMON_SPACING) / 2)
+#define MLE_HEIGHT              25
+
+#define REAL_NAME_WIDTH         (INFO_ACTUAL_WIDTH - LEFT_COLUMN_WIDTH - 2 * COMMON_SPACING)
 
 static const CONTROLDEF
     RealNameTxt = CONTROLDEF_TEXT(
@@ -2006,7 +2018,7 @@ static const CONTROLDEF
     RealNameData = CONTROLDEF_TEXT(
                             "W",
                             ID_XSDI_FILES_REALNAME,
-                            INFO_GROUP_WIDTH - COMMON_SPACING - LEFT_COLUMN_WIDTH,
+                            REAL_NAME_WIDTH,
                             -1),
     SizeTxt = CONTROLDEF_TEXT(
                             LOAD_STRING,
@@ -2018,15 +2030,11 @@ static const CONTROLDEF
                             ID_XSDI_FILES_FILESIZE,
                             -1,
                             -1),
-    WorkAreaCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,
-                            ID_XSDI_FILES_WORKAREA,
-                            -1,
-                            -1),
+    WorkAreaCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_FILES_WORKAREA),
     DateTimeGroup = CONTROLDEF_GROUP(
                             LOAD_STRING,
                             ID_XSDI_FILES_DATETIME_GROUP,
-                            DATETIMEGROUP_WIDTH,
+                            DATETIME_TABLE_WIDTH,
                             -1),
     CreationTxt = CONTROLDEF_TEXT(
                             LOAD_STRING,
@@ -2076,32 +2084,16 @@ static const CONTROLDEF
     AttrGroup = CONTROLDEF_GROUP(
                             LOAD_STRING,
                             ID_XSDI_FILES_ATTR_GROUP,
-                            ATTRGROUP_WIDTH,
+                            ATTR_TABLE_WIDTH,
                             -1),
-    AttrArchivedCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,
-                            ID_XSDI_FILES_ATTR_ARCHIVED,
-                            -1,
-                            -1),
-    AttrReadOnlyCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,
-                            ID_XSDI_FILES_ATTR_READONLY,
-                            -1,
-                            -1),
-    AttrSystemCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,
-                            ID_XSDI_FILES_ATTR_SYSTEM,
-                            -1,
-                            -1),
-    AttrHiddenCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,
-                            ID_XSDI_FILES_ATTR_HIDDEN,
-                            -1,
-                            -1),
+    AttrArchivedCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_FILES_ATTR_ARCHIVED),
+    AttrReadOnlyCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_FILES_ATTR_READONLY),
+    AttrSystemCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_FILES_ATTR_SYSTEM),
+    AttrHiddenCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_FILES_ATTR_HIDDEN),
     InfoGroup = CONTROLDEF_GROUP(
                             LOAD_STRING,
                             ID_XSDI_FILES_INFO_GROUP,
-                            INFO_GROUP_WIDTH,
+                            INFO_TABLE_WIDTH,
                             -1),
     SubjectTxt = CONTROLDEF_TEXT(
                             LOAD_STRING,
@@ -2122,7 +2114,7 @@ static const CONTROLDEF
                             NULL,
                             ID_XSDI_FILES_COMMENTS,
                             MLE_WIDTH,
-                            50),
+                            MLE_HEIGHT),
     KeyphrasesTxt = CONTROLDEF_TEXT(
                             LOAD_STRING,
                             ID_XSDI_FILES_KEYPHRASES_TXT,
@@ -2132,7 +2124,7 @@ static const CONTROLDEF
                             NULL,
                             ID_XSDI_FILES_KEYPHRASES,
                             MLE_WIDTH,
-                            50);
+                            MLE_HEIGHT);
 
 static const DLGHITEM dlgFile1[] =
     {
@@ -2372,7 +2364,10 @@ VOID fsysFile1InitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
         PSZ     pszString = NULL;
         ULONG   ulAttr;
         FILESTATUS3 fs3;
-        // PEABINDING  peab;       // \helpers\eas.c
+
+        // on network drives, this can take a second or so
+        // V0.9.19 (2002-04-24) [umoeller]
+        HPOINTER hptrOld = winhSetWaitPointer();
 
         PCOUNTRYSETTINGS pcs = cmnQueryCountrySettings(FALSE);
 
@@ -2463,6 +2458,8 @@ VOID fsysFile1InitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
                         pszString);
         if (pszString)
             free(pszString);
+
+        WinSetPointer(HWND_DESKTOP, hptrOld);
     }
 
     if (flFlags & CBI_DESTROY)

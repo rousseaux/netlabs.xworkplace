@@ -446,9 +446,9 @@ typedef struct _XBTNMENUITEMDEF
 #define ID_ENTRYFIELD       999
 
 static CONTROLDEF
-            OKButton = CONTROLDEF_DEFPUSHBUTTON(NULL, DID_OK, 100, 30),
-            CancelButton = CONTROLDEF_PUSHBUTTON(NULL, DID_CANCEL, 100, 30),
-            HelpButton = CONTROLDEF_HELPPUSHBUTTON(NULL, DID_HELP, 100, 30),
+            OKButton = CONTROLDEF_DEFPUSHBUTTON(NULL, DID_OK, STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT),
+            CancelButton = CONTROLDEF_PUSHBUTTON(NULL, DID_CANCEL, STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT),
+            HelpButton = CONTROLDEF_HELPPUSHBUTTON(NULL, DID_HELP, STD_BUTTON_WIDTH, STD_BUTTON_HEIGHT),
 
             ChecksGroup = CONTROLDEF_GROUP(
                             NULL,
@@ -458,27 +458,27 @@ static CONTROLDEF
             CheckShutdown
                         = CONTROLDEF_AUTOCHECKBOX(NULL,
                                                   1000 + MENUFL_NOSHUTDOWN,
-                                                  -1, 20),
+                                                  -1, 8),
             CheckRestartWPS
                         = CONTROLDEF_AUTOCHECKBOX(NULL,
                                                   1000 + MENUFL_NORESTARTWPS,
-                                                  -1, 20),
+                                                  -1, 8),
             CheckLogoff
                         = CONTROLDEF_AUTOCHECKBOX(NULL,
                                                   1000 + MENUFL_NOLOGOFF,
-                                                  -1, 20),
+                                                  -1, 8),
             CheckSuspend
                         = CONTROLDEF_AUTOCHECKBOX(NULL,
                                                   1000 + MENUFL_NOSUSPEND,
-                                                  -1, 20),
+                                                  -1, 8),
             CheckLockup
                         = CONTROLDEF_AUTOCHECKBOX(NULL,
                                                   1000 + MENUFL_NOLOCKUP,
-                                                  -1, 20),
+                                                  -1, 8),
             CheckRunDlg
                         = CONTROLDEF_AUTOCHECKBOX(NULL,
                                                   1000 + MENUFL_NORUNDLG,
-                                                  -1, 20),
+                                                  -1, 8),
             BitmapGroup = CONTROLDEF_GROUP(
                             NULL,
                             -1,
@@ -487,13 +487,13 @@ static CONTROLDEF
             BitmapEF = CONTROLDEF_ENTRYFIELD(
                             NULL,
                             ID_ENTRYFIELD,
-                            200,
+                            100,
                             -1),
             BitmapBrowse = CONTROLDEF_PUSHBUTTON(
                             NULL,
                             DID_BROWSE,
                             -1,
-                            30);
+                            STD_BUTTON_HEIGHT);
 
 static const DLGHITEM dlgXButtonSettings[] =
     {
@@ -1053,7 +1053,7 @@ static VOID BuildXButtonMenu(HWND hwnd,
     WPObject *pActiveDesktop = cmnQueryActiveDesktop();
     PSZ pszDesktopTitle = _wpQueryTitle(pActiveDesktop);
     PCKERNELGLOBALS  pKernelGlobals = krnQueryGlobals();
-    BOOL fShutdownRunning = xsdIsShutdownRunning();
+    BOOL fShutdownRunning = xsdQueryShutdownState() != XSD_IDLE;
 
     HWND hMenu
      = pPrivate->hwndMenuMain
@@ -1539,8 +1539,9 @@ static BOOL OwgtCommand(HWND hwnd, MPARAM mp1)
                             // and have this setting, and wpChangePowerState doesn't
                             // confirm anything?!?
                             // so do it now
-                            fGo = (cmnMessageBoxMsg(pWidget->hwndWidget,
+                            fGo = (cmnMessageBoxExt(pWidget->hwndWidget,
                                                     197,        // xcenter
+                                                    NULL, 0,
                                                     198,        // sure suspend?
                                                     MB_YESNO)
                                             == MBID_YES);

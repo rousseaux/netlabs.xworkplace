@@ -295,7 +295,7 @@ static BOOL CheckIfTrayable(PCSZ pcszWidgetClass)
             {
                 PCSZ     apsz[2];
                 apsz[0] = (PSZ)pcszWidgetClass;
-                if (cmnMessageBoxMsgExt(NULLHANDLE,
+                if (cmnMessageBoxExt(NULLHANDLE,
                                         194,        // XCenter Error
                                         apsz,
                                         1,
@@ -1071,6 +1071,22 @@ static VOID YwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
 }
 
 /*
+ *@@ IsClickOnTrayButton:
+ *
+ *@@added V0.9.19 (2002-04-25) [umoeller]
+ */
+
+static BOOL IsClickOnTrayButton(const XCENTERGLOBALS *pGlobals,
+                                MPARAM mp1)
+{
+    SHORT sx = SHORT1FROMMP(mp1);
+    SHORT sComp = pGlobals->cxMiniIcon + 2;
+    if (0 == (pGlobals->flDisplayStyle & XCS_FLATBUTTONS))
+        sComp += 4;     // 2*2 for button borders
+    return (sx < sComp);
+}
+
+/*
  * YwgtButton1Down:
  *      implementation for WM_BUTTON1DOWN in fnwpTrayWidget.
  *
@@ -1088,10 +1104,7 @@ static VOID YwgtButton1Down(HWND hwnd, MPARAM mp1)
     {
         const XCENTERGLOBALS *pGlobals = pWidget->pGlobals;
         SHORT sx = SHORT1FROMMP(mp1);
-        SHORT sComp = pGlobals->cxMiniIcon + 2;
-        if (0 == (pGlobals->flDisplayStyle & XCS_FLATBUTTONS))
-            sComp += 4;     // 2*2 for button borders
-        if (sx < sComp)
+        if (IsClickOnTrayButton(pGlobals, mp1))
         {
             // click on tray button:
             if (WinIsWindowEnabled(hwnd))
@@ -1168,12 +1181,15 @@ static VOID YwgtButton1Down(HWND hwnd, MPARAM mp1)
 }
 
 /*
- *@@ YwgtButton1DblClick:
+ *@@ YwgtButton1Click:
  *
  *@@added V0.9.14 (2001-08-07) [umoeller]
+ *@@changed V0.9.19 (2002-04-25) [umoeller]: now allowing single-click for switching trays
  */
 
-static VOID YwgtButton1DblClick(HWND hwnd)
+static VOID YwgtButton1Click(HWND hwnd,
+                             ULONG msg,
+                             MPARAM mp1)
 {
     PXCENTERWIDGET pWidget;
     PTRAYWIDGETPRIVATE pPrivate;
@@ -1181,12 +1197,19 @@ static VOID YwgtButton1DblClick(HWND hwnd)
          && (pPrivate = (PTRAYWIDGETPRIVATE)pWidget->pUser)
        )
     {
-        // circle through the trays
-        PPRIVATEWIDGETSETTING ppws = (PPRIVATEWIDGETSETTING)pPrivate->pWidget->pvWidgetSetting;
-        ULONG cTrays = lstCountItems(ppws->pllTraySettings);
-        if (cTrays > 1)
-            SwitchToTray(pPrivate,
-                         ((pPrivate->Setup.pPrivateSetting->ulCurrentTray) + 1) % cTrays);
+        BOOL fButton = IsClickOnTrayButton(pWidget->pGlobals, mp1);
+
+        if (    ((fButton) && (msg == WM_BUTTON1DBLCLK))
+             || ((!fButton) && (msg == WM_BUTTON1CLICK))
+           )
+        {
+            // circle through the trays
+            PPRIVATEWIDGETSETTING ppws = (PPRIVATEWIDGETSETTING)pPrivate->pWidget->pvWidgetSetting;
+            ULONG cTrays = lstCountItems(ppws->pllTraySettings);
+            if (cTrays > 1)
+                SwitchToTray(pPrivate,
+                             ((pPrivate->Setup.pPrivateSetting->ulCurrentTray) + 1) % cTrays);
+        }
     }
 }
 
@@ -1353,7 +1376,7 @@ static MRESULT YwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *
  *      --  >= 100: from the "trays" menu.
  *
- *      --  >= GLOBALSETTINGS.VarMenuItems: "add widget" menu.
+ *      --  >= sulVarMenuItems: "add widget" menu.
  */
 
 static MRESULT YwgtCommand(HWND hwnd, MPARAM mp1, MPARAM mp2)
@@ -1437,7 +1460,7 @@ static MRESULT YwgtCommand(HWND hwnd, MPARAM mp1, MPARAM mp2)
                 if (pCurrentTray = FindCurrentTray(pPrivate))
                 {
                     PCSZ apsz = pCurrentTray->pszTrayName;
-                    if (cmnMessageBoxMsgExt(pGlobals->hwndClient,
+                    if (cmnMessageBoxExt(pGlobals->hwndClient,
                                             220,        // delete tray
                                             &apsz,
                                             1,
@@ -1874,8 +1897,9 @@ MRESULT EXPENTRY fnwpTrayWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
             mrc = (MPARAM)TRUE;     // message processed
         break;
 
+        case WM_BUTTON1CLICK:       // V0.9.19 (2002-04-25) [umoeller]
         case WM_BUTTON1DBLCLK:
-            YwgtButton1DblClick(hwnd);
+            YwgtButton1Click(hwnd, msg, mp1);
             mrc = (MPARAM)TRUE;     // message processed
         break;
 
@@ -1887,15 +1911,6 @@ MRESULT EXPENTRY fnwpTrayWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
         case WM_BUTTON1UP:
             YwgtButton1Up(hwnd);
             mrc = (MPARAM)TRUE;     // message processed
-        break;
-
-        /*
-         * WM_BUTTON1CLICK:
-         *      swallow this
-         */
-
-        case WM_BUTTON1CLICK:
-            mrc = (MPARAM)TRUE;
         break;
 
         /*

@@ -284,7 +284,7 @@ SOM_Scope ULONG  SOMLINK xwp_xwpAddWPSFdrStatusBarPages(XFldWPS *somSelf,
         inbp.usPageStyleFlags = BKA_MAJOR;
         inbp.fEnumerate = TRUE;
         inbp.pcszName = cmnGetString(ID_XSSI_27STATUSBAR);  // psz27StatusBar
-        inbp.ulDlgID = ID_XSD_SET27STATUSBARS;
+        inbp.ulDlgID = ID_XFD_EMPTYDLG; // ID_XSD_SET27STATUSBARS; V0.9.19 (2002-04-24) [umoeller]
         inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS1+3;
         inbp.ulPageID = SP_27STATUSBAR;
         inbp.pfncbInitPage    = stbStatusBar1InitPage;
@@ -738,7 +738,7 @@ SOM_Scope BOOL  SOMLINK xwpM_wpclsQuerySettingsPageSize(M_XFldWPS *somSelf,
         pSizl->cy = 170;        // this is the height of the "WPS Classes" page,
                                 // which seems to be the largest in the "Workplace
                                 // Shell" object
-        if (doshIsWarp4())
+        if (G_fIsWarp4)
             // on Warp 4, reduce again, because we're moving
             // the notebook buttons to the bottom
             pSizl->cy -= WARP4_NOTEBOOK_OFFSET;

@@ -98,6 +98,7 @@
 
 #include "filesys\filetype.h"           // extended file types implementation
 #include "filesys\icons.h"              // icons handling
+#include "filesys\object.h"             // XFldObject implementation
 #include "filesys\program.h"            // program implementation; WARNING: this redefines macros
 
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
@@ -311,11 +312,11 @@ SOM_Scope BOOL  SOMLINK xpg_xwpQueryExecutable(XWPProgram *somSelf,
                 strhncpy0(pszBuffer, pData->pszExecutable, CCHMAXPATH);
                 brc = TRUE;
             }
-            else if (   (hobj = pData->ulExecutableHandle)
-                     && (pobj = _wpclsQueryObject(_WPObject,
-                                                  hobj | (G_usHiwordFileSystem << 16)))
-                     && (_somIsA(pobj, _WPFileSystem))
-                     && (_wpQueryFilename(pobj, pszBuffer, TRUE))
+            else if (    (hobj = pData->ulExecutableHandle)
+                      && (pobj = _wpclsQueryObject(_WPObject,
+                                                   hobj | (G_usHiwordFileSystem << 16)))
+                      && (objQueryFlags(pobj) & OBJFL_WPFILESYSTEM)
+                      && (_wpQueryFilename(pobj, pszBuffer, TRUE))
                     )
                 brc = TRUE;
         }
@@ -866,7 +867,7 @@ SOM_Scope BOOL  SOMLINK xpg_wpSetProgIcon(XWPProgram *somSelf,
 
         // here's the important check that prevents our
         // standard icon from being nuked:
-        if (!_wpIsObjectInitialized(somSelf))
+        if (!objIsObjectInitialized(somSelf))
         {
             // set flag for wpObjectReady so it can call
             // us again after the object has been fully
@@ -1218,7 +1219,7 @@ SOM_Scope BOOL  SOMLINK xpg_wpQueryProgDetails(XWPProgram *somSelf,
                                                hobj | (G_usHiwordFileSystem << 16))))
                     _Pmpf(("    _wpclsQueryObject(%lX) failed",
                                                hobj | (G_usHiwordFileSystem << 16)));
-                else if (_somIsA(pobj, _WPFileSystem))
+                else if (objQueryFlags(pobj) & OBJFL_WPFILESYSTEM)
                 {
                     CHAR szBuffer[CCHMAXPATH];
                     if (!_wpQueryFilename(pobj, szBuffer, TRUE))
@@ -1319,19 +1320,24 @@ SOM_Scope BOOL  SOMLINK xpg_wpQueryProgDetails(XWPProgram *somSelf,
 
 /*
  *@@ GetFSHandle:
+ *      returns the 16-bit file-system handle for the
+ *      given file, or null if the file is invalid.
  *
  *@@added V0.9.16 (2002-01-09) [umoeller]
+ *@@changed V0.9.19 (2002-04-22) [pr]: Canonicalize path
  */
 
 USHORT GetFSHandle(PCSZ pcszFile)
 {
-    ULONG ulrc = 0;
-    WPFileSystem *pFile;
+    ULONG           ulrc = 0;
+    WPFileSystem    *pFile;
+    CHAR            szFile[CCHMAXPATH];
 
-    if (    (pcszFile)
-         && (*pcszFile)
+    if (    (!doshCanonicalize(pcszFile,
+                               szFile,
+                               sizeof(szFile)))
          && (pFile = _wpclsQueryObjectFromPath(_WPFileSystem,
-                                               (PSZ)pcszFile))
+                                               szFile))
        )
     {
         ulrc = LOUSHORT(_wpQueryHandle(pFile));
@@ -1497,7 +1503,7 @@ SOM_Scope BOOL  SOMLINK xpg_wpSetProgDetails(XWPProgram *somSelf,
                         {
                             // handle changed:
                             #ifdef DEBUG_PROGRAMSTART
-                                _Pmpf(("    setting new exe handle 0xlX", hfs));
+                                _Pmpf(("    setting new exe handle 0x%lX", hfs));
                             #endif
 
                             progStore(somSelf,
@@ -1519,7 +1525,7 @@ SOM_Scope BOOL  SOMLINK xpg_wpSetProgDetails(XWPProgram *somSelf,
                         {
                             // file changed:
                             #ifdef DEBUG_PROGRAMSTART
-                                _Pmpf(("    setting new exe handle 0xlX", hfs));
+                                _Pmpf(("    setting new exe handle 0x%lX", hfs));
                             #endif
 
                             progStore(somSelf,

@@ -150,7 +150,7 @@ BOOL hifLoadHookConfig(PHOOKCONFIG phc)
  *      If this is the same as fEnable, the
  *      operation was successfull.
  *
- *      This does NOT change the GLOBALSETTINGS.
+ *      This does NOT change the global settings.
  *
  *@@added V0.9.2 (2000-02-22) [umoeller]
  */
@@ -235,7 +235,7 @@ BOOL hifXWPHookReady(VOID)
  *      enables or disables XPager by sending
  *      XDM_STARTSTOPPAGER to the daemon.
  *
- *      This does not change the GLOBALSETTINGS.
+ *      This does not change the global settings.
  *
  *@@added V0.9.2 (2000-02-22) [umoeller]
  */
@@ -1038,7 +1038,7 @@ MRESULT hifKeybdHotkeysItemChanged(PNOTEBOOKPAGE pnbp,
                                     precc->szHotkey,        // %1: hotkey
                                     precc->recc.pszIcon     // %2: object title
                               };
-                if (cmnMessageBoxMsgExt(pnbp->hwndFrame, // inbp.hwndPage,
+                if (cmnMessageBoxExt(pnbp->hwndFrame, // inbp.hwndPage,
                                         148,       // "XWorkplace Setup
                                         apsz, 2,   // two string replacements
                                         162,       // Sure hotkey?
@@ -1427,13 +1427,11 @@ MRESULT hifKeybdFunctionKeysItemChanged(PNOTEBOOKPAGE pnbp,
         case ID_XSMI_FUNCK_EDIT:
         {
             // in both cases, we use the same "Edit" dialog
-            HWND hwndEditDlg = WinLoadDlg(HWND_DESKTOP,
-                                          pnbp->hwndDlgPage,
-                                          hif_fnwpEditFunctionKeyDlg,
-                                          cmnQueryNLSModuleHandle(FALSE),
-                                          ID_XSD_KEYB_EDITFUNCTIONKEY,
-                                          NULL);
-            if (hwndEditDlg)
+            HWND hwndEditDlg;
+            if (hwndEditDlg = cmnLoadDlg(pnbp->hwndDlgPage,
+                                         hif_fnwpEditFunctionKeyDlg,
+                                         ID_XSD_KEYB_EDITFUNCTIONKEY,
+                                         NULL))
             {
                 PEDITFUNCTIONKEYDATA pefkd
                     = (PEDITFUNCTIONKEYDATA)malloc(sizeof(EDITFUNCTIONKEYDATA));
@@ -1903,9 +1901,9 @@ MRESULT hifMouseMappings2ItemChanged(PNOTEBOOKPAGE pnbp,
  *
  ********************************************************************/
 
-#define STYLE_SLIDERS_WIDTH        150
-#define STYLE_SLIDERS_HEIGHT        30
-#define STYLE_SLIDERTEXT_WIDTH      30
+#define STYLE_SLIDERS_WIDTH         75
+#define STYLE_SLIDERS_HEIGHT        15
+#define STYLE_SLIDERTEXT_WIDTH      15
 
 SLDCDATA
 #ifndef __NOSLIDINGFOCUS__
@@ -1931,21 +1929,9 @@ SLDCDATA
 
 static const CONTROLDEF
 #ifndef __NOSLIDINGFOCUS__
-    SlidingFocusGroup = CONTROLDEF_GROUP(
-                            LOAD_STRING,
-                            ID_XSDI_MOUSE_SLIDINGFOCUS_GRP,
-                            -1,
-                            -1),
-    SlidingFocusCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,
-                            ID_XSDI_MOUSE_SLIDINGFOCUS,
-                            -1,
-                            -1),
-    SlidingFocusDelayTxt1 = CONTROLDEF_TEXT(
-                            LOAD_STRING,
-                            ID_XSDI_MOUSE_FOCUSDELAY_TXT1,
-                            -1,
-                            -1),
+    SlidingFocusGroup = LOADDEF_GROUP(ID_XSDI_MOUSE_SLIDINGFOCUS_GRP, SZL_AUTOSIZE),
+    SlidingFocusCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_MOUSE_SLIDINGFOCUS),
+    SlidingFocusDelayTxt1 = LOADDEF_TEXT(ID_XSDI_MOUSE_FOCUSDELAY_TXT1),
     SlidingFocusDelaySlider =
         {
                 WC_SLIDER,
@@ -1967,47 +1953,15 @@ static const CONTROLDEF
                             ID_XSDI_MOUSE_FOCUSDELAY_TXT2,
                             -1,
                             -1),
-    BringToTopCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,
-                            ID_XSDI_MOUSE_BRING2TOP,
-                            -1,
-                            -1),
-    IgnoreSeamlessCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,
-                            ID_XSDI_MOUSE_IGNORESEAMLESS,
-                            -1,
-                            -1),
-    IgnoreDesktopCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,
-                            ID_XSDI_MOUSE_IGNOREDESKTOP,
-                            -1,
-                            -1),
-    IgnoreXPagerCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,
-                            ID_XSDI_MOUSE_IGNOREPAGER,
-                            -1,
-                            -1),
-    IgnoreXCenterCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,
-                            ID_XSDI_MOUSE_IGNOREXCENTER,
-                            -1,
-                            -1),
+    BringToTopCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_MOUSE_BRING2TOP),
+    IgnoreSeamlessCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_MOUSE_IGNORESEAMLESS),
+    IgnoreDesktopCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_MOUSE_IGNOREDESKTOP),
+    IgnoreXPagerCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_MOUSE_IGNOREPAGER),
+    IgnoreXCenterCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_MOUSE_IGNOREXCENTER),
 #endif
-    SlidingMenusGroup = CONTROLDEF_GROUP(
-                            LOAD_STRING,
-                            ID_XSDI_MOUSE_SLIDINGMENU_GRP,
-                            -1,
-                            -1),
-    SlidingMenusCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,
-                            ID_XSDI_MOUSE_SLIDINGMENU,
-                            -1,
-                            -1),
-    SlidingMenusDelayTxt1 = CONTROLDEF_TEXT(
-                            LOAD_STRING,
-                            ID_XSDI_MOUSE_MENUDELAY_TXT1,
-                            -1,
-                            -1),
+    SlidingMenusGroup = LOADDEF_GROUP(ID_XSDI_MOUSE_SLIDINGMENU_GRP, SZL_AUTOSIZE),
+    SlidingMenusCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_MOUSE_SLIDINGMENU),
+    SlidingMenusDelayTxt1 = LOADDEF_TEXT(ID_XSDI_MOUSE_MENUDELAY_TXT1),
     SlidingMenusDelaySlider =
         {
                 WC_SLIDER,
@@ -2029,16 +1983,8 @@ static const CONTROLDEF
                             ID_XSDI_MOUSE_MENUDELAY_TXT2,
                             -1,
                             -1),
-    CondCascadeCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,
-                            ID_XSDI_MOUSE_CONDCASCADE,
-                            -1,
-                            -1),
-    MenuHiliteCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,
-                            ID_XSDI_MOUSE_MENUHILITE,
-                            -1,
-                            -1);
+    CondCascadeCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_MOUSE_CONDCASCADE),
+    MenuHiliteCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_MOUSE_MENUHILITE);
 
 static const DLGHITEM dlgMovement1[] =
     {

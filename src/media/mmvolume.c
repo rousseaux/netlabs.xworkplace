@@ -244,8 +244,9 @@ HWND xmmCreateVolumeView(WPObject *somSelf,
                     if (ul == -1)
                     {
                         // error occured:
-                        cmnMessageBoxMsg(hwndFrame,
+                        cmnMessageBoxExt(hwndFrame,
                                          104,       // xwp: error
+                                         NULL, 0,
                                          218,       // master not working, closing
                                          MB_CANCEL);
                         WinPostMsg(hwndFrame,

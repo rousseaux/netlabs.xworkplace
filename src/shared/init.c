@@ -315,7 +315,7 @@ static ULONG WaitForApp(PCSZ pcszTitle,
     {
         // error:
         PCSZ apsz[] = {pcszTitle};
-        cmnMessageBoxMsgExt(NULLHANDLE,
+        cmnMessageBoxExt(NULLHANDLE,
                             121,       // xwp
                             apsz,
                             1,
@@ -373,119 +373,39 @@ static ULONG WaitForApp(PCSZ pcszTitle,
 
 static const CONTROLDEF
 #ifndef __NOBOOTLOGO__
-    SkipBootLogoCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,    // "Skip ~boot logo once",
-                            ID_XFDI_PANIC_SKIPBOOTLOGO,
-                            -1,
-                            -1),
+    SkipBootLogoCB = LOADDEF_AUTOCHECKBOX(ID_XFDI_PANIC_SKIPBOOTLOGO),
 #endif
 #ifndef __NOXWPSTARTUP__
-    SkipStartupFolderCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,    // "Skip XWorkplace S~tartup folder once",
-                            ID_XFDI_PANIC_SKIPXFLDSTARTUP,
-                            -1,
-                            -1),
+    SkipStartupFolderCB = LOADDEF_AUTOCHECKBOX(ID_XFDI_PANIC_SKIPXFLDSTARTUP),
 #endif
 #ifndef __NOQUICKOPEN__
-    SkipQuickOpenCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,    // "Skip ""~Quick open"" folders once",
-                            ID_XFDI_PANIC_SKIPQUICKOPEN,
-                            -1,
-                            -1),
+    SkipQuickOpenCB = LOADDEF_AUTOCHECKBOX(ID_XFDI_PANIC_SKIPQUICKOPEN),
 #endif
-    SkipArchivingCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,    // "Skip WPS ~archiving once",
-                            ID_XFDI_PANIC_NOARCHIVING,
-                            -1,
-                            -1),
+    SkipArchivingCB = LOADDEF_AUTOCHECKBOX(ID_XFDI_PANIC_NOARCHIVING),
 #ifndef __NEVERCHECKDESKTOP__
-    DisableCheckDesktopCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,
-                            ID_XFDI_PANIC_DISABLECHECKDESKTOP,
-                            -1,
-                            -1),
+    DisableCheckDesktopCB = LOADDEF_AUTOCHECKBOX(ID_XFDI_PANIC_DISABLECHECKDESKTOP),
 #endif
-    DisableReplRefreshCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,
-                            ID_XFDI_PANIC_DISABLEREPLREFRESH,
-                            -1,
-                            -1),
+    DisableReplRefreshCB = LOADDEF_AUTOCHECKBOX(ID_XFDI_PANIC_DISABLEREPLREFRESH),
 #ifndef __NOTURBOFOLDERS__
-    DisableTurboFoldersCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,
-                            ID_XFDI_PANIC_DISABLETURBOFOLDERS,
-                            -1,
-                            -1),
+    DisableTurboFoldersCB = LOADDEF_AUTOCHECKBOX(ID_XFDI_PANIC_DISABLETURBOFOLDERS),
 #endif
-    DisableFeaturesCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,    // "Permanently ~disable all features",
-                            ID_XFDI_PANIC_DISABLEFEATURES,
-                            -1,
-                            -1),
+    DisableFeaturesCB = LOADDEF_AUTOCHECKBOX(ID_XFDI_PANIC_DISABLEFEATURES),
 #ifndef __NOICONREPLACEMENTS__
-    DisableReplIconsCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,    // "Permanently disable ~icon replacements",
-                            ID_XFDI_PANIC_DISABLEREPLICONS,
-                            -1,
-                            -1),
+    DisableReplIconsCB = LOADDEF_AUTOCHECKBOX(ID_XFDI_PANIC_DISABLEREPLICONS),
 #endif
-    RemoveHotkeysCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,    // "~Remove all object hotkeys",
-                            ID_XFDI_PANIC_REMOVEHOTKEYS,
-                            -1,
-                            -1),
+    RemoveHotkeysCB = LOADDEF_AUTOCHECKBOX(ID_XFDI_PANIC_REMOVEHOTKEYS),
 #ifndef __NOPAGER__
-    DisableXPagerCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,    // "Disable ~XPager",
-                            ID_XFDI_PANIC_DISABLEPAGER,
-                            -1,
-                            -1),
+    DisableXPagerCB = LOADDEF_AUTOCHECKBOX(ID_XFDI_PANIC_DISABLEPAGER),
 #endif
-    DisableMultimediaCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,    // "Disable ~multimedia",
-                            ID_XFDI_PANIC_DISABLEMULTIMEDIA,
-                            -1,
-                            -1),
-    ContinueButton = CONTROLDEF_DEFPUSHBUTTON(
-                            LOAD_STRING,
-                            ID_XFDI_PANIC_CONTINUE,
-                            100,
-                            30),
-    ContinueText = CONTROLDEF_TEXT(
-                            LOAD_STRING,
-                            ID_XFDI_PANIC_CONTINUE_TXT,
-                            -1,
-                            -1),
-    XFixButton = CONTROLDEF_PUSHBUTTON(
-                            LOAD_STRING,
-                            ID_XFDI_PANIC_XFIX,
-                            100,
-                            30),
-    XFixText = CONTROLDEF_TEXT(
-                            LOAD_STRING,
-                            ID_XFDI_PANIC_XFIX_TXT,
-                            -1,
-                            -1),
-    CmdButton = CONTROLDEF_PUSHBUTTON(
-                            LOAD_STRING,
-                            ID_XFDI_PANIC_CMD,
-                            100,
-                            30),
-    CmdText = CONTROLDEF_TEXT(
-                            LOAD_STRING,
-                            ID_XFDI_PANIC_CMD_TXT,
-                            -1,
-                            -1),
-    ShutdownButton = CONTROLDEF_PUSHBUTTON(
-                            LOAD_STRING,
-                            ID_XFDI_PANIC_SHUTDOWN,
-                            100,
-                            30),
-    ShutdownText = CONTROLDEF_TEXT(
-                            LOAD_STRING,
-                            ID_XFDI_PANIC_SHUTDOWN_TXT,
-                            -1,
-                            -1);
+    DisableMultimediaCB = LOADDEF_AUTOCHECKBOX(ID_XFDI_PANIC_DISABLEMULTIMEDIA),
+    ContinueButton = LOADDEF_DEFPUSHBUTTON(ID_XFDI_PANIC_CONTINUE),
+    ContinueText = LOADDEF_TEXT(ID_XFDI_PANIC_CONTINUE_TXT),
+    XFixButton = LOADDEF_PUSHBUTTON(ID_XFDI_PANIC_XFIX),
+    XFixText = LOADDEF_TEXT(ID_XFDI_PANIC_XFIX_TXT),
+    CmdButton = LOADDEF_PUSHBUTTON(ID_XFDI_PANIC_CMD),
+    CmdText = LOADDEF_TEXT(ID_XFDI_PANIC_CMD_TXT),
+    ShutdownButton = LOADDEF_PUSHBUTTON(ID_XFDI_PANIC_SHUTDOWN),
+    ShutdownText = LOADDEF_TEXT(ID_XFDI_PANIC_SHUTDOWN_TXT);
 
 static const DLGHITEM dlgPanic[] =
     {
@@ -735,8 +655,9 @@ static VOID ShowPanicDlg(BOOL fForceShow)      // V0.9.17 (2002-02-05) [umoeller
                         if (RunXFix())
                         {
                             // handle section changed:
-                            cmnMessageBoxMsg(NULLHANDLE,
+                            cmnMessageBoxExt(NULLHANDLE,
                                              121,       // xwp
+                                             NULL, 0,
                                              205,       // restart wps now.
                                              MB_OK);
                             DosExit(EXIT_PROCESS, 0);
@@ -804,8 +725,9 @@ static VOID ShowStartupDlgs(VOID)
                            0x123) != 0x123)
     {
         // yes: explain the "Panic" feature
-        cmnMessageBoxMsg(HWND_DESKTOP,
+        cmnMessageBoxExt(HWND_DESKTOP,
                          121,       // "XWorkplace"
+                         NULL, 0,
                          159,       // "press shift for panic"
                          MB_OK);
     }
@@ -838,8 +760,9 @@ static VOID ShowStartupDlgs(VOID)
                                       &cbData))
            )
         {
-            if (cmnMessageBoxMsg(HWND_DESKTOP,
+            if (cmnMessageBoxExt(HWND_DESKTOP,
                                  121,       // "XWorkplace"
+                                 NULL, 0,
                                  160,       // "convert?"
                                  MB_YESNO)
                     == MBID_YES)
@@ -1136,7 +1059,7 @@ static ULONG CheckDesktop(HHANDLES hHandles)       // in: handles buffer from wp
  *      So what we're doing here is the following (this is a
  *      bit complex):
  *
- *      a) Initialize XWorkplace's globals: the GLOBALSETTINGS,
+ *      a) Initialize XWorkplace's globals: the global settings,
  *         the KERNELGLOBALS, and such.
  *
  *      b) Create the Thread-1 object window (fnwpThread1Object)
@@ -1195,6 +1118,9 @@ VOID initMain(VOID)
         return;
 
     fInitialized = TRUE;
+
+    // initialize global vars V0.9.19 (2002-04-24) [umoeller]
+    G_fIsWarp4 = doshIsWarp4();
 
     // force loading of the global settings
     cmnLoadGlobalSettings();
@@ -1348,7 +1274,7 @@ VOID initMain(VOID)
                         PCSZ psz = sz;
                         initLog("WARNING: wphRebuildNodeHashTable returned %d", arc);
                         sprintf(sz, "%d", arc);
-                        if (cmnMessageBoxMsgExt(NULLHANDLE,
+                        if (cmnMessageBoxExt(NULLHANDLE,
                                                 230,        // desktop error
                                                 &psz,
                                                 1,
@@ -1779,6 +1705,7 @@ BOOL initRepairDesktopIfBroken(VOID)
                     if (cmnMessageBox(NULLHANDLE,
                                       pcszTitle,
                                       str.psz,
+                                      NULLHANDLE, // no help
                                       MB_RETRYCANCEL)
                             == MBID_RETRY)
                         fRepeat = TRUE;
@@ -2163,9 +2090,8 @@ static void _Optlink fntStartupThread(PTHREADINFO ptiMyself)
             {
                 if (cmnQuerySetting(sfShowStartupProgress))
                 {
-                    qod.hwndStatus = WinLoadDlg(HWND_DESKTOP, NULLHANDLE,
+                    qod.hwndStatus = cmnLoadDlg(NULLHANDLE,
                                                 fnwpQuickOpenDlg,
-                                                cmnQueryNLSModuleHandle(FALSE),
                                                 ID_XFD_STARTUPSTATUS,
                                                 &qod);      // param
                     WinSetWindowText(qod.hwndStatus,

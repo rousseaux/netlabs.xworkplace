@@ -239,6 +239,7 @@
 // headers in /hook
 #include "hook\xwphook.h"
 
+#include "filesys\fdrmenus.h"           // shared folder menu logic
 #include "filesys\filesys.h"            // various file-system object implementation code
 #include "filesys\folder.h"             // XFolder implementation
 #include "filesys\object.h"             // XFldObject implementation
@@ -328,6 +329,31 @@ WPObject* objResolveIfShadow(WPObject *somSelf)
 }
 
 /*
+ *@@ objQueryFlags:
+ *
+ *@@added V0.9.19 (2002-04-24) [umoeller]
+ */
+
+ULONG objQueryFlags(WPObject *somSelf)
+{
+    XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    return _flFlags;
+}
+
+/*
+ *@@ objIsAnAbstract:
+ *      returns TRUE if somSelf is an abstract.
+ *
+ *@@added V0.9.19 (2002-04-24) [umoeller]
+ */
+
+BOOL objIsAnAbstract(WPObject *somSelf)
+{
+    XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    return (0 != (_flFlags & OBJFL_WPABSTRACT));
+}
+
+/*
  *@@ objIsAFolder:
  *      returns TRUE if somSelf is a folder.
  *
@@ -338,6 +364,20 @@ BOOL objIsAFolder(WPObject *somSelf)
 {
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
     return (0 != (_flFlags & OBJFL_WPFOLDER));
+}
+
+/*
+ *@@ objIsObjectInitialized:
+ *      the same as WPObject::wpIsObjectInitialized,
+ *      but faster.
+ *
+ *@@added V0.9.19 (2002-04-17) [umoeller]
+ */
+
+BOOL objIsObjectInitialized(WPObject *somSelf)
+{
+    XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    return (0 != (_flFlags & OBJFL_INITIALIZED));
 }
 
 /*
@@ -590,7 +630,7 @@ BOOL objQuerySetup(WPObject *somSelf,
         APPEND("TEMPLATE=YES;");
 
     // LOCKEDINPLACE: Warp 4 only
-    if (doshIsWarp4())
+    if (G_fIsWarp4)
         if (ulStyle & OBJSTYLE_LOCKEDINPLACE)
             APPEND("LOCKEDINPLACE=YES;");
 
@@ -1647,11 +1687,20 @@ static MRESULT EXPENTRY fnwpObjectDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, M
                                     if (    (pszNew[0] != '<')
                                          || (*(pszNew + strlen(pszNew)-1) != '>')
                                        )
-                                        cmnMessageBoxMsg(hwndDlg, 104, 108, MB_OK);
+                                        cmnMessageBoxExt(hwndDlg,
+                                                         104,
+                                                         NULL, 0,
+                                                         108,
+                                                         MB_OK);
                                             // fixed (V0.85)
                                     else
                                         // valid: confirm change
-                                        if (cmnMessageBoxMsg(hwndDlg, 107, 109, MB_YESNO) == MBID_YES)
+                                        if (cmnMessageBoxExt(hwndDlg,
+                                                             107,
+                                                             NULL, 0,
+                                                             109,
+                                                             MB_YESNO)
+                                                      == MBID_YES)
                                             fChange = TRUE;
 
                                     if (fChange)
@@ -1714,12 +1763,10 @@ static MRESULT EXPENTRY fnwpObjectDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, M
     return (mrc);
 }
 
+#define DETAILS_WIDTH       200
+
 static const CONTROLDEF
-    DetailsGroup = CONTROLDEF_GROUP(
-                            LOAD_STRING,
-                            ID_XSDI_DETAILS_GROUP,
-                            -1,
-                            -1),
+    DetailsGroup = LOADDEF_GROUP(ID_XSDI_DETAILS_GROUP, SZL_AUTOSIZE),
     DetailsCnr =
         {
             WC_CONTAINER,
@@ -1728,29 +1775,17 @@ static const CONTROLDEF
             ID_XSDI_DETAILS_CONTAINER,
             CTL_COMMON_FONT,
             0,
-            {400, 300},
+            {DETAILS_WIDTH, 120},
             COMMON_SPACING
         },
-    SetupStringGroup = CONTROLDEF_GROUP(
-                            LOAD_STRING,
-                            ID_XSDI_DETAILS_SETUPSTR_GROUP,
-                            -1,
-                            -1),
+    SetupStringGroup = LOADDEF_GROUP(ID_XSDI_DETAILS_SETUPSTR_GROUP, SZL_AUTOSIZE),
     SetupStringEF = CONTROLDEF_ENTRYFIELD_RO(
                             NULL,
                             ID_XSDI_DETAILS_SETUPSTR_EF,
-                            400,
+                            DETAILS_WIDTH,
                             -1),
-    CloseButton = CONTROLDEF_DEFPUSHBUTTON(
-                            LOAD_STRING,
-                            DID_CLOSE,
-                            100,
-                            30),
-    HelpButton = CONTROLDEF_HELPPUSHBUTTON(
-                            LOAD_STRING,
-                            DID_HELP,
-                            100,
-                            30);
+    CloseButton = LOADDEF_DEFPUSHBUTTON(DID_CLOSE),
+    HelpButton = LOADDEF_HELPPUSHBUTTON(DID_HELP);
 
 static const DLGHITEM dlgObjDetails[] =
     {
@@ -1902,6 +1937,7 @@ VOID objReady(WPObject *somSelf,
                  ));
          #endif
 
+        // set flag
         _flFlags |= OBJFL_INITIALIZED;
 
         if (ulCode & OR_REFERENCE)
@@ -3455,34 +3491,35 @@ BOOL objRemoveObjectHotkey(HOBJECT hobj)
  *      This now implements "lock in place" hacks.
  *
  *@@added V0.9.7 (2000-12-10) [umoeller]
+ *@@changed V0.9.19 (2002-04-17) [umoeller]: adjusted for new menu handling
  */
 
 VOID objModifyPopupMenu(WPObject* somSelf,
                         HWND hwndMenu)
 {
-    if (doshIsWarp4())
+    if (G_fIsWarp4)
     {
-        if (cmnQuerySetting(sfRemoveLockInPlaceItem))
+        if (cmnQuerySetting(mnuQueryMenuXWPSetting(somSelf)) & XWPCTXT_LOCKEDINPLACE)
             // remove WPObject's "Lock in place" submenu
-            winhDeleteMenuItem(hwndMenu, ID_WPM_LOCKINPLACE);
+            winhDeleteMenuItem(hwndMenu, WPMENUID_LOCKEDINPLACE); // ID_WPM_LOCKINPLACE);
         else if (cmnQuerySetting(sfFixLockInPlace)) // V0.9.7 (2000-12-10) [umoeller]
         {
             // get text first... this saves us our own NLS resource
-            PSZ pszLockInPlace = winhQueryMenuItemText(hwndMenu, ID_WPM_LOCKINPLACE);
-            if (pszLockInPlace)
+            PSZ pszLockInPlace;
+            if (pszLockInPlace = winhQueryMenuItemText(hwndMenu, WPMENUID_LOCKEDINPLACE)) // ID_WPM_LOCKINPLACE))
             {
                 MENUITEM mi;
                 if (winhQueryMenuItem(hwndMenu,
-                                      ID_WPM_LOCKINPLACE,
+                                      WPMENUID_LOCKEDINPLACE,
                                       FALSE,
                                       &mi))
                 {
                     // delete old (incl. submenu)
-                    winhDeleteMenuItem(hwndMenu, ID_WPM_LOCKINPLACE);
+                    winhDeleteMenuItem(hwndMenu, WPMENUID_LOCKEDINPLACE);
                     // insert new
                     winhInsertMenuItem(hwndMenu,
                                        mi.iPosition,        // at old position
-                                       ID_WPM_LOCKINPLACE,
+                                       WPMENUID_LOCKEDINPLACE,
                                        pszLockInPlace,
                                        MIS_TEXT,
                                        (_wpQueryStyle(somSelf) & OBJSTYLE_LOCKEDINPLACE)

@@ -1274,6 +1274,7 @@ static BOOL StartAutohideNow(PXCENTERWINDATA pXCenterData)
  *@@added V0.9.7 (2000-12-02) [umoeller]
  *@@changed V0.9.13 (2001-06-19) [umoeller]: extracted various functions for tray support
  *@@changed V0.9.13 (2001-06-21) [umoeller]: added XN_DISPLAYSTYLECHANGED widget broadcast
+ *@@changed V0.9.19 (2002-04-24) [umoeller]: fixed resurface if menu is currently open
  */
 
 VOID ctrpReformat(PXCENTERWINDATA pXCenterData,
@@ -1390,7 +1391,19 @@ VOID ctrpReformat(PXCENTERWINDATA pXCenterData,
     }
 
     if (ulFlags & XFMF_RESURFACE)
-        flSWP |= SWP_ZORDER;
+    {
+        // resurface only if no menu is currently open
+        // V0.9.19 (2002-04-24) [umoeller]
+        HWND hwndFocus;
+        CHAR szFocus[10];
+        if (    (!WinQuerySysModalWindow(HWND_DESKTOP))
+             && (    (!(hwndFocus = WinQueryFocus(HWND_DESKTOP)))
+                  || (!WinQueryClassName(hwndFocus, sizeof(szFocus), szFocus))
+                  || (strcmp(szFocus, "#4"))
+                )
+           )
+            flSWP |= SWP_ZORDER;
+    }
 
     StopAutoHide(pXCenterData);
 
@@ -3013,7 +3026,7 @@ static ULONG CreateAllWidgetWindows(PXCENTERWINDATA pXCenterData)
             // error creating window: V0.9.9 (2001-02-01) [umoeller]
             PCSZ     apsz[2];
             apsz[0] = (PSZ)pSetting->Public.pszWidgetClass;
-            if (cmnMessageBoxMsgExt(NULLHANDLE,
+            if (cmnMessageBoxExt(NULLHANDLE,
                                     194,        // XCenter Error
                                     apsz,
                                     1,

@@ -46,6 +46,7 @@ EXPORTS
     apmhClose
     csysQuerySwapperSize
     cmnGetString
+    cmnLoadDlg
     cmnQueryActiveDesktopHWND
     cmnQueryDefaultFont
     cmnQueryHelpLibrary

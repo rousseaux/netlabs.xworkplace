@@ -27,7 +27,13 @@ Toolkit does not set <CODE>SMINCLUDE</CODE> correctly from the makefiles.
 I am still running <CODE>nmake</CODE> 3, which comes with the Warp 3 Toolkit
 and also with the IBM VAC 3 compiler.
 
-<P>The SOM compiler that comes with the Warp 4.5 Toolkit appears to produce
+<P>Alternatively, look at <CODE>idl\makefile</CODE> and search for
+<CODE>SMINCLUDE</CODE>. Uncomment the line that sets the environment variable
+and set the variable to the proper values externally. Some people have
+gotten the thing to work like that too.
+
+<P>The SOM compiler that comes with some versions of the Warp 4.5 Toolkit
+appears to produce
 very strange errors also, according to some user reports. I recommend using
 the Warp 3 Toolkit; see <A HREF="src1_2requires.html">Required Tools</A>.
 

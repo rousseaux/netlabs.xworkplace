@@ -35,15 +35,27 @@ LANGUAGE = 001
 
 FILES_TO_COPY = \
     $(XWPRUNNING)\help\xfldr$(LANGUAGE).tmf \
-    $(XWPRUNNING)\install\crobj$(LANGUAGE).cmd \
-    $(XWPRUNNING)\install\instl$(LANGUAGE).cmd \
 !ifndef XWPLITE
     $(XWPRUNNING)\install\sound$(LANGUAGE).cmd \
     $(XWPRUNNING)\help\drvrs$(LANGUAGE).txt \
     $(XWPRUNNING)\help\xfcls$(LANGUAGE).txt
 !endif
 
+!ifdef XWPLITE
+CROBJ_SOURCE = crobj$(LANGUAGE)_lite.cmd
+!else
+CROBJ_SOURCE = crobj$(LANGUAGE).cmd
+!endif
+
+!ifdef XWPLITE
+INSTL_SOURCE = instl$(LANGUAGE)_lite.cmd
+!else
+INSTL_SOURCE = instl$(LANGUAGE).cmd
+!endif
+
 all: $(FILES_TO_COPY)
+    $(COPY) $(CROBJ_SOURCE) $(XWPRUNNING)\install\crobj$(LANGUAGE).cmd
+    $(COPY) $(INSTL_SOURCE) $(XWPRUNNING)\install\instl$(LANGUAGE).cmd
     @echo ----- Leaving $(MAKEDIR)
 
 # copy tmf file to modulesdir first
@@ -58,28 +70,6 @@ $(MODULESDIR)\xfldr$(LANGUAGE).tmf: xfldr$(LANGUAGE).tmf xwplite$(LANGUAGE).tmf
 $(MODULESDIR)\xfldr$(LANGUAGE).tmf: xfldr$(LANGUAGE).tmf xwpfull$(LANGUAGE).tmf
     $(COPY) $(@B).tmf+xwpfull$(LANGUAGE).tmf $@
 !endif
-
-# crobjXXX.cmd
-
-!ifdef XWPLITE
-CROBJ_SOURCE = crobj$(LANGUAGE)_lite.cmd
-!else
-CROBJ_SOURCE = crobj$(LANGUAGE).cmd
-!endif
-
-$(XWPRUNNING)\install\crobj$(LANGUAGE).cmd: $(CROBJ_SOURCE)
-    $(COPY) $(CROBJ_SOURCE) $(XWPRUNNING)\install\crobj$(LANGUAGE).cmd
-
-# instlXXX.cmd
-
-!ifdef XWPLITE
-INSTL_SOURCE = instl$(LANGUAGE)_lite.cmd
-!else
-INSTL_SOURCE = instl$(LANGUAGE).cmd
-!endif
-
-$(XWPRUNNING)\install\instl$(LANGUAGE).cmd: $(INSTL_SOURCE)
-    $(COPY) $(INSTL_SOURCE) $(XWPRUNNING)\install\instl$(LANGUAGE).cmd
 
 $(XWPRUNNING)\install\sound$(LANGUAGE).cmd: $(@B).cmd
     $(COPY) $(@B).cmd $(XWPRUNNING)\install

@@ -19,8 +19,8 @@
  *      Note that the ARCHIVINGSETTINGS are only manipulated by the
  *      new Desktop "Archives" notebook page, whose code is
  *      in xfdesk.c. For the archiving settings, we do not use
- *      the GLOBALSETTINGS structure (as the rest of XWorkplace
- *      does), but this separate structure instead. See arcQuerySettings.
+ *      the global settings (as the rest of XWorkplace does), but
+ *      this separate structure instead. See arcQuerySettings.
  *
  *@@added V0.9.0 [umoeller]
  *@@header "startshut\archives.h"
@@ -155,32 +155,15 @@ static PCSZ     G_apcszPercentages[] =
         "5.000"
     };
 
+#define SPIN_WIDTH      40
+#define SPIN_HEIGHT     STD_SPIN_HEIGHT
+
 static const CONTROLDEF
-    ArcCriteriaGroup = CONTROLDEF_GROUP(
-                            LOAD_STRING,
-                            ID_XSDI_ARC_CRITERIA_GROUP,
-                            -1,
-                            -1),
-    EnableArchiveCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,
-                            ID_XSDI_ARC_ENABLE,
-                            -1,
-                            -1),
-    ArcAlwaysCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,
-                            ID_XSDI_ARC_ALWAYS,
-                            -1,
-                            -1),
-    ArcNextCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,
-                            ID_XSDI_ARC_NEXT,
-                            -1,
-                            -1),
-    ArcINICB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,
-                            ID_XSDI_ARC_INI,
-                            -1,
-                            -1),
+    ArcCriteriaGroup = LOADDEF_GROUP(ID_XSDI_ARC_CRITERIA_GROUP, DEFAULT_TABLE_WIDTH),
+    EnableArchiveCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_ARC_ENABLE),
+    ArcAlwaysCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_ARC_ALWAYS),
+    ArcNextCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_ARC_NEXT),
+    ArcINICB = LOADDEF_AUTOCHECKBOX(ID_XSDI_ARC_INI),
     ArcINISpin =
         {
             WC_SPINBUTTON,
@@ -191,19 +174,11 @@ static const CONTROLDEF
             ID_XSDI_ARC_INI_SPIN,
             CTL_COMMON_FONT,
             0,
-            { 100, 20 },     // size
-            5               // spacing
+            { SPIN_WIDTH, SPIN_HEIGHT },     // size
+            COMMON_SPACING,
         },
-    ArcINITxt2 = CONTROLDEF_TEXT(
-                            LOAD_STRING,
-                            ID_XSDI_ARC_INI_SPINTXT1,
-                            -1,
-                            -1),
-    ArcDaysCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,
-                            ID_XSDI_ARC_DAYS,
-                            -1,
-                            -1),
+    ArcINITxt2 = LOADDEF_TEXT(ID_XSDI_ARC_INI_SPINTXT1),
+    ArcDaysCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_ARC_DAYS),
     ArcDaysSpin =
         {
             WC_SPINBUTTON,
@@ -214,29 +189,13 @@ static const CONTROLDEF
             ID_XSDI_ARC_DAYS_SPIN,
             CTL_COMMON_FONT,
             0,
-            { 100, 20 },     // size
-            5               // spacing
+            { SPIN_WIDTH, SPIN_HEIGHT },     // size
+            COMMON_SPACING,
         },
-    ArcDaysTxt2 = CONTROLDEF_TEXT(
-                            LOAD_STRING,
-                            ID_XSDI_ARC_DAYS_SPINTXT1,
-                            -1,
-                            -1),
-    ArcShowStatusCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING,
-                            ID_XSDI_ARC_SHOWSTATUS,
-                            -1,
-                            -1),
-    Arc2Group = CONTROLDEF_GROUP(
-                            LOAD_STRING,
-                            ID_XSDI_ARC_ARCHIVES_GROUP,
-                            -1,
-                            -1),
-    ArcNoTxt1 = CONTROLDEF_TEXT(
-                            LOAD_STRING,
-                            ID_XSDI_ARC_ARCHIVES_NO_TXT1,
-                            -1,
-                            -1),
+    ArcDaysTxt2 = LOADDEF_TEXT(ID_XSDI_ARC_DAYS_SPINTXT1),
+    ArcShowStatusCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_ARC_SHOWSTATUS),
+    Arc2Group = LOADDEF_GROUP(ID_XSDI_ARC_ARCHIVES_GROUP, DEFAULT_TABLE_WIDTH),
+    ArcNoTxt1 = LOADDEF_TEXT(ID_XSDI_ARC_ARCHIVES_NO_TXT1),
     ArcNoSpin =
         {
             WC_SPINBUTTON,
@@ -246,14 +205,10 @@ static const CONTROLDEF
             ID_XSDI_ARC_ARCHIVES_NO_SPIN,
             CTL_COMMON_FONT,
             0,
-            { 100, 20 },     // size
-            5               // spacing
+            { SPIN_WIDTH, SPIN_HEIGHT },     // size
+            COMMON_SPACING,
         },
-    ArcNoTxt2 = CONTROLDEF_TEXT(
-                            LOAD_STRING,
-                            ID_XSDI_ARC_ARCHIVES_NO_TXT2,
-                            -1,
-                            -1);
+    ArcNoTxt2 = LOADDEF_TEXT(ID_XSDI_ARC_ARCHIVES_NO_TXT2);
 
 static const DLGHITEM dlgArchives[] =
     {
@@ -457,7 +412,7 @@ MRESULT arcArchivesItemChanged(PNOTEBOOKPAGE pnbp,
         break;
 
         case ID_XSDI_ARC_INI_SPIN:
-            if (    (pnbp->fPageInitialized)       // skip this during initialization
+            if (    (pnbp->flPage & NBFL_PAGE_INITED)       // skip this during initialization
                  && (usNotifyCode == SPBN_CHANGE)
                )
             {
@@ -757,9 +712,9 @@ static CONTROLDEF
                             NULLHANDLE,     // replaced below
                             ID_ICONDLG),
     ArcStatusText = CONTROLDEF_TEXT_WORDBREAK(
-                            "1\n2\n3\n4",   // room for four lines, replaced below
+                            "1\n2\n3",   // room for three lines, replaced below
                             ID_XFDI_GENERICDLGTEXT,
-                            400);
+                            200);
 
 static const DLGHITEM dlgArcStatus[] =
     {
@@ -1010,8 +965,9 @@ BOOL arcCheckIfBackupNeeded(HWND hwndNotify,        // in: window to notify
     {
         G_ArcSettings.ulArcFlags &= ~ARCF_ENABLED;
         arcSaveSettings();
-        cmnMessageBoxMsg(NULLHANDLE,
+        cmnMessageBoxExt(NULLHANDLE,
                          116,
+                         NULL, 0,
                          188,
                          MB_OK);
     }

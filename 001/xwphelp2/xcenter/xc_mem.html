@@ -24,7 +24,10 @@ system would have to swap out other data to make room for a new allocation.
 So when this amount becomes too small, this only means that your swap file will
 probably have to be expanded.
 
-<P>The memory widget accepts colors and fonts that are dropped on it.
+<!-- V0.9.19: changed the following -->
+<P>Note that you can
+<A HREF="glossary/gls_dropfonts.html">drag and drop fonts and colors</A>
+onto the memory widget.
 
 <IFNDEF __NOOS2KERNEL__>
 <P>You can also double-click on the widget to have the
@@ -32,6 +35,8 @@ probably have to be expanded.
 among other things, allows you to change the system's memory widget.
 </IFNDEF>
 
+<!-- V0.9.19: added ifdef -->
+<IFNDEF __EWORKPLACE__>
 <P><B>Implementation Details</B>
 
 <P>Internally, this widget uses the <CODE>Dos16MemAvail</CODE> API,
@@ -49,7 +54,7 @@ or released again by a process. (From my testing, this API returns the same
 values as Theseus does for the free physical RAM.)
 This free RAM can be used by applications immediately
 without &os2; having to make room by swapping out other memory pages.
-
+</IFNDEF>
 <BR>
 </BODY>
 </HTML>

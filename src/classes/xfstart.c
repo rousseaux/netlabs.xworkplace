@@ -402,10 +402,11 @@ SOM_Scope BOOL  SOMLINK xfstup_wpMenuItemSelected(XFldStartup *somSelf,
 
     if ( (ulMenuId - cmnQuerySetting(sulVarMenuOffset)) == ID_XFMI_OFS_PROCESSCONTENT )
     {
-        if (cmnMessageBoxMsg((hwndFrame)
+        if (cmnMessageBoxExt((hwndFrame)
                                 ? hwndFrame
                                 : HWND_DESKTOP,
                              116,
+                             NULL, 0,
                              138,
                              MB_YESNO | MB_DEFBUTTON2)
                 == MBID_YES)
