@@ -110,7 +110,7 @@
     #define XCERR_INVALID_SUBWIDGET_INDEX       (ERROR_XWP_FIRST + 104)
     #define ERROR_XCENTER_LAST                  (ERROR_XWP_FIRST + 104)
 
-    typedef unsigned long XCRET;
+    // typedef unsigned long XCRET;     removed V0.9.19 (2002-04-17) [umoeller]
 
     #define ERROR_XWPBASE_FIRST                 (ERROR_XWP_FIRST + 200)
     #define BASEERR_BUILDPTR_FAILED             (ERROR_XWP_FIRST + 200)

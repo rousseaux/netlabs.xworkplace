@@ -217,7 +217,12 @@
  *  common controls which are _not_ notebook buttons
  ******************************************/
 
-#define DID_BROWSE             101
+#define DID_BROWSE              101
+
+// the following added with V0.9.19 (2002-04-17) [umoeller]
+#define DID_ADD                 102
+#define DID_EDIT                103
+#define DID_REMOVE              104
 
 /* ******************************************************************
  *
@@ -713,7 +718,10 @@
 // #define ID_XCDI_REPLDRIVENOTREADY       1155
 
 // XWPSetup "Paranoia" page (V0.9.0)
-#define ID_XCD_PARANOIA                 1160
+// #define ID_XCD_PARANOIA                 1160 removed V0.9.19 (2002-04-17) [umoeller]
+#define ID_XCDI_PARANOIA_GROUP          1158
+#define ID_XCDI_PARANOIA_INTRO          1159
+#define ID_XCDI_VARMENUOFFSET_TXT       1160
 #define ID_XCDI_VARMENUOFFSET           1161
 #define ID_XCDI_NOFREAKYMENUS           1162
 #ifndef __ALWAYSSUBCLASS__
@@ -729,6 +737,7 @@
 // they must have higher IDs, or the help panels won't work
 #define ID_XCDI_WORKERPRTY_TEXT1        1169
 #define ID_XCDI_WORKERPRTY_TEXT2        1170
+#define ID_XCDI_WORKERPRTY_GROUP        1171        // V0.9.19 (2002-04-17) [umoeller]
 
 // XWPSetup "Objects" page (V0.9.0)
 #define ID_XCD_OBJECTS                  1180
@@ -1416,9 +1425,6 @@
     // added V0.9.19 (2002-04-17) [umoeller]
     #define ID_SCDI_STICKY_GROUP            4550
     #define ID_SCDI_STICKY_CNR              4551
-    #define ID_SCDI_STICKY_ADD              4552
-    #define ID_SCDI_STICKY_EDIT             4553
-    #define ID_SCDI_STICKY_REMOVE           4554
 
     #define ID_SCDI_STICKY_INCLUDE          4560
     #define ID_SCDI_STICKY_EXCLUDE          4561

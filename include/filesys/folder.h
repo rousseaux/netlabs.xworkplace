@@ -118,7 +118,7 @@
     BOOL fdrForEachOpenGlobalView(ULONG ulMsg,
                                   PFNWP pfnwpCallback);
 
-    VOID fdrUpdateStatusBars(WPFolder *pFolder);
+    VOID stbUpdate(WPFolder *pFolder);
 
     /* ******************************************************************
      *
@@ -192,9 +192,9 @@
                                           MPARAM mpView,
                                           MPARAM mpFolder);
 
-    /* ******************************************************************
+    /********************************************************************
      *
-     *   Status bars
+     *   Folder frame window subclassing
      *
      ********************************************************************/
 
@@ -262,28 +262,6 @@
                                         // this field is valid only between
                                         // WM_INITMENU and WM_COMMAND
     } SUBCLASSEDFOLDERVIEW, *PSUBCLASSEDFOLDERVIEW;
-
-    HWND fdrCreateStatusBar(WPFolder *somSelf,
-                            PSUBCLASSEDFOLDERVIEW psli2,
-                            BOOL fShow);
-
-    MRESULT EXPENTRY fncbUpdateStatusBars(HWND hwndView, ULONG ulActivate,
-                                          MPARAM mpView, MPARAM mpFolder);
-
-    MRESULT EXPENTRY fncbStatusBarPost(HWND hwndView, ULONG msg,
-                                       MPARAM mpView, MPARAM mpFolder);
-
-    VOID fdrCallResolvedUpdateStatusBar(WPFolder *pFolder,
-                                        HWND hwndStatusBar,
-                                        HWND hwndCnr);
-
-    VOID fdrUpdateStatusBars(WPFolder *pFolder);
-
-    /********************************************************************
-     *
-     *   Folder frame window subclassing
-     *
-     ********************************************************************/
 
     PSUBCLASSEDFOLDERVIEW fdrCreateSFV(HWND hwndFrame,
                                        HWND hwndCnr,

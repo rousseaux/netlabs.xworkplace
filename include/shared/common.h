@@ -338,6 +338,11 @@
     DECLARE_CMN_STRING(G_pcszWPTemplates, "WPTemplates");
     DECLARE_CMN_STRING(G_pcszWPDrives, "WPDrives");
 
+    // object desktop classes
+    // V0.9.19 (2002-04-17) [umoeller]
+    DECLARE_CMN_STRING(G_pcszTabLaunchPad, "TSTabFolder");
+    DECLARE_CMN_STRING(G_pcszControlCenter, "TSCPad");
+
     /********************************************************************
      *
      *   Thread object windows

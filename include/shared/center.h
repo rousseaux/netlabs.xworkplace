@@ -576,6 +576,15 @@
                 //    Note: Restrictions apply if you want your widget
                 //    to be trayable. See above.
 
+                #define WGTF_CANTAKECENTERHOTKEY    0x0400
+                // -- WGTF_CANTAKECENTERHOTKEY: signals that the widget is
+                //    willing to take action when the XCenter gets
+                //    resurfaced via its object hotkey.
+                //    The widget will then receive WM_CONTROL with
+                //    the XN_CENTERHOTKEYPRESSED code; see remarks for
+                //    XN_CENTERHOTKEYPRESSED.
+                //    V0.9.19 (2002-04-17) [umoeller]
+
         PWGTSHOWSETTINGSDLG pShowSettingsDlg;
                 // if the widget supports a settings dialog,
                 // it must set this func pointer to a procedure
@@ -1209,6 +1218,30 @@
 
     #define XN_INUSECHANGED             13
 
+    /*
+     *@@ XN_CENTERHOTKEYPRESSED:
+     *      notification code for WM_CONTROL sent (!)
+     *      to the first widget that has the WGTF_CANTAKECENTERHOTKEY
+     *      class flag when the XCenter hotkey is pressed.
+     *
+     *      Presently this is only used by the X-button to
+     *      open its menu when the XCenter gets activated via
+     *      hotkey, but other widget classes could behave
+     *      accordingly.
+     *
+     *      Parameters:
+     *
+     *      -- SHORT1FROMMP(mp1): ID, always ID_XCENTER_CLIENT.
+     *
+     *      -- SHORT2FROMMP(mp1): notify code (XN_CENTERHOTKEYPRESSED).
+     *
+     *      -- mp2: unused, always NULL.
+     *
+     *@@added V0.9.19 (2002-04-17) [umoeller]
+     */
+
+    #define XN_CENTERHOTKEYPRESSED      14
+
     /* ******************************************************************
      *
      *   Public messages _to_ XCenter client
@@ -1256,6 +1289,7 @@
     #define XFMF_REPOSITIONWIDGETS      0x0008
     #define XFMF_SHOWWIDGETS            0x0010
     #define XFMF_RESURFACE              0x0020
+    #define XFMF_FOCUS2FIRSTWIDGET      0x0040
 
     /*
      *@@ XCM_REFORMAT:
@@ -1295,6 +1329,10 @@
      *          --  XFMF_SHOWWIDGETS: set WS_VISIBLE on all widgets.
      *
      *          --  XFMF_RESURFACE: resurface XCenter to HWND_TOP.
+     *
+     *          --  XFMF_FOCUS2FIRSTWIDGET: implies XFMF_RESURFACE,
+     *              but will open the X-Button widget's menu, if
+     *              appplicable.
      *
      *          Even if you specify 0, the XCenter will be re-shown
      *          if it is currently auto-hidden.

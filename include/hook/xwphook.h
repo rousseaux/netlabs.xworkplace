@@ -306,18 +306,19 @@
                             // If any item is NULLHANDLE, it means the
                             // corner is inactive (no function defined).
                             // If the hiword of the item is 0xFFFF, this
-                            // means a special function has been defined.
-                            // Currently the following exist:
-                            //      0xFFFF0000 = show window list;
-                            //      0xFFFF0001 = show Desktop's context menu.
-                            //      0xFFFF0002 = show XPager.
-                            //      (2001-01-26) [lafaix]
-                            //      0xFFFF0003 = up one screen
-                            //      0xFFFF0004 = right one screen
-                            //      0xFFFF0005 = down one screen
-                            //      0xFFFF0006 = left one screen
-                            //      [lafaix] end
-                            //      0xFFFF0007 = screen wrap [pr]
+                            // means a special function has been defined:
+                            // (#define's added V0.9.19 (2002-04-17) [umoeller]):
+                  #define SPECIALOBJ_FIRST                  0xFFFF0000
+                  #define SPECIALOBJ_SHOWWINDOWLIST         0xFFFF0000
+                  #define SPECIALOBJ_DESKTOPCONTEXTMENU     0xFFFF0001
+                  #define SPECIALOBJ_PAGER_SHOW             0xFFFF0002
+                  // the following added (2001-01-26) [lafaix]
+                  #define SPECIALOBJ_PAGER_UP               0xFFFF0003
+                  #define SPECIALOBJ_PAGER_RIGHT            0xFFFF0004
+                  #define SPECIALOBJ_PAGER_DOWN             0xFFFF0005
+                  #define SPECIALOBJ_PAGER_LEFT             0xFFFF0006
+                  // the following added V0.9.18 [pr]
+                  #define SPECIALOBJ_SCREENWRAP             0xFFFF0007
                             // Otherwise (> 0 and < 0xFFFF0000), we have
                             // a "real" object handle, and a regular WPS
                             // object is to be opened.

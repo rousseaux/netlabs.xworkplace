@@ -54,6 +54,9 @@
     // max length of status bar mnemonics
     #define CCHMAXMNEMONICS         256
 
+    // window ID of status bar
+    #define ID_STATUSBAR            0x9001
+
     #ifdef FOLDER_HEADER_INCLUDED
         /*
          *@@ STATUSBARDATA:
@@ -76,12 +79,41 @@
     #endif
 
     // msgs to status bar window (STBM_xxx)
-    #define STBM_UPDATESTATUSBAR        (WM_USER+110)
-    #define STBM_PROHIBITBROADCASTING     (WM_USER+111)
+    #define STBM_UPDATESTATUSBAR            (WM_USER + 110)
+    #define STBM_PROHIBITBROADCASTING       (WM_USER + 111)
+
+    /* ******************************************************************
+     *
+     *   Status bar window
+     *
+     ********************************************************************/
+
+    BOOL stbClassCanHaveStatusBars(WPFolder *somSelf);
+
+    BOOL stbViewHasStatusBars(WPFolder *somSelf,
+                              ULONG ulView);
+
+    #ifdef FOLDER_HEADER_INCLUDED
+        HWND stbCreate(PSUBCLASSEDFOLDERVIEW psli2);
+
+        VOID stbDestroy(PSUBCLASSEDFOLDERVIEW psli2);
+    #endif
+
+    MRESULT EXPENTRY stb_UpdateCallback(HWND hwndView,
+                                        ULONG ulActivate,
+                                        MPARAM mpView,
+                                        MPARAM mpFolder);
+
+    MRESULT EXPENTRY stb_PostCallback(HWND hwndView,
+                                      ULONG msg,
+                                      MPARAM mpView,
+                                      MPARAM mpFolder);
+
+    VOID stbUpdate(WPFolder *pFolder);
 
     /********************************************************************
      *
-     *   Prototypes
+     *   Status bar text composition
      *
      ********************************************************************/
 
@@ -95,9 +127,6 @@
         #endif
 
         PSZ stbQueryClassMnemonics(SOMClass *pClassObject);
-
-        ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,
-                                           PSZ* ppszText);
 
         PSZ stbComposeText(WPFolder* somSelf,
                            HWND hwndCnr);

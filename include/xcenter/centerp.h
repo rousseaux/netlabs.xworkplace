@@ -210,7 +210,7 @@
 
     #ifdef LINKLIST_HEADER_INCLUDED
 
-        XCRET XWPENTRY ctrpCreateWidgetSetting(XCenter *somSelf,
+        APIRET XWPENTRY ctrpCreateWidgetSetting(XCenter *somSelf,
                                                PTRAYSETTING pTray,
                                                PCSZ pcszWidgetClass,
                                                PCSZ pcszSetupString,
@@ -219,7 +219,7 @@
                                                PULONG pulNewItemCount,
                                                PULONG pulNewWidgetIndex);
 
-        XCRET ctrpFindWidgetSetting(XCenter *somSelf,
+        APIRET ctrpFindWidgetSetting(XCenter *somSelf,
                                     PWIDGETPOSITION pPosition,
                                     PPRIVATEWIDGETSETTING *ppSetting,
                                     PXCENTERWIDGET *ppViewData);
