@@ -28,6 +28,12 @@ Description '@#Ulrich M”ller:0.9.16#@ XWorkplace main module'
 PROTMODE
 DATA SINGLE SHARED LOADONCALL
 
+SEGMENTS
+; these correspond to the pragma alloc_text in include\setup.h
+; note the LOADONCALL attribute is ignored anyway
+    FREQ_CODE1   CLASS 'CODE'    LOADONCALL
+    FREQ_CODE2   CLASS 'CODE'    LOADONCALL
+
 IMPORTS
     DOSQPROCSTATUS = DOSCALLS.154
     DosQuerySysState = DOSCALLS.368

@@ -1234,13 +1234,9 @@ BOOL AddTrashObjectsForTrashDir(M_XWPTrashObject *pXWPTrashObjectClass, // in: _
                                     // because they're empty
     ULONG       ulTrashObjectCountSub = 0;
 
-    // ULONG   ulNesting = 0;
-
     if (!pXWPTrashObjectClass)
         // error
         return (0);
-
-    // DosEnterMustComplete(&ulNesting);
 
     #ifdef DEBUG_TRASHCAN
         _Pmpf(("  Entering AddTrashObjectsForTrashDir for %s", _wpQueryTitle(pTrashDir)));
@@ -1382,8 +1378,6 @@ BOOL AddTrashObjectsForTrashDir(M_XWPTrashObject *pXWPTrashObjectClass, // in: _
         fdrReleaseFolderMutexSem(pTrashDir);
         fTrashDirSemOwned = FALSE;
     }
-
-    // DosExitMustComplete(&ulNesting);
 
     *pulObjectCount += ulTrashObjectCountSub;
 
@@ -2297,9 +2291,6 @@ BOOL trshSetDrivesSupport(PBYTE pabSupportedDrives)
     BOOL brc = FALSE;
     BOOL fLocked = FALSE;
 
-    //ULONG ulNesting;
-    // DosEnterMustComplete(&ulNesting);
-
     TRY_LOUD(excpt1)
     {
         fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__);
@@ -2384,8 +2375,6 @@ BOOL trshSetDrivesSupport(PBYTE pabSupportedDrives)
 
     if (fLocked)
         krnUnlock();
-
-    // DosExitMustComplete(&ulNesting);
 
     return (brc);
 }

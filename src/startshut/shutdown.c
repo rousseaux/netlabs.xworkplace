@@ -3149,9 +3149,6 @@ PSHUTLISTITEM xsdItemFromPID(PLINKLIST pList,
     BOOL            fAccess = FALSE,
                     fSemOwned = FALSE;
 
-    // ULONG           ulNesting = 0;
-    // DosEnterMustComplete(&ulNesting);
-
     TRY_QUIET(excpt1)
     {
         if (hmtx)
@@ -3184,8 +3181,6 @@ PSHUTLISTITEM xsdItemFromPID(PLINKLIST pList,
         fSemOwned = FALSE;
     }
 
-    // DosExitMustComplete(&ulNesting);
-
     return (pItem);
 }
 
@@ -3205,9 +3200,6 @@ PSHUTLISTITEM xsdItemFromSID(PLINKLIST pList,
     PSHUTLISTITEM pItem = NULL;
     BOOL          fAccess = FALSE,
                   fSemOwned = FALSE;
-
-    // ULONG           ulNesting = 0;
-    // DosEnterMustComplete(&ulNesting);
 
     TRY_QUIET(excpt1)
     {
@@ -3241,8 +3233,6 @@ PSHUTLISTITEM xsdItemFromSID(PLINKLIST pList,
         fSemOwned = FALSE;
     }
 
-    // DosExitMustComplete(&ulNesting);
-
     return (pItem);
 }
 
@@ -3260,9 +3250,6 @@ ULONG xsdCountRemainingItems(PSHUTDOWNDATA pData)
     ULONG   ulrc = 0;
     BOOL    fShutdownSemOwned = FALSE,
             fSkippedSemOwned = FALSE;
-
-    // ULONG           ulNesting = 0;
-    // DosEnterMustComplete(&ulNesting);
 
     TRY_QUIET(excpt1)
     {
@@ -3287,8 +3274,6 @@ ULONG xsdCountRemainingItems(PSHUTDOWNDATA pData)
         DosReleaseMutexSem(pData->hmtxSkipped);
         fSkippedSemOwned = FALSE;
     }
-
-    // DosExitMustComplete(&ulNesting);
 
     return (ulrc);
 }
@@ -3351,9 +3336,6 @@ PSHUTLISTITEM xsdQueryCurrentItem(PSHUTDOWNDATA pData)
                     fSkippedSemOwned = FALSE;
     PSHUTLISTITEM   pliShutItem = 0;
 
-    // ULONG           ulNesting = 0;
-    // DosEnterMustComplete(&ulNesting);
-
     TRY_QUIET(excpt1)
     {
         fShutdownSemOwned = (WinRequestMutexSem(pData->hmtxShutdown, 4000) == NO_ERROR);
@@ -3405,8 +3387,6 @@ PSHUTLISTITEM xsdQueryCurrentItem(PSHUTDOWNDATA pData)
         DosReleaseMutexSem(pData->hmtxSkipped);
         fSkippedSemOwned = FALSE;
     }
-
-    // DosExitMustComplete(&ulNesting);
 
     return (pliShutItem);
 }
@@ -3741,9 +3721,6 @@ void xsdUpdateListBox(HAB hab,
 
     BOOL            fSemOwned = FALSE;
 
-    // ULONG           ulNesting = 0;
-    // DosEnterMustComplete(&ulNesting);
-
     TRY_QUIET(excpt1)
     {
         fSemOwned = (WinRequestMutexSem(pShutdownData->hmtxShutdown, 4000) == NO_ERROR);
@@ -3778,8 +3755,6 @@ void xsdUpdateListBox(HAB hab,
         DosReleaseMutexSem(pShutdownData->hmtxShutdown);
         fSemOwned = FALSE;
     }
-
-    // DosExitMustComplete(&ulNesting);
 }
 
 /*
@@ -6327,7 +6302,6 @@ void _Optlink fntUpdateThread(PTHREADINFO ptiMyself)
                     // count items in the list of the Shutdown thread;
                     // here we need a mutex semaphore, because the
                     // Shutdown thread might be working on this too
-                    // DosEnterMustComplete(&ulNesting);
                     TRY_LOUD(excpt2)
                     {
                         fSemOwned = (WinRequestMutexSem(pShutdownData->hmtxShutdown, 4000) == NO_ERROR);
@@ -6339,7 +6313,6 @@ void _Optlink fntUpdateThread(PTHREADINFO ptiMyself)
                         }
                     }
                     CATCH(excpt2) {} END_CATCH();
-                    // DosExitMustComplete(&ulNesting);
 
                     if (!G_tiUpdateThread.fExit)
                         DosSleep(100);

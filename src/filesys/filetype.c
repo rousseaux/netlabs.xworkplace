@@ -152,8 +152,10 @@
 
 typedef struct _XWPTYPEWITHFILTERS
 {
-    PSZ         pszType;        // e.g. "C Code" (malloc copy)
-    PSZ         pszFilters;     // e.g. "*.c\0*.h\0\0" (malloc copy)
+    PSZ         pszType;        // e.g. "C Code" (points to after structure)
+    PSZ         pszFilters;     // e.g. "*.c\0*.h\0\0" (points to after structure)
+            // together with this structure we allocate enough
+            // room for storing the two strings
 } XWPTYPEWITHFILTERS, *PXWPTYPEWITHFILTERS;
 
 /*

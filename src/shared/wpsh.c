@@ -458,6 +458,50 @@ BOOL wpshOverrideStaticMethod(SOMClass *somSelf,            // in: class object 
  ********************************************************************/
 
 /*
+ *@@ wpshStore:
+ *      like strhStore, but uses wpAllocMem for allocating
+ *      memory.
+ *
+ *@@added V0.9.16 (2002-01-26) [umoeller]
+ */
+
+APIRET wpshStore(WPObject *somSelf,
+                 PSZ *ppszTarget,
+                 PCSZ pcszSource,
+                 PULONG pulLength)        // out: length of new string (ptr can be NULL)
+{
+    ULONG   ulLength = 0;
+
+    if (ppszTarget)
+    {
+        if (*ppszTarget)
+            _wpFreeMem(somSelf, *ppszTarget);
+
+        if (    (pcszSource)
+             && (ulLength = strlen(pcszSource))
+           )
+        {
+            APIRET  arc = NO_ERROR;
+            if (*ppszTarget = (PSZ)_wpAllocMem(somSelf,
+                                               ulLength + 1,
+                                               &arc))
+                memcpy(*ppszTarget, pcszSource, ulLength + 1);
+            else
+                return (arc);
+        }
+        else
+            *ppszTarget = NULL;
+    }
+    else
+        return (ERROR_INVALID_PARAMETER);
+
+    if (pulLength)
+        *pulLength = ulLength;
+
+    return (NO_ERROR);
+}
+
+/*
  *@@ wpshCheckObject:
  *      checks pObject for validity.
  *

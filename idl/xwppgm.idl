@@ -57,7 +57,8 @@ interface XWPProgram : WPProgram
 
     releaseorder: xwpAddAssociationsPage,
                   xwpQuerySetup2,
-                  xwpDestroyStorage;
+                  xwpDestroyStorage,
+                  xwpQueryExecutable;
 
     /*
      * Class Modifiers:
@@ -98,16 +99,19 @@ interface XWPProgram : WPProgram
     PROGTYPE    ProgType;
 
     USHORT      usExecutableHandle;
-    PSZ         pszExecutable;          // only used if the user did not specify a
+    PSZ         pWszExecutable;         // only used if the user did not specify a
                                         // executable that could be resolved to
                                         // the executable fshandle above (e.g. an
                                         // executable on the PATH)
+                                        // WARNING: allocated using wpAllocMem
 
-    PSZ         pszParameters;          // parameters string
+    PSZ         pWszParameters;         // parameters string or NULL
+                                        // WARNING: allocated using wpAllocMem
 
     USHORT      usStartupDirHandle;
 
-    PSZ         pszEnvironment;
+    PSZ         pWszEnvironment;        // environment buffer (Dos format);
+                                        // WARNING: allocated using wpAllocMem
     SWP         swpInitial;
 
     /*

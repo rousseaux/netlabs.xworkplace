@@ -186,8 +186,9 @@ interface XFldObject : WPObject
     PWPOBJECTLONGS pObjectLongs;      // ptr to array of LONGs in instance data
     ULONG       cbObjectLongs;
 
-    PSZ         pszOriginalObjectID;    // copy of object ID as found with wpRestoreState
-                                        // (malloc()'ed) // V0.9.16 (2001-12-06) [umoeller]
+    PSZ         pWszOriginalObjectID;   // copy of object ID as found with wpRestoreState
+                                        // WARNING: allocated using wpAllocMem
+                                        // V0.9.16 (2001-12-06) [umoeller]
 
     // the following has been added with V0.9.16 (2001-12-06) [umoeller]
     PWPOBJECTSTRINGS pObjectStrings;  // ptr to array of strings in instance data

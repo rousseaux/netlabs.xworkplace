@@ -2794,7 +2794,7 @@ VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
                     {
                         sprintf(szTemp1,
                                 "Folder contents (%d fs objects)",
-                                ((PFDRCONTENTS)_pvFdrContents)->cFileSystems);
+                                _cFileSystems);
 
                         preccLevel2 = AddObjectUsage2Cnr(hwndCnr,
                                                          preccRoot,
@@ -2802,7 +2802,7 @@ VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
                                                          CRA_RECORDREADONLY);
 
                         for (pThis = (PFDRCONTENTITEM)treeFirst(
-                                        ((PFDRCONTENTS)_pvFdrContents)->FileSystemsTreeRoot);
+                                        _FileSystemsTreeRoot);
                              pThis;
                              pThis = (PFDRCONTENTITEM)treeNext((TREE*)pThis))
                         {
@@ -2814,7 +2814,7 @@ VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
 
                         sprintf(szTemp1,
                                 "Folder contents (%d abstract objects)",
-                                ((PFDRCONTENTS)_pvFdrContents)->cAbstracts);
+                                _cAbstracts);
 
                         preccLevel2 = AddObjectUsage2Cnr(hwndCnr,
                                                          preccRoot,
@@ -2822,7 +2822,7 @@ VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
                                                          CRA_RECORDREADONLY);
 
                         for (pThis = (PFDRCONTENTITEM)treeFirst(
-                                        ((PFDRCONTENTS)_pvFdrContents)->AbstractsTreeRoot);
+                                        _AbstractsTreeRoot);
                              pThis;
                              pThis = (PFDRCONTENTITEM)treeNext((TREE*)pThis))
                         {

@@ -1835,7 +1835,8 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                 cmnLoadString(hab,
                               hmodNLS,
                               G_FeatureItemsList[ul].usFeatureID, // in: string ID
-                              &(G_FeatureItemsList[ul].pszNLSString)); // out: NLS string
+                              &(G_FeatureItemsList[ul].pszNLSString), // out: NLS string
+                              NULL);
 
                 // copy FEATURESITEM to record core
                 preccThis->ulStyle = G_FeatureItemsList[ul].ulStyle;

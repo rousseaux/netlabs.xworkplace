@@ -73,7 +73,9 @@ interface XWPFileSystem : WPFileSystem
 
     ULONG       ulHandle;
 
-    PSZ         pszUpperRealName;
+    PSZ         pWszUpperRealName;      // upper-case short real name for
+                                        // folder content tree;
+                                        // WARNING: allocated using wpAllocMem
 
     ULONG       ulCnrRefresh;
 

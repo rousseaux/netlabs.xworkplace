@@ -86,6 +86,9 @@ ew */
 #include "setup.h"                      // code generation and debugging options
 
 // disable wrappers, because we're not linking statically
+#ifdef DOSH_STANDARDWRAPPERS
+    #undef DOSH_STANDARDWRAPPERS
+#endif
 #ifdef WINH_STANDARDWRAPPERS
     #undef WINH_STANDARDWRAPPERS
 #endif

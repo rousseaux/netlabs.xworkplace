@@ -135,7 +135,7 @@ static XWPSETUPENTRY    G_XCenterSetupSet[] =
          */
 
         // type,  setup string,     offset,
-        STG_LONG,    NULL,           FIELDOFFSET(XCenterData, ulWindowStyle),
+        STG_LONG_DEC,    NULL,           FIELDOFFSET(XCenterData, ulWindowStyle),
         //     key for wpSaveState/wpRestoreState
                2,      // bitfield! only first item!
         //     default, ulExtra,            min, max
@@ -161,7 +161,7 @@ static XWPSETUPENTRY    G_XCenterSetupSet[] =
          */
 
         // type,  setup string,     offset,
-        STG_LONG,    NULL,             FIELDOFFSET(XCenterData, flDisplayStyle),
+        STG_LONG_DEC,    NULL,             FIELDOFFSET(XCenterData, flDisplayStyle),
         //     key for wpSaveState/wpRestoreState
                4,      // bitfield! only first item!
         //     default, ulExtra,            min, max
@@ -220,7 +220,7 @@ static XWPSETUPENTRY    G_XCenterSetupSet[] =
          */
 
         // type,  setup string,     offset,
-        STG_LONG,    "AUTOHIDE",    FIELDOFFSET(XCenterData, ulAutoHide),
+        STG_LONG_DEC,    "AUTOHIDE",    FIELDOFFSET(XCenterData, ulAutoHide),
         //     key for wpSaveState/wpRestoreState
                3,
         //     default, ulExtra,            min, max
@@ -234,7 +234,7 @@ static XWPSETUPENTRY    G_XCenterSetupSet[] =
                FALSE,   0,                  0,   1,
 
         // type,  setup string,     offset,
-        STG_LONG, "PRIORITYCLASS",    FIELDOFFSET(XCenterData, ulPriorityClass),
+        STG_LONG_DEC, "PRIORITYCLASS",    FIELDOFFSET(XCenterData, ulPriorityClass),
         //     key for wpSaveState/wpRestoreState
                6,
         //     default, ulExtra,            min, max
@@ -243,21 +243,21 @@ static XWPSETUPENTRY    G_XCenterSetupSet[] =
                                             // PRTYC_FOREGROUNDSERVER = 4
 
         // type,  setup string,     offset,
-        STG_LONG, "PRIORITYDELTA",    FIELDOFFSET(XCenterData, lPriorityDelta),
+        STG_LONG_DEC, "PRIORITYDELTA",    FIELDOFFSET(XCenterData, lPriorityDelta),
         //     key for wpSaveState/wpRestoreState
                7,
         //     default, ulExtra,            min, max
                0,       0,                  0,   31,
 
         // type,  setup string,     offset,
-        STG_LONG, NULL,               FIELDOFFSET(XCenterData, ulPosition),
+        STG_LONG_DEC, NULL,               FIELDOFFSET(XCenterData, ulPosition),
         //     key for wpSaveState/wpRestoreState
                8,
         //     default, ulExtra,            min, max
                XCENTER_BOTTOM, 0,           0,   3,
 
         // type,  setup string,     offset,
-        STG_LONG, "3DBORDERWIDTH",    FIELDOFFSET(XCenterData, ul3DBorderWidth),
+        STG_LONG_DEC, "3DBORDERWIDTH",    FIELDOFFSET(XCenterData, ul3DBorderWidth),
         //     key for wpSaveState/wpRestoreState
                9,
         //     default, ulExtra,            min, max
@@ -265,14 +265,14 @@ static XWPSETUPENTRY    G_XCenterSetupSet[] =
                // changed default V0.9.16 (2001-12-08) [umoeller]
 
         // type,  setup string,     offset,
-        STG_LONG, "BORDERSPACING",    FIELDOFFSET(XCenterData, ulBorderSpacing),
+        STG_LONG_DEC, "BORDERSPACING",    FIELDOFFSET(XCenterData, ulBorderSpacing),
         //     key for wpSaveState/wpRestoreState
                10,
         //     default, ulExtra,            min, max
                2,       0,                  0,   10,
 
         // type,  setup string,     offset,
-        STG_LONG, "WIDGETSPACING",    FIELDOFFSET(XCenterData, ulWidgetSpacing),
+        STG_LONG_DEC, "WIDGETSPACING",    FIELDOFFSET(XCenterData, ulWidgetSpacing),
         //     key for wpSaveState/wpRestoreState
                11,
         //     default, ulExtra,            min, max
@@ -306,7 +306,7 @@ static XWPSETUPENTRY    G_XCenterSetupSet[] =
                (LONG)NULL, 0,               0,   0,
 
         // type,  setup string,     offset,
-        STG_LONG,    "CLIENTCOLOR", FIELDOFFSET(XCenterData, lcolClientBackground),
+        STG_LONG_RGB,    "CLIENTCOLOR", FIELDOFFSET(XCenterData, lcolClientBackground),
         //     key for wpSaveState/wpRestoreState
                14,
         //     default, ulExtra,            min, max

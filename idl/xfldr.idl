@@ -340,12 +340,15 @@ interface XFolder : WPFolder
     // we cannot store a pointer to instance
     // data because the pointer used in wpRestoreString (IDKEY_FDRBKGNDIMAGEFILE)
     // apparently only points to a temporary buffer
-    PSZ             pszFolderBkgndImageFile;
+    PSZ             pWszFolderBkgndImageFile;
+                        // WARNING: allocated using wpAllocMem
 
     // default document V0.9.4 (2000-06-09) [umoeller]
     WPFileSystem    pDefaultDocument;
 
-    PSZ             pszDefaultDocDeferred;      // holds file name from wpRestoreState
+    PSZ             pWszDefaultDocDeferred;
+                        // holds file name from wpRestoreState
+                        // WARNING: allocated using wpAllocMem
 
     // folder contents
     ULONG           cObjects;                   // folder's objects count, always valid
@@ -355,6 +358,16 @@ interface XFolder : WPFolder
     WPObject        *ppLastObj;
             // note: in IDL, "WPObject" is a WPObject* already, so this
             // translates into **ppFirstObj etc.
+
+    // tree of WPFileSystem objects
+    // V0.9.16 (2002-01-26) [umoeller]
+    PVOID           FileSystemsTreeRoot;        // a TREE* really
+    LONG            cFileSystems;
+
+    // tree of WPAbstract objects;
+    // V0.9.16 (2002-01-26) [umoeller]
+    PVOID           AbstractsTreeRoot;          // a TREE* really
+    LONG            cAbstracts;
 
     // file-system notifications for replacement auto-refresh
     // V0.9.9 (2001-02-01) [umoeller]
@@ -385,15 +398,6 @@ interface XFolder : WPFolder
     BOOL        fInwpAddFolderView1Page;
                 // TRUE while in wpAddFolderView1Page; allows us
                 // to do an evil hack in wpInsertSettingsPage
-                // V0.9.16 (2001-10-23) [umoeller]
-
-    PVOID       pvFdrContents;
-                // ptr to a FDRCONTENTS struct which is allocated
-                // in XFolder::wpInitData. Yes, this isn't pretty,
-                // but we use the tree* funcs for this, and we can't
-                // share the TREE struct definition between IDL and
-                // the helpers include file easily. The FDRCONTENTS
-                // struct is therefore defined in include\folder.h.
                 // V0.9.16 (2001-10-23) [umoeller]
 
     SOMObject   pMonitor;
@@ -519,8 +523,8 @@ interface M_XFolder : M_WPFolder
      */
 
     // class default icons
-    HPOINTER    hptrClosed;
-    HPOINTER    hptrOpen;
+    // HPOINTER    hptrClosed;
+    HPOINTER    hptrAni1;
 
     /*
      * M_WPFolder methods overridden by M_XFolder:
@@ -536,6 +540,8 @@ interface M_XFolder : M_WPFolder
 
     wpclsQueryIconData: override;
     wpclsQueryIconDataN: override;
+
+    wpclsQueryIconN: override;
   };
 #endif /* __SOMIDL__ */
 };

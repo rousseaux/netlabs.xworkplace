@@ -715,8 +715,7 @@ BOOL krnReplaceRefreshEnabled(VOID)
 VOID krnSetProcessStartupFolder(BOOL fReuse)
 {
     PKERNELGLOBALS pKernelGlobals = NULL;
-    // ULONG ulNesting;
-    // DosEnterMustComplete(&ulNesting);
+
     TRY_LOUD(excpt1)
     {
         pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
@@ -734,8 +733,6 @@ VOID krnSetProcessStartupFolder(BOOL fReuse)
 
     if (pKernelGlobals)
         krnUnlockGlobals();
-
-    // DosExitMustComplete(&ulNesting);
 }
 
 /*

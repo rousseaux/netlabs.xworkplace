@@ -29,12 +29,15 @@ and a listing of many setup strings. -->
 
 <P>Presently, &xwp; can decode setup strings of the following classes:
 
-<UL><LI>WPObject/XFldObject;
-<P><LI>WPFolder/XFolder;
-<P><LI>WPProgram and XWPProgramFile. For these classes, the setup string can become
+<!-- V0.9.16: added links -->
+<UL><LI><A HREF="objects/string_1wpobject.html">WPObject</A>
+<P><LI><A HREF="objects/string_2wpfolder.html">WPFolder</A>/<A HREF="objects/string_3xfolder.html">XFolder</A>
+<P><LI><A HREF="objects/string_5wpprogram.html">WPProgram</A> and XWPProgramFile;
+For these classes, the setup string can become
 particularly long. You will also see that the WPS stores the DOS setup variables
 ("DOS" or "&winos2; properties" button on the "Session" page) in the program's
 environment, using "SET xxx=yyy" strings.
+<P><LI><A HREF="objects/string_7xcenter.html">XCenter</A>
 
 </UL>If setup strings are defined of a more specific class, but &xwp; cannot
 decode them, you will only get the setup strings of the parent class(es).

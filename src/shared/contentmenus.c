@@ -735,8 +735,6 @@ VOID cmnuInsertObjectsIntoMenu(WPFolder *pFolder,   // in: folder whose contents
                 // counts items which were left out because
                 // too many are in the folder to be displayed
 
-    // ULONG           ulNesting;
-    // DosEnterMustComplete(&ulNesting);
     TRY_LOUD(excpt1)
     {
         WPObject        *pObject, *pObject2;
@@ -828,8 +826,6 @@ VOID cmnuInsertObjectsIntoMenu(WPFolder *pFolder,   // in: folder whose contents
 
     if (fFolderLocked)
         fdrReleaseFolderMutexSem(pFolder);
-
-    // DosExitMustComplete(&ulNesting);
 
     // now sort the lists alphabetically
     lstQuickSort(pllFolders,

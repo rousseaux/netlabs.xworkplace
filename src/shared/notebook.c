@@ -431,7 +431,8 @@ MRESULT EXPENTRY ntbPageWmControl(PCREATENOTEBOOKPAGE pcnbp,
                         fCallItemChanged = TRUE;
                     }
                 }
-            break; }
+            }
+            break;
 
             // spinbutton?
             case 32:
@@ -449,7 +450,8 @@ MRESULT EXPENTRY ntbPageWmControl(PCREATENOTEBOOKPAGE pcnbp,
                                MPFROM2SHORT(0, SPBQ_UPDATEIFVALID));
                     fCallItemChanged = TRUE;
                 }
-            break; }
+            }
+            break;
 
             // listbox?
             case 7:
@@ -502,17 +504,17 @@ MRESULT EXPENTRY ntbPageWmControl(PCREATENOTEBOOKPAGE pcnbp,
                             ulExtra = (ULONG)(pnre->pRecord);
                             pcnbp->preccLastSelected = pnre->pRecord;
                         }
-                    break; }
+                    }
+                    break;
 
                     case CN_CONTEXTMENU:
-                    {
                         fCallItemChanged = TRUE;
                         ulExtra = (ULONG)mp2;
                             // record core for context menu
                             // or NULL for cnr whitespace
                         WinQueryPointerPos(HWND_DESKTOP,
                                            &(pcnbp->ptlMenuMousePos));
-                    break; }
+                    break;
 
                     case CN_PICKUP:
                     case CN_INITDRAG:
@@ -524,7 +526,8 @@ MRESULT EXPENTRY ntbPageWmControl(PCREATENOTEBOOKPAGE pcnbp,
                             fCallItemChanged = TRUE;
                             ulExtra = (ULONG)pcdi;
                         }
-                    break; }
+                    }
+                    break;
 
                     case CN_DRAGAFTER:
                     case CN_DRAGOVER:
@@ -537,7 +540,8 @@ MRESULT EXPENTRY ntbPageWmControl(PCREATENOTEBOOKPAGE pcnbp,
                             fCallItemChanged = TRUE;
                             ulExtra = (ULONG)pcdi;
                         }
-                    break; }
+                    }
+                    break;
 
                     case CN_DROPNOTIFY:
                     {
@@ -548,7 +552,8 @@ MRESULT EXPENTRY ntbPageWmControl(PCREATENOTEBOOKPAGE pcnbp,
                             fCallItemChanged = TRUE;
                             ulExtra = (ULONG)pcldi;
                         }
-                    break; }
+                    }
+                    break;
 
                     case CN_RECORDCHECKED:
                     {
@@ -561,7 +566,8 @@ MRESULT EXPENTRY ntbPageWmControl(PCREATENOTEBOOKPAGE pcnbp,
                                     // changed V0.9.9 (2001-03-27) [umoeller]
                             fCallItemChanged = TRUE;
                         }
-                    break; }
+                    }
+                    break;
 
                     /*
                      * CN_EXPANDTREE:
@@ -570,7 +576,6 @@ MRESULT EXPENTRY ntbPageWmControl(PCREATENOTEBOOKPAGE pcnbp,
                      */
 
                     case CN_EXPANDTREE:
-                    {
                         // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
                         mrc = WinDefDlgProc(pcnbp->hwndDlgPage, msg, mp1, mp2);
                         if (cmnQuerySetting(sfTreeViewAutoScroll))
@@ -584,7 +589,7 @@ MRESULT EXPENTRY ntbPageWmControl(PCREATENOTEBOOKPAGE pcnbp,
                                           999,      // ID
                                           100);
                         }
-                    break; }
+                    break;
 
                     case CN_HELP:
                         // does caller want CN_HELP passed?
@@ -614,16 +619,14 @@ MRESULT EXPENTRY ntbPageWmControl(PCREATENOTEBOOKPAGE pcnbp,
 
             // linear slider?
             case 38:
-            {
                 if (    (usNotifyCode == SLN_CHANGE)
                      || (usNotifyCode == SLN_SLIDERTRACK)
                    )
                     fCallItemChanged = TRUE;
-            break; }
+            break;
 
             // circular slider?
             case 65:
-            {
                 if (    (usNotifyCode == CSN_SETFOCUS)
                                 // mp2 is TRUE or FALSE
                      || (usNotifyCode == CSN_CHANGED)
@@ -635,11 +638,10 @@ MRESULT EXPENTRY ntbPageWmControl(PCREATENOTEBOOKPAGE pcnbp,
                     fCallItemChanged = TRUE;
                     ulExtra = (ULONG)mp2;
                 }
-            break; }
+            break;
 
             // value set? (added V0.9.9 (2001-03-15) [lafaix])
             case 39:
-            {
                 if (    (usNotifyCode == VN_ENTER)
                                 // mp2 is selected row/col
                      || (usNotifyCode == VN_SELECT)
@@ -650,7 +652,7 @@ MRESULT EXPENTRY ntbPageWmControl(PCREATENOTEBOOKPAGE pcnbp,
                     ulExtra = (ULONG)mp2;
                 }
 
-            break; }
+            break;
 
         } // end switch (ulClassCode)
 
@@ -915,7 +917,8 @@ MRESULT EXPENTRY ntb_fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
                                                       pcnbp->ulCnrOwnerDraw);
                     }
                     // else: return default FALSE
-                break; } // WM_DRAWITEM
+                }
+                break;  // WM_DRAWITEM
 
                 /*
                  * WM_MENUEND:
@@ -956,7 +959,8 @@ MRESULT EXPENTRY ntb_fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
                         // and the caller might still need this
                     }
                     mrc = (MRESULT)0;
-                break; } // WM_MENUEND
+                }
+                break;  // WM_MENUEND
 
                 /*
                  * WM_COMMAND:
@@ -981,7 +985,8 @@ MRESULT EXPENTRY ntb_fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
                                                           usItemID,
                                                           0,
                                                           (ULONG)mp2);
-                break; } // WM_COMMAND
+                }
+                break;  // WM_COMMAND
 
                 /*
                  * WM_HELP:
@@ -1367,7 +1372,8 @@ MRESULT EXPENTRY ntb_fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM mp1,
                 DestroyNBLI(hwndNotebook, pSubclNBLI);
                             // after this, pSubclNBLI is invalid!!
                 mrc = pfnwpNotebookOrig(hwndNotebook, msg, mp1, mp2);
-            break; }
+            }
+            break;
 
             default:
                 mrc = pSubclNBLI->pfnwpNotebookOrig(hwndNotebook, msg, mp1, mp2);

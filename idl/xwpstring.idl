@@ -42,8 +42,8 @@ interface XWPString : WPAbstract
      *
      */
 
-    BOOL xwpQueryString(in PSZ pszBuf,
-                        in PULONG pcbBuf);
+    PSZ xwpQueryString();
+
     BOOL xwpSetString(in PSZ pszSetupString);
 
     WPObject xwpQueryStaticObject();
@@ -86,9 +86,9 @@ interface XWPString : WPAbstract
      *
      */
 
-    PSZ         pszSetupString;     // setup string to be invoked on member
-                                    // object or other object dropped on
-                                    // instance
+    PSZ         pWszSetupString;    // setup string to be invoked on member
+                                    // object or other object dropped on instance;
+                                    // WARNING: allocated using wpAllocMem
 
     HOBJECT     hobjStatic;         // static object to invoke pszSetupString
                                     // upon on double-click or hotkey press

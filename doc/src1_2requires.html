@@ -11,14 +11,22 @@ Required Tools
 to develop XWorkplace. For VAC++ 3.0, <B>fixpak 8</B> is strongly recommended,
 because the original crashes frequently with the complex SOM header files.
 
-<P>Other compilers are presently not supported.
+<P>Other compilers are presently not supported. Most notably, some people have
+tried to compile using VAC 3.6.5 and ran into problems.
 
 <P><LI>You need some <B>OS/2 Developer's Toolkit</B> for
 all the SOM header files and the SOM compiler.
-<P>The <B>Warp 3 toolkit</B> is sufficient. XWorkplace does some tricks for Warp 4 too,
-but does it even though I don't have the Warp 4 toolkit. <CODE>;-)</CODE>
+
+<P>I am still using the <B>Warp 3 toolkit,</B> mostly because if XWP is built
+using a newer toolkit, it will not start on Warp 3. Besides, it appears that
+the SOM compiler and <CODE>nmake</CODE> from the Warp 4.5 toolkit have some
+problems, according to some reports I got.
 
 <P><LI><B>IBM NMAKE</B> is our make utily. This comes with VAC, so no problem there.
+
+<P>As said above, newer <CODE>nmake</CODE>'s appear to have problems with
+XWorkplace's makefiles, mostly with invoking the SOM compiler. I am using
+<CODE>nmake</CODE> 3, which comes with either the Warp 3 toolkit or VAC 3.
 
 <P><LI>You need to check out the <B>"xwphelpers" CVS archive</B> from Netlabs also.
 XWorkplace uses a lot

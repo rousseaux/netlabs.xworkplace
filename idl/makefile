@@ -39,6 +39,9 @@ SOMTEMP = $(TEMP)
     [set SMINCLUDE=$(TKBASE)\idl;$(TKBASE)\h;$(TKBASE)\SOM\include;.]
 !endif
 
+!if [@echo    SMINCLUDE is $(SMINCLUDE)]
+!endif
+
 # SMTMP=$(SOMTEMP)
 # SMEMIT=ih;h;c
 # SMADDSTAR=1

@@ -1111,37 +1111,37 @@ ULONG ReplaceEntities(PXSTRING pstr)
  *@@changed V0.9.0 (99-11-28) [umoeller]: added more meaningful error message
  *@@changed V0.9.2 (2000-02-26) [umoeller]: made temporary buffer larger
  *@@changed V0.9.16 (2001-09-29) [umoeller]: added entities support
+ *@@changed V0.9.16 (2002-01-26) [umoeller]: added pcb param
  */
 
 void cmnLoadString(HAB habDesktop,
                    HMODULE hmodResource,
                    ULONG ulID,
-                   PSZ *ppsz)
+                   PSZ *ppsz,
+                   PULONG pulLength)        // out: length of new string (ptr can be NULL)
 {
     CHAR szBuf[500];
+    XSTRING str;
+
     if (*ppsz)
         free(*ppsz);
 
-    if (WinLoadString(habDesktop,
-                      hmodResource,
-                      ulID,
-                      sizeof(szBuf),
-                      szBuf))
-    {
-        XSTRING str;
-        xstrInitCopy(&str, szBuf, 0);
-        ReplaceEntities(&str);      // V0.9.16
-        *ppsz = str.psz;
-    }
-    else
-    {
+    if (!WinLoadString(habDesktop,
+                       hmodResource,
+                       ulID,
+                       sizeof(szBuf),
+                       szBuf))
+        // loading failed:
         sprintf(szBuf,
                 "cmnLoadString error: string resource %d not found in module 0x%lX",
                 ulID,
                 hmodResource);
-        *ppsz = strdup(szBuf);
-    }
 
+    xstrInitCopy(&str, szBuf, 0);
+    ReplaceEntities(&str);      // V0.9.16
+    *ppsz = str.psz;
+    if (pulLength)
+        *pulLength = str.ulLength;
     // do not free string
 }
 
@@ -1190,12 +1190,15 @@ VOID UnlockStrings(VOID)
  *      internal string node structure for cmnGetString.
  *
  *@@added V0.9.9 (2001-04-04) [umoeller]
+ *@@changed V0.9.16 (2002-01-26) [umoeller]: no longer using malloc() for string
  */
 
 typedef struct _STRINGTREENODE
 {
     TREE        Tree;               // tree node (src\helpers\tree.c)
-    PSZ         pszLoaded;          // string that was loaded; malloc()'ed
+    CHAR        szLoaded[1];        // string that was loaded;
+                                    // the struct is dynamic in size now
+                                    // V0.9.16 (2002-01-26) [umoeller]
 } STRINGTREENODE, *PSTRINGTREENODE;
 
 /*
@@ -1250,6 +1253,7 @@ typedef struct _STRINGTREENODE
  *
  *@@added V0.9.9 (2001-04-04) [umoeller]
  *@@changed V0.9.16 (2001-10-19) [umoeller]: fixed bad string count which was never set
+ *@@changed V0.9.16 (2002-01-26) [umoeller]: optimized heap locality
  */
 
 PSZ cmnGetString(ULONG ulStringID)
@@ -1267,32 +1271,45 @@ PSZ cmnGetString(ULONG ulStringID)
                                                   ulStringID,
                                                   treeCompareKeys))
                 // already loaded:
-                pszReturn = pNode->pszLoaded;
+                pszReturn = pNode->szLoaded;
             else
             {
                 // not loaded: load now
-                pNode = NEW(STRINGTREENODE);
-                if (!pNode)
+                PSZ     psz = NULL;
+                ULONG   ulLength = 0;
+
+                if (!G_hmodNLS)
+                    // NLS DLL not loaded yet:
+                    cmnQueryNLSModuleHandle(FALSE);
+
+                cmnLoadString(G_habThread1,     // kernel.c
+                              G_hmodNLS,
+                              ulStringID,
+                              &psz,
+                              &ulLength);
+
+                if (    (!psz)
+                     || (!(pNode = (PSTRINGTREENODE)malloc(   sizeof(STRINGTREENODE)
+                                                               // has one byte for null
+                                                               // terminator already
+                                                            + ulLength)))
+                   )
                     pszReturn = "malloc() failed.";
                 else
                 {
-                    if (!G_hmodNLS)
-                        // NLS DLL not loaded yet:
-                        cmnQueryNLSModuleHandle(FALSE);
-
                     pNode->Tree.ulKey = ulStringID;
-                    pNode->pszLoaded = NULL;
-                        // otherwise cmnLoadString frees the string
-                    cmnLoadString(G_habThread1,     // kernel.c
-                                  G_hmodNLS,
-                                  ulStringID,
-                                  &pNode->pszLoaded);
+                    memcpy(pNode->szLoaded,
+                           psz,
+                           ulLength + 1);
                     treeInsert(&G_StringsCache,
                                &G_cStringsInCache,      // fixed V0.9.16 (2001-10-19) [umoeller]
                                (TREE*)pNode,
                                treeCompareKeys);
-                    pszReturn = pNode->pszLoaded;
+                    pszReturn = pNode->szLoaded;
                 }
+
+                if (psz)
+                    free(psz);
             }
         }
         else
@@ -1338,15 +1355,11 @@ VOID UnloadAllStrings(VOID)
                 {
                     // delete all nodes in array
                     ULONG ul;
-                    PSTRINGTREENODE pNode;
                     for (ul = 0;
                          ul < cNodes;
                          ul++)
                     {
-                        pNode = papNodes[ul];
-                        if (pNode->pszLoaded)
-                            free(pNode->pszLoaded);
-                        free(pNode);
+                        free(papNodes[ul]);
                     }
                 }
                 else
@@ -3378,8 +3391,8 @@ VOID cmnEnableTurboFolders(VOID)
  *      This initializes each entry with the lDefault value
  *      from the XWPSETUPENTRY.
  *
- *      This initializes STG_LONG and STG_BOOL entries with
- *      a copy of XWPSETUPENTRY.lDefault,
+ *      This initializes STG_LONG_DEC, STG_BOOL, and STG_LONG_RGB
+ *      entries with a copy of XWPSETUPENTRY.lDefault,
  *      but not STG_BITFLAG fields. For this reason, for bit
  *      fields, always define a preceding STG_LONG entry.
  *
@@ -3405,8 +3418,9 @@ VOID cmnSetupInitData(PXWPSETUPENTRY paSettings, // in: object's setup set
 
         switch (pSettingThis->ulType)
         {
-            case STG_LONG:
+            case STG_LONG_DEC:
             case STG_BOOL:
+            case STG_LONG_RGB:
             {
                 PLONG plData = (PLONG)((PBYTE)somThis + pSettingThis->ulOfsOfData);
                 *plData = pSettingThis->lDefault;
@@ -3446,7 +3460,9 @@ VOID cmnSetupInitData(PXWPSETUPENTRY paSettings, // in: object's setup set
  *      should be safely initialized. XWPSETUPENTRY's that have
  *      (pcszSetupString == NULL) are skipped.
  *
- *      -- For STG_LONG, this appends "KEYWORD=%d;".
+ *      -- For STG_LONG_DEC, this appends "KEYWORD=%d;".
+ *
+ *      -- For STG_LONG_RGB, this appends "KEYWORD=red green blue;".
  *
  *      -- For STG_BOOL and STG_BITFLAG, this appends "KEYWORD={YES|NO};".
  *
@@ -3475,7 +3491,7 @@ VOID cmnSetupBuildString(PXWPSETUPENTRY paSettings, // in: object's setup set
 
             switch (pSettingThis->ulType)
             {
-                case STG_LONG:
+                case STG_LONG_DEC:
                 {
                     PLONG plData = (PLONG)((PBYTE)somThis + pSettingThis->ulOfsOfData);
                     if (*plData != pSettingThis->lDefault)
@@ -3484,6 +3500,22 @@ VOID cmnSetupBuildString(PXWPSETUPENTRY paSettings, // in: object's setup set
                                 "%s=%d;",
                                 pSettingThis->pcszSetupString,
                                 *plData);
+                        xstrcat(pstr, szTemp, 0);
+                    }
+                }
+                break;
+
+                case STG_LONG_RGB:      // V0.9.16 (2002-01-26) [umoeller]
+                {
+                    PLONG plData = (PLONG)((PBYTE)somThis + pSettingThis->ulOfsOfData);
+                    if (*plData != pSettingThis->lDefault)
+                    {
+                        sprintf(szTemp,
+                                "%s=%d %d %d;",
+                                pSettingThis->pcszSetupString,
+                                GET_RED(*plData),
+                                GET_GREEN(*plData),
+                                GET_BLUE(*plData));
                         xstrcat(pstr, szTemp, 0);
                     }
                 }
@@ -3601,7 +3633,7 @@ BOOL cmnSetupScanString(WPObject *somSelf,
                 // see what to do with it
                 switch (pSettingThis->ulType)
                 {
-                    case STG_LONG:
+                    case STG_LONG_DEC:
                     {
                         LONG lValue = atoi(szValue);
                         if (    (lValue >= pSettingThis->lMin)
@@ -3609,6 +3641,33 @@ BOOL cmnSetupScanString(WPObject *somSelf,
                            )
                         {
                             PLONG plData = (PLONG)((PBYTE)somThis + pSettingThis->ulOfsOfData);
+                            if (*plData != lValue)
+                            {
+                                // data changed:
+                                *plData = lValue;
+                                (*pcSuccess)++;
+                            }
+                        }
+                        else
+                            brc = FALSE;
+                    }
+                    break;
+
+                    case STG_LONG_RGB: // V0.9.16 (2002-01-26) [umoeller]
+                    {
+                        ULONG ulRed, ulGreen, ulBlue;
+                        if (    (3 == sscanf(szValue,
+                                             "%d %d %d",
+                                             &ulRed,
+                                             &ulGreen,
+                                             &ulBlue))
+                             && (ulRed <= 255)
+                             && (ulGreen <= 255)
+                             && (ulBlue <= 255)
+                           )
+                        {
+                            PLONG plData = (PLONG)((PBYTE)somThis + pSettingThis->ulOfsOfData);
+                            LONG lValue = MAKE_RGB(ulRed, ulGreen, ulBlue);
                             if (*plData != lValue)
                             {
                                 // data changed:
@@ -3728,8 +3787,9 @@ BOOL cmnSetupSave(WPObject *somSelf,
         {
             switch (pSettingThis->ulType)
             {
-                case STG_LONG:
+                case STG_LONG_DEC:
                 case STG_BOOL:
+                case STG_LONG_RGB:
                 // case STG_BITFLAG:
                 {
                     PULONG pulData = (PULONG)((PBYTE)somThis + pSettingThis->ulOfsOfData);
@@ -3801,8 +3861,9 @@ BOOL cmnSetupRestore(WPObject *somSelf,
         {
             switch (pSettingThis->ulType)
             {
-                case STG_LONG:
+                case STG_LONG_DEC:
                 case STG_BOOL:
+                case STG_LONG_RGB:
                 // case STG_BITFLAG:
                 {
                     ULONG   ulTemp = 0;
@@ -3913,8 +3974,9 @@ ULONG cmnSetupSetDefaults(PXWPSETUPENTRY paSettings, // in: object's setup set
                 // found:
                 switch (pSettingThis->ulType)
                 {
-                    case STG_LONG:
+                    case STG_LONG_DEC:
                     case STG_BOOL:
+                    case STG_LONG_RGB:
                      // but skip STG_BITFLAG
                     {
                         // reset value

@@ -98,6 +98,7 @@ interface XFldDataFile : WPDataFile
 
     wpQueryDefaultHelp: override;
     wpQueryAssociatedProgram: override;
+    wpQueryAssociatedFileIcon: override;
 
     wpQueryIcon: override;
     wpSetAssociatedFileIcon: override;

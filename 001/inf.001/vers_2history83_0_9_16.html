@@ -92,6 +92,10 @@ for every message that is needed.
 
 <P><LI>Common: Rewrote Henk Kelder's WPS handles engine to be much faster now.
 
+<P><LI>Common: Did lots of page tuning, both for frequently used code and for
+the &xwp; private heap. This might result in speedups for certain time-critical
+places such as folder populate and extended associations.
+
 <P><LI>Common: Rewrote &xwp; log file routines to use DosWrite directly since the
 buffered fprintf() calls sometimes didn't end up in the log at all (especially
 on crashes).
