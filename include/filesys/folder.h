@@ -126,7 +126,7 @@
 
         typedef struct _IBMFDRBKGND
         {
-            WPImageFile         *pobjImage;     // WPImageFile apparently
+            WPObject            *pobjImage;     // WPImageFile apparently
             IBMFDRBKGNDSTORE    BkgndStore;     // persistent data
         } IBMFDRBKGND, *PIBMFDRBKGND;
 
