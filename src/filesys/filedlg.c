@@ -130,9 +130,9 @@ const char *WC_ADDCHILDRENOBJ   = "XWPFileDlgAddChildren";
 
 /*
  *@@ FILEDLGDATA:
- *      single structure allocated on the stack
- *      in fdlgFileDlg. The main frame and the
- *      main client receive pointers to this
+ *      central "window data" structure allocated on
+ *      the stack in fdlgFileDlg. The main frame and
+ *      the main client receive pointers to this
  *      and store them in QWL_USER.
  *
  *      This pretty much holds all the data the
@@ -141,7 +141,7 @@ const char *WC_ADDCHILDRENOBJ   = "XWPFileDlgAddChildren";
 
 typedef struct _FILEDLGDATA
 {
-    // ptr to FILEDLG structure passed in
+    // ptr to original FILEDLG structure passed into fdlgFileDlg
     PFILEDLG    pfd;
 
     // window hierarchy
@@ -156,7 +156,6 @@ typedef struct _FILEDLGDATA
                 hwndFilesCnr;       // child of hwndFilesFrame
 
     // controls in hwndMainClient
-                // buttons:
 
     HWND        // types combo:
                 hwndTypesTxt,
@@ -174,39 +173,45 @@ typedef struct _FILEDLGDATA
 
     LINKLIST    llDialogControls;       // list of dialog controls for focus etc.
 
-    // drives view (left)
-    PSUBCLASSEDFOLDERVIEW psfvDrives;   // created in fdlgFileDlg only once
+    // data for drives view (left)
+    PSUBCLASSEDFOLDERVIEW psfvDrives;   // XFolder subclassed view data (needed
+                                        // for cnr owner subclassing with XFolder's
+                                        // cooperation;
+                                        // created in fdlgFileDlg only once
 
     WPFolder    *pDrivesFolder;         // root folder to populate, whose contents
-                                        // appear in "drives" tree
+                                        // appear in "drives" tree (constant)
+
+    // "add children" thread info (keeps running, has object window)
     THREADINFO  tiAddChildren;
     BOOL        fAddChildrenRunning;
-    HWND        hwndAddChildren;
+    HWND        hwndAddChildren;        // "add children" object window (fnwpAddChildren)
 
     LINKLIST    llDriveObjectsInserted; // linked list of plain WPObject* pointers
-                                        // inserted, no auto-free
+                                        // inserted, no auto-free; needed for cleanup
     LINKLIST    llDisks;                // linked list of all WPDisk* objects
-                                        // so that we can find them later;
-                                        // no auto-free
-    PMINIRECORDCORE precSelectedInDrives;
+                                        // so that we can quickly find them for updating
+                                        // the dialog; no auto-free
+    PMINIRECORDCORE precSelectedInDrives;   // currently selected record
 
-    // files view (right)
-    PSUBCLASSEDFOLDERVIEW psfvFiles;
-    BOOL        fFilesFrameSubclassed;
+    // data for files view (right)
+    PSUBCLASSEDFOLDERVIEW psfvFiles;    // XFolder subclassed view data (see above)
+    BOOL        fFilesFrameSubclassed;  // TRUE after first insert
 
+    // transient "insert contents" thread, restarted on every selection
     THREADINFO  tiInsertContents;
     BOOL        fInsertContentsRunning;
     LINKLIST    llFileObjectsInserted;
 
-    // full file name etc. (_splitpath)
+    // full file name etc., parsed and set by ParseFileString()
     ULONG       ulLogicalDrive;         // e.g. 3 for 'C'
     CHAR        szDir[CCHMAXPATH],      // e.g. "\whatever"
                 szFileMask[CCHMAXPATH],    // e.g. "*.txt"
                 szFileName[CCHMAXPATH]; // e.g. "test.txt"
 
     BOOL        fFileDlgReady;
-            // while this is FALSE, the dialog doesn't
-            // react to changes in the containers
+            // while this is FALSE (during the initial setup),
+            // the dialog doesn't react to any changes in the containers
 
 } FILEDLGDATA, *PFILEDLGDATA;
 
@@ -992,6 +997,7 @@ ULONG ParseFileString(PFILEDLGDATA pWinData,
     // get path from there
     if (*p)
     {
+        // p2 = last backslash
         const char *p2 = strrchr(p, '\\');
         if (p2)
         {
@@ -1017,6 +1023,7 @@ ULONG ParseFileString(PFILEDLGDATA pWinData,
             // get file name (mask) after that
             strcpy(pWinData->szFileMask,
                    p2);
+            _Pmpf(("  new mask is %s", pWinData->szFileMask));
             ulChanged |= FFL_FILEMASK;
         }
         else
@@ -1039,14 +1046,18 @@ ULONG ParseFileString(PFILEDLGDATA pWinData,
                                   sizeof(fs3)))
             {
                 // this thing exists:
+                // is it a file or a directory?
                 if (fs3.attrFile & FILE_DIRECTORY)
                     fIsDir = TRUE;
             }
 
             if (fIsDir)
             {
+                // user specified directory:
+                // append to existing and say "path changed"
                 strcat(pWinData->szDir, "\\");
                 strcat(pWinData->szDir, p2);
+                _Pmpf(("  new path is %s", pWinData->szDir));
                 ulChanged |= FFL_PATH;
             }
             else
@@ -1054,6 +1065,7 @@ ULONG ParseFileString(PFILEDLGDATA pWinData,
                 // this doesn't exist, or it is a file:
                 strcpy(pWinData->szFileName,
                        p2);
+                _Pmpf(("  new filename is %s", pWinData->szFileName));
                 ulChanged |= FFL_FILENAME;
             }
         }
@@ -1745,7 +1757,17 @@ VOID UpdateDlgWithFullFile(PFILEDLGDATA pWinData)
 
 /*
  *@@ ParseAndUpdate:
+ *      parses the specified new file or file
+ *      mask and updates the display.
  *
+ *      Gets called on startup with the initial
+ *      directory, file, and file mask passed to
+ *      the dialog, and later whenever the user
+ *      enters something in the entry field.
+ *
+ *      If pcszFullFile contains a full file name,
+ *      we post WM_CLOSE to the dialog's client
+ *      to dismiss the dialog.
  */
 
 VOID ParseAndUpdate(PFILEDLGDATA pWinData,
@@ -2043,6 +2065,8 @@ VOID _Optlink fntInsertContents(PTHREADINFO ptiMyself)
 
 /*
  *@@ StartInsertContents:
+ *      starts the "insert contents" thread (fntInsertContents).
+ *
  *      Returns FALSE if the thread was not started
  *      because it was already running.
  *
@@ -2271,7 +2295,7 @@ MPARAM MainClientCreate(HWND hwnd,
         pWinData->hwndDirValue
             = winhCreateControl(hwnd,           // parent
                                 WC_STATIC,
-                                "",
+                                "Working...",       // @@todo localize
                                 WS_VISIBLE | SS_TEXT | DT_LEFT | DT_VCENTER,
                                 IDDI_DIRVALUE);
 
@@ -2286,7 +2310,7 @@ MPARAM MainClientCreate(HWND hwnd,
         pWinData->hwndFileEntry
             = winhCreateControl(hwnd,           // parent
                                 WC_ENTRYFIELD,
-                                pWinData->szFileMask,     // initial text: file mask
+                                "",             // initial text... we set this later
                                 WS_VISIBLE | ES_LEFT | ES_AUTOSCROLL | ES_MARGIN,
                                 IDDI_FILEENTRY);
         winhSetEntryFieldLimit(pWinData->hwndFileEntry, CCHMAXPATH - 1);
@@ -2667,6 +2691,8 @@ MRESULT EXPENTRY fnwpMainClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
                         {
                             ParseAndUpdate(pWinData,
                                            pszFullFile);
+                                    // this posts WM_CLOSE if a full file name
+                                    // was entered to close the dialog and return
                             free(pszFullFile);
                         }
 
@@ -2749,7 +2775,7 @@ MRESULT EXPENTRY fnwpMainClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
             PINSERTOBJECTSARRAY pioa = (PINSERTOBJECTSARRAY)mp1;
             if (pioa)
             {
-                CHAR    szPathName[CCHMAXPATH];
+                CHAR    szPathName[CCHMAXPATH + 4];
                 ULONG   ul;
                 POINTL  ptlIcon = {0, 0};
                 // _Pmpf(("XM_INSERTOBJARRAY: inserting %d recs", pioa->cObjects));
@@ -2822,10 +2848,12 @@ MRESULT EXPENTRY fnwpMainClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
                     }
                     // _Pmpf(("    done locking"));
 
-                    // set new "directory" on bottom
+                    // set new "directory" static on bottom
                     _wpQueryFilename(pioa->pFolder,
                                      szPathName,
                                      TRUE);     // fully q'fied
+                    strcat(szPathName, "\\");
+                    strcat(szPathName, pWinData->szFileMask);
                     WinSetWindowText(pWinData->hwndDirValue,
                                      szPathName);
 
@@ -3095,6 +3123,8 @@ MRESULT EXPENTRY fnwpSubclassedFilesFrame(HWND hwndFrame, ULONG msg, MPARAM mp1,
                     /*
                      * CN_EMPHASIS:
                      *      selection changed:
+                     *      if it is a file (and not a folder), update
+                     *      windata and the entry field.
                      */
 
                     case CN_EMPHASIS:
@@ -3109,15 +3139,21 @@ MRESULT EXPENTRY fnwpSubclassedFilesFrame(HWND hwndFrame, ULONG msg, MPARAM mp1,
                         if (    (pnre->pRecord)
                              && (pnre->fEmphasisMask & CRA_SELECTED)
                              && (((PMINIRECORDCORE)(pnre->pRecord))->flRecordAttr & CRA_SELECTED)
+                             // alright, selection changed: get file-system object
+                             // from the new record:
                              && (pobj = GetFSFromRecord((PMINIRECORDCORE)(pnre->pRecord),
                                                         FALSE))
+                             // do not update if folder:
                              && (!_somIsA(pobj, _WPFolder))
+                             // it's a file: get filename
                              && (_wpQueryFilename(pobj, szFilename, FALSE))
                              && (hwndMainClient = WinQueryWindow(hwndFrame, QW_OWNER))
                              && (pWinData = WinQueryWindowPtr(hwndMainClient, QWL_USER))
                            )
                         {
+                            // OK, file was selected: update windata
                             strcpy(pWinData->szFileName, szFilename);
+                            // update entry field
                             WinSetWindowText(pWinData->hwndFileEntry, szFilename);
                         }
                     break; }
@@ -3232,6 +3268,8 @@ HWND fdlgFileDlg(HWND hwndOwner,
         APIRET      arc;
         PSZ         pszDlgTitle;
 
+        ULONG       flInitialParse = 0;
+
         WinData.pfd = pfd;
         pfd->lReturn = DID_CANCEL;           // for now
 
@@ -3251,9 +3289,11 @@ HWND fdlgFileDlg(HWND hwndOwner,
 
         // OK, here's the trick. We first call ParseFile
         // string with the current directory plus the "*"
-        // file mask; we then call it a second time with
+        // file mask to make sure all fields are properly
+        // initialized;
+        // we then call it a second time with
         // full path string given to us in FILEDLG.
-        doshQueryCurrentDir(szCurDir);
+        doshQueryCurrentDir(szCurDir); // @@todo use caller's process dir!
         if (strlen(szCurDir) > 3)
             strcat(szCurDir, "\\*");
         else
@@ -3262,8 +3302,10 @@ HWND fdlgFileDlg(HWND hwndOwner,
                         szCurDir);
 
         _Pmpf((__FUNCTION__ ": pfd->szFullFile is %s", pfd->szFullFile));
-        ParseFileString(&WinData,
-                        pfd->szFullFile);
+        flInitialParse = ParseFileString(&WinData,
+                                         pfd->szFullFile);
+                            // store the initial parse flags so we
+                            // can set the entry field properly below
 
         /*
          *  WINDOW CREATION
@@ -3272,14 +3314,13 @@ HWND fdlgFileDlg(HWND hwndOwner,
 
         if (!s_fRegistered)
         {
-            HWND hwnd = winhCreateObjectWindow(WC_BUTTON, NULL);
-            HAB hab = WinQueryAnchorBlock(hwnd);
+            // first call: register client class
+            HAB hab = winhMyAnchorBlock();
             WinRegisterClass(hab,
                              (PSZ)WC_FILEDLGCLIENT,
                              fnwpMainClient,
                              CS_CLIPCHILDREN | CS_SIZEREDRAW,
                              sizeof(PFILEDLGDATA));
-            WinDestroyWindow(hwnd);
             s_fRegistered = TRUE;
         }
 
@@ -3287,7 +3328,7 @@ HWND fdlgFileDlg(HWND hwndOwner,
         if (!pszDlgTitle)
             // no user title specified:
             if (pfd->fl & FDS_SAVEAS_DIALOG)
-                pszDlgTitle = "Save File As...";
+                pszDlgTitle = "Save File As...";        // @@todo localize
             else
                 pszDlgTitle = "Open File...";
 
@@ -3305,7 +3346,7 @@ HWND fdlgFileDlg(HWND hwndOwner,
                                                     pszDlgTitle,    // frame title
                                                     0,  // resids
                                                     WC_FILEDLGCLIENT,
-                                                    WS_VISIBLE, // client style
+                                                    WS_VISIBLE | WS_SYNCPAINT, // client style
                                                     0,  // frame ID
                                                     &WinData,
                                                     &WinData.hwndMainClient);
@@ -3388,7 +3429,7 @@ HWND fdlgFileDlg(HWND hwndOwner,
                 BuildDisksList(WinData.pDrivesFolder,
                                &WinData.llDisks);
 
-                // insert the drives folder
+                // insert the drives folder as the root of the tree
                 pDrivesRec = _wpCnrInsertObject(WinData.pDrivesFolder,
                                                 WinData.hwndDrivesCnr,
                                                 &ptlIcon,
@@ -3461,6 +3502,18 @@ HWND fdlgFileDlg(HWND hwndOwner,
                             // add first children to
 
                     WinData.fFileDlgReady = TRUE;
+
+                    // set the entry field's initial contents:
+                    // a) if this is an "open" dialog, it should receive
+                    //    the file mask (FILEDLG.szFullFile normally
+                    //    contains something like "C:\path\*")
+                    // b) if this is a "save as" dialog, it should receive
+                    //    the filename that the application proposed
+                    //    (FILEDLG.szFullFile normally has "C:\path\filename.ext")
+                    WinSetWindowText(WinData.hwndFileEntry,     // WinFileDlg
+                                     (flInitialParse & FFL_FILEMASK)
+                                        ? WinData.szFileMask
+                                        : WinData.szFileName);
 
                     WinSetFocus(HWND_DESKTOP, WinData.hwndFileEntry);
 

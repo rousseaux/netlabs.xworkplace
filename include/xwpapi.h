@@ -95,13 +95,17 @@
             TID         tidCaller;
                             // PID and TID of thread which called WinFileDlg
 
-            HWND        hwndReturn;
-                            // return value of fdlgFileDlg
+            CHAR        szCurrentDir[CCHMAXPATH + 4];
+                            // current directory (fully qualified) of calling
+                            // process; do not change size, fafner relies on this
 
             FILEDLG     fd;
                             // regular file-dlg structure; all
                             // member pointers must point to
                             // shared memory too!
+
+            HWND        hwndReturn;
+                            // return value of fdlgFileDlg
 
         } XWPFILEDLG, *PXWPFILEDLG;
     #endif

@@ -840,8 +840,14 @@ VOID ctrpShowSettingsDlg(PXCENTERWINDATA pXCenterData,
                           };
                     // disable auto-hide while we're showing the dlg
                     pXCenterData->fShowingSettingsDlg = TRUE;
+
+                    // disable the XCenter while doing this V0.9.11 (2001-04-18) [umoeller]
+                    WinEnableWindow(pGlobals->hwndFrame, FALSE);
+
                     pClass->pShowSettingsDlg(&DlgData);
                                 // @@todo no, this must be outside of the lock
+
+                    WinEnableWindow(pGlobals->hwndFrame, TRUE);
 
                     pXCenterData->fShowingSettingsDlg = FALSE;
                 } // end if (pSettingsNode)
@@ -2212,9 +2218,13 @@ MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM m
              */
 
             case WM_HITTEST:
-                // return the default NULL
-                // #define HT_NORMAL                   0
-                // return (MRESULT)0;
+                // fixed: V0.9.11 (2001-04-18) [umoeller]
+                if (WinIsWindowEnabled(hwnd))
+                    // enabled:
+                    mrc = (MPARAM)HT_NORMAL;
+                else
+                    // disabled (e.g. settings dialog showing):
+                    mrc = (MPARAM)HT_ERROR;
             break;
 
             /*
