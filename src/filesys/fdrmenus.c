@@ -2336,6 +2336,77 @@ BOOL mnuFileSystemSelectingMenuItem(WPObject *somSelf,
 }
 
 /*
+ *@@ HandleFolderEditMenuItems:
+ *      handles folder menu items that appear in both
+ *      the "Edit" pulldown and in the folder context
+ *      menu, such as "select some" and "batch rename".
+ *
+ *      We need to handle these in both mnuFolderSelectingMenuItem
+ *      and mnuMenuItemSelected:
+ *
+ *      1)  If we don't handle it in mnuFolderSelectingMenuItem,
+ *          the command will never work from the edit pulldown
+ *          if an object is selected because the WPS will then
+ *          invoke wpMenuItemSelected on that object.
+ *
+ *      2)  If we don't handle it in mnuMenuItemSelected,
+ *          the folder hotkeys will break.
+ *
+ *      Finally got all situations right with V0.9.20, I hope.
+ *
+ *      Returns TRUE if the item was processed.
+ *
+ *@@added V0.9.20 (2002-08-08) [umoeller]
+ */
+
+static BOOL HandleFolderEditMenuItems(WPFolder *somSelf,
+                                      HWND hwndFrame,
+                                      USHORT usItem)
+{
+    // Note V0.9.19 (2002-06-18) [umoeller]:
+    // ID_XFMI_OFS_SELECTSOME was moved here from
+    // mnuMenuItemSelected because it never worked
+    // from the "Edit" pulldown menu as soon as any
+    // non-folder object was selected in the folder,
+    // becasue the WPS then called wpMenuItemSelected
+    // on that object. So it was moved here, and
+    // "batch rename" was added at the same time.
+
+    ULONG       ulVarMenuOffset = cmnQuerySetting(sulVarMenuOffset);
+    ULONG       ulMenuId2 = usItem - ulVarMenuOffset;
+    BOOL        fProcessed = TRUE;
+
+    switch (ulMenuId2)
+    {
+        /*
+         * ID_XFMI_OFS_SELECTSOME:
+         *      show "Select by name" dialog.
+         */
+
+        case ID_XFMI_OFS_SELECTSOME:
+            fdrShowSelectSome(hwndFrame);
+                    // V0.9.19 (2002-04-17) [umoeller]
+        break;
+
+        /*
+         * ID_XFMI_OFS_BATCHRENAME:
+         *      show "batch rename" dialog.
+         *      V0.9.19 (2002-06-18) [umoeller]
+         */
+
+        case ID_XFMI_OFS_BATCHRENAME:
+            fdrShowBatchRename(hwndFrame);
+        break;
+
+        default:
+            // anything else:
+            fProcessed = FALSE;
+    }
+
+    return fProcessed;
+}
+
+/*
  *@@ mnuFolderSelectingMenuItem:
  *      this is called for folders before wpMenuItemSelected.
  *      See mnuFileSystemSelectingMenuItem for details.
@@ -2346,6 +2417,7 @@ BOOL mnuFileSystemSelectingMenuItem(WPObject *somSelf,
  *@@changed V0.9.0 [umoeller]: added support for "Menu bar" item
  *@@changed V0.9.19 (2002-06-18) [umoeller]: ID_XFMI_OFS_SELECTSOME never worked right from edit pulldown, fixed
  *@@changed V0.9.19 (2002-06-18) [umoeller]: added "batch rename"
+ *@@changed V0.9.20 (2002-08-08) [umoeller]: added replacement "Paste"
  */
 
 BOOL mnuFolderSelectingMenuItem(WPFolder *somSelf,
@@ -2358,7 +2430,7 @@ BOOL mnuFolderSelectingMenuItem(WPFolder *somSelf,
 {
     ULONG       ulVarMenuOffset = cmnQuerySetting(sulVarMenuOffset);
     ULONG       ulMenuId2 = usItem - ulVarMenuOffset;
-    BOOL        fHandled = TRUE;
+    BOOL        fHandled;
     HWND        hwndFrame = WinQueryWindow(hwndCnr, QW_PARENT);
 
     #ifdef DEBUG_MENUS
@@ -2517,43 +2589,16 @@ BOOL mnuFolderSelectingMenuItem(WPFolder *somSelf,
             }
             break;
 
-// Note V0.9.19 (2002-06-18) [umoeller]:
-// ID_XFMI_OFS_SELECTSOME was moved here from
-// mnuMenuItemSelected because it never worked
-// from the "Edit" pulldown menu as soon as any
-// non-folder object was selected in the folder,
-// becasue the WPS then called wpMenuItemSelected
-// on that object. So it was moved here, and
-// "batch rename" was added at the same time.
-
-            /*
-             * ID_XFMI_OFS_SELECTSOME:
-             *      show "Select by name" dialog.
-             */
-
-            case ID_XFMI_OFS_SELECTSOME:
-                fdrShowSelectSome(hwndFrame);
-                        // V0.9.19 (2002-04-17) [umoeller]
-                // but do dismiss
-            break;
-
-            /*
-             * ID_XFMI_OFS_BATCHRENAME:
-             *      show "batch rename" dialog.
-             *      V0.9.19 (2002-06-18) [umoeller]
-             */
-
-            case ID_XFMI_OFS_BATCHRENAME:
-                fdrShowBatchRename(hwndFrame);
-                // but do dismiss
-            break;
-
             default:
-                fHandled = FALSE;
+                // added call to HandleFolderEditMenuItems
+                // V0.9.20 (2002-08-08) [umoeller]
+                fHandled = HandleFolderEditMenuItems(somSelf,
+                                                     hwndFrame,
+                                                     usItem);
         }
     }
 
-    return (fHandled);
+    return fHandled;
 }
 
 /* ******************************************************************
@@ -2931,6 +2976,7 @@ static BOOL CheckForVariableMenuItems(WPFolder *somSelf,  // in: folder or root 
  *@@changed V0.9.6 (2000-10-16) [umoeller]: fixed "Refresh now"
  *@@changed V0.9.9 (2001-03-27) [umoeller]: removed SOM_CREATEFROMTEMPLATE crap, now calling wpshCreateFromTemplate directly
  *@@changed V0.9.12 (2001-05-03) [umoeller]: removed "Partitions" for WPDrives
+ *@@changed V0.9.20 (2002-08-08) [umoeller]: Ctrl+S hotkey was broken, fixed
  */
 
 BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
@@ -3205,19 +3251,24 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
                  */
 
                 default:
-                    switch (ulMenuId)
-                    {
-                        case WPMENUID_PASTE:        // V0.9.20 (2002-08-08) [umoeller]
+                    // added call to HandleFolderEditMenuItems
+                    // to fix broken hotkeys
+                    // V0.9.20 (2002-08-08) [umoeller]
+                    if (!(brc = HandleFolderEditMenuItems(somSelf,
+                                                          hwndFrame,
+                                                          ulMenuId)))
+                        if (    (ulMenuId == WPMENUID_PASTE)        // V0.9.20 (2002-08-08) [umoeller]
+                             && (cmnQuerySetting(sfReplacePaste))
+                           )
+                        {
                             fdrShowPasteDlg(somSelf, hwndFrame);
                             brc = TRUE;
-                        break;
-
-                        default:
+                        }
+                        else
                             // anything else: check if it's one of our variable menu items
                             brc = CheckForVariableMenuItems(somSelf,
                                                             hwndFrame,
                                                             ulMenuId);
-                    }
 
             } // end switch;
         } // end if (somSelf)

@@ -2052,8 +2052,9 @@
 #ifndef __NEVEREXTASSOCS__
 #define ID_XCSI_EXTASSOCS               6041
 #endif
-// #define ID_XCSI_CLEANUPINIS             6042
-            // disabled for now
+
+#define ID_XCSI_REPLACEPASTE            6042        // V0.9.20 (2002-08-08) [umoeller]
+
 #ifndef __ALWAYSREPLACEFILEEXISTS__
 #define ID_XCSI_REPLFILEEXISTS          6043
 #endif

@@ -2971,6 +2971,12 @@ static const SETTINGINFO G_aSettingInfos[] =
             SP_SETUP_FEATURES, 0,
             "fReplaceDriveNotReady",
 #endif
+
+        // added this V0.9.20 (2002-08-08) [umoeller]
+        sfReplacePaste, -1, 0,
+            SP_SETUP_FEATURES, 0,
+            "fReplacePaste",
+
         // adjusted the following two V0.9.19 (2001-04-13) [umoeller]
 #ifndef __ALWAYSTRASHANDTRUEDELETE__
         sfReplaceDelete, FIELDOFFSET(OLDGLOBALSETTINGS, __fTrashDelete), 1,

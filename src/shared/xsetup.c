@@ -241,6 +241,10 @@ static FEATURESITEM G_FeatureItemsList[] =
 #ifndef __NEVERREPLACEDRIVENOTREADY__
             ID_XCSI_REPLDRIVENOTREADY, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
 #endif
+
+            // V0.9.20 (2002-08-08) [umoeller]
+            ID_XCSI_REPLACEPASTE, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+
 #ifndef __ALWAYSTRASHANDTRUEDELETE__
             ID_XCSI_REPLACEDELETE, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
 #endif
@@ -1780,6 +1784,9 @@ static const XWPSETTING G_FeaturesBackup[] =
 #ifndef __NEVERREPLACEDRIVENOTREADY__
         sfReplaceDriveNotReady,
 #endif
+
+        sfReplacePaste,             // V0.9.20 (2002-08-08) [umoeller]
+
 #ifndef __ALWAYSTRASHANDTRUEDELETE__
         sfReplaceDelete,
 #endif
@@ -2056,6 +2063,10 @@ VOID setFeaturesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_REPLDRIVENOTREADY,
                 cmnQuerySetting(sfReplaceDriveNotReady));
 #endif
+
+        ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_REPLACEPASTE,
+                cmnQuerySetting(sfReplacePaste));
+
 #ifndef __ALWAYSTRASHANDTRUEDELETE__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_REPLACEDELETE,
                 (cmnTrashCanReady() && cmnQuerySetting(sfReplaceDelete)));
@@ -2411,6 +2422,10 @@ MRESULT setFeaturesItemChanged(PNOTEBOOKPAGE pnbp,
             /* case ID_XCSI_CLEANUPINIS:
                 cmnSetSetting(sCleanupINIs, precc->usCheckState);
             break; */       // removed for now V0.9.12 (2001-05-15) [umoeller]
+
+            case ID_XCSI_REPLACEPASTE:
+                cmnSetSetting(sfReplacePaste, precc->usCheckState);
+            break;
 
 #ifndef __ALWAYSTRASHANDTRUEDELETE__
             case ID_XCSI_REPLACEDELETE:
@@ -3162,9 +3177,9 @@ VOID setStatusTimer(PNOTEBOOKPAGE pnbp,   // notebook info struct
 
     // XWPHook status
     {
-        PXWPGLOBALSHARED pXwpGlobalShared = pKernelGlobals->pXwpGlobalShared;
+        PXWPGLOBALSHARED pXwpGlobalShared;
         PSZ         psz = "Disabled";
-        if (pXwpGlobalShared)
+        if (pXwpGlobalShared = pKernelGlobals->pXwpGlobalShared)
         {
             // Desktop restarts V0.9.1 (99-12-29) [umoeller]
             WinSetDlgItemShort(pnbp->hwndDlgPage, ID_XCDI_INFO_WPSRESTARTS,

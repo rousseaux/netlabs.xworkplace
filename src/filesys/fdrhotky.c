@@ -659,7 +659,7 @@ static VOID AddHotkeyToMenuItem(HWND hwndMenu,
                       &usKeyCode))
     {
         if (    (usMenuCommand >= WPMENUID_USER)
-             && (usMenuCommand < WPMENUID_USER+FIRST_VARIABLE)
+             && (usMenuCommand < WPMENUID_USER + FIRST_VARIABLE)
            )
             // it's one of the "variable" menu items:
             // add the global variable menu offset
@@ -673,6 +673,42 @@ static VOID AddHotkeyToMenuItem(HWND hwndMenu,
                                 usMenuCommand,
                                 szDescription,
                                 TRUE);
+    }
+}
+
+/*
+ *@@ fdrAddHotkeysToPulldown:
+ *      gets called from our menu hacks for WM_INITMENU
+ *      to add hotkeys to the "Edit" pulldown properly
+ *      as well.
+ *
+ *@@added V0.9.20 (2002-08-08) [umoeller]
+ */
+
+VOID fdrAddHotkeysToPulldown(HWND hwndPulldown,     // in: submenu handle
+                             const ULONG *paulMenuIDs,    // in: array of menu IDs to test
+                             ULONG cMenuIDs)        // in: array item count
+{
+    if (
+#ifndef __ALWAYSFDRHOTKEYS__
+            (cmnQuerySetting(sfFolderHotkeys))
+         &&
+#endif
+            (cmnQuerySetting(sfShowHotkeysInMenus))
+        )
+    {
+        ULONG   ulVarMenuOffset = cmnQuerySetting(sulVarMenuOffset);
+
+        ULONG ul;
+        for (ul = 0;
+             ul < cMenuIDs;
+             ++ul)
+        {
+            AddHotkeyToMenuItem(hwndPulldown,
+                                paulMenuIDs[ul],
+                                paulMenuIDs[ul],
+                                ulVarMenuOffset);
+        }
     }
 }
 

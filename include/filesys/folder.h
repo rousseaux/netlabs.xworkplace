@@ -679,6 +679,10 @@
                               USHORT usch,
                               USHORT usvk);
 
+    VOID fdrAddHotkeysToPulldown(HWND hwndPulldown,
+                                 const ULONG *paulMenuIDs,
+                                 ULONG cMenuIDs);
+
     VOID fdrAddHotkeysToMenu(WPObject *somSelf,
                              HWND hwndCnr,
                              HWND hwndMenu);

@@ -766,6 +766,9 @@ BEGIN
     ID_XCSI_FILEOPERATIONS              "File operations"
     ID_XCSI_EXTASSOCS                   "Extended file type associations"
 
+/* this item added V0.9.20 (2002-08-08) [umoeller] */
+    ID_XCSI_REPLACEPASTE                "Replace ""Paste"" dialog"
+
 /*     this item removed with V0.9.16
     ID_XCSI_CLEANUPINIS                 "Clean up WPS INI entries" */
 /* the following item added with V0.9.5 (2000-08-14) [umoeller] */

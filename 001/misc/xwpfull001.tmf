@@ -376,8 +376,12 @@ This was added with &xwp; 0.9.0.
 See the &xwp; User Guide for details.
 
 ;
-; FEATURES_6042 was removed with V0.9.20
+; FEATURES_6042 was changed with V0.9.20
 ;
+
+<--FEATURES_6042-->: If enabled, this setting replaces the "Paste" dialog that comes up when you select "Paste" from a folder popup menu (or the "Edit" pulldown from a folder menu bar).
+As opposed to the WPS version, the replacement dialog keeps a history of object titles and remembers the last format and WPS class for pasting.
+This was added with &xwp; V0.9.20.
 
 <--FEATURES_6043-->: This replaces the "File exists" dialog which appears if you move or copy files to a folder where another object already has the same title.
 This replacement dialog is a bit more useful and shows much more information than &os2;'s default one.

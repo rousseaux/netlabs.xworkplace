@@ -788,6 +788,7 @@ static VOID CalcFrameRect(MPARAM mp1, MPARAM mp2)
  *@@changed V0.9.4 (2000-07-15) [umoeller]: fixed source object confusion in WM_INITMENU
  *@@changed V0.9.12 (2001-05-29) [umoeller]: fixed broken source object with folder menu bars, which broke new "View" menu items
  *@@changed V0.9.19 (2002-06-18) [umoeller]: optimized, added "batch rename" to view pulldown
+ *@@changed V0.9.20 (2002-08-08) [umoeller]: fixed missing hotkey specs for edit and view
  */
 
 static VOID InitMenu(PSUBCLFOLDERVIEW psfv,     // in: frame information
@@ -891,6 +892,18 @@ static VOID InitMenu(PSUBCLFOLDERVIEW psfv,     // in: frame information
                                                        MPNULL);
                         ULONG flXWP = cmnQuerySetting(mnuQueryMenuXWPSetting(psfv->somSelf));
 
+                        // hotkey specs were missing V0.9.20 (2002-08-08) [umoeller]
+                        static const ULONG aulEditMenuIds[] =
+                            {
+                                ID_XFMI_OFS_SELECTSOME,
+                                WPMENUID_SELALL,
+                                WPMENUID_DESELALL,
+                                // WPMENUID_PASTE,
+                                     // do not add hotkey for paste because that only
+                                     // applies to the selected object
+                                WPMENUID_FIND
+                            };
+
                         #ifdef DEBUG_MENUS
                             _Pmpf(("  'Edit' menu found"));
                         #endif
@@ -904,11 +917,13 @@ static VOID InitMenu(PSUBCLFOLDERVIEW psfv,     // in: frame information
                         // fixed V0.9.19 (2002-06-18) [umoeller]:
                         // only if menu item is enabled
                         if (!(flXWP & XWPCTXT_SELECTSOME))
+                        {
                             winhInsertMenuItem(hwndMenuMsg,
                                                ++sPos,
                                                ulVarMenuOffset + ID_XFMI_OFS_SELECTSOME,
-                                               cmnGetString(ID_XSSI_SELECTSOME),  // pszSelectSome
+                                               cmnGetString(ID_XSSI_SELECTSOME),
                                                MIS_TEXT, 0);
+                        }
 
                         // insert "Batch rename" V0.9.19 (2002-06-18) [umoeller]
                         if (!(flXWP & XWPCTXT_BATCHRENAME))
@@ -917,6 +932,11 @@ static VOID InitMenu(PSUBCLFOLDERVIEW psfv,     // in: frame information
                                                ulVarMenuOffset + ID_XFMI_OFS_BATCHRENAME,
                                                cmnGetString(ID_XSDI_MENU_BATCHRENAME),
                                                MIS_TEXT, 0);
+
+                        // hotkey specs were missing V0.9.20 (2002-08-08) [umoeller]
+                        fdrAddHotkeysToPulldown(hwndMenuMsg,
+                                                aulEditMenuIds,
+                                                ARRAYITEMCOUNT(aulEditMenuIds));
                     }
                     break;
 
@@ -926,6 +946,32 @@ static VOID InitMenu(PSUBCLFOLDERVIEW psfv,     // in: frame information
                         #ifdef DEBUG_MENUS
                             _Pmpf(("  'View' menu found"));
                         #endif
+
+                        // hotkey specs were missing V0.9.20 (2002-08-08) [umoeller]
+                        static const ULONG aulViewMenuIds[] =
+                            {
+                                WPMENUID_REFRESH,
+                                ID_WPMI_SORTBYNAME,
+                                ID_WPMI_SORTBYSIZE,
+                                ID_WPMI_SORTBYTYPE,
+                                ID_WPMI_SORTBYREALNAME,
+                                ID_WPMI_SORTBYWRITEDATE,
+                                ID_WPMI_SORTBYACCESSDATE,
+                                ID_WPMI_SORTBYCREATIONDATE,
+                                ID_XFMI_OFS_SORTBYEXT,
+                                ID_XFMI_OFS_SORTFOLDERSFIRST,
+                                ID_XFMI_OFS_SORTBYCLASS,
+                                WPMENUID_CHANGETOICON,
+                                WPMENUID_CHANGETODETAILS,
+                                WPMENUID_CHANGETOTREE,
+                                WPMENUID_ARRANGETOP,
+                                WPMENUID_ARRANGELEFT,
+                                WPMENUID_ARRANGERIGHT,
+                                WPMENUID_ARRANGEBOTTOM,
+                                WPMENUID_PERIMETER,
+                                WPMENUID_SELECTEDHORZ,
+                                WPMENUID_SELECTEDVERT,
+                            };
 
                         // set the "source" object for menu item
                         // selections to the folder
@@ -949,6 +995,11 @@ static VOID InitMenu(PSUBCLFOLDERVIEW psfv,     // in: frame information
                                                psfv->hwndCnr,
                                                wpshQueryView(psfv->somSelf,
                                                              psfv->hwndFrame));
+
+                        // hotkey specs were missing V0.9.20 (2002-08-08) [umoeller]
+                        fdrAddHotkeysToPulldown(hwndMenuMsg,
+                                                aulViewMenuIds,
+                                                ARRAYITEMCOUNT(aulViewMenuIds));
                     }
                     break;
 

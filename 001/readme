@@ -1,9 +1,9 @@
 
-XWorkplace 0.9.19 README
+XWorkplace 0.9.20 README
 
 (W) Ulrich M”ller, Feb 7, 2000
 
-Last updated July 2, 2002
+Last updated August 9, 2002
 
 
 0. CONTENTS OF THIS FILE
@@ -31,7 +31,7 @@ Last updated July 2, 2002
 1. INTRODUCTION
 ===============
 
-    Welcome to XWorkplace V0.9.19.
+    Welcome to XWorkplace V0.9.20.
 
     XWorkplace is a complex set of replacement classes for the
     OS/2 Workplace Shell to enhance the WPS's behavior in many
@@ -48,12 +48,13 @@ Last updated July 2, 2002
     About this release
     ------------------
 
-    It's been about three months since V0.9.18, so lots of
-    things have happened. This release has many bugfixes,
-    complete rewrites of some components such as the XPager,
-    plus some new features as well. I hope that, as opposed
-    to some of the previous releases, this works better for
-    most people.
+    Things looked pretty good with V0.9.19, but a few fixes
+    still had to be made, so here's my next attempt.
+
+    Because I got bored bugfixing, I also added a few new
+    (optional) features. To go for the exciting stuff
+    right away, go to "Workplace Shell", "Folder views",
+    and enable "Lazy icon loading" and "mark shadow icons".
 
     For details, refer to the "Version Notices" in the
     "XWorkplace User Guide". To extract the documentation

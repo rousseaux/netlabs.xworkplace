@@ -2903,6 +2903,11 @@ static MRESULT EXPENTRY fnwpPaste(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp
             winhSetPresColor(pData->hwndPreview,
                              PP_BACKGROUNDCOLOR,
                              RGBCOL_WHITE);
+            winhSetPresColor(pData->hwndPreview,
+                             PP_FOREGROUNDCOLOR,
+                             RGBCOL_BLACK);
+            winhSetWindowFont(pData->hwndPreview,
+                              "5.System VIO");
 
             // fill formats and classes
             PasteFillControls(hwndDlg, pData);
@@ -2950,7 +2955,7 @@ static MRESULT EXPENTRY fnwpPaste(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp
 
 static const CONTROLDEF
     PastePreviewTxt = LOADDEF_TEXT(ID_XFDI_PASTE_PREVIEW_TXT),
-    PastePreviewPane = CONTROLDEF_TEXT("W", ID_XFDI_PASTE_PREVIEW_PANE, CX_RIGHT, 30),
+    PastePreviewPane = CONTROLDEF_TEXT_WORDBREAK_CY("", ID_XFDI_PASTE_PREVIEW_PANE, CX_RIGHT, 30),
     PasteObjTitleTxt = LOADDEF_TEXT(ID_XFDI_PASTE_OBJTITLE_TXT),
     PasteObjTitleDrop = CONTROLDEF_DROPDOWN(ID_XFDI_PASTE_OBJTITLE_DROP, CX_RIGHT, 50),
     PasteFormatTxt = LOADDEF_TEXT(ID_XFDI_PASTE_FORMAT_TXT),
