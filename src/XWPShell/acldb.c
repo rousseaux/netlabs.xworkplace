@@ -330,8 +330,7 @@ APIRET LockACLs(VOID)
 {
     APIRET arc = NO_ERROR;
 
-    arc = DosRequestMutexSem(G_hmtxACLs,
-                             SEM_INDEFINITE_WAIT);
+    arc = DosRequestMutexSem(G_hmtxACLs, SEM_INDEFINITE_WAIT);
 
     return arc;
 }

@@ -1176,21 +1176,22 @@ static LONG        G_cStringsInCache = 0;
 
 static BOOL LockStrings(VOID)
 {
-    BOOL brc = FALSE;
+    if (G_hmtxStringsCache)
+        return !DosRequestMutexSem(G_hmtxStringsCache, SEM_INDEFINITE_WAIT);
 
-    if (G_hmtxStringsCache == NULLHANDLE)
+    // first call:
+    if (!DosCreateMutexSem(NULL,
+                           &G_hmtxStringsCache,
+                           0,
+                           TRUE))
     {
-        brc = !DosCreateMutexSem(NULL,
-                                 &G_hmtxStringsCache,
-                                 0,
-                                 TRUE);
         treeInit(&G_StringsCache,
                  &G_cStringsInCache);
-    }
-    else
-        brc = !WinRequestMutexSem(G_hmtxStringsCache, SEM_INDEFINITE_WAIT);
 
-    return brc;
+        return TRUE;
+    }
+
+    return FALSE;
 }
 
 /*
@@ -1666,22 +1667,20 @@ LONG        G_cIconsInCache = 0;
 
 static BOOL LockIcons(VOID)
 {
-    BOOL brc = FALSE;
+    if (G_hmtxIconsCache)
+        return !DosRequestMutexSem(G_hmtxIconsCache, SEM_INDEFINITE_WAIT);
 
-    if (G_hmtxIconsCache == NULLHANDLE)
+    // first call:
+    if (!DosCreateMutexSem(NULL,
+                           &G_hmtxIconsCache,
+                           0,
+                           TRUE))       // request
     {
-        if (!DosCreateMutexSem(NULL,
-                               &G_hmtxIconsCache,
-                               0,
-                               TRUE))       // request
-        {
-            treeInit(&G_IconsCache,
-                     &G_cIconsInCache);
-            return TRUE;
-        }
+        treeInit(&G_IconsCache,
+                 &G_cIconsInCache);
+
+        return TRUE;
     }
-    else
-        return !WinRequestMutexSem(G_hmtxIconsCache, SEM_INDEFINITE_WAIT);
 
     return FALSE;
 }

@@ -189,24 +189,25 @@ extern HAB          G_habDaemon;        // xwpdaemn.c
  *
  *@@added V0.9.14 (2001-08-25) [umoeller]
  *@@changed V0.9.19 (2002-05-07) [umoeller]: now allowing recursive calls on the same thread
+ *@@changed V0.9.20 (2002-07-22) [umoeller]: optimized
  */
 
 BOOL pgrLockHook(PCSZ pcszFile, ULONG ulLine, PCSZ pcszFunction)
 {
-    if (!G_hmtxSuppressNotify)
-    {
-        // first call:
-        DosCreateMutexSem(NULL, &G_hmtxSuppressNotify, 0, FALSE);
-    }
-
-    if (!DosRequestMutexSem(G_hmtxSuppressNotify, 4000))
+    if (    (    (G_hmtxSuppressNotify)
+              && (!DosRequestMutexSem(G_hmtxSuppressNotify, 4000))
+            )
+         || (!DosCreateMutexSem(NULL,
+                                &G_hmtxSuppressNotify,
+                                0,
+                                TRUE))
+       )
     {
         ++(G_pHookData->cSuppressWinlistNotify);
-                // V0.9.19 (2002-05-07) [umoeller]
+                    // V0.9.19 (2002-05-07) [umoeller]
         return TRUE;
     }
 
-    DosBeep(100, 1000);
     return FALSE;
 }
 
@@ -739,13 +740,13 @@ static VOID RefreshPagerBitmap(HWND hwnd,
                                     =   xThis / dScale_X;
 
                                 pMiniThis->ptlLowerLeft.y
-                                    =   yThis / dScale_Y;
+                                    =   yThis / dScale_Y + 1;
 
                                 pMiniThis->ptlTopRight.x
-                                    =   (xThis + pWinInfo->data.swp.cx) / dScale_X - 1;
+                                    =   (xThis + pWinInfo->data.swp.cx) / dScale_X;
 
                                 pMiniThis->ptlTopRight.y
-                                    =   (yThis + pWinInfo->data.swp.cy) / dScale_Y - 1;
+                                    =   (yThis + pWinInfo->data.swp.cy) / dScale_Y + 1;
 
                             } // end if (    (bTypeThis == WINDOW_NORMAL) ...
                         }
@@ -1379,13 +1380,13 @@ static VOID PagerDrag(HWND hwnd, MPARAM mp1)
             ti.rclTrack.xLeft   =   (swpTracked.x + xCurrent)
                                   / dScaleX;
             ti.rclTrack.yBottom =   (swpTracked.y + yCurrent)
-                                  / dScaleY;
+                                  / dScaleY + 1;
             ti.rclTrack.xRight  =   (swpTracked.x + swpTracked.cx + xCurrent)
                                   / dScaleX
                                   + 1;
             ti.rclTrack.yTop    =   (swpTracked.y + swpTracked.cy + yCurrent)
                                   / dScaleY
-                                  + 1;
+                                  + 2;
 
             ptlInitial.x = ti.rclTrack.xLeft;
             ptlInitial.y = ti.rclTrack.yBottom;

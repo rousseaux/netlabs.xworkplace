@@ -221,14 +221,14 @@ static PFNCHECKDRIVERNAME G_aBuiltInDriverProcs[] =
 
 static BOOL LockPlugins(VOID)
 {
-    if (!G_hmxPlugins)
-        return (!DosCreateMutexSem(NULL,
-                                   &G_hmxPlugins,
-                                   0,
-                                   TRUE));      // request!
+    if (G_hmxPlugins)
+        return !DosRequestMutexSem(G_hmxPlugins, SEM_INDEFINITE_WAIT);
 
-    return (!WinRequestMutexSem(G_hmxPlugins, SEM_INDEFINITE_WAIT));
-        // WinRequestMutexSem works even if the thread has no message queue
+    // first call:
+    return !DosCreateMutexSem(NULL,
+                              &G_hmxPlugins,
+                              0,
+                              TRUE);      // request!
 }
 
 /*

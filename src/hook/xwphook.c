@@ -679,12 +679,11 @@ APIRET EXPENTRY hookSetGlobalHotkeys(PGLOBALHOTKEY pNewHotkeys, // in: new hotke
                                 &G_hmtxGlobalHotkeys)))
     {
         fSemOpened = TRUE;
-        arc = WinRequestMutexSem(G_hmtxGlobalHotkeys,
+        arc = DosRequestMutexSem(G_hmtxGlobalHotkeys,
                                  TIMEOUT_HMTX_HOTKEYS);
-            // WinRequestMutexSem works even if the thread has no message queue
     }
 
-    _Pmpf(("hookSetGlobalHotkeys: WinRequestMutexSem arc: %d", arc));
+    _Pmpf(("hookSetGlobalHotkeys: DosRequestMutexSem arc: %d", arc));
 
     if (!arc)
     {

@@ -1525,6 +1525,8 @@ SOM_Scope BOOL  SOMLINK xctr_wpAddSettingsPages(XCenter *somSelf,
  *      is loaded by the WPS (probably from within a
  *      somFindClass call) and allows the class to initialize
  *      itself.
+ *
+ *@@changed V0.9.20 (2002-07-23) [lafaix]: added category registering
  */
 
 SOM_Scope void  SOMLINK xctrM_wpclsInitData(M_XCenter *somSelf)
@@ -1540,6 +1542,9 @@ SOM_Scope void  SOMLINK xctrM_wpclsInitData(M_XCenter *somSelf)
     // resolve WinSetDesktopWorkArea etc. (ctr_engine.c)
     arc = ctrpDesktopWorkareaSupported();
     // _PmpfF(("ctrpChangeDesktopSupported returned %d.", arc));
+
+    // register XCenter plugins category (ctr_model.c)
+    arc = ctrpRegisterCategory();
 }
 
 /*

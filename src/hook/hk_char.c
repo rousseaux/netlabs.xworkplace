@@ -272,9 +272,8 @@ BOOL WMChar_Main(PQMSG pqmsg)       // in/out: from hookPreAccelHook
                                     &G_hmtxGlobalHotkeys)))
         {
             // OK, semaphore opened: request access
-            if (!(arc = WinRequestMutexSem(G_hmtxGlobalHotkeys,
+            if (!(arc = DosRequestMutexSem(G_hmtxGlobalHotkeys,
                                            TIMEOUT_HMTX_HOTKEYS)))
-                    // WinRequestMutexSem works even if the thread has no message queue
             {
                 // OK, we got the mutex:
                 // search the list of function keys
@@ -422,8 +421,10 @@ BOOL WMChar_Main(PQMSG pqmsg)       // in/out: from hookPreAccelHook
                             brc = TRUE;
                     }
                 }
+
                 DosReleaseMutexSem(G_hmtxGlobalHotkeys);
-            } // end if WinRequestMutexSem
+
+            } // end if !DosRequestMutexSem
 
             DosCloseMutexSem(G_hmtxGlobalHotkeys);
         } // end if DosOpenMutexSem

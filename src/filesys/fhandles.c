@@ -150,26 +150,15 @@ static HMTX    G_hmtxHandles = NULLHANDLE;
 
 BOOL fhdlLockHandles(ULONG ulTimeout)
 {
-    BOOL    brc = TRUE;
-    // BOOL    fSemOwned = FALSE;
+    if (G_hmtxHandles)
+        return !DosRequestMutexSem(G_hmtxHandles,
+                                   ulTimeout);
 
-    if (G_hmtxHandles == NULLHANDLE)
-    {
-        // first call:
-        if (DosCreateMutexSem(NULL,     // unnamed
+    // first call:
+    return !DosCreateMutexSem(NULL,     // unnamed
                               &G_hmtxHandles,
                               0,        // unshared
-                              FALSE)    // unowned
-                != NO_ERROR)
-            brc = FALSE;
-    }
-
-    if (brc)
-        brc = (WinRequestMutexSem(G_hmtxHandles,
-                                  ulTimeout)
-                    == NO_ERROR);
-
-    return brc;
+                              TRUE);
 }
 
 /*

@@ -1702,11 +1702,11 @@ BOOL fsysPopulateWithFSObjects(WPFolder *somSelf,
             {
                 // go block until find-files has set the buf ptr
                 // _PmpfF(("blocking on hevBufPtrChanged"));
-                if (!(arc = WinWaitEventSem(spt.hevBufPtrChanged,
+                if (!(arc = DosWaitEventSem(spt.hevBufPtrChanged,
                                             SEM_INDEFINITE_WAIT)))
                 {
                     // _PmpfF(("blocking on hmtxBuffer"));
-                    if (!(arc = WinRequestMutexSem(spt.hmtxBuffer,
+                    if (!(arc = DosRequestMutexSem(spt.hmtxBuffer,
                                                    SEM_INDEFINITE_WAIT)))
                     {
                         // OK, find-files released that sem:

@@ -151,8 +151,7 @@ MRESULT EXPENTRY fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM mp1, MPA
 static BOOL LockNotebooks(VOID)
 {
     if (G_hmtxNotebooks)
-        return !WinRequestMutexSem(G_hmtxNotebooks, SEM_INDEFINITE_WAIT);
-            // WinRequestMutexSem works even if the thread has no message queue
+        return !DosRequestMutexSem(G_hmtxNotebooks, SEM_INDEFINITE_WAIT);
 
     if (!DosCreateMutexSem(NULL,         // unnamed
                            &G_hmtxNotebooks,
@@ -341,7 +340,6 @@ static VOID PageDestroy(PNOTEBOOKPAGE pnbp)
             TRY_LOUD(excpt1)
             {
                 if (fSemOwned = LockNotebooks())
-                    // WinRequestMutexSem works even if the thread has no message queue
                     lstRemoveItem(&G_llOpenPages,
                                   pnbp->pnbli);  // this is auto-free!
                                 // this free's the pnbli

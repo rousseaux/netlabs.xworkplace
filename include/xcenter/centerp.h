@@ -8,8 +8,8 @@
  *@@include #include "helpers\linklist.h"
  *@@include #include "shared\errors.h"
  *@@include #include "classes\xcenter.h"
- *@@include #include "config\center.h"
- *@@include #include "config\centerp.h"
+ *@@include #include "xcenter\center.h"
+ *@@include #include "xcenter\centerp.h"
  */
 
 /*
@@ -29,11 +29,11 @@
     #define CENTERP_HEADER_INCLUDED
 
     #ifndef CENTER_HEADER_INCLUDED
-        #error shared\center.h must be included before config\centerp.h.
+        #error shared\center.h must be included before xcenter\centerp.h.
     #endif
 
     #ifndef SOM_XCenter_h
-        #error classes\xcenter.h must be included before config\centerp.h.
+        #error classes\xcenter.h must be included before xcenter\centerp.h.
     #endif
 
     /* ******************************************************************
@@ -43,40 +43,6 @@
      ********************************************************************/
 
     #define TRAY_WIDGET_CLASS_NAME "Tray"
-
-    /*
-     *@@ PRIVATEWIDGETCLASS:
-     *      private wrapper around the public
-     *      XCENTERWIDGETCLASS struct which is
-     *      returned by plugin DLLs. This allows
-     *      us to store additional data that the
-     *      widgets should not see.
-     *
-     *@@added V0.9.9 (2001-03-09) [umoeller]
-     *@@todo WGTF_UNIQUEGLOBAL tracking
-     */
-
-    typedef struct _PRIVATEWIDGETCLASS
-    {
-        // public declaration
-        XCENTERWIDGETCLASS      Public;
-                // NOTE: THIS MUST BE THE FIRST FIELD
-                // or our private typecasts won't work
-
-        ULONG               ulVersionMajor,
-                            ulVersionMinor,
-                            ulVersionRevision;
-
-        ULONG               ulInstancesGlobal;
-                // global count of widget instances which
-                // exist across all XCenters. This allows
-                // us to keep track of WGTF_UNIQUEGLOBAL. @@todo
-
-        HMODULE             hmod;
-                // plugin DLL this widget comes from or
-                // NULLHANDLE if built-in
-
-    } PRIVATEWIDGETCLASS, *PPRIVATEWIDGETCLASS;
 
     #ifdef LINKLIST_HEADER_INCLUDED
 
@@ -158,6 +124,8 @@
      *
      ********************************************************************/
 
+    APIRET ctrpRegisterCategory(VOID);
+
     BOOL ctrpLockClasses(VOID);
 
     VOID ctrpUnlockClasses(VOID);
@@ -179,7 +147,7 @@
                             SHORT sPosition,
                             BOOL fTrayableOnly);
 
-    PPRIVATEWIDGETCLASS ctrpFindClassFromMenuCommand(USHORT usCmd);
+    PXCENTERWIDGETCLASS ctrpFindClassFromMenuCommand(USHORT usCmd);
 
     /* ******************************************************************
      *

@@ -256,14 +256,14 @@ static BOOL RegisterBuiltInWidgets(HAB hab)
 
 static BOOL LockWorkAreas(VOID)
 {
-    if (!G_hmtxWorkAreaViews)
-        return (!DosCreateMutexSem(NULL,
-                                   &G_hmtxWorkAreaViews,
-                                   0,
-                                   TRUE));      // request!
+    if (G_hmtxWorkAreaViews)
+        return !DosRequestMutexSem(G_hmtxWorkAreaViews, SEM_INDEFINITE_WAIT);
 
-    return (!WinRequestMutexSem(G_hmtxWorkAreaViews, SEM_INDEFINITE_WAIT));
-        // WinRequestMutexSem works even if the thread has no message queue
+    // first call:
+    return !DosCreateMutexSem(NULL,
+                              &G_hmtxWorkAreaViews,
+                              0,
+                              TRUE);      // request!
 }
 
 /*
@@ -541,22 +541,20 @@ static BOOL UpdateDesktopWorkarea(PXCENTERWINDATA pXCenterData,
 
 static BOOL LockOpenViews(VOID)
 {
-    if (!G_hmtxOpenViews)
-    {
-        if (!DosCreateMutexSem(NULL,
-                               &G_hmtxOpenViews,
-                               0,
-                               TRUE))      // request!
-        {
-            lstInit(&G_llOpenViews, FALSE);
-            return TRUE;
-        }
+    if (G_hmtxOpenViews)
+        return !DosRequestMutexSem(G_hmtxOpenViews, SEM_INDEFINITE_WAIT);
 
-        return FALSE;
+    // first call:
+    if (!DosCreateMutexSem(NULL,
+                           &G_hmtxOpenViews,
+                           0,
+                           TRUE))      // request!
+    {
+        lstInit(&G_llOpenViews, FALSE);
+        return TRUE;
     }
 
-    return (!WinRequestMutexSem(G_hmtxOpenViews, SEM_INDEFINITE_WAIT));
-        // WinRequestMutexSem works even if the thread has no message queue
+    return FALSE;
 }
 
 /*
@@ -3492,6 +3490,8 @@ static BOOL SetWidgetSize(PXCENTERWINDATA pXCenterData,
  *@@ FrameCommand:
  *      implementation for WM_COMMAND in fnwpXCenterMainFrame.
  *      This handles "Close" and "Add widget" items.
+ *
+ *@@changed V0.9.20 (2002-07-23) [lafaix]: removed PPRIVATEWIDGETCLASS reference
  */
 
 static VOID FrameCommand(HWND hwnd, USHORT usCmd)
@@ -3508,7 +3508,7 @@ static VOID FrameCommand(HWND hwnd, USHORT usCmd)
         default:
         {
             // is it one of the items in the "add widget" submenu?
-            PPRIVATEWIDGETCLASS pClass;
+            PXCENTERWIDGETCLASS pClass;
             if (pClass = ctrpFindClassFromMenuCommand(usCmd))
             {
                 WIDGETPOSITION pos2;
@@ -3516,7 +3516,7 @@ static VOID FrameCommand(HWND hwnd, USHORT usCmd)
                 pos2.ulTrayIndex = -1;
                 pos2.ulWidgetIndex = -1;        // at the end
                 _xwpCreateWidget(pXCenterData->somSelf,
-                                 (PSZ)pClass->Public.pcszWidgetClass,
+                                 (PSZ)pClass->pcszWidgetClass,
                                  NULL,     // no setup string yet
                                  &pos2);
             }
@@ -5955,7 +5955,7 @@ HWND ctrpCreateXCenterView(XCenter *somSelf,
                     {
                         // thread created:
                         // wait until it's created the XCenter frame
-                        WinWaitEventSem(pXCenterData->hevRunning,
+                        DosWaitEventSem(pXCenterData->hevRunning,
                                         10*1000);
                         // return the frame HWND from this (which will
                         // return it from wpOpen)

@@ -132,19 +132,22 @@ extern HWND G_hwndMediaObject;      // in mmthread.c
 
 BOOL xmmLockDevicesList(VOID)
 {
-    if (G_hmtxOpenDevices == NULLHANDLE)
+    if (G_hmtxOpenDevices)
+        return !DosRequestMutexSem(G_hmtxOpenDevices, SEM_INDEFINITE_WAIT);
+
+    // first call:
+    if (!DosCreateMutexSem(NULL,
+                           &G_hmtxOpenDevices,
+                           0,
+                           TRUE))
     {
-        // first call:
-        DosCreateMutexSem(NULL,
-                          &G_hmtxOpenDevices,
-                          0,
-                          FALSE);
         lstInit(&G_lstOpenDevices,
                 FALSE);     // we have USHORT's on the list, so no free
+
+        return TRUE;
     }
 
-    return (!WinRequestMutexSem(G_hmtxOpenDevices, 5000));  // APIRET NO_ERROR
-        // WinRequestMutexSem works even if the thread has no message queue
+    return FALSE;
 }
 
 /*

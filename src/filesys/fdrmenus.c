@@ -1235,9 +1235,9 @@ static LONG InsertObjectsFromList(PLINKLIST  pllContentThis, // in: list to take
 static BOOL LockConfigCache(VOID)
 {
     if (G_hmtxConfigContent)
-        return !WinRequestMutexSem(G_hmtxConfigContent, SEM_INDEFINITE_WAIT);
-                // WinRequestMutexSem works even if the thread has no message queue
+        return !DosRequestMutexSem(G_hmtxConfigContent, SEM_INDEFINITE_WAIT);
 
+    // first call:
     if (!DosCreateMutexSem(NULL,
                            &G_hmtxConfigContent,
                            0,

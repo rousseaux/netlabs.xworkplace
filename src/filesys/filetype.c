@@ -220,8 +220,7 @@ static LINKLIST            G_llInstanceFilters;
 static BOOL LockInstances(VOID)
 {
     if (G_hmtxInstances)
-        return (!WinRequestMutexSem(G_hmtxInstances, SEM_INDEFINITE_WAIT));
-            // WinRequestMutexSem works even if the thread has no message queue
+        return !DosRequestMutexSem(G_hmtxInstances, SEM_INDEFINITE_WAIT);
 
     // first call:
     if (!DosCreateMutexSem(NULL,
@@ -559,8 +558,7 @@ PCSZ ftypFindClassFromInstanceFilter(PCSZ pcszObjectTitle,
 BOOL ftypLockCaches(VOID)
 {
     if (G_hmtxAssocsCaches)
-        return (!WinRequestMutexSem(G_hmtxAssocsCaches, SEM_INDEFINITE_WAIT));
-            // WinRequestMutexSem works even if the thread has no message queue
+        return !DosRequestMutexSem(G_hmtxAssocsCaches, SEM_INDEFINITE_WAIT);
 
     // first call:
     if (!DosCreateMutexSem(NULL,

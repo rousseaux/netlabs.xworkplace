@@ -914,25 +914,22 @@ APIRET progFindIcon(PEXECUTABLE pExec,          // in: executable from exehOpen;
 
 static BOOL LockRunning(VOID)
 {
-    if (!G_hmtxRunning)
-    {
-        // first call:
-        if (!DosCreateMutexSem(NULL,     // unnamed
-                               &G_hmtxRunning,
-                               0,        // unshared
-                               TRUE))    // initially owned!
-        {
-            lstInit(&G_llRunning,
-                    TRUE);      // auto-free
+    if (G_hmtxRunning)
+        return !DosRequestMutexSem(G_hmtxRunning, SEM_INDEFINITE_WAIT);
 
-            return TRUE;
-        }
-        else
-            return FALSE;
+    // first call:
+    if (!DosCreateMutexSem(NULL,     // unnamed
+                           &G_hmtxRunning,
+                           0,        // unshared
+                           TRUE))    // initially owned!
+    {
+        lstInit(&G_llRunning,
+                TRUE);      // auto-free
+
+        return TRUE;
     }
 
-    return (!WinRequestMutexSem(G_hmtxRunning, SEM_INDEFINITE_WAIT));
-        // WinRequestMutexSem works even if the thread has no message queue
+    return FALSE;
 }
 
 /*

@@ -173,15 +173,14 @@ static PXFILE           G_pStartupLogFile = NULL;
 
 BOOL LockLog(VOID)
 {
-    if (!G_hmtxLog)
-        // first call:
-        return (!DosCreateMutexSem(NULL,         // unnamed
-                                   &G_hmtxLog,
-                                   0,            // unshared
-                                   TRUE));       // request now
+    if (G_hmtxLog)
+        return !DosRequestMutexSem(G_hmtxLog, SEM_INDEFINITE_WAIT);
 
-    // subsequent calls:
-    return !WinRequestMutexSem(G_hmtxLog, SEM_INDEFINITE_WAIT);
+    // first call:
+    return !DosCreateMutexSem(NULL,         // unnamed
+                              &G_hmtxLog,
+                              0,            // unshared
+                              TRUE);        // request now
 }
 
 /*

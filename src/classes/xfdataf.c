@@ -1078,7 +1078,8 @@ SOM_Scope WPObject*  SOMLINK xdf_wpQueryAssociatedProgram(XFldDataFile *somSelf,
 /*
  *@@ wpQueryAssociatedFileIcon:
  *      this WPDataFile method should return the icon of
- *      the program that the data file is associated with.
+ *      the program that the data file is associated with
+ *      or NULLHANDLE if we can't find an association.
  *
  *      This gets called on the first call to wpQueryIcon,
  *      even if turbo folders are not enabled.
@@ -1108,14 +1109,14 @@ SOM_Scope HPOINTER  SOMLINK xdf_wpQueryAssociatedFileIcon(XFldDataFile *somSelf)
             ULONG ulView = _wpQueryDefaultView(somSelf);
                         // should return 0x1000 unless the user
                         // has changed the data file's default view
-            WPObject *pobjAssoc = ftypQueryAssociatedProgram(somSelf,
-                                                             &ulView,
-                                                             // do not use "plain text" as default,
-                                                             // this affects the icon:
-                                                             FALSE);
-                                    // locks the object
 
-            if (pobjAssoc)
+            WPObject *pobjAssoc;
+            if (pobjAssoc = ftypQueryAssociatedProgram(somSelf,
+                                                       &ulView,
+                                                       // do not use "plain text" as default,
+                                                       // this affects the icon:
+                                                       FALSE))
+                    // locks the object
             {
                 // get the assoc icon
                 if (hptr = _wpQueryIcon(pobjAssoc))

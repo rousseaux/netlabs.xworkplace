@@ -183,16 +183,15 @@ static HMTX        G_hmtxDrivesList = NULLHANDLE;
 
 BOOL LockDrivesList(VOID)
 {
-    if (!G_hmtxDrivesList)
-    {
-        lstInit(&G_llDrives, TRUE);         // auto-free
-        return (!DosCreateMutexSem(NULL,
-                                   &G_hmtxDrivesList,
-                                   0,
-                                   TRUE));      // request!
-    }
+    if (G_hmtxDrivesList)
+        return !DosRequestMutexSem(G_hmtxDrivesList, SEM_INDEFINITE_WAIT);
 
-    return (!DosRequestMutexSem(G_hmtxDrivesList, SEM_INDEFINITE_WAIT));
+    // first call:
+    lstInit(&G_llDrives, TRUE);         // auto-free
+    return !DosCreateMutexSem(NULL,
+                              &G_hmtxDrivesList,
+                              0,
+                              TRUE);      // request!
 }
 
 /*

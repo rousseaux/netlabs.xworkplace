@@ -2226,18 +2226,14 @@ VOID objRefreshUseItems(WPObject *somSelf,
 
 static BOOL LockObjectsList(VOID)
 {
-    BOOL brc = FALSE;
+    if (G_hmtxObjectsLists)
+        return !DosRequestMutexSem(G_hmtxObjectsLists, SEM_INDEFINITE_WAIT);
 
-    if (G_hmtxObjectsLists == NULLHANDLE)
-        brc = !DosCreateMutexSem(NULL,
-                                 &G_hmtxObjectsLists,
-                                 0,
-                                 TRUE);
-    else
-        brc = !WinRequestMutexSem(G_hmtxObjectsLists, SEM_INDEFINITE_WAIT);
-            // WinRequestMutexSem works even if the thread has no message queue
-
-    return brc;
+    // first call:
+    return !DosCreateMutexSem(NULL,
+                              &G_hmtxObjectsLists,
+                              0,
+                              TRUE);
 }
 
 /*
@@ -2748,24 +2744,23 @@ WPObject* objEnumList(POBJECTLIST pll,        // in: linked list of WPObject* po
 
 static BOOL LockHandlesCache(VOID)
 {
-    BOOL brc = FALSE;
+    if (G_hmtxHandlesCache)
+        return !DosRequestMutexSem(G_hmtxHandlesCache, SEM_INDEFINITE_WAIT);
 
-    if (G_hmtxHandlesCache == NULLHANDLE)
+    // first call:
+    if (!DosCreateMutexSem(NULL,
+                           &G_hmtxHandlesCache,
+                           0,
+                           TRUE))
     {
-        // first call:
-        brc = !DosCreateMutexSem(NULL,
-                                 &G_hmtxHandlesCache,
-                                 0,
-                                 TRUE);
         // initialize tree
         treeInit(&G_HandlesCache,
                  &G_lHandlesCacheItemsCount);
-    }
-    else
-        brc = !WinRequestMutexSem(G_hmtxHandlesCache, SEM_INDEFINITE_WAIT);
-            // WinRequestMutexSem works even if the thread has no message queue
 
-    return brc;
+        return TRUE;
+    }
+
+    return FALSE;
 }
 
 /*
@@ -2975,24 +2970,22 @@ VOID objRemoveFromHandlesCache(WPObject *somSelf)
 
 static BOOL LockDirtyList(VOID)
 {
-    BOOL brc = FALSE;
+    if (G_hmtxDirtyList)
+        return !DosRequestMutexSem(G_hmtxDirtyList, SEM_INDEFINITE_WAIT);
 
-    if (G_hmtxDirtyList == NULLHANDLE)
+    // first call:
+    if (!DosCreateMutexSem(NULL,
+                           &G_hmtxDirtyList,
+                           0,
+                           TRUE))
     {
-        // first call:
-        brc = !DosCreateMutexSem(NULL,
-                                 &G_hmtxDirtyList,
-                                 0,
-                                 TRUE);
         // initialize tree
         treeInit(&G_DirtyList,
                  &G_lDirtyListItemsCount);
+        return TRUE;
     }
-    else
-        brc = !WinRequestMutexSem(G_hmtxDirtyList, SEM_INDEFINITE_WAIT);
-            // WinRequestMutexSem works even if the thread has no message queue
 
-    return brc;
+    return FALSE;
 }
 
 /*

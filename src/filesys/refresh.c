@@ -687,7 +687,7 @@ static VOID _Optlink fntPumpThread(PTHREADINFO ptiMyself)
 
         // _PmpfF(("pump thread blocking on HEV."));
 
-        WinWaitEventSem(G_hevNotificationPump, ulWaitTime);
+        DosWaitEventSem(G_hevNotificationPump, ulWaitTime);
 
         // _PmpfF(("pump event posted."));
 

@@ -786,7 +786,7 @@ VOID EXPENTRY PwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
 
 static BOOL LockData(PWIDGETPRIVATE pPrivate)
 {
-    return (!DosRequestMutexSem(pPrivate->hmtxData, 500));
+    return !DosRequestMutexSem(pPrivate->hmtxData, 500);
 }
 
 /*
@@ -1866,7 +1866,7 @@ static VOID PwgtDestroy(HWND hwnd)
         //    is currently sleeping
         DosPostEventSem(pPrivate->hevExit);
         // c) now wait for collect thread to post "exit done"
-        WinWaitEventSem(pPrivate->hevExitComplete, 2000);
+        DosWaitEventSem(pPrivate->hevExitComplete, 2000);
 
         if (pPrivate->pBitmap)
             gpihDestroyXBitmap(&pPrivate->pBitmap);

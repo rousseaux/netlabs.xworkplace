@@ -3158,7 +3158,7 @@ PSHUTLISTITEM xsdItemFromPID(PLINKLIST pList,
     {
         if (hmtx)
         {
-            fSemOwned = (WinRequestMutexSem(hmtx, SEM_INDEFINITE_WAIT) == NO_ERROR);
+            fSemOwned = !DosRequestMutexSem(hmtx, SEM_INDEFINITE_WAIT);
             fAccess = fSemOwned;
         }
         else
@@ -3210,7 +3210,7 @@ PSHUTLISTITEM xsdItemFromSID(PLINKLIST pList,
     {
         if (hmtx)
         {
-            fSemOwned = (WinRequestMutexSem(hmtx, ulTimeout) == NO_ERROR);
+            fSemOwned = !DosRequestMutexSem(hmtx, ulTimeout);
             fAccess = fSemOwned;
         }
         else
@@ -3248,6 +3248,7 @@ PSHUTLISTITEM xsdItemFromSID(PLINKLIST pList,
  *      which were skipped by the user.
  *
  *@@changed V0.9.0 [umoeller]: adjusted for new linklist.c functions
+ *@@changed V0.9.20 (2002-07-22) [umoeller]: fixed mutex release order
  */
 
 ULONG xsdCountRemainingItems(PSHUTDOWNDATA pData)
@@ -3258,9 +3259,9 @@ ULONG xsdCountRemainingItems(PSHUTDOWNDATA pData)
 
     TRY_QUIET(excpt1)
     {
-        fShutdownSemOwned = (WinRequestMutexSem(pData->hmtxShutdown, 4000) == NO_ERROR);
-        fSkippedSemOwned = (WinRequestMutexSem(pData->hmtxSkipped, 4000) == NO_ERROR);
-        if ( (fShutdownSemOwned) && (fSkippedSemOwned) )
+        if (    (fShutdownSemOwned = !DosRequestMutexSem(pData->hmtxShutdown, 4000))
+             && (fSkippedSemOwned = !DosRequestMutexSem(pData->hmtxSkipped, 4000))
+           )
             ulrc = (
                         lstCountItems(&pData->llShutdown)
                       - lstCountItems(&pData->llSkipped)
@@ -3268,17 +3269,12 @@ ULONG xsdCountRemainingItems(PSHUTDOWNDATA pData)
     }
     CATCH(excpt1) { } END_CATCH();
 
-    if (fShutdownSemOwned)
-    {
-        DosReleaseMutexSem(pData->hmtxShutdown);
-        fShutdownSemOwned = FALSE;
-    }
-
+    // fixed release order V0.9.20 (2002-07-22) [umoeller]
     if (fSkippedSemOwned)
-    {
         DosReleaseMutexSem(pData->hmtxSkipped);
-        fSkippedSemOwned = FALSE;
-    }
+
+    if (fShutdownSemOwned)
+        DosReleaseMutexSem(pData->hmtxShutdown);
 
     return (ulrc);
 }
@@ -3331,6 +3327,7 @@ void xsdLongTitle(PSZ pszTitle,
  *      marked to be skipped).
  *
  *@@changed V0.9.0 [umoeller]: adjusted for new linklist.c functions
+ *@@changed V0.9.20 (2002-07-22) [umoeller]: fixed mutex release order
  */
 
 PSHUTLISTITEM xsdQueryCurrentItem(PSHUTDOWNDATA pData)
@@ -3343,10 +3340,9 @@ PSHUTLISTITEM xsdQueryCurrentItem(PSHUTDOWNDATA pData)
 
     TRY_QUIET(excpt1)
     {
-        fShutdownSemOwned = (WinRequestMutexSem(pData->hmtxShutdown, 4000) == NO_ERROR);
-        fSkippedSemOwned = (WinRequestMutexSem(pData->hmtxSkipped, 4000) == NO_ERROR);
-
-        if ((fShutdownSemOwned) && (fSkippedSemOwned))
+        if (    (fShutdownSemOwned = !DosRequestMutexSem(pData->hmtxShutdown, 4000))
+             && (fSkippedSemOwned = !DosRequestMutexSem(pData->hmtxSkipped, 4000))
+           )
         {
             PLISTNODE pShutNode = lstQueryFirstNode(&pData->llShutdown);
             // pliShutItem = pliShutdownFirst;
@@ -3382,16 +3378,12 @@ PSHUTLISTITEM xsdQueryCurrentItem(PSHUTDOWNDATA pData)
     }
     CATCH(excpt1) { } END_CATCH();
 
-    if (fShutdownSemOwned)
-    {
-        DosReleaseMutexSem(pData->hmtxShutdown);
-        fShutdownSemOwned = FALSE;
-    }
+    // fixed release order V0.9.20 (2002-07-22) [umoeller]
     if (fSkippedSemOwned)
-    {
         DosReleaseMutexSem(pData->hmtxSkipped);
-        fSkippedSemOwned = FALSE;
-    }
+
+    if (fShutdownSemOwned)
+        DosReleaseMutexSem(pData->hmtxShutdown);
 
     return (pliShutItem);
 }
@@ -3776,8 +3768,7 @@ void xsdUpdateListBox(HAB hab,
 
     TRY_QUIET(excpt1)
     {
-        fSemOwned = (WinRequestMutexSem(pShutdownData->hmtxShutdown, 4000) == NO_ERROR);
-        if (fSemOwned)
+        if (fSemOwned = !DosRequestMutexSem(pShutdownData->hmtxShutdown, 4000))
         {
             PLISTNODE pNode = 0;
             lstClear(&pShutdownData->llShutdown);
@@ -3804,10 +3795,7 @@ void xsdUpdateListBox(HAB hab,
     CATCH(excpt1) { } END_CATCH();
 
     if (fSemOwned)
-    {
         DosReleaseMutexSem(pShutdownData->hmtxShutdown);
-        fSemOwned = FALSE;
-    }
 }
 
 /*
@@ -5474,8 +5462,7 @@ static MRESULT EXPENTRY fnwpShutdownThread(HWND hwndFrame, ULONG msg, MPARAM mp1
                         doshWriteLogEntry(pShutdownData->ShutdownLogFile, "    Adding %s to the list of skipped items",
                                pItem->swctl.szSwtitle);
 
-                        pShutdownData->fSkippedSemOwned = !WinRequestMutexSem(pShutdownData->hmtxSkipped, 4000);
-                        if (pShutdownData->fSkippedSemOwned)
+                        if (pShutdownData->fSkippedSemOwned = !DosRequestMutexSem(pShutdownData->hmtxSkipped, 4000))
                         {
                             pSkipItem = malloc(sizeof(SHUTLISTITEM));
                             memcpy(pSkipItem, pItem, sizeof(SHUTLISTITEM));
@@ -6389,7 +6376,7 @@ static void _Optlink fntUpdateThread(PTHREADINFO ptiMyself)
                 // Shutdown thread might be working on this too
                 TRY_LOUD(excpt2)
                 {
-                    if (fSemOwned = !WinRequestMutexSem(pShutdownData->hmtxShutdown, 4000))
+                    if (fSemOwned = !DosRequestMutexSem(pShutdownData->hmtxShutdown, 4000))
                     {
                         ulShutItemCount = lstCountItems(&pShutdownData->llShutdown);
                         DosReleaseMutexSem(pShutdownData->hmtxShutdown);

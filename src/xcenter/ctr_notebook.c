@@ -42,6 +42,7 @@
 #define INCL_DOSEXCEPTIONS
 #define INCL_DOSPROCESS
 #define INCL_DOSMODULEMGR
+#define INCL_DOSSEMAPHORES      // V0.9.20 (2002-07-23) [lafaix] needed for plugins.h
 #define INCL_DOSERRORS
 
 #define INCL_WINWINDOWMGR
@@ -83,6 +84,7 @@
 #include "shared\errors.h"              // private XWorkplace error codes
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
+#include "shared\plugins.h"             // generic plugins support
 
 #include "shared\center.h"              // public XCenter interfaces
 #include "xcenter\centerp.h"            // private XCenter implementation
@@ -3231,6 +3233,7 @@ typedef struct _XCLASSRECORD
  *      instance settings.
  *
  *@@added V0.9.7 (2000-12-05) [umoeller]
+ *@@changed V0.9.20 (2002-07-23) [lafaix]: uses generic plugin support now
  */
 
 VOID ctrpClassesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
@@ -3304,15 +3307,19 @@ VOID ctrpClassesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                 PLISTNODE pNode = lstQueryFirstNode(pllClasses);
                 while (pNode)
                 {
-                    PPRIVATEWIDGETCLASS pClass = (PPRIVATEWIDGETCLASS)pNode->pItemData;
+                    PPLUGINCLASS pClass = (PPLUGINCLASS)pNode->pItemData;
 
-                    if (pClass->hmod)
+                    if (!plgIsClassBuiltIn(pClass))
                     {
                         PSZ p = NULL;
                         CHAR sz[CCHMAXPATH];
-                        if (!DosQueryModuleName(pClass->hmod,
-                                                sizeof(sz),
-                                                sz))
+                        ULONG ulMajor,
+                              ulMinor,
+                              ulRevision;
+
+                        if (!plgQueryClassModuleName(pClass,
+                                                     sizeof(sz),
+                                                     sz))
                         {
                             if (p = strrchr(sz, '\\'))
                             {
@@ -3324,19 +3331,26 @@ VOID ctrpClassesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                         if (!p)
                             precThis->pszDLL = "Error";
 
-                        sprintf(precThis->szVersion,
-                                "%d.%d.%d",
-                                pClass->ulVersionMajor,
-                                pClass->ulVersionMinor,
-                                pClass->ulVersionRevision);
+                        if (!plgQueryClassVersion(pClass,
+                                                  &ulMajor,
+                                                  &ulMinor,
+                                                  &ulRevision))
+                        {
+                            sprintf(precThis->szVersion,
+                                    "%d.%d.%d",
+                                    ulMajor,
+                                    ulMinor,
+                                    ulRevision);
+                        }
+
                         precThis->pszVersion = precThis->szVersion;
                     }
                     else
                         precThis->pszDLL = cmnGetString(ID_CRSI_BUILTINCLASS);
 
-                    precThis->pszClass = (PSZ)pClass->Public.pcszWidgetClass;
+                    precThis->pszClass = (PSZ)pClass->pcszClass;
 
-                    precThis->pszClassTitle = (PSZ)pClass->Public.pcszClassTitle;
+                    precThis->pszClassTitle = (PSZ)pClass->pcszClassTitle;
 
                     precThis = (PXCLASSRECORD)precThis->recc.preccNextRecord;
                     pNode = pNode->pNext;

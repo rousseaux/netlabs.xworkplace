@@ -108,7 +108,7 @@
     #define XCERR_ROOT_WIDGET_INDEX_IS_NO_TRAY  (ERROR_XWP_FIRST + 102)
     #define XCERR_INVALID_TRAY_INDEX            (ERROR_XWP_FIRST + 103)
     #define XCERR_INVALID_SUBWIDGET_INDEX       (ERROR_XWP_FIRST + 104)
-    #define XCERR_INVALID_CLASS_NAME            (ERROR_XWP_FIRST + 105)
+    // #define XCERR_INVALID_CLASS_NAME            (ERROR_XWP_FIRST + 105) removed V0.9.20 (2002-07-24) [lafaix]
     #define XCERR_CLASS_NOT_TRAYABLE            (ERROR_XWP_FIRST + 106)
                     // V0.9.19 (2002-04-25) [umoeller]
     #define XCERR_INTEGRITY                     (ERROR_XWP_FIRST + 107)
@@ -126,7 +126,11 @@
     #define BASEERR_DAEMON_DEAD                 (ERROR_XWP_FIRST + 201)
     #define ERROR_XWPBASE_LAST                  (ERROR_XWP_FIRST + 201)
 
-    #define ERROR_XWP_LAST                      (ERROR_XWP_FIRST + 201)
+    #define ERROR_PLUGIN_FIRST                  (ERROR_XWP_FIRST + 300)
+    #define PLGERR_INVALID_CLASS_NAME           (ERROR_XWP_FIRST + 300)
+    #define ERROR_PLUGIN_LAST                   (ERROR_XWP_FIRST + 300)
+
+    #define ERROR_XWP_LAST                      (ERROR_XWP_FIRST + 300)
 
 #endif
 

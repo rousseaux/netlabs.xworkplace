@@ -1368,7 +1368,7 @@ static MRESULT YwgtCommand(HWND hwnd, MPARAM mp1, MPARAM mp2)
         const XCENTERGLOBALS *pGlobals = pWidget->pGlobals;
         USHORT usCommand = SHORT1FROMMP(mp1);
         PPRIVATEWIDGETSETTING ppws = (PPRIVATEWIDGETSETTING)pPrivate->pWidget->pvWidgetSetting;
-        PPRIVATEWIDGETCLASS pClass;
+        PXCENTERWIDGETCLASS pClass;
         PTRAYSETTING pCurrentTray;
 
         XCenter *somSelf = pPrivate->pXCenterData->somSelf;
@@ -1485,7 +1485,7 @@ static MRESULT YwgtCommand(HWND hwnd, MPARAM mp1, MPARAM mp2)
                 else if (pClass = ctrpFindClassFromMenuCommand(usCommand))
                 {
                     YwgtCreateSubwidget(pPrivate,
-                                        pClass->Public.pcszWidgetClass,
+                                        pClass->pcszWidgetClass,
                                         NULL,       // setup string
                                         -1);        // add rightmost
 

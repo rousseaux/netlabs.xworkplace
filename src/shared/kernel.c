@@ -257,8 +257,7 @@ BOOL krnLock(PCSZ pcszSourceFile,        // in: __FILE__
     }
 
     // subsequent calls:
-    if (WinRequestMutexSem(G_hmtxCommonLock, 10*1000) == NO_ERROR)
-        // WinRequestMutexSem works even if the thread has no message queue
+    if (!DosRequestMutexSem(G_hmtxCommonLock, 10 * 1000))
     {
         // store owner (these are const strings, this is safe)
         G_pcszReqSourceFile = pcszSourceFile;

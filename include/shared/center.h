@@ -330,6 +330,10 @@
      *      used in an XCenter. Such a class can either
      *      be internal or in a widget plugin DLL.
      *
+     *      This structure _must_ have the same layout as
+     *      PLUGINCLASS.  It can redefine the ulUser* fields
+     *      to its liking, though.
+     *
      *      The window procedure which implements the widget
      *      class must be registered by a plug-in DLL when
      *      its INIT callback gets called by the XCenter.

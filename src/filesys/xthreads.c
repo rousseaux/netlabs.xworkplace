@@ -241,36 +241,34 @@ static void WorkerShrinkHeap(Heap_t uh,
 
 BOOL xthrLockAwakeObjectsList(VOID)
 {
-    BOOL brc = FALSE;
+    if (G_hmtxAwakeObjectsList)
+        return !DosRequestMutexSem(G_hmtxAwakeObjectsList, SEM_INDEFINITE_WAIT);
 
-    if (G_hmtxAwakeObjectsList == NULLHANDLE)
+    // first call:
+    if (!DosCreateMutexSem(NULL,
+                           &G_hmtxAwakeObjectsList,
+                           0,
+                           TRUE))
     {
-        if (brc = !DosCreateMutexSem(NULL,
-                                     &G_hmtxAwakeObjectsList,
-                                     0,
-                                     TRUE))
-        {
-            treeInit(&G_AwakeObjectsTree,
-                     &G_lAwakeObjectsCount);
+        treeInit(&G_AwakeObjectsTree,
+                 &G_lAwakeObjectsCount);
 
-            if (!(G_AwakeObjectsHeap = _ucreate(G_HeapStartChunk,
-                                                _HEAP_MIN_SIZE,
-                                                !_BLOCK_CLEAN,    // memory is not set to 0
-                                                _HEAP_REGULAR,    // regular memory
-                                                WorkerExpandHeap,
-                                                WorkerShrinkHeap)))
-                cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "_ucreate failed for Worker heap.");
-            else if (_uopen(G_AwakeObjectsHeap))        // open heap and check for failure
-                cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "_uopen failed for Worker heap.");
-        }
+        if (!(G_AwakeObjectsHeap = _ucreate(G_HeapStartChunk,
+                                            _HEAP_MIN_SIZE,
+                                            !_BLOCK_CLEAN,    // memory is not set to 0
+                                            _HEAP_REGULAR,    // regular memory
+                                            WorkerExpandHeap,
+                                            WorkerShrinkHeap)))
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                   "_ucreate failed for Worker heap.");
+        else if (_uopen(G_AwakeObjectsHeap))        // open heap and check for failure
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                   "_uopen failed for Worker heap.");
+
+        return TRUE;
     }
-    else
-        brc = !WinRequestMutexSem(G_hmtxAwakeObjectsList, SEM_INDEFINITE_WAIT);
-            // WinRequestMutexSem works even if the thread has no message queue
 
-    return brc;
+    return FALSE;
 }
 
 /*
@@ -494,13 +492,12 @@ static VOID WorkerRemoveObject(WPObject *pObj)
 static BOOL LockWorkerThreadData(VOID)
 {
     if (G_hmtxWorkerThreadData)
-        return (!WinRequestMutexSem(G_hmtxWorkerThreadData, SEM_INDEFINITE_WAIT));
-            // WinRequestMutexSem works even if the thread has no message queue
+        return !DosRequestMutexSem(G_hmtxWorkerThreadData, SEM_INDEFINITE_WAIT);
 
-    return (!DosCreateMutexSem(NULL,
-                               &G_hmtxWorkerThreadData,
-                               0,
-                               TRUE));      // request
+    return !DosCreateMutexSem(NULL,
+                              &G_hmtxWorkerThreadData,
+                              0,
+                              TRUE);      // request
 }
 
 /*

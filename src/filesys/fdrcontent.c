@@ -1495,9 +1495,9 @@ static CHAR         G_szLastQueryAwakeFolderPath[CCHMAXPATH];
 static BOOL LockRootFolders(VOID)
 {
     if (G_hmtxRootFolders)
-        return (!WinRequestMutexSem(G_hmtxRootFolders, SEM_INDEFINITE_WAIT));
-            // WinRequestMutexSem works even if the thread has no message queue
+        return !DosRequestMutexSem(G_hmtxRootFolders, SEM_INDEFINITE_WAIT);
 
+    // first call:
     if (!DosCreateMutexSem(NULL,
                            &G_hmtxRootFolders,
                            0,
@@ -2020,7 +2020,7 @@ static BOOL PopulateWithAbstracts(WPFolder *somSelf,
 
 /*
  *@@ fdrPopulate:
- *      implementation for XFolder::wpPopulate if
+ *      reimplementation for XFolder::wpPopulate if
  *      "turbo folders" are enabled. This is a
  *      100% replacement of WPFolder::wpPopulate.
  *
