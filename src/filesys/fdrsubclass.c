@@ -542,6 +542,29 @@ VOID fdrManipulateNewView(WPFolder *somSelf,        // in: folder with new view
  ********************************************************************/
 
 /*
+ *@@ PostWMChar:
+ *      little helper for posting a WM_CHAR msg
+ *      twice, once for key down and once for
+ *      key up.
+ *
+ *@@added V0.9.19 (2002-06-02) [umoeller]
+ */
+
+static VOID PostWMChar(HWND hwnd,
+                       USHORT fsFlags,
+                       MPARAM mp2)
+{
+    WinPostMsg(hwnd,
+               WM_CHAR,
+               MPFROM2SHORT(fsFlags, 0),
+               mp2);
+    WinPostMsg(hwnd,
+               WM_CHAR,
+               MPFROM2SHORT(fsFlags | KC_KEYUP, 0),
+               mp2);
+}
+
+/*
  * FormatFrame:
  *      implementation WM_FORMATFRAME in fdr_fnwpSubclassedFolderFrame.
  *
@@ -643,16 +666,12 @@ static VOID FormatFrame(PSUBCLFOLDERVIEW psfv, // in: frame information
                 // container's vertical scroll bar and _then_
                 // another PAGEUP to the container itself
                 // V0.9.18 (2002-03-24) [umoeller]
-                WinPostMsg(WinWindowFromID(hwndThis, 0x7FF9),
-                           WM_CHAR,
-                           MPFROM2SHORT(KC_VIRTUALKEY | KC_CTRL,
-                                        0),
+                PostWMChar(WinWindowFromID(hwndThis, 0x7FF9),
+                           KC_VIRTUALKEY | KC_CTRL,
                            MPFROM2SHORT(0,
                                         VK_HOME));
-                WinPostMsg(hwndThis,
-                           WM_CHAR,
-                           MPFROM2SHORT(KC_VIRTUALKEY,
-                                        0),
+                PostWMChar(hwndThis,
+                           KC_VIRTUALKEY,
                            MPFROM2SHORT(0,
                                         VK_PAGEUP));
 

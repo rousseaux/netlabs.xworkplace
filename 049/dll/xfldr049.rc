@@ -739,7 +739,7 @@ BEGIN
     ID_XCSI_TURBOFOLDERS                "Turbo-Ordner"
 
     ID_XCSI_MOUSEKEYBOARDFEATURES       "Maus- und Tastaturfunktionen"
-    ID_XCSI_ANIMOUSE                    "Animierte Mauszeiger"
+/*     ID_XCSI_ANIMOUSE                    "Animierte Mauszeiger" removed V0.9.19 (2002-06-02) [umoeller] */
     ID_XCSI_XWPHOOK                     "&xwp;-Hook aktivieren"
     ID_XCSI_GLOBALHOTKEYS               "Globale TastatenkÅrzel fÅr Objekte aktivieren"
 /*     ID_XCSI_PAGER                       "&pgr;: Virtuelle ArbeitsoberflÑchen" removed */
@@ -978,14 +978,6 @@ BEGIN
     ID_CRSI_WIDGET_HEALTH               "Temperatur-Monitor"
     ID_CRSI_WIDGET_IPMONITOR            "IP-Monitor"
 
-    /* IP monitor */
-    ID_CRSI_IPWGT_GRAPHCOLORS           "Graphenfarben"
-    ID_CRSI_IPWGT_OTHERCOLORS           "Andere Farben"
-    ID_CRSI_IPWGT_IN                    "Ein"
-    ID_CRSI_IPWGT_OUT                   "Aus"
-    ID_CRSI_IPWGT_GRAPHINCOLOR          "Ein-Graph Farbe"
-    ID_CRSI_IPWGT_GRAPHOUTCOLOR         "Aus-Graph Farbe"
-
     /* font sample view (all new with V0.9.19) */
     ID_XSSI_FONT_BASELINE               "Show baseline (red line)"
     ID_XSSI_FONT_MAXASCENDER            "Show maximum ascender/descender (gray rectangles on left)"
@@ -1040,6 +1032,10 @@ BEGIN
     ID_CRSI_WINLIST_HIDE                "~Hide"
     ID_CRSI_WINLIST_KILL1               "Kill process"
     ID_CRSI_WINLIST_KILL2               "~Kill process (PID 0x%lX)"
+
+    ID_CRSI_IPWGT_GRAPHCOLORS           "Graphenfarben"
+    ID_CRSI_IPWGT_GRAPHINCOLOR          "Ankommende KB"
+    ID_CRSI_IPWGT_GRAPHOUTCOLOR         "Ausgehende KB"
 END
 
 /* string IDs for status bar mnemonics (all new with V0.9.14) */
@@ -1358,6 +1354,7 @@ BEGIN
     ID_SCDI_PGR1_CLICK2ACTIVATE        "~Mausoperationen fÅr Mini-Fenster"
     ID_SCDI_PGR1_SHOWSECONDARY         "Show ~secondary windows"
     ID_SCDI_PGR1_SHOWSTICKY            "Ha~ftfenster anzeigen"
+    ID_SCDI_PGR1_FOLLOWFOCUS           "A~rbeitsoberflÑche folgt aktivem Fenster"
 
     /* strings formerly in ID_SCD_PAGER_COLORS */
     ID_SCDI_PGR2_COLORS_GROUP          "&pgr;-Farben"

@@ -245,6 +245,7 @@ VOID SelectMenuItem(HWND hwndMenu,
  *@@changed V0.9.3 (2000-05-22) [umoeller]: fixed MDI frames problems
  *@@changed V0.9.4 (2000-06-12) [umoeller]: fixed Win-OS/2 menu problems
  *@@changed V0.9.9 (2001-03-14) [lafaix]: disabling sliding when processing mouse switch
+ *@@changed V0.9.19 (2002-06-02) [umoeller]: fixed idiocy with Mozilla menus
  */
 
 VOID WMMouseMove_SlidingFocus(HWND hwnd,        // in: wnd under mouse, from hookInputHook
@@ -300,8 +301,8 @@ VOID WMMouseMove_SlidingFocus(HWND hwnd,        // in: wnd under mouse, from hoo
                     hwndTempParent = NULLHANDLE,
                     hwndFrameInBetween = NULLHANDLE;
             HWND    hwndFocusNow = WinQueryFocus(HWND_DESKTOP);
-            CHAR    szClassName[200],
-                    szWindowText[200];
+            CHAR    szClassName[30],
+                    szWindowText[30];
 
             // check 2: make sure mouse is not captured
             if (WinQueryCapture(HWND_DESKTOP) != NULLHANDLE)
@@ -362,6 +363,13 @@ VOID WMMouseMove_SlidingFocus(HWND hwnd,        // in: wnd under mouse, from hoo
                  || (!strcmp(szClassName, "#7"))
                          // listbox: as a desktop child, this must be a
                          // a drop-down box which is currently open
+                 || (!strcmp(szClassName, "MozillaWindowClass"))
+                         // this fixes mozilla popup menus; those
+                         // are a MozillaWindowClass as child of
+                         // HWND_DESKTOP (this does not break the
+                         // main Mozilla windows because those have
+                         // a WC_FRAME)
+                         // V0.9.19 (2002-06-02) [umoeller]
                )
             {
                 // stop timers and quit

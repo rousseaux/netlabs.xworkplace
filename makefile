@@ -87,20 +87,6 @@ $(XFLDR_OBJS_MEDIA) \
 $(XFLDR_OBJS_STARTSHUT) \
 $(XFLDR_OBJS_XCENTER)
 
-OBJS_ANICLASSES = $(XWP_OUTPUT_ROOT)\anand.obj $(XWP_OUTPUT_ROOT)\anos2ptr.obj $(XWP_OUTPUT_ROOT)\anwani.obj $(XWP_OUTPUT_ROOT)\anwcur.obj
-OBJS_ANICONVERT = $(XWP_OUTPUT_ROOT)\cursor.obj $(XWP_OUTPUT_ROOT)\pointer.obj $(XWP_OUTPUT_ROOT)\script.obj
-#$(XWP_OUTPUT_ROOT)\expire.obj
-OBJS_ANIDLL = $(XWP_OUTPUT_ROOT)\dll.obj $(XWP_OUTPUT_ROOT)\dllbin.obj
-OBJS_ANIANI = $(XWP_OUTPUT_ROOT)\mptranim.obj $(XWP_OUTPUT_ROOT)\mptrcnr.obj $(XWP_OUTPUT_ROOT)\mptredit.obj $(XWP_OUTPUT_ROOT)\mptrlset.obj \
-    $(XWP_OUTPUT_ROOT)\mptrpag1.obj $(XWP_OUTPUT_ROOT)\mptrppl.obj $(XWP_OUTPUT_ROOT)\mptrprop.obj $(XWP_OUTPUT_ROOT)\mptrptr.obj $(XWP_OUTPUT_ROOT)\mptrset.obj \
-    $(XWP_OUTPUT_ROOT)\mptrutil.obj $(XWP_OUTPUT_ROOT)\mptrfile.obj $(XWP_OUTPUT_ROOT)\wpamptr.obj
-
-!ifdef ANIMATED_MOUSE_POINTERS
-ANIOBJS = $(OBJS_ANICLASSES) $(OBJS_ANICONVERT) $(OBJS_ANIANI) $(OBJS_ANIDLL)
-!else
-ANIOBJS =
-!endif
-
 # The HLPOBJS macro contains all the .OBJ files which have been
 # created from the files in HELPERS\. You probably won't have to change this.
 HLPOBJS = $(XWP_OUTPUT_ROOT)\helpers.lib
@@ -327,10 +313,10 @@ src\shared\xwp.def
 src\shared\xwp.def: include\bldlevel.h makefile
         $(RUN_BLDLEVEL) $@ include\bldlevel.h "$(XWPNAME) main module"
 
-$(MODULESDIR)\xfldr.dll: $(OBJS) $(HLPOBJS) $(ANIOBJS) $(MODDEFFILE) objects.in
+$(MODULESDIR)\xfldr.dll: $(OBJS) $(HLPOBJS) $(MODDEFFILE) objects.in
         @echo $(MAKEDIR)\makefile [$@]: Linking $@
         $(LINK) @<<$(TEMP)\XFLDR.LNK
-/OUT:$@ $(MODDEFFILE) $(OBJS) $(HLPOBJS) $(ANIOBJS) $(LIBS)
+/OUT:$@ $(MODDEFFILE) $(OBJS) $(HLPOBJS) $(LIBS)
 <<KEEP
 !ifdef XWP_OUTPUT_ROOT_DRIVE
         @$(XWP_OUTPUT_ROOT_DRIVE)

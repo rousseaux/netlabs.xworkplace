@@ -26,7 +26,7 @@ int ARCTUSED = 1;
 
 PSZ EXPENTRY ThisDoesNothing(VOID)
 {
-    return (NULL);
+    return NULL;
 }
 
 

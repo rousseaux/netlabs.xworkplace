@@ -989,7 +989,7 @@ APIRET saclVerifyAccess(PCXWPSECURITYCONTEXT pContext,   // in: security context
     if (fLocked)
         UnlockACLs();
 
-    return (NO_ERROR);
+    return NO_ERROR;
     // return arc;
 }
 

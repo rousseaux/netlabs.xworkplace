@@ -201,9 +201,6 @@ static FEATURESITEM G_FeatureItemsList[] =
 
             // mouse/keyboard features
             ID_XCSI_MOUSEKEYBOARDFEATURES, 0, 0, NULL,
-#ifdef __ANIMATED_MOUSE_POINTERS__
-            ID_XCSI_ANIMOUSE, ID_XCSI_MOUSEKEYBOARDFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
-#endif
 #ifndef __ALWAYSHOOK__
             ID_XCSI_XWPHOOK, ID_XCSI_MOUSEKEYBOARDFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
 #endif
@@ -985,15 +982,14 @@ static BOOL HandleOKButton(HWND hwndDlg)
                 }
 
             // deregister classes
-            p = strDereg.psz;
-            if (p)
+            if (p = strDereg.psz)
                 while (*p)
                 {
-                    PSZ     pEOL = strchr(p, '\n');
-                    if (pEOL)
+                    PSZ     pEOL;
+                    if (pEOL = strchr(p, '\n'))
                     {
-                        PSZ     pszClass = strhSubstr(p, pEOL);
-                        if (pszClass)
+                        PSZ     pszClass;
+                        if (pszClass = strhSubstr(p, pEOL))
                         {
                             if (!WinDeregisterObjectClass(pszClass))
                             {
@@ -1011,18 +1007,17 @@ static BOOL HandleOKButton(HWND hwndDlg)
                 }
 
             // register new classes
-            p = strReg.psz;
-            if (p)
+            if (p = strReg.psz)
                 while (*p)
                 {
                     APIRET  arc = NO_ERROR;
                     CHAR    szRegisterError[300];
 
-                    PSZ     pEOL = strchr(p, '\n');
-                    if (pEOL)
+                    PSZ     pEOL;
+                    if (pEOL = strchr(p, '\n'))
                     {
-                        PSZ     pszClass = strhSubstr(p, pEOL);
-                        if (pszClass)
+                        PSZ     pszClass;
+                        if (pszClass = strhSubstr(p, pEOL))
                         {
                             arc = winhRegisterClass(pszClass,
                                                     cmnQueryMainCodeModuleFilename(),
@@ -1045,8 +1040,7 @@ static BOOL HandleOKButton(HWND hwndDlg)
                 }
 
             // replace classes
-            p = strReplace.psz;
-            if (p)
+            if (p = strReplace.psz)
                 while (*p)
                 {
                     // string components: "OldClass NewClass\n"
@@ -1162,20 +1156,19 @@ MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
 
             // register tooltip class
             ctlRegisterTooltip(WinQueryAnchorBlock(hwndDlg));
-            // create tooltip
-            pxwpc->hwndTooltip = WinCreateWindow(HWND_DESKTOP,  // parent
-                                                 COMCTL_TOOLTIP_CLASS, // wnd class
-                                                 "",            // window text
-                                                 XWP_TOOLTIP_STYLE,
-                                                      // tooltip window style (common.h)
-                                                 10, 10, 10, 10,    // window pos and size, ignored
-                                                 hwndDlg,       // owner window -- important!
-                                                 HWND_TOP,      // hwndInsertBehind, ignored
-                                                 DID_TOOLTIP, // window ID, optional
-                                                 NULL,          // control data
-                                                 NULL);         // presparams
 
-            if (pxwpc->hwndTooltip)
+            // create tooltip
+            if (pxwpc->hwndTooltip = WinCreateWindow(HWND_DESKTOP,  // parent
+                                                     COMCTL_TOOLTIP_CLASS, // wnd class
+                                                     "",            // window text
+                                                     XWP_TOOLTIP_STYLE,
+                                                          // tooltip window style (common.h)
+                                                     10, 10, 10, 10,    // window pos and size, ignored
+                                                     hwndDlg,       // owner window -- important!
+                                                     HWND_TOP,      // hwndInsertBehind, ignored
+                                                     DID_TOOLTIP, // window ID, optional
+                                                     NULL,          // control data
+                                                     NULL))         // presparams
             {
                 // tooltip successfully created:
                 // add tools (i.e. controls of the dialog)
@@ -1997,10 +1990,6 @@ VOID setFeaturesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                 // WPS startup setting
                 cmnQuerySetting(sfTurboFolders));
 #endif
-#if 0
-        ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_ANIMOUSE,
-                cmnQuerySetting(sfAniMouse));
-#endif
 #ifndef __ALWAYSHOOK__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_XWPHOOK,
                 cmnQuerySetting(sfXWPHook));
@@ -2260,12 +2249,6 @@ MRESULT setFeaturesItemChanged(PNOTEBOOKPAGE pnbp,
 #ifndef __ALWAYSFIXCLASSTITLES__
             case ID_XCSI_FIXCLASSTITLES: // added V0.9.12 (2001-05-22) [umoeller]
                 cmnSetSetting(sfFixClassTitles, precc->usCheckState);
-            break;
-#endif
-
-#if 0
-            case ID_XCSI_ANIMOUSE:
-                cmnSetSetting(sfAniMouse, precc->usCheckState);
             break;
 #endif
 
@@ -2897,8 +2880,6 @@ VOID setStatusInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
         ULONG           ulResultBufLen = sizeof(FILEFINDBUF3);
         ULONG           ulFindCount    = 1;        // Look for 1 file at a time
         APIRET          rc             = NO_ERROR; // Return code
-
-        // PCKERNELGLOBALS  pKernelGlobals = krnQueryGlobals();
 
         HAB             hab = WinQueryAnchorBlock(pnbp->hwndDlgPage);
 

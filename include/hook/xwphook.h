@@ -87,25 +87,26 @@
 
         ULONG       flPager;
                 // flags for "XPager" settings page 1
-                #define PGRFL_WRAPAROUND        0x0001
-                #define PGRFL_HOTKEYS           0x0002
+                #define PGRFL_WRAPAROUND            0x0001
+                #define PGRFL_HOTKEYS               0x0002
+                #define PGRFL_NOFOLLOWFOCUS         0x0004
 
                 #define PGRMASK_PAGE1 (PGRFL_WRAPAROUND | PGRFL_HOTKEYS)
                 #define PGRFL_PAGE1_DEFAULTS        0
 
                 // flags for "XPager" settings page 2
-                #define PGRFL_PRESERVEPROPS     0x0010
+                #define PGRFL_PRESERVEPROPS         0x0010
                     // preserve proportions of XPager win when resizing?
-                #define PGRFL_STAYONTOP         0x0020
+                #define PGRFL_STAYONTOP             0x0020
                     // stay on top?
-                #define PGRFL_FLASHTOTOP        0x0040
-                #define PGRFL_MINIWINDOWS       0x0080
+                #define PGRFL_FLASHTOTOP            0x0040
+                #define PGRFL_MINIWINDOWS           0x0080
                     // show mini windows in XPager?
-                #define PGRFL_MINIWIN_TITLES    0x0100
-                #define PGRFL_MINIWIN_MOUSE     0x0200
+                #define PGRFL_MINIWIN_TITLES        0x0100
+                #define PGRFL_MINIWIN_MOUSE         0x0200
                     // allow activate/lower by mouse clicks?
-                #define PGRFL_INCLUDESECONDARY  0x0400
-                #define PGRFL_INCLUDESTICKY     0x0800
+                #define PGRFL_INCLUDESECONDARY      0x0400
+                #define PGRFL_INCLUDESTICKY         0x0800
 
                 #define PGRMASK_PAGE2 (   PGRFL_PRESERVEPROPS       \
                                         | PGRFL_STAYONTOP           \

@@ -771,7 +771,7 @@ FOPSRET fopsFileThreadConfirmDeleteFolder(PFILETASKLIST pftl,
                                        pulIgnoreSubsequent));
     }
 
-    return (NO_ERROR);
+    return NO_ERROR;
 }
 
 /*

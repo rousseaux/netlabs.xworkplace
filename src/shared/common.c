@@ -1504,7 +1504,7 @@ APIRET cmnLoadDialogStrings(PCDLGHITEM paDlgItems,     // in: definition array
     // output pointer
     *ppaNew = paNew;
 
-    return (NO_ERROR);
+    return NO_ERROR;
 }
 
 /*
@@ -3415,16 +3415,19 @@ BOOL cmnSetSetting(XWPSETTING s,
 PSETTINGSBACKUP cmnBackupSettings(const XWPSETTING *paSettings,
                                   ULONG cItems)         // in: array item count (NOT array size)
 {
-    PSETTINGSBACKUP p1 = (PSETTINGSBACKUP)malloc(sizeof(SETTINGSBACKUP) * cItems),
-                    p = p1;
-    ULONG ul;
-    for (ul = 0;
-         ul < cItems;
-         ul++)
+    PSETTINGSBACKUP p1;
+
+    if (p1 = (PSETTINGSBACKUP)malloc(sizeof(SETTINGSBACKUP) * cItems))
     {
-        p->s = paSettings[ul];
-        p->ul = cmnQuerySetting(p->s);
-        p++;
+        PSETTINGSBACKUP p = p1;
+        ULONG ul;
+        for (ul = 0;
+             ul < cItems;
+             ++ul, ++p)
+        {
+            p->s = paSettings[ul];
+            p->ul = cmnQuerySetting(p->s);
+        }
     }
 
     return (p1);
@@ -3445,14 +3448,17 @@ PSETTINGSBACKUP cmnBackupSettings(const XWPSETTING *paSettings,
 VOID cmnRestoreSettings(PSETTINGSBACKUP paSettingsBackup,
                         ULONG cItems)           // in: array item count (NOT array size)
 {
-    ULONG ul;
-    for (ul = 0;
-         ul < cItems;
-         ul++)
+    if (paSettingsBackup)
     {
-        cmnSetSetting(paSettingsBackup->s,
-                      paSettingsBackup->ul);
-        paSettingsBackup++;
+        ULONG ul;
+        for (ul = 0;
+             ul < cItems;
+             ul++)
+        {
+            cmnSetSetting(paSettingsBackup->s,
+                          paSettingsBackup->ul);
+            paSettingsBackup++;
+        }
     }
 }
 

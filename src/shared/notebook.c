@@ -32,7 +32,9 @@
  *      3)  Easier support for "Undo" and "Default". The NOTEBOOKPAGE
  *          struct that is maintained for each page has space for
  *          backing up data so you won't have to deal with QWL_USER
- *          and that crap yourself. In conjunction with
+ *          and that crap yourself. In conjunction with the new
+ *          global settings support (see cmnBackupSettings), this
+ *          can make life quite a bit easier.
  *
  *      4)  Maintenance of a global list of all currently open
  *          notebook pages on the system. This allows for refreshing
@@ -42,11 +44,11 @@
  *          "Workplace Shell", the status bar checkboxes should
  *          be disabled in open folder instance notebooks.
  *
- *      5)  Dialog formatter support. See ntbFormatPage.
- *
- *      6)  Thread safety and exception handling. fnwpPageCommon
+ *      5)  Thread safety and exception handling. fnwpPageCommon
  *          installs an exception handler, so all the callbacks are
  *          protected by that handler too.
+ *
+ *      6)  Dialog formatter support. See ntbFormatPage.
  *
  *@@header "shared\notebook.h"
  */
@@ -151,23 +153,20 @@ static BOOL LockNotebooks(VOID)
     if (G_hmtxNotebooks)
         return !WinRequestMutexSem(G_hmtxNotebooks, SEM_INDEFINITE_WAIT);
             // WinRequestMutexSem works even if the thread has no message queue
-    else
+
+    if (!DosCreateMutexSem(NULL,         // unnamed
+                           &G_hmtxNotebooks,
+                           0,            // unshared
+                           TRUE))        // request!
     {
-        // and mutex semaphore for those lists
-        if (!DosCreateMutexSem(NULL,         // unnamed
-                               &G_hmtxNotebooks,
-                               0,            // unshared
-                               TRUE))        // request!
-        {
-            lstInit(&G_llOpenPages, TRUE); // NOTEBOOKPAGELISTITEMs are freeable
-            lstInit(&G_llSubclNotebooks, TRUE); // SUBCLNOTEBOOKLISTITEM are freeable
+        lstInit(&G_llOpenPages, TRUE); // NOTEBOOKPAGELISTITEMs are freeable
+        lstInit(&G_llSubclNotebooks, TRUE); // SUBCLNOTEBOOKLISTITEM are freeable
 
-            #ifdef DEBUG_NOTEBOOKS
-                _Pmpf(("Created NOTEBOOKPAGELISTITEM list and mutex"));
-            #endif
+        #ifdef DEBUG_NOTEBOOKS
+            _Pmpf(("Created NOTEBOOKPAGELISTITEM list and mutex"));
+        #endif
 
-            return TRUE;
-        }
+        return TRUE;
     }
 
     return FALSE;
@@ -341,16 +340,9 @@ static VOID PageDestroy(PNOTEBOOKPAGE pnbp)
             {
                 if (fSemOwned = LockNotebooks())
                     // WinRequestMutexSem works even if the thread has no message queue
-                {
-                    if (!lstRemoveItem(&G_llOpenPages,
-                                       pnbp->pnbli))  // this is auto-free!
+                    lstRemoveItem(&G_llOpenPages,
+                                  pnbp->pnbli);  // this is auto-free!
                                 // this free's the pnbli
-                        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                               "lstRemoveItem returned FALSE.");
-                }
-                else
-                    cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                           "hmtxNotebookLists request failed.");
             }
             CATCH(excpt1) {} END_CATCH();
 
@@ -397,7 +389,7 @@ static MRESULT EXPENTRY PageWmControl(PNOTEBOOKPAGE pnbp,
     BOOL    fCallItemChanged = FALSE;
             // if this becomes TRUE, we'll call the "item changed" callback
 
-    CHAR    szClassName[100];
+    CHAR    szClassName[20];
     ULONG   ulClassCode = 0;
     ULONG   ulExtra = -1;
 
@@ -421,53 +413,48 @@ static MRESULT EXPENTRY PageWmControl(PNOTEBOOKPAGE pnbp,
         )
     {
         // now translate the class name into a ULONG
-        sscanf(&(szClassName[1]), "%d", &ulClassCode);
+        ulClassCode = atoi(szClassName + 1);
+        // sscanf(&szClassName[1], "%d", &ulClassCode);
 
         switch (ulClassCode)
         {
             // checkbox? radio button?
             case 3:
-            {
-                if (    (usNotifyCode == BN_CLICKED)
-                     || (usNotifyCode == BN_DBLCLICKED) // added V0.9.0
-                   )
+                switch (usNotifyCode)
                 {
-                    // code for WC_BUTTON...
-                    ULONG ulStyle = winhQueryWindowStyle(pnbp->hwndControl);
-
-                    if (ulStyle & BS_PRIMARYSTYLES)
-                            // == 0x000F; BS_PUSHBUTTON has 0x0,
-                            // so we exclude pushbuttons here
-                    {
-                        // for checkboxes and radiobuttons, pass
-                        // the new check state to the callback
-                        ulExtra = (ULONG)WinSendMsg(pnbp->hwndControl,
-                                                    BM_QUERYCHECK,
-                                                    MPNULL,
-                                                    MPNULL);
-                        fCallItemChanged = TRUE;
-                    }
+                    case BN_CLICKED:
+                    case BN_DBLCLICKED: // added V0.9.0
+                        // code for WC_BUTTON...
+                        if (winhQueryWindowStyle(pnbp->hwndControl) & BS_PRIMARYSTYLES)
+                                // == 0x000F; BS_PUSHBUTTON has 0x0,
+                                // so we exclude pushbuttons here
+                        {
+                            // for checkboxes and radiobuttons, pass
+                            // the new check state to the callback
+                            ulExtra = (ULONG)WinSendMsg(pnbp->hwndControl,
+                                                        BM_QUERYCHECK,
+                                                        MPNULL,
+                                                        MPNULL);
+                            fCallItemChanged = TRUE;
+                        }
                 }
-            }
             break;
 
             // spinbutton?
             case 32:
-            {
-                if (    (usNotifyCode == SPBN_UPARROW)
-                     || (usNotifyCode == SPBN_DOWNARROW)
-                     || (usNotifyCode == SPBN_CHANGE)   // manual input
-                   )
+                switch (usNotifyCode)
                 {
-                    // for spinbuttons, pass the new spbn
-                    // value in ulExtra
-                    WinSendMsg(pnbp->hwndControl,
-                               SPBM_QUERYVALUE,
-                               (MPARAM)&ulExtra,
-                               MPFROM2SHORT(0, SPBQ_UPDATEIFVALID));
-                    fCallItemChanged = TRUE;
+                    case SPBN_UPARROW:
+                    case SPBN_DOWNARROW:
+                    case SPBN_CHANGE:   // manual input
+                        // for spinbuttons, pass the new spbn
+                        // value in ulExtra
+                        WinSendMsg(pnbp->hwndControl,
+                                   SPBM_QUERYVALUE,
+                                   (MPARAM)&ulExtra,
+                                   MPFROM2SHORT(0, SPBQ_UPDATEIFVALID));
+                        fCallItemChanged = TRUE;
                 }
-            }
             break;
 
             // listbox?
@@ -480,27 +467,32 @@ static MRESULT EXPENTRY PageWmControl(PNOTEBOOKPAGE pnbp,
 
             // entry field?
             case 6:
-                if (    (usNotifyCode == EN_CHANGE)
-                     || (usNotifyCode == EN_SETFOCUS)
-                     || (usNotifyCode == EN_KILLFOCUS)
-                   )
-                    fCallItemChanged = TRUE;
-                else if (usNotifyCode == EN_HOTKEY)
+                switch (usNotifyCode)
                 {
-                    // from hotkey entry field (comctl.c):
-                    fCallItemChanged = TRUE;
-                    ulExtra = (ULONG)mp2;
-                        // HOTKEYNOTIFY struct pointer
+                    case EN_CHANGE:         // 0x0004
+                    case EN_SETFOCUS:       // 0x0001
+                    case EN_KILLFOCUS:      // 0x0002
+                        fCallItemChanged = TRUE;
+                    break;
+
+                    case EN_HOTKEY:
+                        // from hotkey entry field (comctl.c):
+                        fCallItemChanged = TRUE;
+                        ulExtra = (ULONG)mp2;
+                            // HOTKEYNOTIFY struct pointer
+                    break;
                 }
             break;
 
             // multi-line entry field?
             case 10:
-                if (    (usNotifyCode == MLN_CHANGE)
-                     || (usNotifyCode == MLN_SETFOCUS)
-                     || (usNotifyCode == MLN_KILLFOCUS)
-                   )
-                    fCallItemChanged = TRUE;
+                switch (usNotifyCode)
+                {
+                    case MLN_CHANGE:        // 0x0007
+                    case MLN_SETFOCUS:      // 0x0008
+                    case MLN_KILLFOCUS:     // 0x0009
+                        fCallItemChanged = TRUE;
+                }
             break;
 
             // container?
@@ -535,8 +527,8 @@ static MRESULT EXPENTRY PageWmControl(PNOTEBOOKPAGE pnbp,
 
                     case CN_ENTER:
                     {
-                        PNOTIFYRECORDENTER pnre = (PNOTIFYRECORDENTER)mp2;
-                        if (pnre)
+                        PNOTIFYRECORDENTER pnre;
+                        if (pnre = (PNOTIFYRECORDENTER)mp2)
                         {
                             fCallItemChanged = TRUE;
                             ulExtra = (ULONG)pnre->pRecord;
@@ -548,8 +540,8 @@ static MRESULT EXPENTRY PageWmControl(PNOTEBOOKPAGE pnbp,
                     case CN_INITDRAG:
                     {
                         // get cnr notification struct (mp2)
-                        PCNRDRAGINIT pcdi = (PCNRDRAGINIT)mp2;
-                        if (pcdi)
+                        PCNRDRAGINIT pcdi;
+                        if (pcdi = (PCNRDRAGINIT)mp2)
                         {
                             fCallItemChanged = TRUE;
                             ulExtra = (ULONG)pcdi;
@@ -562,8 +554,8 @@ static MRESULT EXPENTRY PageWmControl(PNOTEBOOKPAGE pnbp,
                     case CN_DROP:
                     {
                         // get cnr notification struct (mp2)
-                        PCNRDRAGINFO pcdi = (PCNRDRAGINFO)mp2;
-                        if (pcdi)
+                        PCNRDRAGINFO pcdi;
+                        if (pcdi = (PCNRDRAGINFO)mp2)
                         {
                             fCallItemChanged = TRUE;
                             ulExtra = (ULONG)pcdi;
@@ -574,8 +566,8 @@ static MRESULT EXPENTRY PageWmControl(PNOTEBOOKPAGE pnbp,
                     case CN_DROPNOTIFY:
                     {
                         // get cnr notification struct (mp2)
-                        PCNRLAZYDRAGINFO pcldi = (PCNRLAZYDRAGINFO)mp2;
-                        if (pcldi)
+                        PCNRLAZYDRAGINFO pcldi;
+                        if (pcldi = (PCNRLAZYDRAGINFO)mp2)
                         {
                             fCallItemChanged = TRUE;
                             ulExtra = (ULONG)pcldi;
@@ -587,8 +579,8 @@ static MRESULT EXPENTRY PageWmControl(PNOTEBOOKPAGE pnbp,
                     {
                         // extra check-box cnr notification code
                         // (cctl_checkcnr.c)
-                        PCHECKBOXRECORDCORE precc = (PCHECKBOXRECORDCORE)mp2;
-                        if (precc)
+                        PCHECKBOXRECORDCORE precc;
+                        if (precc = (PCHECKBOXRECORDCORE)mp2)
                         {
                             ulExtra = (ULONG)precc;
                                     // changed V0.9.9 (2001-03-27) [umoeller]
@@ -646,52 +638,51 @@ static MRESULT EXPENTRY PageWmControl(PNOTEBOOKPAGE pnbp,
 
             // linear slider?
             case 38:
-                if (    (usNotifyCode == SLN_CHANGE)
-                     || (usNotifyCode == SLN_SLIDERTRACK)
-                   )
-                    fCallItemChanged = TRUE;
+                switch (usNotifyCode)
+                {
+                    case SLN_CHANGE:
+                    case SLN_SLIDERTRACK:
+                        fCallItemChanged = TRUE;
+                }
             break;
 
             // circular slider?
             case 65:
-                if (    (usNotifyCode == CSN_SETFOCUS)
-                                // mp2 is TRUE or FALSE
-                     || (usNotifyCode == CSN_CHANGED)
-                                // mp2 has new slider value
-                     || (usNotifyCode == CSN_TRACKING)
-                                // mp2 has new slider value
-                   )
+                switch (usNotifyCode)
                 {
-                    fCallItemChanged = TRUE;
-                    ulExtra = (ULONG)mp2;
+                    case CSN_SETFOCUS:
+                                // mp2 is TRUE or FALSE
+                    case CSN_CHANGED:
+                                // mp2 has new slider value
+                    case CSN_TRACKING:
+                                // mp2 has new slider value
+                        fCallItemChanged = TRUE;
+                        ulExtra = (ULONG)mp2;
                 }
             break;
 
             // value set? (added V0.9.9 (2001-03-15) [lafaix])
             case 39:
-                if (    (usNotifyCode == VN_ENTER)
-                                // mp2 is selected row/col
-                     || (usNotifyCode == VN_SELECT)
-                                // mp2 is selected row/col
-                   )
+                switch (usNotifyCode)
                 {
-                    fCallItemChanged = TRUE;
-                    ulExtra = (ULONG)mp2;
+                    case VN_ENTER:
+                                // mp2 is selected row/col
+                    case VN_SELECT:
+                                // mp2 is selected row/col
+                        fCallItemChanged = TRUE;
+                        ulExtra = (ULONG)mp2;
                 }
-
             break;
 
         } // end switch (ulClassCode)
 
         if (fCallItemChanged)
-        {
             // "important" message found:
             // call "item changed" callback
             mrc = pnbp->inbp.pfncbItemChanged(pnbp,
                                               ulItemID,
                                               usNotifyCode,
                                               ulExtra);
-        }
     } // end if (szClassName[0] == '#')
 
     return mrc;
@@ -716,16 +707,16 @@ static VOID PageWindowPosChanged(PNOTEBOOKPAGE pnbp,
     if (!pnbp)
         return;
 
-    if (pswp->fl & SWP_SHOW)
+    if (pnbp->inbp.pfncbInitPage)
     {
-        // notebook page is being shown:
-        // call "initialize" callback
-        if (pnbp->inbp.pfncbInitPage)
+        if (pswp->fl & SWP_SHOW)
         {
+            // notebook page is being shown:
+            // call "initialize" callback
             WinEnableWindowUpdate(pnbp->hwndDlgPage, FALSE);
             pnbp->flPage |= NBFL_PAGE_SHOWING;
             pnbp->inbp.pfncbInitPage(pnbp,
-                                 CBI_SHOW | CBI_ENABLE);
+                                     CBI_SHOW | CBI_ENABLE);
                     // we also set the ENABLE flag so
                     // that the callback can re-enable
                     // controls when the page is being
@@ -733,13 +724,10 @@ static VOID PageWindowPosChanged(PNOTEBOOKPAGE pnbp,
 
             WinEnableWindowUpdate(pnbp->hwndDlgPage, TRUE);
         }
-    }
-    else if (pswp->fl & SWP_HIDE)
-    {
-        // notebook page is being hidden:
-        // call "initialize" callback
-        if (pnbp->inbp.pfncbInitPage)
+        else if (pswp->fl & SWP_HIDE)
         {
+            // notebook page is being hidden:
+            // call "initialize" callback
             pnbp->flPage &= ~NBFL_PAGE_SHOWING;
             pnbp->inbp.pfncbInitPage(pnbp, CBI_HIDE);
         }
@@ -801,7 +789,9 @@ static VOID PageTimer(PNOTEBOOKPAGE pnbp,
                                                // expanded PRECORDCORE from CN_EXPANDTREE
                                             MPFROM2SHORT(CMA_LASTCHILD,
                                                          CMA_ITEMORDER));
-                if ((preccLastChild) && (preccLastChild != (PRECORDCORE)-1))
+                if (    (preccLastChild)
+                     && (preccLastChild != (PRECORDCORE)-1)
+                   )
                 {
                     // ULONG ulrc;
                     cnrhScrollToRecord(pnbp->hwndExpandedCnr,
@@ -984,6 +974,7 @@ static MRESULT EXPENTRY fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                         // WM_MENUEND is posted before WM_COMMAND,
                         // and the caller might still need this
                     }
+
                     mrc = (MRESULT)0;
                 }
                 break;  // WM_MENUEND
@@ -997,21 +988,18 @@ static MRESULT EXPENTRY fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                  */
 
                 case WM_COMMAND:
-                {
-                    USHORT usItemID = SHORT1FROMMP(mp1);
-
                     #ifdef DEBUG_NOTEBOOKS
                         _Pmpf(("fnwpPageCommon: WM_COMMAND"));
                     #endif
 
                     // call "item changed" callback
-                    if (pnbp)
-                        if (pnbp->inbp.pfncbItemChanged)
-                            mrc = pnbp->inbp.pfncbItemChanged(pnbp,
-                                                              usItemID,
-                                                              0,
-                                                              (ULONG)mp2);
-                }
+                    if (    (pnbp)
+                         && (pnbp->inbp.pfncbItemChanged)
+                       )
+                        mrc = pnbp->inbp.pfncbItemChanged(pnbp,
+                                                          SHORT1FROMMP(mp1),
+                                                          0,
+                                                          (ULONG)mp2);
                 break;  // WM_COMMAND
 
                 /*
@@ -1054,15 +1042,16 @@ static MRESULT EXPENTRY fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                  */
 
                 case WM_MOUSEMOVE:
-                    if (pnbp)
-                        if (pnbp->fShowWaitPointer)
-                        {
-                            WinSetPointer(HWND_DESKTOP,
-                                          WinQuerySysPointer(HWND_DESKTOP,
-                                                             SPTR_WAIT,
-                                                             FALSE));
-                            break;
-                        }
+                    if (    (pnbp)
+                         && (pnbp->fShowWaitPointer)
+                       )
+                    {
+                        WinSetPointer(HWND_DESKTOP,
+                                      WinQuerySysPointer(HWND_DESKTOP,
+                                                         SPTR_WAIT,
+                                                         FALSE));
+                        break;
+                    }
 
                     mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
                 break;
@@ -1074,14 +1063,15 @@ static MRESULT EXPENTRY fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                  */
 
                 case WM_CONTROLPOINTER:
-                    if (pnbp)
-                        if (pnbp->fShowWaitPointer)
-                        {
-                            mrc = (MRESULT)WinQuerySysPointer(HWND_DESKTOP,
-                                                              SPTR_WAIT,
-                                                              FALSE);
-                            break;
-                        }
+                    if (    (pnbp)
+                         && (pnbp->fShowWaitPointer)
+                       )
+                    {
+                        mrc = (MRESULT)WinQuerySysPointer(HWND_DESKTOP,
+                                                          SPTR_WAIT,
+                                                          FALSE);
+                        break;
+                    }
 
                     mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
                 break;
@@ -1109,9 +1099,10 @@ static MRESULT EXPENTRY fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                  */
 
                 case XNTBM_UPDATE:
-                    if (pnbp)
-                        if (pnbp->inbp.pfncbInitPage)
-                            pnbp->inbp.pfncbInitPage(pnbp, (ULONG)mp1);
+                    if (    (pnbp)
+                         && (pnbp->inbp.pfncbInitPage)
+                       )
+                        pnbp->inbp.pfncbInitPage(pnbp, (ULONG)mp1);
                 break;
 
                 /*
@@ -1122,7 +1113,6 @@ static MRESULT EXPENTRY fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                 case WM_DESTROY:
                     PageDestroy(pnbp);
                     fProcessed = FALSE;
-                    // mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
                 break;
 
                 default:
@@ -1713,7 +1703,7 @@ ULONG ntbInsertPage(PINSERTNOTEBOOKPAGE pinbp)
         {
             // successfully inserted:
 
-            // if this is a major tab, hack the "page info"
+            // if this is a minor tab, hack the "page info"
             // to display the minor tab title in the notebook
             // context menu V0.9.16 (2001-10-23) [umoeller]
             if (pinbp->pcszMinorName)
@@ -1736,9 +1726,6 @@ ULONG ntbInsertPage(PINSERTNOTEBOOKPAGE pinbp)
             // create SUBCLNOTEBOOKLISTITEM
             CreateNBLI(pnbpNew);
         }
-        else
-            cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                   "Notebook page could not be inserted (wpInsertSettingsPage failed).");
     }
 
     return (ulrc);
@@ -1747,13 +1734,16 @@ ULONG ntbInsertPage(PINSERTNOTEBOOKPAGE pinbp)
 /*
  *@@ ntbFormatPage:
  *      wrapper around dlghFormatDialog for dynamically
- *      formatting notebook pages.
+ *      formatting notebook pages. This allows XWorkplace
+ *      to use the dialog formatter (src\helpers\dialog.c)
+ *      with notebook pages too.
  *
  *      Usage:
  *
  *      1)  With ntbInsertPage, specify ID_XFD_EMPTYDLG for
  *          the dialog ID to be loaded (which is an empty
- *          dialog frame).
+ *          dialog frame). This is required, unfortunately,
+ *          because the WPS expects us to use PM resources.
  *
  *      2)  In your "init page" callback, when CBI_INIT
  *          comes in, call this function on the array of
@@ -1912,7 +1902,7 @@ PNOTEBOOKPAGE ntbQueryOpenPages(PNOTEBOOKPAGE pnbp)
     if (pItemReturn)
         return (pItemReturn->pnbp);
     else
-        return (NULL);
+        return NULL;
 }
 
 /*

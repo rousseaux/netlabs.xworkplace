@@ -949,7 +949,7 @@ static PWPSTYPEASSOCTREENODE FindWPSTypeAssoc(PCSZ pcszType)
                                                 treeCompareStrings));
     }
 
-    return (NULL);
+    return NULL;
 }
 
 /* ******************************************************************

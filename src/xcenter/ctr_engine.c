@@ -3920,6 +3920,13 @@ static MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, M
                                       TRUE);            // force remove
                 WinDestroyWindow(hwnd);
                         // after this pXCenterData is INVALID!
+
+                // sigh... this was missing
+                // V0.9.19 (2002-06-02) [umoeller]
+                WinPostMsg(NULLHANDLE,      // into the queue
+                           WM_QUIT,
+                           0,
+                           0);
             break;
 
             /*

@@ -1648,45 +1648,40 @@ void _Optlink fntFileThread(PTHREADINFO pti)
 
     TRY_LOUD(excpt1)
     {
-        if (G_habFileThread = WinInitialize(0))
+        PKERNELGLOBALS pKernelGlobals;
+        if (    (G_habFileThread = WinInitialize(0))
+             && (G_hmqFileThread = WinCreateMsgQueue(G_habFileThread, 3000))
+             && (pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__))
+           )
         {
-            if (G_hmqFileThread = WinCreateMsgQueue(G_habFileThread, 3000))
-            {
-                PKERNELGLOBALS pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
-                if (pKernelGlobals)
-                {
-                    WinCancelShutdown(G_hmqFileThread, TRUE);
+            WinCancelShutdown(G_hmqFileThread, TRUE);
 
-                    WinRegisterClass(G_habFileThread,
-                                     (PSZ)WNDCLASS_FILEOBJECT,    // class name
-                                     (PFNWP)fnwpFileObject,    // Window procedure
-                                     0,                  // class style
-                                     0);                 // extra window words
+            WinRegisterClass(G_habFileThread,
+                             (PSZ)WNDCLASS_FILEOBJECT,    // class name
+                             (PFNWP)fnwpFileObject,    // Window procedure
+                             0,                  // class style
+                             0);                 // extra window words
 
-                    // set ourselves to regular priority
-                    DosSetPriority(PRTYS_THREAD,
-                                   PRTYC_REGULAR,
-                                   0, // priority delta
-                                   0);
+            // set ourselves to regular priority
+            DosSetPriority(PRTYS_THREAD,
+                           PRTYC_REGULAR,
+                           0, // priority delta
+                           0);
 
-                    // create object window
-                    pKernelGlobals->hwndFileObject
-                        = winhCreateObjectWindow(WNDCLASS_FILEOBJECT, NULL);
+            // create object window
+            if (!(pKernelGlobals->hwndFileObject = winhCreateObjectWindow(WNDCLASS_FILEOBJECT,
+                                                                          NULL)))
+                winhDebugBox(HWND_DESKTOP,
+                         "XFolder: Error",
+                         "XFolder failed to create the File thread object window.");
 
-                    if (!pKernelGlobals->hwndFileObject)
-                        winhDebugBox(HWND_DESKTOP,
-                                 "XFolder: Error",
-                                 "XFolder failed to create the File thread object window.");
+            krnUnlockGlobals();
+            pKernelGlobals = NULL;
 
-                    krnUnlockGlobals();
-                    pKernelGlobals = NULL;
-                }
-
-                // now enter the message loop
-                while (WinGetMsg(G_habFileThread, &qmsg, NULLHANDLE, 0, 0))
-                    // loop until WM_QUIT
-                    WinDispatchMsg(G_habFileThread, &qmsg);
-            }
+            // now enter the message loop
+            while (WinGetMsg(G_habFileThread, &qmsg, NULLHANDLE, 0, 0))
+                // loop until WM_QUIT
+                WinDispatchMsg(G_habFileThread, &qmsg);
         }
     }
     CATCH(excpt1)
@@ -1698,8 +1693,7 @@ void _Optlink fntFileThread(PTHREADINFO pti)
         {
             // only report the first error, or otherwise we will
             // jam the system with msg boxes
-            pszErrMsg = malloc(1000);
-            if (pszErrMsg)
+            if (pszErrMsg = malloc(1000))
             {
                 strcpy(pszErrMsg, "An error occured in the XFolder File thread.\n"
                                   "The File thread has been terminated. This severely limits "

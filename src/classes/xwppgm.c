@@ -1426,7 +1426,7 @@ APIRET progStore(WPObject *somSelf,
     if (pulLength)
         *pulLength = ulLength;
 
-    return (NO_ERROR);
+    return NO_ERROR;
 }
 /*
  *@@ wpSetProgDetails:

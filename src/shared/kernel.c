@@ -358,7 +358,7 @@ PKERNELGLOBALS krnLockGlobals(PCSZ pcszSourceFile,
     if (krnLock(pcszSourceFile, ulLine, pcszFunction))
         return (&G_KernelGlobals);
     else
-        return (NULL);
+        return NULL;
 }
 
 /*

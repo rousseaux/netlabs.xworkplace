@@ -302,8 +302,6 @@ static VOID CheckFlashTimer(VOID)
  *      returns TRUE if the specified window is at least
  *      partially visible on the current desktp.
  *
- *      Based on a code snipped by Dmitry Kubov.
- *
  *@@added V0.9.7 (2001-01-21) [umoeller]
  */
 
@@ -332,77 +330,90 @@ BOOL pgrIsShowing(PSWP pswp)
  *      windows which are completely off the screen.
  *
  *@@added V0.9.2 (2000-02-21) [umoeller]
+ *@@changed V0.9.19 (2002-06-02) [umoeller]: rewritten to use linklist
  */
 
 VOID pgrRecoverWindows(HAB hab)
 {
-    #define MAX_WINDOWS 1000        // yes, that's a lot... too lazy
-                                    // to build another linked list here
-
+    LINKLIST    llSWPs;
     HENUM       henum;
-    HWND        hwndTemp[MAX_WINDOWS];
-    SWP         swpTemp[MAX_WINDOWS];
-    ULONG       ul,
-                ul2;
-    CHAR        szClassName[30];
+    HWND        hwnd;
 
-    LONG    cxEach = G_pHookData->szlEachDesktopFaked.cx,
-            cDesktopsX = G_pHookData->PagerConfig.cDesktopsX,
-            cyEach = G_pHookData->szlEachDesktopFaked.cy,
-            cDesktopsY = G_pHookData->PagerConfig.cDesktopsY;
+    ULONG       cWindows;
+    PSWP        paswp;
 
-    ul = 0;
+    lstInit(&llSWPs,
+            TRUE);      // auto-free
+
     henum = WinBeginEnumWindows(HWND_DESKTOP);
-    while ((hwndTemp[ul] = WinGetNextWindow(henum)))
+    while ((hwnd = WinGetNextWindow(henum)))
     {
-        HWND    hwndThis = hwndTemp[ul];
-        PSWP    pswpThis = &swpTemp[ul];
-        if (    (WinQueryWindowPos(hwndThis, pswpThis))
-             && (WinQueryClassName(hwndThis, sizeof(szClassName), szClassName))
-             && ((pswpThis->fl & SWP_HIDE) == 0)
-             && (!(pswpThis->fl & SWP_MINIMIZE))
-             && (WinIsChild(hwndThis, HWND_DESKTOP))
+        CHAR    szClassName[30];
+        SWP     swp;
+        if (    (hwnd != G_pHookData->hwndWPSDesktop)
+             && (WinIsChild(hwnd, HWND_DESKTOP))
+             && (!WinIsChild(hwnd, G_pHookData->hwndPagerFrame))
+             && (WinQueryWindowPos(hwnd, &swp))
+             && (!(swp.fl & (SWP_HIDE | SWP_MINIMIZE)))
+             && (WinQueryClassName(hwnd, sizeof(szClassName), szClassName))
              && (strcmp(szClassName, "#32765"))
-                // not WPS window:
-             && (hwndThis != G_pHookData->hwndWPSDesktop)
-             && (!pgrIsShowing(pswpThis))
-             && (!WinIsChild(hwndThis, G_pHookData->hwndPagerFrame))
+             && (!pgrIsShowing(&swp))
            )
-            ul++;
+        {
+            PSWP pswp;
+            if (pswp = NEW(SWP))
+            {
+                memcpy(pswp, &swp, sizeof(SWP));
+                lstAppendItem(&llSWPs, pswp);
+            }
+        }
     }
     WinEndEnumWindows(henum);
 
-    for (ul2 = 0; ul2 < ul; ul2++)
+    if (    (cWindows = lstCountItems(&llSWPs))
+         && (paswp = malloc(cWindows * sizeof(SWP)))
+       )
     {
-        PSWP         pswpThis = &swpTemp[ul2];
-        WinQueryWindowPos(hwndTemp[ul2],
-                          pswpThis);
+        LONG        cxEach = G_pHookData->szlEachDesktopFaked.cx,
+                    cDesktopsX = G_pHookData->PagerConfig.cDesktopsX,
+                    cyEach = G_pHookData->szlEachDesktopFaked.cy,
+                    cDesktopsY = G_pHookData->PagerConfig.cDesktopsY;
 
-        pswpThis->fl = SWP_MOVE;
-        if (!WinIsWindowVisible(hwndTemp[ul2]))
-            pswpThis->fl |= SWP_HIDE;
+        PSWP        pswpThis = paswp;
+        PLISTNODE   pNode = lstQueryFirstNode(&llSWPs);
 
-        pswpThis->x =    (   (swpTemp[ul2].x)
-                              + (   cDesktopsX
-                                    * cxEach
-                                )
+        while (pNode)
+        {
+            memcpy(pswpThis, pNode->pItemData, sizeof(SWP));
+
+            pswpThis->fl = SWP_MOVE;
+            if (!WinIsWindowVisible(pswpThis->hwnd))
+                pswpThis->fl |= SWP_HIDE;
+
+            pswpThis->x =   (   pswpThis->x
+                              + (cDesktopsX * cxEach)
                             ) % cxEach;
-        pswpThis->y = (   (swpTemp[ul2].y)
-                              + (   cDesktopsY
-                                    * cyEach
-                                )
+            pswpThis->y =   (   pswpThis->y
+                              + (cDesktopsY * cyEach)
                             ) % cyEach;
 
-        if (pswpThis->x > cxEach - 5)
-            pswpThis->x = pswpThis->x - cxEach;
-        if (pswpThis->y > cyEach - 5)
-            pswpThis->y = pswpThis->y - cyEach;
+            if (pswpThis->x > cxEach - 5)
+                pswpThis->x = pswpThis->x - cxEach;
+            if (pswpThis->y > cyEach - 5)
+                pswpThis->y = pswpThis->y - cyEach;
 
-        pswpThis->hwnd = hwndTemp[ul2];
-        pswpThis->hwndInsertBehind = HWND_TOP;
+            pswpThis->hwndInsertBehind = HWND_TOP;
+
+            pNode = pNode->pNext;
+            pswpThis++;
+        }
+
+        WinSetMultWindowPos(hab,
+                            paswp,
+                            cWindows);
     }
 
-    WinSetMultWindowPos(hab, swpTemp, ul);
+    lstClear(&llSWPs);
 }
 
 /*
@@ -459,7 +470,6 @@ static HBITMAP CreateTemplateBmp(HAB hab,
         HPS hpsMem = pbmTemplate->hpsMem;
         POINTL ptl;
         RECTL rclBkgnd;
-        LONG lMax;
         info.flPaintMode = G_pHookData->PagerConfig.flPaintMode;
         info.hbm = NULLHANDLE;
         info.lcol1 = G_pHookData->PagerConfig.lcolDesktop1;
@@ -477,9 +487,8 @@ static HBITMAP CreateTemplateBmp(HAB hab,
                     G_pHookData->PagerConfig.lcolGrid);
 
         // a) verticals (X separators)
-        lMax = G_pHookData->PagerConfig.cDesktopsX;
         for (l = 1;
-             l < lMax;
+             l < G_pHookData->PagerConfig.cDesktopsX;
              ++l)
         {
             ptl.x = GRID_X(pszl->cx, l);
@@ -490,9 +499,8 @@ static HBITMAP CreateTemplateBmp(HAB hab,
         }
 
         // b) horizontals (Y separators)
-        lMax = G_pHookData->PagerConfig.cDesktopsY;
         for (l = 1;
-             l < lMax;
+             l < G_pHookData->PagerConfig.cDesktopsY;
              ++l)
         {
             ptl.x = 0;
@@ -566,20 +574,20 @@ typedef struct _MINIWINDOW
 static VOID RefreshPagerBmp(HWND hwnd,
                             PPAGERWINDATA pWinData)
 {
-    HPS hpsMem = pWinData->pbmClient->hpsMem;
-    POINTL ptl;
+    HPS     hpsMem = pWinData->pbmClient->hpsMem;
+    POINTL  ptl;
 
-    LONG        cxEach = G_pHookData->szlEachDesktopFaked.cx,
-                cyEach = G_pHookData->szlEachDesktopFaked.cy,
-                xCurrent = G_pHookData->ptlCurrentDesktop.x,
-                yCurrent = G_pHookData->ptlCurrentDesktop.y,
-                cxClient = pWinData->szlClient.cx,
-                cyClient = pWinData->szlClient.cy;
+    LONG    cxEach = G_pHookData->szlEachDesktopFaked.cx,
+            cyEach = G_pHookData->szlEachDesktopFaked.cy,
+            xCurrent = G_pHookData->ptlCurrentDesktop.x,
+            yCurrent = G_pHookData->ptlCurrentDesktop.y,
+            cxClient = pWinData->szlClient.cx,
+            cyClient = pWinData->szlClient.cy;
 
-    ULONG       xDesktop = xCurrent / cxEach;
-    ULONG       yDesktop = yCurrent / cyEach;
+    ULONG   xDesktop = xCurrent / cxEach;
+    ULONG   yDesktop = yCurrent / cyEach;
 
-    ULONG flPager = G_pHookData->PagerConfig.flPager;
+    ULONG   flPager = G_pHookData->PagerConfig.flPager;
 
     // check if we need a new template bitmap for background
     // (this gets destroyed on resize only)
@@ -718,8 +726,8 @@ static VOID RefreshPagerBmp(HWND hwnd,
                             PMINIWINDOW pMiniThis
                                 = &paMiniWindows[cMiniWindowsUsed++];
 
-                            LONG xThis = pWinInfo->swp.x + xCurrent,
-                                 yThis = pWinInfo->swp.y + yCurrent;
+                            LONG    xThis = pWinInfo->swp.x + xCurrent,
+                                    yThis = pWinInfo->swp.y + yCurrent;
 
                             // store WININFO ptr; we hold the winlist
                             // locked all the time, so this is safe
@@ -728,22 +736,16 @@ static VOID RefreshPagerBmp(HWND hwnd,
                             pMiniThis->hwnd = hwndThis;
 
                             pMiniThis->ptlLowerLeft.x
-                                =   (xThis)
-                                  / dScale_X;
+                                =   xThis / dScale_X;
 
                             pMiniThis->ptlLowerLeft.y
-                                =   (yThis)
-                                  / dScale_Y;
+                                =   yThis / dScale_Y;
 
                             pMiniThis->ptlTopRight.x
-                                =   (xThis + pWinInfo->swp.cx)
-                                  / dScale_X
-                                  - 1;
+                                =   (xThis + pWinInfo->swp.cx) / dScale_X - 1;
 
                             pMiniThis->ptlTopRight.y
-                                =   (yThis + pWinInfo->swp.cy)
-                                  / dScale_Y
-                                  - 1;
+                                =   (yThis + pWinInfo->swp.cy) / dScale_Y - 1;
 
                         } // end if (    (bTypeThis == WINDOW_NORMAL) ...
                     } // end if (WinIsVisible)
@@ -850,36 +852,33 @@ static VOID RefreshPagerBmp(HWND hwnd,
  */
 
 static HWND FindWindow(PPAGERWINDATA pWinData,
-                       PPOINTL ptlClient,
-                       BOOL fAllowStickes)         // in: if TRUE, allow returning sticky windows
+                       PPOINTL ptlClient,       // in: client coords
+                       BOOL fAllowStickes)      // in: if TRUE, allow returning sticky windows
 {
     HWND    hwndResult = NULLHANDLE;
 
     if (G_pHookData->PagerConfig.flPager & PGRFL_MINIWINDOWS)
     {
-        // mini windows are shown: check if the point denotes one
-        // of them
+        // mini windows are shown: check if the point denotes one of them
         // V0.9.18 (2002-02-20) [lafaix]
-        POINTL  ptlCalc;
-        double  dCalcX,
-                dCalcY;
-        HENUM   henumPoint;
-        HWND    hwndPoint;
-        SWP     swpPoint;
+        POINTL      ptlCalc;
+        HENUM       henumPoint;
+        HWND        hwndPoint;
+        SWP         swpPoint;
 
-        dCalcX =    (double)ptlClient->x
-                  * G_pHookData->szlEachDesktopFaked.cx
-                  / (pWinData->szlClient.cx / G_pHookData->PagerConfig.cDesktopsX);
-        dCalcY =    (double)ptlClient->y
-                  * G_pHookData->szlEachDesktopFaked.cy
-                  / (pWinData->szlClient.cy / G_pHookData->PagerConfig.cDesktopsY);
+        // scale the client coordinate to the real desktop
+        // coordinate (in terms of the current desktop)
+        ptlCalc.x = (   ptlClient->x
+                      * G_pHookData->szlEachDesktopFaked.cx
+                      / (pWinData->szlClient.cx / G_pHookData->PagerConfig.cDesktopsX)
+                    ) - G_pHookData->ptlCurrentDesktop.x;
+        ptlCalc.y = (   ptlClient->y
+                      * G_pHookData->szlEachDesktopFaked.cy
+                      / (pWinData->szlClient.cy / G_pHookData->PagerConfig.cDesktopsY)
+                    ) - G_pHookData->ptlCurrentDesktop.y;
 
-        ptlCalc.x = ((int)dCalcX) - G_pHookData->ptlCurrentDesktop.x;
-        ptlCalc.y = ((int)dCalcY) - G_pHookData->ptlCurrentDesktop.y;
-
-        // the WinxxxEnum part is a bit complex, but we can't just use
-        // the wininfo list, as it does not reflect the z order
-
+        // enum all desktop windows again because our
+        // internal winlist does not have the z-order right
         henumPoint = WinBeginEnumWindows(HWND_DESKTOP);
         while (hwndPoint = WinGetNextWindow(henumPoint))
         {
@@ -898,7 +897,6 @@ static HWND FindWindow(PPAGERWINDATA pWinData,
                 // this window matches the coordinates:
                 // check if it's visible in the client window
                 // V0.9.18 (2002-02-20) [lafaix]
-
                 if (pgrLockWinlist())
                 {
                     PPAGERWININFO pWinInfo = pgrFindWinInfo(hwndPoint, NULL);
@@ -906,7 +904,9 @@ static HWND FindWindow(PPAGERWINDATA pWinData,
                     if (    (pWinInfo)
                          && (    (pWinInfo->bWindowType == WINDOW_NORMAL)
                               || (pWinInfo->bWindowType == WINDOW_MAXIMIZE)
-                              || (fAllowStickes && pWinInfo->bWindowType == WINDOW_STICKY)
+                              || (    (fAllowStickes)
+                                   && (pWinInfo->bWindowType == WINDOW_STICKY)
+                                 )
                             )
                        )
                     {
@@ -1420,11 +1420,16 @@ static VOID PagerDrag(HWND hwnd, MPARAM mp1)
  *      implementation for PGRM_ACTIVECHANGED in
  *      fnwpPager.
  *
+ *      This switches the current desktop if a
+ *      window becomes active that is on a different
+ *      desktop.
+ *
  *      Note that this is deferred through a PM timer
  *      and actually gets called when WM_TIMER for
  *      TIMERID_PGR_ACTIVECHANGED comes in.
  *
  *@@added V0.9.19 (2002-05-07) [umoeller]
+ *@@changed V0.9.19 (2002-06-02) [umoeller]: made this configurable
  */
 
 static VOID PagerActiveChanged(HWND hwnd)
@@ -1434,7 +1439,6 @@ static VOID PagerActiveChanged(HWND hwnd)
     if (!G_pHookData->fProcessingWraparound)
     {
         HWND        hwndActive;
-
         if (hwndActive = WinQueryActiveWindow(HWND_DESKTOP))
         {
             // test if this is a sticky window;
@@ -1492,14 +1496,27 @@ static VOID PagerActiveChanged(HWND hwnd)
                          && (y <= (G_pHookData->PagerConfig.cDesktopsY * cy))
                        )
                     {
-                        WinPostMsg(G_pHookData->hwndPagerMoveThread,
-                                   PGRM_MOVEBYDELTA,
-                                   (MPARAM)(xCurrent - x),
-                                   (MPARAM)(yCurrent - y));
+                        // only actually post the msg if follow focus
+                        // is enabled V0.9.19 (2002-06-02) [umoeller]
+                        if (!(G_pHookData->PagerConfig.flPager & PGRFL_NOFOLLOWFOCUS))
+                            WinPostMsg(G_pHookData->hwndPagerMoveThread,
+                                       PGRM_MOVEBYDELTA,
+                                       (MPARAM)(xCurrent - x),
+                                       (MPARAM)(yCurrent - y));
+
+                        // even if follow focus is disabled we should still bring
+                        // the pager window back to top in flash mode
+                        // V0.9.19 (2002-06-02) [umoeller]
+                        WinSetWindowPos(G_pHookData->hwndPagerFrame,
+                                        HWND_TOP,
+                                        0, 0, 0, 0,
+                                        SWP_SHOW | SWP_ZORDER);
+                        CheckFlashTimer();
                     }
                 }
             }
         } // end if (hwndActive)
+
     } // end if (!G_pHookData->fProcessingWraparound)
 }
 
@@ -1705,84 +1722,6 @@ static MRESULT EXPENTRY fnwpPager(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
             case WM_SEM2:
                 WinInvalidateRect(hwnd, NULL, FALSE);
             break;
-
-            /*
-             *@@ PGRM_WINDOWCHANGED:
-             *      posted by ProcessMsgsForXPager in the hook
-             *      whenever important window changes are detected.
-             *      This applies to the msgs listed below, but
-             *      not WM_ACTIVATE, for which PGRM_ACTIVECHANGED
-             *      is posted instead.
-             *
-             *      Parameters:
-             *
-             *      --  HWND mp1: window for which the msg came in.
-             *
-             *      --  ULONG mp2: message that came in.
-             *
-             *      mp2 will be one of the following messages:
-             *
-             *      --  WM_CREATE
-             *
-             *      --  WM_DESTROY
-             *
-             *      --  WM_SETWINDOWPARAMS
-             *
-             *      --  WM_WINDOWPOSCHANGED
-             *
-             *@@added V0.9.19 (2002-05-07) [umoeller]
-             */
-
-            /*
-            case PGRM_WINDOWCHANGED:
-                switch ((ULONG)mp2)
-                {
-                    case WM_CREATE:
-                        pgrCreateWinInfo((HWND)mp1);
-                    break;
-
-                    case WM_DESTROY:
-                        pgrFreeWinInfo((HWND)mp1);
-                    break;
-
-                    case WM_SETWINDOWPARAMS:
-                        pgrMarkDirty((HWND)mp1);
-                    break;
-                }
-
-                // refresh the client bitmap
-                WinPostMsg(hwnd,
-                           PGRM_REFRESHCLIENT,
-                           (MPARAM)FALSE,
-                           0);
-            break;
-            */
-
-            /*
-             *@@ PGRM_ACTIVECHANGED:
-             *      posted by ProcessMsgsForXPager in the hook
-             *      whenever the active window has changed.
-             *
-             *      Parameters:
-             *
-             *      --  HWND mp1: window for which WM_ACTIVATE
-             *          with mp1 == TRUE came in.
-             *
-             *      --  mp2: always null.
-             *
-             *@@added V0.9.19 (2002-05-07) [umoeller]
-             */
-
-            /*
-            case PGRM_ACTIVECHANGED:
-                // at this point, start a timer only so we can
-                // defer processing a bit to avoid flicker
-                WinStartTimer(G_habDaemon,
-                              hwnd,
-                              TIMERID_PGR_ACTIVECHANGED,
-                              200);     // 200 ms
-            break;
-            */
 
             /*
              *@@ PGRM_WRAPAROUND:

@@ -928,7 +928,7 @@ PPRIVATEWIDGETCLASS ctrpFindClassFromMenuCommand(USHORT usCmd)
                                                      usCmd - ulOfsVariable);
     }
 
-    return (NULL);
+    return NULL;
 }
 
 /* ******************************************************************

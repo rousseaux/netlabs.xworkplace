@@ -401,7 +401,7 @@ APIRET scxtFreeSecurityContexts(PXWPSECURITYCONTEXT paContexts)
     if (paContexts)
         free(paContexts);
 
-    return (NO_ERROR);
+    return NO_ERROR;
 }
 
 /*

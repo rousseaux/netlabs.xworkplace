@@ -50,11 +50,7 @@ SOMTEMP = $(TEMP)
 
 # Specify the main target.
 
-all: $(OUTPUTDIR)\anand.h \
-     $(OUTPUTDIR)\anos2ptr.h \
-     $(OUTPUTDIR)\anwani.h \
-     $(OUTPUTDIR)\anwcur.h \
-     $(OUTPUTDIR)\xcenter.h \
+all: $(OUTPUTDIR)\xcenter.h \
      $(OUTPUTDIR)\xclslist.h \
      $(OUTPUTDIR)\xdebug.h \
      $(OUTPUTDIR)\xdebug_folder.h \
@@ -117,14 +113,6 @@ RUNSC = sc -p -v -r -maddstar -mnoint -S128000 -C128000
 # using the SOM inference rule above.
 
 # Special macros used here: $(@B) is the current target w/out ext.
-
-$(OUTPUTDIR)\anand.h:            $(@B).idl
-
-$(OUTPUTDIR)\anos2ptr.h:         $(@B).idl
-
-$(OUTPUTDIR)\anwani.h:           $(@B).idl
-
-$(OUTPUTDIR)\anwcur.h:           $(@B).idl
 
 $(OUTPUTDIR)\xcenter.h:          $(@B).idl
 

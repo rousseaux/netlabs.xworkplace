@@ -1801,7 +1801,7 @@ static MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1,
                                      NULL);
                 }
                 else
-                    return (NULL);
+                    return NULL;
 
                 // add orphans; this is done by setting the title
                 // for the "Orphans" recc tree

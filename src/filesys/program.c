@@ -352,7 +352,7 @@ PPROGDETAILS progQueryDetails(WPObject *pProgObject)    // in: either WPProgram 
         }
     }
 
-    return (NULL);
+    return NULL;
 }
 
 /*

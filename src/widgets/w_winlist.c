@@ -1165,7 +1165,7 @@ PLISTNODE FindSwitchNodeFromHWND(PLINKLIST pll,
             return (pNode);
     }
 
-    return (NULL);
+    return NULL;
 }
 
 /*

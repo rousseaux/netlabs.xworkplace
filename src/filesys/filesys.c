@@ -733,7 +733,7 @@ PBYTE fsysFindEAValue(PFEA2LIST pFEA2List2,      // in: file EA list
     */
 
     if (!pFEA2List2)
-        return (NULL);
+        return NULL;
 
     if (    (pFEA2List2->cbList > sizeof(ULONG))
                     // FAT32 and CDFS return 4 for anything here, so
@@ -781,7 +781,7 @@ PBYTE fsysFindEAValue(PFEA2LIST pFEA2List2,      // in: file EA list
 
             if (!pThis->oNextEntryOffset)
                 // this was the last entry:
-                return (NULL);
+                return NULL;
 
             ulOfsThis += pThis->oNextEntryOffset;
 
@@ -790,7 +790,7 @@ PBYTE fsysFindEAValue(PFEA2LIST pFEA2List2,      // in: file EA list
         } // end while
     } // end if (    (pFEA2List2->cbList > sizeof(ULONG)) ...
 
-    return (NULL);
+    return NULL;
 }
 
 // find this many files at a time
@@ -1068,7 +1068,7 @@ static WPFileSystem* RefreshOrAwake(WPFolder *pFolder,
                  )
             )
        )
-        return (NULL);
+        return NULL;
 
     if (!s_ulWPDataFileLen)
         // on first call, cache length of "WPDataFile" string

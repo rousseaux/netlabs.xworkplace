@@ -650,7 +650,7 @@ PFUNCTIONKEY hifFindFunctionKey(PFUNCTIONKEY paFunctionKeys, // in: array of fun
             return (&paFunctionKeys[ul]);
     }
 
-    return (NULL);
+    return NULL;
 }
 
 /*

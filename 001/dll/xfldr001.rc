@@ -746,7 +746,7 @@ BEGIN
     ID_XCSI_TURBOFOLDERS                "Turbo folders"
 
     ID_XCSI_MOUSEKEYBOARDFEATURES       "Mouse and keyboard features"
-    ID_XCSI_ANIMOUSE                    "Animated Mouse Pointers"
+/*     ID_XCSI_ANIMOUSE                    "Animated Mouse Pointers" removed V0.9.19 (2002-06-02) [umoeller] */
     ID_XCSI_XWPHOOK                     "Enable &xwp; Hook"
     ID_XCSI_GLOBALHOTKEYS               "Enable global object hotkeys"
 /*     ID_XCSI_PAGER                       "&pgr;: virtual desktops" removed V0.9.19 (2002-05-28) [umoeller] */
@@ -985,14 +985,6 @@ BEGIN
     ID_CRSI_WIDGET_HEALTH               "Health Monitor"
     ID_CRSI_WIDGET_IPMONITOR            "IP Monitor"
 
-    /* IP monitor */
-    ID_CRSI_IPWGT_GRAPHCOLORS           "Graph colors"
-    ID_CRSI_IPWGT_OTHERCOLORS           "Other colors"
-    ID_CRSI_IPWGT_IN                    "In"
-    ID_CRSI_IPWGT_OUT                   "Out"
-    ID_CRSI_IPWGT_GRAPHINCOLOR          "In-Graph color"
-    ID_CRSI_IPWGT_GRAPHOUTCOLOR         "Out-Graph color"
-
     /* font sample view (all new with V0.9.19) */
     ID_XSSI_FONT_BASELINE               "Show baseline (red line)"
     ID_XSSI_FONT_MAXASCENDER            "Show maximum ascender/descender (gray rectangles on left)"
@@ -1047,6 +1039,11 @@ BEGIN
     ID_CRSI_WINLIST_HIDE                "~Hide"
     ID_CRSI_WINLIST_KILL1               "Kill process"
     ID_CRSI_WINLIST_KILL2               "~Kill process (PID 0x%lX)"
+
+    /* IP monitor */
+    ID_CRSI_IPWGT_GRAPHCOLORS           "Graph colors"
+    ID_CRSI_IPWGT_GRAPHINCOLOR          "Incoming KB"
+    ID_CRSI_IPWGT_GRAPHOUTCOLOR         "Outgoing KB"
 END
 
 /* string IDs for status bar mnemonics (all new with V0.9.14) */
@@ -1367,6 +1364,7 @@ BEGIN
     ID_SCDI_PGR1_CLICK2ACTIVATE        "~Mini-window mouse actions"
     ID_SCDI_PGR1_SHOWSECONDARY         "Show ~secondary windows"
     ID_SCDI_PGR1_SHOWSTICKY            "Show stic~ky windows"
+    ID_SCDI_PGR1_FOLLOWFOCUS           "Desktop follows active ~window"
 
     /* strings formerly in ID_SCD_PAGER_COLORS */
     ID_SCDI_PGR2_COLORS_GROUP          "&pgr; colors"

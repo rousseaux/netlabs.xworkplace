@@ -416,7 +416,7 @@ SOM_Scope PSZ  SOMLINK xwstr_xwpQueryString(XWPString *somSelf)
         }
     }
 
-    return (NULL);
+    return NULL;
 }
 
 /*
@@ -458,7 +458,7 @@ SOM_Scope WPObject*  SOMLINK xwstr_xwpQueryStaticObject(XWPString *somSelf)
     if (_hobjStatic)
         return (_wpclsQueryObject(_WPObject, _hobjStatic));
     else
-        return (NULL);
+        return NULL;
 }
 
 /*

@@ -473,33 +473,31 @@ APIRET wpshStore(WPObject *somSelf,
 {
     ULONG   ulLength = 0;
 
-    if (ppszTarget)
-    {
-        if (*ppszTarget)
-            _wpFreeMem(somSelf, *ppszTarget);
+    if (!ppszTarget)
+        return (ERROR_INVALID_PARAMETER);
 
-        if (    (pcszSource)
-             && (ulLength = strlen(pcszSource))
-           )
-        {
-            APIRET  arc = NO_ERROR;
-            if (*ppszTarget = (PSZ)_wpAllocMem(somSelf,
-                                               ulLength + 1,
-                                               &arc))
-                memcpy(*ppszTarget, pcszSource, ulLength + 1);
-            else
-                return arc;
-        }
+    if (*ppszTarget)
+        _wpFreeMem(somSelf, *ppszTarget);
+
+    if (    (pcszSource)
+         && (ulLength = strlen(pcszSource))
+       )
+    {
+        APIRET  arc = NO_ERROR;
+        if (*ppszTarget = (PSZ)_wpAllocMem(somSelf,
+                                           ulLength + 1,
+                                           &arc))
+            memcpy(*ppszTarget, pcszSource, ulLength + 1);
         else
-            *ppszTarget = NULL;
+            return arc;
     }
     else
-        return (ERROR_INVALID_PARAMETER);
+        *ppszTarget = NULL;
 
     if (pulLength)
         *pulLength = ulLength;
 
-    return (NO_ERROR);
+    return NO_ERROR;
 }
 
 /*
@@ -1146,8 +1144,8 @@ ULONG wpshQueryDraggedObject(PDRAGITEM pdrgItem,
     {
         // get the object pointer:
         // the WPS stores the MINIRECORDCORE in drgItem.ulItemID
-        WPObject *pObject = OBJECT_FROM_PREC(pdrgItem->ulItemID);
-        if (pObject)
+        WPObject *pObject;
+        if (pObject = OBJECT_FROM_PREC(pdrgItem->ulItemID))
         {
             ulrc = 1;
             if (ppObjectFound)
@@ -1162,10 +1160,9 @@ ULONG wpshQueryDraggedObject(PDRAGITEM pdrgItem,
         CHAR    szFullFile[2*CCHMAXPATH];
         ULONG   cbFullFile;
         // get source directory; this always ends in "\"
-        cbFullFile = DrgQueryStrName(pdrgItem->hstrContainerName, // source container
-                                     sizeof(szFullFile),
-                                     szFullFile);
-        if (cbFullFile)
+        if (cbFullFile = DrgQueryStrName(pdrgItem->hstrContainerName, // source container
+                                         sizeof(szFullFile),
+                                         szFullFile))
         {
             // append file name to source directory
             if (DrgQueryStrName(pdrgItem->hstrSourceName,
@@ -1205,6 +1202,9 @@ ULONG wpshQueryDraggedObject(PDRAGITEM pdrgItem,
  *      *phObject will be set to the object handle. Otherwise
  *      it will always be set to NULLHANDLE.
  *
+ *      NOTE: This produces an object handle for the object.
+ *      Use this func only if you really need a handle.
+ *
  *@@added V0.9.3 (2000-04-27) [umoeller]
  */
 
@@ -1238,37 +1238,24 @@ MRESULT wpshQueryDraggedObjectCnr(PCNRDRAGINFO pcdi,
         else
         {
 
-            // accept only default drop operation
-            if (    (pcdi->pDragInfo->usOperation == DO_DEFAULT)
+            if (    // accept only default drop operation
+                    (pcdi->pDragInfo->usOperation == DO_DEFAULT)
+                    // get the item being dragged (PDRAGITEM)
+                 && (pdrgItem = DrgQueryDragitemPtr(pcdi->pDragInfo, 0))
+                    // WPS object?
+                 && (DrgVerifyRMF(pdrgItem, "DRM_OBJECT", NULL))
                )
             {
-                // get the item being dragged (PDRAGITEM)
-                if (pdrgItem = DrgQueryDragitemPtr(pcdi->pDragInfo, 0))
+                // the WPS stores the MINIRECORDCORE of the
+                // object in ulItemID of the DRAGITEM structure;
+                // we use OBJECT_FROM_PREC to get the SOM pointer
+                WPObject *pSourceObject
+                            = OBJECT_FROM_PREC(pdrgItem->ulItemID);
+                if (pSourceObject = objResolveIfShadow(pSourceObject))
                 {
-                    // Desktop object?
-                    if (DrgVerifyRMF(pdrgItem, "DRM_OBJECT", NULL))
-                    {
-                        // the WPS stores the MINIRECORDCORE of the
-                        // object in ulItemID of the DRAGITEM structure;
-                        // we use OBJECT_FROM_PREC to get the SOM pointer
-                        WPObject *pSourceObject
-                                    = OBJECT_FROM_PREC(pdrgItem->ulItemID);
-                        if (pSourceObject = objResolveIfShadow(pSourceObject))
-                        {
-                            // dereference shadows
-                            /* while (     (pSourceObject)
-                                     && (_somIsA(pSourceObject, _WPShadow))
-                                  )
-                                pSourceObject = _wpQueryShadowedObject(pSourceObject,
-                                                    TRUE);  // lock
-                               */
-
-                            // store object handle to output
-                            *phObject = _wpQueryHandle(pSourceObject);
-                            if (*phObject)
-                                usIndicator = DOR_DROP;
-                        }
-                    }
+                    // store object handle to output
+                    if (*phObject = _wpQueryHandle(pSourceObject))
+                        usIndicator = DOR_DROP;
                 }
             }
         }
@@ -2148,138 +2135,6 @@ double wpshQueryDiskSizeFromFolder(WPFolder *somSelf)
     }
 
 #endif
-
-/* ******************************************************************
- *
- *   Object locks
- *
- ********************************************************************/
-
-/*
- *@@ wpshLockObject:
- *      locks the specified object (somSelf) by calling
- *      WPObject::wpRequestObjectMutexSem on it. Before
- *      that, this installs a private exception handler
- *      which makes sure that the object gets unlocked
- *      if an exception occurs or the current thread gets
- *      terminated while the mutex is held.
- *
- *      This uses excHandlerLoud (src/helpers/excpt.c)
- *      as the exception handler, so you get all the bells
- *      and whistles (literally) of the standard XWorkplace
- *      trap logs.
- *
- *      Returns TRUE only if the exception handler was
- *      installed _and_ the object is now locked.
- *
- *      Returns FALSE either if the lock failed, or an
- *      exception occured in the protected block (which
- *      results in the handler jumping back into the middle
- *      of this function, which then decides to return FALSE).
- *
- *      You must ALWAYS call wpshUnlockObject afterwards, as
- *      shown below, or you will definitely get hangs and
- *      traps which are impossible to debug. This is true
- *      even if this function returned FALSE.
- *
- *      This is extremely sick code internally, but makes
- *      it easy to implement proper serialization for WPS
- *      objects.
- *
- *      <B>Usage:</B>
- +
- +          WPSHLOCKSTRUCT Lock = {0};
- +          if (wpshLockObject(&Lock, somSelf))
- +          {
- +              // exception handler installed, object locked:
- +              // do protected processing
- +              ...
- +          }
- +          // else: lock failed, OR an exception occured:
- +          // IN ANY CASE, call "unlock object"
- +          wpshUnlockObject(&Lock);
- *
- *@@added V0.9.7 (2000-12-08) [umoeller]
- */
-
-/* BOOL wpshLockObject(PWPSHLOCKSTRUCT pLock,
-                    WPObject *somSelf)
-{
-    BOOL brc = FALSE;
-
-    memset(pLock, 0, sizeof(*pLock));
-
-    // enter must-complete section!
-    DosEnterMustComplete(&pLock->ulNesting);
-
-    // install exception handler!
-    pLock->ExceptStruct.RegRec2.pfnHandler = (PFN)excHandlerLoud;
-    pLock->ExceptStruct.arc
-            = DosSetExceptionHandler((PEXCEPTIONREGISTRATIONRECORD)&pLock->ExceptStruct.RegRec2);
-    if (pLock->ExceptStruct.arc == NO_ERROR)
-    {
-        // exception handler installed:
-        // set jump buf for exception handler
-        pLock->ExceptStruct.ulExcpt = setjmp(pLock->ExceptStruct.RegRec2.jmpThread);
-        if (pLock->ExceptStruct.ulExcpt == 0)
-        {
-            // setjmp == 0 means no exception occured:
-            // lock the object!
-            pLock->fLocked = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT);
-            if (pLock->fLocked)
-            {
-                // object was locked:
-                // store the object ptr in the extended exception registration record
-                // so we can unlock later
-                pLock->ExceptStruct.RegRec2.pvUser = somSelf;
-                // only then return TRUE
-                brc = TRUE;
-            }
-        }
-        else
-        {
-            // the exception handler puts us here if an exception occured...
-            DosUnsetExceptionHandler((PEXCEPTIONREGISTRATIONRECORD)&pLock->ExceptStruct.RegRec2);
-            // return FALSE
-            brc = FALSE;
-        }
-    }
-
-    return brc;
-} */
-
-/*
- *@@ wpshUnlockObject:
- *      unlocks an object locked with wpshLockObject.
- *      ALWAYS call this after wpshLockObject.
- *
- *      Returns TRUE if the object was unlocked.
- *
- *@@added V0.9.7 (2000-12-08) [umoeller]
- */
-
-/* BOOL wpshUnlockObject(PWPSHLOCKSTRUCT pLock)
-{
-    BOOL brc = FALSE;
-    if (    (pLock->fLocked)
-         && (pLock->ExceptStruct.RegRec2.pvUser)        // has the object
-       )
-    {
-        // pvUser was set to somSelf of the locked object
-        if (!_wpReleaseObjectMutexSem((WPObject*)pLock->ExceptStruct.RegRec2.pvUser))
-        {
-            pLock->ExceptStruct.RegRec2.pvUser = NULL;
-            pLock->fLocked = FALSE;
-            brc = TRUE;
-        }
-    }
-
-    DosUnsetExceptionHandler((PEXCEPTIONREGISTRATIONRECORD)&pLock->ExceptStruct.RegRec2);
-
-    DosExitMustComplete(&pLock->ulNesting);
-
-    return brc;
-} */
 
 /* ******************************************************************
  *

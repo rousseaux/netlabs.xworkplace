@@ -302,8 +302,8 @@ SLDCDATA
                      0          // scale 2 spacing
              };
 
-#define SLIDER_CX           120
-#define SLIDER_CY           60
+#define SLIDER_CX           100
+#define SLIDER_CY           50
 #define SLIDER_WIDTH        14
 #define VALUESET_WIDTH      (SLIDER_CX + SLIDER_WIDTH + 2 * COMMON_SPACING)
 #define PAGE_WIDTH          (VALUESET_WIDTH + SLIDER_WIDTH + 4 * COMMON_SPACING)
@@ -342,6 +342,7 @@ static const CONTROLDEF
     Pgr1ValueSet = CONTROLDEF_TEXT("", ID_SCDI_PGR1_VALUESET,
                                    VALUESET_WIDTH,
                                    SLIDER_CY + SLIDER_WIDTH + 2 * COMMON_SPACING),
+    Pgr1FollowFocusCB = LOADDEF_AUTOCHECKBOX(ID_SCDI_PGR1_FOLLOWFOCUS),
     Pgr1ArrowHotkeysCB = LOADDEF_AUTOCHECKBOX(ID_SCDI_PGR1_ARROWHOTKEYS),
     Pgr1HotkeysCtrlCB = LOADDEF_AUTOCHECKBOX(ID_SCDI_PGR1_HOTKEYS_CTRL),
     Pgr1HotkeysShiftCB = LOADDEF_AUTOCHECKBOX(ID_SCDI_PGR1_HOTKEYS_SHIFT),
@@ -368,6 +369,8 @@ static const DLGHITEM G_dlgPagerGeneral[] =
                         END_TABLE,
                         CONTROL_DEF(&Pgr1ValueSet),
                 END_TABLE,
+            START_ROW(0),
+                CONTROL_DEF(&Pgr1FollowFocusCB),
             START_ROW(0),
                 CONTROL_DEF(&Pgr1ArrowHotkeysCB),
             START_ROW(0),
@@ -410,6 +413,7 @@ typedef struct _PAGERPAGEDATA
  *@@changed V0.9.9 (2001-03-15) [lafaix]: "window" part moved to PagerWindowInitPage
  *@@changed V0.9.19 (2002-05-07) [umoeller]: adjusted for pager rework
  *@@changed V0.9.19 (2002-05-28) [umoeller]: now using dialog formatter
+ *@@changed V0.9.19 (2002-06-02) [umoeller]: added "desktop follows focus" setting
  */
 
 static VOID PagerGeneralInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
@@ -474,6 +478,10 @@ static VOID PagerGeneralInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
         UpdateValueSet(pnbp->hwndDlgPage,
                        pPagerCfg);
 
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SCDI_PGR1_FOLLOWFOCUS,
+                              // this one is reverse
+                              !(pPagerCfg->flPager & PGRFL_NOFOLLOWFOCUS));
+
         // hotkeys
         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SCDI_PGR1_ARROWHOTKEYS,
                               !!(pPagerCfg->flPager & PGRFL_HOTKEYS));
@@ -483,6 +491,7 @@ static VOID PagerGeneralInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                               !!(pPagerCfg->flKeyShift & KC_SHIFT));
         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SCDI_PGR1_HOTKEYS_ALT,
                               !!(pPagerCfg->flKeyShift & KC_ALT));
+
         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SCDI_PGR1_WRAPAROUND,
                               !!(pPagerCfg->flPager & PGRFL_WRAPAROUND));
 
@@ -500,6 +509,7 @@ static VOID PagerGeneralInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                 ID_SCDI_PGR1_Y_TEXT2,
                 ID_SCDI_PGR1_VALUESET,
 
+                ID_SCDI_PGR1_FOLLOWFOCUS,
                 ID_SCDI_PGR1_ARROWHOTKEYS,
                 ID_SCDI_PGR1_WRAPAROUND
             },
@@ -622,6 +632,16 @@ static MRESULT PagerGeneralItemChanged(PNOTEBOOKPAGE pnbp,
                 UpdateValueSet(pnbp->hwndDlgPage,
                                pPagerCfg);
             }
+        break;
+
+        case ID_SCDI_PGR1_FOLLOWFOCUS:
+            LoadPagerConfig(pnbp->pUser);
+            // this one is reverse
+            if (!ulExtra)
+                pPagerCfg->flPager |= PGRFL_NOFOLLOWFOCUS;
+            else
+                pPagerCfg->flPager &= ~PGRFL_NOFOLLOWFOCUS;
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_ENABLE);
         break;
 
         case ID_SCDI_PGR1_ARROWHOTKEYS:
@@ -2041,7 +2061,7 @@ static PLONG GetColorPointer(HWND hwndStatic,
             return (&pPagerCfg->lcolActiveText);
     }
 
-    return (NULL);
+    return NULL;
 }
 
 /*

@@ -47,14 +47,11 @@ interface XWPMouse : WPMouse
 
     ULONG xwpAddMouseMappings2Page(in HWND hwndDlg);
 
-    ULONG xwpAddAnimatedMousePointerPage(in HWND hwndDlg);
-
 #ifdef __SOMIDL__
   implementation {
 
     releaseorder: xwpAddMouseMovementPage,
-                  xwpAddMouseMappings2Page,
-                  xwpAddAnimatedMousePointerPage;
+                  xwpAddMouseMappings2Page;
 
     /*
      * Class Modifiers:
@@ -75,26 +72,14 @@ interface XWPMouse : WPMouse
      *
      */
 
-    PSZ         pszCurrentSettings;
-    HWND        hwndNotebookPage;
-    PRECORDCORE pcnrrec;
-
     /*
      * WPMouse methods overridden by XWPMouse:
      *
      */
 
-    wpInitData: override;
-    wpUnInitData: override;
-    wpSetup: override;
-
-    wpSaveState: override;
-    wpRestoreState: override;
-
     wpFilterPopupMenu: override;
 
     wpAddMouseCometPage: override;
-    wpAddMousePtrPage: override;
     wpAddMouseMappingsPage: override;
 
 #ifdef __PRIVATE__
@@ -142,10 +127,6 @@ interface M_XWPMouse : M_WPMouse
      */
 
     wpclsInitData: override;
-
-    wpclsUnInitData: override;
-
-    wpclsQuerySettingsPageSize: override;
 
   };
 #endif /* __SOMIDL__ */

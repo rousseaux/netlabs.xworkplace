@@ -351,7 +351,7 @@ static SOMAny* GetMonitorObject(WPFolder *somSelf)
 #ifdef __DEBUG__
     cmnLog(__FILE__, __LINE__, __FUNCTION__,
            "Function invoked on non-folder object.");
-    return (NULL);
+    return NULL;
 #endif
 }
 
@@ -709,7 +709,7 @@ static WPObject* FastFindFSFromUpperName(WPFolder *pFolder,
                          treeCompareStrings))
         return (pNode->pobj);
 
-    return (NULL);
+    return NULL;
 }
 
 /*
@@ -784,7 +784,7 @@ WPObject* fdrFastFindFSFromName(WPFolder *pFolder,
                                         pszUpperRealName));
     }
 
-    return (NULL);
+    return NULL;
 }
 
 /*
@@ -1716,7 +1716,7 @@ static WPFileSystem* ProcessParticles(WPFolder *pCurrentFolder,
     } // end while (    (pStartOfParticle)
            //         && (!fQuit)
 
-    return (NULL);
+    return NULL;
 }
 
 /*

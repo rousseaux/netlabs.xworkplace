@@ -793,7 +793,7 @@ VOID EXPENTRY PwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
     ULONG       ul;
 
     GraphsGroup.pcszText = pcmnGetString(ID_CRSI_IPWGT_GRAPHCOLORS);
-    OthersGroup.pcszText = pcmnGetString(ID_CRSI_IPWGT_OTHERCOLORS);
+    OthersGroup.pcszText = pcmnGetString(ID_CRSI_PWGT_OTHERCOLORS);
 
     OKButton.pcszText = pcmnGetString(DID_OK);
     CancelButton.pcszText = pcmnGetString(DID_CANCEL);

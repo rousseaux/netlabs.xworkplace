@@ -2232,8 +2232,8 @@ ULONG stbTranslateSingleMnemonics(SOMClass *pObject,       // in: object
         if (p = strstr(pstrText->psz, "\ty")) // type
         {
             // offset where we found this:
-            PSZ p2 = _wpQueryType(pObject);
-            if (!p2)
+            PSZ p2;
+            if (!(p2 = _wpQueryType(pObject)))
                 p2 = "?";
             xstrrpl(pstrText,
                     // ofs of first char to replace:
@@ -2534,10 +2534,10 @@ ULONG stbTranslateSingleMnemonics(SOMClass *pObject,       // in: object
  *@@added V0.9.19 (2002-06-02) [umoeller]
  */
 
-static VOID ReplaceKeyWithDouble(XSTRING *pstrText,
-                                 PCSZ pcszKey,
-                                 double dValue,
-                                 PCOUNTRYSETTINGS pcs)
+static VOID ReplaceKeyWithDouble(XSTRING *pstrText, // in/out: status bar text
+                                 PCSZ pcszKey,      // in: two-character key to search for
+                                 double dValue,     // in: value to replace three chars with
+                                 PCOUNTRYSETTINGS pcs)  // in: country settings for formatting
 {
     CHAR        szTemp[300];
     PSZ         p = pstrText->psz;
@@ -2948,7 +2948,8 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
 
     // else:
     xstrClear(&strText);
-    return (NULL);
+
+    return NULL;
 }
 
 /* ******************************************************************
@@ -3080,7 +3081,6 @@ static MRESULT EXPENTRY fncbWPSStatusBarClassSelected(HWND hwndCnr,
                                                       MPARAM mphwndInfo)
 {
     PWPSLISTITEM pwps = (PWPSLISTITEM)mpwps;
-    // PSTATUSBARSELECTCLASS psbsc = (PSTATUSBARSELECTCLASS)ulpsbsc;
     CHAR szInfo[2000];
     MRESULT mrc = (MPARAM)FALSE;
     PSZ pszClassTitle;
@@ -3089,8 +3089,7 @@ static MRESULT EXPENTRY fncbWPSStatusBarClassSelected(HWND hwndCnr,
 
     if (pwps->pClassObject)
     {
-        pszClassTitle = _wpclsQueryTitle(pwps->pClassObject);
-        if (pszClassTitle)
+        if (pszClassTitle = _wpclsQueryTitle(pwps->pClassObject))
             sprintf(szInfo, "%s (\"%s\")\n",
                     pwps->pszClassName,
                     pszClassTitle);
@@ -3234,16 +3233,21 @@ VOID stbStatusBar1InitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
     if (flFlags & CBI_ENABLE)
     {
 #ifndef __ALWAYSSUBCLASS__
-        BOOL fEnable = !cmnQuerySetting(sfNoSubclassing);
-        WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_ENABLESTATUSBAR, fEnable);
-        WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_SBSTYLE_3RAISED, fEnable);
-        WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_SBSTYLE_3SUNKEN, fEnable);
-        WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_SBSTYLE_4MENU,   fEnable);
-        WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_SBSTYLE_4RECT,   fEnable);
-
-        WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_SBFORICONVIEWS,   fEnable);
-        WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_SBFORTREEVIEWS,   fEnable);
-        WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_SBFORDETAILSVIEWS,   fEnable);
+        static const ULONG aulIDs[] =
+            {
+                ID_XSDI_ENABLESTATUSBAR,
+                ID_XSDI_SBSTYLE_3RAISED,
+                ID_XSDI_SBSTYLE_3SUNKEN,
+                ID_XSDI_SBSTYLE_4MENU,
+                ID_XSDI_SBSTYLE_4RECT,
+                ID_XSDI_SBFORICONVIEWS,
+                ID_XSDI_SBFORTREEVIEWS,
+                ID_XSDI_SBFORDETAILSVIEWS
+            };
+        winhEnableControls2(pnbp->hwndDlgPage,
+                            aulIDs,
+                            ARRAYITEMCOUNT(aulIDs),
+                            !cmnQuerySetting(sfNoSubclassing));
 #endif
     }
 }
@@ -3548,7 +3552,8 @@ typedef struct _KEYARRAYITEM
     ULONG       ulDescription;          // string ID for description
 } KEYARRAYITEM, *PKEYARRAYITEM;
 
-static KEYARRAYITEM G_aFormatSubKeys[] =
+static const KEYARRAYITEM
+    G_aFormatSubKeys[] =
     {
         1, "b", ID_XSSI_SBMNC_1,       // "in bytes"
         2, "k", ID_XSSI_SBMNC_2,       // "in kBytes"
@@ -3624,7 +3629,7 @@ static KEYARRAYITEM G_aFormatSubKeys[] =
  */
 
 static VOID InsertKeysIntoMenu(HWND hwndMenu,
-                               PKEYARRAYITEM paKeys,
+                               const KEYARRAYITEM *paKeys,
                                ULONG cKeys,
                                BOOL fSeparatorBefore)
 {
@@ -3771,6 +3776,7 @@ static MRESULT CreateKeysMenu(PSTATUSBARPAGEDATA psbpd,
  *@@changed V0.9.5 (2000-10-07) [umoeller]: added "Dereference shadows" for multiple mode
  *@@changed V0.9.14 (2001-07-31) [umoeller]: added "Keys" buttons support
  *@@changed V0.9.14 (2001-07-31) [umoeller]: "Undo" didn't undo everything, fixed
+ *@@changed V0.9.19 (2002-06-02) [umoeller]: fixed minor memory leak
  */
 
 MRESULT stbStatusBar2ItemChanged(PNOTEBOOKPAGE pnbp,
@@ -3944,7 +3950,7 @@ MRESULT stbStatusBar2ItemChanged(PNOTEBOOKPAGE pnbp,
             {
                 // one of the menu item IDs from the "Keys" menu:
                 // look up the item in the menu we built then
-                PSZ psz = NULL;
+                PSZ psz;
                 if (    (psbpd->hwndKeysMenu)
                      && (psz = winhQueryMenuItemText(psbpd->hwndKeysMenu,
                                                      ulItemID))
@@ -4021,6 +4027,9 @@ MRESULT stbStatusBar2ItemChanged(PNOTEBOOKPAGE pnbp,
 
                                 fSave = TRUE;
                                 fReadEFs = TRUE;
+
+                                free(pszOld);
+                                        // was missing V0.9.19 (2002-06-02) [umoeller]
                             }
                         }
                     }

@@ -1864,7 +1864,7 @@ static PICONPOS GetICONPOS(PORDEREDLISTITEM poli,
         else
             break;
     }
-    return (NULL);
+    return NULL;
 }
 
 /*
