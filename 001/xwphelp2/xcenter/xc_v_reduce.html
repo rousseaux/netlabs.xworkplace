@@ -21,9 +21,15 @@ correct.
 
 <P><B>Notes:</B>
 
-<UL><LI>This probably doesn't work on Warp 3.
+<UL>
 
-<P><LI>This setting is global and will affect the entire system.
+<!-- V0.9.19: added ifndef -->
+<IFNDEF __EWORKPLACE__>
+<LI>This probably doesn't work on Warp 3.
+<P>
+</IFNDEF>
+
+<LI>This setting is global and will affect the entire system.
 It can lead to the same problems as with &warpcenter;'s setting (most notably
 scroll bars on the WPS Desktop), so use this with care.
 

@@ -526,10 +526,10 @@ BOOL hifFreeFunctionKeys(PFUNCTIONKEY paFunctionKeys)
     if (paFunctionKeys)
     {
         free(paFunctionKeys);
-        return (TRUE);
+        return TRUE;
     }
 
-    return (FALSE);
+    return FALSE;
 }
 
 /*
@@ -2952,7 +2952,7 @@ MRESULT hifMouseCornersItemChanged(PNOTEBOOKPAGE pnbp,
     BOOL    fSave = TRUE;
 
     if (G_fShutUpSlider)
-        return (0);             // V0.9.9 (2001-03-27) [umoeller]
+        return 0;             // V0.9.9 (2001-03-27) [umoeller]
 
     _Pmpf((__FUNCTION__ ": usItemID: %d ulExtra: %d", ulItemID, ulExtra));
     _Pmpf(("  selected index: %d", G_ulScreenCornerSelectedIndex));

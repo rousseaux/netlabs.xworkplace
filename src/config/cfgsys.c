@@ -904,7 +904,8 @@ VOID cfgConfigInitPage(PNOTEBOOKPAGE pnbp,
                                            500, 100*1000,
                                            ulDiskIdle);
 
-                break; } */
+                }
+                break;  */
 
                 /*
                  * SP_FAT:
@@ -1856,7 +1857,8 @@ MRESULT cfgConfigItemChanged(PNOTEBOOKPAGE pnbp,
                             csysSetParameter(&pszConfigSys, szSearchKey, szTemp,
                                     TRUE); // convert to upper case if necessary
 
-                        break; } */
+                        }
+                        break;  */
 
                         /*
                          * SP_FAT:
@@ -2174,7 +2176,8 @@ MRESULT cfgConfigItemChanged(PNOTEBOOKPAGE pnbp,
                                            500, 100*1000,
                                            60*1000);
 
-                break; } */
+                }
+                break;  */
 
                 case SP_FAT:
                 {
@@ -2300,7 +2303,8 @@ MRESULT cfgConfigItemChanged(PNOTEBOOKPAGE pnbp,
                                            500, 100*1000,
                                            1000);
 
-                break; } */
+                }
+                break;  */
 
                 case SP_FAT:
                     winhSetDlgItemChecked(hwndDlgPage, ID_OSDI_FSINSTALLED, TRUE);

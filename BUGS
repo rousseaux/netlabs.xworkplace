@@ -46,14 +46,25 @@ FIXED SINCE 0.9.18
 
     --  XCenter doesn't save its height when scaling.
 
+    --  hatching doesn't disappear for program objects
+
+--  lost icons for FTP-PM, Lotus Approach
 
 
 CURRENT PROBLEMS
 ----------------
 
---  XCenter:
+--  XFldProgramFile: Parameter and Working dir settings
+    specified in a settings notebook are presently ignored.
 
-    --  hatching doesn't disappear for program objects
+--  WPProgramFile objects have a menu item called "Create Program
+    Object". This disappears in XWPProgramFile and is replaced with
+    "Create Another". I think the functionality is the same, but it
+    is a very confusing menu item as it doesn't "Create Another"
+    instance of the same class, but rather an instance of WPProgram
+    or XWPProgram.
+
+--  dragging font files to install don't work
 
 --  shutdown: waits forever on exceptions to finish
 
@@ -76,8 +87,6 @@ CURRENT PROBLEMS
     --  xshutdown in xwp folder has default vio icon
 
     --  pronews.exe shows default icon in program object
-
-    --  lost icons for FTP-PM, Lotus Approach
 
 --  when you open the object properties of an application from the File
     Types tab of the Workplace Shell object, the icon disappears. Selecting

@@ -26,7 +26,7 @@ Christian Hennecke <christian.hennecke@ruhr-uni-bochum.de> V0.9.18 (2002-02-06) 
 
 Italian (updated V0.9.3 (2000-04-08) [umoeller])
 Obelix <nbrion@box.seven.it>
-Gabriele Gamba <ggamba@tiscalinet.it>
+Gabriele Gamba <ggamba@tiscalinet.it> http://www.quasarbbs.net/xwp/
 Loris Rinaldo <xloris@yahoo.com>
 
 Japanese:

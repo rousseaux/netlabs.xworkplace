@@ -642,7 +642,7 @@ static BOOL ParseTraysList(XCenter *somSelf,
             && (brc)
           )
     {
-        // widget list comes next in square brackets
+        // tray with widgets list comes next in square brackets
         PCSZ    pOpen,
                 pClose;
         if (    (!(pOpen = strchr(pTrayThis, '[')))
@@ -1463,62 +1463,62 @@ BOOL ctrpSaveToFile(PCSZ pszDest,
  *@@ ctrpReadFromFile:
  *      returns a packed representation of the widget.
  *
- *      If not NULL, ppszSetup contains the widget class name,
- *      followed by a '\r\n' pair, and followed by the widget
- *      setup string.
+ *      Returns:
  *
- *      It is the responsability of the caller to free the
- *      memory block pointed to by ppszSetup.
+ *      --  NO_ERROR if the operation was successful. In this case,
+ *          *ppszClass and *ppszSetup receive a malloc'd buffer
+ *          each with the widget class name and setup string to
+ *          be freed by the caller.
  *
- *      Returns TRUE if the operation was successful (in this case,
- *      *ppszSetup points to the data).  Returns FALSE otherwise (in
- *      this case, *ppszSetup is NULL).
+ *      --  ERROR_NOT_ENOUGH_MEMORY
+ *
+ *      --  ERROR_BAD_FORMAT: file format is invalid.
+ *
+ *      plus the error codes of DosOpen and the like.
  *
  *@@added V0.9.14 (2001-07-30) [lafaix]
+ *@@changed V0.9.19 (2002-05-22) [umoeller]: mostly rewritten, prototype changed; now returning APIRET and ready-made strings
  */
 
-BOOL ctrpReadFromFile(PCSZ pszSource,
-                      PSZ *ppszSetup)
+APIRET ctrpReadFromFile(PCSZ pszSource,     // in: source file name
+                        PSZ *ppszClass,     // out: widget class name
+                        PSZ *ppszSetup)     // out: widget setup string
 {
+    APIRET      arc;
     HFILE       hf;
     ULONG       ulAction;
-    FILESTATUS3 fs3 = {0};
+    FILESTATUS3 fs3;
     PSZ         pszBuff = NULL;
-    BOOL        brc = FALSE;
 
-    if (DosOpen((PSZ)pszSource,
-                &hf,
-                &ulAction,
-                0L,
-                0,
-                FILE_OPEN,
-                OPEN_ACCESS_READONLY|OPEN_SHARE_DENYWRITE,
-                0) == NO_ERROR)
+    if (!(arc = DosOpen((PSZ)pszSource,
+                        &hf,
+                        &ulAction,
+                        0L,
+                        0,
+                        FILE_OPEN,
+                        OPEN_ACCESS_READONLY | OPEN_SHARE_DENYWRITE,
+                        0)))
     {
         // we will read the file in just one block,
         // so we must know its size
-        if (DosQueryFileInfo(hf,
-                             FIL_STANDARD,
-                             &fs3,
-                             sizeof(fs3)) == NO_ERROR)
+        if (!(arc = DosQueryFileInfo(hf,
+                                     FIL_STANDARD,
+                                     &fs3,
+                                     sizeof(fs3))))
         {
-            pszBuff = malloc(fs3.cbFile+1);
-            if (pszBuff)
+            if (!(pszBuff = malloc(fs3.cbFile + 1)))
             {
-                if (DosRead(hf,
-                            pszBuff,
-                            fs3.cbFile,
-                            &ulAction) == NO_ERROR)
+                arc = ERROR_NOT_ENOUGH_MEMORY;
+                _Pmpf((__FUNCTION__ ": malloc I failed (%d bytes)", fs3.cbFile + 1));
+            }
+            else
+            {
+                if (!(arc = DosRead(hf,
+                                    pszBuff,
+                                    fs3.cbFile,
+                                    &ulAction)))
                 {
                     pszBuff[fs3.cbFile] = 0;
-                    brc = TRUE;
-                }
-                else
-                {
-                    // an error occured while reading data; we must free
-                    // our buffer so that no memory leaks
-                    free(pszBuff);
-                    pszBuff = NULL;
                 }
             }
         }
@@ -1526,9 +1526,39 @@ BOOL ctrpReadFromFile(PCSZ pszSource,
         DosClose(hf);
     }
 
-    *ppszSetup = pszBuff;
+    if (!arc)
+    {
+        ULONG   ulClassLen, ulSetupLen;
+        PSZ     pSeparator;
+        if (    (!(pSeparator = strstr(pszBuff, "\r\n")))
+             || (!(ulClassLen = pSeparator - pszBuff))
+             || (!(ulSetupLen = strlen(pSeparator + 2)))
+           )
+            arc = ERROR_BAD_FORMAT;
+        else
+        {
+            if (!(*ppszClass = malloc(ulClassLen + 1)))
+                arc = ERROR_NOT_ENOUGH_MEMORY;
+            else if (!(*ppszSetup = malloc(ulSetupLen + 1)))
+            {
+                free(*ppszClass);
+                arc = ERROR_NOT_ENOUGH_MEMORY;
+            }
+            else
+            {
+                memcpy(*ppszClass, pszBuff, ulClassLen);
+                (*ppszClass)[ulClassLen] = '\0';
+                pSeparator += 2;
+                memcpy(*ppszSetup, pSeparator, ulSetupLen);
+                (*ppszSetup)[ulSetupLen] = '\0';
+            }
+        }
+    }
 
-    return (brc);
+    if (pszBuff)
+        free(pszBuff);
+
+    return (arc);
 }
 
 
@@ -1580,23 +1610,26 @@ static SLDCDATA
                      0           // scale 2 spacing
              };
 
-#define VIEW_WIDTH              200
+#define VIEW_TABLE_WIDTH    200
+#define HALF_TABLE_WIDTH    ((VIEW_TABLE_WIDTH / 2) - COMMON_SPACING - GROUP_INNER_SPACING_X)
+#define DESCRTXT_WIDTH      15
+#define SLIDER_WIDTH        (HALF_TABLE_WIDTH - 4 * COMMON_SPACING - DESCRTXT_WIDTH )
 
 static const CONTROLDEF
-    FrameGroup = LOADDEF_GROUP(ID_XRDI_VIEW_FRAMEGROUP, VIEW_WIDTH),
+    FrameGroup = LOADDEF_GROUP(ID_XRDI_VIEW_FRAMEGROUP, VIEW_TABLE_WIDTH),
     ReduceDesktopCB = LOADDEF_AUTOCHECKBOX(ID_CRDI_VIEW_REDUCEWORKAREA),
     AlwaysOnTopCB = LOADDEF_AUTOCHECKBOX(ID_CRDI_VIEW_ALWAYSONTOP),
     AnimateCB = LOADDEF_AUTOCHECKBOX(ID_CRDI_VIEW_ANIMATE),
     AutoHideCB = LOADDEF_AUTOCHECKBOX(ID_CRDI_VIEW_AUTOHIDE),
     DelayTxt1 = LOADDEF_TEXT(ID_CRDI_VIEW_AUTOHIDE_TXT1),
     DelaySlider = CONTROLDEF_SLIDER(ID_CRDI_VIEW_AUTOHIDE_SLIDER, 108, 14, &DelaySliderCData),
-    DelayTxt2 = CONTROLDEF_TEXT("TBR", ID_CRDI_VIEW_AUTOHIDE_TXT2, SZL_AUTOSIZE, SZL_AUTOSIZE),
+    DelayTxt2 = CONTROLDEF_TEXT_CENTER("TBR", ID_CRDI_VIEW_AUTOHIDE_TXT2, DESCRTXT_WIDTH, SZL_AUTOSIZE),
     AutoHideClickCB = LOADDEF_AUTOCHECKBOX(ID_CRDI_VIEW_AUTOHIDE_CLICK),
     AutoScreenBorderCB = LOADDEF_AUTOCHECKBOX(ID_CRDI_VIEW_AUTOSCREENBORDER),
-    PriorityGroup = LOADDEF_GROUP(ID_CRDI_VIEW_PRTY_GROUP, VIEW_WIDTH),
-    PrioritySlider = CONTROLDEF_SLIDER(ID_CRDI_VIEW_PRTY_SLIDER, 96, 16, &PrioritySliderCData),
-    PriorityTxt2 = CONTROLDEF_TEXT("TBR", ID_CRDI_VIEW_PRTY_TEXT, SZL_AUTOSIZE, SZL_AUTOSIZE),
-    PositionGroup = LOADDEF_GROUP(ID_CRDI_VIEW_POSITION_GROUP, VIEW_WIDTH),
+    PriorityGroup = LOADDEF_GROUP(ID_CRDI_VIEW_PRTY_GROUP, HALF_TABLE_WIDTH),
+    PrioritySlider = CONTROLDEF_SLIDER(ID_CRDI_VIEW_PRTY_SLIDER, SLIDER_WIDTH, 16, &PrioritySliderCData),
+    PriorityTxt2 = CONTROLDEF_TEXT_CENTER("TBR", ID_CRDI_VIEW_PRTY_TEXT, DESCRTXT_WIDTH, SZL_AUTOSIZE),
+    PositionGroup = LOADDEF_GROUP(ID_CRDI_VIEW_POSITION_GROUP, HALF_TABLE_WIDTH),
     TopOfScreenRadio = LOADDEF_FIRST_AUTORADIO(ID_CRDI_VIEW_TOPOFSCREEN),
     BottomOfScreenRadio = LOADDEF_NEXT_AUTORADIO(ID_CRDI_VIEW_BOTTOMOFSCREEN);
 
@@ -1625,17 +1658,16 @@ static const DLGHITEM G_dlgXCenterView[] =
                         CONTROL_DEF(&AutoScreenBorderCB),
                 END_TABLE,
             START_ROW(0),
-                START_GROUP_TABLE(&PriorityGroup),
-                    START_ROW(ROW_VALIGN_CENTER),
-                        CONTROL_DEF(&PrioritySlider),
-                        CONTROL_DEF(&PriorityTxt2),
-                END_TABLE,
-            START_ROW(0),
                 START_GROUP_TABLE(&PositionGroup),
                     START_ROW(0),
                         CONTROL_DEF(&TopOfScreenRadio),
                     START_ROW(0),
                         CONTROL_DEF(&BottomOfScreenRadio),
+                END_TABLE,
+                START_GROUP_TABLE(&PriorityGroup),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&PrioritySlider),
+                        CONTROL_DEF(&PriorityTxt2),
                 END_TABLE,
             START_ROW(0),       // notebook buttons (will be moved)
                 CONTROL_DEF(&G_UndoButton),         // common.c
@@ -1968,12 +2000,12 @@ static SLDCDATA
                      0           // scale 2 spacing
              };
 
-#define STYLE_SLIDERS_WIDTH         75
+#define STYLE_SLIDERS_WIDTH         SLIDER_WIDTH        // from above
 #define STYLE_SLIDERS_HEIGHT        15
-#define STYLE_SLIDERTEXT_WIDTH      15
+#define STYLE_SLIDERTEXT_WIDTH      DESCRTXT_WIDTH      // from above
 
 static const CONTROLDEF
-    BorderWidthGroup = LOADDEF_GROUP(ID_CRDI_VIEW2_3DBORDER_GROUP, SZL_AUTOSIZE),
+    BorderWidthGroup = LOADDEF_GROUP(ID_CRDI_VIEW2_3DBORDER_GROUP, HALF_TABLE_WIDTH),
     BorderWidthSlider =
         {
                 WC_SLIDER,
@@ -1990,13 +2022,13 @@ static const CONTROLDEF
                 COMMON_SPACING,
                 &BorderWidthSliderCData
         },
-    BorderWidthText = CONTROLDEF_TEXT(
+    BorderWidthText = CONTROLDEF_TEXT_CENTER(
                             "M",           // to be replaced
                             ID_CRDI_VIEW2_3DBORDER_TEXT,
                             STYLE_SLIDERTEXT_WIDTH,
                             -1),
     DrawAll3DBordersCB = LOADDEF_AUTOCHECKBOX(ID_CRDI_VIEW2_ALL3DBORDERS),
-    BorderSpacingGroup = LOADDEF_GROUP(ID_CRDI_VIEW2_BDRSPACE_GROUP, SZL_AUTOSIZE),
+    BorderSpacingGroup = LOADDEF_GROUP(ID_CRDI_VIEW2_BDRSPACE_GROUP, HALF_TABLE_WIDTH),
     BorderSpacingSlider =
         {
                 WC_SLIDER,
@@ -2013,12 +2045,12 @@ static const CONTROLDEF
                 COMMON_SPACING,
                 &BorderSpacingSliderCData
         },
-    BorderSpacingText = CONTROLDEF_TEXT(
+    BorderSpacingText = CONTROLDEF_TEXT_CENTER(
                             "M",           // to be replaced
                             ID_CRDI_VIEW2_BDRSPACE_TEXT,
                             STYLE_SLIDERTEXT_WIDTH,
                             -1),
-    WidgetSpacingGroup = LOADDEF_GROUP(ID_CRDI_VIEW2_WGTSPACE_GROUP, SZL_AUTOSIZE),
+    WidgetSpacingGroup = LOADDEF_GROUP(ID_CRDI_VIEW2_WGTSPACE_GROUP, HALF_TABLE_WIDTH),
     WidgetSpacingSlider =
         {
                 WC_SLIDER,
@@ -2035,14 +2067,14 @@ static const CONTROLDEF
                 COMMON_SPACING,
                 &WidgetSpacingSliderCData
         },
-    WidgetSpacingText = CONTROLDEF_TEXT(
+    WidgetSpacingText = CONTROLDEF_TEXT_CENTER(
                             "M",           // to be replaced
                             ID_CRDI_VIEW2_WGTSPACE_TEXT,
                             STYLE_SLIDERTEXT_WIDTH,
                             -1),
     SizingBarsCB = LOADDEF_AUTOCHECKBOX(ID_CRDI_VIEW2_SIZINGBARS),
     SpacingLinesCB = LOADDEF_AUTOCHECKBOX(ID_CRDI_VIEW2_SPACINGLINES),
-    DefWidgetStylesGroup = LOADDEF_GROUP(ID_CRDI_VIEW2_DEFSTYLES_GROUP, SZL_AUTOSIZE),
+    DefWidgetStylesGroup = LOADDEF_GROUP(ID_CRDI_VIEW2_DEFSTYLES_GROUP, HALF_TABLE_WIDTH),
 
     FlatButtonsCB = LOADDEF_AUTOCHECKBOX(ID_CRDI_VIEW2_FLATBUTTONS),
     SunkBordersCB = LOADDEF_AUTOCHECKBOX(ID_CRDI_VIEW2_SUNKBORDERS),
@@ -2934,7 +2966,6 @@ MRESULT ctrpWidgetsItemChanged(PNOTEBOOKPAGE pnbp,
                                 // here.
                                 CHAR        achCnr[CCHMAXPATH],
                                             achSrc[CCHMAXPATH];
-                                PSZ         pszBuff;
 
                                 // the dnd part guaranties the following
                                 // will not overflow
@@ -2948,58 +2979,53 @@ MRESULT ctrpWidgetsItemChanged(PNOTEBOOKPAGE pnbp,
                                 if ((strlen(achCnr)+strlen(achSrc)) < (CCHMAXPATH-1))
                                 {
                                     CHAR achAll[CCHMAXPATH];
+                                    PSZ pszClass, pszSetup;
+                                    APIRET arc;
 
                                     strcpy(achAll, achCnr);
                                     strcat(achAll, achSrc);
 
-                                    ctrpReadFromFile(achAll, &pszBuff);
-
-                                    if (pszBuff)
+                                    if (!(arc = ctrpReadFromFile(achAll,
+                                                                 &pszClass,
+                                                                 &pszSetup)))
                                     {
-                                        PSZ pszSetupString = strstr(pszBuff, "\r\n");
+                                        // it looks like it is a valid
+                                        // widget settings data
+                                        ULONG ulIndex = -2;
 
-                                        if (pszSetupString)
+                                        if (G_precAfter == (PWIDGETRECORD)CMA_FIRST)
                                         {
-                                            // it looks like it is a valid
-                                            // widget settings data
-                                            ULONG ulIndex = -2;
+                                            // copy before index 0
+                                            ulIndex = 0;
+                                        }
+                                        else if (G_precAfter == (PWIDGETRECORD)CMA_LAST)
+                                        {
+                                            // shouldn't happen
+                                            DosBeep(100, 100);
+                                        }
+                                        else
+                                        {
+                                            // we get the record _before_ the draggee
+                                            // (CN_DRAGAFTER), but xwpMoveWidget wants
+                                            // the index of the widget _before_ which the
+                                            // widget should be inserted:
+                                            ulIndex = G_precAfter->Position.ulWidgetIndex + 1; // ulRootIndex + 1;
+                                        }
+                                        if (ulIndex != -2)
+                                        {
+                                            WIDGETPOSITION pos2;
+                                            pos2.ulTrayWidgetIndex = -1;
+                                            pos2.ulTrayIndex = -1;
+                                            pos2.ulWidgetIndex = ulIndex;
 
-                                            if (G_precAfter == (PWIDGETRECORD)CMA_FIRST)
-                                            {
-                                                // copy before index 0
-                                                ulIndex = 0;
-                                            }
-                                            else if (G_precAfter == (PWIDGETRECORD)CMA_LAST)
-                                            {
-                                                // shouldn't happen
-                                                DosBeep(100, 100);
-                                            }
-                                            else
-                                            {
-                                                // we get the record _before_ the draggee
-                                                // (CN_DRAGAFTER), but xwpMoveWidget wants
-                                                // the index of the widget _before_ which the
-                                                // widget should be inserted:
-                                                ulIndex = G_precAfter->Position.ulWidgetIndex + 1; // ulRootIndex + 1;
-                                            }
-                                            if (ulIndex != -2)
-                                            {
-                                                WIDGETPOSITION pos2;
-                                                pos2.ulTrayWidgetIndex = -1;
-                                                pos2.ulTrayIndex = -1;
-                                                pos2.ulWidgetIndex = ulIndex;
-
-                                                *pszSetupString = 0;
-                                                pszSetupString += 2;
-
-                                                _xwpCreateWidget(pnbp->inbp.somSelf,
-                                                                 pszBuff,
-                                                                 pszSetupString,
-                                                                 &pos2);
-                                            }
+                                            _xwpCreateWidget(pnbp->inbp.somSelf,
+                                                             pszClass,
+                                                             pszSetup,
+                                                             &pos2);
                                         }
 
-                                        free(pszBuff);
+                                        free(pszClass);
+                                        free(pszSetup);
                                     }
                                 }
                             }

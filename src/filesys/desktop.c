@@ -373,7 +373,7 @@ BOOL dtpQuerySetup(WPDesktop *somSelf,
         free(pszTemp);
     } */
 
-    return (TRUE);
+    return TRUE;
 }
 
 /* ******************************************************************
@@ -615,12 +615,12 @@ BOOL dtpMenuItemSelected(XFldDesktop *somSelf,
         if (ulMenuId2 == ID_XFMI_OFS_RESTARTWPS)
         {
             xsdInitiateRestartWPS(FALSE);   // restart Desktop, no logoff
-            return (TRUE);
+            return TRUE;
         }
         else if (ulMenuId2 == ID_XFMI_OFS_LOGOFF)
         {
             xsdInitiateRestartWPS(TRUE);    // logoff
-            return (TRUE);
+            return TRUE;
         }
 #ifndef __NOXSHUTDOWN__
         else if (    (cmnQuerySetting(sfXShutdown))
@@ -632,7 +632,7 @@ BOOL dtpMenuItemSelected(XFldDesktop *somSelf,
             if (*pulMenuId == WPMENUID_SHUTDOWN)
             {
                 xsdInitiateShutdown();
-                return (TRUE);
+                return TRUE;
             }
             else if (ulMenuId2 == ID_XFMI_OFS_OS2_SHUTDOWN)
             {
@@ -640,7 +640,7 @@ BOOL dtpMenuItemSelected(XFldDesktop *somSelf,
                 // have parent method called with default shutdown menu item ID
                 // to start OS/2 shutdown...
                 *pulMenuId = WPMENUID_SHUTDOWN;
-                return (FALSE);
+                return FALSE;
             }
         }
 #endif
@@ -651,7 +651,7 @@ BOOL dtpMenuItemSelected(XFldDesktop *somSelf,
     {
         cmnShowProductInfo(NULLHANDLE,      // owner
                            MMSOUND_SYSTEMSTARTUP);
-        return (TRUE);
+        return TRUE;
     }
 #endif
 
@@ -662,14 +662,14 @@ BOOL dtpMenuItemSelected(XFldDesktop *somSelf,
         if (*pulMenuId == DEBUG_MENUID_LISTHEAP)
         {
             memdCreateMemDebugWindow();
-            return (TRUE);
+            return TRUE;
         }
         else if (*pulMenuId == DEBUG_MENUID_RELEASEFREED)
         {
             HPOINTER hptrOld = winhSetWaitPointer();
             memdReleaseFreed();
             WinSetPointer(HWND_DESKTOP, hptrOld);
-            return (TRUE);
+            return TRUE;
         }
     #endif
 
@@ -698,7 +698,7 @@ BOOL dtpMenuItemSelected(XFldDesktop *somSelf,
         }
     #endif
 
-    return (FALSE);
+    return FALSE;
 }
 
 /* ******************************************************************

@@ -619,7 +619,7 @@ int main(int argc,
     WinDestroyMsgQueue(hmq);
     WinTerminate(G_hab);
 
-    return (0);
+    return 0;
 }
 
 /*

@@ -343,7 +343,7 @@ SOM_Scope ULONG SOMLINK wcur_xwpInsertAnimationPage3(XWPWinCursor * somSelf,
     XWPWinCursorMethodDebug("XWPWinCursor", "wcur_xwpInsertAnimationPage3");
 
     /* Return statement to be customized: */
-    return (0);
+    return 0;
 }
 
 /*

@@ -2526,7 +2526,7 @@ MRESULT setFeaturesItemChanged(PNOTEBOOKPAGE pnbp,
         // update "Mouse movement" page
         ntbUpdateVisiblePage(NULL,
                              SP_MOUSE_MOVEMENT);
-    return (0);
+    return 0;
 }
 
 /*
@@ -3596,7 +3596,7 @@ static const CONTROLDEF
     ParanoiaIntro = CONTROLDEF_TEXT_WORDBREAK(
                             LOAD_STRING,
                             ID_XCDI_PARANOIA_INTRO,
-                            64),
+                            -100),
     VarMenuOfsTxt = LOADDEF_TEXT(ID_XCDI_VARMENUOFFSET_TXT),
     VarMenuSpin = CONTROLDEF_SPINBUTTON(
                             ID_XCDI_VARMENUOFFSET,

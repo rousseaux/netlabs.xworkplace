@@ -2204,7 +2204,7 @@ HPOINTER icoQueryIconN(WPObject *pobj,    // in: object
             return (pwpQueryIconN(pobj, ulIndex));
     }
 
-    return (0);
+    return 0;
 }
 
 /*
@@ -2262,7 +2262,7 @@ ULONG icoQueryIconDataN(WPObject *pobj,    // in: object
             return (pwpQueryIconDataN(pobj, pData, ulIndex));
     }
 
-    return (0);
+    return 0;
 }
 
 /*
@@ -2309,7 +2309,7 @@ BOOL icoSetIconDataN(WPObject *pobj,    // in: object
             return (pwpSetIconDataN(pobj, pData, ulIndex));
     }
 
-    return (0);
+    return 0;
 }
 
 /*
@@ -2344,7 +2344,7 @@ HPOINTER icoClsQueryIconN(SOMClass *pClassObject,
             return (pwpclsQueryIconN(pClassObject, ulIndex));
     }
 
-    return (0);
+    return 0;
 }
 
 /*
@@ -2990,24 +2990,24 @@ VOID icoFormatIconPage(PNOTEBOOKPAGE pnbp,
 
 typedef struct _OBJICONPAGEDATA
 {
-    ULONG       flIconPageFlags;            // flags for icoFormatIconPage so we
+    ULONG           flIconPageFlags;            // flags for icoFormatIconPage so we
                                             // know which fields are available
 
-    BOOL        fIsFolder;                  // TRUE if this is for a folder page
+    BOOL            fIsFolder;                  // TRUE if this is for a folder page
 
-    HWND        hwndIconStatic,
-                hwndHotkeyEF;
+    HWND            hwndIconStatic,
+                    hwndHotkeyEF;
 
-    ULONG       ulAnimationIndex;           // 0 if main icon page
-                                            // 1 if folder animation page
+    ULONG           ulAnimationIndex;           // 0 if main icon page
+                                                // 1 if folder animation page
 
     // backup for "Undo"
-    PICONINFO   pIconDataBackup;            // backup of icon data... if this is NULL,
+    PICONINFO       pIconDataBackup;            // backup of icon data... if this is NULL,
                                             // the object was using a default icon
-    PSZ         pszTitleBackup;             // backup of object title
-    BOOL        fNoRename,
-                fTemplateBackup,
-                fLockedInPlaceBackup;
+    PSZ             pszTitleBackup;             // backup of object title
+    BOOL            fNoRename,                  // TRUE if object has OBJSTYLE_NORENAME
+                    fTemplateBackup,
+                    fLockedInPlaceBackup;
 
     // data for subclassed icon
     PNOTEBOOKPAGE   pnbp;              // reverse linkage for subclassed icon
@@ -3750,6 +3750,7 @@ static MRESULT HandleENHotkey(POBJICONPAGEDATA pData,
  *@@added V0.9.16 (2001-10-15) [umoeller]
  *@@changed V0.9.16 (2001-12-08) [umoeller]: now disabling hotkeys while entryfield has the focus
  *@@changed V0.9.19 (2002-04-25) [umoeller]: this didn't allow empty titles, fixed
+ *@@changed V0.9.19 (2002-05-23) [umoeller]: title was read before page was ready, fixed
  */
 
 MRESULT XWPENTRY icoIcon1ItemChanged(PNOTEBOOKPAGE pnbp,
@@ -3783,6 +3784,8 @@ MRESULT XWPENTRY icoIcon1ItemChanged(PNOTEBOOKPAGE pnbp,
                      // title controls available?
                      && (flIconPageFlags & ICONFL_TITLE)
                      && (!pData->fNoRename)
+                     // page already initialized? V0.9.19 (2002-05-23) [umoeller]
+                     && (pnbp->flPage & NBFL_PAGE_INITED)
                    )
                 {
                     PSZ pszNewTitle;

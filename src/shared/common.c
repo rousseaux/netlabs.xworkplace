@@ -280,7 +280,7 @@ unsigned long _System _DLL_InitTerm(unsigned long hModule,
             // now initialize the C run-time environment before we
             // call any runtime functions
             if (_CRT_init() == -1)
-               return (0);  // error
+               return 0;  // error
 
             if (rc = DosQueryModuleName(hModule, CCHMAXPATH, G_szDLLFile))
                 DosBeep(100, 100);
@@ -295,7 +295,7 @@ unsigned long _System _DLL_InitTerm(unsigned long hModule,
         default:
             // other code: beep for error
             DosBeep(100, 100);
-            return (0);     // error
+            return 0;     // error
     }
 
     // a non-zero value must be returned to indicate success
@@ -1630,7 +1630,7 @@ static BOOL LockIcons(VOID)
     else
         return (!WinRequestMutexSem(G_hmtxIconsCache, SEM_INDEFINITE_WAIT));
 
-    return (FALSE);
+    return FALSE;
 }
 
 /*
@@ -3259,7 +3259,7 @@ BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
         }
     }
 
-    return (TRUE);
+    return TRUE;
 }
 
 #ifdef __DEBUG__
@@ -4840,6 +4840,7 @@ BOOL cmnRegisterView(WPObject *somSelf,
                                   hwndFrame,
                                   pszViewTitle); // view title
         }
+
         free(pszViewTitle);
     }
 
@@ -6854,10 +6855,10 @@ BOOL cmnFileDlg2(HWND hwndOwner,    // in: owner for file dlg
 
         strcpy(pszFile, fd.szFullFile);
 
-        return (TRUE);
+        return TRUE;
     }
 
-    return (FALSE);
+    return FALSE;
 }
 
 /*

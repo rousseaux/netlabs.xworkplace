@@ -405,7 +405,6 @@ static MRESULT EXPENTRY fnwpRegisterClass(HWND hwndDlg, ULONG msg, MPARAM mp1, M
             switch (SHORT1FROMMP(mp1))
             {
                 case DID_OK:
-                {
                     if (prcd)
                     {
                         WinQueryDlgItemText(hwndDlg, ID_XLDI_CLASSNAME,
@@ -414,7 +413,7 @@ static MRESULT EXPENTRY fnwpRegisterClass(HWND hwndDlg, ULONG msg, MPARAM mp1, M
                                             sizeof(prcd->szModName), prcd->szModName);
                     }
                     mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
-                break; }
+                break;
 
                 case ID_XLDI_BROWSE:
                 {
@@ -431,7 +430,8 @@ static MRESULT EXPENTRY fnwpRegisterClass(HWND hwndDlg, ULONG msg, MPARAM mp1, M
                                           ID_XLDI_CLASSMODULE,
                                           szFile);
                     }
-                break; }
+                }
+                break;
 
                 default:
                     mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
@@ -1364,7 +1364,8 @@ static MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM m
             } */
 
             mrc = (MPARAM)FALSE;
-        break; }
+        }
+        break;
 
         /*
          * WM_WINDOWPOSCHANGED:
@@ -1697,7 +1698,8 @@ static MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1,
                                    &pClassTreeCnrData->xacClassCnr);  // storage area
 
                 mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
-            break; }
+            }
+            break;
 
             /*
              * WM_DRAWITEM:
@@ -1747,7 +1749,8 @@ static MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1,
                     }
                 }
                 mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
-            break; }
+            }
+            break;
 
             /*
              * WM_FILLCNR:
@@ -1811,7 +1814,8 @@ static MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1,
 
                 fFillingCnr = FALSE;
                 WinSetPointer(HWND_DESKTOP, hptrOld);
-            break; }
+            }
+            break;
 
             /*
              * WM_CONTROL:
@@ -1850,7 +1854,8 @@ static MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1,
                                 }
                             }
                             mrc = MPNULL;
-                        break; }
+                        }
+                        break;
 
                         /*
                          * CN_CONTEXTMENU:
@@ -1893,7 +1898,8 @@ static MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1,
                                                MENU_OPENVIEWPOPUP,
                                                0);
                             }
-                        break; }
+                        }
+                        break;
 
                         /*
                          * CN_EMPHASIS:
@@ -1921,7 +1927,8 @@ static MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1,
                                         StartMethodsUpdateTimer(pClassTreeCnrData->pClientData);
                                     }
                                 }
-                        break; }
+                        }
+                        break;
 
                         /*
                          * CN_HELP:
@@ -1983,7 +1990,8 @@ static MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1,
                                         TRUE);      // keep parent visible
                             }
                         }
-                    break; }
+                    }
+                    break;
 
                     /*
                      * Timer 2:
@@ -2096,7 +2104,8 @@ static MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1,
                                                 MB_OK);
                                 }
                             }
-                    break; }
+                    }
+                    break;
 
                     // "Replace class" menu command:
                     // show yet another WPS classes dlg
@@ -2166,7 +2175,8 @@ static MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1,
                             xstrClear(&strTitle);
                             xstrClear(&strIntroText);
                         }
-                    break; }
+                    }
+                    break;
 
                     // "Unreplace class" menu command
                     case ID_XLMI_UNREPLACE:
@@ -2221,7 +2231,8 @@ static MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1,
                                                 MB_OK);
                                 }
                             }
-                    break; }
+                    }
+                    break;
 
                     // "Create object" menu command
                     // (new with V0.9.0)
@@ -2249,11 +2260,13 @@ static MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1,
                                 }
 
                             }
-                    break; }
+                    }
+                    break;
 
                 } // end switch (SHORT1FROMMP(mp1))
                 pscd->preccSource = NULL;
-            break; }
+            }
+            break;
 
             /*
              * WM_MENUEND:
@@ -2270,7 +2283,8 @@ static MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1,
                 cnrhSetSourceEmphasis(pscd->hwndCnr,
                                       pscd->preccSource,
                                       FALSE);
-            break; }
+            }
+            break;
 
             /*
              * WM_SYSCOMMAND:
@@ -2325,7 +2339,8 @@ static MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1,
 
                 mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
                 WinSetPointer(HWND_DESKTOP, hptrOld);
-            break; }
+            }
+            break;
 
             default:
                 mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
@@ -2435,7 +2450,8 @@ static MRESULT EXPENTRY fnwpClassInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MP
                 }
             }
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
-        break; }
+        }
+        break;
 
         /*
          * WM_SYSCOMMAND:
@@ -2454,9 +2470,8 @@ static MRESULT EXPENTRY fnwpClassInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MP
          */
 
         case WM_HELP:
-        {
             WinPostMsg(pClassInfoData->pClientData->hwndClient, msg, mp1, mp2);
-        break; }
+        break;
 
         /*
          * WM_DESTROY:
@@ -2464,7 +2479,6 @@ static MRESULT EXPENTRY fnwpClassInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MP
          */
 
         case WM_DESTROY:
-        {
             // clean up window positions
             winhAdjustControls(hwndDlg,             // dialog
                                NULL,                // clean up
@@ -2473,7 +2487,7 @@ static MRESULT EXPENTRY fnwpClassInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MP
                                &pClassInfoData->xacClassInfo); // storage area
             free(pClassInfoData);
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
-        break; }
+        break;
 
         default:
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
@@ -2580,7 +2594,8 @@ static MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, M
             winhSetDlgItemChecked(hwndDlg,
                                   pMethodInfoData->pClientData->somThis->ulMethodsRadioB,
                                   TRUE);
-        break; }
+        }
+        break;
 
         /*
          * WM_WINDOWPOSCHANGED:
@@ -2614,7 +2629,8 @@ static MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, M
                 }
             }
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
-        break; }
+        }
+        break;
 
         /*
          * WM_FILLCNR:
@@ -2733,7 +2749,8 @@ static MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, M
                 // so we can release that later
                 pMethodInfoData->pClientData->pMethodInfo = pMethodInfo;
             } // end if (pMethodInfoData->pMethodInfo)
-        break; }  // WM_FILLCNR
+        }
+        break;   // WM_FILLCNR
 
         /*
          * WM_CONTROL:
@@ -2795,7 +2812,8 @@ static MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, M
                                                     (PRECORDCORE)pMethodInfoData->pMethodReccSource,
                                                     hPopupMenu,
                                                     hwndDlg);
-                        break; }
+                        }
+                        break;
                     }
                 break; // case ID_XLDI_CNR
             }
@@ -3045,10 +3063,10 @@ BOOL cllModifyPopupMenu(XWPClassList *somSelf,
             _fMenuCnrWhitespace = FALSE;
         }
 
-        return (TRUE);
+        return TRUE;
     }
     else
-        return (FALSE);
+        return FALSE;
 }
 
 /*

@@ -234,10 +234,10 @@ static BOOL LockInstances(VOID)
                  &G_cInstanceTypes);
         lstInit(&G_llInstanceFilters,
                 TRUE);         // auto-free
-        return (TRUE);
+        return TRUE;
     }
 
-    return (FALSE);
+    return FALSE;
 }
 
 /*
@@ -573,10 +573,10 @@ BOOL ftypLockCaches(VOID)
                 TRUE);         // auto-free
         treeInit(&G_WPSTypeAssocsTreeRoot,
                  &G_cWPSTypeAssocsTreeItems);
-        return (TRUE);
+        return TRUE;
     }
 
-    return (FALSE);
+    return FALSE;
 }
 
 /*
@@ -1814,6 +1814,7 @@ ULONG ftypFreeAssocsList(PLINKLIST *ppllAssocs)    // in: list created by ftypBu
  *@@changed V0.9.6 (2000-10-16) [umoeller]: lists are temporary only now
  *@@changed V0.9.6 (2000-11-12) [umoeller]: added pulView output
  *@@changed V0.9.16 (2002-01-26) [umoeller]: performance tweaking
+ *@@changed V0.9.19 (2002-05-23) [umoeller]: fixed wrong default icons for WPUrl
  */
 
 WPObject* ftypQueryAssociatedProgram(WPDataFile *somSelf,       // in: data file
@@ -1839,37 +1840,52 @@ WPObject* ftypQueryAssociatedProgram(WPDataFile *somSelf,       // in: data file
                 // the default association on the "Menu" page
 
     // calc index to search...
-    if (*pulView >= 0x1000)
-        ulIndex = *pulView - 0x1000;
-    else
-        ulIndex = 0;
-
-    if (pllAssocObjects = ftypBuildAssocsList(somSelf,
-                                              ulIndex + 1,
-                                              fUsePlainTextAsDefault))
+    if (    (*pulView >= 0x1000)
+         // delimit this!! Return a null icon if this is way too large.
+         // V0.9.19 (2002-05-23) [umoeller]
+         && (*pulView <= 0x1010)
+       )
     {
-        ULONG   cAssocObjects;
-        if (cAssocObjects = lstCountItems(pllAssocObjects))
+        ulIndex = *pulView - 0x1000;
+    // else
+        // ulIndex = 0;
+        // wrooong: WPUrl objects have OPEN_CONTENTS (1)
+        // as their default view and the WPS does not give them an associated
+        // file icon... instead, they always get the class default icon.
+        // This was broken with XWP, which always associated the first
+        // program even if the default view was < 0x1000. In that case,
+        // we must rather return a null icon so that the class icon gets
+        // used instead. So ONLY run thru the list below if we actually
+        // have a default view >= 0x1000.
+        // V0.9.19 (2002-05-23) [umoeller]
+
+        if (pllAssocObjects = ftypBuildAssocsList(somSelf,
+                                                  ulIndex + 1,
+                                                  fUsePlainTextAsDefault))
         {
-            // any items found:
-            PLISTNODE           pAssocObjectNode = 0;
-
-            if (ulIndex >= cAssocObjects)
-                ulIndex = 0;
-
-            if (pAssocObjectNode = lstNodeFromIndex(pllAssocObjects,
-                                                    ulIndex))
+            ULONG   cAssocObjects;
+            if (cAssocObjects = lstCountItems(pllAssocObjects))
             {
-                pObjReturn = (WPObject*)pAssocObjectNode->pItemData;
-                // raise lock count on this object again (i.e. lock
-                // twice) because ftypFreeAssocsList unlocks each
-                // object on the list once, and this one better
-                // stay locked
-                _wpLockObject(pObjReturn);
-            }
-        }
+                // any items found:
+                PLISTNODE           pAssocObjectNode = 0;
 
-        ftypFreeAssocsList(&pllAssocObjects);
+                if (ulIndex >= cAssocObjects)
+                    ulIndex = 0;
+
+                if (pAssocObjectNode = lstNodeFromIndex(pllAssocObjects,
+                                                        ulIndex))
+                {
+                    pObjReturn = (WPObject*)pAssocObjectNode->pItemData;
+                    // raise lock count on this object again (i.e. lock
+                    // twice) because ftypFreeAssocsList unlocks each
+                    // object on the list once, and this one better
+                    // stay locked
+                    _wpLockObject(pObjReturn);
+                }
+            }
+
+            ftypFreeAssocsList(&pllAssocObjects);
+        }
     }
 
     return (pObjReturn);

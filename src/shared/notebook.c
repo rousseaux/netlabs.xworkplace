@@ -166,11 +166,11 @@ static BOOL LockNotebooks(VOID)
                 _Pmpf(("Created NOTEBOOKPAGELISTITEM list and mutex"));
             #endif
 
-            return (TRUE);
+            return TRUE;
         }
     }
 
-    return (FALSE);
+    return FALSE;
 }
 
 /*

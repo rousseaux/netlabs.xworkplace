@@ -198,6 +198,34 @@ VOID refrAddNotification(PXWPNOTIFY pNotify)
 }
 
 /*
+ *@@ refrTouchNotification:
+ *      touches the specified notification, meaning
+ *      that its addition time is reset to wait another
+ *      full cycle.
+ *
+ *      Called on the find-folder thread.
+ *
+ *      Preconditions:
+ *
+ *      --  The caller must have the global WPS notify
+ *          mutex.
+ *
+ *      --  The notification must already be on the
+ *          global list. We only change the time
+ *          field.
+ *
+ *@@added V0.9.19 (2002-05-23) [umoeller]
+ */
+
+VOID refrTouchNotification(PXWPNOTIFY pNotify)
+{
+    // reset current system time in pNotify
+    pNotify->ulMS = doshQuerySysUptime();
+    // post the event sem for the pump thread
+    DosPostEventSem(G_hevNotificationPump);
+}
+
+/*
  *@@ refrRemoveNotification:
  *      removes the specified notification.
  *
@@ -738,6 +766,8 @@ static VOID _Optlink fntPumpThread(PTHREADINFO ptiMyself)
  *
  *@@added V0.9.9 (2001-01-29) [umoeller]
  *@@changed V0.9.16 (2001-10-28) [umoeller]: added support for RCNF_CHANGED
+ *@@changed V0.9.19 (2002-05-23) [umoeller]: this only compared short filenames not the folders, fixed
+ *@@changed V0.9.19 (2002-05-23) [umoeller]: added touching notifications for refresh and duplicates
  */
 
 static BOOL AddNotifyIfNotRedundant(PXWPNOTIFY pNotify)
@@ -755,9 +785,6 @@ static BOOL AddNotifyIfNotRedundant(PXWPNOTIFY pNotify)
         // let's say: add this one now
         fAddThis = TRUE;
 
-        // does the folder have a notification list at
-        // all yet?
-
         /*
          *  (1) drop redundant processing:
          *
@@ -774,6 +801,7 @@ static BOOL AddNotifyIfNotRedundant(PXWPNOTIFY pNotify)
         // RCNF_FILE_ADDED in the queue already
         if (    (bOpposite)
              || (bActionThis == RCNF_CHANGED)
+             || (bActionThis == RCNF_XWP_FULLREFRESH) // V0.9.19 (2002-05-23) [umoeller]
            )
         {
             // yes, check redundancy:
@@ -782,13 +810,33 @@ static BOOL AddNotifyIfNotRedundant(PXWPNOTIFY pNotify)
             {
                 PLISTNODE pNext = pNode->pNext;
                 PXWPNOTIFY  pNotifyThat = (PXWPNOTIFY)pNode->pItemData;
-                BYTE        bActionThat = pNotifyThat->CNInfo.bAction;
-                if (bActionThat == bOpposite)
+
+                // is this notification for the same folder?
+                // V0.9.19 (2002-05-23) [umoeller]
+                if (pNotify->pFolder == pNotifyThat->pFolder)
                 {
-                    // we have an opposite action for that folder:
-                    // compare the short names
-                    if (!stricmp(pNotify->pShortName,
-                                 pNotifyThat->pShortName))
+                    BYTE bActionThat = pNotifyThat->CNInfo.bAction;
+
+                    // if we have a full refresh (due to overflow)
+                    // pending for the folder, do not add any
+                    // additional items, but touch the full refresh
+                    // instead; this includes multiple full refresh
+                    // notifications
+                    // V0.9.19 (2002-05-23) [umoeller]
+                    if (bActionThat == RCNF_XWP_FULLREFRESH)
+                    {
+                        // drop the new notification
+                        fAddThis = FALSE;
+                        // reset the time of the old full
+                        // refresh notification
+                        refrTouchNotification(pNotifyThat);
+
+                        break;
+                    }
+                    else if (    (bActionThat == bOpposite)
+                              && (!stricmp(pNotify->pShortName,
+                                           pNotifyThat->pShortName))
+                            )
                     {
                         // same file name:
                         // drop it, it's redundant
@@ -800,21 +848,26 @@ static BOOL AddNotifyIfNotRedundant(PXWPNOTIFY pNotify)
 
                         break;
                     }
-                }
-                // V0.9.16 (2001-10-28) [umoeller]
-                else if (    // do not add RCNF_CHANGED if we already have RCNF_CHANGED
-                             (    (bActionThis == RCNF_CHANGED)
-                               && (bActionThat == RCNF_FILE_ADDED)
-                             )
-                             // and do not add any duplicate notifications at all
-                          || (bActionThis == bActionThat)
-                        )
-                {
-                    if (!stricmp(pNotify->pShortName,
-                                 pNotifyThat->pShortName))
+                    // V0.9.16 (2001-10-28) [umoeller]
+                    else if (    // do not add RCNF_CHANGED if we already have RCNF_CHANGED
+                                 (    (bActionThis == RCNF_CHANGED)
+                                   && (bActionThat == RCNF_FILE_ADDED)
+                                 )
+                                 // and do not add any duplicate notifications at all
+                              || (bActionThis == bActionThat)
+                            )
                     {
-                        fAddThis = FALSE;
-                        break;
+                        if (!stricmp(pNotify->pShortName,
+                                     pNotifyThat->pShortName))
+                        {
+                            fAddThis = FALSE;
+
+                            // reset the time of the old notification
+                            // V0.9.19 (2002-05-23) [umoeller]
+                            refrTouchNotification(pNotifyThat);
+
+                            break;
+                        }
                     }
                 }
 
@@ -829,6 +882,7 @@ static BOOL AddNotifyIfNotRedundant(PXWPNOTIFY pNotify)
 
         if (fAddThis)
             refrAddNotification(pNotify);
+
     } // end if (pNotify)
 
     return (fAddThis);

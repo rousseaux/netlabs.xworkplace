@@ -1017,7 +1017,7 @@ ULONG xmmCDPlayTrack(PXMMCDPLAYER pPlayer,
                     if (usTrack < 0)
                         usTrack = 1;
                     if (usTrack > pPlayer->cTracks)
-                        return (FALSE);
+                        return FALSE;
 
                     TMSF_TRACK(mpp.ulFrom) = usTrack;
                     TMSF_MINUTE(mpp.ulFrom) = 0;
@@ -1887,10 +1887,10 @@ BOOL xmmFreeDevices(PXMMDEVICE paDevices)
         // now free the entire array
         free(paDevices);
 
-        return (TRUE);
+        return TRUE;
     }
 
-    return (FALSE);
+    return FALSE;
 }
 
 

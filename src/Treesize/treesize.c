@@ -463,7 +463,7 @@ SHORT EXPENTRY fnCompareName(PRECORDCORE pmrc1, PRECORDCORE pmrc2, PVOID pStorag
                 case WCS_GT: return (1);
             }
 
-    return (0);
+    return 0;
 }
 
 /*
@@ -489,7 +489,7 @@ SHORT EXPENTRY fnCompareSize(PSIZERECORD pmrc1, PSIZERECORD pmrc2, PVOID pStorag
         }
     }
 
-    return (0);
+    return 0;
 }
 
 /*
@@ -520,7 +520,7 @@ SHORT EXPENTRY fnCompareFilesCount(PSIZERECORD pmrc1, PSIZERECORD pmrc2, PVOID p
                 return (1);
         }
 
-    return (0);
+    return 0;
 }
 
 /*
@@ -550,7 +550,7 @@ SHORT EXPENTRY fnCompareEASize(PSIZERECORD pmrc1, PSIZERECORD pmrc2, PVOID pStor
                 return (1);
         }
 
-    return (0);
+    return 0;
 }
 
 /*
@@ -758,7 +758,8 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
 
             // initiate processing (below)
             WinPostMsg(hwndDlg, TSM_START, 0, 0);
-        break; }
+        }
+        break;
 
         /*
          * TSM_START:
@@ -854,7 +855,8 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                                    CRA_SELECTED
                                ));
             }
-        break; }
+        }
+        break;
 
         /*
          * TSM_DONEDIRECTORY:
@@ -961,7 +963,8 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
 
                 pdiThis = pdiThis->pParent;
             }
-        break; }
+        }
+        break;
 
         /*
          * TSM_DONEWITHALL:
@@ -992,7 +995,8 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                           hwndDlg,
                           2,
                           100);
-        break; }
+        }
+        break;
 
         /*
          * WM_CONTROL:
@@ -1034,7 +1038,8 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                         }
                         // else double click on whitespace, which we'll ignore
                     }
-                break; }
+                }
+                break;
 
                 /*
                  * CN_EXPANDTREE:
@@ -1101,7 +1106,8 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                                   hwndDlg,
                                   1,
                                   100);
-                break; }
+                }
+                break;
 
                 /*
                  * CN_EMPHASIS:
@@ -1122,7 +1128,8 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                             WinSetWindowText(G_hwndText,
                                              ((PSIZERECORD)(pnre->pRecord))->pdi->szFullPath);
                         }
-                break; }
+                }
+                break;
 
                 /*
                  * CN_CONTEXTMENU:
@@ -1189,7 +1196,8 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                                            TRUE),
                                        MPFROM2SHORT(MIA_CHECKED, MIA_CHECKED));
                     }
-                break; }
+                }
+                break;
 
                 /**********************************************
                 *                                             *
@@ -1349,7 +1357,8 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
 
                     // clean up
                     DrgFreeDraginfo(pcdi->pDragInfo);
-                break; }
+                }
+                break;
 
                 /*
                  * CN_DROP:
@@ -1357,7 +1366,6 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                  */
 
                 case CN_DROP:
-                {
                     // check the global variable which has been set
                     // by CN_DRAGOVER above:
                     if (G_fDnDValid)
@@ -1368,11 +1376,10 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                         WinPostMsg(hwndDlg, TSM_START, NULL, NULL);
                         G_fDnDValid = FALSE;
                     }
-                break; }
+                break;
             }
-
-
-        break; }
+        }
+        break;
 
         /*
          * WM_TIMER:
@@ -1404,7 +1411,8 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                                        TRUE);      // keep parent visible
                 }
             }
-        break; }
+        }
+        break;
 
         /*
          * WM_ADJUSTWINDOWPOS:
@@ -1430,7 +1438,8 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                 if (pswp->cy < 300)
                     pswp->cy = 300;
             }
-        break; }
+        }
+        break;
 
         /*
          * WM_WINDOWPOSCHANGED:
@@ -1533,7 +1542,8 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                                 SWP_MOVE);
             }
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
-        break; }
+        }
+        break;
 
         /*
          * WM_COMMAND:
@@ -1649,10 +1659,12 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                     WinStoreWindowPos((PSZ)G_pcszXFldTreesize, "WindowPos", hwndDlg);
                     Cleanup(NULL);
                     mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
-                break; }
+                }
+                break;
 
             }
-        break; }
+        }
+        break;
 
         default:
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);

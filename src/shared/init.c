@@ -515,9 +515,9 @@ static BOOL RunXFix(VOID)
         if (WaitForApp(szXfix,
                        happXFix)
             == 1)
-            return (TRUE);
+            return TRUE;
 
-    return (FALSE);
+    return FALSE;
 }
 
 /*

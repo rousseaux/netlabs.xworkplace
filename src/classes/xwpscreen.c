@@ -195,7 +195,7 @@ SOM_Scope BOOL  SOMLINK xwpscr_wpQueryDefaultHelp(XWPScreen *somSelf,
 
     strcpy(HelpLibrary, cmnQueryHelpLibrary());
     *pHelpPanelId = ID_XSH_XWPSCREEN;
-    return (TRUE);
+    return TRUE;
 }
 
 /*
@@ -244,7 +244,7 @@ SOM_Scope BOOL  SOMLINK xwpscr_wpAddSettingsPages(XWPScreen *somSelf,
     // "Screen" page 1 next
     _wpAddSystemScreenPage(somSelf, hwndNotebook);
 
-    return (TRUE);
+    return TRUE;
 }
 
 /* ******************************************************************
@@ -326,13 +326,24 @@ SOM_Scope PSZ  SOMLINK xwpscrM_wpclsQueryTitle(M_XWPScreen *somSelf)
 
 /*
  *@@ wpclsQueryIconData:
- *      this WPObject class method builds the default
- *      icon for objects of a class (i.e. the icon which
- *      is shown if no instance icon is assigned). This
- *      apparently gets called from some of the other
- *      icon instance methods if no instance icon was
- *      found for an object. The exact mechanism of how
- *      this works is not documented.
+ *      this WPObject class method must return information
+ *      about how to build the default icon for objects
+ *      of a class. This gets called from various other
+ *      methods whenever a class default icon is needed;
+ *      most importantly, M_WPObject::wpclsQueryIcon
+ *      calls this to build a class default icon, which
+ *      is then cached in the class's instance data.
+ *      If a subclass wants to change a class default icon,
+ *      it should always override _this_ method instead of
+ *      wpclsQueryIcon.
+ *
+ *      Note that the default WPS implementation does not
+ *      allow for specifying the ICON_FILE format here,
+ *      which is why we have overridden
+ *      M_XFldObject::wpclsQueryIcon too. This allows us
+ *      to return icon _files_ for theming too. For details
+ *      about the WPS's crappy icon management, refer to
+ *      src\filesys\icons.c.
  *
  *      We give the "Screen" object a new standard icon here.
  */

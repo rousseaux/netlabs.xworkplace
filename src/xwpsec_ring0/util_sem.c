@@ -160,7 +160,7 @@ unsigned long utilGetTaskPID(void)
     if (arc == NO_ERROR)
         return (pLDT->LIS_CurProcID);
     else
-        return (0);
+        return 0;
 
     /* PTR16           p16Temp;
 

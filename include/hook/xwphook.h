@@ -413,7 +413,7 @@
      *      An array of these is returned by
      *      hifQueryFunctionKeys().
      *
-2     *@@added V0.9.3 (2000-04-19) [umoeller]
+     *@@added V0.9.3 (2000-04-19) [umoeller]
      */
 
     typedef struct _FUNCTIONKEY

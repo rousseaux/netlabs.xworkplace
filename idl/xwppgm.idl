@@ -180,6 +180,8 @@ interface M_XWPProgram : M_WPProgram
      */
 
     wpclsInitData: override;
+
+    wpclsQueryIconData: override;
   };
 #endif /* __SOMIDL__ */
 };

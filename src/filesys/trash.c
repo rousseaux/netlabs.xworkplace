@@ -1068,11 +1068,11 @@ BOOL trshSetupOnce(XWPTrashObject *somSelf,
                 // set size synchronously
                 trshCalcTrashObjectSize(somSelf,
                                         pTrashCan);
-            return (TRUE);
+            return TRUE;
         }
     }
 
-    return (FALSE);
+    return FALSE;
 }
 
 /*
@@ -1240,7 +1240,7 @@ static BOOL AddTrashObjectsForTrashDir(M_XWPTrashObject *pXWPTrashObjectClass, /
 
     if (!pXWPTrashObjectClass)
         // error
-        return (0);
+        return 0;
 
     #ifdef DEBUG_TRASHCAN
         _Pmpf(("  Entering AddTrashObjectsForTrashDir for %s", _wpQueryTitle(pTrashDir)));
@@ -1591,7 +1591,7 @@ BOOL trshRefresh(XWPTrashCan *somSelf)
 
     stbUpdate(somSelf);
 
-    return (TRUE);
+    return TRUE;
 }
 
 /* ******************************************************************

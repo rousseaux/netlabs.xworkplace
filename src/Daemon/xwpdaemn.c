@@ -662,10 +662,10 @@ BOOL dmnLoadPagerSettings(ULONG flConfig)
                            0);
         }
 
-        return (TRUE);
+        return TRUE;
     }
 
-    return (FALSE);
+    return FALSE;
 }
 
 /*
@@ -2872,6 +2872,7 @@ ULONG _System TerminateExcHandler(PEXCEPTIONREPORTRECORD pReportRec,
  *@@changed V0.9.9 (2001-03-18) [lafaix]: loads pointers
  *@@changed V0.9.11 (2001-04-25) [umoeller]: added termination exception handler for proper hook cleanup
  *@@changed V0.9.11 (2001-04-25) [umoeller]: reordered all this code for readability
+ *@@changed V0.9.19 (2002-05-23) [umoeller]: fixed startup directory
  */
 
 int main(int argc, char *argv[])
@@ -2954,9 +2955,24 @@ int main(int argc, char *argv[])
             }
             else
             {
+                ULONG ulBootDrive;
+
                 // OK:
                 G_pXwpGlobalShared->fAllHooksInstalled = FALSE;
                         // V0.9.11 (2001-04-25) [umoeller]
+
+                // change current directory to root directory on
+                // drive where XWorkplace is installed, and then
+                // set current disk to boot disk; otherwise the
+                // user will end up in XWP's "bin" directory when
+                // starting a command prompt and changing disks
+                // since we are now using the Daemon for program
+                // startup V0.9.19 (2002-05-23) [umoeller]
+                DosSetCurrentDir("\\");
+                DosQuerySysInfo(QSV_BOOT_DRIVE, QSV_BOOT_DRIVE,
+                                &ulBootDrive,
+                                sizeof(ulBootDrive));
+                DosSetDefaultDisk(ulBootDrive);
 
 #ifndef __NOPAGER__
                 pgrInit();
@@ -3018,19 +3034,12 @@ int main(int argc, char *argv[])
                                T1M_DAEMONREADY,
                                0, 0);
 
-                    // _Pmpf(("posted T1M_DAEMONREADY to 0x%lX",
-                       //          G_pXwpGlobalShared->hwndThread1Object));
-                    // _Pmpf(("G_pXwpGlobalShared->hwndDaemonObjec is 0x%lX",
-                       //          G_pXwpGlobalShared->hwndDaemonObject));
-
                     // register special exception handler just for
                     // thread termination (see TerminateExcHandler)
                     // V0.9.11 (2001-04-25) [umoeller]
                     TermExcptStruct.RegRec2.pfnHandler = (PFN)TerminateExcHandler;
-                    arc = DosSetExceptionHandler((PEXCEPTIONREGISTRATIONRECORD)
-                                                        &(TermExcptStruct.RegRec2));
-                    // if (arc)
-                       //  _Pmpf(("DosSetExceptionHandler returned %d", arc));
+                    DosSetExceptionHandler(
+                        (PEXCEPTIONREGISTRATIONRECORD)&TermExcptStruct.RegRec2);
 
                     TermExcptStruct.ulExcpt = setjmp(TermExcptStruct.RegRec2.jmpThread);
                     if (TermExcptStruct.ulExcpt == 0)
@@ -3047,8 +3056,8 @@ int main(int argc, char *argv[])
                     }
                     // else: exception occured...
 
-                    DosUnsetExceptionHandler((PEXCEPTIONREGISTRATIONRECORD)
-                                                &(TermExcptStruct.RegRec2));
+                    DosUnsetExceptionHandler(
+                        (PEXCEPTIONREGISTRATIONRECORD)&TermExcptStruct.RegRec2);
 
                     // we get here if
                     // a) we received WM_QUIT (can't see why this would happen);
@@ -3071,6 +3080,6 @@ int main(int argc, char *argv[])
         WinTerminate(G_habDaemon);
     }
 
-    return (0);
+    return 0;
 }
 

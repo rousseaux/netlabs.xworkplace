@@ -264,7 +264,7 @@ SOM_Scope BOOL  SOMLINK xfdesk_xwpQuerySetup2(XFldDesktop *somSelf,
                                       pstrSetup));
     }
 
-    return (FALSE);
+    return FALSE;
 }
 
 /*
@@ -410,7 +410,7 @@ SOM_Scope BOOL  SOMLINK xfdesk_wpMenuItemSelected(XFldDesktop *somSelf,
 
     if (dtpMenuItemSelected(somSelf, hwndFrame, &ulMenuId2))
         // one of the new items processed:
-        return (TRUE);
+        return TRUE;
     else
         return (XFldDesktop_parent_WPDesktop_wpMenuItemSelected(somSelf,
                                                                 hwndFrame,
@@ -722,24 +722,32 @@ SOM_Scope BOOL  SOMLINK xfdeskM_wpclsQuerySettingsPageSize(M_XFldDesktop *somSel
 
 /*
  *@@ wpclsQueryIconData:
- *      this WPObject class method builds the default
- *      icon for objects of a class (i.e. the icon which
- *      is shown if no instance icon is assigned). This
- *      apparently gets called from some of the other
- *      icon instance methods if no instance icon was
- *      found for an object. The exact mechanism of how
- *      this works is not documented.
+ *      this WPObject class method must return information
+ *      about how to build the default icon for objects
+ *      of a class. This gets called from various other
+ *      methods whenever a class default icon is needed;
+ *      most importantly, M_WPObject::wpclsQueryIcon
+ *      calls this to build a class default icon, which
+ *      is then cached in the class's instance data.
+ *      If a subclass wants to change a class default icon,
+ *      it should always override _this_ method instead of
+ *      wpclsQueryIcon.
+ *
+ *      Note that the default WPS implementation does not
+ *      allow for specifying the ICON_FILE format here,
+ *      which is why we have overridden
+ *      M_XFldObject::wpclsQueryIcon too. This allows us
+ *      to return icon _files_ for theming too. For details
+ *      about the WPS's crappy icon management, refer to
+ *      src\filesys\icons.c.
  *
  *      We give XFldDesktop's a new default closed icon, if the
  *      global settings allow this.
- *      This is loaded from /ICONS/ICONS.DLL.
  */
 
 SOM_Scope ULONG  SOMLINK xfdeskM_wpclsQueryIconData(M_XFldDesktop *somSelf,
                                                     PICONINFO pIconInfo)
 {
-    ULONG       ulrc = 0;
-
     // M_XFldDesktopData *somThis = M_XFldDesktopGetData(somSelf);
     M_XFldDesktopMethodDebug("M_XFldDesktop","xfdeskM_wpclsQueryIconData");
 
@@ -767,13 +775,10 @@ SOM_Scope ULONG  SOMLINK xfdeskM_wpclsQueryIconData(M_XFldDesktop *somSelf,
         return 0;
 
     }
-
-    if (!ulrc)
 #endif
-        // icon replacements not allowed: call default
-        ulrc = M_XFldDesktop_parent_M_WPDesktop_wpclsQueryIconData(somSelf,
-                                                                   pIconInfo);
-    return (ulrc);
+    // icon replacements not allowed: call default
+    return M_XFldDesktop_parent_M_WPDesktop_wpclsQueryIconData(somSelf,
+                                                               pIconInfo);
 }
 
 /*
@@ -787,8 +792,6 @@ SOM_Scope ULONG  SOMLINK xfdeskM_wpclsQueryIconDataN(M_XFldDesktop *somSelf,
                                                      ICONINFO* pIconInfo,
                                                      ULONG ulIconIndex)
 {
-    ULONG       ulrc = 0;
-
     // M_XFldDesktopData *somThis = M_XFldDesktopGetData(somSelf);
     M_XFldDesktopMethodDebug("M_XFldDesktop","xfdeskM_wpclsQueryIconDataN");
 
@@ -816,12 +819,10 @@ SOM_Scope ULONG  SOMLINK xfdeskM_wpclsQueryIconDataN(M_XFldDesktop *somSelf,
         return 0;
     }
 
-    if (!ulrc)
 #endif
-        // icon replacements not allowed: call default
-        ulrc = M_XFldDesktop_parent_M_WPDesktop_wpclsQueryIconDataN(somSelf,
-                                                                    pIconInfo,
-                                                                    ulIconIndex);
-    return (ulrc);
+    // icon replacements not allowed: call default
+    return M_XFldDesktop_parent_M_WPDesktop_wpclsQueryIconDataN(somSelf,
+                                                                pIconInfo,
+                                                                ulIconIndex);
 }
 

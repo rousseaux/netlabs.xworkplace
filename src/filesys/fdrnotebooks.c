@@ -485,24 +485,22 @@ MRESULT fdrGridItemChanged(PNOTEBOOKPAGE pnbp,
         break;
 
         case DID_UNDO:
-        {
             // "Undo" button: get pointer to backed-up Global Settings
             // and restore the settings for this page
             cmnRestoreSettings(pnbp->pUser,
                                ARRAYITEMCOUNT(G_GridBackup));
             // update the display by calling the INIT callback
             pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
-        break; }
+        break;
 
         case DID_DEFAULT:
-        {
             // set the default settings for this settings page
             // (this is in common.c because it's also used at
             // Desktop startup)
             cmnSetDefaultSettings(pnbp->inbp.ulPageID);
             // update the display by calling the INIT callback
             pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
-        break; }
+        break;
 
         default:
             fSave = FALSE;
@@ -929,7 +927,8 @@ MRESULT fdrStartupFolderItemChanged(PNOTEBOOKPAGE pnbp,
 
             cmnSetSetting(sulStartupInitialDelay, lMS);
             fUpdate = FALSE;
-        break; }
+        }
+        break;
 
         case ID_SDDI_STARTUP_OBJDELAY_SLID:
         {
@@ -945,7 +944,8 @@ MRESULT fdrStartupFolderItemChanged(PNOTEBOOKPAGE pnbp,
 
             _ulObjectDelay = lMS;
             ulChange = 0;
-        break; }
+        }
+        break;
 
         case ID_SDDI_STARTUP_REBOOTSONLY:
             _ulType = XSTARTUP_REBOOTSONLY;

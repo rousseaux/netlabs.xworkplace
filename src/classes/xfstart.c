@@ -423,7 +423,7 @@ SOM_Scope BOOL  SOMLINK xfstup_wpMenuItemSelected(XFldStartup *somSelf,
                                                     // XFldStartup method
                 // this goes into fdrStartFolderContents
         }
-        return (TRUE);
+        return TRUE;
     }
     else
         return (XFldStartup_parent_XFolder_wpMenuItemSelected(somSelf,
@@ -466,7 +466,7 @@ SOM_Scope BOOL  SOMLINK xfstup_wpQueryDefaultHelp(XFldStartup *somSelf,
 
     strcpy(HelpLibrary, cmnQueryHelpLibrary());
     *pHelpPanelId = ID_XMH_STARTUPSHUTDOWN;
-    return (TRUE);
+    return TRUE;
 
     /* return (XFldStartup_parent_XFolder_wpQueryDefaultHelp(somSelf,
                                                           pHelpPanelId,
@@ -631,13 +631,24 @@ SOM_Scope ULONG  SOMLINK xfstupM_wpclsQueryStyle(M_XFldStartup *somSelf)
 
 /*
  *@@ wpclsQueryIconData:
- *      this WPObject class method builds the default
- *      icon for objects of a class (i.e. the icon which
- *      is shown if no instance icon is assigned). This
- *      apparently gets called from some of the other
- *      icon instance methods if no instance icon was
- *      found for an object. The exact mechanism of how
- *      this works is not documented.
+ *      this WPObject class method must return information
+ *      about how to build the default icon for objects
+ *      of a class. This gets called from various other
+ *      methods whenever a class default icon is needed;
+ *      most importantly, M_WPObject::wpclsQueryIcon
+ *      calls this to build a class default icon, which
+ *      is then cached in the class's instance data.
+ *      If a subclass wants to change a class default icon,
+ *      it should always override _this_ method instead of
+ *      wpclsQueryIcon.
+ *
+ *      Note that the default WPS implementation does not
+ *      allow for specifying the ICON_FILE format here,
+ *      which is why we have overridden
+ *      M_XFldObject::wpclsQueryIcon too. This allows us
+ *      to return icon _files_ for theming too. For details
+ *      about the WPS's crappy icon management, refer to
+ *      src\filesys\icons.c.
  *
  *      We give the Startup folder a new closed icon.
  */
@@ -707,7 +718,7 @@ SOM_Scope BOOL  SOMLINK xfshut_wpQueryDefaultHelp(XFldShutdown *somSelf,
 
     strcpy(HelpLibrary, cmnQueryHelpLibrary());
     *pHelpPanelId = ID_XMH_STARTUPSHUTDOWN;
-    return (TRUE);
+    return TRUE;
 
     /* return (XFldShutdown_parent_XFolder_wpQueryDefaultHelp(somSelf,
                                                            pHelpPanelId,
@@ -772,7 +783,26 @@ SOM_Scope ULONG  SOMLINK xfshutM_wpclsQueryStyle(M_XFldShutdown *somSelf)
 
 /*
  *@@ wpclsQueryIconData:
- *      give the Shutdown folder a new closed icon.
+ *      this WPObject class method must return information
+ *      about how to build the default icon for objects
+ *      of a class. This gets called from various other
+ *      methods whenever a class default icon is needed;
+ *      most importantly, M_WPObject::wpclsQueryIcon
+ *      calls this to build a class default icon, which
+ *      is then cached in the class's instance data.
+ *      If a subclass wants to change a class default icon,
+ *      it should always override _this_ method instead of
+ *      wpclsQueryIcon.
+ *
+ *      Note that the default WPS implementation does not
+ *      allow for specifying the ICON_FILE format here,
+ *      which is why we have overridden
+ *      M_XFldObject::wpclsQueryIcon too. This allows us
+ *      to return icon _files_ for theming too. For details
+ *      about the WPS's crappy icon management, refer to
+ *      src\filesys\icons.c.
+ *
+ *      We give the Shutdown folder a new closed icon.
  */
 
 SOM_Scope ULONG  SOMLINK xfshutM_wpclsQueryIconData(M_XFldShutdown *somSelf,

@@ -13,7 +13,7 @@
  *      XCenter thread) still does the painting.
  *
  *      Function prefix for this file:
- *      --  Bwgt*
+ *      --  Pwgt*
  *
  *      This is all new with V0.9.7.
  *
@@ -757,8 +757,8 @@ VOID EXPENTRY PwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
                 //     while running.
                 if (!paProcessorColor)
                 {
-                    paProcessorColor = malloc(  sizeof(ProcessorColor)
-                                              * cProcessors);
+                    paProcessorColor = malloc(   sizeof(ProcessorColor)
+                                               * cProcessors);
                     padlgPulsePerProcessor = malloc(  sizeof(dlgPulsePerProcessor)
                                                     * cProcessors);
                     for (ul = 0;
@@ -956,8 +956,8 @@ static VOID UnlockData(PWIDGETPRIVATE pPrivate)
 
 static VOID _Optlink fntCollect(PTHREADINFO ptiMyself)
 {
-    PWIDGETPRIVATE pPrivate = (PWIDGETPRIVATE)ptiMyself->ulData;
-    if (pPrivate)
+    PWIDGETPRIVATE pPrivate;
+    if (pPrivate = (PWIDGETPRIVATE)ptiMyself->ulData)
     {
         BOOL    fLocked = FALSE;
         ULONG   iCPU;
@@ -969,7 +969,7 @@ static VOID _Optlink fntCollect(PTHREADINFO ptiMyself)
         // spent only very little time in here
 
         DosSetPriority(PRTYS_THREAD,
-                       PRTYC_TIMECRITICAL,  // 3, second highest class
+                       PRTYC_TIMECRITICAL,
                        0,                   // delta, let's not overdo it
                        0);                  // current thread
 
@@ -1003,29 +1003,18 @@ static VOID _Optlink fntCollect(PTHREADINFO ptiMyself)
 
                                 // in the array of loads, move each entry
                                 // one to the front; drop the oldest entry
-                                #if 0  //kso debug
-                                memcpy(palCPUIntr,
-                                       palCPUIntr + 1,
-                                       sizeof(LONG) * (pPrivate->cLoads - 1));
-                                #else
-                                int i;
-                                for (i = 1; i < pPrivate->cLoads; i++)
-                                    palCPUIntr[i - 1] = palCPUIntr[i];
-                                #endif
+                                memmove(palCPUIntr,
+                                        palCPUIntr + 1,
+                                        sizeof(LONG) * (pPrivate->cLoads - 1));
                                 // and update the last entry with the current value
                                 palCPUIntr[pPrivate->cLoads - 1] = pPrivate->pPerfData->palIntrs[iCPU];
 
 
                                 // in the array of loads, move each entry
                                 // one to the front; drop the oldest entry
-                                #if 0 //kso debug
-                                memcpy(palCPULoad,
-                                       palCPULoad + 1,
-                                       sizeof(LONG) * (pPrivate->cLoads - 1));
-                                #else
-                                for (i = 1; i < pPrivate->cLoads; i++)
-                                    palCPULoad[i - 1] = palCPULoad[i];
-                                #endif
+                                memmove(palCPULoad,
+                                        palCPULoad + 1,
+                                        sizeof(LONG) * (pPrivate->cLoads - 1));
 
                                 // and update the last entry with the current value
                                 palCPULoad[pPrivate->cLoads - 1] = pPrivate->pPerfData->palLoads[iCPU];
@@ -1390,7 +1379,7 @@ static VOID PwgtUpdateGraph(HWND hwnd,
                  iCPU < pPrivate->cProcessors;
                  iCPU++)
             {
-                pszTooltipLoc += sprintf(pszTooltipLoc, // @@todo localize
+                pszTooltipLoc += sprintf(pszTooltipLoc,
                                          cmnGetString(ID_CRSI_PWGT_TOOLTIP2),
                                          // "\nCPU %d User: %lu%c%lu%c",
                                          iCPU,
@@ -1510,9 +1499,9 @@ static VOID PwgtPaint2(HWND hwnd,
                         paulLoad1000[iCPU] += pPrivate->pPerfData->palIntrs[iCPU];
                 } // for iCPU
 
-                //// everything below is safe, so unlock
-                //UnlockData(pPrivate);
-                //fLocked = FALSE;
+                // everything below is safe, so unlock
+                UnlockData(pPrivate);
+                fLocked = FALSE;
 
                 if (pPrivate->pBitmap)
                 {
@@ -1526,10 +1515,6 @@ static VOID PwgtPaint2(HWND hwnd,
                                   0, 0,
                                   DBM_NORMAL);
                 }
-
-                // everything below is safe, so unlock
-                UnlockData(pPrivate);
-                fLocked = FALSE;
 
                 pszPaintLoc = szPaint;
                 for (iCPU = 0;
@@ -1758,7 +1743,9 @@ static VOID PwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
                                     // fill the front with zeroes
                                     memset(palNew, 0, cDelta * sizeof(LONG));
                                     // and copy old values after that
-                                    memcpy(palNew + cDelta, palOld, pPrivate->cLoads * sizeof(LONG));
+                                    memcpy(palNew + cDelta,
+                                           palOld,
+                                           pPrivate->cLoads * sizeof(LONG));
                                 }
                                 else
                                 {
@@ -1766,13 +1753,14 @@ static VOID PwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
                                     // e.g. ulnewClientCX = 100
                                     //      pPrivate->cLoads = 200
                                     // drop the first items
-                                    memcpy(palNew, palOld + cDelta, ulNewClientCX * sizeof(LONG));
+                                    memcpy(palNew,
+                                           palOld + cDelta,
+                                           ulNewClientCX * sizeof(LONG));
                                 }
                             } /* for iCPU */
 
                             free(pPrivate->palLoads);
                             pPrivate->palLoads = palNewLoads;
-
 
                             // do the same for the interrupt load
                             if (pPrivate->palIntrs)
@@ -1789,7 +1777,9 @@ static VOID PwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
                                         // fill the front with zeroes
                                         memset(palNew, 0, cDelta * sizeof(LONG));
                                         // and copy old values after that
-                                        memcpy(palNew + cDelta, palOld, pPrivate->cLoads * sizeof(LONG));
+                                        memcpy(palNew + cDelta,
+                                               palOld,
+                                               pPrivate->cLoads * sizeof(LONG));
                                     }
                                     else
                                     {
@@ -1797,7 +1787,9 @@ static VOID PwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
                                         // e.g. ulnewClientCX = 100
                                         //      pPrivate->cLoads = 200
                                         // drop the first items
-                                        memcpy(palNew, palOld + cDelta, ulNewClientCX * sizeof(LONG));
+                                        memcpy(palNew,
+                                               palOld + cDelta,
+                                               ulNewClientCX * sizeof(LONG));
                                     }
                                 } /* for iCPU */
 
@@ -1895,8 +1887,7 @@ static VOID PwgtPresParamChanged(HWND hwnd,
                     pPrivate->Setup.pszFont = NULL;
                 }
 
-                pszFont = winhQueryWindowFont(hwnd);
-                if (pszFont)
+                if (pszFont = winhQueryWindowFont(hwnd))
                 {
                     // we must use local malloc() for the font
                     pPrivate->Setup.pszFont = strdup(pszFont);

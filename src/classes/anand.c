@@ -346,7 +346,7 @@ SOM_Scope ULONG SOMLINK and_xwpInsertAnimationPage3(XWPAnimouse * somSelf,
     XWPAnimouseMethodDebug("XWPAnimouse", "and_xwpInsertAnimationPage3");
 
     /* Return statement to be customized: */
-    return (0);
+    return 0;
 }
 
 /*

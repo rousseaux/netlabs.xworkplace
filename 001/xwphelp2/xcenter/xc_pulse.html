@@ -19,8 +19,12 @@ respective monitor in the &warpcenter;.
 
 <P>The cyan part of the graph represents the "user" load of the system, while the
 blue part represents the "IRQ" load. The percentage that is printed in the center
-always represents the current combined "user" and "IRQ" loads. See the remarks
-below for details about this.
+always represents the current combined "user" and "IRQ" loads.
+<!-- V0.9.19: added this -->
+If you are running a multi-processor system, you will get one "user" graph for
+each CPU. However, even then you will only have one "IRQ" graph because per
+definition, &os2; processes all interrupts on the first CPU in the system.
+See the remarks below for details about this.
 <!-- end V0.9.9 -->
 
 <!-- V0.9.19: changed the following -->
@@ -31,8 +35,9 @@ Besides, it is
 <!-- V0.9.19: replaced link -->
 <A HREF="xcenter/xc_main_sizbar.html">sizeable</A>.
 
-<P>Presently, the pulse widget can only display the load of the first CPU, in
-case you are running &os2; on a multi-processor system.
+<!-- V0.9.19: removed
+Presently, the pulse widget can only display the load of the first CPU, in
+case you are running &os2; on a multi-processor system. -->
 
 <P><B>Implementation Details</B>
 
@@ -56,12 +61,16 @@ below 0.7% with the standard widget size.
 <!-- V0.9.9: added all the following -->
 <P><B>Requirements</B>
 
+<!-- V0.9.19: refreshed this -->
+<IFNDEF __EWORKPLACE__>
 <P>The <CODE>DosPerfSysCall</CODE> API has only been introduced fairly recently
 and may not work on your system. It should work with Warp 4 and above (or Warp 3
 with an equivalent fixpak level; should be fixpak 26).
+</IFNDEF>
 
-<P>In addition, the IBM documentation for this API states that a Pentium processor is
-required for the kernel performance counters to work.
+<P>The IBM documentation for <CODE>DosPerfSysCall</CODE> states that a Pentium
+processor is required for the kernel performance counters to work.
+<!-- end V0.9.19 -->
 
 <P>If the widget does not display a graph but <CODE>"E xxx"</CODE> only (with
 <CODE>xxx</CODE> being a standard &os2; error code), an error occured. Most probably, you
@@ -84,7 +93,9 @@ as controlled by the scheduler in the &os2; kernel.
 <P>By contrast, the <B>"IRQ" load</B> represents the time that was needed to process
 interrupts. As you might know, interrupts are a way for hardware components to signal
 to the CPU that some important event occured which needs to be serviced immediately.
-Most commonly, interrupts are raised by hard disks, sound cards, and network adapters.
+Most commonly, interrupts are raised by hard disks, sound cards, network adapters,
+<!-- V0.9.19: added serials and printers-->
+and serial and printer communications.
 These devices cannot afford to wait until the &os2; scheduler has finished a process
 timeslice and is ready to switch to another task. Instead, when an IRQ comes in,
 the &os2; kernel interrupts the regular scheduling sequence and calls an interrupt
@@ -93,7 +104,7 @@ general, only &os2; device drivers can install interrupt handlers.) For example,
 if an interrupt from the hard disk comes in, code in <CODE>IBM1S506.ADD</CODE> will
 be called immediately to service the interrupt.
 
-<P>If you never see any IRQ load on your system, this is not a problem. This is
+<P>If you never see any IRQ load on your system, this is normal. This is
 probably the case if you do not have any network adapters installed and you have
 busmastering enabled for your hard disks. However, if you have a high IRQ load,
 you might consider taking measurements to reduce it -- enable busmastering for your

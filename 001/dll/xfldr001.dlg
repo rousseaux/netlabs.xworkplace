@@ -1144,53 +1144,6 @@ BEGIN
     END
 END
 
-DLGTEMPLATE ID_XSD_AUTOCLOSE LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "Auto-Close Non-PM Sessions", ID_XSD_AUTOCLOSE, 25, 9, 245, 192,
-            WS_VISIBLE, FCF_SYSMENU | FCF_TITLEBAR
-    BEGIN
-        ICON            ID_SDICON, ID_SDDI_ICON, 5, 170, 20, 16, WS_GROUP
-        LTEXT           "Enter the sessions to be closed automatically here.",
-                        -1, 35, 167, 195, 17, DT_WORDBREAK | NOT WS_GROUP
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        LISTBOX         ID_XSDI_XRB_LISTBOX, 5, 99, 165, 60, LS_NOADJUSTPOS |
-                        LS_HORZSCROLL
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        PUSHBUTTON      "~New", ID_XSDI_XRB_NEW, 180, 147, 55, 12,
-                        BS_NOPOINTERFOCUS
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        PUSHBUTTON      "~Delete", ID_XSDI_XRB_DELETE, 180, 132, 55, 12,
-                        BS_NOPOINTERFOCUS
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        LTEXT           "Session ~title (leading characters):", -1, 5, 87,
-                        230, 8, DT_MNEMONIC
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        ENTRYFIELD      "", ID_XSDI_XRB_ITEMNAME, 7, 77, 226, 8, ES_MARGIN
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        GROUPBOX        "Do ~what?", -1, 5, 24, 230, 49, DT_MNEMONIC | NOT
-                        WS_GROUP
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        AUTORADIOBUTTON "Sk~ip session (do not close)", ID_XSDI_ACL_SKIP, 10,
-                        54, 170, 10, WS_GROUP | WS_TABSTOP
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        AUTORADIOBUTTON "Si~mulate Ctrl+C", ID_XSDI_ACL_CTRL_C, 10, 45, 170,
-                        10, WS_TABSTOP
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        AUTORADIOBUTTON "Clo~se PM window", ID_XSDI_ACL_WMCLOSE, 10, 36, 175,
-                        10, WS_TABSTOP
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        AUTORADIOBUTTON "~Kill session (DosKillProcess)",
-                        ID_XSDI_ACL_KILLSESSION, 10, 27, 175, 10, WS_TABSTOP
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        DEFPUSHBUTTON   "~OK", DID_OK, 5, 6, 60, 12, WS_GROUP
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        PUSHBUTTON      "~Cancel", DID_CANCEL, 75, 6, 60, 12
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        PUSHBUTTON      "~Help", -1, 175, 6, 60, 12, BS_HELP
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-    END
-END
-
 DLGTEMPLATE ID_XSD_DATAF_TYPES LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     DIALOG  "", ID_XSD_DATAF_TYPES, 0, 0, 265, 162, NOT FS_DLGBORDER |

@@ -235,9 +235,6 @@ interface XFldObject : WPObject
     wpSetDefaultView: override;
     wpSetObjectID: override;
 
-    wpSetStyle: override;
-    wpModifyStyle: override;
-
     wpSaveDeferred: override;
     wpSaveImmediate: override;
 

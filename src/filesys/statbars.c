@@ -1598,7 +1598,7 @@ BOOL stbSetClassMnemonics(SOMClass *pClassObject,
                                       pszText));
     }
 
-    return (FALSE);
+    return FALSE;
 }
 
 #endif
@@ -1819,7 +1819,7 @@ static ULONG GetDivisor(CHAR c,
     // invalid code:
     *pcReplace = 2;
 
-    return (0);
+    return 0;
 }
 
 /*

@@ -72,11 +72,11 @@ BOOL utilNeedsVerify(VOID)
             // pid contains caller's PID:
             if (pid != G_pidRing3Daemon)
                 // not daemon process:
-                return (TRUE);
+                return TRUE;
         }
     }
 
-    return (FALSE);
+    return FALSE;
 }
 
 /*

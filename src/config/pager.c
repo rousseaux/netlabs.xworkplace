@@ -2124,7 +2124,6 @@ ULONG pgmiInsertPagerPages(WPObject *somSelf,       // in: screen object
     inbp.pfncbItemChanged = pgmiXPagerColorsItemChanged;
     inbp.usPageStyleFlags = BKA_MINOR;
     inbp.fEnumerate = TRUE;
-    // inbp.pcszName = "~XPager";
     inbp.ulDlgID = ID_XFD_EMPTYDLG; // ID_SCD_PAGER_COLORS;
     inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_PAGER_COLORS;
     // give this page a unique ID, which is
@@ -2141,7 +2140,6 @@ ULONG pgmiInsertPagerPages(WPObject *somSelf,       // in: screen object
     inbp.pfncbItemChanged = pgmiXPagerStickyItemChanged;
     inbp.usPageStyleFlags = BKA_MINOR;
     inbp.fEnumerate = TRUE;
-    // inbp.pcszName = "~XPager";
     inbp.ulDlgID = ID_XFD_EMPTYDLG; // ID_SCD_PAGER_STICKY; V0.9.19 (2002-04-17) [umoeller]
     inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_PAGER_STICKY;
     // make this sizeable V0.9.19 (2002-04-17) [umoeller]
@@ -2161,7 +2159,6 @@ ULONG pgmiInsertPagerPages(WPObject *somSelf,       // in: screen object
     inbp.pfncbItemChanged = pgmiXPagerWindowItemChanged;
     inbp.usPageStyleFlags = BKA_MINOR;
     inbp.fEnumerate = TRUE;
-    // inbp.pcszName = "~XPager";
     inbp.ulDlgID = ID_XFD_EMPTYDLG; // ID_SCD_PAGER_WINDOW; V0.9.19 (2002-04-17) [umoeller]
     inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_PAGER_WINDOW;
     // give this page a unique ID, which is
@@ -2178,7 +2175,7 @@ ULONG pgmiInsertPagerPages(WPObject *somSelf,       // in: screen object
     inbp.pfncbItemChanged = pgmiXPagerGeneralItemChanged;
     inbp.usPageStyleFlags = BKA_MAJOR;
     inbp.fEnumerate = TRUE;
-    inbp.pcszName = "~XPager";
+    inbp.pcszName = cmnGetString(ID_XSSI_PAGETITLE_PAGER);
     inbp.ulDlgID = ID_SCD_PAGER_GENERAL;
     inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_PAGER_GENERAL;
     // give this page a unique ID, which is

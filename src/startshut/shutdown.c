@@ -946,6 +946,8 @@ USHORT xsdWriteAutoCloseItems(PLINKLIST pllItems)
  *      (fncbDesktop1ItemChanged, xfdesk.c).
  *
  *@@changed V0.9.0 [umoeller]: adjusted for new linklist.c functions
+ *@@changed V0.9.19 (2002-05-23) [umoeller]: removed Ctrl+C option, which never worked
+ *@@changed V0.9.19 (2002-05-23) [umoeller]: now using dialog formatter
  */
 
 MRESULT EXPENTRY fnwpAutoCloseDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -1032,7 +1034,7 @@ MRESULT EXPENTRY fnwpAutoCloseDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
 
                 // radio buttons
                 case ID_XSDI_ACL_WMCLOSE:
-                case ID_XSDI_ACL_CTRL_C:
+                // case ID_XSDI_ACL_CTRL_C:     removed V0.9.19 (2002-05-23) [umoeller]
                 case ID_XSDI_ACL_KILLSESSION:
                 case ID_XSDI_ACL_SKIP:
                     if (SHORT2FROMMP(mp1) == BN_CLICKED)
@@ -1044,8 +1046,8 @@ MRESULT EXPENTRY fnwpAutoCloseDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
                                 pData->pliSelected->usAction =
                                     (SHORT1FROMMP(mp1) == ID_XSDI_ACL_WMCLOSE)
                                         ? ACL_WMCLOSE
-                                    : (SHORT1FROMMP(mp1) == ID_XSDI_ACL_CTRL_C)
-                                        ? ACL_CTRL_C
+                                    // : (SHORT1FROMMP(mp1) == ID_XSDI_ACL_CTRL_C)
+                                    //     ? ACL_CTRL_C
                                     : (SHORT1FROMMP(mp1) == ID_XSDI_ACL_KILLSESSION)
                                         ? ACL_KILLSESSION
                                     : ACL_SKIP;
@@ -1089,9 +1091,9 @@ MRESULT EXPENTRY fnwpAutoCloseDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
                         case ACL_WMCLOSE:
                             winhSetDlgItemChecked(hwndDlg,
                                 ID_XSDI_ACL_WMCLOSE, 1); break;
-                        case ACL_CTRL_C:
-                            winhSetDlgItemChecked(hwndDlg,
-                                ID_XSDI_ACL_CTRL_C, 1); break;
+                        // case ACL_CTRL_C:     removed V0.9.19 (2002-05-23) [umoeller]
+                        //     winhSetDlgItemChecked(hwndDlg,
+                        //         ID_XSDI_ACL_CTRL_C, 1); break;
                         case ACL_KILLSESSION:
                             winhSetDlgItemChecked(hwndDlg,
                                 ID_XSDI_ACL_KILLSESSION, 1); break;
@@ -1110,8 +1112,8 @@ MRESULT EXPENTRY fnwpAutoCloseDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
 
                 winhEnableDlgItem(hwndDlg, ID_XSDI_ACL_WMCLOSE,
                             (pData->pliSelected != NULL));
-                winhEnableDlgItem(hwndDlg, ID_XSDI_ACL_CTRL_C,
-                            (pData->pliSelected != NULL));
+                // winhEnableDlgItem(hwndDlg, ID_XSDI_ACL_CTRL_C,
+                //             (pData->pliSelected != NULL));
                 winhEnableDlgItem(hwndDlg, ID_XSDI_ACL_KILLSESSION,
                             (pData->pliSelected != NULL));
                 winhEnableDlgItem(hwndDlg, ID_XSDI_ACL_SKIP,
@@ -1239,6 +1241,89 @@ MRESULT EXPENTRY fnwpAutoCloseDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
         break;
     }
     return (mrc);
+}
+
+#define ACL_WIDTH       200
+#define ACL_LB_WIDTH    (ACL_WIDTH - COMMON_SPACING - STD_BUTTON_WIDTH)
+
+static const CONTROLDEF
+    ACLIcon = CONTROLDEF_ICON(NULLHANDLE, ID_SDDI_ICON),
+    ACLIntro = LOADDEF_TEXT_WORDBREAK(ID_XSDI_ACL_INTRO, ACL_WIDTH - 30),
+    ACLListbox = CONTROLDEF_LISTBOX(ID_XSDI_XRB_LISTBOX, ACL_LB_WIDTH, 60),
+    ACLNew = LOADDEF_NOFOCUSBUTTON(ID_XSDI_XRB_NEW),
+    ACLDelete = LOADDEF_NOFOCUSBUTTON(ID_XSDI_XRB_DELETE),
+    ACLSessionTitle = LOADDEF_TEXT(ID_XSDI_ACL_SESSIONTITLE),
+    ACLEntryField = CONTROLDEF_ENTRYFIELD("", ID_XSDI_XRB_ITEMNAME, ACL_WIDTH, SZL_AUTOSIZE),
+    ACLDoWhatGroup = LOADDEF_GROUP(ID_XSDI_ACL_DOWHATGROUP, SZL_AUTOSIZE),
+    ACLSkipRadio = LOADDEF_FIRST_AUTORADIO(ID_XSDI_ACL_SKIP),
+    ACLWMCloseRadio = LOADDEF_NEXT_AUTORADIO(ID_XSDI_ACL_WMCLOSE),
+    ACLKillRadio = LOADDEF_NEXT_AUTORADIO(ID_XSDI_ACL_KILLSESSION);
+
+static const DLGHITEM G_dlgAutoCloseDetails[] =
+    {
+        START_TABLE,
+            START_ROW(ROW_VALIGN_CENTER),
+                CONTROL_DEF(&ACLIcon),
+                CONTROL_DEF(&ACLIntro),
+            START_ROW(ROW_VALIGN_CENTER),
+                CONTROL_DEF(&ACLListbox),
+                START_TABLE,
+                    START_ROW(0),
+                        CONTROL_DEF(&ACLNew),
+                    START_ROW(0),
+                        CONTROL_DEF(&ACLDelete),
+                END_TABLE,
+            START_ROW(0),
+                CONTROL_DEF(&ACLSessionTitle),
+            START_ROW(0),
+                CONTROL_DEF(&ACLEntryField),
+            START_ROW(0),
+                START_GROUP_TABLE(&ACLDoWhatGroup),
+                    START_ROW(0),
+                        CONTROL_DEF(&ACLSkipRadio),
+                    START_ROW(0),
+                        CONTROL_DEF(&ACLWMCloseRadio),
+                    START_ROW(0),
+                        CONTROL_DEF(&ACLKillRadio),
+                END_TABLE,
+            START_ROW(0),
+                CONTROL_DEF(&G_OKButton),
+                CONTROL_DEF(&G_CancelButton),
+                CONTROL_DEF(&G_HelpButton),
+        END_TABLE
+    };
+
+/*
+ *@@ ShowAutoCloseDetails:
+ *
+ *@@added V0.9.19 (2002-05-23) [umoeller]
+ */
+
+static VOID ShowAutoCloseDetails(HWND hwndOwner)
+{
+    PDLGHITEM paNew;
+    if (!cmnLoadDialogStrings(G_dlgAutoCloseDetails,
+                              ARRAYITEMCOUNT(G_dlgAutoCloseDetails),
+                              &paNew))
+    {
+        HWND hwndDlg;
+        if (!dlghCreateDlg(&hwndDlg,
+                           hwndOwner,
+                           FCF_FIXED_DLG,
+                           fnwpAutoCloseDetails,
+                           cmnGetString(ID_XSD_AUTOCLOSE), // "Auto-Close Non-PM Sessions"
+                           paNew,
+                           ARRAYITEMCOUNT(G_dlgAutoCloseDetails),
+                           NULL,
+                           cmnQueryDefaultFont()))
+        {
+            winhCenterWindow(hwndDlg);      // still hidden
+            WinProcessDlg(hwndDlg);
+            WinDestroyWindow(hwndDlg);
+        }
+
+        free(paNew);
+    }
 }
 
 /*
@@ -2677,12 +2762,15 @@ MRESULT xsdShutdownItemChanged(PNOTEBOOKPAGE pnbp,
 
         // Auto-close details (Desktop page 1)
         case ID_SDDI_AUTOCLOSEDETAILS:
+            ShowAutoCloseDetails(pnbp->hwndFrame);
+            /*
             WinDlgBox(HWND_DESKTOP,         // parent is desktop
                       pnbp->hwndFrame,             // owner
                       (PFNWP)fnwpAutoCloseDetails,    // dialog procedure
                       cmnQueryNLSModuleHandle(FALSE),  // from resource file
                       ID_XSD_AUTOCLOSE,        // dialog resource id
                       (PVOID)NULL);            // no dialog parameters
+            */
             ulChange = 0;
         break;
 
@@ -2905,8 +2993,7 @@ APIRET xsdFlushWPS2INI(VOID)
     APIRET arc  = 0;
     HEV hev = NULLHANDLE;
 
-    arc = DosOpenEventSem("\\SEM32\\WORKPLAC\\LAZYWRIT.SEM", &hev);
-    if (arc == NO_ERROR)
+    if (!(arc = DosOpenEventSem("\\SEM32\\WORKPLAC\\LAZYWRIT.SEM", &hev)))
     {
         arc = DosPostEventSem(hev);
         DosCloseEventSem(hev);
@@ -4768,6 +4855,7 @@ static void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
  *      Runs on the Shutdown thread.
  *
  *@@added V0.9.1 (99-12-10) [umoeller]
+ *@@changed V0.9.19 (2002-05-23) [umoeller]: removed Ctrl+C option, which never worked
  */
 
 VOID xsdCloseVIO(PSHUTDOWNDATA pShutdownData,
@@ -4785,9 +4873,7 @@ VOID xsdCloseVIO(PSHUTDOWNDATA pShutdownData,
            hwndFrame);
 
     // get VIO item to close
-    pItem = xsdQueryCurrentItem(pShutdownData);
-
-    if (pItem)
+    if (pItem = xsdQueryCurrentItem(pShutdownData))
     {
         // valid item: go thru list of auto-close items
         // if this item is on there
@@ -4806,10 +4892,9 @@ VOID xsdCloseVIO(PSHUTDOWNDATA pShutdownData,
             PAUTOCLOSELISTITEM pliThis = pAutoCloseNode->pItemData;
             doshWriteLogEntry(pShutdownData->ShutdownLogFile, "      Checking %s", pliThis->szItemName);
             // compare first characters
-            if (strnicmp(pShutdownData->VioItem.swctl.szSwtitle,
-                         pliThis->szItemName,
-                         strlen(pliThis->szItemName))
-                   == 0)
+            if (!strnicmp(pShutdownData->VioItem.swctl.szSwtitle,
+                          pliThis->szItemName,
+                          strlen(pliThis->szItemName)))
             {
                 // item found:
                 doshWriteLogEntry(pShutdownData->ShutdownLogFile, "        Matching item found, auto-closing item");
@@ -4960,12 +5045,12 @@ VOID xsdCloseVIO(PSHUTDOWNDATA pShutdownData,
                        WinWindowFromID(pShutdownData->VioItem.swctl.hwnd, FID_SYSMENU));
             break;
 
-            case ACL_CTRL_C:
+            /* case ACL_CTRL_C:     removed V0.9.19 (2002-05-23) [umoeller]
                 DosSendSignalException(pShutdownData->VioItem.swctl.idProcess,
                                        XCPT_SIGNAL_INTR);
                 doshWriteLogEntry(pShutdownData->ShutdownLogFile, "      xsdCloseVIO: Sent INTR signal to pid 0x%lX",
                        pShutdownData->VioItem.swctl.idProcess);
-            break;
+            break; */
 
             case ACL_KILLSESSION:
                 DosKillProcess(DKP_PROCESS, pShutdownData->VioItem.swctl.idProcess);
@@ -5639,7 +5724,7 @@ BOOL _Optlink xsd_fnSaveINIsProgress(ULONG ulUser,
                    WM_UPDATEPROGRESSBAR,
                    (MPARAM)ulProgressNow,
                    (MPARAM)ulProgressMax);
-    return (TRUE);
+    return TRUE;
 }
 
 /*

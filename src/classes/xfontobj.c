@@ -583,7 +583,7 @@ SOM_Scope BOOL  SOMLINK fono_wpMenuItemSelected(XWPFontObject *somSelf,
     XWPFontObjectMethodDebug("XWPFontObject","fono_wpMenuItemSelected");
 
     if (fonMenuItemSelected(somSelf, ulMenuId))
-        return (TRUE);
+        return TRUE;
 
     return (XWPFontObject_parent_WPTransient_wpMenuItemSelected(somSelf,
                                                                 hwndFrame,
@@ -604,7 +604,7 @@ SOM_Scope BOOL  SOMLINK fono_wpMenuItemHelpSelected(XWPFontObject *somSelf,
     XWPFontObjectMethodDebug("XWPFontObject","fono_wpMenuItemHelpSelected");
 
     if (fonMenuItemHelpSelected(somSelf, MenuId))
-        return (TRUE);
+        return TRUE;
 
     return (XWPFontObject_parent_WPTransient_wpMenuItemHelpSelected(somSelf,
                                                                     MenuId));
@@ -645,7 +645,7 @@ SOM_Scope BOOL  SOMLINK fono_wpQueryDefaultHelp(XWPFontObject *somSelf,
 
     strcpy(HelpLibrary, cmnQueryHelpLibrary());
     *pHelpPanelId = ID_XSH_FONTOBJECT;
-    return (TRUE);
+    return TRUE;
 }
 
 /*
@@ -681,7 +681,7 @@ SOM_Scope HWND  SOMLINK fono_wpOpen(XWPFontObject *somSelf, HWND hwndCnr,
                                         WinQueryAnchorBlock(hwndCnr),
                                         ulView));
 
-    return (NULLHANDLE);
+    return NULLHANDLE;
 }
 
 /* ******************************************************************
@@ -742,7 +742,7 @@ SOM_Scope BOOL  SOMLINK fonoM_xwpclsSetFontSampleHints(M_XWPFontObject *somSelf,
         fonInvalidateAllOpenSampleViews();
     }
 
-    return (TRUE);
+    return TRUE;
 }
 
 /*
@@ -865,7 +865,7 @@ SOM_Scope BOOL  SOMLINK fonoM_wpclsCreateDefaultTemplates(M_XWPFontObject *somSe
     /* M_XWPFontObjectData *somThis = M_XWPFontObjectGetData(somSelf); */
     M_XWPFontObjectMethodDebug("M_XWPFontObject","fonoM_wpclsCreateDefaultTemplates");
 
-    return (TRUE);
+    return TRUE;
     // means that the Templates folder should _not_ create templates
     // by itself; we pretend that we've done this
 }
@@ -984,13 +984,26 @@ SOM_Scope ULONG  SOMLINK fonoM_wpclsQueryStyle(M_XWPFontObject *somSelf)
 
 /*
  *@@ wpclsQueryIconData:
- *      this WPObject class method builds the default
- *      icon for objects of a class (i.e. the icon which
- *      is shown if no instance icon is assigned). This
- *      apparently gets called from some of the other
- *      icon instance methods if no instance icon was
- *      found for an object. The exact mechanism of how
- *      this works is not documented.
+ *      this WPObject class method must return information
+ *      about how to build the default icon for objects
+ *      of a class. This gets called from various other
+ *      methods whenever a class default icon is needed;
+ *      most importantly, M_WPObject::wpclsQueryIcon
+ *      calls this to build a class default icon, which
+ *      is then cached in the class's instance data.
+ *      If a subclass wants to change a class default icon,
+ *      it should always override _this_ method instead of
+ *      wpclsQueryIcon.
+ *
+ *      Note that the default WPS implementation does not
+ *      allow for specifying the ICON_FILE format here,
+ *      which is why we have overridden
+ *      M_XFldObject::wpclsQueryIcon too. This allows us
+ *      to return icon _files_ for theming too. For details
+ *      about the WPS's crappy icon management, refer to
+ *      src\filesys\icons.c.
+ *
+ *      We give this class a new standard icon here.
  */
 
 SOM_Scope ULONG  SOMLINK fonoM_wpclsQueryIconData(M_XWPFontObject *somSelf,

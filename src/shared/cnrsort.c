@@ -123,7 +123,7 @@ SHORT EXPENTRY fnCompareExt(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmrc2, PVOID 
                 {
                     case WCS_LT: return (-1);
                     case WCS_GT: return (1);
-                    default: return (0);
+                    default: return 0;
                 }
             else
                 // pmrc1 has no ext, but pmrc2 does:
@@ -158,7 +158,7 @@ SHORT EXPENTRY fnCompareExt(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmrc2, PVOID 
         }
     }
 
-    return (0);
+    return 0;
 }
 
 /*
@@ -219,7 +219,7 @@ SHORT EXPENTRY fnCompareName(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmrc2, PVOID
             case WCS_GT: return (1);
         }
 
-    return (0);
+    return 0;
 }
 
 /*
@@ -448,7 +448,7 @@ SHORT EXPENTRY fnCompareRealName(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmrc2, P
              }
         }
 
-    return (0);
+    return 0;
 }
 
 /*
@@ -481,7 +481,7 @@ SHORT EXPENTRY fnCompareSize(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmrc2, PVOID
                 return (-1);
          }
     }
-    return (0);
+    return 0;
 }
 
 /*
@@ -564,7 +564,7 @@ SHORT EXPENTRY fnCompareCommonDate(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmrc2,
             }
         }
     }
-    return (0);
+    return 0;
 }
 
 /*

@@ -649,29 +649,27 @@ SOM_Scope BOOL  SOMLINK xdf_wpModifyPopupMenu(XFldDataFile *somSelf,
                                               HWND hwndCnr,
                                               ULONG iPosition)
 {
-    BOOL brc = TRUE;
-
     /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
     XFldDataFileMethodDebug("XFldDataFile","xdf_wpModifyPopupMenu");
 
-    brc = XFldDataFile_parent_WPDataFile_wpModifyPopupMenu(somSelf,
-                                                           hwndMenu,
-                                                           hwndCnr,
-                                                           iPosition);
-
-    if (brc)
-        // manipulate the data file menu according to our needs
-        brc = mnuModifyDataFilePopupMenu(somSelf,
-                                         hwndMenu,
-                                         hwndCnr,
-                                         iPosition);
-
-    if (brc)
+    if (    (XFldDataFile_parent_WPDataFile_wpModifyPopupMenu(somSelf,
+                                                              hwndMenu,
+                                                              hwndCnr,
+                                                              iPosition))
+            // manipulate the data file menu according to our needs
+         && (mnuModifyDataFilePopupMenu(somSelf,
+                                        hwndMenu,
+                                        hwndCnr,
+                                        iPosition))
+       )
+    {
         fdrAddHotkeysToMenu(somSelf,
                             hwndCnr,
                             hwndMenu);
+        return TRUE;
+    }
 
-    return (brc);
+    return FALSE;
 }
 
 /*
@@ -690,10 +688,10 @@ SOM_Scope BOOL  SOMLINK xdf_wpMenuItemHelpSelected(XFldDataFile *somSelf,
         // if this returns TRUE, help was requested for one
         // of the new menu items
         return TRUE;
-    else
-        // else: none of our menu items, call default
-        return (XFldDataFile_parent_WPDataFile_wpMenuItemHelpSelected(somSelf,
-                                                                 MenuId));
+
+    // else: none of our menu items, call default
+    return XFldDataFile_parent_WPDataFile_wpMenuItemHelpSelected(somSelf,
+                                                                 MenuId);
 }
 
 /*
@@ -953,10 +951,10 @@ SOM_Scope ULONG  SOMLINK xdf_wpAddFileTypePage(XFldDataFile *somSelf,
 
         return (ntbInsertPage(&inbp));
     }
-    else
 #endif
-        return (XFldDataFile_parent_WPDataFile_wpAddFileTypePage(somSelf,
-                                                                 hwndNotebook));
+
+    return XFldDataFile_parent_WPDataFile_wpAddFileTypePage(somSelf,
+                                                            hwndNotebook);
 }
 
 /*
@@ -1484,7 +1482,7 @@ SOM_Scope BOOL  SOMLINK xdf_wpSetIconData(XFldDataFile *somSelf,
                 _fHasIconEA = FALSE;
                 // use default assoc icon
                 _wpSetAssociatedFileIcon(somSelf);
-                return (TRUE);
+                return TRUE;
             }
         }
     }
@@ -1673,7 +1671,7 @@ SOM_Scope BOOL  SOMLINK xdfM_wpclsCreateDefaultTemplates(M_XFldDataFile *somSelf
     // break the default behavior for subclasses.
     // this is not working on Warp 3
     if (somSelf == _XFldDataFile)
-        return (TRUE);
+        return TRUE;
         // means that the Templates folder should _not_ create templates
         // by itself; we pretend that we've done this
     else
@@ -1732,7 +1730,7 @@ SOM_Scope BOOL  SOMLINK xdfM_wpclsQueryDefaultHelp(M_XFldDataFile *somSelf,
 
     strcpy(pszHelpLibrary, cmnQueryHelpLibrary());
     *pHelpPanelId = ID_XSH_DATAFILE_MAIN;
-    return (TRUE);
+    return TRUE;
 
     /* return (M_XFldDataFile_parent_M_WPDataFile_wpclsQueryDefaultHelp(somSelf,
                                                                      pHelpPanelId,
@@ -1741,24 +1739,33 @@ SOM_Scope BOOL  SOMLINK xdfM_wpclsQueryDefaultHelp(M_XFldDataFile *somSelf,
 
 /*
  *@@ wpclsQueryIconData:
- *      this WPObject class method builds the default
- *      icon for objects of a class (i.e. the icon which
- *      is shown if no instance icon is assigned). This
- *      apparently gets called from some of the other
- *      icon instance methods if no instance icon was
- *      found for an object. The exact mechanism of how
- *      this works is not documented.
+ *      this WPObject class method must return information
+ *      about how to build the default icon for objects
+ *      of a class. This gets called from various other
+ *      methods whenever a class default icon is needed;
+ *      most importantly, M_WPObject::wpclsQueryIcon
+ *      calls this to build a class default icon, which
+ *      is then cached in the class's instance data.
+ *      If a subclass wants to change a class default icon,
+ *      it should always override _this_ method instead of
+ *      wpclsQueryIcon.
  *
- *      We give data files a new default icon, if the
- *      global settings allow this.
- *      This is loaded from /ICONS/ICONS.DLL.
+ *      Note that the default WPS implementation does not
+ *      allow for specifying the ICON_FILE format here,
+ *      which is why we have overridden
+ *      M_XFldObject::wpclsQueryIcon too. This allows us
+ *      to return icon _files_ for theming too. For details
+ *      about the WPS's crappy icon management, refer to
+ *      src\filesys\icons.c.
+ *
+ *      We give data files a new default icon, if icon
+ *      replacements are enabled. Note that this only
+ *      affects data files that have no associations.
  */
 
 SOM_Scope ULONG  SOMLINK xdfM_wpclsQueryIconData(M_XFldDataFile *somSelf,
                                                  PICONINFO pIconInfo)
 {
-    ULONG       ulrc = 0;
-
     // M_XFldDataFileData *somThis = M_XFldDataFileGetData(somSelf);
     M_XFldDataFileMethodDebug("M_XFldDataFile","xdfM_wpclsQueryIconData");
 
@@ -1785,13 +1792,10 @@ SOM_Scope ULONG  SOMLINK xdfM_wpclsQueryIconData(M_XFldDataFile *somSelf,
 
         return 0;
     }
-
-    if (!ulrc)
 #endif
-        // icon replacements not allowed: call default
-        ulrc = M_XFldDataFile_parent_M_WPDataFile_wpclsQueryIconData(somSelf,
-                                                                     pIconInfo);
 
-    return (ulrc);
+    // icon replacements not allowed: call default
+    return M_XFldDataFile_parent_M_WPDataFile_wpclsQueryIconData(somSelf,
+                                                                 pIconInfo);
 }
 

@@ -417,7 +417,7 @@ unsigned long _System _DLL_InitTerm(unsigned long hModule,
             // now initialize the C run-time environment before we
             // call any runtime functions
             if (_CRT_init() == -1)
-               return (0);  // error
+               return 0;  // error
         break;
 
         case 1:
@@ -428,7 +428,7 @@ unsigned long _System _DLL_InitTerm(unsigned long hModule,
         default:
             // other code: beep for error
             DosBeep(100, 100);
-            return (0);     // error
+            return 0;     // error
     }
 
     // a non-zero value must be returned to indicate success
@@ -1345,7 +1345,7 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
                             // set to TRUE if auto-hide mouse should be handled
 
     if (pqmsg == NULL)
-        return (FALSE);
+        return FALSE;
 
 #ifndef __NOPAGER__
     if (    // XPager running?
@@ -1619,7 +1619,7 @@ BOOL EXPENTRY hookPreAccelHook(HAB hab, PQMSG pqmsg, ULONG option)
     BOOL        brc = FALSE;
 
     if (pqmsg == NULL)
-        return (FALSE);
+        return FALSE;
 
     switch(pqmsg->msg)
     {

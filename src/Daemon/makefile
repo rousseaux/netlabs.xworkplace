@@ -56,11 +56,9 @@ OUTPUTDIR = $(BASE_OUTPUTDIR)\exe_mt
 # The PGRDAEMNOBJS macro contains all the XPager .OBJ files,
 # which go into XWPDAEMN.EXE.
 PGRDAEMNOBJS = \
-!ifndef XWPLITE
 $(OUTPUTDIR)\pg_control.obj \
 $(OUTPUTDIR)\pg_move.obj \
 $(OUTPUTDIR)\pg_winlist.obj
-!endif
 
 # The DMNOBJS macro contains all the .OBJ files for XWPDAEMN.EXE;
 # this includes PGRDAEMNOBJS.

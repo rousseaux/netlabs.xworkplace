@@ -506,7 +506,7 @@ SOM_Scope BOOL  SOMLINK xtro_wpSetupOnce(XWPTrashObject *somSelf,
         return (trshSetupOnce(somSelf, pszSetupString));
     }
 
-    return (FALSE);
+    return FALSE;
 }
 
 /*
@@ -773,7 +773,7 @@ SOM_Scope BOOL  SOMLINK xtro_wpMenuItemHelpSelected(XWPTrashObject *somSelf,
         // now open the help panel we've set above
         cmnDisplayHelp(somSelf,
                        ID_XSH_SETTINGS_TRASHCAN);
-        return (TRUE);
+        return TRUE;
     }
 
     return (XWPTrashObject_parent_WPTransient_wpMenuItemHelpSelected(somSelf,
@@ -800,7 +800,7 @@ SOM_Scope BOOL  SOMLINK xtro_wpQueryDefaultHelp(XWPTrashObject *somSelf,
 
     strcpy(HelpLibrary, cmnQueryHelpLibrary());
     *pHelpPanelId = ID_XSH_SETTINGS_TRASHCAN;
-    return (TRUE);
+    return TRUE;
 
     /* return (XWPTrashObject_parent_WPTransient_wpQueryDefaultHelp(somSelf,
                                                                  pHelpPanelId,
@@ -853,7 +853,8 @@ SOM_Scope BOOL  SOMLINK xtro_wpMoveObject(XWPTrashObject *somSelf,
  *      or an OPEN setup string, this will not be on thread 1.
  *
  *      Since trash objects have no views, we'll always
- *      return NULLHANDLE.
+ *      return NULLHANDLE if some dumbass tries to open
+ *      this.
  */
 
 SOM_Scope HWND  SOMLINK xtro_wpOpen(XWPTrashObject *somSelf,
@@ -863,7 +864,7 @@ SOM_Scope HWND  SOMLINK xtro_wpOpen(XWPTrashObject *somSelf,
     /* XWPTrashObjectData *somThis = XWPTrashObjectGetData(somSelf); */
     XWPTrashObjectMethodDebug("XWPTrashObject","xtro_wpOpen");
 
-    return (NULLHANDLE);
+    return NULLHANDLE;
 
 }
 
@@ -1084,7 +1085,7 @@ SOM_Scope BOOL  SOMLINK xtroM_wpclsCreateDefaultTemplates(M_XWPTrashObject *somS
     /* M_XWPTrashObjectData *somThis = M_XWPTrashObjectGetData(somSelf); */
     M_XWPTrashObjectMethodDebug("M_XWPTrashObject","xtroM_wpclsCreateDefaultTemplates");
 
-    return (TRUE);
+    return TRUE;
     // means that the Templates folder should _not_ create templates
     // by itself; we pretend that we've done this
 }

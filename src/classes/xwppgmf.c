@@ -398,7 +398,7 @@ SOM_Scope BOOL  SOMLINK xpgf_xwpQuerySetup2(XWPProgramFile *somSelf,
                                       pstrSetup));
     }
 
-    return (FALSE);
+    return FALSE;
 }
 
 /*
@@ -1054,7 +1054,7 @@ SOM_Scope BOOL  SOMLINK xpgf_wpSetIconData(XWPProgramFile *somSelf,
             {
                 // use default executable icon
                 _wpSetProgIcon(somSelf, NULL);
-                return (TRUE);
+                return TRUE;
             }
         }
     }
@@ -1224,7 +1224,7 @@ SOM_Scope BOOL  SOMLINK xpgf_wpQueryDefaultHelp(XWPProgramFile *somSelf,
 
         }
 
-        return (TRUE);
+        return TRUE;
     }
 #endif
 

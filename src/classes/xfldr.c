@@ -258,7 +258,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpQueryFldrSort(XFolder *somSelf,
     if (plAlwaysSort)
         *plAlwaysSort = _lAlwaysSort;
 
-    return (TRUE);
+    return TRUE;
 }
 
 /*
@@ -1072,7 +1072,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpSetStatusBarVisibility(XFolder *somSelf,
         }
     }
 
-    return (TRUE);
+    return TRUE;
 }
 
 /*
@@ -1233,7 +1233,8 @@ SOM_Scope BOOL  SOMLINK xf_xwpUpdateStatusBar(XFolder *somSelf,
 
 /*
  *@@ xwpAddXFolderPages:
- *      this adds the "XFolder" page into a folder settings notebook.
+ *      this adds the new first "View" page into a folder settings notebook.
+ *      This used to be the "XFolder" page with versions before 0.9.16.
  *
  *@@changed V0.9.16 (2001-09-29): now using dialog formatter
  */
@@ -1287,7 +1288,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpQuerySetup2(XFolder *somSelf, PVOID pstrSetup)
                                       pstrSetup));
     }
 
-    return (FALSE);
+    return FALSE;
 }
 
 /*
@@ -1412,9 +1413,9 @@ SOM_Scope BOOL  SOMLINK xf_wpSetup(XFolder *somSelf, PSZ pszSetupString)
     if (    (XFolder_parent_WPFolder_wpSetup(somSelf, pszSetupString))
          && (fdrSetup(somSelf, pszSetupString))
        )
-        return (TRUE);
+        return TRUE;
 
-    return (FALSE);
+    return FALSE;
 }
 
 /*
@@ -2064,7 +2065,8 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreData(XFolder *somSelf,
                     _cbCnrBackground = *pcbValue;
                     _pvCnrBackground = pValue;
                 }
-            break; } */
+            }
+            break;  */
 
             /*
              * the following others were queried for G:\root\test
@@ -2304,7 +2306,7 @@ SOM_Scope BOOL  SOMLINK xf_wpMenuItemSelected(XFolder *somSelf,
     // (fdrmenus.c); this returns TRUE if one of the manipulated
     // menu items was selected
     if (mnuMenuItemSelected(somSelf, hwndFrame, ulMenuId))
-        return (TRUE);
+        return TRUE;
 
     // none of our menu items: pass on to parent
     return (XFolder_parent_WPFolder_wpMenuItemSelected(somSelf, hwndFrame, ulMenuId));
@@ -3559,7 +3561,7 @@ SOM_Scope BOOL  SOMLINK xf_wpSetFldrSort(XFolder *somSelf,
                     fdrSetFldrCnrSort(somSelf,
                                       hwndCnr,
                                       TRUE);  // enfore cnr sort
-                    return (TRUE);
+                    return TRUE;
                 }
             }
         }
@@ -3789,7 +3791,7 @@ SOM_Scope BOOL  SOMLINK xfM_wpclsCreateDefaultTemplates(M_XFolder *somSelf,
     // the parent method, because we do not want to
     // break the default behavior for subclasses.
     if (somSelf == _XFolder)
-        return (TRUE);
+        return TRUE;
         // means that the Templates folder should _not_ create templates
         // by itself; we pretend that we've done this
     else
@@ -3896,30 +3898,32 @@ SOM_Scope BOOL  SOMLINK xfM_wpclsQueryDefaultHelp(M_XFolder *somSelf,
 
 /*
  *@@ wpclsQueryIconData:
- *      this WPObject class method builds the default
- *      icon for objects of a class (i.e. the icon which
- *      is shown if no instance icon is assigned). This
- *      apparently gets called from some of the other
- *      icon instance methods if no instance icon was
- *      found for an object. The exact mechanism of how
- *      this works is not documented.
+ *      this WPObject class method must return information
+ *      about how to build the default icon for objects
+ *      of a class. This gets called from various other
+ *      methods whenever a class default icon is needed;
+ *      most importantly, M_WPObject::wpclsQueryIcon
+ *      calls this to build a class default icon, which
+ *      is then cached in the class's instance data.
+ *      If a subclass wants to change a class default icon,
+ *      it should always override _this_ method instead of
+ *      wpclsQueryIcon.
+ *
+ *      Note that the default WPS implementation does not
+ *      allow for specifying the ICON_FILE format here,
+ *      which is why we have overridden
+ *      M_XFldObject::wpclsQueryIcon too. This allows us
+ *      to return icon _files_ for theming too. For details
+ *      about the WPS's crappy icon management, refer to
+ *      src\filesys\icons.c.
  *
  *      We give folders a new default closed icon, if the
  *      global settings allow this.
- *      This is loaded from /ICONS/ICONS.DLL.
- *      Unfortunately, it appears to be impossible to
- *      dynamically load default icons as specified for
- *      the ICONINFO structure in the WPS reference.
- *      ICON_FILE at least doesn't work, and the format
- *      for ICON_DATA is not explained. So we have to
- *      use a DLL here.
  */
 
 SOM_Scope ULONG  SOMLINK xfM_wpclsQueryIconData(M_XFolder *somSelf,
                                                 PICONINFO pIconInfo)
 {
-    ULONG       ulrc = 0;
-
     // M_XFolderData *somThis = M_XFolderGetData(somSelf);
     M_XFolderMethodDebug("M_XFolder","xfM_wpclsQueryIconData");
 
@@ -3947,12 +3951,10 @@ SOM_Scope ULONG  SOMLINK xfM_wpclsQueryIconData(M_XFolder *somSelf,
         return 0;
     }
 
-    if (!ulrc)
 #endif
-        // icon replacements not allowed: call default
-        ulrc = M_XFolder_parent_M_WPFolder_wpclsQueryIconData(somSelf,
-                                                              pIconInfo);
-    return (ulrc);
+    // icon replacements not allowed: call default
+    return M_XFolder_parent_M_WPFolder_wpclsQueryIconData(somSelf,
+                                                          pIconInfo);
 }
 
 /*
@@ -3966,8 +3968,6 @@ SOM_Scope ULONG  SOMLINK xfM_wpclsQueryIconDataN(M_XFolder *somSelf,
                                                  ICONINFO* pIconInfo,
                                                  ULONG ulIconIndex)
 {
-    ULONG       ulrc = 0;
-
     // M_XFolderData *somThis = M_XFolderGetData(somSelf);
     M_XFolderMethodDebug("M_XFolder","xfM_wpclsQueryIconDataN");
 
@@ -3998,13 +3998,11 @@ SOM_Scope ULONG  SOMLINK xfM_wpclsQueryIconDataN(M_XFolder *somSelf,
         return 0;
     }
 
-    if (!ulrc)
 #endif
-        // icon replacements not allowed: call default
-        ulrc = M_XFolder_parent_M_WPFolder_wpclsQueryIconDataN(somSelf,
-                                                               pIconInfo,
-                                                               ulIconIndex);
-    return (ulrc);
+    // icon replacements not allowed: call default
+    return M_XFolder_parent_M_WPFolder_wpclsQueryIconDataN(somSelf,
+                                                           pIconInfo,
+                                                           ulIconIndex);
 }
 
 /*

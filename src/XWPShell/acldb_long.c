@@ -467,7 +467,7 @@ int TREEENTRY fnCompareSubjects(unsigned long id1, unsigned long id2)
         return -1;
     if (id1 > id2)
         return +1;
-    return (0);
+    return 0;
 }
 
 /*
@@ -482,7 +482,7 @@ int TREEENTRY fnCompareACLDBNames_Nodes(TREE *t1, TREE *t2)
                 ((PACLDBENTRYNODE)t2)->pszName);
     if (i < 0) return -1;
     if (i > 0) return +1;
-    return (0);
+    return 0;
 }
 
 /*
@@ -497,7 +497,7 @@ int TREEENTRY fnCompareACLDBNames_Data(TREE *t1, void *pName)
                 (PSZ)pName);
     if (i < 0) return -1;
     if (i > 0) return +1;
-    return (0);
+    return 0;
 }
 
 /* ******************************************************************

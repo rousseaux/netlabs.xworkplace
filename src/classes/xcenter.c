@@ -204,7 +204,7 @@ SOM_Scope ULONG  SOMLINK xctr_xwpAddXCenterPages(XCenter *somSelf,
     inbp.ulPageID = SP_XCENTER_VIEW1;
     inbp.pfncbInitPage    = ctrpView1InitPage;
     inbp.pfncbItemChanged = ctrpView1ItemChanged;
-    return (ntbInsertPage(&inbp));
+    return ntbInsertPage(&inbp);
 }
 
 /*
@@ -269,7 +269,7 @@ SOM_Scope PVOID  SOMLINK xctr_xwpQueryWidgets(XCenter *somSelf,
     if (fLocked)
         _wpReleaseObjectMutexSem(somSelf);
 
-    return (paSettings);
+    return paSettings;
 }
 
 /*
@@ -504,7 +504,7 @@ SOM_Scope ULONG  SOMLINK xctr_xwpCreateWidget(XCenter *somSelf,
     // update the "widgets" notebook page, if open
     ntbUpdateVisiblePage(somSelf, SP_XCENTER_WIDGETS);
 
-    return (arc);
+    return arc;
 }
 
 /*
@@ -652,7 +652,7 @@ SOM_Scope ULONG  SOMLINK xctr_xwpRenameTray(XCenter *somSelf,
             XCenterData *somThis = XCenterGetData(somSelf);
             PPRIVATEWIDGETSETTING pTrayWidgetSetting;
             PTRAYSETTING pTraySetting;
-            PXCENTERWIDGET pTrayWidget;
+            PXCENTERWIDGET pTrayWidget = NULL;
             if (!(arc = ctrpFindTraySetting(somSelf,
                                             ulTrayWidgetIndex,
                                             ulTrayIndex,
@@ -666,6 +666,7 @@ SOM_Scope ULONG  SOMLINK xctr_xwpRenameTray(XCenter *somSelf,
 
                 if (pTrayWidget)
                 {
+                    // we have an open view:
                     _wpReleaseObjectMutexSem(somSelf);
                     fLocked = FALSE;
 
@@ -926,7 +927,7 @@ SOM_Scope BOOL  SOMLINK xctr_xwpMoveWidget(XCenter *somSelf,
     // XCenterData *somThis = XCenterGetData(somSelf);
     XCenterMethodDebug("XCenter","xctr_xwpMoveWidget");
 
-    return (ctrpMoveWidget(somSelf, ulIndex2Move, ulBeforeIndex));
+    return ctrpMoveWidget(somSelf, ulIndex2Move, ulBeforeIndex);
 }
 
 /*
@@ -975,7 +976,7 @@ SOM_Scope BOOL  SOMLINK xctr_xwpSetPriority(XCenter *somSelf,
     if (fLocked)
         _wpReleaseObjectMutexSem(somSelf);
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -996,7 +997,7 @@ SOM_Scope BOOL  SOMLINK xctr_xwpQuerySetup2(XCenter *somSelf,
     XCenterMethodDebug("XCenter","xctr_xwpQuerySetup2");
 
     // call implementation
-    return (ctrpQuerySetup(somSelf, pstrSetup));
+    return ctrpQuerySetup(somSelf, pstrSetup);
 }
 
 /*
@@ -1141,7 +1142,7 @@ SOM_Scope BOOL  SOMLINK xctr_wpSetup(XCenter *somSelf, PSZ pszSetupString)
                         pszSetupString);
             // V0.9.19 (2002-04-25) [umoeller]
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1169,9 +1170,7 @@ SOM_Scope BOOL  SOMLINK xctr_wpSetupOnce(XCenter *somSelf, PSZ pszSetupString)
     XCenterMethodDebug("XCenter","xctr_wpSetupOnce");
 
     if (XCenter_parent_WPAbstract_wpSetupOnce(somSelf, pszSetupString))
-    {
-        return (ctrpSetupOnce(somSelf, pszSetupString));
-    }
+        return ctrpSetupOnce(somSelf, pszSetupString);
 
     return FALSE;
 }
@@ -1189,16 +1188,13 @@ SOM_Scope BOOL  SOMLINK xctr_wpSetupOnce(XCenter *somSelf, PSZ pszSetupString)
 
 SOM_Scope BOOL  SOMLINK xctr_wpSaveState(XCenter *somSelf)
 {
-    BOOL brc = FALSE;
     // XCenterData *somThis = XCenterGetData(somSelf);
     XCenterMethodDebug("XCenter","xctr_wpSaveState");
 
-    brc = XCenter_parent_WPAbstract_wpSaveState(somSelf);
+    if (XCenter_parent_WPAbstract_wpSaveState(somSelf))
+        return ctrpSaveState(somSelf);
 
-    if (brc)
-        brc = ctrpSaveState(somSelf);
-
-    return (brc);
+    return FALSE;
 }
 
 /*
@@ -1213,17 +1209,13 @@ SOM_Scope BOOL  SOMLINK xctr_wpSaveState(XCenter *somSelf)
 SOM_Scope BOOL  SOMLINK xctr_wpRestoreState(XCenter *somSelf,
                                             ULONG ulReserved)
 {
-    BOOL brc = FALSE;
     // XCenterData *somThis = XCenterGetData(somSelf);
     XCenterMethodDebug("XCenter","xctr_wpRestoreState");
 
-    brc = XCenter_parent_WPAbstract_wpRestoreState(somSelf,
-                                                   ulReserved);
+    if (XCenter_parent_WPAbstract_wpRestoreState(somSelf, ulReserved))
+        return ctrpRestoreState(somSelf);
 
-    if (brc)
-        brc = ctrpRestoreState(somSelf);
-
-    return (brc);
+    return FALSE;
 }
 
 /*
@@ -1246,19 +1238,17 @@ SOM_Scope BOOL  SOMLINK xctr_wpModifyPopupMenu(XCenter *somSelf,
                                                HWND hwndCnr,
                                                ULONG iPosition)
 {
-    BOOL brc;
     // XCenterData *somThis = XCenterGetData(somSelf);
     XCenterMethodDebug("XCenter","xctr_wpModifyPopupMenu");
 
-    brc = XCenter_parent_WPAbstract_wpModifyPopupMenu(somSelf,
-                                                      hwndMenu,
-                                                      hwndCnr,
-                                                      iPosition);
-    if (brc)
+    if (XCenter_parent_WPAbstract_wpModifyPopupMenu(somSelf,
+                                                    hwndMenu,
+                                                    hwndCnr,
+                                                    iPosition))
         // add "Add widget" submenu etc.
-        brc = ctrpModifyPopupMenu(somSelf, hwndMenu);
+        return ctrpModifyPopupMenu(somSelf, hwndMenu);
 
-    return (brc);
+    return FALSE;
 }
 
 /*
@@ -1279,7 +1269,7 @@ SOM_Scope BOOL  SOMLINK xctr_wpQueryDefaultHelp(XCenter *somSelf,
 
     strcpy(HelpLibrary, cmnQueryHelpLibrary());
     *pHelpPanelId = ID_XSH_XCENTER_MAIN;
-    return (TRUE);
+    return TRUE;
 }
 
 /*
@@ -1299,7 +1289,7 @@ SOM_Scope ULONG  SOMLINK xctr_wpQueryDefaultView(XCenter *somSelf)
     /* XCenterData *somThis = XCenterGetData(somSelf); */
     XCenterMethodDebug("XCenter","xctr_wpQueryDefaultView");
 
-    return (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_XWPVIEW);
+    return cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_XWPVIEW;
 }
 
 /*
@@ -1387,7 +1377,7 @@ SOM_Scope HWND  SOMLINK xctr_wpOpen(XCenter *somSelf,
                                                            param);
     }
 
-    return (hwndNewView);
+    return hwndNewView;
 }
 
 /*
@@ -1452,7 +1442,7 @@ SOM_Scope BOOL  SOMLINK xctr_wpSwitchTo(XCenter *somSelf, ULONG View)
         // view other than XCenter view (probably settings):
         brc = XCenter_parent_WPAbstract_wpSwitchTo(somSelf, View);
 
-    return (brc);
+    return brc;
 }
 
 /*
@@ -1489,10 +1479,10 @@ SOM_Scope BOOL  SOMLINK xctr_wpClose(XCenter *somSelf)
         /* while (_tid)
             winhSleep(100); */
 
-        return (TRUE);
+        return TRUE;
     }
 
-    return (FALSE);
+    return FALSE;
 }
 
 /*
@@ -1525,16 +1515,17 @@ SOM_Scope ULONG  SOMLINK xctr_wpAddObjectWindowPage(XCenter *somSelf,
 SOM_Scope BOOL  SOMLINK xctr_wpAddSettingsPages(XCenter *somSelf,
                                                 HWND hwndNotebook)
 {
-    BOOL brc = FALSE;
     /* XCenterData *somThis = XCenterGetData(somSelf); */
     XCenterMethodDebug("XCenter","xctr_wpAddSettingsPages");
 
-    brc = XCenter_parent_WPAbstract_wpAddSettingsPages(somSelf,
-                                                       hwndNotebook);
-    if (brc)
+    if (XCenter_parent_WPAbstract_wpAddSettingsPages(somSelf,
+                                                     hwndNotebook))
+    {
         _xwpAddXCenterPages(somSelf, hwndNotebook);
+        return TRUE;
+    }
 
-    return (brc);
+    return FALSE;
 }
 
 /* ******************************************************************
@@ -1617,18 +1608,29 @@ SOM_Scope BOOL  SOMLINK xctrM_wpclsCreateDefaultTemplates(M_XCenter *somSelf,
     M_XCenterMethodDebug("M_XCenter","xctrM_wpclsCreateDefaultTemplates");
 
     // pretend we've created the templates
-    return (TRUE);
+    return TRUE;
 }
 
 /*
  *@@ wpclsQueryIconData:
- *      this WPObject class method builds the default
- *      icon for objects of a class (i.e. the icon which
- *      is shown if no instance icon is assigned). This
- *      apparently gets called from some of the other
- *      icon instance methods if no instance icon was
- *      found for an object. The exact mechanism of how
- *      this works is not documented.
+ *      this WPObject class method must return information
+ *      about how to build the default icon for objects
+ *      of a class. This gets called from various other
+ *      methods whenever a class default icon is needed;
+ *      most importantly, M_WPObject::wpclsQueryIcon
+ *      calls this to build a class default icon, which
+ *      is then cached in the class's instance data.
+ *      If a subclass wants to change a class default icon,
+ *      it should always override _this_ method instead of
+ *      wpclsQueryIcon.
+ *
+ *      Note that the default WPS implementation does not
+ *      allow for specifying the ICON_FILE format here,
+ *      which is why we have overridden
+ *      M_XFldObject::wpclsQueryIcon too. This allows us
+ *      to return icon _files_ for theming too. For details
+ *      about the WPS's crappy icon management, refer to
+ *      src\filesys\icons.c.
  *
  *      We override this to give XCenter object a new
  *      icon (src\shared\xcenter.ico).
@@ -1642,12 +1644,12 @@ SOM_Scope ULONG  SOMLINK xctrM_wpclsQueryIconData(M_XCenter *somSelf,
 
     if (pIconInfo)
     {
-       pIconInfo->fFormat = ICON_RESOURCE;
-       pIconInfo->resid   = ID_ICONXCENTER;
-       pIconInfo->hmod    = cmnQueryMainResModuleHandle();
+        pIconInfo->fFormat = ICON_RESOURCE;
+        pIconInfo->resid   = ID_ICONXCENTER;
+        pIconInfo->hmod    = cmnQueryMainResModuleHandle();
     }
 
-    return (sizeof(ICONINFO));
+    return sizeof(ICONINFO);
 }
 
 

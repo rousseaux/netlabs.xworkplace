@@ -344,7 +344,7 @@ SOM_Scope ULONG SOMLINK wani_xwpInsertAnimationPage3(XWPWinAni * somSelf,
     XWPWinAniMethodDebug("XWPWinAni", "wani_xwpInsertAnimationPage3");
 
     /* Return statement to be customized: */
-    return (0);
+    return 0;
 }
 
 /*

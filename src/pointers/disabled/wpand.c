@@ -1108,7 +1108,7 @@ MRESULT EXPENTRY wpand_NotebookPageProc(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM
 
             }                   // switch (SHORT1FROMMP(mp1))
 
-            return (TRUE);
+            return TRUE;
             break;              // case WM_COMMAND:
 
             // --------------------------------------------------------------------------

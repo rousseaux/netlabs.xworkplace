@@ -363,7 +363,7 @@ ULONG fsysQueryRefreshFlags(WPFileSystem *somSelf)
     if (pwpQueryRefreshFlags)
         return (pwpQueryRefreshFlags(somSelf));
 
-    return (0);
+    return 0;
 }
 
 /*
@@ -384,7 +384,7 @@ BOOL fsysSetRefreshFlags(WPFileSystem *somSelf, ULONG ulRefreshFlags)
     if (pwpSetRefreshFlags)
         return (pwpSetRefreshFlags(somSelf, ulRefreshFlags));
 
-    return (FALSE);
+    return FALSE;
 }
 
 /*
@@ -828,12 +828,12 @@ static BOOL DecodeLongname(PFEA2LIST pFEA2List2,
                        cb);
                 pszLongname[cb] = '\0';
                 *pulNameLen = cb;
-                return (TRUE);
+                return TRUE;
             }
         }
     }
 
-    return (FALSE);
+    return FALSE;
 }
 
 /*
@@ -2841,7 +2841,7 @@ MRESULT fsysFile2ItemChanged(PNOTEBOOKPAGE pnbp,    // notebook info struct
         break;
     }
 
-    return (0);
+    return 0;
 }
 
 #endif

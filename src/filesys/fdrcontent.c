@@ -1509,10 +1509,10 @@ static BOOL LockRootFolders(VOID)
     {
         lstInit(&G_llRootFolders,
                 FALSE);     // no auto-free
-        return (TRUE);
+        return TRUE;
     }
 
-    return (FALSE);
+    return FALSE;
 }
 
 /*

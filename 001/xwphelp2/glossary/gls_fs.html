@@ -72,10 +72,18 @@ If installed, HPFS386 replaces the standard HPFS. It is loaded
 through the <CODE>HPFS386.IFS</CODE> driver in &cfgsys;, but this
 won't work if you do not have the &os2; server components installed.
 
-<P><LI>For &warp; Server for e-Business (WSeB), IBM ported <B>JFS,</B>
-the Journaling File System, from AIX to &os2;. By now JFS has been ported
+<!-- V0.9.19: rewrote this paragraph -->
+<IFNDEF __EWORKPLACE__>
+<P><LI>For OS/2 Warp Server for e-Business (WSeB), IBM ported <B>JFS,</B>
+the Journaling File System, from AIX to OS/2. By now JFS has been ported
 to Linux too. JFS is now also available with eComStation and the IBM
-&os2; Convenience Packs.
+OS/2 Convenience Packs.
+</IFNDEF>
+<IFDEF __EWORKPLACE__>
+<P><LI>&os2; also supports the <B>Journaling File System (JFS),</B> a
+modern high-performance file system that is also supported by AIX and
+Linux.
+</IFDEF>
 
 <P>JFS has the following advantages over HPFS:
 

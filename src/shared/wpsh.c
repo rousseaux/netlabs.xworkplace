@@ -1914,7 +1914,7 @@ ULONG wpshQueryLogicalDisk(WPObject *somSelf)
         }
     }
 
-    return (0);
+    return 0;
 }
 
 /*
@@ -1938,7 +1938,7 @@ double wpshQueryDiskFreeFromFolder(WPFolder *somSelf)
         return (dFree);
     }
 
-    return (0);
+    return 0;
 }
 
 /*
@@ -1962,7 +1962,7 @@ double wpshQueryDiskSizeFromFolder(WPFolder *somSelf)
         return (dSize);
     }
 
-    return (0);
+    return 0;
 }
 
 /* ******************************************************************
@@ -2311,7 +2311,7 @@ BOOL wpshParentQuerySetup2(WPObject *somSelf,       // in: object
         return (pxwpQuerySetup2(somSelf, pstrSetup));
     }
 
-    return (FALSE);
+    return FALSE;
 }
 
 /*

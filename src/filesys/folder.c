@@ -1899,7 +1899,7 @@ SHORT XWPENTRY fdrSortByICONPOS(PVOID pItem1, PVOID pItem2, PVOID psip)
             return (1);
     }
 
-    return (0);
+    return 0;
 }
 
 /* ******************************************************************

@@ -79,7 +79,7 @@ int TREEENTRY treeCompareKeys(unsigned long  ul1, unsigned long ul2)
         return -1;
     if (ul1 > ul2)
         return +1;
-    return (0);
+    return 0;
 }
 
 /*
@@ -112,7 +112,7 @@ int TREEENTRY treeCompareStrings(unsigned long  ul1, unsigned long ul2)
         return (-1);
 
     // return 0 if strcmp returned 0 above or both strings are NULL
-    return (0);
+    return 0;
 }
 
 /*

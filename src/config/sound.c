@@ -127,6 +127,8 @@ static ULONG aulAddtlSystemSounds[] =
 
 typedef struct _SOUNDPAGEDATA
 {
+    HAB     hab;            // V0.9.19 (2002-05-23) [umoeller]
+
     CHAR    szMMPM[CCHMAXPATH];
                 // path of ?:\MMPM2\MMPM.INI
 
@@ -381,7 +383,7 @@ static VOID UpdateMMPMINI(PNOTEBOOKPAGE pnbp)
 
     if (pspd->sEventSelected != LIT_NONE)
     {
-        HINI hiniMMPM = PrfOpenProfile(WinQueryAnchorBlock(pnbp->hwndDlgPage),
+        HINI hiniMMPM = PrfOpenProfile(pspd->hab,
                                        pspd->szMMPM);
 
         if (hiniMMPM)
@@ -481,7 +483,7 @@ static BOOL SaveSoundSchemeAs(PNOTEBOOKPAGE pnbp,
             // shall we proceed?
             if (fOverwrite)
             {
-                HINI hiniMMPM = PrfOpenProfile(WinQueryAnchorBlock(pnbp->hwndDlgPage),
+                HINI hiniMMPM = PrfOpenProfile(pspd->hab,
                                                pspd->szMMPM);
                 if (hiniMMPM)
                 {
@@ -547,10 +549,10 @@ static BOOL LoadSoundSchemeFrom(PNOTEBOOKPAGE pnbp)
     BOOL    brc = FALSE;
     PSOUNDPAGEDATA pspd = (PSOUNDPAGEDATA)pnbp->pUser;
 
-    HINI hiniMMPM = PrfOpenProfile(WinQueryAnchorBlock(pnbp->hwndDlgPage),
-                                   pspd->szMMPM);
+    HINI hiniMMPM;
 
-    if (hiniMMPM)
+    if (hiniMMPM = PrfOpenProfile(pspd->hab,
+                                  pspd->szMMPM))
     {
         CHAR szSchemeName[200];
         APIRET arc;
@@ -714,7 +716,8 @@ static MRESULT EXPENTRY fnwpSubclassedSoundFile(HWND hwndEntryField,
                                 // e.g. for "F:\SOUNDS\TEST.WAV" this would be "TEST.WAV"
                         }
                     }
-                } else
+                }
+                else
                     // non-default drop op:
                     usIndicator = DOR_NODROP;
                     // but do send DM_DRAGOVER again
@@ -725,7 +728,8 @@ static MRESULT EXPENTRY fnwpSubclassedSoundFile(HWND hwndEntryField,
 
             // and return the drop flags
             mrc = (MRFROM2SHORT(usIndicator, usOp));
-        break; }
+        }
+        break;
 
         /*
          * DM_DROP:
@@ -770,7 +774,8 @@ static MRESULT EXPENTRY fnwpSubclassedSoundFile(HWND hwndEntryField,
 
             // always return 0
             mrc = (MRESULT)0;
-        break; }
+        }
+        break;
 
         default:
             mrc = (*(pspd->pfnwpSoundFileOriginal))(hwndEntryField, msg, mp1, mp2);
@@ -807,7 +812,9 @@ VOID sndSoundsInitPage(PNOTEBOOKPAGE pnbp,           // notebook info struct
             SHORT   sSchemeToSelect;
 
             PSOUNDPAGEDATA pspd = (PSOUNDPAGEDATA)(pnbp->pUser);
-            memset(pnbp->pUser, 0, sizeof(SOUNDPAGEDATA));
+            memset(pspd, 0, sizeof(SOUNDPAGEDATA));
+
+            pspd->hab = WinQueryAnchorBlock(pnbp->hwndDlgPage);
 
             // sound schemes
             pspd->hwndSchemesDropDown = WinWindowFromID(pnbp->hwndDlgPage,
@@ -879,9 +886,8 @@ VOID sndSoundsInitPage(PNOTEBOOKPAGE pnbp,           // notebook info struct
         PSOUNDPAGEDATA pspd = (PSOUNDPAGEDATA)pnbp->pUser;
         HINI    hiniMMPM;
 
-        hiniMMPM = PrfOpenProfile(WinQueryAnchorBlock(pnbp->hwndDlgPage),
-                                  pspd->szMMPM);
-        if (hiniMMPM)
+        if (hiniMMPM = PrfOpenProfile(pspd->hab,
+                                      pspd->szMMPM))
         {
             CHAR szData[100];
             PSZ pszSysSounds;
@@ -923,7 +929,7 @@ VOID sndSoundsInitPage(PNOTEBOOKPAGE pnbp,           // notebook info struct
                 // go thru system sounds
                 PSZ     pKey2 = pszSysSounds;
 
-                while (*pKey2 != 0)
+                while (*pKey2)
                 {
                     // pKey2 has the current key now
                     ULONG   cbData = 0;
@@ -963,7 +969,7 @@ VOID sndSoundsInitPage(PNOTEBOOKPAGE pnbp,           // notebook info struct
                     }
 
                     // next sound index
-                    pKey2 += strlen(pKey2)+1;
+                    pKey2 += strlen(pKey2) + 1;
                 }
 
                 // select first item
@@ -1063,7 +1069,7 @@ MRESULT sndSoundsItemChanged(PNOTEBOOKPAGE pnbp,  // notebook info
 
         case ID_XSDI_SOUND_ENABLE:
         {
-            HINI hiniMMPM = PrfOpenProfile(WinQueryAnchorBlock(pnbp->hwndDlgPage),
+            HINI hiniMMPM = PrfOpenProfile(pspd->hab,
                                            pspd->szMMPM);
             pspd->fSoundsEnabled = ulExtra;
             if (hiniMMPM)
@@ -1076,7 +1082,8 @@ MRESULT sndSoundsItemChanged(PNOTEBOOKPAGE pnbp,  // notebook info
             }
             // re-enable controls
             pnbp->inbp.pfncbInitPage(pnbp, CBI_ENABLE);
-        break; }
+        }
+        break;
 
         /*
          * ID_XSDI_SOUND_SCHEMES_DROPDOWN:
@@ -1191,7 +1198,8 @@ MRESULT sndSoundsItemChanged(PNOTEBOOKPAGE pnbp,  // notebook info
                 // _Pmpf(("End of ID_XSDI_SOUND_SCHEMES_DROPDOWN"));
                 // _Pmpf(("  pspd->sSchemeSelected: %d", pspd->sSchemeSelected));
             }
-        break; }
+        }
+        break;
 
         /*
          * ID_XSDI_SOUND_SCHEMES_SAVEAS:
@@ -1238,7 +1246,8 @@ MRESULT sndSoundsItemChanged(PNOTEBOOKPAGE pnbp,  // notebook info
                 // now re-enable controls
                 pnbp->inbp.pfncbInitPage(pnbp, CBI_ENABLE);
             }
-        break; }
+        }
+        break;
 
         /*
          * ID_XSDI_SOUND_EVENTSLISTBOX:
@@ -1248,7 +1257,7 @@ MRESULT sndSoundsItemChanged(PNOTEBOOKPAGE pnbp,  // notebook info
 
         case ID_XSDI_SOUND_EVENTSLISTBOX:
         {
-            HINI hiniMMPM = PrfOpenProfile(WinQueryAnchorBlock(pnbp->hwndDlgPage),
+            HINI hiniMMPM = PrfOpenProfile(pspd->hab,
                                            pspd->szMMPM);
             if (hiniMMPM)
             {
@@ -1299,7 +1308,8 @@ MRESULT sndSoundsItemChanged(PNOTEBOOKPAGE pnbp,  // notebook info
 
                 PrfCloseProfile(hiniMMPM);
             }
-        break; }
+        }
+        break;
 
         /*
          * ID_XSDI_SOUND_FILE:
@@ -1321,7 +1331,6 @@ MRESULT sndSoundsItemChanged(PNOTEBOOKPAGE pnbp,  // notebook info
                 break;
 
                 case EN_CHANGE:
-                {
                     // text has changed: update SOUNDPAGEDATA
                     WinQueryWindowText(pspd->hwndSoundFile,
                                        sizeof(pspd->szFile),
@@ -1329,7 +1338,7 @@ MRESULT sndSoundsItemChanged(PNOTEBOOKPAGE pnbp,  // notebook info
                     pspd->fSoundFileChanged = TRUE;
                     // and re-enable controls
                     pnbp->inbp.pfncbInitPage(pnbp, CBI_ENABLE);
-                break; }
+                break;
             }
         break;
 
@@ -1399,7 +1408,8 @@ MRESULT sndSoundsItemChanged(PNOTEBOOKPAGE pnbp,  // notebook info
                 // rewrite that one sound MMPM.INI
                 UpdateMMPMINI(pnbp);
             }
-        break; }
+        }
+        break;
 
         /*
          * ID_XSDI_SOUND_PLAY:
@@ -1408,14 +1418,13 @@ MRESULT sndSoundsItemChanged(PNOTEBOOKPAGE pnbp,  // notebook info
          */
 
         case ID_XSDI_SOUND_PLAY:
-        {
             xmmPostPartyMsg(XMM_PLAYSOUND,
                             (MPARAM)strdup(pspd->szFile),
                                     // the quick thread wants to free()
                                     // the PSZ passed to it
                             (MPARAM)pspd->ulVolume);
 
-        break; }
+        break;
 
         /*
          * ID_XSDI_SOUND_COMMONVOLUME:
@@ -1425,7 +1434,7 @@ MRESULT sndSoundsItemChanged(PNOTEBOOKPAGE pnbp,  // notebook info
 
         case ID_XSDI_SOUND_COMMONVOLUME:
         {
-            HINI hiniMMPM = PrfOpenProfile(WinQueryAnchorBlock(pnbp->hwndDlgPage),
+            HINI hiniMMPM = PrfOpenProfile(pspd->hab,
                                            pspd->szMMPM);
             pspd->fCommonVolume = ulExtra;
             if (hiniMMPM)
@@ -1449,7 +1458,8 @@ MRESULT sndSoundsItemChanged(PNOTEBOOKPAGE pnbp,  // notebook info
 
             // re-enable controls
             pnbp->inbp.pfncbInitPage(pnbp, CBI_ENABLE);
-        break; }
+        }
+        break;
 
         /*
          * ID_XSDI_SOUND_VOLUMELEVER:
@@ -1467,7 +1477,7 @@ MRESULT sndSoundsItemChanged(PNOTEBOOKPAGE pnbp,  // notebook info
                     // "common volume" flag set:
 
                     // write it back to MMPM.INI
-                    HINI hiniMMPM = PrfOpenProfile(WinQueryAnchorBlock(pnbp->hwndDlgPage),
+                    HINI hiniMMPM = PrfOpenProfile(pspd->hab,
                                                    pspd->szMMPM);
 
                     if (hiniMMPM)
@@ -1494,7 +1504,8 @@ MRESULT sndSoundsItemChanged(PNOTEBOOKPAGE pnbp,  // notebook info
                 // ulExtra is FALSE only if we're losing the focus
                 if (ulExtra == FALSE)
                     UpdateMMPMINI(pnbp);
-        break; }
+        }
+        break;
 
         case DID_UNDO:
             // "Undo" button:

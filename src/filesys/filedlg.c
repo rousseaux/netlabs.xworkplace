@@ -322,7 +322,7 @@ static ULONG ParseFileString(PFILEDLGDATA pWinData,
          && (arc2 != ERROR_INVALID_PARAMETER)
        )
         // some error was detected:
-        return (0);
+        return 0;
 
     // get path from there
     if (p && *p)
@@ -551,7 +551,7 @@ static BOOL IsInsertable(WPObject *pObject,
                )
             {
                 // always insert, even if drive not ready
-                return (TRUE);
+                return TRUE;
             }
             else
                 if (_somIsA(pObject, _WPFolder))
@@ -560,7 +560,7 @@ static BOOL IsInsertable(WPObject *pObject,
                     if (    (!(_wpQueryStyle(pObject) & OBJSTYLE_TEMPLATE))
                          && (!(_wpQueryAttr(pObject) & FILE_HIDDEN))
                        )
-                        return (TRUE);
+                        return TRUE;
                 }
         }
     }
@@ -574,10 +574,10 @@ static BOOL IsInsertable(WPObject *pObject,
 
         if (!pObject)
             // broken:
-            return (FALSE);
+            return FALSE;
 
         if (_somIsA(pObject, _WPDisk))
-            return (TRUE);
+            return TRUE;
 
         if (    // filter out non-file systems (shadows pointing to them have been resolved):
                 (_somIsA(pObject, _WPFileSystem))
@@ -588,7 +588,7 @@ static BOOL IsInsertable(WPObject *pObject,
             // OK, non-hidden file-system object:
             // regardless of filters, always insert folders
             if (_somIsA(pObject, _WPFolder))
-                return (TRUE);          // templates too
+                return TRUE;          // templates too
 
             if ((pcszFileMask) && (*pcszFileMask))
             {
@@ -603,11 +603,11 @@ static BOOL IsInsertable(WPObject *pObject,
             }
             else
                 // no file mask:
-                return (TRUE);
+                return TRUE;
         }
     }
 
-    return (FALSE);
+    return FALSE;
 }
 
 /*

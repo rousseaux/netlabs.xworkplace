@@ -426,7 +426,8 @@ MRESULT EXPENTRY fnwpPartitionsClient(HWND hwndClient, ULONG msg, MPARAM mp1, MP
                        XM_UPDATE,
                        0, 0);
             mrc = (MPARAM)FALSE;
-        break; }
+        }
+        break;
 
         /*
          * XM_UPDATE:
@@ -459,7 +460,8 @@ MRESULT EXPENTRY fnwpPartitionsClient(HWND hwndClient, ULONG msg, MPARAM mp1, MP
                                     &rclPaint);
             WinFillRect(hps, &rclPaint, CLR_BLACK);
             WinEndPaint(hps);
-        break; }
+        }
+        break;
 
         /*
          * WM_WINDOWPOSCHANGED:
@@ -486,7 +488,8 @@ MRESULT EXPENTRY fnwpPartitionsClient(HWND hwndClient, ULONG msg, MPARAM mp1, MP
             }
 
             // return default NULL
-        break; }
+        }
+        break;
 
         /*
          * WM_CLOSE:
@@ -507,7 +510,8 @@ MRESULT EXPENTRY fnwpPartitionsClient(HWND hwndClient, ULONG msg, MPARAM mp1, MP
             WinDestroyWindow(hwndFrame);
 
             // return default NULL
-        break; }
+        }
+        break;
 
         /*
          * WM_DESTROY:

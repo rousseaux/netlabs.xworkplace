@@ -291,7 +291,7 @@ BEGIN
 
     MENUITEM "", ID_CRMI_SEP3, MIS_SEPARATOR
 
-    MENUITEM "~XCenter", ID_CRM_XCSUB, MIS_SUBMENU
+    MENUITEM "", ID_CRM_XCSUB, MIS_SUBMENU
     BEGIN
         MENUITEM "Propertie~s", ID_CRMI_XCSUB_PROPERTIES
         MENUITEM "", ID_CRMI_SEP4, MIS_SEPARATOR
@@ -665,7 +665,7 @@ BEGIN
     ID_MMSI_PAGETITLE_IOPROCS           "~IOProcs"
     ID_MMSI_PAGETITLE_CODECS            "~Codecs"
 
-    ID_XSSI_PAGETITLE_PAGER             "X~Pager"
+    ID_XSSI_PAGETITLE_PAGER             "~Pager"
 
     ID_XSSI_XWPSTRING_PAGE              "~Setup string"
     ID_XSSI_XWPSTRING_OPENMENU          "~Invoke setup string"
@@ -969,27 +969,65 @@ BEGIN
 
     ID_CRSI_OWGT_BITMAPFILE             "OS/2 bitmap file"
 
-    /* XPager "sticky" page and related dialogs */
-    ID_SCDI_STICKY_GROUP                "Sticky windows"
-    ID_SCDI_STICKY_INCLUDE               "I"
-    ID_SCDI_STICKY_EXCLUDE               "E"
-    ID_SCDI_STICKY_CONTAINS              "contains"
-    ID_SCDI_STICKY_BEGINSWITH            "begins with"
-    ID_SCDI_STICKY_ENDSWITH              "ends with"
-    ID_SCDI_STICKY_EQUALS                "equals"
-    ID_SCDI_STICKY_MATCHES               "matches"
-    ID_SCDI_STICKY_TITLEATTRIBUTE        "Title"
-    ID_SCDI_STICKY_CRITERIA              "Criteria"
-    ID_SCDI_STICKY_ATTRIBUTE             "Attribute"
-    ID_SCDI_STICKY_OPERATOR              "Operator"
-    ID_SCDI_STICKY_VALUE                 "Value"
-    ID_SCDI_STICKY_EDITTITLE             "Edit Sticky Criteria"
-    ID_SCDI_STICKY_ADDTITLE              "Add Sticky Criteria"
+    /* widget class names (all new with V0.9.19) */
+    ID_CRSI_WIDGET_OBJBUTTON            "Object button"
+    ID_CRSI_WIDGET_XBUTTON              "&xbutton;"
+    ID_CRSI_WIDGET_PULSE                "Pulse (CPU load)"
+    ID_CRSI_WIDGET_TRAY                 "Tray"
+    ID_CRSI_WIDGET_DISKFREE_WC          "Diskfree (&warpcenter; style)"
+    ID_CRSI_WIDGET_DATE                 "Date"
+    ID_CRSI_WIDGET_TIME                 "Time"
+    ID_CRSI_WIDGET_FREEMEM              "Free physical memory"
+    ID_CRSI_WIDGET_POWER                "Battery power"
+    ID_CRSI_WIDGET_DISKFREE_COND        "Diskfree (condensed)"
+    ID_CRSI_WIDGET_SENTINEL             "Sentinel memory watcher"
+    ID_CRSI_WIDGET_WINDOWLIST           "Window list"
+    ID_CRSI_WIDGET_HEALTH               "Health Monitor"
 
-    ID_SCDI_STICKY_CRITERIAGROUP         "Criteria"
-    ID_SCDI_STICKY_MATCHINGGROUP         "Matching criteria"
-    ID_SCDI_STICKY_RADIO_INCLUDE         "I - Include matching windows"
-    ID_SCDI_STICKY_RADIO_EXCLUDE         "E - Exclude matching windows"
+    /* font sample view (all new with V0.9.19) */
+    ID_XSSI_FONT_BASELINE               "Show baseline (red line)"
+    ID_XSSI_FONT_MAXASCENDER            "Show maximum ascender/descender (gray rectangles on left)"
+    ID_XSSI_FONT_INTERNALLEADING        "Show internal leading (gray rectangle)"
+    ID_XSSI_FONT_LOWERCASEASCENT        "Show lower case ascent/descent (red rectangles)"
+
+    /* object details dialog V0.9.19 (2002-05-23) [umoeller] */
+    ID_XSSI_OBJDET_OBJECTID             "Object ID"
+    ID_XSSI_OBJDET_NONESET              "none set"
+    ID_XSSI_OBJDET_OBJECTID_ORIG        "Original object ID"
+    ID_XSSI_OBJDET_DEFAULTVIEW          "Object default view"
+    ID_XSSI_OBJDET_HANDLE               "Object handle"
+
+    ID_XSSI_OBJDET_STYLEGROUP           "Object style"
+    ID_XSSI_OBJDET_CUSTOMICON           "Custom icon (auto-destroy; style doesn't work)"
+    ID_XSSI_OBJDET_NOTDEFAULTICON       "Not default icon (auto-destroy)"
+    ID_XSSI_OBJDET_NOCOPY               "no copy"
+    ID_XSSI_OBJDET_NODELETE             "no delete"
+    ID_XSSI_OBJDET_NODRAG               "no drag"
+    ID_XSSI_OBJDET_NODROPON             "no drop-on"
+    ID_XSSI_OBJDET_NOLINK               "no link (cannot have shadows)"
+    ID_XSSI_OBJDET_NOMOVE               "no move"
+    ID_XSSI_OBJDET_NOPRINT              "no print"
+    ID_XSSI_OBJDET_NORENAME             "no rename"
+    ID_XSSI_OBJDET_NOSETTINGS           "no settings"
+    ID_XSSI_OBJDET_NOTVISIBLE           "not visible"
+    ID_XSSI_OBJDET_TEMPLATE             "template"
+    ID_XSSI_OBJDET_LOCKEDINPLACE        "locked in place"
+
+    ID_XSSI_OBJDET_PROGRAMDATA          "Program data"
+    ID_XSSI_OBJDET_PROGRAMTYPE          "Program type"
+    ID_XSSI_OBJDET_ENVIRONMENT          "Environment"
+
+    ID_XSSI_OBJDET_FOLDERFLAGS          "Folder flags"
+    ID_XSSI_OBJDET_FOLDERVIEWFLAGS      "Folder view flags"
+    ID_XSSI_OBJDET_OBJUSAGE             "Object usage"
+    ID_XSSI_OBJDET_OPENVIEWS            "Currently open views"
+    ID_XSSI_OBJDET_ALLOCMEM             "Allocated memory"
+    ID_XSSI_OBJDET_AWAKESHADOWS         "Awake shadows of this object"
+    ID_XSSI_OBJDET_FOLDERWINDOWS        "Folder windows containing this object"
+    ID_XSSI_OBJDET_CNRHWND              "Container HWND"
+    ID_XSSI_OBJDET_APPSOPEN             "Applications which opened this object"
+    ID_XSSI_OBJDET_APPHANDLE            "Open handle (probably HAPP)"
+    ID_XSSI_OBJDET_MENUID               "Menu ID"
 END
 
 /* string IDs for status bar mnemonics (all new with V0.9.14) */
@@ -1444,26 +1482,38 @@ BEGIN
     ID_XSDI_MENU_EJECTDISK              "~Eject disk"
     ID_XSDI_MENU_UNLOCKDISK             "~Unlock disk"
 
-    /* widget class names (all new with V0.9.19) */
-    ID_CRSI_WIDGET_OBJBUTTON            "Object button"
-    ID_CRSI_WIDGET_XBUTTON              "&xbutton;"
-    ID_CRSI_WIDGET_PULSE                "Pulse (CPU load)"
-    ID_CRSI_WIDGET_TRAY                 "Tray"
-    ID_CRSI_WIDGET_DISKFREE_WC          "Diskfree (&warpcenter; style)"
-    ID_CRSI_WIDGET_DATE                 "Date"
-    ID_CRSI_WIDGET_TIME                 "Time"
-    ID_CRSI_WIDGET_FREEMEM              "Free physical memory"
-    ID_CRSI_WIDGET_POWER                "Battery power"
-    ID_CRSI_WIDGET_DISKFREE_COND        "Diskfree (condensed)"
-    ID_CRSI_WIDGET_SENTINEL             "Sentinel memory watcher"
-    ID_CRSI_WIDGET_WINDOWLIST           "Window list"
-    ID_CRSI_WIDGET_HEALTH               "Health Monitor"
+    /* XPager "sticky" page and related dialogs */
+    ID_SCDI_STICKY_GROUP                "Sticky windows"
+    ID_SCDI_STICKY_INCLUDE              "I"
+    ID_SCDI_STICKY_EXCLUDE              "E"
+    ID_SCDI_STICKY_CONTAINS             "contains"
+    ID_SCDI_STICKY_BEGINSWITH           "begins with"
+    ID_SCDI_STICKY_ENDSWITH             "ends with"
+    ID_SCDI_STICKY_EQUALS               "equals"
+    ID_SCDI_STICKY_MATCHES              "matches"
+    ID_SCDI_STICKY_TITLEATTRIBUTE       "Title"
+    ID_SCDI_STICKY_CRITERIA             "Criteria"
+    ID_SCDI_STICKY_ATTRIBUTE            "Attribute"
+    ID_SCDI_STICKY_OPERATOR             "Operator"
+    ID_SCDI_STICKY_VALUE                "Value"
+    ID_SCDI_STICKY_EDITTITLE            "Edit Sticky Criteria"
+    ID_SCDI_STICKY_ADDTITLE             "Add Sticky Criteria"
 
-    /* font sample view (all new with V0.9.19) */
-    ID_XSSI_FONT_BASELINE               "Show baseline (red line)"
-    ID_XSSI_FONT_MAXASCENDER            "Show maximum ascender/descender (gray rectangles on left)"
-    ID_XSSI_FONT_INTERNALLEADING        "Show internal leading (gray rectangle)"
-    ID_XSSI_FONT_LOWERCASEASCENT        "Show lower case ascent/descent (red rectangles)"
+    ID_SCDI_STICKY_CRITERIAGROUP        "Criteria"
+    ID_SCDI_STICKY_MATCHINGGROUP        "Matching criteria"
+    ID_SCDI_STICKY_RADIO_INCLUDE        "I - Include matching windows"
+    ID_SCDI_STICKY_RADIO_EXCLUDE        "E - Exclude matching windows"
+
+    /* strings formerly in ID_XSD_AUTOCLOSE */
+    ID_XSD_AUTOCLOSE                    "Auto-Close Non-PM Sessions"
+    ID_XSDI_ACL_INTRO                   "Enter the sessions to be closed automatically here."
+    ID_XSDI_XRB_NEW                     "~New"
+    ID_XSDI_XRB_DELETE                  "~Delete"
+    ID_XSDI_ACL_SESSIONTITLE            "Session ~title (leading characters):"
+    ID_XSDI_ACL_DOWHATGROUP             "Do ~what?"
+    ID_XSDI_ACL_SKIP                    "Sk~ip session (do not close)"
+    ID_XSDI_ACL_WMCLOSE                 "Clo~se PM window"
+    ID_XSDI_ACL_KILLSESSION             "~Kill session (DosKillProcess)"
 END
 
 /* Treesize definitions; added V0.9.0 */

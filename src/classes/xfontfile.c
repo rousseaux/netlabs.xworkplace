@@ -193,7 +193,7 @@ SOM_Scope BOOL  SOMLINK fonf_wpQueryDefaultHelp(XWPFontFile *somSelf,
 
     strcpy(HelpLibrary, cmnQueryHelpLibrary());
     *pHelpPanelId = ID_XSH_FONTFILE;
-    return (TRUE);
+    return TRUE;
 }
 
 /* ******************************************************************
@@ -240,7 +240,7 @@ SOM_Scope BOOL  SOMLINK fonfM_wpclsCreateDefaultTemplates(M_XWPFontFile *somSelf
     /* M_XWPFontFileData *somThis = M_XWPFontFileGetData(somSelf); */
     M_XWPFontFileMethodDebug("M_XWPFontFile","fonfM_wpclsCreateDefaultTemplates");
 
-    return (TRUE);
+    return TRUE;
     // means that the Templates folder should _not_ create templates
     // by itself; we pretend that we've done this
 }
@@ -281,13 +281,24 @@ SOM_Scope ULONG  SOMLINK fonfM_wpclsQueryStyle(M_XWPFontFile *somSelf)
 
 /*
  *@@ wpclsQueryIconData:
- *      this WPObject class method builds the default
- *      icon for objects of a class (i.e. the icon which
- *      is shown if no instance icon is assigned). This
- *      apparently gets called from some of the other
- *      icon instance methods if no instance icon was
- *      found for an object. The exact mechanism of how
- *      this works is not documented.
+ *      this WPObject class method must return information
+ *      about how to build the default icon for objects
+ *      of a class. This gets called from various other
+ *      methods whenever a class default icon is needed;
+ *      most importantly, M_WPObject::wpclsQueryIcon
+ *      calls this to build a class default icon, which
+ *      is then cached in the class's instance data.
+ *      If a subclass wants to change a class default icon,
+ *      it should always override _this_ method instead of
+ *      wpclsQueryIcon.
+ *
+ *      Note that the default WPS implementation does not
+ *      allow for specifying the ICON_FILE format here,
+ *      which is why we have overridden
+ *      M_XFldObject::wpclsQueryIcon too. This allows us
+ *      to return icon _files_ for theming too. For details
+ *      about the WPS's crappy icon management, refer to
+ *      src\filesys\icons.c.
  *
  *      We give this class a new standard icon here.
  *

@@ -1167,7 +1167,7 @@ static BOOL WMChar(HWND hwndFrame,
 
                 // swallow this key,
                 // do not process default winproc
-                return (TRUE);
+                return TRUE;
             }
         }
 
@@ -1194,12 +1194,12 @@ static BOOL WMChar(HWND hwndFrame,
                 // was a hotkey:
                 // swallow this key,
                 // do not process default winproc
-                return (TRUE);
+                return TRUE;
             }
         }
     }
 
-    return (FALSE);
+    return FALSE;
 }
 
 /*
@@ -1833,7 +1833,9 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
     CATCH(excpt1)
     {
         // exception occured:
-        return (0);
+        // return 0;        // not good V0.9.19 (2002-05-23) [umoeller]
+        fCallDefault = FALSE;
+        mrc = NULL;
     } END_CATCH();
 
     if (fCallDefault)

@@ -1,10 +1,11 @@
 <HTML>
 <HEAD>
     <TITLE>
-        New XFldDesktop Setup Strings
+        WPProgram Strings
     </TITLE>
 </HEAD>
 <!-- this is all new with V0.9.16 -->
+<!-- V0.9.19: title was wrong, fixed -->
 <BODY>
 <CODE>WPProgram</CODE> is the WPS class for all program objects
 (see <A HREF="glossary/gls_wpsclasses.html">WPS classes</A> for details).
@@ -17,10 +18,13 @@ recognized by the <CODE><A HREF="objects/string_1wpobject.html">WPObject</A></CO
 <DD>Sets <I>filters</I> for data files to be associated with a program
 object. Multiple filters are separated by commas.
 
-<P>Note: If XWorkplace's extended associations are enabled, the filter is
+<!-- V0.9.19: added ifndef, replaced entities here -->
+<IFNDEF __NEVEREXTASSOCS__>
+<P>Note: If &xwp;'s extended associations are enabled, the filter is
 stored in the INI files, but the change will have no effect until extended
-associations are disabled again because XWorkplace completely ignores
+associations are disabled again because &xwp; completely ignores
 WPS associations by filter.
+</IFNDEF>
 
 <DT><P><CITE><B>ASSOCTYPE</B>=<I>types</I></CITE>
 <DD>Sets <I>types</I> for data files to be associated with a program

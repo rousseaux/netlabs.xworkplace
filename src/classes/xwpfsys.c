@@ -125,7 +125,7 @@ SOM_Scope HOBJECT  SOMLINK xfs_xwpQueryHandle(XWPFileSystem *somSelf,
     XWPFileSystemMethodDebug("XWPFileSystem","xfs_xwpQueryHandle");
 
     /* Return statement to be customized: */
-    return (0);
+    return 0;
 }
 
 /*

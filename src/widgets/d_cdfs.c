@@ -1182,7 +1182,7 @@ ULONG EXPENTRY CheckDriverName(HMODULE hmodPlugin, // in: module handle of the w
     }
 
     // report "no, we don't know this driver"
-    return (0);
+    return 0;
 }
 
 

@@ -248,7 +248,7 @@ SOM_Scope BOOL  SOMLINK xnw_wpQueryDefaultHelp(XWPNetwork *somSelf,
 
     strcpy(HelpLibrary, cmnQueryHelpLibrary());
     *pHelpPanelId = ID_XSH_XWPNETWORK_MAIN;
-    return (TRUE);
+    return TRUE;
 }
 
 /*
@@ -394,11 +394,29 @@ SOM_Scope BOOL  SOMLINK xnwM_wpclsCreateDefaultTemplates(M_XWPNetwork *somSelf,
     M_XWPNetworkMethodDebug("M_XWPNetwork","xnwM_wpclsCreateDefaultTemplates");
 
     // pretend we've created the templates
-    return (TRUE);
+    return TRUE;
 }
 
 /*
  *@@ wpclsQueryIconData:
+ *      this WPObject class method must return information
+ *      about how to build the default icon for objects
+ *      of a class. This gets called from various other
+ *      methods whenever a class default icon is needed;
+ *      most importantly, M_WPObject::wpclsQueryIcon
+ *      calls this to build a class default icon, which
+ *      is then cached in the class's instance data.
+ *      If a subclass wants to change a class default icon,
+ *      it should always override _this_ method instead of
+ *      wpclsQueryIcon.
+ *
+ *      Note that the default WPS implementation does not
+ *      allow for specifying the ICON_FILE format here,
+ *      which is why we have overridden
+ *      M_XFldObject::wpclsQueryIcon too. This allows us
+ *      to return icon _files_ for theming too. For details
+ *      about the WPS's crappy icon management, refer to
+ *      src\filesys\icons.c.
  *
  */
 

@@ -751,6 +751,11 @@ typedef struct _CLASSTOINSERT
     ULONG               ulAttr;
 } CLASSTOINSERT, *PCLASSTOINSERT;
 
+/*
+ *@@ SortClasses:
+ *
+ */
+
 static signed short XWPENTRY SortClasses(void* pItem1,
                                          void* pItem2,
                                          void* pStorage)       // HAB really
@@ -931,32 +936,6 @@ PPRIVATEWIDGETCLASS ctrpFindClassFromMenuCommand(USHORT usCmd)
  *   Widget settings management
  *
  ********************************************************************/
-
-/*
- *@@ AddWidgetSetting:
- *      adds a new PRIVATEWIDGETSETTING to the internal
- *      list of widget settings.
- *
- *      pSetting is assumed to be dynamic (i.e. allocated
- *      with malloc()).
- *
- *      This does not update open views. It neither saves
- *      the XCenter instance data. This has only been
- *      put into a separate procedure because it's both
- *      needed by ctrpInsertWidget and ctrpUnstuffSettings.
- *
- *      The caller must lock the XCenter himself.
- *
- *@@added V0.9.7 (2000-12-02) [umoeller]
- *@@changed V0.9.7 (2000-12-13) [umoeller]: changed prototype
- *@@changed V0.9.13 (2001-06-21) [umoeller]: now using PRIVATEWIDGETSETTING
- */
-
-/* VOID AddWidgetSetting(XCenter *somSelf,
-                      PPRIVATEWIDGETSETTING pSetting,  // in: new setting
-                      ULONG ulBeforeIndex,             // in: index to insert before or -1 for end
-{
-} */
 
 /*
  *@@ ctrpCheckClass:
@@ -1465,8 +1444,11 @@ APIRET ctrpFindTraySetting(XCenter *somSelf,
 {
     APIRET      arc = NO_ERROR;
     PLINKLIST   pllWidgets = ctrpQuerySettingsList(somSelf);
-
     PPRIVATEWIDGETSETTING pTrayWidgetSetting;
+
+    if (ppTrayWidget)
+        *ppTrayWidget = NULL;       // for safety V0.9.19 (2002-05-14) [umoeller]
+
     if (!(pTrayWidgetSetting = lstItemFromIndex(pllWidgets,
                                                 ulTrayWidgetIndex)))
         // this doesn't exist at all:
@@ -1550,11 +1532,11 @@ BOOL ctrpDeleteTraySetting(XCenter *somSelf,
 
             free(pTray);
 
-            return (TRUE);
+            return TRUE;
         }
     }
 
-    return (FALSE);
+    return FALSE;
 }
 
 /*

@@ -552,6 +552,10 @@ static const MENUITEMDEF G_MenuItemsWithIDs[] =
         ID_XSDI_MENU_SHUTDOWN, WPMENUID_SHUTDOWN,
                 CONFFL_WPDESKTOP,
                 CTXT_SHUTDOWN,
+        // "Shut ~down..."
+        ID_XSDI_MENU_SHUTDOWN, WPMENUID_SHUTDOWN,
+                CONFFL_WPDESKTOP,
+                CTXT_SHUTDOWN,
         // "S~ystem setup"
         ID_XSDI_MENU_SYSTEMSETUP, WPMENUID_SYSTEMSETUP,
                 CONFFL_WPDESKTOP,
@@ -1930,7 +1934,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                         | PU_MOUSEBUTTON2 | PU_KEYBOARD);
     }
 
-    return (TRUE);
+    return TRUE;
 } */
 
 /*
@@ -2095,7 +2099,7 @@ BOOL mnuModifyDataFilePopupMenu(WPObject *somSelf,  // in: data file
     }
 #endif
 
-    return (TRUE);
+    return TRUE;
 }
 
 /* ******************************************************************

@@ -487,10 +487,10 @@ static BOOL SwitchToTray(PTRAYWIDGETPRIVATE pPrivate,
             }
         }
 
-        return (TRUE);
+        return TRUE;
     }
 
-    return (FALSE);
+    return FALSE;
 }
 
 /*
@@ -1500,7 +1500,7 @@ static MRESULT YwgtCommand(HWND hwnd, MPARAM mp1, MPARAM mp2)
         }
     }
 
-    return (FALSE);
+    return FALSE;
 }
 
 /*
@@ -1519,7 +1519,7 @@ static MRESULT YwgtDragOver(HWND hwnd, MPARAM mp1)
                              (PDRAGINFO)mp1));
     }
 
-    return (0);
+    return 0;
 }
 
 /*
@@ -1611,7 +1611,7 @@ static BOOL YwgtSaveSubwidgetSetup(HWND hwnd,
                     // and save it with the XCenter... duh
                     YwgtSaveSetupAndSend(pPrivate);
 
-                    return (TRUE);
+                    return TRUE;
                 }
                 else
                     cmnLog(__FILE__, __LINE__, __FUNCTION__,
@@ -1623,7 +1623,7 @@ static BOOL YwgtSaveSubwidgetSetup(HWND hwnd,
         }
     }
 
-    return (FALSE);
+    return FALSE;
 }
 
 /*

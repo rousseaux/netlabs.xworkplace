@@ -24,10 +24,14 @@ allow you to quickly install fonts.
 </UL>Presently, files with the following extensions will be turned into font files:
 
 <UL><LI><CODE>.TTF</CODE>, <CODE>.TTC</CODE>: These are the extensions for TrueType
-font files. It is assumed that your &os2; system can display TrueType fonts. This is
+font files.
+<!-- V0.9.19: added ifndef -->
+<IFNDEF __EWORKPLACE__>
+It is assumed that your &os2; system can display TrueType fonts. This is
 the case for Warp 4 (and higher) without any special preparations. On Warp 3, you have
 to install the FreeType/2 engine -- but this is recommended for Warp 4 as well because
 its display quality is better.
+</IFNDEF>
 
 <P><LI><CODE>.OFM</CODE>: These are the special files which make Adobe Type-1
 fonts (with the <CODE>.PFB</CODE> extension) accessible to &os2;. In order for &os2;

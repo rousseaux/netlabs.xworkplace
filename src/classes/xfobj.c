@@ -379,7 +379,7 @@ SOM_Scope BOOL  SOMLINK xo_xwpSetTrashObject(XFldObject *somSelf,
 
     _pTrashObject = pTrashObject;
 
-    return (TRUE);
+    return TRUE;
 }
 
 /*
@@ -1762,63 +1762,6 @@ SOM_Scope BOOL  SOMLINK xo_wpSetObjectID(XFldObject *somSelf,
 }
 
 /*
- *@@ wpSetStyle:
- *      this WPObject method sets the OBJSTYLE_* flags for
- *      the object to a whole new set.
- *
- *      If this thing is made a template, lock the object
- *      so it won't be made dormant.
- *
- *@@added V0.9.18 (2002-03-24) [umoeller]
- */
-
-SOM_Scope BOOL  SOMLINK xo_wpSetStyle(XFldObject *somSelf, ULONG ulNewStyle)
-{
-    XFldObjectMethodDebug("XFldObject","xo_wpSetStyle");
-
-    /* if (ulNewStyle & OBJSTYLE_TEMPLATE)
-    {
-        XFldObjectData *somThis = XFldObjectGetData(somSelf);
-        if (_flFlags & OBJFL_INITIALIZED)
-            _wpLockObject(somSelf);
-    } */
-
-    return (XFldObject_parent_WPObject_wpSetStyle(somSelf, ulNewStyle));
-}
-
-/*
- *@@ wpModifyStyle:
- *      this WPObject method modifies OBJSTYLE_* flags for
- *      the object bit-wise in an atomic operation.
- *
- *      If some smart ass makes this a template, lock the
- *      object so it won't be made dormant.
- *
- *@@added V0.9.18 (2002-03-24) [umoeller]
- */
-
-SOM_Scope BOOL  SOMLINK xo_wpModifyStyle(XFldObject *somSelf,
-                                         ULONG ulStyleFlags,
-                                         ULONG ulStyleMask)
-{
-    // XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xo_wpModifyStyle");
-
-    /* if (    (ulStyleFlags & OBJSTYLE_TEMPLATE)
-         && (ulStyleMask & OBJSTYLE_TEMPLATE)
-       )
-    {
-        XFldObjectData *somThis = XFldObjectGetData(somSelf);
-        if (_flFlags & OBJFL_INITIALIZED)
-            _wpLockObject(somSelf);
-    } */
-
-    return (XFldObject_parent_WPObject_wpModifyStyle(somSelf,
-                                                     ulStyleFlags,
-                                                     ulStyleMask));
-}
-
-/*
  *@@ wpSaveDeferred:
  *      this WPObject method saves object instance data
  *      asynchronously on a separate thread.
@@ -1920,7 +1863,7 @@ SOM_Scope BOOL  SOMLINK xo_wpSaveImmediate(XFldObject *somSelf)
                szFolderPath);
     }
 
-    return (TRUE);*/
+    return TRUE;*/
 }
 
 /*
@@ -2807,7 +2750,7 @@ SOM_Scope BOOL  SOMLINK xoM_wpclsQuerySettingsPageSize(M_XFldObject *somSelf,
     pSizl->cx = 275;       // size of "Object" page
     pSizl->cy = 150;       // size of "Object" page
 
-    return (TRUE);
+    return TRUE;
 }
 
 /*

@@ -344,7 +344,7 @@ SOM_Scope ULONG SOMLINK o2p_xwpInsertAnimationPage3(XWPOS2Pointer * somSelf,
     XWPOS2PointerMethodDebug("XWPOS2Pointer", "o2p_xwpInsertAnimationPage3");
 
     /* Return statement to be customized: */
-    return (0);
+    return 0;
 }
 
 /*

@@ -244,7 +244,7 @@ SOM_Scope ULONG  SOMLINK xms_xwpAddAnimatedMousePointerPage(XWPMouse *somSelf,
 
         return _wpInsertSettingsPage(somSelf, hwndDlg, &pi);
     #else
-        return (0);
+        return 0;
     #endif
 }
 

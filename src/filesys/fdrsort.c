@@ -768,7 +768,7 @@ static LONG EXPENTRY CompareStrings(PSZ *ppsz1,     // ptr to PSZ 1
         return (CMP_LESS);
 
     // return 0 if strcmp returned 0 above or both strings are NULL
-    return (0);
+    return 0;
 }
 
 /*
@@ -995,7 +995,7 @@ SHORT EXPENTRY fnCompareDetailsColumn(PMINIRECORDCORE pmrc1,
         return (-1);
 
     // neither is:
-    return (0);
+    return 0;
 }
 
 /*
@@ -1214,7 +1214,7 @@ BOOL fdrHasAlwaysSort(WPFolder *somSelf)
     if (_pFolderSortInfo)
         return (((PIBMSORTINFO)_pFolderSortInfo)->fAlwaysSort);
 
-    return (FALSE);
+    return FALSE;
 #endif
 }
 

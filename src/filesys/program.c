@@ -923,10 +923,10 @@ static BOOL LockRunning(VOID)
             lstInit(&G_llRunning,
                     TRUE);      // auto-free
 
-            return (TRUE);
+            return TRUE;
         }
         else
-            return (FALSE);
+            return FALSE;
     }
 
     return (!WinRequestMutexSem(G_hmtxRunning, SEM_INDEFINITE_WAIT));

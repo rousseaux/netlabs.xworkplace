@@ -93,7 +93,7 @@
     } AUTOCLOSELISTITEM, *PAUTOCLOSELISTITEM;
 
     // auto-close actions
-    #define ACL_CTRL_C              1
+    // #define ACL_CTRL_C              1            removed V0.9.19 (2002-05-23) [umoeller]
     #define ACL_WMCLOSE             2
     #define ACL_KILLSESSION         3
     #define ACL_SKIP                4

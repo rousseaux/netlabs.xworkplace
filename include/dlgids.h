@@ -1107,11 +1107,14 @@
 
 #define ID_XSD_AUTOCLOSE                2180
 #define ID_XSDI_ACL_WMCLOSE             2181
-#define ID_XSDI_ACL_CTRL_C              2182
+// #define ID_XSDI_ACL_CTRL_C              2182 removed V0.9.19 (2002-05-23) [umoeller]
 #define ID_XSDI_ACL_KILLSESSION         2183
 #define ID_XSDI_ACL_SKIP                2184
 
 #define ID_XSDI_ACL_STORE               2185    // added V0.9.1 (99-12-10)
+#define ID_XSDI_ACL_INTRO               2186
+#define ID_XSDI_ACL_SESSIONTITLE        2187
+#define ID_XSDI_ACL_DOWHATGROUP         2188
 
 #define ID_XSDI_PARTITIONSFIRST         2190    // menu item of first submenu on "Partitions" button (V0.9.0)
 
@@ -2220,6 +2223,41 @@
 #define ID_XSSI_FONT_MAXASCENDER        6241
 #define ID_XSSI_FONT_INTERNALLEADING    6242
 #define ID_XSSI_FONT_LOWERCASEASCENT    6243
+
+#define ID_XSSI_OBJDET_OBJECTID         6244
+#define ID_XSSI_OBJDET_NONESET          6245
+#define ID_XSSI_OBJDET_OBJECTID_ORIG    6246
+#define ID_XSSI_OBJDET_DEFAULTVIEW      6247
+#define ID_XSSI_OBJDET_HANDLE           6248
+#define ID_XSSI_OBJDET_STYLEGROUP       6249
+#define ID_XSSI_OBJDET_CUSTOMICON       6250
+#define ID_XSSI_OBJDET_NOTDEFAULTICON   6251
+#define ID_XSSI_OBJDET_NOCOPY           6252
+#define ID_XSSI_OBJDET_NODELETE         6253
+#define ID_XSSI_OBJDET_NODRAG           6254
+#define ID_XSSI_OBJDET_NODROPON         6255
+#define ID_XSSI_OBJDET_NOLINK           6256
+#define ID_XSSI_OBJDET_NOMOVE           6257
+#define ID_XSSI_OBJDET_NOPRINT          6258
+#define ID_XSSI_OBJDET_NORENAME         6259
+#define ID_XSSI_OBJDET_NOSETTINGS       6260
+#define ID_XSSI_OBJDET_NOTVISIBLE       6261
+#define ID_XSSI_OBJDET_TEMPLATE         6262
+#define ID_XSSI_OBJDET_LOCKEDINPLACE    6263
+#define ID_XSSI_OBJDET_PROGRAMDATA      6264
+#define ID_XSSI_OBJDET_PROGRAMTYPE      6265
+#define ID_XSSI_OBJDET_ENVIRONMENT      6266
+#define ID_XSSI_OBJDET_FOLDERFLAGS      6267
+#define ID_XSSI_OBJDET_FOLDERVIEWFLAGS  6268
+#define ID_XSSI_OBJDET_OBJUSAGE         6269
+#define ID_XSSI_OBJDET_OPENVIEWS        6270
+#define ID_XSSI_OBJDET_ALLOCMEM         6271
+#define ID_XSSI_OBJDET_AWAKESHADOWS     6272
+#define ID_XSSI_OBJDET_FOLDERWINDOWS    6273
+#define ID_XSSI_OBJDET_CNRHWND          6274
+#define ID_XSSI_OBJDET_APPSOPEN         6275
+#define ID_XSSI_OBJDET_APPHANDLE        6276
+#define ID_XSSI_OBJDET_MENUID           6277
 
 /* ******************************************************************
  *

@@ -511,12 +511,12 @@ BOOL cmnuAppendMi2List(WPObject *pObject,
     {
         G_sNextMenuId++;
         G_ulVarItemCount++;
-        return (TRUE);
+        return TRUE;
     }
     else
     {
         krnPostThread1ObjectMsg(T1M_LIMITREACHED, MPNULL, MPNULL);
-        return (FALSE);
+        return FALSE;
     }
 }
 
@@ -568,7 +568,7 @@ ULONG cmnuInsertOneObjectMenuItem(HWND       hAddToMenu,   // hwnd of menu to ad
         // something
         return (rc);
     else
-        return (0); // report error
+        return 0; // report error
 }
 
 /*
@@ -646,7 +646,7 @@ SHORT cmnuPrepareContentSubmenu(WPFolder *somSelf, // in: folder whose content i
         return(sId);
     }
 
-    return (0);
+    return 0;
 }
 
 /*
@@ -675,7 +675,7 @@ SHORT XWPENTRY fncbSortContentMenuItems(PVOID pItem1, PVOID pItem2, PVOID hab)
     {
         case WCS_LT:    return (-1);
         case WCS_GT:    return (1);
-        default:        return (0);
+        default:        return 0;
     }
 
 }

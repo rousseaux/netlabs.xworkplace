@@ -17,8 +17,11 @@ bottom). All the file names starting with "00" used to start with
 <LI><A HREX="00203noobject.html">"Object not found"</A> -->
 <LI><A HREF="msg_limit.html">"Too many items"</A>
 <LI><A HREF="msg_noclip.html">"No text in clipboard"</A>
+<!-- V0.9.19: added ifndef -->
+<IFNDEF __NOXSHUTDOWN__>
 <LI><A HREF="xshutdown/xsd_reboot.html">Reboot options</A>
 <LI><A HREF="xshutdown/xsd_autoclose.html">Auto-close non-PM sessions</A>
+</IFNDEF>
 <LI><A HREF="fsys/stat_selclass.html">Select object class</A>
 <LI><A HREF="clst_register.html">Register new class</A>
 <LI><A HREF="dlg_titleclsh.html">File conflict</A>
@@ -41,7 +44,10 @@ bottom). All the file names starting with "00" used to start with
 <LI><A HREF="setup/xset_paranoia.html">Internal settings</A>
 </IFNDEF>
 <LI><A HREF="fsys/dtp_menus.html">XDesktop Settings page 1</A>
+<!-- V0.9.19: added ifndef -->
+<IFNDEF __NOXSHUTDOWN__>
 <LI><A HREF="xshutdown/xsd_main.html">XDesktop Settings page 2</A>
+</IFNDEF>
 <LI><A HREF="menus/menu_sort.html">&xwp; Extended Sort Functions</A>
 <LI><A HREF="fsys/fldr_viewpage1.html">&xwp; Settings page in folders</A>
 <LI><A HREF="wps/wps_statbars2.html">Status bars page 2</A>
@@ -128,11 +134,15 @@ bottom). All the file names starting with "00" used to start with
 <LI><A HREF="dlg_selsome.html">Add "Select by name"</A>
 <LI><A HREF="menus/menu_view.html">New "View" menu items</A>
 <!-- the following items have been added with V0.9.5 -->
+<!-- V0.9.19: added ifndef -->
+<IFNDEF __NOOS2KERNEL__>
 <LI><A HREF="kernel/drv_hpfs386.html">&os2; Kernel: HPFS386.IFS</A>
+</IFNDEF>
 <LI><A HREF="objects/obj_media.html">Multimedia</A>
 <LI><A HREF="dlg_classes.html">Installed Classes</A>
 
 <!-- the following items have been added with V0.9.7 -->
+<!-- V0.9.19: added ifndef -->
 <LI><A HREF="xshutdown/xsd_dlg_vio.html">Close non-PM sessions</A>
 <LI><A HREF="fsys/fsys_resource.html">Resources page</A>
 <LI><A HREF="xcenter/xc_main.html">&xcenter;</A>

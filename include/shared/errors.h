@@ -36,13 +36,13 @@
     #define ERROR_XWP_FIRST  30000
 
     // other error ranges:
-    // --   include\security\xwpsecty.h defines XWPSEC_ERROR_FIRST
-    // --   include\expat\expat.h defines ERROR_XML_FIRST as 40000
+    // --   include\security\xwpsecty.h defines XWPSEC_ERROR_FIRST as   31000
+    // --   include\expat\expat.h defines ERROR_XML_FIRST as            40000
     //      (also used by include\helpers\xml.h)
-    // --   include\helpers\wphandle.h defines ERROR_WPH_FIRST 41000
-    // --   include\helpers\prfh.h defines ERROR_PRF_FIRST as 42000
-    // --   include\helpers\dialog.h defines ERROR_DLG_FIRST as 43000
-    // --   include\helpers\regexp.h defines ERROR_REGEXP_FIRST as 44000
+    // --   include\helpers\wphandle.h defines ERROR_WPH_FIRST          41000
+    // --   include\helpers\prfh.h defines ERROR_PRF_FIRST as           42000
+    // --   include\helpers\dialog.h defines ERROR_DLG_FIRST as         43000
+    // --   include\helpers\regexp.h defines ERROR_REGEXP_FIRST as      44000
 
     #define ERROR_FOPS_FIRST                  (ERROR_XWP_FIRST + 1)
     #define FOPSERR_NOT_HANDLED_ABORT         (ERROR_XWP_FIRST + 1)

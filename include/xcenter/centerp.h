@@ -517,9 +517,9 @@
                              HWND hwndTrayWidget,
                              PDRAGINFO pdrgInfo);
 
-        VOID ctrpDrop(HWND hwndClient,
-                      HWND hwndTrayWidget,
-                      PDRAGINFO pdrgInfo);
+        APIRET ctrpDrop(HWND hwndClient,
+                        HWND hwndTrayWidget,
+                        PDRAGINFO pdrgInfo);
 
         BOOL ctrpVerifyType(PDRAGITEM pdrgInfo,
                             PCSZ pcszType);
@@ -767,7 +767,9 @@
 
     BOOL ctrpSaveToFile(PCSZ pszDest, PCSZ pszClass, PCSZ pszSetup);
 
-    BOOL ctrpReadFromFile(PCSZ pszSource, PSZ *ppszSetup);
+    APIRET ctrpReadFromFile(PCSZ pszSource,
+                            PSZ *ppszClass,
+                            PSZ *ppszSetup);
 
     /* ******************************************************************
      *

@@ -266,7 +266,7 @@ BOOL krnLock(PCSZ pcszSourceFile,        // in: __FILE__
         G_pcszReqSourceFile = pcszSourceFile;
         G_ulReqLine = ulLine;
         G_pcszReqFunction = pcszFunction;
-        return (TRUE);
+        return TRUE;
     }
     else
     {
@@ -282,7 +282,7 @@ BOOL krnLock(PCSZ pcszSourceFile,        // in: __FILE__
                pcszSourceFile,
                ulLine);
 
-        return (FALSE);
+        return FALSE;
     }
 }
 
@@ -320,7 +320,7 @@ ULONG krnQueryLock(VOID)
             == NO_ERROR)
         return (tid);
 
-    return (0);
+    return 0;
 }
 
 /********************************************************************
@@ -798,7 +798,7 @@ HWND krnQueryDaemonObject(VOID)
                 return (pXwpGlobalShared->hwndDaemonObject);
     }
 
-    return (NULLHANDLE);
+    return NULLHANDLE;
 }
 
 /*

@@ -741,7 +741,7 @@ BOOL UpdateDiskMonitors(HWND hwnd,
         pPrivate->ulRefreshBitmap = 2;
     }
 
-    return (FALSE);
+    return FALSE;
 }
 
 /* ******************************************************************

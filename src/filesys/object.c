@@ -652,7 +652,7 @@ BOOL objQuerySetup(WPObject *somSelf,
         xstrcatc(pstrSetup, ';');
     }
 
-    return (TRUE);
+    return TRUE;
 }
 
 /* ******************************************************************
@@ -901,54 +901,65 @@ static POBJECTUSAGERECORD AddObjectUsage2Cnr(HWND hwndCnr,     // in: container 
  *@@ AddFolderView2Cnr:
  *
  *@@added V0.9.1 (2000-01-17) [umoeller]
+ *@@changed V0.9.19 (2002-05-23) [umoeller]: now using string ID
  */
 
 static VOID AddFolderView2Cnr(HWND hwndCnr,
                               POBJECTUSAGERECORD preccLevel2,
                               WPObject *pObject,
                               ULONG ulView,
-                              PSZ pszView)
+                              ULONG idStringView)
 {
     XSTRING strTemp;
     ULONG ulViewAttrs = _wpQueryFldrAttr(pObject, ulView);
+    PSZ pszView;
 
-    xstrInit(&strTemp, 200);
+    if (pszView = strdup(cmnGetString(idStringView)))
+    {
+        PSZ p;
+        if (p = strchr(pszView, '~'))
+            strcpy(p, p + 1);
 
-    xstrcpy(&strTemp, pszView, 0);
-    xstrcat(&strTemp, ": ", 0);
+        xstrInit(&strTemp, 200);
 
-    if (ulViewAttrs & CV_ICON)
-        xstrcat(&strTemp, "CV_ICON ", 0);
-    if (ulViewAttrs & CV_NAME)
-        xstrcat(&strTemp, "CV_NAME ", 0);
-    if (ulViewAttrs & CV_TEXT)
-        xstrcat(&strTemp, "CV_TEXT ", 0);
-    if (ulViewAttrs & CV_TREE)
-        xstrcat(&strTemp, "CV_TREE ", 0);
-    if (ulViewAttrs & CV_DETAIL)
-        xstrcat(&strTemp, "CV_DETAIL ", 0);
-    if (ulViewAttrs & CA_DETAILSVIEWTITLES)
-        xstrcat(&strTemp, "CA_DETAILSVIEWTITLES ", 0);
+        xstrcpy(&strTemp, pszView, 0);
+        xstrcat(&strTemp, ": ", 0);
 
-    if (ulViewAttrs & CV_MINI)
-        xstrcat(&strTemp, "CV_MINI ", 0);
-    if (ulViewAttrs & CV_FLOW)
-        xstrcat(&strTemp, "CV_FLOW ", 0);
-    if (ulViewAttrs & CA_DRAWICON)
-        xstrcat(&strTemp, "CA_DRAWICON ", 0);
-    if (ulViewAttrs & CA_DRAWBITMAP)
-        xstrcat(&strTemp, "CA_DRAWBITMAP ", 0);
-    if (ulViewAttrs & CA_TREELINE)
-        xstrcat(&strTemp, "CA_TREELINE ", 0);
+        if (ulViewAttrs & CV_ICON)
+            xstrcat(&strTemp, "CV_ICON ", 0);
+        if (ulViewAttrs & CV_NAME)
+            xstrcat(&strTemp, "CV_NAME ", 0);
+        if (ulViewAttrs & CV_TEXT)
+            xstrcat(&strTemp, "CV_TEXT ", 0);
+        if (ulViewAttrs & CV_TREE)
+            xstrcat(&strTemp, "CV_TREE ", 0);
+        if (ulViewAttrs & CV_DETAIL)
+            xstrcat(&strTemp, "CV_DETAIL ", 0);
+        if (ulViewAttrs & CA_DETAILSVIEWTITLES)
+            xstrcat(&strTemp, "CA_DETAILSVIEWTITLES ", 0);
 
-    // owner...
+        if (ulViewAttrs & CV_MINI)
+            xstrcat(&strTemp, "CV_MINI ", 0);
+        if (ulViewAttrs & CV_FLOW)
+            xstrcat(&strTemp, "CV_FLOW ", 0);
+        if (ulViewAttrs & CA_DRAWICON)
+            xstrcat(&strTemp, "CA_DRAWICON ", 0);
+        if (ulViewAttrs & CA_DRAWBITMAP)
+            xstrcat(&strTemp, "CA_DRAWBITMAP ", 0);
+        if (ulViewAttrs & CA_TREELINE)
+            xstrcat(&strTemp, "CA_TREELINE ", 0);
 
-    AddObjectUsage2Cnr(hwndCnr,
-                       preccLevel2,
-                       strTemp.psz,
-                       CRA_RECORDREADONLY);
+        // owner...
 
-    xstrClear(&strTemp);
+        AddObjectUsage2Cnr(hwndCnr,
+                           preccLevel2,
+                           strTemp.psz,
+                           CRA_RECORDREADONLY);
+
+        xstrClear(&strTemp);
+
+        free(pszView);
+    }
 }
 
 /*
@@ -959,6 +970,8 @@ static VOID AddFolderView2Cnr(HWND hwndCnr,
  *@@changed V0.9.1 (2000-01-16) [umoeller]: added object setup string
  *@@changed V0.9.6 (2000-10-16) [umoeller]: added program data
  *@@changed V0.9.16 (2001-10-06): fixed memory leak with program objects
+ *@@changed V0.9.19 (2002-05-23) [umoeller]: added obj default view
+ *@@changed V0.9.19 (2002-05-23) [umoeller]: finally localized strings in cnr
  */
 
 static VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
@@ -977,16 +990,18 @@ static VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
     {
         APIRET      arc = NO_ERROR;
         HOBJECT     hObject = NULLHANDLE;
+        ULONG       ulDefaultView;
 
-        sprintf(szText, "%s (Class: %s)",
+        sprintf(szText, "%s (%s: %s)",
                 _wpQueryTitle(pObject),
+                cmnGetString(ID_XSSI_CLSLIST_CLASS),        // "Class"
                 _somGetClassName(pObject));
         preccRoot = AddObjectUsage2Cnr(hwndCnr, NULL, szText,
                                        CRA_RECORDREADONLY | CRA_EXPANDED);
 
         // object ID
         preccLevel2 = AddObjectUsage2Cnr(hwndCnr, preccRoot,
-                                         "Object ID",
+                                         cmnGetString(ID_XSSI_OBJDET_OBJECTID), // "Object ID",
                                          CRA_RECORDREADONLY | CRA_EXPANDED);
         if (pszObjectID = _wpQueryObjectID(pObject))
             AddObjectUsage2Cnr(hwndCnr, preccLevel2,
@@ -996,11 +1011,12 @@ static VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
                                     : CRA_RECORDREADONLY)); // for the Desktop
         else
             AddObjectUsage2Cnr(hwndCnr, preccLevel2,
-                               "none set", 0); // editable!
+                               cmnGetString(ID_XSSI_OBJDET_NONESET), // "none set",
+                               0); // editable!
 
         // original object ID   V0.9.16 (2001-12-06) [umoeller]
         preccLevel2 = AddObjectUsage2Cnr(hwndCnr, preccRoot,
-                                         "Original object ID",
+                                         cmnGetString(ID_XSSI_OBJDET_OBJECTID_ORIG), // "Original object ID",
                                          CRA_RECORDREADONLY | CRA_EXPANDED);
         if (pszObjectID = _xwpQueryOriginalObjectID(pObject))
             AddObjectUsage2Cnr(hwndCnr, preccLevel2,
@@ -1008,12 +1024,36 @@ static VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
                                CRA_RECORDREADONLY);
         else
             AddObjectUsage2Cnr(hwndCnr, preccLevel2,
-                               "none set",
+                               cmnGetString(ID_XSSI_OBJDET_NONESET), // "none set",
                                CRA_RECORDREADONLY);
+
+        // object default view V0.9.19 (2002-05-23) [umoeller]
+        ulDefaultView = _wpQueryDefaultView(pObject);
+        sprintf(szText,
+                "%s: 0x%lX",
+                cmnGetString(ID_XSSI_OBJDET_DEFAULTVIEW),
+                ulDefaultView);
+
+        switch (ulDefaultView)
+        {
+            #define CASE_VIEW(v) case v: strcat(szText, " (" #v ")"); break
+            CASE_VIEW(OPEN_UNKNOWN);
+            CASE_VIEW(OPEN_DEFAULT);
+            CASE_VIEW(OPEN_CONTENTS);
+            CASE_VIEW(OPEN_SETTINGS);
+            CASE_VIEW(OPEN_HELP);
+            CASE_VIEW(OPEN_RUNNING);
+            CASE_VIEW(OPEN_PROMPTDLG);
+            CASE_VIEW(OPEN_PALETTE);
+        }
+
+        preccLevel2 = AddObjectUsage2Cnr(hwndCnr, preccRoot,
+                                         szText,
+                                         CRA_RECORDREADONLY | CRA_EXPANDED);
 
         // object handle
         preccLevel2 = AddObjectUsage2Cnr(hwndCnr, preccRoot,
-                                         "Object handle",
+                                         cmnGetString(ID_XSSI_OBJDET_HANDLE), // "Object handle",
                                          CRA_RECORDREADONLY | CRA_EXPANDED);
         if (_somIsA(pObject, _WPFileSystem))
         {
@@ -1038,62 +1078,57 @@ static VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
         else
             // hObject is 0:
             if ((arc) && (arc != ERROR_FILE_NOT_FOUND))
-                sprintf(szObjectHandle, "Error %d", arc);
+                sprintf(szObjectHandle,
+                        "Error %d",
+                        arc);
             else
-                sprintf(szObjectHandle, "(none queried)");
+                sprintf(szObjectHandle,
+                        cmnGetString(ID_XSSI_OBJDET_NONESET));
         AddObjectUsage2Cnr(hwndCnr, preccLevel2,
                            szObjectHandle,
                            CRA_RECORDREADONLY);
 
         // object style
         preccLevel2 = AddObjectUsage2Cnr(hwndCnr, preccRoot,
-                                         "Object style",
+                                         cmnGetString(ID_XSSI_OBJDET_STYLEGROUP), // "Object style",
                                          CRA_RECORDREADONLY);
-        ul = _wpQueryStyle(pObject);
-        if (ul & OBJSTYLE_CUSTOMICON)
-            AddObjectUsage2Cnr(hwndCnr, preccLevel2,
-                               "Custom icon (auto-destroy; style doesn't work)",
-                               CRA_RECORDREADONLY);
-        if (ul & OBJSTYLE_NOTDEFAULTICON)
-            AddObjectUsage2Cnr(hwndCnr, preccLevel2,
-                               "Custom icon (auto-destroy; preferred over OBJSTYLE_CUSTOMICON)",
-                               CRA_RECORDREADONLY);
-        if (ul & OBJSTYLE_NOCOPY)
-            AddObjectUsage2Cnr(hwndCnr, preccLevel2, "no copy",
-                               CRA_RECORDREADONLY);
-        if (ul & OBJSTYLE_NODELETE)
-            AddObjectUsage2Cnr(hwndCnr, preccLevel2, "no delete",
-                               CRA_RECORDREADONLY);
-        if (ul & OBJSTYLE_NODRAG)
-            AddObjectUsage2Cnr(hwndCnr, preccLevel2, "no drag",
-                               CRA_RECORDREADONLY);
-        if (ul & OBJSTYLE_NODROPON)
-            AddObjectUsage2Cnr(hwndCnr, preccLevel2, "no drop-on",
-                               CRA_RECORDREADONLY);
-        if (ul & OBJSTYLE_NOLINK)
-            AddObjectUsage2Cnr(hwndCnr, preccLevel2, "no link (cannot have shadows)",
-                               CRA_RECORDREADONLY);
-        if (ul & OBJSTYLE_NOMOVE)
-            AddObjectUsage2Cnr(hwndCnr, preccLevel2, "no move",
-                               CRA_RECORDREADONLY);
-        if (ul & OBJSTYLE_NOPRINT)
-            AddObjectUsage2Cnr(hwndCnr, preccLevel2, "no print",
-                               CRA_RECORDREADONLY);
-        if (ul & OBJSTYLE_NORENAME)
-            AddObjectUsage2Cnr(hwndCnr, preccLevel2, "no rename",
-                               CRA_RECORDREADONLY);
-        if (ul & OBJSTYLE_NOSETTINGS)
-            AddObjectUsage2Cnr(hwndCnr, preccLevel2, "no settings",
-                               CRA_RECORDREADONLY);
-        if (ul & OBJSTYLE_NOSETTINGS)
-            AddObjectUsage2Cnr(hwndCnr, preccLevel2, "not visible",
-                               CRA_RECORDREADONLY);
-        if (ul & OBJSTYLE_TEMPLATE)
-            AddObjectUsage2Cnr(hwndCnr, preccLevel2, "template",
-                               CRA_RECORDREADONLY);
-        if (ul & OBJSTYLE_LOCKEDINPLACE)
-            AddObjectUsage2Cnr(hwndCnr, preccLevel2, "locked in place",
-                               CRA_RECORDREADONLY);
+        if (ul = _wpQueryStyle(pObject))
+        {
+            static const struct
+            {
+                ULONG   fl;
+                ULONG   idString;
+            } Flags[] =
+            {
+                #define STYLEENTRY(s) OBJSTYLE_ ## s, ID_XSSI_OBJDET_ ## s
+                STYLEENTRY(CUSTOMICON),
+                STYLEENTRY(NOTDEFAULTICON),
+                STYLEENTRY(NOCOPY),
+                STYLEENTRY(NODELETE),
+                STYLEENTRY(NODRAG),
+                STYLEENTRY(NODROPON),
+                STYLEENTRY(NOLINK),
+                STYLEENTRY(NOMOVE),
+                STYLEENTRY(NOPRINT),
+                STYLEENTRY(NORENAME),
+                STYLEENTRY(NOSETTINGS),
+                STYLEENTRY(NOTVISIBLE),
+                STYLEENTRY(TEMPLATE),
+                STYLEENTRY(LOCKEDINPLACE)
+            };
+
+            ULONG i;
+            for (i = 0;
+                 i < ARRAYITEMCOUNT(Flags);
+                 ++i)
+            {
+                if (ul & Flags[i].fl)
+                    AddObjectUsage2Cnr(hwndCnr,
+                                       preccLevel2,
+                                       cmnGetString(Flags[i].idString),
+                                       CRA_RECORDREADONLY);
+            }
+        }
 
         /*
          * program data:
@@ -1124,31 +1159,25 @@ static VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
                 } PROGDETAILS; */
 
                 preccLevel2 = AddObjectUsage2Cnr(hwndCnr, preccRoot,
-                                                 "Program data",
+                                                 cmnGetString(ID_XSSI_OBJDET_PROGRAMDATA),
                                                  CRA_RECORDREADONLY);
 
                 // program type
                 // (moved code to helpers V0.9.16 (2001-10-06))
                 if (!(pcszTemp = appDescribeAppType(pDetails->progt.progc)))
-                    pcszTemp = "unknown";
+                    pcszTemp = cmnGetString(ID_SDDI_APMVERSION); // "unknown";
 
                 sprintf(szTemp1,
-                        "Program type: %s (0x%lX)",
+                        "%s: %s (0x%lX)",
+                        cmnGetString(ID_XSSI_OBJDET_PROGRAMTYPE),
                         pcszTemp,
                         pDetails->progt.progc);
                 AddObjectUsage2Cnr(hwndCnr, preccLevel2, szTemp1,
                                    CRA_RECORDREADONLY);
 
-                // program title
-                sprintf(szTemp1, "Program title: %s",
-                        (pDetails->pszTitle)
-                            ? pDetails->pszTitle
-                            : "NULL");
-                AddObjectUsage2Cnr(hwndCnr, preccLevel2, szTemp1,
-                                   CRA_RECORDREADONLY);
-
                 // executable
-                sprintf(szTemp1, "Executable: %s",
+                sprintf(szTemp1, "%s: %s",
+                        cmnGetString(ID_XSSI_SBMNC_500), // "Executable program file"
                         (pDetails->pszExecutable)
                             ? pDetails->pszExecutable
                             : "NULL");
@@ -1156,7 +1185,8 @@ static VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
                                    CRA_RECORDREADONLY);
 
                 // parameters
-                sprintf(szTemp1, "Parameters: %s",
+                sprintf(szTemp1, "%s: %s",
+                        cmnGetString(ID_XSSI_SBMNC_510), // "Parameter list"
                         (pDetails->pszParameters)
                             ? pDetails->pszParameters
                             : "NULL");
@@ -1164,7 +1194,8 @@ static VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
                                    CRA_RECORDREADONLY);
 
                 // startup dir
-                sprintf(szTemp1, "Startup dir: %s",
+                sprintf(szTemp1, "%s: %s",
+                        cmnGetString(ID_XSSI_SBMNC_520), // "Working directory"
                         (pDetails->pszStartupDir)
                             ? pDetails->pszStartupDir
                             : "NULL");
@@ -1173,7 +1204,7 @@ static VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
 
                 // environment
                 preccLevel3 = AddObjectUsage2Cnr(hwndCnr, preccLevel2,
-                                                 "Environment",
+                                                 cmnGetString(ID_XSSI_OBJDET_ENVIRONMENT), // "Environment",
                                                  CRA_RECORDREADONLY);
                 // if (pProgDetails->pszEnvironment)
                 {
@@ -1225,49 +1256,65 @@ static VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
 
         else if (_somIsA(pObject, _WPFolder))
         {
-            preccLevel2 = AddObjectUsage2Cnr(hwndCnr, preccRoot, "Folder flags",
+            preccLevel2 = AddObjectUsage2Cnr(hwndCnr, preccRoot,
+                                             cmnGetString(ID_XSSI_OBJDET_FOLDERFLAGS), // "Folder flags",
                                              CRA_RECORDREADONLY);
-            ul = _wpQueryFldrFlags(pObject);
-            if (ul & FOI_POPULATEDWITHALL)
-                AddObjectUsage2Cnr(hwndCnr, preccLevel2, "Fully populated",
-                                   CRA_RECORDREADONLY);
-            if (ul & FOI_POPULATEDWITHFOLDERS)
-                AddObjectUsage2Cnr(hwndCnr, preccLevel2, "Populated with folders",
-                                   CRA_RECORDREADONLY);
-            if (ul & FOI_FIRSTPOPULATE)
-                AddObjectUsage2Cnr(hwndCnr, preccLevel2, "Populated with first objects",
-                                   CRA_RECORDREADONLY);
-            if (ul & FOI_WORKAREA)
-                AddObjectUsage2Cnr(hwndCnr, preccLevel2, "Work area",
-                                   CRA_RECORDREADONLY);
-            if (ul & FOI_CHANGEFONT)
-                AddObjectUsage2Cnr(hwndCnr, preccLevel2, "FOI_CHANGEFONT",
-                                   CRA_RECORDREADONLY);
-            if (ul & FOI_NOREFRESHVIEWS)
-                AddObjectUsage2Cnr(hwndCnr, preccLevel2, "FOI_NOREFRESHVIEWS",
-                                   CRA_RECORDREADONLY);
-            if (ul & FOI_ASYNCREFRESHONOPEN)
-                AddObjectUsage2Cnr(hwndCnr, preccLevel2, "FOI_ASYNCREFRESHONOPEN",
-                                   CRA_RECORDREADONLY);
-            if (ul & FOI_REFRESHINPROGRESS)
-                AddObjectUsage2Cnr(hwndCnr, preccLevel2, "FOI_REFRESHINPROGRESS",
-                                   CRA_RECORDREADONLY);
-            if (ul & FOI_WAMCRINPROGRESS)
-                AddObjectUsage2Cnr(hwndCnr, preccLevel2, "FOI_WAMCRINPROGRESS",
-                                   CRA_RECORDREADONLY);
-            if (ul & FOI_CNRBKGNDOLDFORMAT)
-                AddObjectUsage2Cnr(hwndCnr, preccLevel2, "FOI_CNRBKGNDOLDFORMAT",
-                                   CRA_RECORDREADONLY);
-            if (ul & FOI_DELETEINPROGRESS)
-                AddObjectUsage2Cnr(hwndCnr, preccLevel2, "FOI_DELETEINPROGRESS",
-                                   CRA_RECORDREADONLY);
+            if (ul = _wpQueryFldrFlags(pObject))
+            {
+                static const struct
+                {
+                    ULONG   fl;
+                    PCSZ    pcsz;
+                } Flags[] =
+                {
+                    #define FLAGENTRY(s) s, #s
+                    FLAGENTRY(FOI_POPULATEDWITHALL),
+                    FLAGENTRY(FOI_POPULATEDWITHFOLDERS),
+                    FLAGENTRY(FOI_FIRSTPOPULATE),
+                    FLAGENTRY(FOI_WORKAREA),
+                    FLAGENTRY(FOI_CHANGEFONT),
+                    FLAGENTRY(FOI_NOREFRESHVIEWS),
+                    FLAGENTRY(FOI_ASYNCREFRESHONOPEN),
+                    FLAGENTRY(FOI_REFRESHINPROGRESS),
+                    FLAGENTRY(FOI_WAMCRINPROGRESS),
+                    FLAGENTRY(FOI_CNRBKGNDOLDFORMAT),
+                    FLAGENTRY(FOI_DELETEINPROGRESS),
+                };
+
+                ULONG i;
+                for (i = 0;
+                     i < ARRAYITEMCOUNT(Flags);
+                     ++i)
+                {
+                    if (ul & Flags[i].fl)
+                        AddObjectUsage2Cnr(hwndCnr,
+                                           preccLevel2,
+                                           Flags[i].pcsz,
+                                           CRA_RECORDREADONLY);
+                }
+            }
 
             // folder views:
-            preccLevel2 = AddObjectUsage2Cnr(hwndCnr, preccRoot, "Folder view flags",
+            preccLevel2 = AddObjectUsage2Cnr(hwndCnr,
+                                             preccRoot,
+                                             cmnGetString(ID_XSSI_OBJDET_FOLDERVIEWFLAGS),
+                                                    // "Folder view flags",
                                              CRA_RECORDREADONLY);
-            AddFolderView2Cnr(hwndCnr, preccLevel2, pObject, OPEN_CONTENTS, "Icon view");
-            AddFolderView2Cnr(hwndCnr, preccLevel2, pObject, OPEN_DETAILS, "Details view");
-            AddFolderView2Cnr(hwndCnr, preccLevel2, pObject, OPEN_TREE, "Tree view");
+            AddFolderView2Cnr(hwndCnr,
+                              preccLevel2,
+                              pObject,
+                              OPEN_CONTENTS,
+                              ID_XSDI_MENU_ICONVIEW);
+            AddFolderView2Cnr(hwndCnr,
+                              preccLevel2,
+                              pObject,
+                              OPEN_DETAILS,
+                              ID_XSDI_MENU_DETAILSVIEW);
+            AddFolderView2Cnr(hwndCnr,
+                              preccLevel2,
+                              pObject,
+                              OPEN_TREE,
+                              ID_XSDI_MENU_TREEVIEW);
 
             // Desktop: add WPS data
             // we use a conditional compile flag here because
@@ -1369,8 +1416,10 @@ static VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
         } // end WPFolder
 
         // object usage:
-        preccLevel2 = AddObjectUsage2Cnr(hwndCnr, preccRoot, "Object usage",
-                            CRA_RECORDREADONLY);
+        preccLevel2 = AddObjectUsage2Cnr(hwndCnr,
+                                         preccRoot,
+                                         cmnGetString(ID_XSSI_OBJDET_OBJUSAGE), // "Object usage",
+                                         CRA_RECORDREADONLY);
 
         // 1) open views
         preccLevel3 = NULL;
@@ -1379,7 +1428,6 @@ static VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
              pUseItem = _wpFindUseItem(pObject, USAGE_OPENVIEW, pUseItem))
         {
             PVIEWITEM   pViewItem = (PVIEWITEM)(pUseItem+1);
-            // ULONG       ulSLIIndex = 0;
             switch (pViewItem->view)
             {
                 case OPEN_SETTINGS: strcpy(szTemp1, "Settings"); break;
@@ -1389,7 +1437,11 @@ static VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
                 case OPEN_RUNNING:  strcpy(szTemp1, "Program running"); break;
                 case OPEN_PROMPTDLG:strcpy(szTemp1, "Prompt dialog"); break;
                 case OPEN_PALETTE:  strcpy(szTemp1, "Palette"); break;
-                default:            sprintf(szTemp1, "unknown (0x%lX)", pViewItem->view); break;
+                default:            sprintf(szTemp1,
+                                            "%s (0x%lX)",
+                                            cmnGetString(ID_SDDI_APMVERSION), // "unknown"
+                                            pViewItem->view);
+                                    break;
             }
 
             if (pViewItem->view != OPEN_RUNNING)
@@ -1397,7 +1449,7 @@ static VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
                 PID pid;
                 TID tid;
                 WinQueryWindowProcess(pViewItem->handle, &pid, &tid);
-                sprintf(szText, "%s (HWND: 0x%lX, thread ID: 0x%lX)",
+                sprintf(szText, "%s (HWND: 0x%lX, TID: 0x%lX)",
                         szTemp1, pViewItem->handle, tid);
             }
             else
@@ -1408,7 +1460,8 @@ static VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
 
             if (!preccLevel3)
                 preccLevel3 = AddObjectUsage2Cnr(hwndCnr, preccLevel2,
-                                                 "Currently open views",
+                                                 cmnGetString(ID_XSSI_OBJDET_OPENVIEWS),
+                                                    // "Currently open views",
                                                  CRA_RECORDREADONLY | CRA_EXPANDED);
             AddObjectUsage2Cnr(hwndCnr, preccLevel3, szText, CRA_RECORDREADONLY);
         }
@@ -1423,7 +1476,8 @@ static VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
             sprintf(szText, "Size: %d", pMemoryItem->cbBuffer);
             if (!preccLevel3)
                 preccLevel3 = AddObjectUsage2Cnr(hwndCnr, preccLevel2,
-                                                 "Allocated memory",
+                                                 cmnGetString(ID_XSSI_OBJDET_ALLOCMEM),
+                                                    // "Allocated memory",
                                                  CRA_RECORDREADONLY);
             AddObjectUsage2Cnr(hwndCnr, preccLevel3, szText, CRA_RECORDREADONLY);
         }
@@ -1441,7 +1495,7 @@ static VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
                 _wpQueryFilename(_wpQueryFolder(pLinkItem->LinkObj),
                                  szShadowPath,
                                  TRUE);     // fully qualified
-                sprintf(szText, "%s in \n%s",
+                sprintf(szText, "%s\n(%s)",
                         _wpQueryTitle(pLinkItem->LinkObj),
                         szShadowPath);
             }
@@ -1452,7 +1506,8 @@ static VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
 
             if (!preccLevel3)
                 preccLevel3 = AddObjectUsage2Cnr(hwndCnr, preccLevel2,
-                                                 "Awake shadows of this object",
+                                                 cmnGetString(ID_XSSI_OBJDET_AWAKESHADOWS),
+                                                    // "Awake shadows of this object",
                                                  CRA_RECORDREADONLY | CRA_EXPANDED);
             AddObjectUsage2Cnr(hwndCnr, preccLevel3,
                                szText,
@@ -1470,12 +1525,15 @@ static VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
             WinQueryWindowText(WinQueryWindow(pRecordItem->hwndCnr, QW_PARENT),
                                sizeof(szFolderTitle)-1,
                                szFolderTitle);
-            sprintf(szText, "Container HWND: 0x%lX\n(\"%s\")",
+            sprintf(szText,
+                    "%s: 0x%lX\n(\"%s\")",
+                    cmnGetString(ID_XSSI_OBJDET_CNRHWND),
                     pRecordItem->hwndCnr,
                     szFolderTitle);
             if (!preccLevel3)
                 preccLevel3 = AddObjectUsage2Cnr(hwndCnr, preccLevel2,
-                                                 "Folder windows containing this object",
+                                                 cmnGetString(ID_XSSI_OBJDET_FOLDERWINDOWS),
+                                                     // "Folder windows containing this object",
                                                  CRA_RECORDREADONLY | CRA_EXPANDED);
             AddObjectUsage2Cnr(hwndCnr, preccLevel3, szText, CRA_RECORDREADONLY);
         }
@@ -1489,11 +1547,14 @@ static VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
             PVIEWFILE pViewFile = (PVIEWFILE)(pUseItem+1);
             if (!preccLevel3)
                 preccLevel3 = AddObjectUsage2Cnr(hwndCnr, preccLevel2,
-                                                 "Applications which opened this object",
+                                                 cmnGetString(ID_XSSI_OBJDET_APPSOPEN),
+                                                     // "Applications which opened this object",
                                                  CRA_RECORDREADONLY | CRA_EXPANDED);
 
             sprintf(szText,
-                    "Open handle (probably HAPP): 0x%lX",
+                    "%s: 0x%lX",
+                    cmnGetString(ID_XSSI_OBJDET_APPHANDLE),
+                        // Open handle (probably HAPP)
                     pViewFile->handle);
             AddObjectUsage2Cnr(hwndCnr, preccLevel3,
                                szText,  // open handle
@@ -1501,6 +1562,8 @@ static VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
 
             sprintf(szText,
                     "Menu ID: 0x%lX",
+                    cmnGetString(ID_XSSI_OBJDET_MENUID),
+                        // Menu ID
                     pViewFile->ulMenuId);
             AddObjectUsage2Cnr(hwndCnr, preccLevel3,
                                szText,  // open handle
@@ -2196,7 +2259,7 @@ static BOOL LoadObjectsList(POBJECTLIST pll,
     if (pll->fLoaded)
     {
         // _Pmpf(("        already loaded!!"));
-        return (FALSE);  // V0.9.16 (2001-10-24) [umoeller]
+        return FALSE;  // V0.9.16 (2001-10-24) [umoeller]
     }
 
     TRY_LOUD(excpt1)

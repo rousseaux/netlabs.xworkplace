@@ -482,7 +482,7 @@ BOOL ComposeFullName(PNODERECORD precc,
         }
     }
 
-    return (TRUE);
+    return TRUE;
 }
 
 /*
@@ -628,7 +628,7 @@ LONG inline CompareULongs(PVOID precc1, PVOID precc2, ULONG ulFieldOfs)
         return -1;
     if (ul1 > ul2)
         return 1;
-    return (0);
+    return 0;
 }
 
 /*
@@ -667,7 +667,7 @@ LONG inline CompareStrings(PVOID precc1, PVOID precc2, ULONG ulFieldOfs)
         // string 2 exists, but 1 doesn't:
         return (-1);
 
-    return (0);
+    return 0;
 }
 
 /* ******************************************************************
@@ -2877,7 +2877,7 @@ ULONG EXPENTRY fncbSelectInvalid(HWND hwndCnr,
     else
         pNodeRecord->recc.flRecordAttr &= ~CRA_SELECTED;
 
-    return (0);     // continue
+    return 0;     // continue
 }
 
 

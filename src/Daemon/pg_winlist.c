@@ -576,7 +576,7 @@ BOOL pgrIsSticky(HWND hwnd,
     if (    (G_pHookData)
          && (hwnd == G_pHookData->hwndSwitchList)
        )
-        return (TRUE);
+        return TRUE;
 
     if (pcszSwtitle)
     {
@@ -684,7 +684,7 @@ BOOL pgrIsSticky(HWND hwnd,
             return TRUE;
     }
 
-    return (FALSE);
+    return FALSE;
 }
 
 

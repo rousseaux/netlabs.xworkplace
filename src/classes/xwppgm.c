@@ -199,7 +199,7 @@ SOM_Scope BOOL  SOMLINK xpg_xwpQuerySetup2(XWPProgram *somSelf,
                                       pstrSetup));
     }
 
-    return (FALSE);
+    return FALSE;
 }
 
 /*
@@ -761,10 +761,33 @@ static BOOL ProgramIconHandler(XWPProgram *somSelf,
         }
 
         if (!fFound)
-            cmnGetStandardIcon(STDICON_PROG_UNKNOWN,
+        {
+            /* cmnGetStandardIcon(STDICON_PROG_UNKNOWN,
                                phptr,
                                pcbIconInfo,
-                               pIconInfo);
+                               pIconInfo); */
+            // no, bad decision above. The WPS "Ftp" and
+            // "Telnet" classes override wpclsQueryIconData,
+            // and we should respect that. So instead, run
+            // thru the class methods; I have also overridden
+            // wpclsQueryIconData to call the above.
+            // V0.9.19 (2002-05-23) [umoeller]
+
+            // output data, depending on what
+            // the caller wants
+            SOMClass *pClass = _somGetClass(somSelf);
+
+            if (phptr)
+                *phptr = _wpclsQueryIcon(pClass);
+
+            if (pcbIconInfo)
+                *pcbIconInfo = _wpclsQueryIconData(pClass,
+                                                   NULL);        // return buffer size
+
+            if (pIconInfo)
+                _wpclsQueryIconData(pClass,
+                                    pIconInfo);
+        }
 
         brc = TRUE;
     }
@@ -1083,7 +1106,7 @@ SOM_Scope BOOL  SOMLINK xpg_wpSetIconData(XWPProgram *somSelf,
             _wpSetProgIcon(somSelf, NULL);
 
             // do not call parent
-            return (TRUE);
+            return TRUE;
         }
     }
 
@@ -1710,4 +1733,59 @@ SOM_Scope void  SOMLINK xpgM_wpclsInitData(M_XWPProgram *somSelf)
         // V0.9.17 (2002-02-05) [umoeller]
         initRepairDesktopIfBroken();
 }
+
+/*
+ *@@ wpclsQueryIconData:
+ *      this WPObject class method must return information
+ *      about how to build the default icon for objects
+ *      of a class. This gets called from various other
+ *      methods whenever a class default icon is needed;
+ *      most importantly, M_WPObject::wpclsQueryIcon
+ *      calls this to build a class default icon, which
+ *      is then cached in the class's instance data.
+ *      If a subclass wants to change a class default icon,
+ *      it should always override _this_ method instead of
+ *      wpclsQueryIcon.
+ *      For details about icon management, refer to
+ *      src\filesys\icons.c.
+ *
+ *      We override this method to give program objects a
+ *      new default icon, if icon replacements are enabled.
+ *      Note that this only gets called for program files
+ *      when retrieving an icon for an executable failed
+ *      somehow.
+ *
+ *@@added V0.9.19 (2002-05-23) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xpgM_wpclsQueryIconData(M_XWPProgram *somSelf,
+                                                 PICONINFO pIconInfo)
+{
+    ULONG       ulrc = 0;
+
+    /* M_XWPProgramData *somThis = M_XWPProgramGetData(somSelf); */
+    M_XWPProgramMethodDebug("M_XWPProgram","xpgM_wpclsQueryIconData");
+
+#ifndef __NOICONREPLACEMENTS__
+    if (cmnQuerySetting(sfIconReplacements))
+    {
+        ULONG cb = 0;
+        if (!cmnGetStandardIcon(STDICON_PROG_UNKNOWN,
+                                NULL,            // no hpointer
+                                &cb,
+                                pIconInfo))      // can be NULL
+            return cb;
+
+        return 0;
+    }
+
+    if (!ulrc)
+#endif
+        // icon replacements not allowed: call default
+        ulrc = M_XWPProgram_parent_M_WPProgram_wpclsQueryIconData(somSelf,
+                                                                  pIconInfo);
+
+    return (ulrc);
+}
+
 

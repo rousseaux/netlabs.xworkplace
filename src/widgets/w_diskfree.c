@@ -1149,7 +1149,7 @@ BOOL GetDriveInfo(PDISKFREEPRIVATE pPrivate)
             return((BOOL)pPrivate->dAktDriveFree != dOldDriveFree);
     }
 
-    return (FALSE);
+    return FALSE;
 }
 
 void GetDrive(HWND hwnd,

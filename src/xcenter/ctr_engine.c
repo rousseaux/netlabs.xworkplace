@@ -1267,12 +1267,14 @@ static BOOL StartAutohideNow(PXCENTERWINDATA pXCenterData)
  *
  *      As you can see, in the above list, each flag
  *      causes the next flag to be automatically enabled.
- *      As a result, the top setting (XFMF_DISPLAYSTYLECHANGED)
- *      causes a cascade of all other calculations as well.
- *      These calculations are possibly expensive, so use
- *      these flags economically.
  *      The exceptions are XFMF_SHOWWIDGETS and XFMF_RESURFACE,
  *      which are never implied.
+ *
+ *      As a result, the top setting (XFMF_DISPLAYSTYLECHANGED)
+ *      causes a cascade of all other calculations as well.
+ *      These calculations are possibly expensive (since lots
+ *      of WinSendMsg and WinSetWindowPos calls are involved),
+ *      so use these flags economically.
  *
  *      If the frame is currently auto-hidden (i.e. moved
  *      mostly off the screen), calling this function will
@@ -2101,7 +2103,7 @@ static PLINKLIST GetDragoverObjects(PDRAGINFO pdrgInfo,
  *      If hwndTrayWidget != NULLHANDLE, this searches
  *      the specified tray widget for a subwidget.
  *      The coordinates are assumed to be tray widget
- *      coordinates.              &ouml;
+ *      coordinates.
  *
  *      If hwndTrayWidget == NULLHANDLE, this searches
  *      the XCenter itself for a widget.
@@ -2158,11 +2160,11 @@ static ULONG FindWidgetFromClientXY(PXCENTERWINDATA pXCenterData,
         // the full height of the client has been calculated in cyFrame
         // already... pGlobals->cyInnerClient contains the "inner" client
         // minus borders/spacings only
-        if (    (   (pGlobals->ulPosition == XCENTER_TOP)
-                 && (sy < pGlobals->ul3DBorderWidth)
+        if (    (    (pGlobals->ulPosition == XCENTER_TOP)
+                  && (sy < pGlobals->ul3DBorderWidth)
                 )
-             || (   (pGlobals->ulPosition == XCENTER_BOTTOM)
-                 && (sy >= pXCenterData->cyFrame - pGlobals->ul3DBorderWidth)
+             || (    (pGlobals->ulPosition == XCENTER_BOTTOM)
+                  && (sy >= pXCenterData->cyFrame - pGlobals->ul3DBorderWidth)
                 )
            )
             // mouse is over sizing border:
@@ -2231,7 +2233,7 @@ static ULONG FindWidgetFromClientXY(PXCENTERWINDATA pXCenterData,
         ul++;
     }
 
-    return (0);
+    return 0;
 }
 
 /*
@@ -2379,11 +2381,11 @@ MRESULT ctrpDragOver(HWND hwndClient,
             else
             {
                 // this is something else, lets see if we can handle it
-                PLINKLIST pll = GetDragoverObjects(pdrgInfo,
-                                                   &usIndicator,
-                                                   &usOp);
+                PLINKLIST pll;
 
-                if (pll)
+                if (pll = GetDragoverObjects(pdrgInfo,
+                                             &usIndicator,
+                                             &usOp))
                 {
                     // Desktop object(s) being dragged over client:
                     fDrawTargetEmph = TRUE;
@@ -2458,12 +2460,317 @@ MRESULT ctrpDragOver(HWND hwndClient,
 }
 
 /*
+ *@@ CopyWidgetSetting:
+ *
+ *@@added V0.9.19 (2002-05-14) [umoeller]
+ */
+
+static APIRET CopyWidgetSetting(PPRIVATEWIDGETSETTING pSettingSource,
+                                PPRIVATEWIDGETSETTING *ppSettingTarget)
+{
+    APIRET arc = NO_ERROR;
+    PPRIVATEWIDGETSETTING pSettingTarget;
+
+    if (!pSettingSource || !ppSettingTarget)
+        return ERROR_INVALID_PARAMETER;
+
+    if (!(pSettingTarget = NEW(PRIVATEWIDGETSETTING)))
+        arc = ERROR_NOT_ENOUGH_MEMORY;
+    else
+    {
+        ZERO(pSettingTarget);
+
+        pSettingTarget->Public.pszWidgetClass = strhdup(pSettingSource->Public.pszWidgetClass, NULL);
+        pSettingTarget->Public.pszSetupString = strhdup(pSettingSource->Public.pszSetupString, NULL);
+
+        // copy subwidgets if we have any
+        pSettingTarget->ulCurrentTray = pSettingSource->ulCurrentTray;
+
+        if (pSettingSource->pllTraySettings)
+        {
+            PLISTNODE pTrayNode;
+            pSettingTarget->pllTraySettings = lstCreate(FALSE);
+
+            pTrayNode = lstQueryFirstNode(pSettingSource->pllTraySettings);
+            while (pTrayNode && !arc)
+            {
+                PTRAYSETTING    pTraySource = (PTRAYSETTING)pTrayNode->pItemData,
+                                pTrayTarget;
+                PLISTNODE       pSubwidgetNode;
+
+                if (!(pTrayTarget = NEW(TRAYSETTING)))
+                {
+                    arc = ERROR_NOT_ENOUGH_MEMORY;
+                    break;
+                }
+
+                ZERO(pTrayTarget);
+
+                // copy tray and subwidgets
+                pTrayTarget->pszTrayName = strhdup(pTraySource->pszTrayName, NULL);
+                lstInit(&pTrayTarget->llSubwidgetSettings, FALSE);
+
+                pSubwidgetNode = lstQueryFirstNode(&pTraySource->llSubwidgetSettings);
+                while (pSubwidgetNode && !arc)
+                {
+                    PPRIVATEWIDGETSETTING   pSubwidgetSource
+                        = (PPRIVATEWIDGETSETTING)pSubwidgetNode->pItemData,
+                                            pSubwidgetTarget;
+
+                    if (!(pSubwidgetTarget = NEW(PRIVATEWIDGETSETTING)))
+                    {
+                        arc = ERROR_NOT_ENOUGH_MEMORY;
+                        break;
+                    }
+
+                    ZERO(pSubwidgetTarget);
+
+                    pSubwidgetTarget->Public.pszWidgetClass = strhdup(pSubwidgetSource->Public.pszWidgetClass, NULL);
+                    pSubwidgetTarget->Public.pszSetupString = strhdup(pSubwidgetSource->Public.pszSetupString, NULL);
+
+                    // append subwidget to tray
+                    lstAppendItem(&pTrayTarget->llSubwidgetSettings,
+                                  pSubwidgetTarget);
+
+                    pSubwidgetNode = pSubwidgetNode->pNext;
+                }
+
+                // append tray to target tray widget setting
+                lstAppendItem(pSettingTarget->pllTraySettings,
+                              pTrayTarget);
+
+                pTrayNode = pTrayNode->pNext;
+            }
+        }
+    }
+
+    if (!arc)
+        *ppSettingTarget = pSettingTarget;
+
+    return arc;
+}
+
+/*
+ *@@ CopyOrMoveWidget:
+ *
+ *@@added V0.9.19 (2002-05-23) [umoeller]
+ */
+
+static APIRET CopyOrMoveWidget(PXCENTERWINDATA pXCenterData,
+                               PDRAGINFO pdrgInfo,
+                               PWIDGETPOSITION pposTarget)
+{
+    APIRET      arc = NO_ERROR;
+    XCenter     *pobjSourceLocked = NULL;
+
+    TRY_LOUD(excpt1)
+    {
+
+        PPRIVATEWIDGETSETTING   pSettingSource,
+                                pSettingTarget;
+
+        // 2) make copy of source widget information
+        PXCENTERWINDATA         pSourceXCenterData;
+        WIDGETPOSITION          posSource;
+
+        // lock the source XCenter
+        if (    (pSourceXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(G_pWidgetBeingDragged->Widget.pGlobals->hwndClient,
+                                                                         QWL_USER))
+             && (!_wpRequestObjectMutexSem(pSourceXCenterData->somSelf, 1000))
+           )
+        {
+            pobjSourceLocked = pSourceXCenterData->somSelf;
+
+            if (    (!(arc = ctrpQueryWidgetIndexFromHWND(pSourceXCenterData->somSelf,
+                                                          G_pWidgetBeingDragged->Widget.hwndWidget,
+                                                          &posSource)))
+                 && (!(arc = ctrpFindWidgetSetting(pSourceXCenterData->somSelf,
+                                                   &posSource,
+                                                   &pSettingSource,
+                                                   NULL)))
+               )
+            {
+                arc = CopyWidgetSetting(pSettingSource,
+                                        &pSettingTarget);
+            }
+
+            _wpReleaseObjectMutexSem(pobjSourceLocked);
+            pobjSourceLocked = NULL;
+        }
+
+        if (!arc)
+        {
+            // got the source widget:
+            // to move the widget, we first delete it in the source XCenter
+            // and then add it to the target XCenter. Note that there
+            // are a couple of situations where the target index will
+            // change because we are deleting the source widget first,
+            // so:
+
+            // 2) adjust target index if move within same XCenter
+
+            if (    (pSourceXCenterData == pXCenterData)
+                 && (pdrgInfo->usOperation == DO_MOVE)
+               )
+            {
+                // if we are dragging a root widget to a tray and
+                // the tray is behind the source, reduce the index
+                // of the tray widget
+                if (    (posSource.ulTrayWidgetIndex == -1)
+                     && (pposTarget->ulTrayWidgetIndex != -1)
+                     && (posSource.ulWidgetIndex < pposTarget->ulTrayWidgetIndex)
+                   )
+                    --(pposTarget->ulTrayWidgetIndex);
+                // if we are dragging a root widget to the root
+                // or a tray subwidget within the same tray,
+                // same thing:
+                else if (    (posSource.ulTrayWidgetIndex == pposTarget->ulTrayWidgetIndex)
+                          && (posSource.ulTrayIndex == pposTarget->ulTrayIndex)
+                          && (posSource.ulWidgetIndex < pposTarget->ulWidgetIndex)
+                        )
+                    --(pposTarget->ulWidgetIndex);
+            }
+
+            // 3) remove source widget
+            if (pdrgInfo->usOperation == DO_MOVE)
+                arc = _xwpDeleteWidget(pSourceXCenterData->somSelf,
+                                       &posSource);
+
+            // 4) add widget anew
+            if (    (!arc)
+                 && (!(arc = _xwpCreateWidget(pXCenterData->somSelf,
+                                              pSettingTarget->Public.pszWidgetClass,
+                                              pSettingTarget->Public.pszSetupString,
+                                              pposTarget)))
+                 // is this a tray widget?
+                 && (pSettingTarget->pllTraySettings)
+               )
+            {
+                // 5) create trays as in source
+                PLISTNODE pTrayNode = lstQueryFirstNode(pSettingTarget->pllTraySettings);
+                WIDGETPOSITION pos;
+                pos.ulTrayWidgetIndex = pposTarget->ulWidgetIndex;
+                                        // constant
+                pos.ulTrayIndex = 0;    // raised with each outer loop
+                pos.ulWidgetIndex = -1; // constant, add to the right
+
+                while (pTrayNode && !arc)
+                {
+                    PTRAYSETTING pTray = (PTRAYSETTING)pTrayNode->pItemData;
+                    if (!pos.ulTrayIndex)
+                        // first tray: the tray widget creates
+                        // an automatic tray if there's none
+                        // on creation, so rename this
+                        arc = _xwpRenameTray(pXCenterData->somSelf,
+                                             pos.ulTrayWidgetIndex,
+                                             0,
+                                             pTray->pszTrayName);
+                    else
+                        arc = _xwpCreateTray(pXCenterData->somSelf,
+                                             pos.ulTrayWidgetIndex,
+                                             pTray->pszTrayName);
+
+                    if (!arc)
+                    {
+                        PLISTNODE pSubwidgetNode
+                            = lstQueryFirstNode(&pTray->llSubwidgetSettings);
+
+                        while (pSubwidgetNode && !arc)
+                        {
+                            PPRIVATEWIDGETSETTING pSubwidget
+                                = (PPRIVATEWIDGETSETTING)pSubwidgetNode->pItemData;
+
+                            arc = _xwpCreateWidget(pXCenterData->somSelf,
+                                                   pSubwidget->Public.pszWidgetClass,
+                                                   pSubwidget->Public.pszSetupString,
+                                                   &pos);
+
+                            pSubwidgetNode = pSubwidgetNode->pNext;
+                        }
+                    }
+
+                    pTrayNode = pTrayNode->pNext;
+                    ++pos.ulTrayIndex;
+                }
+            }
+
+            ctrpFreeSettingData(&pSettingTarget);
+        }
+    }
+    CATCH(excpt1)
+    {
+        arc = ERROR_PROTECTION_VIOLATION;
+    } END_CATCH();
+
+    if (pobjSourceLocked)
+        _wpReleaseObjectMutexSem(pobjSourceLocked);
+
+    return arc;
+}
+
+/*
+ *@@ CreateWidgetsFromFiles:
+ *
+ *@@added V0.9.19 (2002-05-23) [umoeller]
+ */
+
+static APIRET CreateWidgetsFromFiles(PXCENTERWINDATA pXCenterData,
+                                     PDRAGINFO pdrgInfo,
+                                     PWIDGETPOSITION pposTarget)
+{
+    APIRET arc = NO_ERROR;
+
+    ULONG ul = 0;
+    for (;
+         ul < pdrgInfo->cditem;
+         ul++)
+    {
+        // access that drag item, and create the new widget
+        PDRAGITEM   pdrgItem = DrgQueryDragitemPtr(pdrgInfo, ul);
+        CHAR        achCnr[CCHMAXPATH],
+                    achSrc[CCHMAXPATH];
+
+        // the dnd part guarantees the following
+        // will not overflow
+        DrgQueryStrName(pdrgItem->hstrContainerName,
+                        CCHMAXPATH,
+                        achCnr);
+        DrgQueryStrName(pdrgItem->hstrSourceName,
+                        CCHMAXPATH,
+                        achSrc);
+
+        if ((strlen(achCnr) + strlen(achSrc)) < (CCHMAXPATH - 1))
+        {
+            CHAR achAll[CCHMAXPATH];
+            PSZ  pszClass, pszSetup;
+
+            strcpy(achAll, achCnr);
+            strcat(achAll, achSrc);
+
+            if (!(arc = ctrpReadFromFile(achAll, &pszClass, &pszSetup)))
+            {
+                arc = _xwpCreateWidget(pXCenterData->somSelf,
+                                       pszClass,
+                                       pszSetup,
+                                       pposTarget);
+
+                free(pszClass);
+                free(pszSetup);
+            }
+        }
+    }
+
+    return arc;
+}
+
+/*
  *@@ ctrpDrop:
  *      implementation for DM_DROP in fnwpXCenterMainClient
  *      and for the tray widget as well.
  *
- *      Creates object button widgets for Desktop objects dropped
- *      on the client.
+ *      Creates object button widgets for WPS objects dropped
+ *      on the client or copies or moves widgets between
+ *      XCenters.
  *
  *@@changed V0.9.9 (2001-02-08) [umoeller]: fixed wrong leftmost widget add
  *@@changed V0.9.13 (2001-06-21) [umoeller]: renamed from ClientDrop, added tray support
@@ -2471,15 +2778,15 @@ MRESULT ctrpDragOver(HWND hwndClient,
  *@@changed V0.9.14 (2001-07-31) [lafaix]: accepts DRT_WIDGET drops too
  *@@changed V0.9.14 (2001-08-05) [lafaix]: widget drop part rewritten
  *@@changed V0.9.19 (2002-05-04) [umoeller]: largely rewritten again to fix the positioning bugs that caused trays to crash after drop
+ *@@changed V0.9.19 (2002-05-14) [umoeller]: added support for complete tray copy/move
+ *@@changed V0.9.19 (2002-05-23) [umoeller]: now returning APIRET, code cleanup
  */
 
-VOID ctrpDrop(HWND hwndClient,          // in: XCenter client
-              HWND hwndTrayWidget,      // in: tray widget window or NULLHANDLE
-              PDRAGINFO pdrgInfo)
+APIRET ctrpDrop(HWND hwndClient,          // in: XCenter client
+                HWND hwndTrayWidget,      // in: tray widget window or NULLHANDLE
+                PDRAGINFO pdrgInfo)
 {
     APIRET          arc = NO_ERROR;
-
-    XCenter         *pobjSourceLocked = NULL;
 
     if (DrgAccessDraginfo(pdrgInfo))
     {
@@ -2492,8 +2799,7 @@ VOID ctrpDrop(HWND hwndClient,          // in: XCenter client
 
             ULONG           ulTargetIndex = 0;
             POINTL          ptlDrop;
-            WIDGETPOSITION  posSource,
-                            posTarget;
+            WIDGETPOSITION  posTarget;
 
             HWND            hwndOver;
             if (hwndTrayWidget)
@@ -2561,309 +2867,51 @@ VOID ctrpDrop(HWND hwndClient,          // in: XCenter client
 
             if (!arc)
             {
-                _Pmpf((__FUNCTION__ ": posTarget = %d, %d, %d",
-                        posTarget.ulTrayWidgetIndex,
-                        posTarget.ulTrayIndex,
-                        posTarget.ulWidgetIndex));
-
-
                 if (G_pWidgetBeingDragged)
-                {
-                    PPRIVATEWIDGETSETTING   pSettingSource;
-                    PSZ                     pszClassSource = NULL,
-                                            pszSetupSource = NULL;
-
-                    // 2) make copy of source widget information
-                    PXCENTERWINDATA pSourceXCenterData;
-
-                    // lock the source XCenter
-                    if (    (pSourceXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(G_pWidgetBeingDragged->Widget.pGlobals->hwndClient,
-                                                                                     QWL_USER))
-                         && (!_wpRequestObjectMutexSem(pSourceXCenterData->somSelf, 1000))
-                       )
-                    {
-                        pobjSourceLocked = pSourceXCenterData->somSelf;
-
-                        if (    (!(arc = ctrpQueryWidgetIndexFromHWND(pSourceXCenterData->somSelf,
-                                                                      G_pWidgetBeingDragged->Widget.hwndWidget,
-                                                                      &posSource)))
-                             && (!(arc = ctrpFindWidgetSetting(pSourceXCenterData->somSelf,
-                                                               &posSource,
-                                                               &pSettingSource,
-                                                               NULL)))
-                           )
-                        {
-                            pszClassSource = strhdup(G_pWidgetBeingDragged->Widget.pcszWidgetClass, NULL);
-                            pszSetupSource = strhdup(pSettingSource->Public.pszSetupString, NULL);
-                        }
-
-                        _wpReleaseObjectMutexSem(pobjSourceLocked);
-                        pobjSourceLocked = NULL;
-                    }
-
-                    if (pszClassSource)
-                    {
-                        // got the source widget:
-                        // to move the widget, we first delete it in the source XCenter
-                        // and then add it to the target XCenter. Note that there
-                        // are a couple of situations where the target index will
-                        // change because we are deleting the source widget first,
-                        // so:
-
-                        // 2) adjust target index
-
-                        if (    (pSourceXCenterData == pXCenterData)
-                             && (pdrgInfo->usOperation == DO_MOVE)
-                           )
-                        {
-                            // if we are dragging a root widget to a tray and
-                            // the tray is behind the source, reduce the index
-                            // of the tray widget
-                            if (    (posSource.ulTrayWidgetIndex == -1)
-                                 && (posTarget.ulTrayWidgetIndex != -1)
-                                 && (posSource.ulWidgetIndex < posTarget.ulTrayWidgetIndex)
-                               )
-                                (posTarget.ulTrayWidgetIndex)--;
-                            // if we are dragging a root widget to the root
-                            // or a tray subwidget within the same tray,
-                            // same thing:
-                            else if (    (posSource.ulTrayWidgetIndex == posTarget.ulTrayWidgetIndex)
-                                      && (posSource.ulTrayIndex == posTarget.ulTrayIndex)
-                                      && (posSource.ulWidgetIndex < posTarget.ulWidgetIndex)
-                                    )
-                                (posTarget.ulWidgetIndex)--;
-                        }
-
-                        // 3) remove source widget
-                        if (pdrgInfo->usOperation == DO_MOVE)
-                            arc = _xwpDeleteWidget(pSourceXCenterData->somSelf,
-                                                   &posSource);
-
-                        // 4) add widget anew
-                        if (!arc)
-                            arc = _xwpCreateWidget(pXCenterData->somSelf,
-                                                   pszClassSource,
-                                                   pszSetupSource,
-                                                   &posTarget);
-                    }
-
-                    FREE(pszClassSource);
-                    FREE(pszSetupSource);
-
-                    /*
-                    if (    (hwndTrayWidget == NULLHANDLE)
-                         && (pdrgInfo->usOperation == DO_MOVE)
-                         && (hwndClient == WinQueryWindow(G_pWidgetBeingDragged->Widget.hwndWidget,
-                                                          QW_PARENT))
-                       )
-                    {
-                        // case (1): this is an optimization (i.e., case 2 could
-                        // handle it just fine, but calling xwpMoveWidget is faster)
-                        if (!ctrpQueryWidgetIndexFromHWND(pXCenterData->somSelf,
-                                                          G_pWidgetBeingDragged->Widget.hwndWidget,
-                                                          &Pos))
-                            _xwpMoveWidget(pXCenterData->somSelf,
-                                           Pos.ulWidgetIndex,
-                                           ulIndex);
-                    }
-                    else
-                    {
-                        // case (2): generic handling
-                        PXCENTERWINDATA pSourceXCenterData =
-                            (PXCENTERWINDATA)WinQueryWindowPtr(G_pWidgetBeingDragged->Widget.pGlobals->hwndClient,
-                                                               QWL_USER);
-
-                        if (!ctrpQueryWidgetIndexFromHWND(pSourceXCenterData->somSelf,
-                                                          G_pWidgetBeingDragged->Widget.hwndWidget,
-                                                          &Pos))
-                        {
-                            PPRIVATEWIDGETSETTING pSetting;
-
-                            if (!ctrpFindWidgetSetting(pSourceXCenterData->somSelf,
-                                                       &Pos,
-                                                       &pSetting,
-                                                       NULL))
-                            {
-                                PSZ pszClass = (PSZ)G_pWidgetBeingDragged->Widget.pcszWidgetClass;
-                                PSZ pszSetup = pSetting->Public.pszSetupString;
-
-                                if (hwndTrayWidget)
-                                {
-                                    // we are copying a widget to a tray; we hence
-                                    // must build a temporary buffer to hold the
-                                    // packed widget setup definition
-
-                                    PSZ pszBuff = (PSZ)malloc(   strlen(pszClass)
-                                                               + ((pszSetup)
-                                                                      ? strlen(pszSetup)
-                                                                      : 0 )
-                                                               + 3); // "\r\n" + final 0
-
-                                    if (pszBuff)
-                                    {
-                                        strcpy(pszBuff, pszClass);
-                                        strcat(pszBuff, "\r\n");
-                                        if (pszSetup)
-                                            strcat(pszBuff, pszSetup);
-
-                                        WinSendMsg(hwndTrayWidget,
-                                                   XCM_CREATESUBWIDGET,
-                                                   (MPARAM)pszBuff,
-                                                   (MPARAM)ulIndex);
-                                        free(pszBuff);
-                                    }
-                                }
-                                else
-                                {
-                                    WIDGETPOSITION pos2;
-                                    pos2.ulTrayWidgetIndex = -1;
-                                    pos2.ulTrayIndex = -1;
-                                    pos2.ulWidgetIndex = ulIndex;
-                                    _xwpCreateWidget(pXCenterData->somSelf,
-                                                     pszClass,
-                                                     pszSetup,
-                                                     &pos2);
-                                }
-                            }
-
-                            // if the operation was a move, remove the
-                            // widget from its initial location
-                            // (No need to invalidate the source XCenter,
-                            // this will do that too.)
-                            if (pdrgInfo->usOperation == DO_MOVE)
-                                WinSendMsg(G_pWidgetBeingDragged->Widget.hwndWidget,
-                                           DM_DISCARDOBJECT,
-                                           NULL,
-                                           NULL);
-                        }
-                    }
-
-                    */
-                }
+                    // a widget window was dropped:
+                    // copy or move that between widgets
+                    arc = CopyOrMoveWidget(pXCenterData,
+                                           pdrgInfo,
+                                           &posTarget);
                 else
                 {
                     // no widget drag:
-                    PLINKLIST pll = GetDragoverObjects(pdrgInfo,
-                                                       NULL,
-                                                       NULL);
-                    PLISTNODE pNode = lstQueryFirstNode(pll);
-                    WPObject *pObjDragged;
-                    HOBJECT hobjDragged;
-
                     // two possibilities here: (1) if pll contains no elements,
                     // then DRT_WIDGETS files were dropped.  Otherwise, (2),
                     // objects were requesting DO_LINK.
 
-                    if (lstCountItems(pll) == 0)
+                    PLINKLIST   pll = GetDragoverObjects(pdrgInfo,
+                                                         NULL,
+                                                         NULL);
+                    PLISTNODE   pNode;
+                    WPObject    *pobjDragged;
+                    HOBJECT     hobjDragged;
+
+                    if (!(pNode = lstQueryFirstNode(pll)))
                     {
                         // case (1): create widgets for the files being
                         // dropped
-                        ULONG ul = 0;
-
-                        for (;
-                             ul < pdrgInfo->cditem;
-                             ul++)
-                        {
-                            // access that drag item, and create the new widget
-                            PDRAGITEM pdrgItem = DrgQueryDragitemPtr(pdrgInfo, ul);
-                            CHAR        achCnr[CCHMAXPATH],
-                                        achSrc[CCHMAXPATH];
-
-                            // the dnd part guaranties the following
-                            // will not overflow
-                            DrgQueryStrName(pdrgItem->hstrContainerName,
-                                            CCHMAXPATH,
-                                            achCnr);
-                            DrgQueryStrName(pdrgItem->hstrSourceName,
-                                            CCHMAXPATH,
-                                            achSrc);
-
-                            if ((strlen(achCnr)+strlen(achSrc)) < (CCHMAXPATH-1))
-                            {
-                                CHAR achAll[CCHMAXPATH];
-                                PSZ  pszBuff;
-
-                                strcpy(achAll, achCnr);
-                                strcat(achAll, achSrc);
-
-                                ctrpReadFromFile(achAll, &pszBuff);
-
-                                if (pszBuff)
-                                {
-                                    PSZ pszSetupString;
-
-                                    if (pszSetupString = strstr(pszBuff, "\r\n"))
-                                    {
-                                        _xwpCreateWidget(pXCenterData->somSelf,
-                                                         pszBuff,
-                                                         pszSetupString,
-                                                         &posTarget);
-                                                                // computed on top
-
-                                        /*
-                                        if (hwndTrayWidget)
-                                        {
-                                            WinSendMsg(hwndTrayWidget,
-                                                       XCM_CREATESUBWIDGET,
-                                                       (MPARAM)pszBuff,
-                                                       (MPARAM)ulTargetIndex);
-                                        }
-                                        else
-                                        {
-                                            WIDGETPOSITION pos2;
-                                            *pszSetupString = 0;
-                                            pszSetupString += 2;
-                                            pos2.ulTrayWidgetIndex = -1;
-                                            pos2.ulTrayIndex = -1;
-                                            pos2.ulWidgetIndex = ulIndex;
-                                            _xwpCreateWidget(pXCenterData->somSelf,
-                                                             pszBuff,
-                                                             pszSetupString,
-                                                             &pos2);
-                                        }
-                                        */
-                                    }
-
-                                    free(pszBuff);
-                                }
-                            }
-                        }
+                        arc = CreateWidgetsFromFiles(pXCenterData,
+                                                     pdrgInfo,
+                                                     &posTarget);
                     }
                     else
                     {
                         // case (2): insert object button widgets for the objects
                         // being dropped; this sets up the object further
-                        while (pNode)
+                        while (pNode && !arc)
                         {
-                            if (    (pObjDragged = (WPObject*)pNode->pItemData)
-                                 && (hobjDragged = _wpQueryHandle(pObjDragged))
+                            if (    (pobjDragged = (WPObject*)pNode->pItemData)
+                                 && (hobjDragged = _wpQueryHandle(pobjDragged))
                                )
                             {
                                 CHAR szSetup[100];
                                 sprintf(szSetup, "OBJECTHANDLE=%lX;", hobjDragged);
 
-                                _xwpCreateWidget(pXCenterData->somSelf,
-                                                 "ObjButton",    // widget class
-                                                 szSetup,
-                                                 &posTarget);
-
-                                /*
-                                if (hwndTrayWidget)
-                                {
-                                    WinSendMsg(hwndTrayWidget,
-                                               XCM_CREATEOBJECTBUTTON,
-                                               (MPARAM)szSetup,
-                                               (MPARAM)ulIndex);
-                                }
-                                else
-                                {
-                                    // client mode: insert as main widget
-                                    _xwpCreateWidget(pXCenterData->somSelf,
-                                                     "ObjButton",    // widget class
-                                                     szSetup,
-                                                     &posTarget);
-                                }
-                                */
+                                arc = _xwpCreateWidget(pXCenterData->somSelf,
+                                                       "ObjButton",    // widget class
+                                                       szSetup,
+                                                       &posTarget);
                             }
 
                             // next object
@@ -2883,13 +2931,12 @@ VOID ctrpDrop(HWND hwndClient,          // in: XCenter client
             arc = ERROR_PROTECTION_VIOLATION;
         } END_CATCH();
 
-        if (pobjSourceLocked)
-            _wpReleaseObjectMutexSem(pobjSourceLocked);
-
         _Pmpf((__FUNCTION__ ": returning arc %d", arc));
 
         DrgFreeDraginfo(pdrgInfo);
     } // end if (DrgAccessDraginfo(pdrgInfo))
+
+    return arc;
 }
 
 /* ******************************************************************
@@ -2905,8 +2952,8 @@ VOID ctrpDrop(HWND hwndClient,          // in: XCenter client
  *
  *      Gets called
  *
- *      --  from CreateAllWidgetWindows and ctrpInsertWidget to create
- *          a widget as a child of the XCenter client;
+ *      --  from CreateAllWidgetWindows and ctrpInsertWidget
+ *          to create a widget as a child of the XCenter client;
  *
  *      --  from the Tray widget to create a subwidget in a
  *          tray.
@@ -2919,14 +2966,15 @@ VOID ctrpDrop(HWND hwndClient,          // in: XCenter client
  *
  *      Postconditions:
  *
- *      -- The position of the widget is arbitrary after
+ *      -- The position of the widget window is undefined after
  *         this, and the widget window is NOT shown (WS_VISIBLE
  *         not set). The caller must call ReformatWidgets
  *         afterwards and make the widget visible.
  *
  *      -- This raises pXCenterData->Globals.cyClient
  *         if the new widget wants a height larger
- *         than that.
+ *         than the present value. ReformatWidgets will
+ *         evaluate that value.
  *
  *      -- This returns a PRIVATEWIDGETVIEW which was malloc'd.
  *         This structure is inserted into the specified
@@ -3021,6 +3069,8 @@ PPRIVATEWIDGETVIEW ctrpCreateWidgetWindow(PXCENTERWINDATA pXCenterData,      // 
 
                 pWidget->fSizeable = ((pWidgetClass->ulClassFlags & WGTF_SIZEABLE) != 0);
 
+                // set the temporary setup string so the widget can
+                // work on it during WM_CREATE
                 pWidget->pcszSetupString = pSetting->Public.pszSetupString;
                             // can be NULL
 
@@ -3047,7 +3097,8 @@ PPRIVATEWIDGETVIEW ctrpCreateWidgetWindow(PXCENTERWINDATA pXCenterData,      // 
                                                       0);              // presparams
                         // this sends WM_CREATE to the new widget window
 
-                // clean up setup string
+                // reset the setup string; the docs say this is
+                // only valid during WM_CREATE
                 pWidget->pcszSetupString = NULL;
 
                 // unset widget class ptr; this is valid only during WM_CREATE
@@ -3083,10 +3134,13 @@ PPRIVATEWIDGETVIEW ctrpCreateWidgetWindow(PXCENTERWINDATA pXCenterData,      // 
                         pGlobals->cyInnerClient = pGlobals->cyWidgetMax;
 
                     // load standard context menu
-                    pWidget->hwndContextMenu = WinLoadMenu(pWidget->hwndWidget,
-                                                           cmnQueryNLSModuleHandle(FALSE),
-                                                           ID_CRM_WIDGET);
-                    // _Pmpf((__FUNCTION__ ": pszStdMenuFont is %s", (pszStdMenuFont) ? pszStdMenuFont : "NULL"));
+                    if (pWidget->hwndContextMenu = WinLoadMenu(pWidget->hwndWidget,
+                                                               cmnQueryNLSModuleHandle(FALSE),
+                                                               ID_CRM_WIDGET))
+                        WinSendMsg(pWidget->hwndContextMenu,
+                                   MM_SETITEMTEXT,
+                                   (MPARAM)ID_CRM_XCSUB,
+                                   (MPARAM)ENTITY_XCENTER);
 
                     if (pszStdMenuFont)
                     {
@@ -3647,6 +3701,7 @@ static BOOL FrameTimer(HWND hwnd,
  *      implementation for WM_DESTROY in fnwpXCenterMainFrame.
  *
  *@@added V0.9.13 (2001-06-19) [umoeller]
+ *@@changed V0.9.19 (2002-05-23) [umoeller]: now destroying timers first
  */
 
 static VOID FrameDestroy(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -3657,6 +3712,13 @@ static VOID FrameDestroy(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
     PFNWP           pfnwpOrig = pXCenterData->pfnwpFrameOrig;
 
     _pvOpenView = NULL;
+
+    // kill XTimers
+    tmrDestroySet((PXTIMERSET)(pXCenterData->Globals.pvXTimerSet));
+    pXCenterData->Globals.pvXTimerSet = NULL;
+            // added V0.9.12 (2001-05-21) [umoeller]
+            // moved destroy timer up
+            // V0.9.19 (2002-05-23) [umoeller]
 
     // last chance... update desktop workarea in case
     // this hasn't been done that. This has probably been
@@ -3677,11 +3739,6 @@ static VOID FrameDestroy(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
     // remove this window from the object's use list
     _wpDeleteFromObjUseList(pXCenterData->somSelf,
                             &pXCenterData->UseItem);
-
-    // kill XTimers
-    tmrDestroySet((PXTIMERSET)(pXCenterData->Globals.pvXTimerSet));
-    pXCenterData->Globals.pvXTimerSet = NULL;
-            // added V0.9.12 (2001-05-21) [umoeller]
 
     ctrpFreeClasses();
 
@@ -4020,13 +4077,12 @@ static MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, M
 
             case WM_WINDOWPOSCHANGED:
             {
-                PSWP pswp = (PSWP)mp1;
                 WinSetWindowPos(WinWindowFromID(hwnd, FID_CLIENT),
                                 HWND_TOP,
                                 0,
                                 0,
-                                pswp->cx,
-                                pswp->cy,
+                                ((PSWP)mp1)->cx,
+                                ((PSWP)mp1)->cy,
                                 SWP_MOVE | SWP_SIZE | SWP_ZORDER);
             }
             break;
@@ -4339,10 +4395,7 @@ static VOID ClientPresParamChanged(HWND hwnd,
 
         case PP_FONTNAMESIZE:
             if (_pszClientFont)
-            {
                 free(_pszClientFont);
-                _pszClientFont = NULL;
-            }
 
             _pszClientFont = winhQueryWindowFont(hwnd);
         break;
@@ -4724,7 +4777,7 @@ static BOOL ClientSaveSetup(HWND hwndClient,
  *      The XCenter has the following window hierarchy (where
  *      lines signify both parent- and ownership):
  *
- +      WC_FRAME (fnwpXCenterMainFrame)
+ +      pseudo-frame (fnwpXCenterMainFrame)
  +         |
  +         +----- FID_CLIENT (fnwpXCenterMainClient)
  +                    |
@@ -5343,7 +5396,8 @@ BOOL ctrpModifyPopupMenu(XCenter *somSelf,
  *
  *      All this is nicely complex.
  *
- *      This thread is created with a PM message queue.
+ *      Obivously, this thread is created with a PM message
+ *      queue.
  *
  *@@added V0.9.7 (2001-01-03) [umoeller]
  *@@changed V0.9.19 (2002-04-17) [umoeller]: now automatically making XCenter screen border object
@@ -5355,10 +5409,6 @@ static void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
     BOOL        fCreated = FALSE;
     PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)ptiMyself->ulData;
 
-    /* #ifdef __DEBUG__
-        DosBeep(3000, 30);
-    #endif */
-
     if (pXCenterData)
     {
         XCenterData *somThis = XCenterGetData(pXCenterData->somSelf);
@@ -5367,10 +5417,6 @@ static void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
 
         TRY_LOUD(excpt1)
         {
-            /* FRAMECDATA  fcdata = {0};
-            fcdata.cb            = sizeof(FRAMECDATA);
-            fcdata.flCreateFlags = FCF_NOBYTEALIGN; */
-
             // set priority to what user wants
             DosSetPriority(PRTYS_THREAD,
                            _ulPriorityClass,
@@ -5433,7 +5479,7 @@ static void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
             // now go create XCenter frame and client
             // V0.9.16: no longer using WC_FRAME
             if (    (pGlobals->hwndFrame = WinCreateWindow(HWND_DESKTOP,    // parent
-                                                           WC_XCENTER_FRAME, // WC_BUTTON, // WC_FRAME,
+                                                           WC_XCENTER_FRAME,
                                                            _wpQueryTitle(pXCenterData->somSelf),
                                                            _ulWindowStyle,   // frame style
                                                            swpFrame.x,
@@ -5461,24 +5507,6 @@ static void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
                )
                 // frame and client created:
                 fCreated = TRUE;
-
-            /* pGlobals->hwndFrame
-                = winhCreateStdWindow(HWND_DESKTOP, // frame's parent
-                                      &swpFrame,
-                                      FCF_NOBYTEALIGN,
-                                      _ulWindowStyle,   // frame style
-                                      _wpQueryTitle(pXCenterData->somSelf),
-                                      0,            // resources ID
-                                      WC_XCENTER_CLIENT, // client class
-                                      WS_VISIBLE,       // client style
-                                      0,                // client ID
-                                      pXCenterData,     // client control data
-                                      &pGlobals->hwndClient);
-                                            // out: client window
-
-            if ((pGlobals->hwndFrame) && (pGlobals->hwndClient))
-                fCreated = TRUE;
-               */
         }
         CATCH(excpt1) {} END_CATCH();
 
@@ -5547,6 +5575,11 @@ static void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
                                 pGlobals->hwndFrame,
                                 ENTITY_XCENTER);
 
+                // store our own switch handle so we can clean
+                // up the switchlist if something goes wrong;
+                // we are not a WC_FRAME so we have to take
+                // care of this manually in order to avoid
+                // zombie entries in the switchlist
                 hsw2Remove = WinQuerySwitchHandle(pGlobals->hwndFrame,
                                                   doshMyPID());
                         // V0.9.16 (2001-12-08) [umoeller]
@@ -5562,7 +5595,7 @@ static void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
                     // register tooltip class
                     ctlRegisterTooltip(pGlobals->hab);
 
-                    // create tooltip window
+                    // create tooltip window (shared by all widgets)
                     pGlobals->hwndTooltip
                             = WinCreateWindow(HWND_DESKTOP,  // parent
                                               COMCTL_TOOLTIP_CLASS, // wnd class
@@ -5584,10 +5617,6 @@ static void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
                     else
                     {
                         // tooltip successfully created:
-                        // PLISTNODE pNode;
-                        // TOOLINFO    ti = {0};
-                        // ULONG ulStdFlags = 0;
-
                         // go create widgets
                         CreateAllWidgetWindows(pXCenterData);
                                 // this sets the frame's size, invisibly
@@ -5613,7 +5642,8 @@ static void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
                         // with each timer tick... when this is done,
                         // the next timer(s) will be started automatically
                         // until the frame is fully showing and ctrpReformat
-                        // will eventually be called
+                        // will eventually be called (this is all handled
+                        // in the frame window proc's WM_TIMER)
                         tmrStartXTimer(pTimerSet,
                                        pGlobals->hwndFrame,
                                        TIMERID_UNFOLDFRAME,
@@ -5660,22 +5690,27 @@ static void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
                         WinDispatchMsg(ptiMyself->hab, &qmsg);
 
                     // WM_QUIT came in: checks below...
+
                 } // end if (pXCenterData->pfnwpFrameOrig)
             }
             CATCH(excpt1) {} END_CATCH();
 
-            // We can get here for several reasons.
-            // 1)   The user used the tasklist to kill the XCenter.
-            //      Apparently, the task list posts WM_QUIT directly...
-            //      so at this point, the XCenter might not have been
-            //      destroyed.
-            // 2)   By contrast, our WM_DESTROY in fnwpFrame explicitly
-            //      posts WM_QUIT too. At that point, the XCenter is
-            //      already destroyed.
-            // 3)   The XCenter crashed. At that point, the window still
-            //      exists.
+            // Now, we can arrive here for several reasons:
+            // 1)   If we got WM_CLOSE for any reason
+            //      (e.g. from the XCenter context menu), we destroy
+            //      the XCenter directly. Our WM_DESTROY in fnwpFrame
+            //      explicitly posts WM_QUIT too. At that point, the
+            //      XCenter is already destroyed.
+            // 2)   By contrast, if the user used the tasklist to kill
+            //      the XCenter, apparently, the task list posts WM_QUIT
+            //      directly... so at this point, the XCenter might not
+            //      have been destroyed.
+            // 3)   The XCenter crashed somewhere. While we have exception
+            //      handling in the frame and client window procs, some
+            //      widgets may not be as smart. At that point, the window
+            //      still exists too.
 
-            // So check...
+            // So check if we still have a window...
             if (_pvOpenView)
             {
                 // not zeroed yet (zeroed by ClientDestroy):
@@ -5692,9 +5727,8 @@ static void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
                 CATCH(excpt1) {} END_CATCH();
             }
 
-            // if the switch list entry still exists, remove it;
-            // for some reason, since I have switched away from
-            // using WC_FRAME, these things are never removed
+            // if the switch list entry still exists, remove it
+            // (see remarks above)
             // V0.9.16 (2001-12-08) [umoeller]
             if (hsw2Remove)
                 WinRemoveSwitchEntry(hsw2Remove);
@@ -5706,11 +5740,7 @@ static void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
 
     } // if (pXCenterData)
 
-    /* #ifdef __DEBUG__
-        DosBeep(1500, 30);
-    #endif */
-
-    // exit! end of thread!
+    // exit! end of XCenter thread!
 }
 
 /*
@@ -5745,7 +5775,7 @@ HWND ctrpCreateXCenterView(XCenter *somSelf,
     {
         TRY_LOUD(excpt1)
         {
-            static BOOL     s_fXCenterClassRegistered = FALSE;
+            static BOOL s_fXCenterClassRegistered = FALSE;
 
             if (!s_fXCenterClassRegistered)
             {
