@@ -241,7 +241,7 @@
         // this can be disabled even if any hotkeys are defined
         // because the hotkeys themselves are stored separately
         // in shared memory
-        BOOL            fGlobalHotkeys;
+        BOOL            __fGlobalHotkeys;
 
         // PageMage configuration
         BOOL            fRemoved1, // _fPageMageStayOnTop,

@@ -517,8 +517,10 @@ VOID ShowPanicDlg(VOID)
 
                               cmnIsFeatureEnabled(BootLogo));
 #endif
+#ifndef __ALWAYSREPLACEARCHIVING__
             winhEnableDlgItem(hwndPanic, ID_XFDI_PANIC_NOARCHIVING,
-                              pGlobalSettings->fReplaceArchiving);
+                              cmnIsFeatureEnabled(ReplaceArchiving));
+#endif
             winhEnableDlgItem(hwndPanic, ID_XFDI_PANIC_DISABLEREPLREFRESH,
                               krnReplaceRefreshEnabled());
             winhEnableDlgItem(hwndPanic, ID_XFDI_PANIC_DISABLETURBOFOLDERS,
@@ -1403,7 +1405,9 @@ VOID initMain(VOID)
      *      we get crashes if a msg box is displayed otherwise
      */
 
-    if (pGlobalSettings->fReplaceArchiving)
+#ifndef __ALWAYSREPLACEARCHIVING__
+    if (cmnIsFeatureEnabled(ReplaceArchiving))
+#endif
         // check whether we need a WPS backup (archives.c)
         arcCheckIfBackupNeeded(G_KernelGlobals.hwndThread1Object,
                                T1M_DESTROYARCHIVESTATUS);

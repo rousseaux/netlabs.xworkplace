@@ -1,6 +1,10 @@
+// general
+#define __EWORKPLACE__                          1
+
 // classes
 #define __NOOS2KERNEL__                         1
 #define __NOXWPSETUP__                          1
+#define __NOWPSCLASSLIST__                      1
 
 // general features
 #define __NOICONREPLACEMENTS__                  1
@@ -8,6 +12,7 @@
 #define __ALWAYSREPLACEFILEPAGE__               1
 #define __ALWAYSREPLACEICONPAGE__               1
 #define __NOFILEPAGE2__                         1
+#define __ALWAYSFIXCLASSTITLES__                1
 
 // folder features
 #define __ALWAYSSUBCLASS__                      1
@@ -23,6 +28,7 @@
 #define __NOMODULEPAGES__                       1
 
 // startup/shutdown
+#define __ALWAYSREPLACEARCHIVING__              1
 #define __NOBOOTLOGO__                          1
 #define __NOBOOTUPSTATUS__                      1
 
@@ -33,4 +39,5 @@
 
 // hook features
 #define __NOPAGEMAGE__                          1
+#define __ALWAYSOBJHOTKEYS__                    1
 

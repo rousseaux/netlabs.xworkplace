@@ -24,7 +24,7 @@
  +              <IFDEF some_c_definition>
  +                  Lots of text here, which can optionally
  +                  be ignored.
- +              <ENDIF some_c_definition>
+ +              </IFDEF>
  *
  *      --  It supports a RESID attribute to the HTML
  *          tag to allow for setting a resid explicitly.
@@ -202,6 +202,9 @@ typedef struct _STATUS
     BOOL        fFatal;             // if error is returned and this is TRUE,
                                     // processing is stopped; otherwise the
                                     // error is considered a warning only
+
+    ULONG       ulNestingIFDEFs,
+                ulNestingIFNDEFs;
 } STATUS, *PSTATUS;
 
 /* ******************************************************************
@@ -881,10 +884,15 @@ PCSZ HandleIFDEF(PARTICLETREENODE pFile2Process,
                 else
                     return ("Cannot find closing </IFDEF> tag");
             }
+            else
+                (pstat->ulNestingIFDEFs)++;
         }
     }
     else
-        return ("Unrelated closing </IFDEF> tag");
+        if (pstat->ulNestingIFDEFs)
+            (pstat->ulNestingIFDEFs)--;
+        else
+            return ("Unrelated closing </IFDEF> tag");
 
     return (0);
 }
@@ -902,7 +910,7 @@ PCSZ HandleIFNDEF(PARTICLETREENODE pFile2Process,
 {
     if (!fClosingTag)
     {
-        // IFDEF tag...
+        // IFNDEF tag...
         // get the define from the attributes
         PCSZ pDef = pszAttrs;
         while (    (*pDef)
@@ -930,10 +938,15 @@ PCSZ HandleIFNDEF(PARTICLETREENODE pFile2Process,
                 else
                     return ("Cannot find closing </IFNDEF> tag");
             }
+            else
+                (pstat->ulNestingIFNDEFs)++;
         }
     }
     else
-        return ("Unrelated closing </IFNDEF> tag");
+        if (pstat->ulNestingIFNDEFs)
+            (pstat->ulNestingIFNDEFs)--;
+        else
+            return ("Unrelated closing </IFNDEF> tag");
 
     return (0);
 }

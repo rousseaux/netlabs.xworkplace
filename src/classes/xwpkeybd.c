@@ -110,7 +110,9 @@ SOM_Scope ULONG  SOMLINK xkb_xwpAddKeyboardHotkeysPage(XWPKeyboard *somSelf,
 
     // insert "Hotkeys" page if the hook has been enabled
     if (    (hifXWPHookReady())
+#ifndef __ALWAYSOBJHOTKEYS__
          && (hifObjectHotkeysEnabled())
+#endif
        )
     {
         pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));

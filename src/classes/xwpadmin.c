@@ -534,6 +534,8 @@ SOM_Scope void  SOMLINK admM_wpclsInitData(M_XWPAdmin *somSelf)
 /*
  * wpclsQueryStyle:
  *      prevent copy, delete, print.
+ *
+ *@@changed V0.9.16 (2001-11-25) [umoeller]: added nevertemplate
  */
 
 SOM_Scope ULONG  SOMLINK admM_wpclsQueryStyle(M_XWPAdmin *somSelf)
@@ -542,7 +544,7 @@ SOM_Scope ULONG  SOMLINK admM_wpclsQueryStyle(M_XWPAdmin *somSelf)
     M_XWPAdminMethodDebug("M_XWPAdmin","admM_wpclsQueryStyle");
 
     return (M_XWPAdmin_parent_M_WPAbstract_wpclsQueryStyle(somSelf)
-                | CLSSTYLE_DONTTEMPLATE
+                | CLSSTYLE_NEVERTEMPLATE        // V0.9.16 (2001-11-25) [umoeller]
                 | CLSSTYLE_NEVERPRINT
                 | CLSSTYLE_NEVERCOPY
                 | CLSSTYLE_NEVERDELETE);

@@ -1146,6 +1146,8 @@ SOM_Scope PSZ  SOMLINK xtroM_wpclsQueryTitle(M_XWPTrashObject *somSelf)
  *@@ wpclsQueryStyle:
  *      we return lots of flags to make sure the user cannot
  *      mess with the trash objects.
+ *
+ *@@changed V0.9.16 (2001-11-25) [umoeller]: added nevertemplate
  */
 
 SOM_Scope ULONG  SOMLINK xtroM_wpclsQueryStyle(M_XWPTrashObject *somSelf)
@@ -1153,7 +1155,7 @@ SOM_Scope ULONG  SOMLINK xtroM_wpclsQueryStyle(M_XWPTrashObject *somSelf)
     /* M_XWPTrashObjectData *somThis = M_XWPTrashObjectGetData(somSelf); */
     M_XWPTrashObjectMethodDebug("M_XWPTrashObject","xtroM_wpclsQueryStyle");
 
-    return (CLSSTYLE_DONTTEMPLATE
+    return (CLSSTYLE_NEVERTEMPLATE      // V0.9.16 (2001-11-25) [umoeller]
                 | CLSSTYLE_NEVERCOPY    // but allow move
                 | CLSSTYLE_NEVERLINK
                 | CLSSTYLE_NEVERDELETE  // we have a "destroy" menu item already

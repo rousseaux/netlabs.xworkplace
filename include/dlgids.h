@@ -148,6 +148,7 @@
 #define ID_ICONXWPFONTCLOSED   150
 #define ID_ICONXWPFONTOPEN     151
 #define ID_ICONXWPFONTOBJ      152
+#define ID_ICONXWPFONTFILE     153          // added V0.9.16 (2001-11-25) [umoeller]
 
 // icons used by "diskfree" widget
 #define ID_ICON_DRIVE          160
@@ -1949,7 +1950,9 @@
 #define ID_XCSI_REPLACEFILEPAGE         6003
 #endif
 #define ID_XCSI_XSYSTEMSOUNDS           6004
+#ifndef __ALWAYSFIXCLASSTITLES__
 #define ID_XCSI_FIXCLASSTITLES          6005        // V0.9.12 (2001-05-22) [umoeller]
+#endif
 
 #define ID_XCSI_FOLDERFEATURES          6010
 #ifndef __NOCFGSTATUSBARS__
@@ -1965,7 +1968,9 @@
 #define ID_XCSI_TURBOFOLDERS            6015        // V0.9.16 (2001-10-25) [umoeller]
 
 #define ID_XCSI_STARTSHUTFEATURES       6020
+#ifndef __ALWAYSREPLACEARCHIVING__
 #define ID_XCSI_ARCHIVING               6021
+#endif
 #define ID_XCSI_RESTARTWPS              6022
 #define ID_XCSI_XSHUTDOWN               6023
 
@@ -1984,8 +1989,12 @@
 #define ID_XCSI_MOUSEKEYBOARDFEATURES   6050
 #define ID_XCSI_XWPHOOK                 6051
 #define ID_XCSI_ANIMOUSE                6052
+#ifndef __ALWAYSOBJHOTKEYS__
 #define ID_XCSI_GLOBALHOTKEYS           6053
+#endif
+#ifndef __NOPAGEMAGE__
 #define ID_XCSI_PAGEMAGE                6054
+#endif
 
 /******************************************
  *  Still more string IDs                 *

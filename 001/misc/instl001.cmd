@@ -15,18 +15,21 @@ LanguageCode = "001";
 /* Here come the titles of the objects to be created.
    Translate these to your language. */
 
+XWorkplace          = "XWorkplace";
+OS2                 = "OS/2"
+
 /* Title of the Desktop folder; choose a faily long title,
    or the installation might fail if that object already
    exists */
-XFolderMain         = "XWorkplace Installation";
+XFolderMain         = XWorkplace||" Installation";
 /* "Introduction" object (SmartGuide) */
 XFolderIntro        = "Introduction";
-OnlineReference     = "XWorkplace User Guide";
+OnlineReference     = XWorkplace||" User Guide";
 /* other objects */
 WorkplaceShell      = "Workplace Shell";
-XWPSetup            = "XWorkplace Setup";
+XWPSetup            = XWorkplace||" Setup";
 XWPClassList        = "WPS Class List";
-OS2Kernel           = "OS/2 Kernel";
+OS2Kernel           = OS2||" Kernel";
 Screen              = "Screen";
 Media               = "Multimedia";
 String              = "Setup string";

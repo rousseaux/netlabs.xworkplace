@@ -505,13 +505,15 @@ SOM_Scope ULONG  SOMLINK xfdesk_wpAddDesktopArcRest1Page(XFldDesktop *somSelf,
     // XFldDesktopData *somThis = XFldDesktopGetData(somSelf);
     XFldDesktopMethodDebug("XFldDesktop","xfdesk_wpAddDesktopArcRest1Page");
 
-    if (pGlobalSettings->fReplaceArchiving)
-        // remove this, we'll add a new one at a different
-        // location in wpAddSettingsPages
-        return (SETTINGS_PAGE_REMOVED);
-    else
+#ifndef __ALWAYSREPLACEARCHIVING__
+    if (!cmnIsFeatureEnabled(ReplaceArchiving))
         return (XFldDesktop_parent_WPDesktop_wpAddDesktopArcRest1Page(somSelf,
                                                                       hwndNotebook));
+#endif
+
+    // remove this, we'll add a new one at a different
+    // location in wpAddSettingsPages
+    return (SETTINGS_PAGE_REMOVED);
 }
 
 /*
@@ -549,7 +551,9 @@ SOM_Scope BOOL  SOMLINK xfdesk_wpAddSettingsPages(XFldDesktop *somSelf,
         if (pGlobalSettings->fXShutdown)
             _xwpInsertXFldDesktopShutdownPage(somSelf, hwndNotebook);
 
-        if (pGlobalSettings->fReplaceArchiving)
+#ifndef __ALWAYSREPLACEARCHIVING__
+        if (cmnIsFeatureEnabled(ReplaceArchiving))
+#endif
             // insert new "Archives" page;
             // at the same time, the old archives page method
             // will return SETTINGS_PAGE_REMOVED

@@ -764,6 +764,12 @@
 #ifndef __NOREPLACEFILEEXISTS__
         ReplaceFileExists,
 #endif
+#ifndef __ALWAYSFIXCLASSTITLES__
+        FixClassTitles,
+#endif
+#ifndef __ALWAYSREPLACEARCHIVING__
+        ReplaceArchiving,
+#endif
         TurboFolders,            // warning: this will return the setting
                                  // that was once determined on WPS startup
         ___dummy
@@ -1031,7 +1037,7 @@
                         // XWPSetup: enable hook (enables object hotkeys,
                         // mouse movement etc.)
 
-        BYTE        fReplaceArchiving;
+        BYTE        __fReplaceArchiving;
                         // XWPSetup: enable Desktop archiving replacement
 
         BYTE        fAniMouse;
@@ -1113,7 +1119,7 @@
                         // this is a LONG because it can have negative values
                         // (see XFolder::xwpSetFldrSort)
 
-        BYTE        fFixClassTitles;
+        BYTE        __fFixClassTitles;
                         // XWPSetup: override wpclsQueryTitle?
 
         BYTE        fExtendCloseMenu;

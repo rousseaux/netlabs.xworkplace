@@ -13,6 +13,21 @@ XWorkplace features in the "XWorkplace Setup" object.
 
 Ulrich M”ller.
 
+> * 'Confirm on (folder) delete' - I have this set, but Replace True Delete
+>   no longer honours it.  (I guess this isn't the trash, but the eWP delete
+>   option instead.)
+
+> * Duplicate filenames.  I have auto-rename set, but whenever I delete
+>   a file whose name already occurs in Trash, it insists on asking me to
+>   rename the newly-deleted object.  This is a real problem because I tend
+>   to delete identically-named files in considerable numbers.  (Like when
+>   I'm testing and recompiling programs or DLLs.)
+
+--  progOpenProgram doesn't work if exe isn't fully qualified (but assumed
+    to be on PATH)
+
+--  install: subdir plugins\drvdlgs not created?!á
+
 --  folder content menus:
     if folder is already populated, drive changes aren't picked up
     (crashes with CD-ROMs and drive menus)

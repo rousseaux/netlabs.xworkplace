@@ -271,12 +271,13 @@
     #define FOPS_ISQ_DELETE_READONLY        0x0002
     #define FOPS_ISQ_FONTINSTALL            0x0004
 
-    HFILETASKLIST fopsCreateFileTaskList(ULONG ulOperation,
-                                         WPFolder *pSourceFolder,
-                                         WPFolder *pTargetFolder,
-                                         FNFOPSPROGRESSCALLBACK *pfnProgressCallback,
-                                         FNFOPSERRORCALLBACK *pfnErrorCallback,
-                                         ULONG ulUser);
+    FOPSRET fopsCreateFileTaskList(HFILETASKLIST *phftl,
+                                   ULONG ulOperation,
+                                   WPFolder *pSourceFolder,
+                                   WPFolder *pTargetFolder,
+                                   FNFOPSPROGRESSCALLBACK *pfnProgressCallback,
+                                   FNFOPSERRORCALLBACK *pfnErrorCallback,
+                                   ULONG ulUser);
 
     FOPSRET fopsValidateObjOperation(ULONG ulOperation,
                                      FNFOPSERRORCALLBACK *pfnErrorCallback,

@@ -769,6 +769,27 @@ DLGHITEM dlgArcStatus[] =
     };
 
 /*
+ *@@ ShowStatus:
+ *
+ *@@added V0.9.16 (2001-11-25) [umoeller]
+ */
+
+VOID ShowStatus(HWND hwndStatus,
+                PCSZ pcszText)
+{
+    WinSetDlgItemText(hwndStatus, ID_XFDI_GENERICDLGTEXT,
+                      pcszText);
+    WinSetWindowPos(hwndStatus,
+                    HWND_TOP,
+                    50,
+                    50,
+                    0,
+                    0,
+                    SWP_MOVE | SWP_ZORDER | SWP_SHOW);
+                            // but no activate
+}
+
+/*
  *@@ arcCheckIfBackupNeeded:
  *      this checks the system according to the settings
  *      in ARCHIVINGSETTINGS (i.e. always, next bootup,
@@ -856,11 +877,8 @@ BOOL arcCheckIfBackupNeeded(HWND hwndNotify,        // in: window to notify
                 fBackup = TRUE;
 
                 if (G_ArcSettings.fShowStatus)
-                {
-                    WinSetDlgItemText(hwndStatus, ID_XFDI_GENERICDLGTEXT,
-                                      cmnGetString(ID_XSSI_ARCENABLED));
-                    WinShowWindow(hwndStatus, TRUE);
-                }
+                    ShowStatus(hwndStatus,
+                               cmnGetString(ID_XSSI_ARCENABLED));
             }
             else
             {
@@ -869,11 +887,8 @@ BOOL arcCheckIfBackupNeeded(HWND hwndNotify,        // in: window to notify
                 if (G_ArcSettings.ulArcFlags & ARCF_NEXT)
                 {
                     if (G_ArcSettings.fShowStatus)
-                    {
-                        WinSetDlgItemText(hwndStatus, ID_XFDI_GENERICDLGTEXT,
-                                          cmnGetString(ID_XSSI_ARCENABLEDONCE));
-                        WinShowWindow(hwndStatus, TRUE);
-                    }
+                        ShowStatus(hwndStatus,
+                                   cmnGetString(ID_XSSI_ARCENABLEDONCE));
 
                     fBackup = TRUE;
                     fCheckINIs = FALSE;     // not necessary
@@ -930,9 +945,8 @@ BOOL arcCheckIfBackupNeeded(HWND hwndNotify,        // in: window to notify
                         sprintf(szTemp,
                                 "%s\n",
                                 cmnGetString(ID_XSSI_ARCINICHECKING)) ; // pszArcINIChecking
-                        WinSetDlgItemText(hwndStatus, ID_XFDI_GENERICDLGTEXT,
-                                          szTemp);
-                        WinShowWindow(hwndStatus, TRUE);
+                        ShowStatus(hwndStatus,
+                                   szTemp);
                     }
 
                     fBackup = arcCheckINIFiles(&G_ArcSettings.dIniFilesPercent,
@@ -977,15 +991,8 @@ BOOL arcCheckIfBackupNeeded(HWND hwndNotify,        // in: window to notify
                             cmnGetString(ID_XSSI_ARCNOTNECC),  // "Desktop archiving not necessary"
                             0);
 
-                WinSetDlgItemText(hwndStatus, ID_XFDI_GENERICDLGTEXT, strMsg.psz);
-                // WinShowWindow(hwndStatus, TRUE);
-                WinSetWindowPos(hwndStatus,
-                                HWND_TOP,
-                                50,
-                                50,
-                                0,
-                                0,
-                                SWP_MOVE | /* SWP_ACTIVATE | */ SWP_SHOW);
+                ShowStatus(hwndStatus,
+                           strMsg.psz);
             }
         }
 

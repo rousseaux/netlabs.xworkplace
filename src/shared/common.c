@@ -2090,6 +2090,7 @@ BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
             G_GlobalSettings.KeepTitle = 1;
             G_GlobalSettings.MaxPathChars = 25;
             G_GlobalSettings.TreeViewAutoScroll = 1;
+                                    // default changed V0.9.16 (2001-11-25) [umoeller]
 
             G_GlobalSettings._fFdrDefaultDoc = 0;
             G_GlobalSettings._fFdrDefaultDocView = 0;
@@ -2193,7 +2194,7 @@ BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
             G_GlobalSettings.__fReplaceIconPage = 0;
             G_GlobalSettings.__fReplaceFilePage = 0;
             G_GlobalSettings.fXSystemSounds = 0;
-            G_GlobalSettings.fFixClassTitles = 0;     // added V0.9.12 (2001-05-22) [umoeller]
+            G_GlobalSettings.__fFixClassTitles = 0;     // added V0.9.12 (2001-05-22) [umoeller]
 
             G_GlobalSettings.__fEnableStatusBars = 0;
             G_GlobalSettings.__fEnableSnap2Grid = 0;
@@ -2205,7 +2206,7 @@ BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
             G_GlobalSettings.fEnableXWPHook = 0;
             G_GlobalSettings.fEnablePageMage = 0;
 
-            G_GlobalSettings.fReplaceArchiving = 0;
+            G_GlobalSettings.__fReplaceArchiving = 0;
             G_GlobalSettings.fRestartWPS = 0;
             G_GlobalSettings.fXShutdown = 0;
 
@@ -2318,6 +2319,14 @@ BOOL cmnIsFeatureEnabled(XWPFEATURE f)
 
 #ifndef __NOREPLACEFILEEXISTS__
         case ReplaceFileExists: return G_GlobalSettings.__fReplFileExists;
+#endif
+
+#ifndef __ALWAYSFIXCLASSTITLES__
+        case FixClassTitles: return G_GlobalSettings.__fFixClassTitles;
+#endif
+
+#ifndef __ALWAYSREPLACEARCHIVING__
+        case ReplaceArchiving: return G_GlobalSettings.__fReplaceArchiving;
 #endif
 
         // for turbo folders, return the setting that was initially
@@ -3053,8 +3062,6 @@ BOOL cmnEnableTrashCan(HWND hwndOwner,     // for message boxes
 
         if (fCreateObject)
         {
-            // XWPTrashCan *pDefaultTrashCan = NULL;
-
             if (NULLHANDLE == WinQueryObject((PSZ)XFOLDER_TRASHCANID))
             {
                 brc = setCreateStandardObject(hwndOwner,

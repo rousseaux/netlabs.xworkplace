@@ -113,8 +113,7 @@ interface XFldObject : WPObject
 #ifdef __SOMIDL__
   implementation {
 
-    releaseorder: xwpAddObjectInternalsPage,
-                  xwpQueryDeletion,
+    releaseorder: xwpQueryDeletion,
                   xwpSetDeletion,
                   xwpSetTrashObject,
                   xwpQueryObjectHotkey,
@@ -169,6 +168,10 @@ interface XFldObject : WPObject
 
     PVOID       pvllWidgetNotifies; // really a PLINKLIST for xwpSetWidgetNotify
 
+    ULONG       ulDefaultView;
+                            // for xwpQueryRealDefaultView
+                            // V0.9.16 (2001-11-25) [umoeller]
+
     /*
      * WPObject methods overridden by XFldObject:
      *
@@ -178,9 +181,12 @@ interface XFldObject : WPObject
     wpObjectReady: override;
 
     wpSetup: override;
+    wpSetupOnce: override;
 
     wpFree: override;
     wpUnInitData: override;
+
+    wpSetDefaultView: override;
 
     wpSaveDeferred: override;
     wpSaveImmediate: override;

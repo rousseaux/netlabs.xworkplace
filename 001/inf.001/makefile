@@ -83,14 +83,16 @@ all: $(COPYTO)\xfldr$(LANGUAGE).inf
 # Now define inference rules for the different file types.
 #
 
+IPFFILE = $(OUTPUTDIR)\inf$(LANGUAGE).ipf
+
 $(COPYTO)\xfldr$(LANGUAGE).inf: $(OUTPUTDIR)\xfldr$(LANGUAGE).inf
         cmd.exe /c copy $(OUTPUTDIR)\$(@B).inf $(COPYTO)
 
-$(OUTPUTDIR)\xfldr$(LANGUAGE).ipf: *.html *.gif makefile ..\$(ENTITYDEFS)
+$(IPFFILE): *.html *.gif makefile ..\$(ENTITYDEFS)
         $(HTML2IPF) xfldr$(LANGUAGE).html
-        $(COPY) xfldr$(LANGUAGE).ipf $(OUTPUTDIR)
+        $(COPY) xfldr$(LANGUAGE).ipf $(IPFFILE)
 
-$(OUTPUTDIR)\xfldr$(LANGUAGE).inf: $(OUTPUTDIR)\xfldr$(LANGUAGE).ipf
-        ipfc $(OUTPUTDIR)\xfldr001.ipf $(OUTPUTDIR)\xfldr$(LANGUAGE).inf
+$(OUTPUTDIR)\xfldr$(LANGUAGE).inf: $(IPFFILE)
+        ipfc $(IPFFILE) $(OUTPUTDIR)\xfldr$(LANGUAGE).inf
 
 

@@ -103,7 +103,9 @@
 
     BOOL hifXWPHookReady(VOID);
 
+#ifndef __NOPAGEMAGE__
     BOOL hifEnablePageMage(BOOL fEnable);
+#endif
 
     BOOL hifHookConfigChanged(PVOID pvdc);
 
@@ -113,9 +115,11 @@
      *                                                                  *
      ********************************************************************/
 
+#ifndef __ALWAYSOBJHOTKEYS__
     BOOL hifObjectHotkeysEnabled(VOID);
 
     VOID hifEnableObjectHotkeys(BOOL fEnable);
+#endif
 
     PVOID hifQueryObjectHotkeys(PULONG pcHotkeys);
 

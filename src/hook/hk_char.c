@@ -278,7 +278,9 @@ BOOL WMChar_Main(PQMSG pqmsg)       // in/out: from hookPreAccelHook
                         // function keys
 
             // global hotkeys enabled? This also gets called if PageMage hotkeys are on!
-            if (G_HookData.HookConfig.fGlobalHotkeys)
+#ifndef __ALWAYSOBJHOTKEYS__
+            if (G_HookData.HookConfig.__fGlobalHotkeys)
+#endif
             {
                 if (    // process only key-down messages
                         // ((usFlags & KC_KEYUP) == 0)

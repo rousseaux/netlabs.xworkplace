@@ -297,47 +297,47 @@ SOM_Scope void  SOMLINK xms_wpUnInitData(XWPMouse *somSelf)
  *      object to set itself up according to setup strings.
  *      As opposed to wpSetupOnce, this gets called any time
  *      a setup string is invoked.
+ *
+ *@@changed V0.9.16 (2001-10-28) [pr]: prevent trap on null string
  */
 
 SOM_Scope BOOL  SOMLINK xms_wpSetup(XWPMouse *somSelf, PSZ pszSetupString)
 {
     BOOL fResult;
 
-    #ifdef __ANIMATED_MOUSE_POINTERS__
-        PSZ pszSetupCopy = NULL;
-        ULONG ulAnimationInitDelay = 0;
+#ifdef __ANIMATED_MOUSE_POINTERS__
+    ULONG ulAnimationInitDelay = 0;
 
-        XWPMouseData *somThis = XWPMouseGetData(somSelf);
-        XWPMouseMethodDebug("XWPMouse", "xms_wpSetup");
+    XWPMouseData *somThis = XWPMouseGetData(somSelf);
+    XWPMouseMethodDebug("XWPMouse", "xms_wpSetup");
 
-        if (pszSetupString != NULL)
+    // V0.9.16 (2001-10-28) [pr]: Prevent trap on null string
+    if (pszSetupString)
+    {
+        // make a duplicate of the setup string, so that we may modify it
+        // V0.9.16 (2001-10-28) [pr]: Prevent trap on null string
+        PSZ pszSetupCopy = strdup(pszSetupString);
+
+        // delay init until the object was initialized
+        if (!IsSettingsInitialized())
         {
-            // make a duplicate of the setup string, so that we may modify it
-            pszSetupCopy = strdup(pszSetupString);
+            // numerischen Wert fÅr Animtion Init delay holen
+            ulAnimationInitDelay = getAnimationInitDelay();
+            setAnimationInitDelay(ulAnimationInitDelay);
 
-            // delay init until the object was initialized
-            if (!IsSettingsInitialized())
-            {
-                // numerischen Wert fÅr Animtion Init delay holen
-                ulAnimationInitDelay = getAnimationInitDelay();
-                setAnimationInitDelay(ulAnimationInitDelay);
-
-                ScanSetupString(_hwndNotebookPage, _pcnrrec, pszSetupCopy, TRUE, TRUE);
-            }
-            else
-                ScanSetupString(_hwndNotebookPage, _pcnrrec, pszSetupCopy, TRUE, FALSE);
-
-            fResult = XWPMouse_parent_WPMouse_wpSetup(somSelf,
-                                                      pszSetupCopy);
-            free(pszSetupCopy);
+            ScanSetupString(_hwndNotebookPage, _pcnrrec, pszSetupCopy, TRUE, TRUE);
         }
         else
-    #endif
-    {
-        // DEBUGMSG("SOM: not enough memory for strdup !" NEWLINE, 0);
+            ScanSetupString(_hwndNotebookPage, _pcnrrec, pszSetupCopy, TRUE, FALSE);
+
+        fResult = XWPMouse_parent_WPMouse_wpSetup(somSelf,
+                                                  pszSetupCopy);
+        free(pszSetupCopy);
+    }
+    else
+#endif
         fResult = XWPMouse_parent_WPMouse_wpSetup(somSelf,
                                                   pszSetupString);
-    }
 
     return fResult;
 

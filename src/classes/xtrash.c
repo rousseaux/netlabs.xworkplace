@@ -142,6 +142,7 @@
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 #include "filesys\folder.h"             // XFolder implementation
+#include "filesys\icons.h"              // icons handling
 #include "filesys\trash.h"              // trash can implementation
 
 // other SOM headers
@@ -281,14 +282,41 @@ SOM_Scope ULONG  SOMLINK xtrc_xwpAddTrashCanGeneralPage(XWPTrashCan *somSelf,
     pcnbp->somSelf = somSelf;
     pcnbp->hwndNotebook = hwndDlg;
     pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
-    pcnbp->ulDlgID = ID_XTD_ICONPAGE;
-    pcnbp->ulPageID = SP_TRASHCAN_ICON;
-    pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = cmnGetString(ID_XSSI_ICONPAGE);  // pszIconPage
-    pcnbp->ulDefaultHelpPanel = ID_XSH_SETTINGS_TRASHCAN_ICON;
 
-    pcnbp->pfncbInitPage    = trshTrashCanIconInitPage;
-    pcnbp->pfncbItemChanged = trshTrashCanIconItemChanged;
+#ifndef __ALWAYSREPLACEICONPAGE__
+    if (    (cmnIsFeatureEnabled(ReplaceIconPage))
+            // check if this is a folder;
+            // if so, XFolder will insert the page
+            // because otherwise this would be between
+            // the two "Icon" pages...
+         // && (!_somIsA(somSelf, _WPFolder))
+                // removed V0.9.16 (2001-10-15) [umoeller]
+        )
+#endif
+    {
+        pcnbp->ulDlgID = ID_XFD_EMPTYDLG;
+        pcnbp->ulPageID = SP_TRASHCAN_ICON;
+        pcnbp->usPageStyleFlags = BKA_MAJOR;
+        pcnbp->fEnumerate = TRUE;
+        pcnbp->pszName = cmnGetString(ID_XSSI_ICONPAGE);
+        pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_TRASHCAN_ICON;
+        pcnbp->pfncbInitPage    = icoIcon1InitPage;
+        pcnbp->pfncbItemChanged = icoIcon1ItemChanged;
+    }
+#ifndef __ALWAYSREPLACEICONPAGE__
+    else
+    {
+        pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
+        pcnbp->ulDlgID = ID_XTD_ICONPAGE;
+        pcnbp->ulPageID = SP_TRASHCAN_ICON;
+        pcnbp->usPageStyleFlags = BKA_MAJOR;
+        pcnbp->pszName = cmnGetString(ID_XSSI_ICONPAGE);  // pszIconPage
+        pcnbp->ulDefaultHelpPanel = ID_XSH_SETTINGS_TRASHCAN_ICON;
+
+        pcnbp->pfncbInitPage    = trshTrashCanIconInitPage;
+        pcnbp->pfncbItemChanged = trshTrashCanIconItemChanged;
+    }
+#endif
 
     return (ntbInsertPage(pcnbp));
 }
@@ -1689,6 +1717,8 @@ SOM_Scope PSZ  SOMLINK xtrcM_wpclsQueryTitle(M_XWPTrashCan *somSelf)
 /*
  *@@ wpclsQueryStyle:
  *      we return a flag so that no trash can templates are created.
+ *
+ *@@changed V0.9.16 (2001-11-25) [umoeller]: added nevertemplate
  */
 
 SOM_Scope ULONG  SOMLINK xtrcM_wpclsQueryStyle(M_XWPTrashCan *somSelf)
@@ -1696,7 +1726,7 @@ SOM_Scope ULONG  SOMLINK xtrcM_wpclsQueryStyle(M_XWPTrashCan *somSelf)
     /* M_XWPTrashCanData *somThis = M_XWPTrashCanGetData(somSelf); */
     M_XWPTrashCanMethodDebug("M_XWPTrashCan","xtrcM_wpclsQueryStyle");
 
-    return (CLSSTYLE_DONTTEMPLATE
+    return (CLSSTYLE_NEVERTEMPLATE      // V0.9.16 (2001-11-25) [umoeller]
                 | CLSSTYLE_NEVERCOPY    // but allow move
                 | CLSSTYLE_NEVERDELETE
                 | CLSSTYLE_NEVERPRINT);

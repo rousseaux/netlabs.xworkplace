@@ -415,6 +415,7 @@ Do you wish to remove this widget from the &xcenter;'s widget list?
 
 <--XFL0223-->: The "Turbo folders" feature has been enabled. For safety reasons, this setting will not take effect until you restart the Desktop.
 <--XFL0224-->: The "Turbo folders" feature has been disabled. For safety reasons, this setting will not take effect until you restart the Desktop.
+<--XFL0225-->: The selected objects cannot be deleted because the &xwp; trash can does not exist. Do you wish to recreate the trash can object on the Desktop?
 
 ; ---------------------------------------------------------------------------------
 ;

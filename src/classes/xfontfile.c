@@ -265,6 +265,7 @@ SOM_Scope PSZ  SOMLINK fonfM_wpclsQueryTitle(M_XWPFontFile *somSelf)
 /*
  *@@ wpclsQueryStyle:
  *
+ *@@changed V0.9.16 (2001-11-25) [umoeller]: added nevertemplate
  */
 
 SOM_Scope ULONG  SOMLINK fonfM_wpclsQueryStyle(M_XWPFontFile *somSelf)
@@ -272,7 +273,7 @@ SOM_Scope ULONG  SOMLINK fonfM_wpclsQueryStyle(M_XWPFontFile *somSelf)
     /* M_XWPFontFileData *somThis = M_XWPFontFileGetData(somSelf); */
     M_XWPFontFileMethodDebug("M_XWPFontFile","fonfM_wpclsQueryStyle");
 
-    return (CLSSTYLE_DONTTEMPLATE
+    return (CLSSTYLE_NEVERTEMPLATE      // V0.9.16 (2001-11-25) [umoeller]
                 | CLSSTYLE_NEVERCOPY
                 | CLSSTYLE_NEVERDROPON
                 | CLSSTYLE_NEVERPRINT);
@@ -289,6 +290,8 @@ SOM_Scope ULONG  SOMLINK fonfM_wpclsQueryStyle(M_XWPFontFile *somSelf)
  *      this works is not documented.
  *
  *      We give this class a new standard icon here.
+ *
+ *@@changed V0.9.16 (2001-11-25) [umoeller]: now using separate icon for font _files_
  */
 
 SOM_Scope ULONG  SOMLINK fonfM_wpclsQueryIconData(M_XWPFontFile *somSelf,
@@ -300,7 +303,8 @@ SOM_Scope ULONG  SOMLINK fonfM_wpclsQueryIconData(M_XWPFontFile *somSelf,
     if (pIconInfo)
     {
         pIconInfo->fFormat = ICON_RESOURCE;
-        pIconInfo->resid   = ID_ICONXWPFONTOBJ;
+        pIconInfo->resid   = ID_ICONXWPFONTFILE;
+                // V0.9.16 (2001-11-25) [umoeller]
         pIconInfo->hmod    = cmnQueryMainResModuleHandle();
     }
 

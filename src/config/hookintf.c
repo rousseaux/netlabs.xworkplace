@@ -339,6 +339,8 @@ BOOL hifHookConfigChanged(PVOID pvdc)
  *                                                                  *
  ********************************************************************/
 
+#ifndef __ALWAYSOBJHOTKEYS__
+
 /*
  *@@ hifObjectHotkeysEnabled:
  *      returns TRUE if object hotkeys have been
@@ -360,7 +362,7 @@ BOOL hifObjectHotkeysEnabled(VOID)
                             INIKEY_HOOK_CONFIG,
                             &HookConfig,
                             &cb))
-        if (HookConfig.fGlobalHotkeys)
+        if (HookConfig.__fGlobalHotkeys)
             brc = TRUE;
 
     return (brc);
@@ -381,10 +383,12 @@ VOID hifEnableObjectHotkeys(BOOL fEnable)
     HOOKCONFIG  HookConfig;
     // ULONG       cb = sizeof(HookConfig);
     hifLoadHookConfig(&HookConfig);
-    HookConfig.fGlobalHotkeys = fEnable;
+    HookConfig.__fGlobalHotkeys = fEnable;
     // write back to OS2.INI and notify hook
     hifHookConfigChanged(&HookConfig);
 }
+
+#endif
 
 /*
  *@@ hifQueryObjectHotkeys:

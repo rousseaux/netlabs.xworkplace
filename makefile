@@ -741,7 +741,8 @@ release: really_all
 # 4) help
 !if [@md $(XWPRELEASE_NLS)\help 2> NUL]
 !endif
-    $(COPY) $(XWP_LANG_CODE)\misc\xfldr$(XWP_LANG_CODE).tmf $(XWPRELEASE_NLS)\help
+#    $(COPY) $(XWP_LANG_CODE)\misc\xfldr$(XWP_LANG_CODE).tmf $(XWPRELEASE_NLS)\help
+    $(COPY) $(XWPRUNNING)\help\xfldr$(XWP_LANG_CODE).tmf $(XWPRELEASE_NLS)\help
     $(COPY) $(XWP_LANG_CODE)\misc\drvrs$(XWP_LANG_CODE).txt $(XWPRELEASE_NLS)\help
     $(COPY) $(XWP_LANG_CODE)\misc\xfcls$(XWP_LANG_CODE).txt $(XWPRELEASE_NLS)\help
     $(COPY) $(MODULESDIR)\xfldr$(XWP_LANG_CODE).hlp $(XWPRELEASE_NLS)\help
@@ -769,7 +770,17 @@ release: really_all
     $(COPY) release\install\xwp.ico $(XWPRELEASE_MAIN)\install
     $(COPY) release\install\xwp_o.ico $(XWPRELEASE_MAIN)\install
 #    $(COPY) release\install\xwpusers.xml $(XWPRELEASE_MAIN)\install
-    $(COPY) $(XWP_LANG_CODE)\misc\*.cmd $(XWPRELEASE_NLS)\install
+!ifndef XWPLITE
+    $(COPY) $(XWP_LANG_CODE)\misc\crobj001.cmd $(XWPRELEASE_NLS)\install\crobj001.cmd
+!else
+    $(COPY) $(XWP_LANG_CODE)\misc\crobj001_lite.cmd $(XWPRELEASE_NLS)\install\crobj001.cmd
+!endif
+!ifndef XWPLITE
+    $(COPY) $(XWP_LANG_CODE)\misc\instl001.cmd $(XWPRELEASE_NLS)\install\instl001.cmd
+!else
+    $(COPY) $(XWP_LANG_CODE)\misc\instl001_lite.cmd $(XWPRELEASE_NLS)\install\instl001.cmd
+!endif
+    $(COPY) $(XWP_LANG_CODE)\misc\sound001.cmd $(XWPRELEASE_NLS)\install
 !ifndef XWPLITE
     $(COPY) $(XWP_LANG_CODE)\misc\*.msg $(XWPRELEASE_NLS)\install
 !endif

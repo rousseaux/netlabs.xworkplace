@@ -209,9 +209,7 @@ FOPSRET APIENTRY fopsGenericErrorCallback(ULONG ulOperation,
     PSZ     pszTitle = _wpQueryTitle(pObject);
 
     // V0.9.16 (2001-10-28) [pr]: Prevent trap on null title
-    pszTitle = strdup((pszTitle)
-                            ? pszTitle
-                            : "");
+    pszTitle = strdup((pszTitle) ? pszTitle : "");
     strhBeautifyTitle(pszTitle);
 
     switch (frError)
@@ -403,8 +401,8 @@ MRESULT EXPENTRY fops_fnwpGenericProgress(HWND hwndProgress, ULONG msg, MPARAM m
                             // V0.9.16 (2001-10-28) [pr]: Prevent trap on null title
                             PSZ pszTitle = _wpQueryTitle(pfu->pSourceObject);
 
-                            if (   pszTitle
-                                && (pszTitle = strdup(pszTitle))
+                            if (    pszTitle
+                                 && (pszTitle = strdup(pszTitle))
                                )
                             {
                                 strhBeautifyTitle(pszTitle);
@@ -680,126 +678,131 @@ FOPSRET fopsStartTaskFromCnr(ULONG ulOperation,       // in: operation; see fops
 {
     FOPSRET frc = NO_ERROR;
 
-    WPObject *pObject = pSourceObject;
+    WPObject *pObject;
 
-    // allocate progress window data structure
-    // this is passed to fopsCreateFileTaskList as ulUser
-    PGENERICPROGRESSWINDATA ppwd = malloc(sizeof(GENERICPROGRESSWINDATA));
+    PGENERICPROGRESSWINDATA ppwd;
 
     #ifdef DEBUG_TRASHCAN
         _Pmpf(("fopsStartTaskFromCnr: first obj is %s", _wpQueryTitle(pObject)));
         _Pmpf(("        ulSelection: %d", ulSelection));
     #endif
 
-    if (ppwd)
+    if (pObject = pSourceObject)
     {
-        HFILETASKLIST hftl = NULLHANDLE;
-        ULONG       cObjects = 0;
-
-        // create task list for the desired task
-        hftl = fopsCreateFileTaskList(ulOperation,      // as passed to us
-                                      pSourceFolder,    // as passed to us
-                                      pTargetFolder,    // as passed to us
-                                      fopsGenericProgressCallback, // progress callback
-                                      fopsGenericErrorCallback, // error callback
-                                      (ULONG)ppwd);     // ulUser
-             // this locks pSourceFolder
-
-        if ((hftl) && (pObject))
+        // allocate progress window data structure
+        // this is passed to fopsCreateFileTaskList as ulUser
+        if (ppwd = malloc(sizeof(GENERICPROGRESSWINDATA)))
         {
-            // now add all objects to the task list
-            while (pObject)
+            HFILETASKLIST hftl = NULLHANDLE;
+            ULONG       cObjects = 0;
+
+            // create task list for the desired task
+            if (!(frc = fopsCreateFileTaskList(&hftl,
+                                               ulOperation,      // as passed to us
+                                               pSourceFolder,    // as passed to us
+                                               pTargetFolder,    // as passed to us
+                                               fopsGenericProgressCallback, // progress callback
+                                               fopsGenericErrorCallback, // error callback
+                                               (ULONG)ppwd)))     // ulUser
+                            // this locks pSourceFolder
             {
-                FOPSRET     frc2;
-                WPObject    *pAddObject = pObject;
-                #ifdef DEBUG_TRASHCAN
-                    _Pmpf(("fopsStartTaskFromCnr: got object %s", _wpQueryTitle(pObject)));
-                #endif
-
-                if (fRelatedObjects)
-                    // collect related objects instead:
-                    // then this better be a trash object
-                    pAddObject = _xwpQueryRelatedObject(pObject);
-
-                frc2 = fopsAddObjectToTask(hftl,
-                                           pAddObject);
-                if (frc2 == NO_ERROR)
+                // now add all objects to the task list
+                while (pObject)
                 {
-                    // raise objects count
-                    cObjects++;
+                    FOPSRET     frc2;
+                    WPObject    *pAddObject = pObject;
+                    #ifdef DEBUG_TRASHCAN
+                        _Pmpf(("fopsStartTaskFromCnr: got object %s", _wpQueryTitle(pObject)));
+                    #endif
 
-                    if (ulSelection == SEL_MULTISEL)
-                        // more objects to go:
-                        pObject = wpshQueryNextSourceObject(hwndCnr, pObject);
+                    if (fRelatedObjects)
+                        // collect related objects instead:
+                        // then this better be a trash object
+                        pAddObject = _xwpQueryRelatedObject(pObject);
+
+                    if (!(frc2 = fopsAddObjectToTask(hftl,
+                                                     pAddObject)))
+                    {
+                        // raise objects count
+                        cObjects++;
+
+                        if (ulSelection == SEL_MULTISEL)
+                            // more objects to go:
+                            pObject = wpshQueryNextSourceObject(hwndCnr, pObject);
+                        else
+                            break;
+                    }
                     else
+                    {
+                        // error:
+                        frc = frc2;
                         break;
+                    }
                 }
-                else
+
+                if (!frc)
                 {
-                    // error:
-                    frc = frc2;
-                    break;
-                }
-            }
+                    if (cObjects == 0)
+                        // no objects and no other error reported:
+                        frc = FOPSERR_NO_OBJECTS_FOUND;
+                    else
+                    {
+                        // confirmations?
+
+                        if (pConfirm)
+                        {
+                            PSZ     apsz = NULL;
+                            ULONG   ulMsg;
+                            // yes:
+                            if (cObjects == 1)
+                            {
+                                // single object:
+                                // V0.9.16 (2001-10-28) [pr]: Prevent trap on null title
+                                apsz = _wpQueryTitle(pSourceObject);
+                                apsz = strdup(apsz ? apsz : "");
+                                strhBeautifyTitle(apsz);
+                                ulMsg = pConfirm->ulMsgSingle;
+                            }
+                            else
+                            {
+                                apsz = malloc(30);
+                                sprintf(apsz, "%d", cObjects);
+                                ulMsg = pConfirm->ulMsgMultiple;
+                            }
+
+                            if (cmnMessageBoxMsgExt(pConfirm->hwndOwner,  // owner
+                                                    121, // "XWorkplace"
+                                                    &apsz,
+                                                    1,
+                                                    ulMsg,
+                                                    MB_YESNO)
+                                        != MBID_YES)
+                                frc = FOPSERR_CANCELLEDBYUSER;
+
+                            free(apsz);
+                        }
+                    }
+                } // end if (frc == NO_ERROR)
+
+                if (!frc)
+                    // *** go!!!
+                    frc = StartWithGenericProgress(hftl,
+                                                   ulOperation,
+                                                   hab,
+                                                   ppwd);
+                else
+                    // cancel or no success: clean up
+                    fopsDeleteFileTaskList(hftl);
+            } // end if (!(frc = fopsCreateFileTaskList(&hftl,
+
+            if (frc)
+                free(ppwd);     // V0.9.3 (2000-04-11) [umoeller]
         }
         else
-            frc = FOPSERR_INVALID_OBJECT;
-
-        if ((cObjects == 0) && (frc == NO_ERROR))
-            // no objects and no other error reported:
-            frc = FOPSERR_NO_OBJECTS_FOUND;
-
-        if (frc == NO_ERROR)
-        {
-            // confirmations?
-
-            if (pConfirm)
-            {
-                PSZ     apsz = NULL;
-                ULONG   ulMsg;
-                // yes:
-                if (cObjects == 1)
-                {
-                    // single object:
-                    // V0.9.16 (2001-10-28) [pr]: Prevent trap on null title
-                    apsz = _wpQueryTitle(pSourceObject);
-                    apsz = strdup(apsz ? apsz : "");
-                    strhBeautifyTitle(apsz);
-                    ulMsg = pConfirm->ulMsgSingle;
-                }
-                else
-                {
-                    apsz = malloc(30);
-                    sprintf(apsz, "%d", cObjects);
-                    ulMsg = pConfirm->ulMsgMultiple;
-                }
-
-                if (cmnMessageBoxMsgExt(pConfirm->hwndOwner,  // owner
-                                        121, // "XWorkplace"
-                                        &apsz,
-                                        1,
-                                        ulMsg,
-                                        MB_YESNO)
-                            != MBID_YES)
-                    frc = FOPSERR_CANCELLEDBYUSER;
-
-                free(apsz);
-            }
-        } // end if (frc == NO_ERROR)
-
-        if (frc != NO_ERROR)
-        {
-            // cancel or no success: clean up
-            fopsDeleteFileTaskList(hftl);
-            free(ppwd);     // V0.9.3 (2000-04-11) [umoeller]
-        }
-        else
-            // *** go!!!
-            frc = StartWithGenericProgress(hftl,
-                                           ulOperation,
-                                           hab,
-                                           ppwd);
+            frc = ERROR_NOT_ENOUGH_MEMORY;
     }
+    else
+        frc = FOPSERR_INVALID_OBJECT;
 
     #ifdef DEBUG_TRASHCAN
         _Pmpf(("    returning FOPSRET %d", frc));
@@ -838,7 +841,7 @@ FOPSRET fopsStartTaskFromList(ULONG ulOperation,
 
     // allocate progress window data structure
     // this is passed to fopsCreateFileTaskList as ulUser
-    PGENERICPROGRESSWINDATA ppwd = malloc(sizeof(GENERICPROGRESSWINDATA));
+    PGENERICPROGRESSWINDATA ppwd;
 
     #ifdef DEBUG_TRASHCAN
         _Pmpf(("fopsStartTaskFromList, op: %d, source: %s, target: %s",
@@ -848,22 +851,21 @@ FOPSRET fopsStartTaskFromList(ULONG ulOperation,
                 ));
     #endif
 
-    if (ppwd)
+    if (ppwd = malloc(sizeof(GENERICPROGRESSWINDATA)))
     {
         HFILETASKLIST hftl = NULLHANDLE;
         PLISTNODE   pNode = NULL;
         ULONG       cObjects = 0;
 
         // create task list for the desired task
-        hftl = fopsCreateFileTaskList(ulOperation,      // as passed to us
-                                      pSourceFolder,    // as passed to us
-                                      pTargetFolder,    // as passed to us
-                                      fopsGenericProgressCallback, // progress callback
-                                      fopsGenericErrorCallback, // error callback
-                                      (ULONG)ppwd);     // ulUser
-             // this locks pSourceFolder
-
-        if (hftl)
+        if (!(frc = fopsCreateFileTaskList(&hftl,
+                                           ulOperation,      // as passed to us
+                                           pSourceFolder,    // as passed to us
+                                           pTargetFolder,    // as passed to us
+                                           fopsGenericProgressCallback, // progress callback
+                                           fopsGenericErrorCallback, // error callback
+                                           (ULONG)ppwd)))     // ulUser
+                            // this locks pSourceFolder
         {
             // add ALL objects from the list
             pNode = lstQueryFirstNode(pllObjects);
@@ -888,27 +890,27 @@ FOPSRET fopsStartTaskFromList(ULONG ulOperation,
                 pNode = pNode->pNext;
                 cObjects++;
             }
-        }
-        else
-            frc = FOPSERR_INTEGRITY_ABORT;
 
-        if (cObjects == 0)
-            // no objects:
-            frc = FOPSERR_NO_OBJECTS_FOUND;
+            if (cObjects == 0)
+                // no objects:
+                frc = FOPSERR_NO_OBJECTS_FOUND;
 
-        if (frc != NO_ERROR)
-        {
-            // cancel or no success: clean up
-            fopsDeleteFileTaskList(hftl);
+            if (!frc)
+                // *** go!!!
+                frc = StartWithGenericProgress(hftl,
+                                               ulOperation,
+                                               hab,
+                                               ppwd);
+            else
+                // cancel or no success: clean up
+                fopsDeleteFileTaskList(hftl);
+        } // end if (!(frc = fopsCreateFileTaskList(&hftl,
+
+        if (frc)
             free(ppwd);     // V0.9.3 (2000-04-11) [umoeller]
-        }
-        else
-            // *** go!!!
-            frc = StartWithGenericProgress(hftl,
-                                           ulOperation,
-                                           hab,
-                                           ppwd);
     }
+    else
+        frc = ERROR_NOT_ENOUGH_MEMORY;
 
     #ifdef DEBUG_TRASHCAN
         _Pmpf(("    returning FOPSRET %d", frc));
@@ -976,8 +978,8 @@ FOPSRET fopsStartDeleteFromCnr(HAB hab,                 // in: as with fopsStart
         frc = FOPSERR_INVALID_OBJECT;
     else
     {
-        WPFolder *pSourceFolder = _wpQueryFolder(pSourceObject);
-        if (!pSourceFolder)
+        WPFolder *pSourceFolder;
+        if (!(pSourceFolder = _wpQueryFolder(pSourceObject)))
             frc = FOPSERR_INVALID_OBJECT;
         else
         {
@@ -1023,28 +1025,43 @@ FOPSRET fopsStartDeleteFromCnr(HAB hab,                 // in: as with fopsStart
                                             ? &Confirm
                                             : NULL);
 
-            // if we're in "move to trashcan" mode and
-            // the drive is not supported by the trash can,
-            // do a confirmed delete instead
-            if (    (!fTrueDelete)      // delete into trashcan
-                 && (frc == FOPSERR_TRASHDRIVENOTSUPPORTED) // and trash drive not supported
-               )
+            // if we're in "move to trashcan" mode:
+            if (!fTrueDelete)      // delete into trashcan
             {
-                Confirm.ulMsgSingle = 180;
-                Confirm.ulMsgMultiple = 181;
+                // if the drive is not supported by the trash can,
+                // do a confirmed delete instead
+                switch (frc)
+                {
+                    case FOPSERR_TRASHDRIVENOTSUPPORTED:
+                        Confirm.ulMsgSingle = 180;
+                        Confirm.ulMsgMultiple = 181;
 
-                // source folder is not supported by trash can:
-                // start a "delete" job instead, with the proper
-                // confirmation messages ("Drive not supported, delete instead?")
-                frc = fopsStartTaskFromCnr(XFT_TRUEDELETE,
-                                           hab,
-                                           pSourceFolder,
-                                           NULL,         // target folder: not needed
-                                           pSourceObject,
-                                           ulSelection,
-                                           FALSE,       // no related objects
-                                           hwndCnr,
-                                           &Confirm);
+                        // source folder is not supported by trash can:
+                        // start a "delete" job instead, with the proper
+                        // confirmation messages ("Drive not supported, delete instead?")
+                        frc = fopsStartTaskFromCnr(XFT_TRUEDELETE,
+                                                   hab,
+                                                   pSourceFolder,
+                                                   NULL,         // target folder: not needed
+                                                   pSourceObject,
+                                                   ulSelection,
+                                                   FALSE,       // no related objects
+                                                   hwndCnr,
+                                                   &Confirm);
+                    break;
+
+                    case FOPSERR_NO_TRASHCAN:
+                        if (cmnMessageBoxMsg(Confirm.hwndOwner,
+                                             121, // "XWorkplace"
+                                             225,   // "trash can disappeared"
+                                             MB_YESNO)
+                                == MBID_YES)
+                        {
+                            cmnEnableTrashCan(Confirm.hwndOwner,
+                                              TRUE);        // enable
+                        }
+                    break;
+                }
             }
         }
     }
@@ -1158,22 +1175,17 @@ FOPSRET fopsStartPopulate(HAB hab,              // in: as with fopsStartTask
 {
     FOPSRET     frc = NO_ERROR;
     HFILETASKLIST hftl = NULLHANDLE;
-    // PLISTNODE   pNode = NULL;
-    // ULONG       cObjects = 0;
 
     // create task list for the desired task
-    hftl = fopsCreateFileTaskList(XFT_POPULATE,
-                                  NULL, // pSourceFolder,
-                                  NULL, // pTargetFolder,
-                                  NULL, // fopsGenericProgressCallback,
-                                  NULL, // fopsGenericErrorCallback,
-                                  0); // (ULONG)ppwd);     // ulUser
-
-    if (hftl)
+    if (!(frc = fopsCreateFileTaskList(&hftl,
+                                       XFT_POPULATE,
+                                       NULL, // pSourceFolder,
+                                       NULL, // pTargetFolder,
+                                       NULL, // fopsGenericProgressCallback,
+                                       NULL, // fopsGenericErrorCallback,
+                                       0))) // (ULONG)ppwd);     // ulUser
     {
-        frc = fopsAddObjectToTask(hftl, pFolder);
-
-        if (frc != NO_ERROR)
+        if (frc = fopsAddObjectToTask(hftl, pFolder))
             // cancel or no success: clean up
             fopsDeleteFileTaskList(hftl);
                         // moved this here... V0.9.7 (2001-01-17) [umoeller]
@@ -1181,7 +1193,7 @@ FOPSRET fopsStartPopulate(HAB hab,              // in: as with fopsStartTask
     else
         frc = FOPSERR_INTEGRITY_ABORT;
 
-    if (frc == NO_ERROR)
+    if (!frc)
         // *** go!!!
         frc = fopsStartTask(hftl,
                             hab);

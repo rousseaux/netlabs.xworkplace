@@ -595,8 +595,14 @@ VOID ctrpFreeClasses(VOID)
                     {
                         HMODULE hmod = (HMODULE)pNode->pItemData;
                         // _Pmpf((__FUNCTION__ ": Unloading hmod %lX", hmod));
-                        FreeModule(hmod,
-                                   TRUE);       // call uninit
+                        APIRET arc;
+
+                        if (arc = FreeModule(hmod,
+                                             TRUE))       // call uninit
+                            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                                   "FreeModule returned %d for hmod %lX",
+                                   arc,
+                                   hmod);
 
                         pNode = pNode->pNext;
                     }

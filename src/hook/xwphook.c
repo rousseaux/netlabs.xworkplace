@@ -1331,10 +1331,16 @@ BOOL EXPENTRY hookPreAccelHook(HAB hab, PQMSG pqmsg, ULONG option)
             // process this if
             if (
                         // a) object hotkeys are enabled or
-                   (    (G_HookData.HookConfig.fGlobalHotkeys)
+#ifndef __ALWAYSOBJHOTKEYS__
+                   (    (G_HookData.HookConfig.__fGlobalHotkeys)
+#else
+                   (    (TRUE)
+#endif
 #ifndef __NOPAGEMAGE__
                         // b) pagemage switch-screen hotkeys are enabled
                     ||  (G_HookData.PageMageConfig.fEnableArrowHotkeys)
+#else
+                    ||  (FALSE)
 #endif
                    )
                   // and system is not locked up

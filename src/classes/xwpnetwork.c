@@ -368,6 +368,7 @@ SOM_Scope PSZ  SOMLINK xnwM_wpclsQueryTitle(M_XWPNetwork *somSelf)
 /*
  *@@ wpclsQueryStyle:
  *
+ *@@changed V0.9.16 (2001-11-25) [umoeller]: added nevertemplate
  */
 
 SOM_Scope ULONG  SOMLINK xnwM_wpclsQueryStyle(M_XWPNetwork *somSelf)
@@ -375,7 +376,7 @@ SOM_Scope ULONG  SOMLINK xnwM_wpclsQueryStyle(M_XWPNetwork *somSelf)
     /* M_XWPNetworkData *somThis = M_XWPNetworkGetData(somSelf); */
     M_XWPNetworkMethodDebug("M_XWPNetwork","xnwM_wpclsQueryStyle");
 
-    return (CLSSTYLE_DONTTEMPLATE
+    return (CLSSTYLE_NEVERTEMPLATE      // V0.9.16 (2001-11-25) [umoeller]
                 | CLSSTYLE_NEVERCOPY    // but allow move
                 | CLSSTYLE_NEVERDELETE
                 | CLSSTYLE_NEVERPRINT);

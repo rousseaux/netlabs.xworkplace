@@ -1524,7 +1524,9 @@ SOM_Scope void  SOMLINK xwstrM_wpclsInitData(M_XWPString *somSelf)
 
 /*
  *@@ wpclsQueryStyle:
- *      prevent print.
+ *      prevent print, but allow template.
+ *
+ *@@changed V0.9.16 (2001-11-25) [umoeller]: fixed nevertemplate
  */
 
 SOM_Scope ULONG  SOMLINK xwstrM_wpclsQueryStyle(M_XWPString *somSelf)
@@ -1532,7 +1534,8 @@ SOM_Scope ULONG  SOMLINK xwstrM_wpclsQueryStyle(M_XWPString *somSelf)
     /* M_XWPStringData *somThis = M_XWPStringGetData(somSelf); */
     M_XWPStringMethodDebug("M_XWPString","xwstrM_wpclsQueryStyle");
 
-    return (M_XWPString_parent_M_WPAbstract_wpclsQueryStyle(somSelf)
+    return ((M_XWPString_parent_M_WPAbstract_wpclsQueryStyle(somSelf)
+                & ~CLSSTYLE_NEVERTEMPLATE)      // V0.9.16 (2001-11-25) [umoeller]
                 | CLSSTYLE_NEVERPRINT);
 }
 

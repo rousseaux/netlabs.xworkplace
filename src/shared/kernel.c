@@ -518,6 +518,7 @@ FILE* _System krnExceptOpenLogFile(VOID)
  *@@changed V0.9.0 [umoeller]: moved this stuff here from except.c
  *@@changed V0.9.0 [umoeller]: renamed function
  *@@changed V0.9.1 (99-12-28) [umoeller]: updated written information; added File thread
+ *@@changed V0.9.16 (2001-11-02) [pr]: added thread 1 identification
  */
 
 VOID _System krnExceptExplainXFolder(FILE *file,      // in: logfile from fopen()

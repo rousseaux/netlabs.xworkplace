@@ -2444,7 +2444,6 @@ VOID trshLoadDrivesSupport(M_XWPTrashCan *somSelf)
  *
  *@@added V0.9.2 (2000-03-04) [umoeller]
  *@@changed V0.9.16 (2001-11-10) [umoeller]: now returning FOPSRET
- *@@changed V0.9.16 (2001-11-10) [umoeller]: now checking for whether trash can exists
  *@@changed V0.9.16 (2001-11-10) [umoeller]: fixed UNC objects
  */
 
@@ -2452,35 +2451,28 @@ APIRET trshIsOnSupportedDrive(WPObject *pObject)
 {
     FOPSRET frc = FOPSERR_NOT_HANDLED_ABORT;
 
-    // check if the trash can exists
-    // V0.9.16 (2001-11-10) [umoeller]
-    if (NULL == _xwpclsQueryDefaultTrashCan(_XWPTrashCan))
-        frc = FOPSERR_NO_TRASHCAN;
-    else
-    {
-        WPFolder *pFolder;
-        CHAR szFolderPath[CCHMAXPATH];
+    WPFolder *pFolder;
+    CHAR szFolderPath[CCHMAXPATH];
 
-        if (    (pFolder = _wpQueryFolder(pObject))
-             && (_wpQueryFilename(pFolder, szFolderPath, TRUE))
+    if (    (pFolder = _wpQueryFolder(pObject))
+         && (_wpQueryFilename(pFolder, szFolderPath, TRUE))
+       )
+    {
+        nlsUpper(szFolderPath, 0);
+
+        frc = FOPSERR_TRASHDRIVENOTSUPPORTED;   // for drive A: and B: also
+
+        if (    (szFolderPath[0] >= 'C')
+             && (szFolderPath[0] <= 'Z')        // exclude UNC V0.9.16 (2001-11-10) [umoeller]
            )
         {
-            nlsUpper(szFolderPath, 0);
-
-            frc = FOPSERR_TRASHDRIVENOTSUPPORTED;   // for drive A: and B: also
-
-            if (    (szFolderPath[0] >= 'C')
-                 && (szFolderPath[0] <= 'Z')        // exclude UNC V0.9.16 (2001-11-10) [umoeller]
-               )
-            {
-                // is on hard disk:
-                if (G_abSupportedDrives[szFolderPath[0] - 'C'] == XTRC_SUPPORTED)
-                    frc = NO_ERROR;
-            }
+            // is on hard disk:
+            if (G_abSupportedDrives[szFolderPath[0] - 'C'] == XTRC_SUPPORTED)
+                frc = NO_ERROR;
         }
-        else
-            frc = FOPSERR_WPQUERYFILENAME_FAILED;       // V0.9.16 (2001-11-10) [umoeller]
     }
+    else
+        frc = FOPSERR_WPQUERYFILENAME_FAILED;       // V0.9.16 (2001-11-10) [umoeller]
 
     return (frc);
 }

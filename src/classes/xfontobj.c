@@ -996,6 +996,7 @@ SOM_Scope PSZ  SOMLINK fonoM_wpclsQueryTitle(M_XWPFontObject *somSelf)
 /*
  *@@ wpclsQueryStyle:
  *
+ *@@changed V0.9.16 (2001-11-25) [umoeller]: added nevertemplate
  */
 
 SOM_Scope ULONG  SOMLINK fonoM_wpclsQueryStyle(M_XWPFontObject *somSelf)
@@ -1003,7 +1004,7 @@ SOM_Scope ULONG  SOMLINK fonoM_wpclsQueryStyle(M_XWPFontObject *somSelf)
     /* M_XWPFontObjectData *somThis = M_XWPFontObjectGetData(somSelf); */
     M_XWPFontObjectMethodDebug("M_XWPFontObject","fonoM_wpclsQueryStyle");
 
-    return (CLSSTYLE_DONTTEMPLATE
+    return (CLSSTYLE_NEVERTEMPLATE          // V0.9.16 (2001-11-25) [umoeller]
                 | CLSSTYLE_NEVERCOPY
                 | CLSSTYLE_NEVERDELETE
                 | CLSSTYLE_NEVERDRAG

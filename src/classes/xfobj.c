@@ -91,6 +91,7 @@
 #include "helpers\xstring.h"            // extended string helpers
 
 // SOM headers which don't crash with prec. header files
+#include "xfldr.ih"
 #include "xfobj.ih"
 
 // XWorkplace implementation headers
@@ -114,7 +115,6 @@
 
 // other SOM headers
 #pragma hdrstop
-#include <wpfolder.h>                   // WPFolder
 #include <wptrans.h>                    // WPTransient
 
 #include "helpers\undoc.h"              // some undocumented stuff
@@ -126,7 +126,10 @@
  ********************************************************************/
 
 // global variable whether XWorkplace is initialized yet
-static BOOL        G_fXWorkplaceInitialized = FALSE;
+static BOOL         G_fXWorkplaceInitialized = FALSE;
+
+extern WPFolder     *G_pConfigFolder;
+                            // xfldr.c
 
 /* ******************************************************************
  *                                                                  *
@@ -234,6 +237,7 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpNukePhysical(XFldObject *somSelf)
  *      WPObject data.
  *
  *@@added V0.9.12 (2001-05-01) [umoeller]
+ *@@changed V0.9.16 (2001-11-25) [umoeller]: now using new instance var to pick up changes
  */
 
 SOM_Scope ULONG  SOMLINK xfobj_xwpQueryRealDefaultView(XFldObject *somSelf)
@@ -241,10 +245,8 @@ SOM_Scope ULONG  SOMLINK xfobj_xwpQueryRealDefaultView(XFldObject *somSelf)
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xfobj_xwpQueryRealDefaultView");
 
-    if (_pWPObjectData)     // WPObject data intercepted in XFldObject::wpRestoreData
-        return (_pWPObjectData->lDefaultView);
-
-    return (0);        // don't know
+    return (_ulDefaultView);
+            // V0.9.16 (2001-11-25) [umoeller]
 }
 
 /*
@@ -976,6 +978,8 @@ SOM_Scope void  SOMLINK xfobj_wpInitData(XFldObject *somSelf)
     _ulListNotify = 0;
 
     _pvllWidgetNotifies = NULL;
+
+    _ulDefaultView = 0;             // OPEN_DEFAULT
 }
 
 /*
@@ -1092,6 +1096,36 @@ SOM_Scope BOOL  SOMLINK xfobj_wpSetup(XFldObject *somSelf, PSZ pszSetupString)
                        pszSetupString);
 
     return (brc);
+}
+
+/*
+ *@@ wpSetupOnce:
+ *      this WPObject method allows special object handling
+ *      based on a creation setup string after an object has
+ *      been fully created.
+ *      As opposed to WPObject::wpSetup, this method _only_
+ *      gets called during object creation. The WPObject
+ *      implementation calls wpSetup in turn.
+ *      If FALSE is returned, object creation is aborted.
+ *
+ *      We check if we're being created inside the config folder.
+ *      If so, we must invalidate the config folder cache.
+ *
+ *@@added V0.9.16 (2001-11-25) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xfobj_wpSetupOnce(XFldObject *somSelf,
+                                          PSZ pszSetupString)
+{
+    XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectMethodDebug("XFldObject","xfobj_wpSetupOnce");
+
+    if (G_pConfigFolder)
+        // config folder is awake:
+        if (wpshResidesBelow(somSelf, G_pConfigFolder))
+            mnuInvalidateConfigCache();
+
+    return (XFldObject_parent_WPObject_wpSetupOnce(somSelf, pszSetupString));
 }
 
 /*
@@ -1239,6 +1273,29 @@ SOM_Scope void  SOMLINK xfobj_wpUnInitData(XFldObject *somSelf)
     }
 
     XFldObject_parent_WPObject_wpUnInitData(somSelf);
+}
+
+/*
+ *@@ wpSetDefaultView:
+ *      overridden to catch a notification if the default
+ *      view of the folder is to be changed (via the "Menu"
+ *      page, probably).
+ *
+ *      Otherwise our change isn't picked up, for some reason.
+ *
+ *@@added V0.9.16 (2001-11-25) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xfobj_wpSetDefaultView(XFldObject *somSelf,
+                                               ULONG ulView)
+{
+    XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectMethodDebug("XFldObject","xfobj_wpSetDefaultView");
+
+    _ulDefaultView = ulView;
+
+    return (XFldObject_parent_WPObject_wpSetDefaultView(somSelf,
+                                                        ulView));
 }
 
 /*
@@ -1428,6 +1485,10 @@ SOM_Scope BOOL  SOMLINK xfobj_wpRestoreData(XFldObject *somSelf,
             {
                 XFldObjectData *somThis = XFldObjectGetData(somSelf);
                 _pWPObjectData = (PVOID)pValue;
+                // store object default view for xwpQueryDefaultView
+                // V0.9.16 (2001-11-25) [umoeller]
+                _ulDefaultView = _pWPObjectData->lDefaultView;
+
                 _cbWPObjectData = *pcbValue;
             break; }
         }

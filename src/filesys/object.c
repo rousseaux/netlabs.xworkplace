@@ -3259,6 +3259,11 @@ CONTROLDEF
                             LOAD_STRING,
                             DID_CLOSE,
                             100,
+                            30),
+    HelpButton = CONTROLDEF_HELPPUSHBUTTON(
+                            LOAD_STRING,
+                            DID_HELP,
+                            100,
                             30);
 
 DLGHITEM dlgObjDetails[] =
@@ -3276,6 +3281,7 @@ DLGHITEM dlgObjDetails[] =
                 END_TABLE,
             START_ROW(ROW_VALIGN_TOP),
                 CONTROL_DEF(&CloseButton),
+                CONTROL_DEF(&HelpButton),
         END_TABLE
     };
 

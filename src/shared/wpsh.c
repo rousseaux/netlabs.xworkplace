@@ -558,8 +558,7 @@ WPObject* wpshQueryObjectFromID(const char *pcszObjectID,
                             &cbHandle))
     {
         // cool, handle found: resolve object
-        pObject = _wpclsQueryObject(_WPObject, ulHandle);
-        if (!pObject)
+        if (!(pObject = _wpclsQueryObject(_WPObject, ulHandle)))
             if (pulErrorCode)
                 *pulErrorCode = 2;
     }

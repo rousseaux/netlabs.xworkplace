@@ -264,47 +264,74 @@ typedef struct _FILETASKLIST
  *@@changed V0.9.2 (2000-03-04) [umoeller]: added error callback
  *@@changed V0.9.4 (2000-08-03) [umoeller]: added XFT_POPULATE
  *@@changed V0.9.7 (2001-01-13) [umoeller]: added XFT_INSTALLFONTS, XFT_DEINSTALLFONTS
+ *@@changed V0.9.16 (2001-11-25) [umoeller]: now returning FOPSRET
+ *@@changed V0.9.16 (2001-11-25) [umoeller]: for XFT_MOVE2TRASHCAN, now checking if trash can exists
  */
 
-HFILETASKLIST fopsCreateFileTaskList(ULONG ulOperation,     // in: XFT_* flag
-                                     WPFolder *pSourceFolder,
-                                     WPFolder *pTargetFolder,
-                                     FNFOPSPROGRESSCALLBACK *pfnProgressCallback, // in: callback procedure
-                                     FNFOPSERRORCALLBACK *pfnErrorCallback, // in: error callback
-                                     ULONG ulUser)          // in: user parameter passed to callback
+FOPSRET fopsCreateFileTaskList(HFILETASKLIST *phftl,     // out: new file task list
+                               ULONG ulOperation,     // in: XFT_* flag
+                               WPFolder *pSourceFolder,
+                               WPFolder *pTargetFolder,
+                               FNFOPSPROGRESSCALLBACK *pfnProgressCallback, // in: callback procedure
+                               FNFOPSERRORCALLBACK *pfnErrorCallback, // in: error callback
+                               ULONG ulUser)          // in: user parameter passed to callback
 {
-    BOOL    fSourceLocked = FALSE,
-            fProceed = FALSE;
+    HFILETASKLIST   hftl = NULLHANDLE;
+    FOPSRET         frc = NO_ERROR;
 
-    if (pSourceFolder)
-    {
-        if (fSourceLocked = !fdrRequestFolderMutexSem(pSourceFolder, 5000))
-            fProceed = TRUE;
-    }
+    if (    (ulOperation == XFT_MOVE2TRASHCAN)
+            // check if the trash can exists
+            // V0.9.16 (2001-11-10) [umoeller]
+         && (    (!_XWPTrashCan)
+              || (!_xwpclsQueryDefaultTrashCan(_XWPTrashCan))
+            )
+       )
+        frc = FOPSERR_NO_TRASHCAN;
     else
-        fProceed = TRUE;
-
-    if (fProceed)
     {
-        PFILETASKLIST pftl = malloc(sizeof(FILETASKLIST));
-        memset(pftl, 0, sizeof(FILETASKLIST));
-        lstInit(&pftl->llObjects, FALSE);     // no freeing, this stores WPObject pointers!
-        pftl->ulOperation = ulOperation;
-        pftl->pSourceFolder = pSourceFolder;
-        pftl->fSourceLocked = fSourceLocked;
-        pftl->pTargetFolder = pTargetFolder;
-        pftl->pfnProgressCallback = pfnProgressCallback;
-        pftl->pfnErrorCallback = pfnErrorCallback;
-        pftl->ulUser = ulUser;
-        return ((HFILETASKLIST)pftl);
-                // do not unlock pSourceFolder!
+        BOOL            fSourceLocked = FALSE;
+
+        if (pSourceFolder)
+        {
+            if (!(fSourceLocked = !fdrRequestFolderMutexSem(pSourceFolder, 5000)))
+                frc = FOPSERR_LOCK_FAILED;
+        }
+
+        if (!frc)
+        {
+            PFILETASKLIST pftl;
+            if (pftl = malloc(sizeof(FILETASKLIST)))
+            {
+                memset(pftl, 0, sizeof(FILETASKLIST));
+                lstInit(&pftl->llObjects, FALSE);     // no freeing, this stores WPObject pointers!
+                pftl->ulOperation = ulOperation;
+                pftl->pSourceFolder = pSourceFolder;
+                pftl->fSourceLocked = fSourceLocked;
+                pftl->pTargetFolder = pTargetFolder;
+                pftl->pfnProgressCallback = pfnProgressCallback;
+                pftl->pfnErrorCallback = pfnErrorCallback;
+                pftl->ulUser = ulUser;
+                hftl = ((HFILETASKLIST)pftl);
+                        // do not unlock pSourceFolder!
+            }
+            else
+                frc = ERROR_NOT_ENOUGH_MEMORY;
+        }
+
+        if (!frc)
+        {
+            // no error:
+            *phftl = hftl;
+        }
+        else
+        {
+            // error
+            if (fSourceLocked)
+                fdrReleaseFolderMutexSem(pSourceFolder);
+        }
     }
 
-    // error
-    if (fSourceLocked)
-        fdrReleaseFolderMutexSem(pSourceFolder);
-
-    return (NULLHANDLE);
+    return (frc);
 }
 
 /*

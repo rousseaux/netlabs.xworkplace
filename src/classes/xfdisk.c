@@ -573,14 +573,15 @@ SOM_Scope void  SOMLINK xfdiskM_wpclsInitData(M_XFldDisk *somSelf)
 
 SOM_Scope PSZ  SOMLINK xfdiskM_wpclsQueryTitle(M_XFldDisk *somSelf)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     /* M_XFldDiskData *somThis = M_XFldDiskGetData(somSelf); */
     M_XFldDiskMethodDebug("M_XFldDisk","xfdiskM_wpclsQueryTitle");
 
-    if (pGlobalSettings->fFixClassTitles)
-        return (cmnGetString(ID_XSSI_CLASSTITLE_DISK));
+#ifndef __ALWAYSFIXCLASSTITLES__
+    if (!cmnIsFeatureEnabled(FixClassTitles))
+        return (M_XFldDisk_parent_M_WPDisk_wpclsQueryTitle(somSelf));
+#endif
 
-    return (M_XFldDisk_parent_M_WPDisk_wpclsQueryTitle(somSelf));
+    return (cmnGetString(ID_XSSI_CLASSTITLE_DISK));
 }
 
 

@@ -160,7 +160,8 @@
  *                                                                  *
  ********************************************************************/
 
-static XFolder      *G_pConfigFolder = NULL;
+extern WPFolder     *G_pConfigFolder = NULL;
+                        // used in xfobj.c too
 
 // roots of linked lists for favorite/quick-open folders
 // these hold plain WPObject pointers, no auto-free
@@ -1561,6 +1562,7 @@ SOM_Scope void  SOMLINK xf_wpObjectReady(XFolder *somSelf,
  *
  *@@changed V0.9.9 (2001-02-01) [umoeller]: added notify cleanup, semaphores
  *@@changed V0.9.12 (2001-05-22) [umoeller]: fixed refresh synchronization
+ *@@changed V0.9.16 (2001-11-25) [umoeller]: fixed crash on config folder delete
  */
 
 SOM_Scope void  SOMLINK xf_wpUnInitData(XFolder *somSelf)
@@ -1572,6 +1574,11 @@ SOM_Scope void  SOMLINK xf_wpUnInitData(XFolder *somSelf)
     // seem to get called several times sometimes
     if (!_fUnInitCalled)
         _fUnInitCalled = TRUE;
+
+    if (somSelf == G_pConfigFolder)
+        // unset this or we'll crash on the next menu build
+        // V0.9.16 (2001-11-25) [umoeller]
+        G_pConfigFolder = NULL;
 
     if (_pszFolderBkgndImageFile)
     {
@@ -3824,14 +3831,15 @@ SOM_Scope ULONG  SOMLINK xfM_wpclsQueryDefaultView(M_XFolder *somSelf)
 
 SOM_Scope PSZ  SOMLINK xfM_wpclsQueryTitle(M_XFolder *somSelf)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // M_XFolderData *somThis = M_XFolderGetData(somSelf);
     M_XFolderMethodDebug("M_XFolder","xfM_wpclsQueryTitle");
 
-    if (pGlobalSettings->fFixClassTitles)
-        return (cmnGetString(ID_XSSI_CLASSTITLE_FOLDER));
+#ifndef __ALWAYSFIXCLASSTITLES__
+    if (!cmnIsFeatureEnabled(FixClassTitles))
+        return (M_XFolder_parent_M_WPFolder_wpclsQueryTitle(somSelf));
+#endif
 
-    return (M_XFolder_parent_M_WPFolder_wpclsQueryTitle(somSelf));
+    return (cmnGetString(ID_XSSI_CLASSTITLE_FOLDER));
 }
 
 /*

@@ -4,12 +4,13 @@
  */
 
 /* these are the titles of the sounds to be created */
-ShutdownSound       = "XWorkplace: Shutdown"
-RestartWPSSound     = "XWorkplace: Restart WPS"
-ContextOpenSound    = "XWorkplace: Open menu"
-ContextSelectSound  = "XWorkplace: Menu selection"
-CnrSelectSound      = "XWorkplace: Folder double click"
-HotkeyPrsSound      = "XWorkplace: Hotkey pressed"
+/* V0.9.16: removed the leading "XWorkplace" strings */
+ShutdownSound       = "Shutdown"
+RestartWPSSound     = "Restart WPS"
+ContextOpenSound    = "Open menu"
+ContextSelectSound  = "Menu selection"
+CnrSelectSound      = "Folder double click"
+HotkeyPrsSound      = "Hotkey pressed"
             /* added V0.9.3 (2000-04-20) [umoeller] */
 
 /* do not change the following */

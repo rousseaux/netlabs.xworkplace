@@ -505,7 +505,7 @@ BOOL BuildConfigItemsList(PLINKLIST pllContentThis,     // in: CONTENTLISTITEM l
                 lstAppendItem(pllContentThis,
                               pcli);
 
-                // mark this object that it is in the config folder
+                // mark this object as being in the config folder
                 _xwpModifyListNotify(pObject2Insert,
                                      OBJLIST_CONFIGFOLDER,
                                      OBJLIST_CONFIGFOLDER);

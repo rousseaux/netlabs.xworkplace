@@ -16,8 +16,8 @@
    Configuration Folder which will then be underlined
    in the respective menu items. */
 
-XWorkplace          = "XWorkplace";
-OS2                 = "OS/2"
+XWorkplace          = "eWorkplace";
+OS2                 = "eCS"
 
 /* Config Folder title */
 ConfigFolder        = XWorkplace||" Configuration Folder";
@@ -51,7 +51,7 @@ Treesize            = "Treesize";
 PackTree            = "Pack this tree";
 
 /* where to create the config folder: */
-TargetLocation      = "<XWP_MAINFLDR>"
+TargetLocation      = "<WP_CONFIG>"
 
 /* DO NOT CHANGE the following */
 call RxFuncAdd 'SysLoadFuncs', 'REXXUTIL', 'SysLoadFuncs'
@@ -99,13 +99,13 @@ rc = SysCreateObject("WPFolder", QuickSettings, "<XWP_CONFIG>", "DEFAULTVIEW=ICO
     rc = SysCreateObject("WPProgram", ShowAllInTreeView, "<XWP_CFG3>", "EXENAME="dir'showall.cmd;CCVIEW=YES;MINIMIZED=YES;NOAUTOCLOSE=NO;OBJECTID=<XWP_SHOWALL>;', "U");
 */
 
-rc = SysCreateObject("WPFolder", "~"||XWorkplace, "<XWP_CONFIG>", "DEFAULTVIEW=ICON;ICONVIEW=NONFLOWED,MINI;SHOWALLINTREEVIEW=YES;ALWAYSSORT=NO;OBJECTID=<XWP_CFG4>", "U");
+/* rc = SysCreateObject("WPFolder", "~"||XWorkplace, "<XWP_CONFIG>", "DEFAULTVIEW=ICON;ICONVIEW=NONFLOWED,MINI;SHOWALLINTREEVIEW=YES;ALWAYSSORT=NO;OBJECTID=<XWP_CFG4>", "U");
     rc = SysCreateObject("WPShadow", XWPSetup, "<XWP_CFG4>", "SHADOWID=<XWORKPLACE_SETUP>;OBJECTID=<XWORKPLACE_SETUPCFGSHADOW>;", "U");
     rc = SysCreateObject("WPShadow", WorkplaceShell, "<XWP_CFG4>", "SHADOWID=<XWP_WPS>;OBJECTID=<XWP_WPSCFGSHADOW>;", "U");
     rc = SysCreateObject("WPShadow", Mouse, "<XWP_CFG4>", "SHADOWID=<WP_MOUSE>;OBJECTID=<XWP_WPMOUSECFGSHADOW>;", "U");
     if (\rc) then
-        /* IBM changed the object ID of the "Mouse" object with MCP/ACP, so try this then
-        V0.9.16 (2001-10-23) [umoeller] */
+        IBM changed the object ID of the "Mouse" object with MCP/ACP, so try this then
+        V0.9.16 (2001-10-23) [umoeller]
         rc = SysCreateObject("WPShadow", Mouse, "<XWP_CFG4>", "SHADOWID=<WPSTK_MOUSE>;OBJECTID=<XWP_WPMOUSECFGSHADOW>;", "U");
     rc = SysCreateObject("WPShadow", Keyboard, "<XWP_CFG4>", "SHADOWID=<WP_KEYB>;OBJECTID=<XWP_WPKEYBCFGSHADOW>;", "U");
     rc = SysCreateObject("WPShadow", Screen, "<XWP_CFG4>", "SHADOWID=<XWP_SCREEN>;OBJECTID=<XWP_SCREENCFGSHADOW>;", "U");
@@ -114,7 +114,7 @@ rc = SysCreateObject("WPFolder", "~"||XWorkplace, "<XWP_CONFIG>", "DEFAULTVIEW=I
     rc = SysCreateObject("WPShadow", "User Guide", "<XWP_CFG4>", "SHADOWID=<XWP_REF>;OBJECTID=<XWP_REFCFGSHADOW>;", "U");
     rc = SysCreateObject("WPProgram", "--- ", "<XWP_CFG4>", "OBJECTID=<XWP_SEP42>;", "U");
     rc = SysCreateObject("WPShadow", ConfigFolder, "<XWP_CFG4>", "SHADOWID=<XWP_CONFIG>;OBJECTID=<XWP_CONFIGCFGSHADOW>;", "U");
-
+*/
 rc = SysCreateObject("WPProgram", "---", "<XWP_CONFIG>", "OBJECTID=<XWP_SEP1>;", "U");
 
 if (SysSearchPath("PATH", "NETSCAPE.EXE") \= "") then

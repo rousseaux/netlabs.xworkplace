@@ -158,7 +158,9 @@ static FEATURESITEM G_FeatureItemsList[] =
 #ifndef __NOICONREPLACEMENTS__
             ID_XCSI_REPLACEICONS, ID_XCSI_GENERALFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
 #endif
+#ifndef __ALWAYSFIXCLASSTITLES__
             ID_XCSI_FIXCLASSTITLES, ID_XCSI_GENERALFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+#endif
 #ifndef __ALWAYSRESIZESETTINGSPAGES__
             ID_XCSI_RESIZESETTINGSPAGES, ID_XCSI_GENERALFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
 #endif
@@ -191,14 +193,18 @@ static FEATURESITEM G_FeatureItemsList[] =
             ID_XCSI_ANIMOUSE, ID_XCSI_MOUSEKEYBOARDFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
 #endif
             ID_XCSI_XWPHOOK, ID_XCSI_MOUSEKEYBOARDFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+#ifndef __ALWAYSOBJHOTKEYS__
             ID_XCSI_GLOBALHOTKEYS, ID_XCSI_MOUSEKEYBOARDFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+#endif
 #ifndef __NOPAGEMAGE__
             ID_XCSI_PAGEMAGE, ID_XCSI_MOUSEKEYBOARDFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
 #endif
 
             // startup/shutdown features
             ID_XCSI_STARTSHUTFEATURES, 0, 0, NULL,
+#ifndef __ALWAYSREPLACEARCHIVING__
             ID_XCSI_ARCHIVING, ID_XCSI_STARTSHUTFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+#endif
             ID_XCSI_RESTARTWPS, ID_XCSI_STARTSHUTFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
             ID_XCSI_XSHUTDOWN, ID_XCSI_STARTSHUTFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
 
@@ -326,7 +332,8 @@ static STANDARDOBJECT
                     213, 0,
 
             &XFOLDER_TRASHCANID, &G_pcszXWPTrashCan, "<WP_DESKTOP>",
-                    "DETAILSCLASS=XWPTrashObject;SORTCLASS=XWPTrashObject;",
+                    "DEFAULTVIEW=DETAILS;ALWAYSSORT=YES;DETAILSCLASS=XWPTrashObject;SORTCLASS=XWPTrashObject;",
+                                // added DEFAULTVIEW=DETAILS;ALWAYSSORT=YES
                     220, 0,
             &XFOLDER_STRINGTPLID, &G_pcszXWPString, "<XWP_MAINFLDR>", // V0.9.9
                     "TEMPLATE=YES;",
@@ -1642,7 +1649,9 @@ BOOL setLogoMessages(PCREATENOTEBOOKPAGE pcnbp,
 typedef struct _XWPFEATURESDATA
 {
     GLOBALSETTINGS      GlobalSettings;
+#ifndef __ALWAYSOBJHOTKEYS__
     BOOL                bObjectHotkeys;
+#endif
     BOOL                bReplaceRefresh;
 } XWPFEATURESDATA, *PXWPFEATURESDATA;
 
@@ -1687,7 +1696,9 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             // the notebook page is destroyed
             pcnbp->pUser = pFeaturesData = malloc(sizeof(XWPFEATURESDATA));
             memcpy(&pFeaturesData->GlobalSettings, pGlobalSettings, sizeof(GLOBALSETTINGS));
+#ifndef __ALWAYSOBJHOTKEYS__
             pFeaturesData->bObjectHotkeys = hifObjectHotkeysEnabled();
+#endif
             pFeaturesData->bReplaceRefresh = krnReplaceRefreshEnabled();
         }
 
@@ -1822,9 +1833,10 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 #endif
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_XSYSTEMSOUNDS,
                 pGlobalSettings->fXSystemSounds);
+#ifndef __ALWAYSFIXCLASSTITLES__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_FIXCLASSTITLES,
-                pGlobalSettings->fFixClassTitles);   // added V0.9.12 (2001-05-22) [umoeller]
-
+                cmnIsFeatureEnabled(FixClassTitles));   // added V0.9.12 (2001-05-22) [umoeller]
+#endif
 #ifndef __NOCFGSTATUSBARS__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_ENABLESTATUSBARS,
                 cmnIsFeatureEnabled(StatusBars));
@@ -1852,13 +1864,19 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                 pGlobalSettings->fAniMouse);
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_XWPHOOK,
                 pGlobalSettings->fEnableXWPHook);
+#ifndef __ALWAYSOBJHOTKEYS__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_GLOBALHOTKEYS,
                 hifObjectHotkeysEnabled());
+#endif
+#ifndef __NOPAGEMAGE__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_PAGEMAGE,
                 pGlobalSettings->fEnablePageMage);
+#endif
 
+#ifndef __ALWAYSREPLACEARCHIVING__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_ARCHIVING,
-                pGlobalSettings->fReplaceArchiving);
+                cmnIsFeatureEnabled(ReplaceArchiving));
+#endif
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_RESTARTWPS,
                 pGlobalSettings->fRestartWPS);
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_XSHUTDOWN,
@@ -1924,10 +1942,14 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_XWPHOOK,
                 (pXwpGlobalShared->hwndDaemonObject != NULLHANDLE));
+#ifndef __ALWAYSOBJHOTKEYS__
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_GLOBALHOTKEYS,
                 hifXWPHookReady());
+#endif
+#ifndef __NOPAGEMAGE__
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_PAGEMAGE,
                 hifXWPHookReady());
+#endif
 
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_XSYSTEMSOUNDS,
                 (   (fXFolder)
@@ -2061,9 +2083,11 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     cAskSoundsInstallMsg = precc->usCheckState;
             break;
 
+#ifndef __ALWAYSFIXCLASSTITLES__
             case ID_XCSI_FIXCLASSTITLES: // added V0.9.12 (2001-05-22) [umoeller]
-                pGlobalSettings->fFixClassTitles = precc->usCheckState;
+                pGlobalSettings->__fFixClassTitles = precc->usCheckState;
             break;
+#endif
 
             case ID_XCSI_ANIMOUSE:
                 pGlobalSettings->fAniMouse = precc->usCheckState;
@@ -2120,6 +2144,7 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     ulNotifyMsg = 224;
             break;
 
+#ifndef __ALWAYSOBJHOTKEYS__
             case ID_XCSI_GLOBALHOTKEYS:
                 hifEnableObjectHotkeys(precc->usCheckState);
 #ifndef __ALWAYSREPLACEICONPAGE__
@@ -2129,7 +2154,9 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 #endif
                 ulUpdateFlags = CBI_SET | CBI_ENABLE;
             break;
+#endif
 
+#ifndef __NOPAGEMAGE__
             case ID_XCSI_PAGEMAGE:
                 if (hifEnablePageMage(precc->usCheckState) == precc->usCheckState)
                 {
@@ -2140,10 +2167,13 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
                 ulUpdateFlags = CBI_SET | CBI_ENABLE;
             break;
+#endif
 
+#ifndef __ALWAYSREPLACEARCHIVING__
             case ID_XCSI_ARCHIVING:
-                pGlobalSettings->fReplaceArchiving = precc->usCheckState;
+                pGlobalSettings->__fReplaceArchiving = precc->usCheckState;
             break;
+#endif
 
             case ID_XCSI_RESTARTWPS:
                 pGlobalSettings->fRestartWPS = precc->usCheckState;
@@ -2245,20 +2275,26 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             if (hifEnableHook(pGSBackup->fEnableXWPHook) == pGSBackup->fEnableXWPHook)
                 pGlobalSettings->fEnableXWPHook = pGSBackup->fEnableXWPHook;
 
+#ifndef __ALWAYSOBJHOTKEYS__
             hifEnableObjectHotkeys(pFeaturesData->bObjectHotkeys);
+#endif
 #ifndef __ALWAYSREPLACEICONPAGE__
             if (pFeaturesData->bObjectHotkeys)
                 pGlobalSettings->__fReplaceIconPage = TRUE;
 #endif
 
+#ifndef __NOPAGEMAGE__
             if (hifEnablePageMage(pGSBackup->fEnablePageMage) == pGSBackup->fEnablePageMage)
             {
                 pGlobalSettings->fEnablePageMage = pGSBackup->fEnablePageMage;
                 // update "Mouse movement" page
                 fUpdateMouseMovementPage = TRUE;
             }
+#endif
 
-            pGlobalSettings->fReplaceArchiving = pGSBackup->fReplaceArchiving;
+#ifndef __ALWAYSREPLACEARCHIVING__
+            pGlobalSettings->__fReplaceArchiving = pGSBackup->__fReplaceArchiving;
+#endif
             pGlobalSettings->fRestartWPS = pGSBackup->fRestartWPS;
             pGlobalSettings->fXShutdown = pGSBackup->fXShutdown;
 
@@ -2286,12 +2322,16 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             // (this is in common.c because it's also used at Desktop startup)
             cmnSetDefaultSettings(pcnbp->ulPageID);
             hifEnableHook(pGlobalSettings->fEnableXWPHook);
+#ifndef __ALWAYSOBJHOTKEYS__
             hifEnableObjectHotkeys(0);
+#endif
+#ifndef __NOPAGEMAGE__
             if (hifEnablePageMage(pGlobalSettings->fEnablePageMage) == pGlobalSettings->fEnablePageMage)
             {
                 // update "Mouse movement" page
                 fUpdateMouseMovementPage = TRUE;
             }
+#endif
 
             cEnableTrashCan = pGlobalSettings->fTrashDelete;
             krnEnableReplaceRefresh(0);
@@ -2310,43 +2350,14 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         cmnStoreGlobalSettings();
 
     if (fShowClassesSetup)
-    {
         // "classes" dialog to be shown (classes button):
         ShowClassesDlg(pcnbp->hwndFrame);
-        /* HWND hwndClassesDlg = WinLoadDlg(HWND_DESKTOP,     // parent
-                                         pcnbp->hwndFrame,  // owner
-                                         fnwpXWorkplaceClasses,
-                                         cmnQueryNLSModuleHandle(FALSE),
-                                         ID_XCD_XWPINSTALLEDCLASSES,
-                                         NULL);
-        winhCenterWindow(hwndClassesDlg);
-        WinProcessDlg(hwndClassesDlg);
-        WinDestroyWindow(hwndClassesDlg); */
-    }
     else if (ulNotifyMsg)
         // show a notification msg:
         cmnMessageBoxMsg(pcnbp->hwndFrame,
                          148,       // "XWorkplace Setup"
                          ulNotifyMsg,
                          MB_OK);
-    /* else if (fShowHookInstalled)
-        // "hook installed" msg
-        cmnMessageBoxMsg(pcnbp->hwndFrame,
-                         148,
-                         157,
-                         MB_OK);
-    else if (fShowHookDeinstalled)
-        // "hook deinstalled" msg
-        cmnMessageBoxMsg(pcnbp->hwndFrame,
-                         148,
-                         158,
-                         MB_OK);
-    else if (fShowWarnXShutdown)
-        cmnMessageBoxMsg(pcnbp->hwndFrame,
-                         148,
-                         190,
-                         MB_OK);
-    */
     else if (cAskSoundsInstallMsg != -1)
     {
         if (cmnMessageBoxMsg(pcnbp->hwndFrame,
@@ -2367,25 +2378,6 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                           cEnableTrashCan);
         ulUpdateFlags = CBI_SET | CBI_ENABLE;
     }
-    /* else if (fShowRefreshEnabled)
-        // "enabled, warning, unstable" msg
-        cmnMessageBoxMsg(pcnbp->hwndFrame,
-                         148,
-                         212,
-                         MB_OK);
-    else if (fShowRefreshDisabled)
-        // "must restart wps" msg
-        cmnMessageBoxMsg(pcnbp->hwndFrame,
-                         148,
-                         207,
-                         MB_OK);
-    else if (fShowExtAssocsWarning)
-        // "warning: assocs gone" msg
-        cmnMessageBoxMsg(pcnbp->hwndFrame,
-                         148,
-                         208,
-                         MB_OK);
-       */
 
     if (ulUpdateFlags)
         pcnbp->pfncbInitPage(pcnbp, ulUpdateFlags);

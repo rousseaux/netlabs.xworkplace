@@ -981,14 +981,15 @@ SOM_Scope BOOL  SOMLINK xfdfM_wpclsCreateDefaultTemplates(M_XFldDataFile *somSel
 
 SOM_Scope PSZ  SOMLINK xfdfM_wpclsQueryTitle(M_XFldDataFile *somSelf)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     /* M_XFldDataFileData *somThis = M_XFldDataFileGetData(somSelf); */
     M_XFldDataFileMethodDebug("M_XFldDataFile","xfdfM_wpclsQueryTitle");
 
-    if (pGlobalSettings->fFixClassTitles)
-        return (cmnGetString(ID_XSSI_CLASSTITLE_DATAFILE));
+#ifndef __ALWAYSFIXCLASSTITLES__
+    if (!cmnIsFeatureEnabled(FixClassTitles))
+        return (M_XFldDataFile_parent_M_WPDataFile_wpclsQueryTitle(somSelf));
+#endif
 
-    return (M_XFldDataFile_parent_M_WPDataFile_wpclsQueryTitle(somSelf));
+    return (cmnGetString(ID_XSSI_CLASSTITLE_DATAFILE));
 }
 
 /*

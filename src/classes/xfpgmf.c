@@ -1053,7 +1053,7 @@ SOM_Scope void  SOMLINK xfpgmfM_wpclsInitData(M_XFldProgramFile *somSelf)
  *      we make all DLL's instances of WPProgramFile by specifying
  *      "*.DLL" too.
  *
- *      This does not work using wpclsQueryInstance type,
+ *      This does not work using wpclsQueryInstanceType,
  *      because the WPS seems to be using some default file
  *      type of "Executable", which is determined in some hidden
  *      place.
@@ -1072,8 +1072,15 @@ SOM_Scope PSZ  SOMLINK xfpgmfM_wpclsQueryInstanceFilter(M_XFldProgramFile *somSe
     {
         return ((PSZ)G_pcszInstanceFilter);
     }
-    else
 #endif
-        return (M_XFldProgramFile_parent_M_WPProgramFile_wpclsQueryInstanceFilter(somSelf));
+
+    return ("*.COM,*.EXE");
+        // the below code doesn't work: there is no wpclsQueryInstanceFilter
+        // method in WPProgramFile. Apparently the WPS uses some internal hack
+        // to explicitly make COM and EXE files program files, but this won't
+        // work if turbo folders are enabled, so set this explicitly.
+        // V0.9.16 (2001-11-25) [umoeller]
+
+    // return (M_XFldProgramFile_parent_M_WPProgramFile_wpclsQueryInstanceFilter(somSelf));
 }
 

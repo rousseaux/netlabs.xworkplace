@@ -530,6 +530,7 @@ SOM_Scope ULONG  SOMLINK xwlistM_wpclsQueryStyle(M_XWPClassList *somSelf)
     M_XWPClassListMethodDebug("M_XWPClassList","xwlistM_wpclsQueryStyle");
 
     return (M_XWPClassList_parent_M_WPAbstract_wpclsQueryStyle(somSelf)
+                | CLSSTYLE_NEVERTEMPLATE  // V0.9.16 (2001-11-25) [umoeller]
                 | CLSSTYLE_NEVERPRINT
                 | CLSSTYLE_NEVERCOPY
                 | CLSSTYLE_NEVERDELETE);

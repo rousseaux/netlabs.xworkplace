@@ -1310,6 +1310,14 @@ VOID XWPENTRY icoIcon1InitPage(PCREATENOTEBOOKPAGE pcnbp,
                     pData->ulAnimationIndex = 1;
                 break;
 
+                case SP_TRASHCAN_ICON:
+                    // trash can icon page:
+                    pData->flIconPageFlags =    ICONFL_TITLE
+                                              | ICONFL_HOTKEY
+                                              | ICONFL_DETAILS
+                                              | ICONFL_LOCKEDINPLACE;
+                break;
+
                 default:
                     // SP_OBJECT_ICONPAGE1
                     // standard object page flags:

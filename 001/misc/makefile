@@ -38,8 +38,16 @@ LANGUAGE = 001
 
 FILES_TO_COPY = \
     $(XWPRUNNING)\help\xfldr$(LANGUAGE).tmf \
+!ifndef XWPLITE
     $(XWPRUNNING)\install\crobj$(LANGUAGE).cmd \
+!else
+    $(XWPRUNNING)\install\crobj$(LANGUAGE)_lite.cmd \
+!endif
+!ifndef XWPLITE
     $(XWPRUNNING)\install\instl$(LANGUAGE).cmd \
+!else
+    $(XWPRUNNING)\install\instl$(LANGUAGE)_lite.cmd \
+!endif
     $(XWPRUNNING)\install\sound$(LANGUAGE).cmd \
     $(XWPRUNNING)\help\drvrs$(LANGUAGE).txt \
     $(XWPRUNNING)\help\xfcls$(LANGUAGE).txt
@@ -56,10 +64,16 @@ $(XWPRUNNING)\help\xfldr$(LANGUAGE).tmf: xfldr$(LANGUAGE).tmf xwpfull$(LANGUAGE)
 !endif
 
 $(XWPRUNNING)\install\crobj$(LANGUAGE).cmd: $(@B).cmd
-    $(COPY) $(@B).cmd $(XWPRUNNING)\install
+    $(COPY) $(@B).cmd $(XWPRUNNING)\install\crobj$(LANGUAGE).cmd
+
+$(XWPRUNNING)\install\crobj$(LANGUAGE)_lite.cmd: $(@B).cmd
+    $(COPY) $(@B).cmd $(XWPRUNNING)\install\crobj$(LANGUAGE).cmd
 
 $(XWPRUNNING)\install\instl$(LANGUAGE).cmd: $(@B).cmd
-    $(COPY) $(@B).cmd $(XWPRUNNING)\install
+    $(COPY) $(@B).cmd $(XWPRUNNING)\install\instl$(LANGUAGE).cmd
+
+$(XWPRUNNING)\install\instl$(LANGUAGE)_lite.cmd: $(@B).cmd
+    $(COPY) $(@B).cmd $(XWPRUNNING)\install\instl$(LANGUAGE).cmd
 
 $(XWPRUNNING)\install\sound$(LANGUAGE).cmd: $(@B).cmd
     $(COPY) $(@B).cmd $(XWPRUNNING)\install
