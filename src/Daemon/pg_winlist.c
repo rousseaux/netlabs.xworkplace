@@ -1763,8 +1763,10 @@ VOID _Optlink fntWinlistThread(PTHREADINFO pti)
                 while (pNode)
                 {
                     PXWININFO pWinInfo = (PXWININFO)pNode->pItemData;
-                    if (!WinIsWindow(pti->hab,
-                                     pWinInfo->data.swctl.hwnd))
+                    if (    G_pHookData         // V1.0.4 (2005-03-03) [pr]: @@fixes 526
+                         && !WinIsWindow(pti->hab,
+                                         pWinInfo->data.swctl.hwnd)
+                       )
                         WinPostMsg(G_pHookData->hwndDaemonObject,
                                    XDM_WINDOWCHANGE,
                                    (MPARAM)pWinInfo->data.swctl.hwnd,

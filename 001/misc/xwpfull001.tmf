@@ -345,7 +345,7 @@ You might be vaguely familiar with this feature from Windows.
 
 <--FEATURES_6051-->: The "&xwp; Hook" is a global PM hook which implements some of the features which were present in NPS WPS and WarpEnhancer.
 Enable this setting if you wish to use things like sliding focus, mouse-button-3 window scrolling, screen corner objects, and some more mouse features.
-Also, the &xwp; Hook is required for global object hotkeys to work.
+Also, the &xwp; Hook is required for global object hotkeys and the &xcenter; Window List widget to work.
 If this is enabled, you'll get additional settings pages in the "Keyboard" and "Mouse" objects in your "System setup" folder.
 This was added with &xwp; 0.9.0.
 See the &xwp; User Guide for details.

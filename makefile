@@ -186,7 +186,22 @@ running:
 !ifndef XWPLITE
     $(COPY) $(XWP_LANG_CODE)\readme $(XWPRUNNING)
     $(COPY) release\* $(XWPRUNNING)
-    $(COPY) release\bin\* $(XWPRUNNING)\bin
+    $(COPY) release\bin\alwssort.cmd $(XWPRUNNING)\bin
+    $(COPY) release\bin\bm-lvm.cmd $(XWPRUNNING)\bin
+    $(COPY) release\bin\bootmgr.cmd $(XWPRUNNING)\bin
+    $(COPY) release\bin\defdetls.cmd $(XWPRUNNING)\bin
+    $(COPY) release\bin\deficon.cmd $(XWPRUNNING)\bin
+    $(COPY) release\bin\deftree.cmd $(XWPRUNNING)\bin
+    $(COPY) release\bin\iconorm.cmd $(XWPRUNNING)\bin
+    $(COPY) release\bin\icosmall.cmd $(XWPRUNNING)\bin
+    $(COPY) release\bin\newobj.cmd $(XWPRUNNING)\bin
+!endif
+    $(COPY) release\bin\packtree.cmd $(XWPRUNNING)\bin
+!ifndef XWPLITE
+    $(COPY) release\bin\showall.cmd $(XWPRUNNING)\bin
+    $(COPY) release\bin\xhelp.cmd $(XWPRUNNING)\bin
+    $(COPY) release\bin\xshutdwn.cmd $(XWPRUNNING)\bin
+    $(COPY) release\bin\xshutdwn.ico $(XWPRUNNING)\bin
 !endif
 !if [@md $(XWPRUNNING)\bootlogo 2> NUL]
 !endif
@@ -194,10 +209,20 @@ running:
 !if [@md $(XWPRUNNING)\cdplay 2> NUL]
 !endif
     $(COPY) release\cdplay\* $(XWPRUNNING)\cdplay
-!if [@md $(XWPRUNNING)\icons 2> NUL]
+#!if [@md $(XWPRUNNING)\icons 2> NUL]
+#!endif
+#    $(COPY) release\icons\* $(XWPRUNNING)\icons
+    $(COPY) release\install\deinst.cmd $(XWPRELEASE_MAIN)\install
+    $(COPY) release\install\delobjs.cmd $(XWPRELEASE_MAIN)\install
+!ifdef XWPLITE
+    $(COPY) release\install\freshini_lite.cmd $(XWPRELEASE_MAIN)\install\freshini.cmd
+!else
+    $(COPY) release\install\freshini.cmd $(XWPRELEASE_MAIN)\install
+    $(COPY) release\install\od.cmd $(XWPRELEASE_MAIN)\install
+    $(COPY) release\install\soundoff.cmd $(XWPRELEASE_MAIN)\install
+    $(COPY) release\install\xwp.ico $(XWPRELEASE_MAIN)\install
+    $(COPY) release\install\xwp_o.ico $(XWPRELEASE_MAIN)\install
 !endif
-    $(COPY) release\icons\* $(XWPRUNNING)\icons
-    $(COPY) release\install\* $(XWPRUNNING)\install
 !if [@md $(XWPRUNNING)\themes 2> NUL]
 !endif
 !if [@md $(XWPRUNNING)\themes\warp3 2> NUL]
@@ -281,6 +306,8 @@ tools:
     @echo $(MAKEDIR)\makefile [$@]: Going for subdir tools
     @cd tools
     $(MAKE) -nologo "SUBTARGET=all" "MAINMAKERUNNING=YES"
+    $(COPY) $(MODULESDIR)\repclass.exe $(XWPRUNNING)\bin
+    $(COPY) $(MODULESDIR)\wpsreset.exe $(XWPRUNNING)\bin
     @cd ..
 
 xwpsecurity:
@@ -811,11 +838,10 @@ release: really_all
     $(COPY) $(MODULESDIR)\xwphook.sym $(XWPRELEASE_MAIN)\bin
     $(COPY) $(MODULESDIR)\netscdde.exe $(XWPRELEASE_MAIN)\bin
     $(COPY) $(MODULESDIR)\treesize.exe $(XWPRELEASE_MAIN)\bin
-    $(COPY) $(MODULESDIR)\xfix.exe     $(XWPRELEASE_MAIN)\bin
+    $(COPY) $(MODULESDIR)\xfix.exe $(XWPRELEASE_MAIN)\bin
+    $(COPY) $(MODULESDIR)\xfix.sym $(XWPRELEASE_MAIN)\bin
     $(COPY) $(MODULESDIR)\xwpdaemn.exe $(XWPRELEASE_MAIN)\bin
-    $(COPY) $(MODULESDIR)\xfldr.sym $(XWPRELEASE_MAIN)\bin
     $(COPY) $(MODULESDIR)\xwpdaemn.sym $(XWPRELEASE_MAIN)\bin
-    $(COPY) $(MODULESDIR)\xwphook.sym $(XWPRELEASE_MAIN)\bin
     $(COPY) $(MODULESDIR)\repclass.exe $(XWPRELEASE_MAIN)\bin
     $(COPY) $(MODULESDIR)\wpsreset.exe $(XWPRELEASE_MAIN)\bin
 #    b) NLS
@@ -889,8 +915,6 @@ release: really_all
     $(COPY) release\install\freshini.cmd $(XWPRELEASE_MAIN)\install
     $(COPY) release\install\od.cmd $(XWPRELEASE_MAIN)\install
     $(COPY) release\install\soundoff.cmd $(XWPRELEASE_MAIN)\install
-#   $(COPY) release\install\test.cmd $(XWPRELEASE_MAIN)\install
-#    $(COPY) release\install\xfolder.ico $(XWPRELEASE_MAIN)\install
     $(COPY) release\install\xwp.ico $(XWPRELEASE_MAIN)\install
     $(COPY) release\install\xwp_o.ico $(XWPRELEASE_MAIN)\install
 !endif
