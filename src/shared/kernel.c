@@ -836,7 +836,7 @@ HAPP krnStartDaemon(VOID)
                                                        // displays a msg box
                                                  NULL,
                                                  0);// no SAF_INSTALLEDCMDLINE,
-        initLog("  WinStartApp for %s returned HAPP 0x%lX",
+        initLog("  WinStartApp for \"%s\" returned HAPP 0x%lX",
                           pd.pszExecutable,
                           G_KernelGlobals.happDaemon);
 

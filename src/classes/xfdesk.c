@@ -423,6 +423,40 @@ SOM_Scope BOOL  SOMLINK xfdesk_wpQueryDefaultHelp(XFldDesktop *somSelf,
 }
 
 /*
+ *@@ wpSetDefaultView:
+ *      this WPObject method changes the default view of
+ *      the object.
+ *
+ *      Since we now use this method to allow the user
+ *      to change the default view via shift+click on
+ *      a menu item in the "Open" submenu, we better
+ *      make sure that the user won't change the Desktop's
+ *      default view to anything but icon, details, or
+ *      tree. Those three work, but settings or split
+ *      view won't.
+ *
+ *@@added V0.9.21 (2002-09-13) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xfdesk_wpSetDefaultView(XFldDesktop *somSelf,
+                                                ULONG ulView)
+{
+    // XFldDesktopData *somThis = XFldDesktopGetData(somSelf);
+    XFldDesktopMethodDebug("XFldDesktop","xfdesk_wpSetDefaultView");
+
+    switch (ulView)
+    {
+        case OPEN_SETTINGS:
+        case OPEN_DETAILS:
+        case OPEN_TREE:
+            return XFldDesktop_parent_WPDesktop_wpSetDefaultView(somSelf,
+                                                                 ulView);
+    }
+
+    return FALSE;
+}
+
+/*
  *@@ wpFilterPopupMenu:
  *      this WPObject instance method allows the object to
  *      filter out unwanted menu items from the context menu.

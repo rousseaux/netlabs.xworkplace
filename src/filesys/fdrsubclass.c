@@ -1080,29 +1080,35 @@ STATIC BOOL MenuSelect(PSUBCLFOLDERVIEW psfv,   // in: frame information
                             )
                        )
                     {
-                        ULONG ulDefaultView = _wpQueryDefaultView(pObject);
+                        USHORT usOldDefaultView = _wpQueryDefaultView(pObject);
 
-                        PMPF_MENUS(("  un-checking 0x%lX in hMenu 0x%lX",
-                                    ulDefaultView,
-                                    mp2));
+                        if (    (usItem != usOldDefaultView)
+                             && (_wpSetDefaultView(pObject,
+                                                   usItem))
+                                    // we make sure this fails for the desktop
+                                    // and the split view
+                                    // V0.9.21 (2002-09-13) [umoeller]
+                           )
+                        {
+                            PMPF_MENUS(("  un-checking 0x%lX in hMenu 0x%lX",
+                                        ulDefaultView,
+                                        mp2));
 
-                        WinSendMsg((HWND)mp2,
-                                   MM_SETITEMATTR,
-                                   MPFROM2SHORT(LOUSHORT(ulDefaultView),
-                                                FALSE),
-                                   MPFROM2SHORT(MIA_CHECKED,
-                                                0));
+                            WinSendMsg((HWND)mp2,
+                                       MM_SETITEMATTR,
+                                       MPFROM2SHORT(usOldDefaultView,
+                                                    FALSE),
+                                       MPFROM2SHORT(MIA_CHECKED,
+                                                    0));
 
-                        WinSendMsg((HWND)mp2,
-                                   MM_SETITEMATTR,
-                                   MPFROM2SHORT(usItem,
-                                                FALSE),
-                                   MPFROM2SHORT(MIA_CHECKED,
-                                                MIA_CHECKED));
-
-                        _wpSetDefaultView(pObject,
-                                          usItem);
-                        _wpSaveDeferred(pObject);
+                            WinSendMsg((HWND)mp2,
+                                       MM_SETITEMATTR,
+                                       MPFROM2SHORT(usItem,
+                                                    FALSE),
+                                       MPFROM2SHORT(MIA_CHECKED,
+                                                    MIA_CHECKED));
+                            _wpSaveDeferred(pObject);
+                        }
 
                         fHandled = TRUE;
                         *pfDismiss = FALSE;

@@ -1092,6 +1092,7 @@ SOM_Scope BOOL  SOMLINK xdf_wpModifyMenu(XFldDataFile *somSelf,
                                            hwndMenu,
                                            hwndCnr);
 
+#ifndef __NEVEREXTASSOCS__
                 if (cmnQuerySetting(sfExtAssocs))
                 {
                     // extended assocs have been enabled:
@@ -1127,6 +1128,7 @@ SOM_Scope BOOL  SOMLINK xdf_wpModifyMenu(XFldDataFile *somSelf,
                                                       TRUE);        // delete existing
                     }
                 }
+#endif
             break;
         }
 

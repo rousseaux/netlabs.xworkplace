@@ -685,9 +685,9 @@ VOID fdrXFolderInitPage(PNOTEBOOKPAGE pnbp,  // notebook info struct
     {
         // disable items
         BOOL fEnable = (
-                              1 &&
+                              1
 #ifndef __ALWAYSFDRHOTKEYS__
-                              (cmnQuerySetting(sfFolderHotkeys))
+                              && (cmnQuerySetting(sfFolderHotkeys))
 #endif
                          );
 

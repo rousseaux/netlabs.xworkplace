@@ -90,22 +90,38 @@ interface XFldDesktop : WPDesktop
      *
      */
 
+    //# 1)  init/uninit methods
+
     wpInitData: override;
     wpSetup: override;
     wpSetupOnce: override;
 
+    //# 2)  WPObject query/set methods
+
     wpQueryDefaultHelp: override;
+
+    wpSetDefaultView: override;
+
+    //# 3)  icon methods
+
+    //# 4)  class-specific query/set methods
+
+    //# 5)  menu methods
 
     wpFilterPopupMenu: override;
     wpModifyPopupMenu: override;
 
     wpMenuItemSelected: override;
 
+    //# 6)  open view methods
+
     wpOpen: override;
     wpPopulate: override;
 
     wpAddDesktopArcRest1Page: override;
     wpAddSettingsPages: override;
+
+    //# 7)  file operation methods
 
 #ifdef __PRIVATE__
 

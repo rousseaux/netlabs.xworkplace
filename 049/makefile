@@ -40,10 +40,10 @@ all:
     @echo $(MAKEDIR)\makefile [$@]: Going for subdir $(LANGUAGE)\misc
     @cd misc
     @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
-#    @cd ..
-#    @echo $(MAKEDIR)\makefile [$@]: Going for subdir $(LANGUAGE)\xwphelp2
-#    @cd xwphelp2
-#    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
+    @cd ..
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir $(LANGUAGE)\xwphelp2
+    @cd xwphelp2
+    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
     @cd ..\..
     @echo ----- Leaving $(MAKEDIR)
 
