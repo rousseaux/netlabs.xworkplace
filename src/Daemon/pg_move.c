@@ -129,6 +129,8 @@ BOOL pgrMakeWindowVisible(HWND hwnd)
  *      Returns TRUE if the move was successful.
  *
  *@@added V0.9.19 (2002-05-07) [umoeller]
+ *@@changed V1.0.3 (2004-03-11) [bvl]: added check for window parent, if not the Desktop then don't move. @@fixes 524
+ *@@changed V1.0.3 (2004-03-11) [umoeller]: optimized
  */
 
 BOOL MoveCurrentDesktop(HAB hab,
@@ -207,7 +209,10 @@ BOOL MoveCurrentDesktop(HAB hab,
             // at once... we'll allocate one SWP entry for each item
             // on the wininfo list, but we'll probably not use them
             // all. cSwpNewUsed will be incremented for each item that's
-            // actually used
+            // actually used. While we build that list, we check the
+            // internal daemon winlist for sanity, since we sometimes
+            // do not pick up all relevant changes such as "parent changed",
+            // which will block the WinSetMultWindowPos otherwise.
             ULONG       cWinInfos,
                         cbSwpNew,
                         cbNoMoveWithOwner;
@@ -215,16 +220,17 @@ BOOL MoveCurrentDesktop(HAB hab,
             if (    (cWinInfos = lstCountItems(&G_llWinInfos))
                  && (cbSwpNew = cWinInfos * sizeof(SWP))
                  && (cbNoMoveWithOwner  = cWinInfos * sizeof(HWND))
-                 // allocate array of SWPs
+                 // allocate array of SWPs WinSetMultWindowPos:
                  && (paswpNew = (PSWP)malloc(cbSwpNew))
                  // allocate array of HWNDs for which we
-                 // might disable FS_NOMOVEWITHOWNER
+                 // might disable FS_NOMOVEWITHOWNER:
                  && (pahwndNoMoveWithOwner  = (HWND*)malloc(cbNoMoveWithOwner))
                )
             {
                 PLISTNODE    pNode;
 
-                memset(paswpNew, 0, cbSwpNew);
+                // memset(paswpNew, 0, cbSwpNew);
+                        // not necessary V1.0.3 (2004-03-11) [umoeller]
 
                 // now go thru all windows on the main list and copy them
                 // to the move list, if necessary
@@ -235,7 +241,14 @@ BOOL MoveCurrentDesktop(HAB hab,
 
                     PXWININFO pEntryThis = (PXWININFO)pNode->pItemData;
 
-                    if (!WinIsWindow(hab, pEntryThis->data.swctl.hwnd))
+                    // if (!WinIsWindow(hab, pEntryThis->data.swctl.hwnd))
+                            // we can do the WinQueryWindowPos already here; no need for
+                            // an extra WinIsWindow V1.0.3 (2004-03-11) [umoeller]
+                    if (    (!WinQueryWindowPos(pEntryThis->data.swctl.hwnd,
+                                                &pEntryThis->data.swp))
+                            // check if it's still a desktop child (fixes #524)
+                         || (WinQueryWindow(pEntryThis->data.swctl.hwnd,QW_PARENT) != G_pHookData->hwndPMDesktop)
+                       )
                         // window no longer valid:
                         // remove from the list NOW
                         WinPostMsg(G_pHookData->hwndDaemonObject,
@@ -246,29 +259,17 @@ BOOL MoveCurrentDesktop(HAB hab,
                     {
                         BOOL fRefreshThis = FALSE;
 
-                        if (     (!strcmp(pEntryThis->data.szClassName, "#1")
-                              && (!(WinQueryWindowULong(pEntryThis->data.swctl.hwnd, QWL_STYLE)
-                                            & FS_NOMOVEWITHOWNER))
-                                 )
-                           )
-                        {
-                            pahwndNoMoveWithOwner[cNoMoveWithOwner++] = pEntryThis->data.swctl.hwnd;
-                            WinSetWindowBits(pEntryThis->data.swctl.hwnd,
-                                             QWL_STYLE,
-                                             FS_NOMOVEWITHOWNER,
-                                             FS_NOMOVEWITHOWNER);
-                        }
-
-                        WinQueryWindowPos(pEntryThis->data.swctl.hwnd, &pEntryThis->data.swp);
+                        // WinQueryWindowPos(pEntryThis->data.swctl.hwnd, &pEntryThis->data.swp);
+                                // moved up V1.0.3 (2004-03-11) [umoeller]
 
                         // fix outdated minimize/maximize/hide flags
                         if (    (pEntryThis->data.bWindowType == WINDOW_MINIMIZE)
-                             && ( (pEntryThis->data.swp.fl & SWP_MINIMIZE) == 0)
+                             && (!(pEntryThis->data.swp.fl & SWP_MINIMIZE))
                            )
                             // no longer minimized:
                             fRefreshThis = TRUE;
                         else if (    (pEntryThis->data.bWindowType == WINDOW_MAXIMIZE)
-                                  && ( (pEntryThis->data.swp.fl & SWP_MAXIMIZE) == 0)
+                                  && (!(pEntryThis->data.swp.fl & SWP_MAXIMIZE))
                                 )
                             // no longer minimized:
                             fRefreshThis = TRUE;
@@ -287,7 +288,8 @@ BOOL MoveCurrentDesktop(HAB hab,
 
                         if (fRefreshThis)
                         {
-                            if (!pgrGetWinData(&pEntryThis->data))
+                            if (!pgrGetWinData(&pEntryThis->data,
+                                               TRUE))       // quick check, we already have most data
                             {
                                 // window no longer valid:
                                 // remove from the list NOW
@@ -345,6 +347,21 @@ BOOL MoveCurrentDesktop(HAB hab,
 
                             // use next entry in SWP array
                             cSwpNewUsed++;
+
+                            // set FS_NOMOVEWITHOWNER temporarily
+                            // (moved this down V1.0.3 (2004-03-11) [umoeller]
+                            if (     (!strcmp(pEntryThis->data.szClassName, "#1")
+                                  && (!(WinQueryWindowULong(pEntryThis->data.swctl.hwnd, QWL_STYLE)
+                                                & FS_NOMOVEWITHOWNER))
+                                     )
+                               )
+                            {
+                                pahwndNoMoveWithOwner[cNoMoveWithOwner++] = pEntryThis->data.swctl.hwnd;
+                                WinSetWindowBits(pEntryThis->data.swctl.hwnd,
+                                                 QWL_STYLE,
+                                                 FS_NOMOVEWITHOWNER,
+                                                 FS_NOMOVEWITHOWNER);
+                            }
 
                         } // end if (    (pEntryThis->bWindowType == WINDOW_MAXIMIZE)...
                     }

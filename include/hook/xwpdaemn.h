@@ -203,7 +203,7 @@
     PXWININFO pgrFindWinInfo(HWND hwndThis,
                              PVOID *ppListNode);
 
-    BOOL pgrGetWinData(PXWINDATA pWinData);
+    BOOL pgrGetWinData(PXWINDATA pWinData, BOOL fQuickCheck);
 
     BOOL pgrCreateWinInfo(HWND hwnd);
 

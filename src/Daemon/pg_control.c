@@ -745,7 +745,7 @@ STATIC VOID RefreshPagerBitmap(HWND hwnd,
                         BYTE bTypeThis;
 
                         // item is on list:
-                        if (!pgrGetWinData(&pWinInfo->data))
+                        if (!pgrGetWinData(&pWinInfo->data, FALSE))
                             WinPostMsg(G_pHookData->hwndDaemonObject,
                                        XDM_WINDOWCHANGE,
                                        (MPARAM)hwndThis,

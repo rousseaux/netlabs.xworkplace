@@ -747,6 +747,13 @@ STATIC VOID RemoveInfo(PLISTNODE pNode)
  *      Use pgrCreateWinInfo for that, which
  *      calls this function in turn.
  *
+ *      fQuickCheck should only be set if the caller is
+ *      refreshing an existing wininfo and has already
+ *      performed a number of checks. In fact, it is a
+ *      special case for the call from MoveCurrentDesktop
+ *      and probably only works for that call and should
+ *      therefore be FALSE for all other calls.
+ *
  *      Returns TRUE if the specified window data was
  *      returned.
  *
@@ -782,27 +789,33 @@ STATIC VOID RemoveInfo(PLISTNODE pNode)
  *@@changed V0.9.15 (2001-09-14) [umoeller]: now always checking for visibility; this fixes VX-REXX apps hanging XPager
  *@@changed V0.9.18 (2002-02-21) [lafaix]: minimized and maximized windows titles were not queryied and maximized windows couldn't be sticky
  *@@changed V0.9.20 (2002-08-04) [umoeller]: while Embellish was running, pager was broken; fixed
+ *@@changed V1.0.2 (2004-03-11) [umoeller]: optimized; added fQuickCheck param
  */
 
-BOOL pgrGetWinData(PXWINDATA pData)  // in/out: window info
+BOOL pgrGetWinData(PXWINDATA pData,     // in/out: window info
+                   BOOL fQuickCheck)    // in: if TRUE, we assume basic data has already been retrieved and skip some
 {
     BOOL    brc = FALSE;
 
+    // back up the window handle
     HWND    hwnd = pData->swctl.hwnd;
-    ULONG   pid, tid;
+    // ULONG   pid, tid;
 
     ZERO(pData);
 
-    if (    (pData->swctl.hwnd = hwnd)
-         && (WinIsWindow(G_habDaemon, hwnd))
-         && (WinQueryWindowProcess(hwnd,
-                                   &pData->swctl.idProcess,
-                                   &pData->tid))
-         && (pData->swctl.idProcess)
-         && (WinQueryClassName(hwnd,
-                               sizeof(pData->szClassName),
-                               pData->szClassName))
-         && (WinQueryWindowPos(hwnd, &pData->swp))
+    if (    (fQuickCheck)
+         || (    (pData->swctl.hwnd = hwnd)
+              // && (WinIsWindow(G_habDaemon, hwnd))     not necessary V1.0.2 (2004-03-11) [umoeller]
+              && (WinQueryWindowProcess(hwnd,
+                                        &pData->swctl.idProcess,
+                                        &pData->tid))
+              && (pData->swctl.idProcess)
+              && (WinQueryClassName(hwnd,
+                                    sizeof(pData->szClassName),
+                                    pData->szClassName))
+              && (WinQueryWindowPos(hwnd,
+                                    &pData->swp))
+            )
        )
     {
         brc = TRUE;     // can be changed again
@@ -811,9 +824,9 @@ BOOL pgrGetWinData(PXWINDATA pData)  // in/out: window info
             // belongs to XPager:
             pData->bWindowType = WINDOW_XWPDAEMON;
         else if (hwnd == G_pHookData->hwndWPSDesktop)
-            // WPS Desktop window:
+            // better not move the WPS Desktop window:
             pData->bWindowType = WINDOW_WPSDESKTOP;
-        else
+        else if (!fQuickCheck)      // V1.0.3 (2004-03-11) [umoeller]
         {
             const char *pcszClassName = pData->szClassName;
             if (
@@ -865,7 +878,8 @@ BOOL pgrGetWinData(PXWINDATA pData)  // in/out: window info
                 // window type not found yet:
                 ULONG ulStyle = WinQueryWindowULong(hwnd, QWL_STYLE);
 
-                if (pgrIsSticky(hwnd, pData->swctl.szSwtitle))
+                if (pgrIsSticky(hwnd,
+                                pData->swctl.szSwtitle))
                 {
                     pData->bWindowType = WINDOW_STICKY;
                 }
@@ -924,7 +938,7 @@ BOOL pgrCreateWinInfo(HWND hwnd)
 
     XWINDATA dataTemp;
     dataTemp.swctl.hwnd = hwnd;
-    if (pgrGetWinData(&dataTemp))
+    if (pgrGetWinData(&dataTemp, FALSE))
     {
         // window is valid and usable:
 
@@ -1015,7 +1029,7 @@ VOID pgrBuildWinlist(VOID)
             XWINDATA dataTemp;
             hwndTemp = (HWND)pNode->pItemData;
             dataTemp.swctl.hwnd = hwndTemp;
-            if (pgrGetWinData(&dataTemp))
+            if (pgrGetWinData(&dataTemp, FALSE))
             {
                 // window found:
                 // append this thing to the list
@@ -1109,7 +1123,7 @@ BOOL pgrRefresh(HWND hwnd)
                                       NULL))
         {
             // we have an entry:
-            if (!pgrGetWinData(&pWinInfo->data))
+            if (!pgrGetWinData(&pWinInfo->data, FALSE))
                 // failed:
                 WinPostMsg(G_pHookData->hwndDaemonObject,
                            XDM_WINDOWCHANGE,
