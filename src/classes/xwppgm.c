@@ -664,7 +664,7 @@ SOM_Scope HPOINTER  SOMLINK xpg_wpQueryIcon(XWPProgram *somSelf)
  *      Sigh. Yes, the WPS apparently first goes thru the
  *      effort of finding an icon in the entire executable
  *      just to throw it away again right afterwards. In
- *      addition, it kills default icons.
+ *      addition, it kills our shared icons.
  *
  *      Sooo... if icon replacements are enabled, what we
  *      MUST do is check for whether the object is
@@ -731,7 +731,7 @@ SOM_Scope BOOL  SOMLINK xpg_wpSetProgIcon(XWPProgram *somSelf,
             PSZ     pszExec = NULL;
 
             if (    (szExecutable[1] != ':')
-                 || (!strchr(szExecutable, '\\'))
+                 && (!strchr(szExecutable, '\\'))
                )
             {
                 // prog is not fully qualified: find it on path

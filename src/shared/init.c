@@ -152,13 +152,6 @@ static ULONG            G_ulDesktopValid = -1;      // unknown at this point
 static HOBJECT          G_hobjDesktop;
 static CHAR             G_szDesktopPath[CCHMAXPATH];
 
-extern BOOL             G_fTurboSettingsEnabled;
-                                // common.c;
-                                // this is copied from the global settings
-                                // by M_XWPFileSystem::wpclsInitData and
-                                // remains FALSE if that class is not
-                                // installed
-
 /* ******************************************************************
  *
  *   XWorkplace initialization

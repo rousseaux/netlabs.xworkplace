@@ -154,9 +154,8 @@ static HMODULE         G_hmodNLS = NULLHANDLE;
 // array of ULONGs with values for cmnGetSetting; this
 // is filled on startup
 static ULONG           G_aulSettings[___LAST_SETTING];
-static BOOL            G_fGlobalSettingsLoaded = FALSE;
 extern BOOL            G_fTurboSettingsEnabled = FALSE;
-            // initially set by initMain V0.9.16 (2001-10-25) [umoeller]
+            // set by cmnEnableTurboFolders() V0.9.16 (2002-01-05) [umoeller]
 
 #ifndef __NOICONREPLACEMENTS__
 static HMODULE         G_hmodIconsDLL = NULLHANDLE;
@@ -3113,14 +3112,22 @@ VOID ConvertOldGlobalSettings(POLDGLOBALSETTINGS pOld)
 
 VOID cmnLoadGlobalSettings(VOID)
 {
-    ULONG cb;
+    ULONG cb, ul2;
     POLDGLOBALSETTINGS pSettings;
 
     // first set all settings to safe defaults
     // according to the table
 
     _Pmpf((__FUNCTION__ ": Initializing defaults"));
-    cmnSetDefaultSettings(0);
+    // we can't use cmnSetDefaultSettings here
+    // because that would modify the INI entries
+    for (ul2 = 0;
+         ul2 < ARRAYITEMCOUNT(G_aSettingInfos);
+         ul2++)
+    {
+        PSETTINGINFO pThis = &G_aSettingInfos[ul2];
+        G_aulSettings[pThis->s] = pThis->ulDefaultValue;
+    }
 
     if (    (PrfQueryProfileSize(HINI_USER,
                                  (PSZ)INIAPP_XWORKPLACE,
@@ -3143,13 +3150,18 @@ VOID cmnLoadGlobalSettings(VOID)
         ConvertOldGlobalSettings(pSettings);
         free(pSettings);
 
-        // @@todo nuke the entry
+        // now delete the old settings
+        PrfWriteProfileData(HINI_USER,
+                            (PSZ)INIAPP_XWORKPLACE,
+                            (PSZ)INIKEY_GLOBALSETTINGS,
+                            NULL,
+                            0);
     }
     else
     {
         // no GLOBALSETTINGS structure any more:
         // load settings explicitly
-        ULONG ul2;
+        _Pmpf((__FUNCTION__ ": no old settings, loading new"));
         for (ul2 = 0;
              ul2 < ARRAYITEMCOUNT(G_aSettingInfos);
              ul2++)
@@ -3158,15 +3170,22 @@ VOID cmnLoadGlobalSettings(VOID)
             PULONG pulThis = &G_aulSettings[pThis->s];
             cb = sizeof(ULONG);
 
-            if (    (!PrfQueryProfileData(HINI_USER,
-                                          (PSZ)INIAPP_XWORKPLACE,
-                                          (PSZ)pThis->pcszIniKey,
-                                          pulThis,
-                                          &cb))
-                 || (cb != sizeof(ULONG))
-               )
+            _Pmpf(("      trying to load %s", pThis->pcszIniKey));
+            if (!PrfQueryProfileData(HINI_USER,
+                                     (PSZ)INIAPP_XWORKPLACE,
+                                     (PSZ)pThis->pcszIniKey,
+                                     pulThis,
+                                     &cb))
+            {
                 // data not found: use default then
+                _Pmpf(("            PrfQueryProfileData failed"));
                 *pulThis = pThis->ulDefaultValue;
+            }
+            else if (cb != sizeof(ULONG))
+            {
+                _Pmpf(("            cb is %d", cb));
+                *pulThis = pThis->ulDefaultValue;
+            }
         }
     }
 }
@@ -3261,6 +3280,9 @@ ULONG cmnQuerySettingDebug(XWPSETTING s,
 
 ULONG cmnQuerySetting(XWPSETTING s)
 {
+    if (s == sfTurboFolders)
+        return G_fTurboSettingsEnabled;
+
     if (s < ___LAST_SETTING)
         return (G_aulSettings[s]);
 
@@ -3349,7 +3371,8 @@ BOOL cmnSetSetting(XWPSETTING s,
 PSETTINGSBACKUP cmnBackupSettings(XWPSETTING *paSettings,
                                   ULONG cItems)         // in: array item count (NOT array size)
 {
-    PSETTINGSBACKUP p = (PSETTINGSBACKUP)malloc(sizeof(SETTINGSBACKUP) * cItems);
+    PSETTINGSBACKUP p1 = (PSETTINGSBACKUP)malloc(sizeof(SETTINGSBACKUP) * cItems),
+                    p = p1;
     ULONG ul;
     for (ul = 0;
          ul < cItems;
@@ -3387,6 +3410,23 @@ VOID cmnRestoreSettings(PSETTINGSBACKUP paSettingsBackup,
                       paSettingsBackup->ul);
         paSettingsBackup++;
     }
+}
+
+/*
+ *@@ cmnEnableTurboFolders:
+ *      private function called by XWPFileSystem::wpclsInitData
+ *      to give notification that XWPFileSystem is ready.
+ *
+ *      Now it might be safe to return TRUE for
+ *      cmnGetSetting(sfTurboFolders).
+ *
+ *@@added V0.9.16 (2002-01-05) [umoeller]
+ */
+
+VOID cmnEnableTurboFolders(VOID)
+{
+    if (G_aulSettings[sfTurboFolders])
+        G_fTurboSettingsEnabled = TRUE;
 }
 
 /* ******************************************************************

@@ -490,6 +490,8 @@ SOM_Scope void  SOMLINK xfs_wpCnrRefreshDetails(XWPFileSystem *somSelf)
  *                                                                  *
  ********************************************************************/
 
+VOID cmnEnableTurboFolders(VOID);
+
 /*
  *@@ wpclsInitData:
  *      this WPObject class method gets called when a class
@@ -507,12 +509,12 @@ SOM_Scope void  SOMLINK xfsM_wpclsInitData(M_XWPFileSystem *somSelf)
 
     if (krnClassInitialized(G_pcszXWPFileSystem))
     {
-        // make a copy of the "turbo folders" setting _now_, which
-        // will then be returned by cmnQuerySetting for the rest
-        // of this WPS session; doing this here ensures that the
-        // setting is only enabled if XWPFileSystem is installed
-        G_fTurboSettingsEnabled = FALSE; // cmnQuerySetting(s__fTurboFolders;)
-                    // @@todo
+        // now enable the real turbo folders setting,
+        // which _requires_ this class; after this
+        // call cmnQuerySetting(sfTurboFolders) may
+        // return TRUE if the user also enabled the
+        // setting
+        cmnEnableTurboFolders();
     }
 
 #ifdef __REPLHANDLES__
