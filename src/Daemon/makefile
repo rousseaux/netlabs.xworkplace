@@ -53,10 +53,13 @@ EXE_OUTPUTDIR = $(BASE_OUTPUTDIR)\exe_mt
 # These will be put into BIN\.
 # If you add a new source, add the corresponding .OBJ file here.
 OBJS = $(EXE_OUTPUTDIR)\xwpdaemn.obj \
+!ifdef PAGEMAGE
        $(EXE_OUTPUTDIR)\pgmg_control.obj \
        $(EXE_OUTPUTDIR)\pgmg_move.obj \
        $(EXE_OUTPUTDIR)\pgmg_settings.obj \
        $(EXE_OUTPUTDIR)\pgmg_winscan.obj
+!endif
+
 
 # The main target:
 # If we're called from the main makefile, MAINMAKERUNNING is defined,

@@ -46,6 +46,25 @@ This is my private bug list for FP13/14:
 NOT-SO-SERIOUS PROBLEMS
 -----------------------
 
+>I thought we discussed some time ago removing the "standard shutdown"
+>option from the shutdown submenu. If I enable XWP's shutdown but not
+>the submenu the 'standard shutdown' is removed from my popup. Why
+>can't I get rid of it on the submenu too?
+
+>Finally, on the "File" notebook page (with WarpSans font, resolution
+>800x600, 4-digit year YYYY-MM-DD), there is some text clipping evident.
+
+>-Right click on a file object (program object does not cause this bug)
+>select copy.
+>-enter new name(different one), leave it to default folder which should be
+>the one where the file was selected
+>and voila pop-up appears telling user that there is a name conflict, but the
+>new name is not in that folder!
+
+INF:
+    -- add "Sliding menus"
+    -- make stable things
+
 XWPString:
     -- d'n'd no work!
     -- confirm no work!
@@ -55,10 +74,8 @@ XWPSetup:
        PageMage isn't affected
 
 sounds:
-    -- disabling extended system sounds doesn't work
-      >I cannot Un- "Enable System Sounds" in my "Systemkonfiguiration"
-      >/ "Warnton" - notebook. This does neither work for the old version
-      >nor the replaced.
+    -- "Enable system sounds" on "Sound" page has no immediate effect;
+       however, this didn't work for old WPS page either
 
 folders:
     -- dragging stuff to folders crashes WPS if folder is being populated
@@ -72,10 +89,6 @@ trash can:
        effectively updates the object in the TrashCan, while it should
        create a new one.
 
-other settings pages:
-    -- System paths:
-       -- scroll listbox to first visible
-
 NetscDDE:
     -- With the Netscape DDE feature Netscape does not get the right location of
        what to display - the '„' (german Umlaut) gets lost.
@@ -83,8 +96,14 @@ NetscDDE:
 PageMage:
     -- mb2 can move desktop
     -- window creation/destroy/activation not recognized sometimes
+    >I'm using xworkplace 0.95 and find that the os/2 enhanced
+    >editor, EPM, acts as a sticky app in PageMage, even
 
 hook:
+    >there is a little bug with the settings notebook of the mouse - movement 2.
+    >I can drag and drop objects to the open object, but it doesn't work with
+    >the pickup and drop feature of Warp. Than there is no object given.
+
     -- Mouse pointer doesn't reappear when clicking buttons if hide mouse
        pointer is enabled.
 

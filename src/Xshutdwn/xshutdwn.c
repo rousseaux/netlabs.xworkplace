@@ -170,7 +170,7 @@ int main(int argc, char *argv[])
                           && (sMinor < 9)
                         )
                    )
-                    DebugBox(0,
+                    winhDebugBox(0,
                              "XShutdown: Error",
                              "The external XShutdown interface could not be "
                              "accessed. Either XWorkplace is not properly installed, "
@@ -184,7 +184,7 @@ int main(int argc, char *argv[])
                                     T1M_EXTERNALSHUTDOWN,
                                     (MPARAM)psdp,
                                     (MPARAM)0))
-                        DebugBox(0,
+                        winhDebugBox(0,
                                  "XShutdown: Error",
                                  "XWorkplace reported an error processing the "
                                  "external shutdown request. "
@@ -198,7 +198,7 @@ int main(int argc, char *argv[])
         }
     }
     else
-            DebugBox(0,
+            winhDebugBox(0,
                      "XShutdown: Error",
                      "XShutdown failed allocating shared memory.");
 

@@ -140,7 +140,7 @@ VOID SavePageMageConfig(PAGEMAGECONFIG* pPgmgConfig,
         krnPostThread1ObjectMsg(T1M_PAGEMAGECONFIGDELAYED,
                                 (MPARAM)ulFlags,
                                 0);
-#endif
+#endif // __PAGEMAGE__
     }
 }
 
@@ -149,6 +149,8 @@ VOID SavePageMageConfig(PAGEMAGECONFIG* pPgmgConfig,
  *   PageMage General page notebook functions (notebook.c)          *
  *                                                                  *
  ********************************************************************/
+
+#ifdef __PAGEMAGE__
 
 /*
  *@@ pgmiPageMageGeneralInitPage:
@@ -1074,3 +1076,5 @@ MRESULT pgmiPageMageColorsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
     return (mrc);
 }
+
+#endif // __PAGEMAGE__

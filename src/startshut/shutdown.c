@@ -4942,7 +4942,7 @@ VOID xsdFinishStandardReboot(HPS hpsScreen)
                0L)
         != NO_ERROR)
     {
-        DebugBox(HWND_DESKTOP, "XShutdown", "The DOS.SYS device driver could not be opened. "
+        winhDebugBox(HWND_DESKTOP, "XShutdown", "The DOS.SYS device driver could not be opened. "
                  "XShutdown will be unable to reboot your computer. "
                  "Please consult the XFolder Online Reference for a remedy of this problem.");
     }
@@ -5028,7 +5028,7 @@ VOID xsdFinishUserReboot(HAB hab,
                               &sid, &pid)
                != NO_ERROR)
     {
-        DebugBox(HWND_DESKTOP, "XShutdown",
+        winhDebugBox(HWND_DESKTOP, "XShutdown",
                  "The user-defined restart command failed. "
                  "We will now restart the WPS.");
         xsdRestartWPS(hab,

@@ -87,12 +87,14 @@ expect to get an error message other than FALSE. <CODE>:-(</CODE>
 
 <P>See <A HREF="src1_880debug.html">"Debugging XWorkplace"</A> for details.
 
-<P><LI><B>Optional features.</B> By default, a "minimum" version of XWP will be built.
-This excludes a number of features. If you want them to be compiled as well, define
-the following environment variables:
+<P><LI><B>Optional features.</B> By default, a "stable" version of XWP will be built.
+This excludes a number of features. If you want them to be compiled as well,
+define the following environment variables:
 <UL><LI><CODE>SET PAGEMAGE=YES</CODE>: include PageMage.
 <LI><CODE>SET ANIMATED_MOUSE_POINTERS=YES</CODE>: include Animated Mouse Pointers.
-</UL>These features are unstable.
+<LI><CODE>SET EXTASSOCS=YES</CODE>: include extended file associations.
+<LI><CODE>SET REPLHANDLES=YES</CODE>: include replacement file handles management.
+</UL>These features are unstable and are known to cause problems.
 
 <P><LI><B>Replacing in-use files.</B> You can rebuild XWorkplace even while the WPS is up
 and XWorkplace is installed. The makefiles will automatically unlock DLLs which

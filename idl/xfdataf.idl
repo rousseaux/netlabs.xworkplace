@@ -52,8 +52,8 @@ interface XFldDataFile : WPDataFile
      *
      */
 
-    externalprefix = xfdataf_;
-    externalstem = xfdataf;
+    externalprefix = xfdf_;
+    externalstem = xfdf;
     majorversion = 1;
     minorversion = 1;
     filestem = xfdataf;           //# specifies the filestem for sc-generated files
@@ -66,7 +66,7 @@ interface XFldDataFile : WPDataFile
      *
      */
 
-    PVOID   pvAssocObjectsList;
+    // PVOID   pvAssocObjectsList;
                 // this is really a PLINKLIST, pointing
                 // to a list of WPObject's (really:
                 // WPProgram or WPProgramFile instances),
@@ -76,7 +76,7 @@ interface XFldDataFile : WPDataFile
                 // knows nothing about LINKLIST's.
                 // This is NULL initially (wpInitData).
 
-    BOOL    fAssocObjectsListReady;
+    // BOOL    fAssocObjectsListReady;
                 // TRUE if the assocs list has been built
                 // already; initially FALSE (wpInitData).
 
@@ -90,21 +90,18 @@ interface XFldDataFile : WPDataFile
      *
      */
 
-    wpInitData: override;
-    wpUnInitData: override;
-    wpObjectReady: override;
-
+    wpDisplayMenu: override;
     wpFilterPopupMenu: override;
     wpModifyPopupMenu: override;
-    wpDisplayMenu: override;
 
     wpMenuItemHelpSelected: override;
+
+    wpOpen: override;
 
     wpAddFile1Page: override;
     wpAddFile2Page: override;
     wpAddFile3Page: override;
 
-    wpQueryAssociatedFileIcon: override;
     wpQueryAssociatedProgram: override;
 
     wpSetAssociatedFileIcon: override;
@@ -134,9 +131,9 @@ interface M_XFldDataFile : M_WPDataFile
      *
      */
 
-    externalprefix = xfdatafM_;
-    externalstem = xfdatafM;
-    functionprefix = xfdatafM_;
+    externalprefix = xfdfM_;
+    externalstem = xfdfM;
+    functionprefix = xfdfM_;
     majorversion = 1;
     minorversion = 1;
     filestem = xfdataf;           //# specifies the filestem for sc-generated files

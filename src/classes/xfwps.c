@@ -109,6 +109,7 @@
  *      "Workplace Shell" notebook.
  *
  *@@changed V0.9.0 [umoeller]: added "File types" page, removed "XFolder" pages
+ *@@changed V0.9.6 (2000-10-16) [umoeller]: made "File types" resizeable
  */
 
 SOM_Scope ULONG  SOMLINK xfwps_xwpAddXFldWPSPages(XFldWPS *somSelf,
@@ -313,6 +314,7 @@ SOM_Scope ULONG  SOMLINK xfwps_xwpAddXFldWPSPages(XFldWPS *somSelf,
      * "File types" page (new with V0.9.0)
      */
 
+#ifdef __EXTASSOCS__
     if (pGlobalSettings->fExtAssocs)
     {
         pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
@@ -325,10 +327,13 @@ SOM_Scope ULONG  SOMLINK xfwps_xwpAddXFldWPSPages(XFldWPS *somSelf,
         pcnbp->ulDlgID = ID_XSD_FILETYPES;
         pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_FILETYPES;
         pcnbp->ulPageID = SP_FILETYPES;
+        pcnbp->pampControlFlags = G_pampFileTypesPage;
+        pcnbp->cControlFlags = G_cFileTypesPage;
         pcnbp->pfncbInitPage    = ftypFileTypesInitPage;
         pcnbp->pfncbItemChanged = ftypFileTypesItemChanged;
         ntbInsertPage(pcnbp);
     }
+#endif
 
     return (TRUE);
 }

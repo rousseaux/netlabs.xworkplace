@@ -102,8 +102,24 @@
  *                                                                  *
  ********************************************************************/
 
-THREADINFO          G_tiDriversThread = {0};
-PCREATENOTEBOOKPAGE G_pcnbpDrivers = NULL;
+/*
+ *@@ DRIVERPAGEDATA:
+ *      page data for "Drivers" page. Stored in
+ *      CREATENOTEBOOKPAGE.pUser.
+ *
+ *@@added V0.9.6 (2000-10-16) [umoeller]
+ */
+
+typedef struct _DRIVERPAGEDATA
+{
+    THREADINFO          tiDriversThread;
+
+    // main linked list
+    PLINKLIST   pllLists;
+
+    // popup menu
+    HWND        hwndDriverPopupMenu;
+} DRIVERPAGEDATA, *PDRIVERPAGEDATA;
 
 /* ******************************************************************
  *                                                                  *
@@ -531,7 +547,7 @@ PLINKLIST InsertDriverCategories(HWND hwndCnr,
         } // end if (pszBlock)
         else
         {
-            DebugBox(HWND_DESKTOP,
+            winhDebugBox(HWND_DESKTOP,
                      "Drivers",
                      "Block after DRIVERSPEC not found.");
             pSearch++;
@@ -561,7 +577,10 @@ PLINKLIST InsertDriverCategories(HWND hwndCnr,
 
 void _Optlink fntDriversThread(PTHREADINFO pti)
 {
-    HWND            hwndDriversCnr = WinWindowFromID(G_pcnbpDrivers->hwndDlgPage,
+    PCREATENOTEBOOKPAGE pcnbpDrivers = (PCREATENOTEBOOKPAGE)pti->ulData;
+    PDRIVERPAGEDATA pPageData = pcnbpDrivers->pUser;
+
+    HWND            hwndDriversCnr = WinWindowFromID(pcnbpDrivers->hwndDlgPage,
                                                      ID_OSDI_DRIVR_CNR);
     PSZ             pszConfigSys = NULL;
     PDRIVERRECORD   preccRoot = 0;
@@ -570,7 +589,7 @@ void _Optlink fntDriversThread(PTHREADINFO pti)
     PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
 
     // set wait pointer; this is handled by notebook.c
-    G_pcnbpDrivers->fShowWaitPointer = TRUE;
+    pcnbpDrivers->fShowWaitPointer = TRUE;
 
     // clear container
     WinSendMsg(hwndDriversCnr,
@@ -593,7 +612,7 @@ void _Optlink fntDriversThread(PTHREADINFO pti)
 
     // load CONFIG.SYS text; freed below
     if (doshReadTextFile((PSZ)pKernelGlobals->szConfigSys, &pszConfigSys) != NO_ERROR)
-        DebugBox(HWND_DESKTOP,
+        winhDebugBox(HWND_DESKTOP,
                  pKernelGlobals->szConfigSys,
                  "XFolder was unable to open the CONFIG.SYS file.");
     else
@@ -611,17 +630,17 @@ void _Optlink fntDriversThread(PTHREADINFO pti)
         if (doshReadTextFile(szDriverSpecsFilename,
                              &pszDriverSpecsFile)
                 != NO_ERROR)
-            DebugBox(HWND_DESKTOP,
+            winhDebugBox(HWND_DESKTOP,
                      szDriverSpecsFilename,
                      "XWorkplace was unable to open the driver specs file.");
         else
         {
             // drivers file successfully loaded:
             // parse file
-            G_pcnbpDrivers->pUser = InsertDriverCategories(hwndDriversCnr,
-                                                           preccRoot,
-                                                           pszConfigSys,
-                                                           pszDriverSpecsFile);
+            pPageData->pllLists = InsertDriverCategories(hwndDriversCnr,
+                                                         preccRoot,
+                                                         pszConfigSys,
+                                                         pszDriverSpecsFile);
                 // this returns a PLINKLIST containing LINKLIST's
                 // containing DRIVERSPEC's...
 
@@ -631,13 +650,14 @@ void _Optlink fntDriversThread(PTHREADINFO pti)
         free(pszConfigSys);
     }
 
-    G_pcnbpDrivers->fShowWaitPointer = FALSE;
-
-    G_pcnbpDrivers = NULL;
+    pcnbpDrivers->fShowWaitPointer = FALSE;
 }
 
 /*
  *@@ G_ampDriversPage:
+ *      resizing information for "Drives" page.
+ *      Stored in CREATENOTEBOOKPAGE of the
+ *      respective "add notebook page" method.
  *
  *@@added V0.9.4 (2000-08-08) [umoeller]
  */
@@ -671,6 +691,7 @@ extern ULONG G_cDriversPage = sizeof(G_ampDriversPage) / sizeof(G_ampDriversPage
  *@@added V0.9.0 [umoeller]
  *@@changed V0.9.1 (99-12-04) [umoeller]: fixed memory leaks
  *@@changed V0.9.3 (2000-04-11) [umoeller]: added pszVersion to DRIVERSPEC
+ *@@changed V0.9.6 (2000-10-16) [umoeller]: fixed excessive menu creation
  */
 
 VOID cfgDriversInitPage(PCREATENOTEBOOKPAGE pcnbp,
@@ -683,6 +704,7 @@ VOID cfgDriversInitPage(PCREATENOTEBOOKPAGE pcnbp,
         HWND hwndTextView;
         SWP  swpMLE;
         XTEXTVIEWCDATA xtxCData;
+        PDRIVERPAGEDATA pPageData = 0;
 
         BEGIN_CNRINFO()
         {
@@ -701,31 +723,41 @@ VOID cfgDriversInitPage(PCREATENOTEBOOKPAGE pcnbp,
                                                 | XTXF_HSCROLL | XTXF_AUTOHHIDE,
                                               2);
         winhSetWindowFont(hwndTextView, (PSZ)cmnQueryDefaultFont());
+
+        // create page data
+        pPageData = pcnbp->pUser = malloc(sizeof(DRIVERPAGEDATA));
+        memset(pPageData, 0, sizeof(DRIVERPAGEDATA));
+
+        // load popup
+        pPageData->hwndDriverPopupMenu = WinLoadMenu(HWND_OBJECT,
+                                                     cmnQueryNLSModuleHandle(FALSE),
+                                                     ID_XSM_DRIVERS_SEL);
     }
 
     if (flFlags & CBI_SET)
     {
+        PDRIVERPAGEDATA pPageData = (PDRIVERPAGEDATA)pcnbp->pUser;
         // set data: create drivers thread, which inserts
         // the drivers tree
-        if (!thrQueryID(&G_tiDriversThread))
+        if (!thrQueryID(&pPageData->tiDriversThread))
         {
-            G_pcnbpDrivers = pcnbp;
-            thrCreate(&G_tiDriversThread,
+            thrCreate(&pPageData->tiDriversThread,
                       fntDriversThread,
                       NULL, // running flag
                       THRF_PMMSGQUEUE,        // msgq
-                      0);
+                      (ULONG)pcnbp);        // data
+                // this creates a PLINKLIST in pcnbp->pUser
         }
     }
 
     if (flFlags & CBI_DESTROY)
     {
+        PDRIVERPAGEDATA pPageData = (PDRIVERPAGEDATA)pcnbp->pUser;
         // clean up the linked list of linked lists
         // which was created above
-        PLINKLIST pllLists = (PLINKLIST)pcnbp->pUser;
-        if (pllLists)
+        if (pPageData->pllLists)
         {
-            PLISTNODE pListNode = lstQueryFirstNode(pllLists);
+            PLISTNODE pListNode = lstQueryFirstNode(pPageData->pllLists);
             while (pListNode)
             {
                 PLINKLIST pllSpecsForCategory = (PLINKLIST)pListNode->pItemData;
@@ -748,9 +780,11 @@ VOID cfgDriversInitPage(PCREATENOTEBOOKPAGE pcnbp,
                 pListNode = pListNode->pNext;
             }
 
-            lstFree(pllLists);
+            lstFree(pPageData->pllLists);
         }
-        pcnbp->pUser = NULL;        // avoid notebook.c freeing this
+        // pcnbp->pUser = NULL;        // avoid notebook.c freeing this
+
+        WinDestroyWindow(pPageData->hwndDriverPopupMenu);
     }
 }
 
@@ -933,6 +967,7 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     pcnbp->preccSource = (PRECORDCORE)ulExtra;
                     if (pcnbp->preccSource)
                     {
+                        PDRIVERPAGEDATA pPageData = (PDRIVERPAGEDATA)pcnbp->pUser;
                         BOOL fEnableCmdref = FALSE;
                         PDRIVERRECORD precc = (PDRIVERRECORD)pcnbp->preccSource;
                         if (precc->pDriverSpec)
@@ -940,12 +975,10 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                 // help available in CMDREF.INF:
                                 fEnableCmdref = TRUE;
                         // popup menu on container recc:
-                        hPopupMenu = WinLoadMenu(pcnbp->hwndDlgPage, // owner
-                                                 cmnQueryNLSModuleHandle(FALSE),
-                                                 ID_XSM_DRIVERS_SEL);
-                        if (!fEnableCmdref)
-                            WinEnableMenuItem(hPopupMenu,
-                                              ID_XSMI_DRIVERS_CMDREFHELP, FALSE);
+                        hPopupMenu = pPageData->hwndDriverPopupMenu;
+                        WinEnableMenuItem(hPopupMenu,
+                                          ID_XSMI_DRIVERS_CMDREFHELP,
+                                          fEnableCmdref);
 
                     }
                     else
@@ -1124,7 +1157,7 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     PSZ     pszConfigSys = NULL;
 
                     if (doshReadTextFile((PSZ)pKernelGlobals->szConfigSys, &pszConfigSys))
-                        DebugBox(pcnbp->hwndFrame,
+                        winhDebugBox(pcnbp->hwndFrame,
                                  (PSZ)pKernelGlobals->szConfigSys,
                                  "XFolder was unable to open the CONFIG.SYS file.");
                     else
@@ -1150,7 +1183,7 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                              136,   // ###
                                              MB_OK);
                         else
-                            DebugBox(NULLHANDLE, "Error", "Error writing CONFIG.SYS");
+                            winhDebugBox(NULLHANDLE, "Error", "Error writing CONFIG.SYS");
 
                         free(pszConfigSys);
                     }

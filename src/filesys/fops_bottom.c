@@ -979,7 +979,7 @@ VOID fopsFileThreadProcessing(HFILETASKLIST hftl,
                                 "Error %d with object %s",
                                 frc,
                                 pszTitle);
-                        DebugBox(NULLHANDLE,
+                        winhDebugBox(NULLHANDLE,
                                  "XWorkplace File thread",
                                  szMsg);
                     }

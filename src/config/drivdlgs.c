@@ -1268,7 +1268,7 @@ VOID S506ParseParamsString(PDRIVERDLGDATA pddd)
                 sprintf(szMsg, "Syntax error in parameters: %s\n\nCurrent token: %s"
                                "\n\nWarning: All subsequent parameters have been discarded.\n",
                         pszError, pszToken);
-                DebugBox(NULLHANDLE, "IBM1S506.ADD", szMsg);
+                winhDebugBox(NULLHANDLE, "IBM1S506.ADD", szMsg);
                 break;
             }
         } while (pszToken = strtok(NULL, " "));
@@ -1282,7 +1282,7 @@ VOID S506ParseParamsString(PDRIVERDLGDATA pddd)
             sprintf(szMsg, "Warning: The following parameters were not recognized and will be ignored:"
                            "\n\n%s\n\n",
                     pszUnrecognized);
-            DebugBox(NULLHANDLE, "IBM1S506.ADD", szMsg);
+            winhDebugBox(NULLHANDLE, "IBM1S506.ADD", szMsg);
         }
     }
 }

@@ -865,29 +865,24 @@ ULONG clsSelectWpsClassDlg(HWND hwndOwner,
 
 /*
  *@@ clsQueryMethods:
- *      this returns method information for the
- *      given class object in a newly allocated
- *      METHODINFO structure (classlst.h).
+ *      this returns method information for the given class object
+ *      in a newly allocated METHODINFO structure (classlst.h).
  *
- *      Pass this structure to clsFreeMethodInfo
- *      when you're done.
+ *      Pass this structure to clsFreeMethodInfo when you're done.
  *
- *      If (fClassMethods == FALSE), _instance_
- *      method information is returned.
+ *      If (fClassMethods == FALSE), _instance_ method information
+ *      is returned.
  *
- *      If (fClassMethods == TRUE), _class_ method
- *      information is returned.
+ *      If (fClassMethods == TRUE), _class_ method information is
+ *      returned.
  *
- *      This function is reentrant, so it can be
- *      called on a thread other than thread 1.
- *      This is recommended anyway because this
- *      method can take several seconds on slower
- *      systems.
+ *      This function is reentrant, so it can be called on a thread
+ *      other than thread 1. This is recommended anyway because this
+ *      method can take several seconds on slower systems.
  *
- *      If *pfAbort is set to TRUE while this function
- *      is running (from another thread, of course),
- *      this function aborts immediately and returns
- *      NULL.
+ *      If *pfAbort is set to TRUE while this function is running
+ *      (from another thread, of course), this function aborts
+ *      immediately and returns NULL.
  *
  *@@added V0.9.0 [umoeller]
  *@@changed V0.9.1 (99-12-10) [umoeller]: moved this func here from config\clslist.c
@@ -974,6 +969,9 @@ PMETHODINFO clsQueryMethodInfo(SOMClass *pClassObject,  // in: class to query me
                 psm->pszMethodName = strdup(somStringFromId(md.id));    // freed later
                 psm->ulType = md.type;
                 psm->pMethodProc = pMethodLast = md.method;     // method pointer
+
+                psm->tok = _somGetMethodToken(pClassObject,
+                                              md.id);
 
                 // create linked list which will store class objects
                 // which override this method; this might be empty

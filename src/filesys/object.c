@@ -95,7 +95,8 @@
 #pragma hdrstop
 #include <wpdesk.h>                     // WPDesktop; includes WPFolder also
 #include <wppgm.h>                      // WPProgram
-#include <wpshadow.h>
+#include <wppgmf.h>                     // WPProgramFile
+#include <wpshadow.h>                   // WPShadow
 #include "filesys\folder.h"             // XFolder implementation
 
 /* ******************************************************************
@@ -281,6 +282,7 @@ VOID AddFolderView2Cnr(HWND hwndCnr,
  *      container window.
  *
  *@@changed V0.9.1 (2000-01-16) [umoeller]: added object setup string
+ *@@changed V0.9.6 (2000-10-16) [umoeller]: added program data
  */
 
 VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
@@ -296,9 +298,6 @@ VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
     PSZ             pszObjectID;
     ULONG           ul;
 
-    // PKERNELGLOBALS   pKernelGlobals = krnQueryGlobals();
-
-    // printf("Cnr: %d\n", hwndCnr);
     if (pObject)
     {
         sprintf(szText, "%s (Class: %s)",
@@ -392,12 +391,188 @@ VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
         if (ul & OBJSTYLE_TEMPLATE)
             AddObjectUsage2Cnr(hwndCnr, preccLevel2, "template",
                                CRA_RECORDREADONLY);
-        /* if (ul & OBJSTYLE_LOCKEDINPLACE)
+        #ifndef OBJSTYLE_LOCKEDINPLACE
+            #define OBJSTYLE_LOCKEDINPLACE  0x00020000
+        #endif
+        if (ul & OBJSTYLE_LOCKEDINPLACE)
             AddObjectUsage2Cnr(hwndCnr, preccLevel2, "locked in place",
-                               CRA_RECORDREADONLY); */
+                               CRA_RECORDREADONLY);
 
-        // folder data
-        if (_somIsA(pObject, _WPFolder))
+        /*
+         * program data:
+         *
+         */
+
+        if (    (_somIsA(pObject, _WPProgram))
+             || (_somIsA(pObject, _WPProgramFile))
+           )
+        {
+            ULONG   ulSize = 0;
+            if ((_wpQueryProgDetails(pObject, (PPROGDETAILS)NULL, &ulSize)))
+            {
+                PPROGDETAILS    pProgDetails = 0;
+                if ((pProgDetails = (PPROGDETAILS)malloc(ulSize)) != NULL)
+                {
+                    if ((_wpQueryProgDetails(pObject, pProgDetails, &ulSize)))
+                    {
+                        // OK, now we got the program object data....
+
+                        PSZ pTemp;
+
+                        /*
+                        typedef struct _PROGDETAILS {
+                          ULONG        Length;          //  Length of structure.
+                          PROGTYPE     progt;           //  Program type.
+                          PSZ          pszTitle;        //  Title.
+                          PSZ          pszExecutable;   //  Executable file name (program name).
+                          PSZ          pszParameters;   //  Parameter string.
+                          PSZ          pszStartupDir;   //  Start-up directory.
+                          PSZ          pszIcon;         //  Icon-file name.
+                          PSZ          pszEnvironment;  //  Environment string.
+                          SWP          swpInitial;      //  Initial window position and size.
+                        } PROGDETAILS; */
+
+                        preccLevel2 = AddObjectUsage2Cnr(hwndCnr, preccRoot,
+                                                         "Program data",
+                                                         CRA_RECORDREADONLY);
+
+                        // program type
+                        pTemp = 0;
+                        switch (pProgDetails->progt.progc)
+                        {
+                            case PROG_DEFAULT: pTemp = "PROG_DEFAULT"; break;
+                            case PROG_FULLSCREEN: pTemp = "PROG_FULLSCREEN"; break;
+                            case PROG_WINDOWABLEVIO: pTemp = "PROG_WINDOWABLEVIO"; break;
+                            case PROG_PM: pTemp = "PROG_PM"; break;
+                            case PROG_GROUP: pTemp = "PROG_GROUP"; break;
+                            case PROG_VDM: pTemp = "PROG_VDM"; break;
+                                // same as case PROG_REAL: pTemp = "PROG_REAL"; break;
+                            case PROG_WINDOWEDVDM: pTemp = "PROG_WINDOWEDVDM"; break;
+                            case PROG_DLL: pTemp = "PROG_DLL"; break;
+                            case PROG_PDD: pTemp = "PROG_PDD"; break;
+                            case PROG_VDD: pTemp = "PROG_VDD"; break;
+                            case PROG_WINDOW_REAL: pTemp = "PROG_WINDOW_REAL"; break;
+                            case PROG_30_STD: pTemp = "PROG_30_STD"; break;
+                                // same as case PROG_WINDOW_PROT: pTemp = "PROG_WINDOW_PROT"; break;
+                            case PROG_WINDOW_AUTO: pTemp = "PROG_WINDOW_AUTO"; break;
+                            case PROG_30_STDSEAMLESSVDM: pTemp = "PROG_30_STDSEAMLESSVDM"; break;
+                                // same as case PROG_SEAMLESSVDM: pTemp = "PROG_SEAMLESSVDM"; break;
+                            case PROG_30_STDSEAMLESSCOMMON: pTemp = "PROG_30_STDSEAMLESSCOMMON"; break;
+                                // same as case PROG_SEAMLESSCOMMON: pTemp = "PROG_SEAMLESSCOMMON"; break;
+                            case PROG_31_STDSEAMLESSVDM: pTemp = "PROG_31_STDSEAMLESSVDM"; break;
+                            case PROG_31_STDSEAMLESSCOMMON: pTemp = "PROG_31_STDSEAMLESSCOMMON"; break;
+                            case PROG_31_ENHSEAMLESSVDM: pTemp = "PROG_31_ENHSEAMLESSVDM"; break;
+                            case PROG_31_ENHSEAMLESSCOMMON: pTemp = "PROG_31_ENHSEAMLESSCOMMON"; break;
+                            case PROG_31_ENH: pTemp = "PROG_31_ENH"; break;
+                            case PROG_31_STD: pTemp = "PROG_31_STD"; break;
+
+// Warp 4 toolkit defines, whatever these were designed for...
+#ifndef PROG_DOS_GAME
+   #define PROG_DOS_GAME            (PROGCATEGORY)21
+#endif
+#ifndef PROG_WIN_GAME
+   #define PROG_WIN_GAME            (PROGCATEGORY)22
+#endif
+#ifndef PROG_DOS_MODE
+   #define PROG_DOS_MODE            (PROGCATEGORY)23
+#endif
+
+                            case PROG_DOS_GAME: pTemp = "PROG_DOS_GAME"; break;
+                            case PROG_WIN_GAME: pTemp = "PROG_WIN_GAME"; break;
+                            case PROG_DOS_MODE: pTemp = "PROG_DOS_MODE"; break;
+
+                            default: pTemp = "unknown"; break;
+                        }
+
+                        sprintf(szTemp1, "Program type: %s (0x%lX)", pTemp, pProgDetails->progt.progc);
+                        AddObjectUsage2Cnr(hwndCnr, preccLevel2, szTemp1,
+                                           CRA_RECORDREADONLY);
+
+                        // program title
+                        sprintf(szTemp1, "Program title: %s",
+                                (pProgDetails->pszTitle)
+                                    ? pProgDetails->pszTitle
+                                    : "NULL");
+                        AddObjectUsage2Cnr(hwndCnr, preccLevel2, szTemp1,
+                                           CRA_RECORDREADONLY);
+
+                        // executable
+                        sprintf(szTemp1, "Executable: %s",
+                                (pProgDetails->pszExecutable)
+                                    ? pProgDetails->pszExecutable
+                                    : "NULL");
+                        AddObjectUsage2Cnr(hwndCnr, preccLevel2, szTemp1,
+                                           CRA_RECORDREADONLY);
+
+                        // parameters
+                        sprintf(szTemp1, "Parameters: %s",
+                                (pProgDetails->pszParameters)
+                                    ? pProgDetails->pszParameters
+                                    : "NULL");
+                        AddObjectUsage2Cnr(hwndCnr, preccLevel2, szTemp1,
+                                           CRA_RECORDREADONLY);
+
+                        // startup dir
+                        sprintf(szTemp1, "Startup dir: %s",
+                                (pProgDetails->pszStartupDir)
+                                    ? pProgDetails->pszStartupDir
+                                    : "NULL");
+                        AddObjectUsage2Cnr(hwndCnr, preccLevel2, szTemp1,
+                                           CRA_RECORDREADONLY);
+
+                        // environment
+                        preccLevel3 = AddObjectUsage2Cnr(hwndCnr, preccLevel2,
+                                                         "Environment",
+                                                         CRA_RECORDREADONLY);
+                        // if (pProgDetails->pszEnvironment)
+                        {
+                            DOSENVIRONMENT Env = {0};
+                            if (    (pProgDetails->pszEnvironment == 0)
+                                 || (doshParseEnvironment(pProgDetails->pszEnvironment,
+                                                     &Env)
+                                       != NO_ERROR)
+                               )
+                            {
+                                // parse error:
+                                // just add it...
+                                AddObjectUsage2Cnr(hwndCnr, preccLevel3,
+                                                   (pProgDetails->pszEnvironment)
+                                                        ? pProgDetails->pszEnvironment
+                                                        : "NULL",
+                                                   CRA_RECORDREADONLY);
+                            }
+                            else
+                            {
+                                if (Env.papszVars)
+                                {
+                                    PSZ *ppszThis = Env.papszVars;
+                                    for (ul = 0;
+                                         ul < Env.cVars;
+                                         ul++)
+                                    {
+                                        PSZ pszThis = *ppszThis;
+                                        // pszThis now has something like PATH=C:\TEMP
+                                        AddObjectUsage2Cnr(hwndCnr, preccLevel3,
+                                                           pszThis,
+                                                           CRA_RECORDREADONLY);
+                                        // next environment string
+                                        ppszThis++;
+                                    }
+                                }
+                                doshFreeEnvironment(&Env);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        /*
+         * folder data:
+         *
+         */
+
+        else if (_somIsA(pObject, _WPFolder))
         {
             preccLevel2 = AddObjectUsage2Cnr(hwndCnr, preccRoot, "Folder flags",
                                              CRA_RECORDREADONLY);
@@ -462,7 +637,7 @@ VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
                     _heap_walk(fncbHeapWalk);
 
                     strths(szTemp1, lTotalObjectSize, ',');
-                    sprintf(szText, "XFolder memory consumption: %s bytes\n"
+                    sprintf(szText, "XWorkplace memory consumption: %s bytes\n"
                             "(%d objects used, %d objects freed)",
                             szTemp1,
                             lObjectCount,
@@ -470,7 +645,7 @@ VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
                     AddObjectUsage2Cnr(hwndCnr, preccLevel2, szText,
                                        CRA_RECORDREADONLY);
 
-                    sprintf(szText, "XFolder memory heap status: %s",
+                    sprintf(szText, "XWorkplace memory heap status: %s",
                             (lHeapStatus == _HEAPOK) ? "OK"
                             : (lHeapStatus == _HEAPBADBEGIN) ? "Invalid heap (_HEAPBADBEGIN)"
                             : (lHeapStatus == _HEAPBADNODE) ? "Damaged memory node"
@@ -1654,7 +1829,7 @@ ULONG objQuerySetup(WPObject *somSelf,
         }
     }
 
-    // HELPLIBRARY
+    // HELPLIBRARY  ###
 
     // HELPPANEL
     if (_pWPObjectData)

@@ -1,68 +1,69 @@
-@echo off
-REM cleanup all compiled XFolder files
+/* Cleanup XWorkplace */
+signal on halt
+'@echo off'
 
-ECHO This will delete all .DLL, .RES, .OBJ, .MSG, .MAP, .SYM files in
-ECHO the source directories. Press any key to continue or Ctrl+C to stop.
-PAUSE
+/* Compiled XWorkplace files */
+say 'Do you wish to delete all .OBJ, .RES, .EXE, .DLL, .MAP, .SYM files in'
+call charout , 'the source directories [Y/N] ? '
+parse upper linein yn .
+if yn = 'Y' then do
+  call deletefiles 'bin\*.obj'
+  call deletefiles 'bin\*.res'
+  call deletefiles 'bin\exe_mt\*.obj'
+  call deletefiles 'bin\exe_mt\*.res'
+  call deletefiles 'bin\exe_st\*.obj'
+  call deletefiles 'bin\exe_st\*.res'
+  call deletefiles 'bin\modules\*.exe'
+  call deletefiles 'bin\modules\*.dll'
+  call deletefiles 'bin\modules\*.map'
+  call deletefiles 'bin\modules\*.sym'
+end
 
-del src\helpers\*.obj
-del src\NetscapeDDE\*.obj
-del src\NetscapeDDE\*.exe
-del src\Treesize\*.obj
-del src\Treesize\*.exe
+/* LIB files */
+call charout , 'Do you wish to delete the LIB files [Y/N] ? '
+parse upper linein yn .
+if yn = 'Y' then do
+  call deletefiles 'bin\*.lib'
+  call deletefiles 'bin\exe_mt\*.lib'
+end
 
-del bin\*.exe
-del bin\*.dll
-del bin\*.obj
-del bin\*.res
-del bin\*.map
-del bin\*.sym
+/* INF/HLP files */
+call charout , 'Do you wish to delete the INF/HLP files [Y/N] ? '
+parse upper linein yn .
+if yn = 'Y' then do
+  call deletefiles '001\inf.001\xfldr001.inf'
+  call deletefiles '001\xwphelp\xfldr001.hlp'
+  call deletefiles '049_de\inf.049\xfldr049.inf'
+  call deletefiles '049_de\help.049\xfldr049.hlp'
+end
 
-del tools\repclass\*.exe
-del tools\repclass\*.obj
-del tools\repclass\*.map
-del tools\wpsreset\*.exe
-del tools\wpsreset\*.obj
-del tools\wpsreset\*.map
+/* IPF source files */
+call charout , 'Do you wish to delete the IPF source files [Y/N] ? '
+parse upper linein yn .
+if yn = 'Y' then do
+  call deletefiles '001\inf.001\xfldr001.ipf'
+  call deletefiles '001\inf.001\*.bmp'
+  call deletefiles '001\xwphelp\xfldr001.ipf'
+  call deletefiles '001\xwphelp\000img\*.bmp'
+  call deletefiles '049_de\inf.049\xfldr049.ipf'
+  call deletefiles '049_de\inf.049\*.bmp'
+end
 
-REM INF/HLP files
+/* SOM headers */
+call charout , 'Do you wish to delete all the SC-created .DEF, .IH and .H files [Y/N] ? '
+parse upper linein yn .
+if yn = 'Y' then do
+  call deletefiles 'idl\*.def'
+  call deletefiles 'include\classes\*.h'
+  call deletefiles 'include\classes\*.ih'
+end
+return
 
-ECHO Do you also wish to delete the INF/HLP files?
-ECHO Press any key to continue or Ctrl+C to stop.
-PAUSE
+halt:
+  say
+  return
 
-del 001\help.001\xfldr001.hlp
-del 001\inf.001\xfldr001.inf
-
-del 049_de\help.049\xfldr049.hlp
-del 049_de\inf.049\xfldr049.inf
-
-REM SOM headers
-
-ECHO Do you also wish to delete all the SC-created .DEF, .IH, .H files?
-ECHO Press any key to continue or Ctrl+C to stop.
-PAUSE
-
-del idl\*.def
-del include\classes\*.h
-del include\classes\*.ih
-
-REM IPF source files
-
-ECHO Do you also wish to delete all the IPF source files?
-ECHO Press any key to continue or Ctrl+C to stop.
-PAUSE
-
-del 001\inf.001\xfldr001.ipf
-del 001\inf.001\*.bmp
-del 001\help.001\xfldr001.ipf
-del 001\help.001\*.bmp
-
-del 049_de\inf.049\xfldr049.ipf
-del 049_de\inf.049\*.bmp
-del 049_de\help.049\xfldr049.ipf
-del 049_de\help.049\*.bmp
-
-del doc\*.ipf
-
-
+deletefiles: procedure
+  arg name
+  'if exist' name 'del' name
+  return

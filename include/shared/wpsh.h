@@ -1,7 +1,8 @@
 
 /*
  *@@sourcefile wpsh.h:
- *      header file for wpsh.c ("pseudo SOM methods"). See remarks there.
+ *      header file for wpsh.c ("pseudo SOM methods").
+ *      See remarks there.
  *
  *      Note: before #include'ing this header, you must
  *      have at least wpobject.h #include'd. Functions which
@@ -32,8 +33,12 @@
 #ifndef XWPS_HEADER_INCLUDED
     #define XWPS_HEADER_INCLUDED
 
-    PVOID wpshResolveForParent(SOMObject *somSelf,
-                               SOMClass *pClass,
+    PVOID wpshParentResolve(SOMObject *somSelf,
+                            SOMClass *pClass,
+                            const char *pcszMethodName);
+
+    PVOID wpshParentNumResolve(SOMClass *pClass,
+                               somMethodTabs parentMTab,
                                const char *pcszMethodName);
 
     BOOL wpshCheckObject(WPObject *pObject);
@@ -114,4 +119,29 @@
         #define wpshIdentifyRestoreID(psz, ul) ""
         #define wpshDumpTaskRec(somSelf, pszMethodName, pTaskRec)
     #endif
+
+    /* ******************************************************************
+     *
+     *   Undocumented WPS method prototypes
+     *
+     ********************************************************************/
+
+    /*
+     *  For each method, we declare xfTP_methodname for the
+     *  the prototype and xfTD_methodname for a function pointer.
+     *
+     *  IMPORTANT NOTE: Make sure these things have the _System
+     *  calling convention. Normally, SOM uses #pragma linkage
+     *  in the headers to ensure this, but we must do this manually.
+     */
+
+    typedef BOOL _System (xfTP_wpModifyMenu)(WPObject*,
+                                             HWND,
+                                             HWND,
+                                             ULONG,
+                                             ULONG,
+                                             ULONG,
+                                             ULONG);
+    typedef xfTP_wpModifyMenu *xfTD_wpModifyMenu;
+
 #endif

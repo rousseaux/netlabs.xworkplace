@@ -1,6 +1,6 @@
 #
 # makefile:
-#       makefile for TOOLS\REPCLASS directory.
+#       makefile for TOOLS\RECLASS directory.
 #       For use with IBM NMAKE, which comes with the IBM compilers,
 #       the Developer's Toolkit, and the DDK.
 #
@@ -10,7 +10,7 @@
 #
 #       Input:          files in this directory
 #
-#       Output:         repclass.exe, copied to parent directory (TOOLS\).
+#       Output:         repclass.exe, copied to modules directory.
 #
 #       Edit "setup.in" to set up the make process.
 #
@@ -20,76 +20,56 @@
 !endif
 
 # include setup (compiler options etc.)
-# !include ..\..\setup.in
+!include ..\..\setup.in
 
-INCLUDE = $(INCLUDE);..\..\include
+# FIXED MACROS
+# ------------
+#
+# You probably need not change the following.
+#
 
-# First define the suffixes for files which NMAKE will work on.
+# Define the suffixes for files which NMAKE will work on.
 # .SUFFIXES is a reserved NMAKE keyword ("pseudotarget") for
 # defining file extensions that NMAKE will recognize in inference
 # rules.
 
 .SUFFIXES: .c .obj .dll .idl .h .ih .rc .res
 
-# ICC environment variable for compiler options.
-ICC     =
-# /Wcnd- /Wgen- /Wcpy /Wobs- /Word- /Wcns+ /Wcnv-
+# OUTPUTDIR specifies the directory where all the output .OBJ
+# files will be created in.
+OUTPUTDIR = ..\..\bin\exe_st
+MODULESDIR = ..\..\bin\modules
 
-# Compiler macro. This is used for each .OBJ file to be created.
-CC      = icc /c /Ge /Gm- /Gd- /Re /O- /Oi- /ol- /q+ /Se /ss /Tn /w2 /Wcls+ /Wcpy+ /Wcmp+ /Wobs+ /Word+ /Wpro+ /Wrea+ /Wret+ /Wuni+ /Wuse+
+# create output directory
+!if [@md ..\..\bin 2> NUL]
+!endif
+!if [@md $(OUTPUTDIR) 2> NUL]
+!endif
+!if [@md $(MODULESDIR) 2> NUL]
+!endif
 
-# Some VisualAge C++ compiler options explained:
-# /c:   compile only, no link (we'll call the linker explicitly)
-# /fi+: precompile header files
-# /gd-: link runtime statically
-# /ge-: create DLL code
-# /gi+: fast integer execution
-# /Gl+: remove unreferenced functions (when comp.+link in 1 step)
-# /gm+: multithread libraries
-# /kc+: produce preprocessor warnings
-# /o+:  optimization (inlining etc.)
-# /oi-: no inlining (?)
-# /ol+: use intermediate linker
-# /q+:  suppress icc logo
-# /Re : don't use subsystem libraries (!= Rn)
-# /se:  all language extensions
-# /si+: allow use of precompiled header files
-# /ss:  allow double slashes comments in C too
-# /ti+: debug code
-# /tdp: compile everything as C++, even if it has a .C suffix
-# /Tn:  add source line numbers to object files (for mapfile)
-# /Wcls: class problems
-# /Wcnd: conditional exprs problems (= / == etc.)
-# /Wcmp: possible unsigned comparison redundancies
-# /Wcns: operations involving constants
-# /Wcnv: conversions
-# /Wcpy: copy constructor problems
-# /Wgen: generic debugging msgs
-# /Wobs: obsolete features
-# /Word: unspecified evaluation order
-# /Wpar: list not-referenced parameters (annoying)
-# /Wppc: list possible preprocessor problems (.h dependencies)
-# /Wpro: warn if funcs have not been prototyped
-# /Wrea: mark code that cannot be reached
-# /Wret: check consistency of return levels
-# /Wuni: uninitialized variables
-# /Wuse: unused variables
-# /w2:   produce error and warning messages, but no infos
-
-LINK = ilink /map /nologo /linenumbers /optfunc
-
-# Main targets
-all: repclass.exe
+# The main target:
+# If we're called from the main makefile, MAINMAKERUNNING is defined,
+# and we'll set $(OBJS) as our targets (which will go on).
+# Otherwise, we call the main makefile, which will again call ourselves later.
+all: $(MODULESDIR)\repclass.exe
     @echo ----- Leaving $(MAKEDIR)
 
+# main include path
+INC = ..\..\include
+# helpers include path
+HLPINC = $(HELPERS_BASE)\include\helpers
+# our own corresponding include path
+MYOWNINC = $(INC)\hook
+
 # 1) files in this directory
-.c.obj:
-        @ echo Compiling $*.c:
+.c.{$(OUTPUTDIR)}.obj:
+        @ echo Compiling $(@B).c:
 !ifndef PRECH
 # precompiled headers disabled:
-        $(CC) $*.c
+        $(CC_EXE_ST) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
 !else
-        $(CC) /fi"$(PRECH)\$*.pch" /si"$(PRECH)\$*.pch"  $*.c
+        $(CC_EXE_ST) /fi"$(PRECH)\$(@B).pch" /si"$(PRECH)\$(@B).pch" -I$(INC) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
 !endif
 
 #
@@ -99,11 +79,8 @@ all: repclass.exe
 #
 
 # .OBJs for executables in this directory
-repclass.obj: $*.c
+$(OUTPUTDIR)\repclass.obj: $(@B).c
 
-# "repclass" executable: link and copy to parent (TOOLS) directory
-repclass.exe: $*.obj makefile
-          $(LINK) /PMTYPE:VIO $*.obj
-          cmd.exe /c copy repclass.exe ..
-
-
+# "repclass" executable
+$(MODULESDIR)\repclass.exe: $(OUTPUTDIR)\$(@B).obj makefile
+          $(LINK) /OUT:$(MODULESDIR)\$(@B).exe /PMTYPE:VIO $(OUTPUTDIR)\$(@B).obj

@@ -8,7 +8,9 @@
  *      This class replaces the WPFileSystem class.
  *      This is all new with V0.9.5.
  *
- *      Installation of this class is optional.
+ *      Installation of this class is optional. This class
+ *      is not very useful at this point and NOT installed
+ *      with the default XWorkplace install by WarpIN.
  *
  *      Starting with V0.9.0, the files in classes\ contain only
  *      the SOM interface, i.e. the methods themselves.
@@ -181,6 +183,7 @@ SOM_Scope void  SOMLINK xfsM_wpclsInitData(M_XWPFileSystem *somSelf)
     /* M_XWPFileSystemData *somThis = M_XWPFileSystemGetData(somSelf); */
     M_XWPFileSystemMethodDebug("M_XWPFileSystem","xfsM_wpclsInitData");
 
+#ifdef __REPLHANDLES__
     // query once at system startup whether handles
     // management has been replaced
     G_fReplaceHandles = pGlobalSettings->fReplaceHandles;
@@ -188,6 +191,7 @@ SOM_Scope void  SOMLINK xfsM_wpclsInitData(M_XWPFileSystem *somSelf)
         // enabled:
         // initialize handles
         fhdlLoadHandles();
+#endif
 
     M_XWPFileSystem_parent_M_WPFileSystem_wpclsInitData(somSelf);
 }

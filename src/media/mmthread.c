@@ -196,7 +196,8 @@ MRESULT EXPENTRY xmm_fnwpMediaObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPA
             #endif
 
             // get system sound from MMPM.INI
-            if (sndQuerySystemSound((USHORT)mp1,
+            if (sndQuerySystemSound(G_habMediaThread,
+                                    (USHORT)mp1,
                                     szDescr,
                                     pszFile,
                                     &ulVolume))
@@ -544,7 +545,7 @@ void _Optlink xmm_fntMediaThread(PTHREADINFO pti)
                     = winhCreateObjectWindow((PSZ)WNDCLASS_MEDIAOBJECT, NULL);
 
                 if (!G_hwndMediaObject)
-                    DebugBox(HWND_DESKTOP,
+                    winhDebugBox(HWND_DESKTOP,
                              "XFolder: Error",
                              "XFolder failed to create the Media thread object window.");
 

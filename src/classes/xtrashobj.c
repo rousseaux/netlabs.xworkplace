@@ -795,7 +795,14 @@ SOM_Scope BOOL  SOMLINK xtro_wpMoveObject(XWPTrashObject *somSelf,
 
 /*
  *@@ wpOpen:
- *      this instance method opens a new view of an object.
+ *      this WPObject instance method gets called when
+ *      a new view needs to be opened. Normally, this
+ *      gets called after wpViewObject has scanned the
+ *      object's USEITEMs and has determined that a new
+ *      view is needed, mostly in response to a menu
+ *      selection from the "Open" submenu or a double-click
+ *      in the folder.
+ *
  *      Since trash objects have no views, we'll always
  *      return NULLHANDLE.
  */

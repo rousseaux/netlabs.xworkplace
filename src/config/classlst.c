@@ -125,6 +125,8 @@
  *@@ METHODRECORD:
  *      extended record structure for
  *      "method info" cnr window.
+ *
+ *@@changed V0.9.6 (2000-10-16) [umoeller]: added token
  */
 
 typedef struct _METHODRECORD
@@ -140,8 +142,12 @@ typedef struct _METHODRECORD
     PSZ                 pszOverriddenBy;        // string of classes which override this method.
                                                 // This is composed of the linked list in SOMMETHOD.
     ULONG               ulOverriddenBy;         // inheritance distance (see SOMMETHOD.ulOverriddenBy, classlst.h)
+
     PSZ                 pszMethodProc;          // method address; always points to szMethodProc buffer below
-    CHAR                szMethodProc[20];
+    CHAR                szMethodProc[30];
+
+    PSZ                 pszToken;               // method token
+    CHAR                szToken[20];
 } METHODRECORD, *PMETHODRECORD;
 
 #pragma pack(1)
@@ -207,6 +213,11 @@ typedef struct _CLASSLISTCLIENTDATA
     LINKLIST            llCnrStrings;       // linked list of container strings which must be free()'d
     PMETHODINFO         pMethodInfo;        // method info for currently selected class (classlist.h)
     THREADINFO          tiMethodCollectThread; // temporary thread for creating method info
+
+    // popup menus
+    HWND                hmenuClassPopup,    // popup menu on class item
+                        hmenuMethodsWhitespacePopup;
+                                            // popup menu on methods whitespace
 } CLASSLISTCLIENTDATA, *PCLASSLISTCLIENTDATA;
 
 /*
@@ -234,6 +245,7 @@ typedef struct _CLASSLISTTREECNRDATA
 {
     PCLASSLISTCLIENTDATA pClientData;
     XADJUSTCTRLS        xacClassCnr;        // for winhAdjustControls
+
 } CLASSLISTTREECNRDATA, *PCLASSLISTTREECNRDATA;
 
 /*
@@ -1144,6 +1156,7 @@ MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
  *
  *@@added V0.9.0 [umoeller]
  *@@changed V0.9.3 (2000-04-02) [umoeller]: moved wpRegisterView etc. to cllCreateClassListView
+ *@@changed V0.9.6 (2000-10-16) [umoeller]: fixed excessive menu creation
  */
 
 MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -1212,6 +1225,12 @@ MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
                              WS_CLIPCHILDREN,         // set bit
                              WS_CLIPCHILDREN);
 
+            // load popup menu
+            pClientData->hmenuClassPopup
+                = WinLoadMenu(HWND_OBJECT,
+                              cmnQueryNLSModuleHandle(FALSE),
+                              ID_XLM_CLASS_SEL);
+
             /*
              * "Method info" dlg subwindow (bottom right):
              *
@@ -1228,6 +1247,13 @@ MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
                              QWL_STYLE,
                              WS_CLIPCHILDREN,         // set bit
                              WS_CLIPCHILDREN);
+
+            // load popup menu
+            pClientData->hmenuMethodsWhitespacePopup
+                = WinLoadMenu(HWND_OBJECT,
+                              cmnQueryNLSModuleHandle(FALSE),
+                              ID_XLM_METHOD_NOSEL);
+
 
             /*
              * container dlg subwindow (left half of window);:
@@ -1383,6 +1409,10 @@ MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
                 _wpFreeMem(pClientData->somSelf, (PBYTE)pClientData);
 
                 pClientData->somThis->hwndOpenView = NULLHANDLE;
+
+                // destroy popups
+                WinDestroyWindow(pClientData->hmenuClassPopup);
+                WinDestroyWindow(pClientData->hmenuMethodsWhitespacePopup);
             }
 
             // return default NULL
@@ -1414,24 +1444,36 @@ MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
  *
  *@@added V0.9.1 (99-12-28) [umoeller]
  *@@changed V0.9.5 (2000-08-26) [umoeller]: orphaned classes had "Deregister" disabled; fixed
+ *@@changed V0.9.6 (2000-10-16) [umoeller]: orphaned classes had "Create object" enabled; fixed
+ *@@changed V0.9.6 (2000-10-16) [umoeller]: fixed excessive menu creation
  */
 
 VOID ShowClassContextMenu(HWND hwndDlg,
-                          PSELECTCLASSDATA pscd)
+                          PSELECTCLASSDATA pscd,
+                          HWND hPopupMenu)      // in: "class" popup menu
 {
     LONG lrc2;
-    HWND hPopupMenu = WinLoadMenu(hwndDlg,
+    /* HWND hPopupMenu = WinLoadMenu(hwndDlg,
                                   cmnQueryNLSModuleHandle(FALSE),
-                                  ID_XLM_CLASS_SEL);
+                                  ID_XLM_CLASS_SEL); */
+    BOOL        fAllowDeregister = FALSE,
+                fAllowReplace = FALSE,
+                fAllowUnreplace = FALSE,
+                fAllowCreate = FALSE;
 
     if (pscd->preccSource->pwps)
     {
-        BOOL fAllowDeregister = TRUE;
-        BOOL fAllowCreateObjects = TRUE;
         BOOL fIsWPSClass = TRUE;        // V0.9.5 (2000-08-26) [umoeller]
+                            // make TRUE the default to allow deregistering
+                            // orphaned WPS classes
 
         if (pscd->preccSource->pwps->pClassObject)
             fIsWPSClass = _somDescendedFrom(pscd->preccSource->pwps->pClassObject, _WPObject);
+
+        fAllowDeregister = TRUE;
+        fAllowReplace = TRUE;
+        fAllowUnreplace = TRUE;
+        fAllowCreate = TRUE;
 
         // allow deregistering?
         if (   (pscd->preccSource->pwps->pszModName == NULL)
@@ -1469,7 +1511,7 @@ VOID ShowClassContextMenu(HWND hwndDlg,
                 // can have instances created from it
                 if ((ulFlagsSelected & 4) != 0)
                                 // bit set
-                    fAllowCreateObjects = FALSE;
+                    fAllowCreate = FALSE;
             }
         }
 
@@ -1485,13 +1527,7 @@ VOID ShowClassContextMenu(HWND hwndDlg,
             || (!fIsWPSClass)
                        // no WPS class:
            )
-            fAllowCreateObjects = FALSE;
-
-        if (!fAllowDeregister)
-            // disable "Deregister" menu item
-            WinEnableMenuItem(hPopupMenu,
-                              ID_XLMI_DEREGISTER,
-                              FALSE);
+            fAllowCreate = FALSE;
 
         // allow replacements only if the
         // class has subclasses
@@ -1506,33 +1542,21 @@ VOID ShowClassContextMenu(HWND hwndDlg,
              || (pscd->preccSource->pwps->pszReplacesClass)
              || (!fIsWPSClass)
            )
-            WinEnableMenuItem(hPopupMenu,
-                ID_XLMI_REPLACE, FALSE);
+            fAllowReplace = FALSE;
 
         // allow un-replacement only if the class
         // replaces another class
         if (    (pscd->preccSource->pwps->pszReplacesClass == NULL)
              || (!fIsWPSClass)
            )
-            WinEnableMenuItem(hPopupMenu,
-                ID_XLMI_UNREPLACE, FALSE);
-
-        // allow creating objects?
-        if (!fAllowCreateObjects)
-            // disable "Create Objects" menu item
-            WinEnableMenuItem(hPopupMenu,
-                    ID_XLMI_CREATEOBJECT, FALSE);
+            fAllowUnreplace = FALSE;
 
     } // end if (pscd->preccSource->pwps)
-    else
-    {
-        WinEnableMenuItem(hPopupMenu,
-                          ID_XLMI_DEREGISTER, FALSE);
-        WinEnableMenuItem(hPopupMenu,
-                          ID_XLMI_REPLACE, FALSE);
-        WinEnableMenuItem(hPopupMenu,
-                          ID_XLMI_UNREPLACE, FALSE);
-    }
+
+    WinEnableMenuItem(hPopupMenu, ID_XLMI_DEREGISTER, fAllowDeregister);
+    WinEnableMenuItem(hPopupMenu, ID_XLMI_REPLACE, fAllowReplace);
+    WinEnableMenuItem(hPopupMenu, ID_XLMI_UNREPLACE, fAllowUnreplace);
+    WinEnableMenuItem(hPopupMenu, ID_XLMI_CREATEOBJECT, fAllowCreate); // V0.9.6 (2000-10-16) [umoeller]
 
     cnrhShowContextMenu(pscd->hwndCnr,
                         (PRECORDCORE)(pscd->preccSource),
@@ -1790,7 +1814,8 @@ MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM
                             {
                                 // we have a selection:
                                 ShowClassContextMenu(hwndDlg,
-                                                     pscd);
+                                                     pscd,
+                                                     pClassTreeCnrData->pClientData->hmenuClassPopup);
                             }
                             else
                             {
@@ -2398,6 +2423,7 @@ MRESULT EXPENTRY fnwpClassInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp
  *
  *@@changed V0.9.1 (99-12-20) [umoeller]: now using cll_fntMethodCollectThread for method infos
  *@@changed V0.9.5 (2000-08-26) [umoeller]: fixed WM_SYSCOMMAND handling
+ *@@changed V0.9.6 (2000-10-16) [umoeller]: added token, added static/dynamic
  */
 
 MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -2451,6 +2477,11 @@ MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
             xfi[i].ulDataType = CFA_STRING;
             xfi[i++].ulOrientation = CFA_LEFT;
 
+            xfi[i].ulFieldOffset = FIELDOFFSET(METHODRECORD, pszToken);
+            xfi[i].pszColumnTitle = "Token";  // ###
+            xfi[i].ulDataType = CFA_STRING;
+            xfi[i++].ulOrientation = CFA_LEFT;
+
             xfi[i].ulFieldOffset = FIELDOFFSET(METHODRECORD, pszMethodProc);
             xfi[i].pszColumnTitle = pNLSStrings->pszClsListAddress;
             xfi[i].ulDataType = CFA_STRING;
@@ -2470,7 +2501,7 @@ MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
                                     &xfi[0],
                                     i,             // array item count
                                     TRUE,          // no draw lines
-                                    2);            // return second column
+                                    3);            // return second column
 
             BEGIN_CNRINFO()
             {
@@ -2596,9 +2627,18 @@ MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
 
                     preccThis->ulOverriddenBy = psm->ulOverriddenBy;
 
+                    // add token (this is a PVOID really...)
+                    sprintf(preccThis->szToken, "0x%lX",
+                            psm->tok);
+                    // and point PSZ to that buffer
+                    preccThis->pszToken = preccThis->szToken;
+
                     // write method address to recc's string buffer
-                    sprintf(preccThis->szMethodProc, "0x%lX",
-                            psm->pMethodProc);
+                    sprintf(preccThis->szMethodProc, "0x%lX (%c)",
+                            psm->pMethodProc,
+                            (psm->ulType == 0) ? 'S'        // static
+                                : (psm->ulType == 1) ? 'D'  // dynamic
+                                : '?');
                     // and point PSZ to that buffer
                     preccThis->pszMethodProc = preccThis->szMethodProc;
 
@@ -2663,12 +2703,19 @@ MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
                             }
                             else
                             {
+                                static s_last_sort_id = 0;
                                 // whitespace:
-                                hPopupMenu = WinLoadMenu(hwndDlg, cmnQueryNLSModuleHandle(FALSE),
-                                                         ID_XLM_METHOD_NOSEL);
+                                hPopupMenu = pMethodInfoData->pClientData->hmenuMethodsWhitespacePopup;
+
+                                if (s_last_sort_id)
+                                    WinCheckMenuItem(hPopupMenu,
+                                                     s_last_sort_id,
+                                                     FALSE);
                                 // check current sort item
                                 WinCheckMenuItem(hPopupMenu,
-                                                 pMethodInfoData->pClientData->somThis->ulSortID, TRUE);
+                                                 pMethodInfoData->pClientData->somThis->ulSortID,
+                                                 TRUE);
+                                s_last_sort_id = pMethodInfoData->pClientData->somThis->ulSortID;
                             }
                             if (hPopupMenu)
                                 cnrhShowContextMenu(WinWindowFromID(hwndDlg, ID_XLDI_CNR),

@@ -7,6 +7,10 @@
  *
  *      This file is all new with V0.9.5.
  *
+ *      ################ CONSTRUCTION SITE ####################
+ *      ## This code is not used in the release version yet. ##
+ *      ################ CONSTRUCTION SITE ####################
+ *
  *      Function prefix for this file:
  *      --  fhdl*
  *
@@ -34,6 +38,9 @@
  *
  *      -- Besides, XWorkplace uses object handles for storing
  *         object hotkeys.
+ *
+ *      -- Any other application (or parts of the WPS) can use
+ *         object handles for anything.
  *
  *      To replace file-system object handling, XWorkplace must do
  *      the following:

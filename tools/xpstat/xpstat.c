@@ -1317,7 +1317,7 @@ BOOL APIENTRY PrintCallback(ULONG ulPage,
     CHAR    szMsg[1000];
     sprintf(szMsg, "Page %d. Continue?", ulPage);
 
-    if (YesNoBox("Printing", szMsg) == MBID_YES)
+    if (winhYesNoBox("Printing", szMsg) == MBID_YES)
         return (TRUE);
     else
         return (FALSE);
@@ -1470,7 +1470,7 @@ MRESULT EXPENTRY fnwpProcInfoClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPAR
                                            "Process dump",
                                            PrintCallback));
 
-                    DebugBox(0, "print", szRet);
+                    winhDebugBox(0, "print", szRet);
                 }
             }
             mrc = (MPARAM)TRUE;

@@ -214,6 +214,44 @@ PROJECT_INCLUDE = $(PROJECT_BASE_DIR)\include;$(PROJECT_BASE_DIR)\include\classe
 
 !endif
 
+# INCLUDED FEATURES
+# -----------------
+
+# All makefiles react to a number of "features" environment variables,
+# that is, certain features will only be compiled/linked when their
+# corresponding environment variable is defined. The convention is that
+# each of these environment variables will #define __VARNAME__ on the
+# compiler command line so that the code can be conditionally compiled.
+# For example, the PAGEMAGE environment variable will result in a
+# __PAGEMAGE__ #define. This allows for building a "stable" release,
+# excluding certain features (if the variable is not defined).
+#
+# The following features are presently defined (we list the #define's here):
+#   __PAGEMAGE__: include PageMage code
+#   __ANIMATED_MOUSE_POINTERS__: include AMPTR code
+#   __EXTASSOCS__: include extended file associations
+#   __REPLHANDLES__: include replacement file handles management
+
+PAGEMAGE_STRING =
+!ifdef PAGEMAGE
+PAGEMAGE_STRING = /D__PAGEMAGE__=1
+!endif
+
+ANIMATED_MOUSE_POINTERS_STRING =
+!ifdef ANIMATED_MOUSE_POINTERS
+ANIMATED_MOUSE_POINTERS_STRING = /D__ANIMATED_MOUSE_POINTERS__=1
+!endif
+
+EXTASSOCS_STRING =
+!ifdef EXTASSOCS
+EXTASSOCS_STRING = /D__EXTASSOCS__=1
+!endif
+
+REPLHANDLES_STRING =
+!ifdef REPLHANDLES
+REPLHANDLES_STRING = /D__REPLHANDLES__=1
+!endif
+
 # COMPILER OPTIONS
 # ----------------
 
@@ -230,22 +268,11 @@ CC = error_in_setup_in_do_not_use_CC_directly
 CC_WARNINGS  = /w3 /Wcmp+ /Wcnd- /Wcns+ /Wcnv+ /Wgen /Wcns /Wcpy /Wobs /Word- /Wpro /Wrea /Wret /Wtru
 # /Wuse+ /Wuni+
 
-# compose DEFINES_STRING passed with all #defines for the compiler (/D options);
-# this can contain:
-#   __PAGEMAGE__: include PageMage code
-#   __ANIMATED_MOUSE_POINTERS__: include AMPTR code
-DEFINES_STRING =
-
-!ifdef PAGEMAGE
-DEFINES_STRING = /D__PAGEMAGE__=1
-!endif
-
-!ifdef ANIMATED_MOUSE_POINTERS
-DEFINES_STRING = $(DEFINES_STRING) /D__ANIMATED_MOUSE_POINTERS__=1
-!endif
-
 # compiler options which are the same with debug and release code
-CC_SHARED    = icc $(DEFINES_STRING) /I$(PROJECT_INCLUDE) /c /gd- /gi+ /q+ /se /ss
+CC_SHARED    = icc $(PAGEMAGE_STRING) \
+$(ANIMATED_MOUSE_POINTERS_STRING) \
+$(EXTASSOCS_STRING) \
+$(REPLHANDLES_STRING) /I$(PROJECT_INCLUDE) /c /gd- /gi+ /q+ /se /ss
 
 !ifdef XWP_DEBUG
 # debug code

@@ -46,7 +46,7 @@
  *         can be freely assigned (i.e. doesn't have to
  *         be "admin").
  *
- *      An XWP Security Database (XSD) must implement the
+ *      An XWP Security Database (UserDB) must implement the
  *      following functions:
  *
  *      --  sudbInit

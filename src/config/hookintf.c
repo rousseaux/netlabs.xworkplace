@@ -786,6 +786,17 @@ VOID hifCollectHotkeys(MPARAM mp1,  // in: HWND hwndCnr
 }
 
 /*
+ *@@ HOTKEYSPAGEDATA:
+ *
+ *@@added V0.9.6 (2000-10-16) [umoeller]
+ */
+
+typedef struct _HOTKEYSPAGEDATA
+{
+    HWND        hmenuPopup;
+} HOTKEYSPAGEDATA, *PHOTKEYSPAGEDATA;
+
+/*
  *@@ hifKeybdHotkeysInitPage:
  *      notebook callback function (notebook.c) for the
  *      "Object hotkeys" page in the "Keyboard" settings object.
@@ -793,6 +804,7 @@ VOID hifCollectHotkeys(MPARAM mp1,  // in: HWND hwndCnr
  *      Global Settings.
  *
  *@@changed V0.9.4 (2000-06-13) [umoeller]: group title was missing; fixed
+ *@@changed V0.9.6 (2000-10-16) [umoeller]: fixed excessive menu creation
  */
 
 VOID hifKeybdHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -802,6 +814,7 @@ VOID hifKeybdHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struc
 
     if (flFlags & CBI_INIT)
     {
+        PHOTKEYSPAGEDATA pPageData = 0;
         XFIELDINFO      xfi[7];
         PFIELDINFO      pfi = NULL;
         int             i = 0;
@@ -874,6 +887,13 @@ VOID hifKeybdHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struc
             cnrhSetSplitBarAfter(pfi);
             cnrhSetSplitBarPos(250);
         } END_CNRINFO(hwndCnr);
+
+        pPageData = pcnbp->pUser = malloc(sizeof(HOTKEYSPAGEDATA));
+        memset(pPageData, 0, sizeof(HOTKEYSPAGEDATA));
+
+        pPageData->hmenuPopup = WinLoadMenu(HWND_OBJECT,
+                                            cmnQueryNLSModuleHandle(FALSE),
+                                            ID_XSM_HOTKEYS_SEL);
     }
 
     if (flFlags & CBI_SET)
@@ -884,6 +904,12 @@ VOID hifKeybdHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struc
         xthrPostFileMsg(FIM_INSERTHOTKEYS,
                         (MPARAM)WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR),
                         (MPARAM)&pcnbp->fShowWaitPointer);
+    }
+
+    if (flFlags & CBI_DESTROY)
+    {
+        PHOTKEYSPAGEDATA pPageData = (PHOTKEYSPAGEDATA)pcnbp->pUser;
+        WinDestroyWindow(pPageData->hmenuPopup);
     }
 }
 
@@ -925,10 +951,9 @@ MRESULT hifKeybdHotkeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     pcnbp->preccSource = (PRECORDCORE)ulExtra;
                     if (pcnbp->preccSource)
                     {
+                        PHOTKEYSPAGEDATA pPageData = (PHOTKEYSPAGEDATA)pcnbp->pUser;
                         // popup menu on container recc:
-                        hPopupMenu = WinLoadMenu(pcnbp->hwndDlgPage,
-                                                 cmnQueryNLSModuleHandle(FALSE),
-                                                 ID_XSM_HOTKEYS_SEL);
+                        hPopupMenu = pPageData->hmenuPopup;
                     }
 
                     if (hPopupMenu)
@@ -1195,6 +1220,18 @@ VOID AddFuncKeyRecord(HWND hwndCnr,             // in: cnr to create record in
 }
 
 /*
+ *@@ FUNCKEYSPAGEDATA:
+ *
+ *@@added V0.9.6 (2000-10-16) [umoeller]
+ */
+
+typedef struct _FUNCKEYSPAGEDATA
+{
+    HWND        hmenuPopupItem,
+                hmenuPopupWhitespace;
+} FUNCKEYSPAGEDATA, *PFUNCKEYSPAGEDATA;
+
+/*
  *@@ hifKeybdFunctionKeysInitPage:
  *      notebook callback function (notebook.c) for the
  *      "Function keys" page in the "Keyboard" settings object.
@@ -1203,6 +1240,7 @@ VOID AddFuncKeyRecord(HWND hwndCnr,             // in: cnr to create record in
  *
  *@@added V0.9.3 (2000-04-17) [umoeller]
  *@@changed V0.9.4 (2000-06-13) [umoeller]: group title was missing; fixed
+ *@@changed V0.9.6 (2000-10-16) [umoeller]: fixed excessive menu creation
  */
 
 VOID hifKeybdFunctionKeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -1212,6 +1250,8 @@ VOID hifKeybdFunctionKeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info 
 
     if (flFlags & CBI_INIT)
     {
+        PFUNCKEYSPAGEDATA pPageData = 0;
+
         XFIELDINFO      xfi[4];
         PFIELDINFO      pfi = NULL;
         int             i = 0;
@@ -1256,6 +1296,17 @@ VOID hifKeybdFunctionKeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info 
             cnrhSetSplitBarPos(250);
         } END_CNRINFO(hwndCnr);
 
+        pPageData = pcnbp->pUser = malloc(sizeof(FUNCKEYSPAGEDATA));
+
+        pPageData->hmenuPopupItem
+            = WinLoadMenu(HWND_OBJECT,
+                          cmnQueryNLSModuleHandle(FALSE),
+                          ID_XSM_FUNCTIONKEYS_SEL);
+        pPageData->hmenuPopupWhitespace
+            = WinLoadMenu(HWND_OBJECT,
+                          cmnQueryNLSModuleHandle(FALSE),
+                          ID_XSM_FUNCTIONKEYS_NOSEL);
+
     }
 
     if (flFlags & CBI_SET)
@@ -1274,6 +1325,13 @@ VOID hifKeybdFunctionKeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info 
                              &paFuncKeys[ul],
                              ul);
         }
+    }
+
+    if (flFlags & CBI_DESTROY)
+    {
+        PFUNCKEYSPAGEDATA pPageData = (PFUNCKEYSPAGEDATA)pcnbp->pUser;
+        WinDestroyWindow(pPageData->hmenuPopupItem);
+        WinDestroyWindow(pPageData->hmenuPopupWhitespace);
     }
 }
 
@@ -1305,6 +1363,7 @@ MRESULT hifKeybdFunctionKeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
                 case CN_CONTEXTMENU:
                 {
+                    PFUNCKEYSPAGEDATA pPageData = (PFUNCKEYSPAGEDATA)pcnbp->pUser;
                     HWND    hPopupMenu = NULLHANDLE; // fixed V0.9.1 (99-12-06)
 
                     // we store the container and recc.
@@ -1316,15 +1375,11 @@ MRESULT hifKeybdFunctionKeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     if (pcnbp->preccSource)
                     {
                         // popup menu on container recc:
-                        hPopupMenu = WinLoadMenu(pcnbp->hwndDlgPage,
-                                                 cmnQueryNLSModuleHandle(FALSE),
-                                                 ID_XSM_FUNCTIONKEYS_SEL);
+                        hPopupMenu = pPageData->hmenuPopupItem;
                     }
                     else
                         // popup menu on whitespace:
-                        hPopupMenu = WinLoadMenu(pcnbp->hwndDlgPage,
-                                                 cmnQueryNLSModuleHandle(FALSE),
-                                                 ID_XSM_FUNCTIONKEYS_NOSEL);
+                        hPopupMenu = pPageData->hmenuPopupWhitespace;
 
                     if (hPopupMenu)
                         cnrhShowContextMenu(pcnbp->hwndControl,     // cnr

@@ -401,9 +401,14 @@ SOM_Scope BOOL  SOMLINK xwlist_wpQueryDefaultHelp(XWPClassList *somSelf,
 
 /*
  *@@ wpOpen:
- *      this instance method opens a new view of an object.
- *      This gets called by the WPS when wpViewObject
- *      determines that a new view needs to be opened.
+ *      this WPObject instance method gets called when
+ *      a new view needs to be opened. Normally, this
+ *      gets called after wpViewObject has scanned the
+ *      object's USEITEMs and has determined that a new
+ *      view is needed, mostly in response to a menu
+ *      selection from the "Open" submenu or a double-click
+ *      in the folder.
+ *
  *      We need to support the new "Class list view" here.
  *
  *      The implementation for this is in cllCreateClassListView.

@@ -328,11 +328,12 @@
 
 // "File types" page (new with V0.9.0)
 #define ID_XSD_FILETYPES                600     // "File types" page in XFldWPS (V0.9.0)
-#define ID_XSDI_FT_ENABLE               603
-#define ID_XSDI_FT_CONTAINER            604
-#define ID_XSDI_FT_EXTENSION            605
-#define ID_XSDI_FT_FILTERSCNR           606
-#define ID_XSDI_FT_ASSOCSCNR            607
+#define ID_XSDI_FT_GROUP                601
+#define ID_XSDI_FT_CONTAINER            602
+#define ID_XSDI_FT_FILTERS_TXT          603
+#define ID_XSDI_FT_FILTERSCNR           604
+#define ID_XSDI_FT_ASSOCS_TXT           605
+#define ID_XSDI_FT_ASSOCSCNR            606
 
 // "Import WPS Filters" dialog (V0.9.0
 #define ID_XSD_IMPORTWPS                610     // "Import WPS filter" dlg (V0.9.0)
@@ -346,6 +347,7 @@
 #define ID_XSD_NEWFILETYPE              620     // "New File type" dlg (V0.9.0)
 #define ID_XSD_NEWFILTER                621     // "New Filter" dlg (V0.9.0)
 #define ID_XSDI_FT_ENTRYFIELD           622
+#define ID_XSDI_FT_TITLE                623
 
 /******************************************
  * Instance settings notebooks     >=700  *
@@ -1011,7 +1013,7 @@
 // context menu in "WPS Classes" container;
 // all the identifiers have changed with V0.9.0
 #define ID_XLM_CLASS_SEL                (WPMENUID_USER+1001)
-#define ID_XLM_CLASS_NOSEL              (WPMENUID_USER+1002)
+// #define ID_XLM_CLASS_NOSEL              (WPMENUID_USER+1002)
 #define ID_XLMI_REGISTER                (WPMENUID_USER+1003)
 #define ID_XLMI_DEREGISTER              (WPMENUID_USER+1004)
 #define ID_XLMI_REPLACE                 (WPMENUID_USER+1005)

@@ -1258,9 +1258,9 @@ SOM_Scope ULONG  SOMLINK xf_xwpQuerySetup2(XFolder *somSelf,
 
     // manually resolve parent method
     pfn_xwpQuerySetup2
-        = (somTD_XFldObject_xwpQuerySetup)wpshResolveForParent(somSelf,
-                                                               _XFolder,
-                                                               "xwpQuerySetup2");
+        = (somTD_XFldObject_xwpQuerySetup)wpshParentResolve(somSelf,
+                                                            _XFolder,
+                                                            "xwpQuerySetup2");
     if (pfn_xwpQuerySetup2)
     {
         // now call XFldObject method
@@ -1335,6 +1335,7 @@ SOM_Scope void  SOMLINK xf_wpInitData(XFolder *somSelf)
  *      XFolder will examine its setup strings here.
  *
  *@@changed V0.9.1 (2000-01-03) [umoeller]: now processing our own strings first
+ *@@changed V0.9.6 (2000-10-16) [umoeller]: added QUICKOPEN=IMMEDIATE
  */
 
 SOM_Scope BOOL  SOMLINK xf_wpSetup(XFolder *somSelf, PSZ pszSetupString)
@@ -1425,7 +1426,9 @@ SOM_Scope BOOL  SOMLINK xf_wpSetup(XFolder *somSelf, PSZ pszSetupString)
             _xwpSetQuickOpen(somSelf, FALSE);
         else if (strnicmp(szValue, "YES", 3) == 0)
             _xwpSetQuickOpen(somSelf, TRUE);
-        // fChanged = TRUE;
+        else if (strnicmp(szValue, "IMMEDIATE", 3) == 0)  // V0.9.6 (2000-10-16) [umoeller]
+            fdrQuickOpen(somSelf,
+                         NULL);     // no callback
     }
 
     if (somSelf != cmnQueryActiveDesktop())
@@ -2470,7 +2473,14 @@ SOM_Scope BOOL  SOMLINK xf_wpQueryDefaultHelp(XFolder *somSelf,
 
 /*
  *@@ wpOpen:
- *      this instance method opens a new folder view.
+ *      this WPObject instance method gets called when
+ *      a new view needs to be opened. Normally, this
+ *      gets called after wpViewObject has scanned the
+ *      object's USEITEMs and has determined that a new
+ *      view is needed, mostly in response to a menu
+ *      selection from the "Open" submenu or a double-click
+ *      in the folder.
+ *
  *      This is one of the main hooks where the XFolder
  *      features are inserted into the WPS.
  *      We call the parent method first (which will create

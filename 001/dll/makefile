@@ -49,9 +49,12 @@ LANGUAGE = 001
 #
 
 OUTPUTDIR = ..\..\bin
+MODULESDIR = ..\..\bin\modules
 
 # create output directory
 !if [@md $(OUTPUTDIR) 2> NUL]
+!endif
+!if [@md $(MODULESDIR) 2> NUL]
 !endif
 
 OBJS = $(OUTPUTDIR)\xfldr$(LANGUAGE).obj
@@ -94,15 +97,15 @@ $(OUTPUTDIR)\xfldr$(LANGUAGE).obj: $(@B).c
 $(OUTPUTDIR)\xfldr$(LANGUAGE).res: *.rc *.dlg *.bmp *.ico ..\..\include\dlgids.h r_amptr001.h
          $(RC) -r -x2 $(@B).rc $(OUTPUTDIR)\$(@B).res
 
-$(OUTPUTDIR)\xfldr$(LANGUAGE).dll: $(@B).def $(OBJS) $(OUTPUTDIR)\$(@B).res ..\..\include\dlgids.h
-         $(LINK_BASE) $(@B).def $(OBJS) /OUT:$(OUTPUTDIR)\$(@B).dll
-         $(RC) -p -x2 $(OUTPUTDIR)\$(@B).res $(OUTPUTDIR)\$(@B).dll
+$(MODULESDIR)\xfldr$(LANGUAGE).dll: $(@B).def $(OBJS) $(OUTPUTDIR)\$(@B).res ..\..\include\dlgids.h
+         $(LINK_BASE) $(@B).def $(OBJS) /OUT:$(MODULESDIR)\$(@B).dll
+         $(RC) -p -x2 $(OUTPUTDIR)\$(@B).res $(MODULESDIR)\$(@B).dll
 
 # main target
-$(XWPRUNNING)\bin\xfldr$(LANGUAGE).dll: $(OUTPUTDIR)\xfldr$(LANGUAGE).dll
+$(XWPRUNNING)\bin\xfldr$(LANGUAGE).dll: $(MODULESDIR)\xfldr$(LANGUAGE).dll
 !ifdef XWP_UNLOCK_MODULES
          unlock $(XWPRUNNING)\bin\$(@B).dll
 !endif
-         cmd.exe /c copy $(OUTPUTDIR)\$(@B).dll $(XWPRUNNING)\bin
+         cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\bin
 
 

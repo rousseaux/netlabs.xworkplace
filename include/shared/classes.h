@@ -225,6 +225,8 @@
          *      contains information for a certain SOM
          *      method. These structures are contained
          *      in a linked list in METHODINFO (below).
+         *
+         *@@changed V0.9.6 (2000-10-16) [umoeller]: added token
          */
 
         typedef struct _SOMMETHOD
@@ -234,6 +236,10 @@
             PSZ         pszMethodName;          // method name (strdup of resolved somId; freed OK)
             ULONG       ulType;                 // 0=static, 1=dynamic, 2=nonstatic.
                                                 // WPS methods are all static, I think.
+            somMethodProc *pMethodProc;         // pointer to resolved method procedure
+            somMToken   tok;                    // method token
+
+            // interpreted data:
             SOMClass*   pIntroducedBy;          // class object of class which introduced the method.
                                                 // This is always valid and might be _SOMObject.
                                                 // Use _somGetName to get the class name.
@@ -248,7 +254,6 @@
             ULONG       ulOverriddenBy;         // inheritance distance to first class on pllOverriddenBy.
                                                 // This is similar to ulIntroducedBy. If pllOverriddenBy
                                                 // is empty, this is set to 0xFFFF.
-            somMethodProc *pMethodProc;         // pointer to resolved method procedure
         } SOMMETHOD, *PSOMMETHOD;
 
         /*

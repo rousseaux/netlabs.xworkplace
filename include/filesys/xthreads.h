@@ -121,7 +121,8 @@
 
     #define FIM_PROCESSTASKLIST         (WM_USER+201)
 
-    #define FIM_REFRESH                 (WM_USER+204)
+    // #define FIM_REFRESH                 (WM_USER+204)
+        // removed V0.9.6 (2000-10-16) [umoeller]
 
     /*
      *@@ FILELISTITEM:

@@ -62,12 +62,14 @@ BEGIN
     MENUITEM "~Help", ID_XFMI_HELP
 END
 
+/* the following has been removed V0.9.6 (2000-10-16) [umoeller]
+
 MENU ID_XLM_CLASS_NOSEL LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     MENUITEM "~Register new class...", ID_XLMI_REGISTER
     MENUITEM "", 1, MIS_SEPARATOR
     MENUITEM "~Help", ID_XFMI_HELP
-END
+END */
 
 // the following two have been added with V0.9.0 */
 MENU ID_XLM_METHOD_NOSEL LOADONCALL MOVEABLE DISCARDABLE

@@ -8,6 +8,8 @@
  *
  *      This file is ALL new with V0.9.0.
  *
+ *      The main entry point into all this is ftypBuildAssocsList.
+ *
  *      Function prefix for this file:
  *      --  ftyp*
  *
@@ -101,6 +103,10 @@
  *      separated by line feeds, \n) into
  *      a linked list of newly allocated PSZ's.
  *
+ *      The list should be in auto-free mode
+ *      so that the strings are automatically
+ *      freed upon lstClear. See lstInit for details.
+ *
  *@@added V0.9.0 (99-11-27) [umoeller]
  */
 
@@ -152,9 +158,13 @@ ULONG ftypListTypesFromString(PSZ pszTypes, // in: types string (e.g. "C Code\nP
  *      a file filter assigned to them which matches
  *      the given object title.
  *
- *      For example, if "C Code" has the "*.c" filter
+ *      For example, if you pass "filetype.c" to this
+ *      function and "C Code" has the "*.c" filter
  *      assigned, this would add "C Code" to the given
  *      list.
+ *
+ *      The type is only added if it doesn't exist in
+ *      the list yet.
  *
  *      In order to query all associations for a given
  *      object, pass the object title to this function
@@ -172,9 +182,9 @@ ULONG ftypListTypesFromString(PSZ pszTypes, // in: types string (e.g. "C Code\nP
  *@@added V0.9.0 (99-11-27) [umoeller]
  */
 
-ULONG ftypListTypesForFile(PSZ pszObjectTitle,
+ULONG ftypListTypesForFile(const char *pcszObjectTitle,
                            PLINKLIST pllTypes)   // in/out: list of newly allocated PSZ's
-                                                // with file types (e.g. "C Code", "Plain text")
+                                                 // with file types (e.g. "C Code", "Plain text")
 {
     ULONG   ulrc = 0;
     // loop thru all extended file types which have
@@ -258,6 +268,9 @@ ULONG ftypListTypesForFile(PSZ pszObjectTitle,
  *
  *      This adds plain SOM pointers to the given list, so
  *      you better not free() those.
+ *
+ *      NOTE: This locks each object instantiated as a
+ *      result of the call.
  *
  *      This returns the no. of objects added to the list
  *      (0 if none).
@@ -355,123 +368,6 @@ ULONG ftypListAssocsForType(PSZ pszType0,         // in: file type (e.g. "C Code
  ********************************************************************/
 
 /*
- *@@ ftypQueryType:
- *      implementation for XFldDataFile::wpQueryType.
- *
- *@@added V0.9.0 [umoeller]
- */
-
-/* PSZ ftypQueryType(WPDataFile *somSelf,
-                  PSZ pszOriginalTypes,
-                  PCGLOBALSETTINGS pGlobalSettings)
-{
-    XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
-
-    if (_pszFileTypes == NULL)
-    {
-        // not queried yet:
-
-        // 2)   append pseudo types based on file type filters
-        //      declared by the user on "File types" page
-        PSZ     pszFiltersList = prfhQueryKeysForApp(HINI_USER,
-                                                     INIAPP_XWPFILEFILTERS);
-        PSZ     pszObjectTitle = _wpQueryTitle(somSelf);
-
-        // 1)   get the "real" type (.TYPE EA)
-        if (pszOriginalTypes)
-            _pszFileTypes = strdup(pszOriginalTypes);
-
-        if (pszFiltersList)
-        {
-            PSZ pFilter2 = pszFiltersList;
-
-            while (*pFilter2 != 0)
-            {
-                // pFilter2 has the current filter now;
-                // get the profile data for this
-                ULONG   cbFilterEntries = 0;
-                PSZ     pszFilterEntries = prfhQueryProfileData(HINI_USER,
-                                                                INIAPP_XWPFILEFILTERS,
-                                                                pFilter2,
-                                                                &cbFilterEntries);
-                PSZ     pFilterThis = pszFilterEntries;
-
-                // each data entry is a list of file filters, each
-                // terminated by a zero byte
-                while (pFilterThis < pszFilterEntries + cbFilterEntries)
-                {
-                    // does it match?
-                    if (strhMatchOS2(pFilterThis, pszObjectTitle))
-                    {
-                        // yes: add to file types list
-                        PSZ     pszTypes2Add = strdup(pFilter2);
-                        PSZ     pszQueryParentFor = strdup(pFilter2);
-
-                        // get the "parent" file types for this type
-                        BOOL   fCont;
-                        do
-                        {
-                            PSZ     pszParentType = prfhQueryProfileData(HINI_USER,
-                                                                         INIAPP_XWPFILETYPES,
-                                                                         pszQueryParentFor,
-                                                                         NULL);
-                            fCont = FALSE;
-                            if (pszParentType)
-                            {
-                                // parent type exists: append to "types to add" string
-                                ULONG cbTypes2AddNew = strlen(pszTypes2Add)
-                                                         + strlen(pszParentType)
-                                                         + 2;  // \n + null terminator
-                                PSZ pszTypes2AddNew = (PSZ)malloc(cbTypes2AddNew);
-                                sprintf(pszTypes2AddNew,
-                                        "%s\n%s",
-                                        pszTypes2Add,
-                                        pszParentType);
-                                free(pszTypes2Add);
-                                pszTypes2Add = pszTypes2AddNew;
-
-                                // climb up the parents tree
-                                free(pszQueryParentFor);    // from last loop
-                                pszQueryParentFor = pszParentType;
-                                fCont = TRUE;
-                            }
-                        } while (fCont);
-                        free(pszQueryParentFor);
-
-                        if (_pszFileTypes)
-                        {
-                            ULONG   cbFileTypesNew = strlen(_pszFileTypes)
-                                                      + strlen(pszTypes2Add)
-                                                      + 2;  // \n + null terminator
-                            PSZ     pszFileTypesNew = (PSZ)malloc(cbFileTypesNew);
-                            sprintf(pszFileTypesNew,
-                                    "%s\n%s",
-                                    _pszFileTypes,
-                                    pszTypes2Add);
-                            free(_pszFileTypes);
-                            _pszFileTypes = pszFileTypesNew;
-                        }
-                        else
-                            _pszFileTypes = strdup(pszTypes2Add);
-
-                        free(pszTypes2Add);
-                    }
-
-                    pFilterThis += strlen(pFilterThis) + 1;     // next entry
-                }
-
-                free(pszFilterEntries);
-
-                pFilter2 += strlen(pFilter2)+1; // next key
-            }
-            free(pszFiltersList);
-        }
-    }
-
-    return (_pszFileTypes);
-} */
-
-/*
  *@@ ftypBuildAssocsList:
  *      this helper function builds a list of all
  *      associated WPProgram and WPProgramFile objects
@@ -481,39 +377,34 @@ ULONG ftypListAssocsForType(PSZ pszType0,         // in: file type (e.g. "C Code
  *      for building the items in the "Open" context
  *      menu.
  *
- *      This returns the no. of objects added to the
- *      list (or 0 if none).
+ *      The list (which is of type PLINKLIST, containing
+ *      WPObject* pointers) is returned and should be
+ *      freed later using lstFree.
  *
- *      If (fRefresh == TRUE), the list is cleared
- *      and rebuilt in any case. Otherwise, and if
- *      the list has been built already, this func
- *      does nothing (and returns 0).
+ *      This returns an empty list if no file associations
+ *      exist, but not NULL.
+ *
+ *      However, on errors, NULL is returned.
+ *
+ *      NOTE: This locks each object instantiated as a
+ *      result of the call. Use ftypFreeAssocsList instead
+ *      of lstFree to free the list returned by this
+ *      function.
  *
  *@@added V0.9.0 (99-11-27) [umoeller]
+ *@@changed V0.9.6 (2000-10-16) [umoeller]: now returning a PLINKLIST
  */
 
-ULONG ftypBuildAssocsList(XFldDataFile *somSelf,
-                          BOOL fRefresh)
+PLINKLIST ftypBuildAssocsList(WPDataFile *somSelf)
 {
-    ULONG       cAssocObjects = 0;
-    XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
-    BOOL        fRebuild = TRUE;
+    PLINKLIST   pllAssocs = NULL;
+    // ULONG       cAssocObjects = 0;
+    // XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
 
-    if (_fAssocObjectsListReady)
-        // list was built already:
-        if (fRefresh)
-            lstFree(_pvAssocObjectsList);
-        else
-        {
-            // no refresh: do nothing
-            cAssocObjects = lstCountItems(_pvAssocObjectsList);
-            fRebuild = FALSE;
-        }
-
-    if (fRebuild)
+    // create list of type strings (to be freed)
+    PLINKLIST   pllTypes = lstCreate(TRUE);       // free items
+    if (pllTypes)
     {
-        // create list of type strings (to be freed)
-        PLINKLIST   pllTypes = lstCreate(TRUE);       // free items
         ULONG       cTypes = 0;
 
         // check if the data file has a file type
@@ -548,15 +439,15 @@ ULONG ftypBuildAssocsList(XFldDataFile *somSelf,
             // from the types list we had above
             PLISTNODE pNode = lstQueryFirstNode(pllTypes);
 
-            if (_pvAssocObjectsList == NULL)
-                _pvAssocObjectsList = lstCreate(FALSE);
+            // create list of assocs to be returned
+            pllAssocs = lstCreate(FALSE);
 
             // loop thru list
             while (pNode)
             {
                 PSZ pszTypeThis = (PSZ)pNode->pItemData;
-                cAssocObjects += ftypListAssocsForType(pszTypeThis,
-                                                       _pvAssocObjectsList);
+                ftypListAssocsForType(pszTypeThis,
+                                      pllAssocs);
                 pNode = pNode->pNext;
             }
 
@@ -566,12 +457,36 @@ ULONG ftypBuildAssocsList(XFldDataFile *somSelf,
         }
 
         lstFree(pllTypes);
-
-        // mark list as ready
-        _fAssocObjectsListReady = TRUE;
     }
 
-    return (cAssocObjects);
+    return (pllAssocs);
+}
+
+/*
+ *@@ ftypFreeAssocsList:
+ *      frees all resources allocated by ftypBuildAssocsList
+ *      by unlocking all objects on the specified list and
+ *      then freeing the list.
+ *
+ *@@added V0.9.6 (2000-10-16) [umoeller]
+ */
+
+ULONG ftypFreeAssocsList(PLINKLIST pllAssocs)    // in: list created by ftypBuildAssocsList
+{
+    ULONG       ulrc = 0;
+    PLISTNODE   pNode = lstQueryFirstNode(pllAssocs);
+    while (pNode)
+    {
+        WPObject *pObj = (WPObject*)pNode->pItemData;
+        _wpUnlockObject(pObj);
+
+        pNode = pNode->pNext;
+        ulrc++;
+    }
+
+    lstFree(pllAssocs);
+
+    return (ulrc);
 }
 
 /*
@@ -583,49 +498,65 @@ ULONG ftypBuildAssocsList(XFldDataFile *somSelf,
  *
  *      It is the responsibility of this method to return the
  *      associated WPProgram or WPProgramFile object for the
- *      given data file.
+ *      given data file according to ulView.
  *
- *      I am very unsure what all the parameters mean, because
- *      only ulView contains data as specified in WPREF. All the
- *      other fields contain garbage or are set to NULL.
+ *      Normally, ulView is the menu item ID in the "Open"
+ *      submenu, which is >= 0x1000. HOWEVER, for some reason,
+ *      the WPS also uses OPEN_RUNNING as the default view.
+ *      We can also get OPEN_DEFAULT.
+ *
+ *      The object returned has been locked by this function.
+ *      Use _wpUnlockObject to unlock it again.
  *
  *@@added V0.9.0 (99-11-27) [umoeller]
+ *@@changed V0.9.6 (2000-10-16) [umoeller]: lists are temporary only now
  */
 
-WPObject* ftypQueryAssociatedProgram(XFldDataFile *somSelf,     // in: data file
-                                     ULONG ulView,              // in: default view (normally 0x1000,
+WPObject* ftypQueryAssociatedProgram(WPDataFile *somSelf,       // in: data file
+                                     ULONG ulView)              // in: default view (normally 0x1000,
                                                                 // can be > 1000 if the default view
                                                                 // has been manually changed on the
                                                                 // "Menu" page
-                                     PULONG pulHowMatched,      // ?!?
-                                     PSZ pszMatchString,        // ?!?
-                                     ULONG cbMatchString,       // ?!?
-                                     PSZ pszDefaultType)        // ?!?
 {
     WPObject *pObjReturn = 0;
 
-    ULONG cAssocObjects = ftypBuildAssocsList(somSelf,
-                                              FALSE);   // no refresh
-    if (cAssocObjects)
+    PLINKLIST   pllAssocObjects = ftypBuildAssocsList(somSelf);
+    if (pllAssocObjects)
     {
-        // any items found:
-        ULONG               ulIndex = 0;
-        XFldDataFileData    *somThis = XFldDataFileGetData(somSelf);
-        PLISTNODE           pNode = 0;
-
-        if (ulView >= 0x1000)
+        ULONG       cAssocObjects = lstCountItems(pllAssocObjects);
+        if (cAssocObjects)
         {
-            ulIndex = ulView - 0x1000;
-            if (ulIndex > cAssocObjects)
-                ulIndex = 0;
-        }
-        else
-            ulIndex = 0;
+            // any items found:
+            ULONG               ulIndex = 0;
+            PLISTNODE           pAssocObjectNode = 0;
 
-        pNode = lstNodeFromIndex((PLINKLIST)(_pvAssocObjectsList),
-                                 ulIndex);
-        if (pNode)
-            pObjReturn = (WPObject*)pNode->pItemData;
+            if (ulView == OPEN_RUNNING)
+                ulView = 0x1000;
+            else if (ulView == OPEN_DEFAULT)
+                ulView = _wpQueryDefaultView(somSelf);
+
+            // calc index to search...
+            if (ulView >= 0x1000)
+            {
+                ulIndex = ulView - 0x1000;
+                if (ulIndex > cAssocObjects)
+                    ulIndex = 0;
+            }
+            else
+                ulIndex = 0;
+
+            pAssocObjectNode = lstNodeFromIndex(pllAssocObjects,
+                                                ulIndex);
+            if (pAssocObjectNode)
+            {
+                pObjReturn = (WPObject*)pAssocObjectNode->pItemData;
+                // raise lock count on this object again (i.e. lock
+                // twice) because ftypFreeAssocsList unlocks it
+                _wpLockObject(pObjReturn);
+            }
+        }
+
+        ftypFreeAssocsList(pllAssocObjects);
     }
 
     return (pObjReturn);
@@ -633,31 +564,22 @@ WPObject* ftypQueryAssociatedProgram(XFldDataFile *somSelf,     // in: data file
 
 /*
  *@@ ftypModifyDataFileOpenSubmenu:
- *      this gets called from two places:
+ *      this adds associations to an "Open" submenu.
  *
- *      --  XFldDataFile::wpDisplayMenu, after a context
- *          menu has been completely built for a data file.
+ *      -- On Warp 3, this gets called from the wpDisplayMenu
+ *         override with (fDeleteExisting == TRUE).
  *
- *      --  fdr_fnwpSubclassedFolderFrame, after the "Selected"
- *          pulldown menu has been built completely for a
- *          data file.
+ *         This is a brute-force hack to get around the
+ *         limitations which IBM has imposed on manipulation
+ *         of the "Open" submenu. See XFldDataFile::wpDisplayMenu
+ *         for details.
  *
- *      This is a brute-force hack to get around the
- *      limitations which IBM has imposed on manipulation
- *      of the "Open" submenu. See XFldDataFile::wpDisplayMenu
- *      for details.
+ *         We remove all associations from the "Open" menu and
+ *         add our own ones instead.
  *
- *      We remove all associations from the "Open" menu and
- *      add our own ones instead.
- *
- *      Unfortunately, we cannot override wpDisplayMenu on
- *      the WPObject level either, because the damn thing
- *      doesn't get called for folder menu bars (even though
- *      there are plenty of flags for that).
- *
- *      I am beginning to wonder who implemented this menu
- *      bar crap at IBM. This is among the worst shit I've
- *      seen in the WPS so far. :-((((
+ *      -- Instead, on Warp 4, this gets called from our
+ *         XFldDataFile::wpModifyMenu hack with
+ *         (fDeleteExisting == FALSE).
  *
  *      This gets called only if extended associations are
  *      enabled.
@@ -666,101 +588,105 @@ WPObject* ftypQueryAssociatedProgram(XFldDataFile *somSelf,     // in: data file
  */
 
 BOOL ftypModifyDataFileOpenSubmenu(WPDataFile *somSelf, // in: data file in question
-                                   HWND hwndMenu)
-                                            // in: menu window with "Open" submenu;
-                                            // either the return value from XFldDataFile::wpDisplayMenu
-                                            // or the "Selected" pulldown
+                                   HWND hwndOpenSubmenu,
+                                            // in: "Open" submenu window
+                                   BOOL fDeleteExisting)
+                                            // in: if TRUE, we remove all items from "Open"
 {
-    BOOL brc = FALSE;
-    MENUITEM        mi;
+    BOOL            brc = FALSE;
 
-    // 1) remove existing (default WPS) association
-    // items from "Open" submenu
-
-    if (WinSendMsg(hwndMenu,
-                   MM_QUERYITEM,
-                   MPFROM2SHORT(WPMENUID_OPEN, TRUE),
-                   (MPARAM)&mi))
+    if (hwndOpenSubmenu)
     {
-        // found:
-        // find first item
         ULONG       ulItemID = 0;
 
-        do
+        // 1) remove existing (default WPS) association
+        // items from "Open" submenu
+
+        if (!fDeleteExisting)
+            brc = TRUE;     // continue
+        else
         {
-            ulItemID = (ULONG)WinSendMsg(mi.hwndSubMenu,
-                                         MM_ITEMIDFROMPOSITION,
-                                         0,       // first item
-                                         0);      // reserved
-            if ((ulItemID) && (ulItemID != MIT_ERROR))
+            // delete existing:
+            // find first item
+            do
             {
-                PSZ pszItemText = winhQueryMenuItemText(mi.hwndSubMenu, ulItemID);
-
-                #ifdef DEBUG_ASSOCS
-                    _Pmpf(("mnuModifyDataFilePopupMenu: removing 0x%lX (%s)",
-                                ulItemID,
-                                pszItemText));
-                #endif
-
-                free(pszItemText);
-
-                winhDeleteMenuItem(mi.hwndSubMenu, ulItemID);
-
-                brc = TRUE;
-            }
-            else
-                break;
-
-        } while (TRUE);
-    }
-
-    // 2) add the new extended associations
-
-    if (brc)
-    {
-        ULONG cAssocs = ftypBuildAssocsList(somSelf,
-                                            FALSE);
-
-        if (cAssocs)
-        {
-            XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
-
-            // initial menu item ID; all associations must have
-            // IDs >= 0x1000
-            ULONG           ulItemID = 0x1000;
-
-            // get data file default associations; this should
-            // return something >= 0x1000 also
-            ULONG           ulDefaultView = _wpQueryDefaultView(somSelf);
-
-            // now add all the associations; this list has
-            // instances of WPProgram and WPProgramFile
-            PLISTNODE       pNode = lstQueryFirstNode((PLINKLIST)(_pvAssocObjectsList));
-            while (pNode)
-            {
-                WPObject *pAssocThis = (WPObject*)pNode->pItemData;
-                if (pAssocThis)
+                ulItemID = (ULONG)WinSendMsg(hwndOpenSubmenu,
+                                             MM_ITEMIDFROMPOSITION,
+                                             0,       // first item
+                                             0);      // reserved
+                if ((ulItemID) && (ulItemID != MIT_ERROR))
                 {
-                    PSZ pszAssocTitle = _wpQueryTitle(pAssocThis);
-                    if (pszAssocTitle)
-                    {
-                        winhInsertMenuItem(mi.hwndSubMenu,  // still has "Open" submenu
-                                           MIT_END,
-                                           ulItemID,
-                                           pszAssocTitle,
-                                           MIS_TEXT,
-                                           // if this is the default view,
-                                           // mark as default
-                                           (ulItemID == ulDefaultView)
-                                                ? MIA_CHECKED
-                                                : 0);
-                    }
+                    PSZ pszItemText = winhQueryMenuItemText(hwndOpenSubmenu, ulItemID);
+
+                    #ifdef DEBUG_ASSOCS
+                        _Pmpf(("mnuModifyDataFilePopupMenu: removing 0x%lX (%s)",
+                                    ulItemID,
+                                    pszItemText));
+                    #endif
+
+                    free(pszItemText);
+
+                    winhDeleteMenuItem(hwndOpenSubmenu, ulItemID);
+
+                    brc = TRUE;
                 }
+                else
+                    break;
 
-                ulItemID++;     // raise item ID even if object was invalid;
-                                // this must be the same in wpMenuItemSelected
+            } while (TRUE);
+        }
 
-                pNode = pNode->pNext;
+        // 2) add the new extended associations
+
+        if (brc)
+        {
+            PLINKLIST   pllAssocObjects = ftypBuildAssocsList(somSelf);
+            if (pllAssocObjects)
+            {
+                ULONG       cAssocObjects = lstCountItems(pllAssocObjects);
+                if (cAssocObjects)
+                {
+                    // now add all the associations; this list has
+                    // instances of WPProgram and WPProgramFile
+                    PLISTNODE       pNode = lstQueryFirstNode(pllAssocObjects);
+
+                    // get data file default associations; this should
+                    // return something >= 0x1000 also
+                    ULONG           ulDefaultView = _wpQueryDefaultView(somSelf);
+
+                    // initial menu item ID; all associations must have
+                    // IDs >= 0x1000
+                    ulItemID = 0x1000;
+
+                    while (pNode)
+                    {
+                        WPObject *pAssocThis = (WPObject*)pNode->pItemData;
+                        if (pAssocThis)
+                        {
+                            PSZ pszAssocTitle = _wpQueryTitle(pAssocThis);
+                            if (pszAssocTitle)
+                            {
+                                winhInsertMenuItem(hwndOpenSubmenu,  // still has "Open" submenu
+                                                   MIT_END,
+                                                   ulItemID,
+                                                   pszAssocTitle,
+                                                   MIS_TEXT,
+                                                   // if this is the default view,
+                                                   // mark as default
+                                                   (ulItemID == ulDefaultView)
+                                                        ? MIA_CHECKED
+                                                        : 0);
+                            }
+                        }
+
+                        ulItemID++;     // raise item ID even if object was invalid;
+                                        // this must be the same in wpMenuItemSelected
+
+                        pNode = pNode->pNext;
+                    }
+                } // end if (cAssocObjects)
+
+                ftypFreeAssocsList(pllAssocObjects);
             }
         }
     }
@@ -778,9 +704,6 @@ BOOL ftypModifyDataFileOpenSubmenu(WPDataFile *somSelf, // in: data file in ques
  *  See ftypFileTypesInitPage for an introduction
  *  how all this crap works. This is complex.
  */
-
-// forward declaration
-MRESULT EXPENTRY fnwpImportWPSFilters(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2);
 
 /*
  * FILETYPERECORD:
@@ -846,6 +769,14 @@ typedef struct _FILETYPESPAGEDATA
             hwndAssocsCnr,
             hwndFiltersCnr,
             hwndIconStatic;
+
+    // popup menus
+    HWND    hmenuFileTypeSel,
+            hmenuFileTypeNoSel,
+            hmenuFileFilterSel,
+            hmenuFileFilterNoSel,
+            hmenuFileAssocSel,
+            hmenuFileAssocNoSel;
 
     // non-modal "Import WPS Filters" dialog
     // or NULLHANDLE, if not open
@@ -933,7 +864,7 @@ PFILETYPERECORD AddFileTypeAndAllParents(PFILETYPESPAGEDATA pftpd,
                                                pszKey,
                                                NULL);
 
-    /* if (YesNoBox(pszKey, "Continue?") != MBID_YES)
+    /* if (winhYesNoBox(pszKey, "Continue?") != MBID_YES)
         return (NULL); */
 
     if (pszParentForKey)
@@ -1395,6 +1326,28 @@ VOID UpdateFiltersCnr(PFILETYPESPAGEDATA pftpd)
 }
 
 /*
+ *@@ G_ampFileTypesPage:
+ *      resizing information for "File types" page.
+ *      Stored in CREATENOTEBOOKPAGE of the
+ *      respective "add notebook page" method.
+ *
+ *@@added V0.9.4 (2000-08-08) [umoeller]
+ */
+
+MPARAM G_ampFileTypesPage[] =
+    {
+        MPFROM2SHORT(ID_XSDI_FT_GROUP, XAC_SIZEX | XAC_SIZEY),
+        MPFROM2SHORT(ID_XSDI_FT_CONTAINER, XAC_SIZEX | XAC_SIZEY),
+        MPFROM2SHORT(ID_XSDI_FT_FILTERS_TXT, XAC_MOVEX | XAC_MOVEY),
+        MPFROM2SHORT(ID_XSDI_FT_FILTERSCNR, XAC_MOVEX | XAC_MOVEY),
+        MPFROM2SHORT(ID_XSDI_FT_ASSOCS_TXT, XAC_MOVEX | XAC_MOVEY),
+        MPFROM2SHORT(ID_XSDI_FT_ASSOCSCNR, XAC_MOVEX | XAC_SIZEY)
+    };
+
+extern MPARAM *G_pampFileTypesPage = G_ampFileTypesPage;
+extern ULONG G_cFileTypesPage = sizeof(G_ampFileTypesPage) / sizeof(G_ampFileTypesPage[0]);
+
+/*
  *@@ ftypFileTypesInitPage:
  *      notebook callback function (notebook.c) for the
  *      "File types" page in the "Workplace Shell" object.
@@ -1433,6 +1386,7 @@ VOID UpdateFiltersCnr(PFILETYPESPAGEDATA pftpd)
  *      that it is always accessible and will be free()'d automatically.
  *
  *@@added V0.9.0 [umoeller]
+ *@@changed V0.9.6 (2000-10-16) [umoeller]: fixed excessive menu creation
  */
 
 VOID ftypFileTypesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -1508,6 +1462,25 @@ VOID ftypFileTypesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                                             // for disabled records
                 // no sort here
             } END_CNRINFO(pftpd->hwndAssocsCnr);
+
+            pftpd->hmenuFileTypeSel = WinLoadMenu(HWND_OBJECT,
+                                                  cmnQueryNLSModuleHandle(FALSE),
+                                                  ID_XSM_FILETYPES_SEL);
+            pftpd->hmenuFileTypeNoSel = WinLoadMenu(HWND_OBJECT,
+                                                    cmnQueryNLSModuleHandle(FALSE),
+                                                    ID_XSM_FILETYPES_NOSEL);
+            pftpd->hmenuFileFilterSel = WinLoadMenu(HWND_OBJECT,
+                                                    cmnQueryNLSModuleHandle(FALSE),
+                                                    ID_XSM_FILEFILTER_SEL);
+            pftpd->hmenuFileFilterNoSel = WinLoadMenu(HWND_OBJECT,
+                                                      cmnQueryNLSModuleHandle(FALSE),
+                                                      ID_XSM_FILEFILTER_NOSEL);
+            pftpd->hmenuFileAssocSel = WinLoadMenu(HWND_OBJECT,
+                                                   cmnQueryNLSModuleHandle(FALSE),
+                                                   ID_XSM_FILEASSOC_SEL);
+            pftpd->hmenuFileAssocNoSel = WinLoadMenu(HWND_OBJECT,
+                                                     cmnQueryNLSModuleHandle(FALSE),
+                                                     ID_XSM_FILEASSOC_NOSEL);
         }
     }
 
@@ -1665,6 +1638,13 @@ VOID ftypFileTypesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         // also free all the data on the list
         // using free()
         lstFree(pftpd->pllCleanup);
+
+        WinDestroyWindow(pftpd->hmenuFileTypeSel);
+        WinDestroyWindow(pftpd->hmenuFileTypeNoSel);
+        WinDestroyWindow(pftpd->hmenuFileFilterSel);
+        WinDestroyWindow(pftpd->hmenuFileFilterNoSel);
+        WinDestroyWindow(pftpd->hmenuFileAssocSel);
+        WinDestroyWindow(pftpd->hmenuFileAssocNoSel);
     }
 }
 
@@ -1970,27 +1950,23 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     if (pcnbp->preccSource)
                     {
                         // popup menu on container recc:
-                        hPopupMenu = WinLoadMenu(pcnbp->hwndDlgPage,
-                                                 cmnQueryNLSModuleHandle(FALSE),
-                                                 ID_XSM_FILETYPES_SEL);
+                        hPopupMenu = pftpd->hmenuFileTypeSel;
 
                         // if lazy drag is currently in progress,
                         // disable "Pickup" item (we can handle only one)
-                        if (fDragging)
-                            WinEnableMenuItem(hPopupMenu,
-                                              ID_XSMI_FILETYPES_PICKUP, FALSE);
+                        WinEnableMenuItem(hPopupMenu,
+                                          ID_XSMI_FILETYPES_PICKUP,
+                                          !fDragging);
                     }
                     else
                     {
                         // on whitespace: different menu
-                        hPopupMenu = WinLoadMenu(pcnbp->hwndDlgPage,
-                                                 cmnQueryNLSModuleHandle(FALSE),
-                                                 ID_XSM_FILETYPES_NOSEL);
+                        hPopupMenu = pftpd->hmenuFileTypeNoSel;
 
-                        if (pftpd->hwndWPSImportDlg)
-                            // already open: disable
-                            WinEnableMenuItem(hPopupMenu,
-                                              ID_XSMI_FILEFILTER_IMPORTWPS, FALSE);
+                        // already open: disable
+                        WinEnableMenuItem(hPopupMenu,
+                                          ID_XSMI_FILEFILTER_IMPORTWPS,
+                                          (pftpd->hwndWPSImportDlg == NULLHANDLE));
                     }
 
                     // for both menu types
@@ -2179,20 +2155,16 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     if (pcnbp->preccSource)
                     {
                         // popup menu on container recc:
-                        hPopupMenu = WinLoadMenu(pcnbp->hwndDlgPage,
-                                                 cmnQueryNLSModuleHandle(FALSE),
-                                                 ID_XSM_FILEFILTER_SEL);
+                        hPopupMenu = pftpd->hmenuFileFilterSel;
                     }
                     else
                     {
                         // no selection: different menu
-                        hPopupMenu = WinLoadMenu(pcnbp->hwndDlgPage,
-                                                 cmnQueryNLSModuleHandle(FALSE),
-                                                 ID_XSM_FILEFILTER_NOSEL);
-                        if (pftpd->hwndWPSImportDlg)
-                            // already open: disable
-                            WinEnableMenuItem(hPopupMenu,
-                                              ID_XSMI_FILEFILTER_IMPORTWPS, FALSE);
+                        hPopupMenu = pftpd->hmenuFileFilterNoSel;
+                        // already open: disable
+                        WinEnableMenuItem(hPopupMenu,
+                                          ID_XSMI_FILEFILTER_IMPORTWPS,
+                                          (pftpd->hwndWPSImportDlg == NULLHANDLE));
                     }
 
                     cnrhShowContextMenu(pcnbp->hwndControl,
@@ -2536,26 +2508,22 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     if (ulExtra)
                     {
                         // popup menu on record core:
-                        hPopupMenu = WinLoadMenu(pcnbp->hwndDlgPage,
-                                                 cmnQueryNLSModuleHandle(FALSE),
-                                                 ID_XSM_FILEASSOC_SEL);
-                        if (pcnbp->preccSource->flRecordAttr & CRA_DISABLED)
-                            // association from parent file type:
-                            // do not allow deletion
-                            WinEnableMenuItem(hPopupMenu,
-                                              ID_XSMI_FILEASSOC_DELETE, FALSE);
+                        hPopupMenu = pftpd->hmenuFileAssocSel;
+                        // association from parent file type:
+                        // do not allow deletion
+                        WinEnableMenuItem(hPopupMenu,
+                                          ID_XSMI_FILEASSOC_DELETE,
+                                          ((pcnbp->preccSource->flRecordAttr & CRA_DISABLED) == 0));
                     }
                     else
                     {
                         // on whitespace: different menu
-                        hPopupMenu = WinLoadMenu(pcnbp->hwndDlgPage,
-                                                 cmnQueryNLSModuleHandle(FALSE),
-                                                 ID_XSM_FILEASSOC_NOSEL);
+                        hPopupMenu = pftpd->hmenuFileAssocNoSel;
 
-                        if (pftpd->hwndWPSImportDlg)
-                            // already open: disable
-                            WinEnableMenuItem(hPopupMenu,
-                                              ID_XSMI_FILEFILTER_IMPORTWPS, FALSE);
+                        // already open: disable
+                        WinEnableMenuItem(hPopupMenu,
+                                          ID_XSMI_FILEFILTER_IMPORTWPS,
+                                          (pftpd->hwndWPSImportDlg == NULLHANDLE));
                     }
 
                     cnrhShowContextMenu(pcnbp->hwndControl,

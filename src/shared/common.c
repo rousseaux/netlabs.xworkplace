@@ -1280,7 +1280,7 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
                                        szResourceModuleName,
                                        (PHMODULE)&G_hmodNLS))
                     {
-                        DebugBox(HWND_DESKTOP,
+                        winhDebugBox(HWND_DESKTOP,
                                  "XFolder: Couldn't Find Resource DLL",
                                  szResourceModuleName); // ###
                     }
@@ -1322,7 +1322,7 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
                                     if (lLength == 0)
                                     {
                                         // version string not found: complain
-                                        DebugBox(HWND_DESKTOP,
+                                        winhDebugBox(HWND_DESKTOP,
                                                  "XFolder",
                                                  "The requested file is not an XFolder National Language Support DLL.");
                                         DosFreeModule(G_hmodNLS);
@@ -1343,7 +1343,7 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
                                                       (PVOID)NULL)
                                                 == DID_CANCEL)
                                         {
-                                            DebugBox(HWND_DESKTOP,
+                                            winhDebugBox(HWND_DESKTOP,
                                                      "XFolder",
                                                      "The new National Language Support DLL was not loaded.");
                                             // unload new NLS DLL
@@ -2021,9 +2021,13 @@ BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
 
             // G_pGlobalSettings->fMonitorCDRoms = 0;
 
+#ifdef __EXTASSOCS__
             G_pGlobalSettings->fExtAssocs = 0;
+#endif
             G_pGlobalSettings->CleanupINIs = 0;
+#ifdef __REPLHANDLES__
             G_pGlobalSettings->fReplaceHandles = 0; // added V0.9.5 (2000-08-14) [umoeller]
+#endif
             G_pGlobalSettings->fReplFileExists = 0;
             G_pGlobalSettings->fReplDriveNotReady = 0;
             G_pGlobalSettings->fTrashDelete = 0;

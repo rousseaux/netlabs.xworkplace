@@ -42,9 +42,9 @@
     #define COMMON_HEADER_INCLUDED
 
     /********************************************************************
-     *                                                                  *
-     *   INI keys                                                       *
-     *                                                                  *
+     *
+     *   INI keys
+     *
      ********************************************************************/
 
     /*
@@ -145,9 +145,9 @@
     // #define WPINIKEY_TASKLISTPOS    "SavePos"
 
     /********************************************************************
-     *                                                                  *
-     *   XWorkplace object IDs                                          *
-     *                                                                  *
+     *
+     *   XWorkplace object IDs
+     *
      ********************************************************************/
 
     // all of these have been redone with V0.9.2
@@ -174,9 +174,9 @@
                 // archive marker file in Desktop directory V0.9.4 (2000-08-03) [umoeller]
 
     /********************************************************************
-     *                                                                  *
-     *   Thread object windows                                          *
-     *                                                                  *
+     *
+     *   Thread object windows
+     *
      ********************************************************************/
 
     // ID's of XWorkplace object windows (added V0.9.0)
@@ -194,9 +194,9 @@
     #define WNDCLASS_SUPPLOBJECT          "XWPSupplFolderObject"
 
     /********************************************************************
-     *                                                                  *
-     *   Help panels in XFDLRxxx.HLP                                    *
-     *                                                                  *
+     *
+     *   Help panels in XFDLRxxx.HLP
+     *
      ********************************************************************/
 
     // The following are constant (I hope) help panel IDs
@@ -300,9 +300,9 @@
     #define ID_XSH_XWP_CLASSESDLG            94     // V0.9.5: XWP "Classes" dlg
 
     /********************************************************************
-     *                                                                  *
-     *   Various other identifiers/flag declarations                    *
-     *                                                                  *
+     *
+     *   Various other identifiers/flag declarations
+     *
      ********************************************************************/
 
     // offset by which the controls should be moved
@@ -362,9 +362,9 @@
     #endif
 
     /********************************************************************
-     *                                                                  *
-     *   Notebook settings page IDs (notebook.c)                        *
-     *                                                                  *
+     *
+     *   Notebook settings page IDs (notebook.c)
+     *
      ********************************************************************/
 
     // XWorkplace settings page IDs; these are used by
@@ -467,9 +467,9 @@
     #define SP_MEDIA_IOPROCS        162     // new with V0.9.3 (2000-04-29) [umoeller]
 
     /********************************************************************
-     *                                                                  *
-     *   Global structures                                              *
-     *                                                                  *
+     *
+     *   Global structures
+     *
      ********************************************************************/
 
     // shutdown settings bits: composed by the
@@ -693,9 +693,12 @@
                     fReplaceFilePage,
                         // XFolder/XFldDataFile: replace three "File" pages
                         // into one
+#ifdef __EXTASSOCS__
                     fExtAssocs,
                         // XFldDataFile/XFldWPS: extended associations
-
+#else
+                    _ulDisabled1,
+#endif
                     // Desktop menu items
                     fDTMSort,
                     fDTMArrange,
@@ -805,8 +808,13 @@
                         // XFldStartup: initial delay
 
     /* XWorkplace 0.9.5 */
+
+#ifdef __REPLHANDLES__
         BYTE        fReplaceHandles;
                         // XWPSetup: replace handles management?
+#else
+        BYTE        fDisabled2;
+#endif
         BYTE        bSaveINIS;
                         // XShutdown: save-INIs method:
                         // -- 0: new method (xprf* APIs)
@@ -1196,9 +1204,9 @@
     #endif
 
     /* ******************************************************************
-     *                                                                  *
-     *   Main module handling (XFLDR.DLL)                               *
-     *                                                                  *
+     *
+     *   Main module handling (XFLDR.DLL)
+     *
      ********************************************************************/
 
     HMODULE cmnQueryMainModuleHandle(VOID);
@@ -1206,9 +1214,9 @@
     const char* cmnQueryMainModuleFilename(VOID);
 
     /* ******************************************************************
-     *                                                                  *
-     *   Error logging                                                  *
-     *                                                                  *
+     *
+     *   Error logging
+     *
      ********************************************************************/
 
     VOID cmnLog(const char *pcszSourceFile,
@@ -1218,9 +1226,9 @@
                 ...);
 
     /* ******************************************************************
-     *                                                                  *
-     *   XWorkplace National Language Support (NLS)                     *
-     *                                                                  *
+     *
+     *   XWorkplace National Language Support (NLS)
+     *
      ********************************************************************/
 
     BOOL cmnQueryXFolderBasePath(PSZ pszPath);
@@ -1255,9 +1263,9 @@
                         USHORT usKeyCode);
 
     /********************************************************************
-     *                                                                  *
-     *   XFolder Global Settings                                        *
-     *                                                                  *
+     *
+     *   XFolder Global Settings
+     *
      ********************************************************************/
 
     const char* cmnQueryStatusBarSetting(USHORT usSetting);
@@ -1279,9 +1287,9 @@
     BOOL cmnSetDefaultSettings(USHORT usSettingsPage);
 
     /* ******************************************************************
-     *                                                                  *
-     *   Trash can setup                                                *
-     *                                                                  *
+     *
+     *   Trash can setup
+     *
      ********************************************************************/
 
     BOOL cmnTrashCanReady(VOID);
@@ -1298,9 +1306,9 @@
                              HWND hwndConfirmOwner);
 
     /********************************************************************
-     *                                                                  *
-     *   Miscellaneae                                                   *
-     *                                                                  *
+     *
+     *   Miscellaneae
+     *
      ********************************************************************/
 
     BOOL cmnPlaySystemSound(USHORT usIndex);

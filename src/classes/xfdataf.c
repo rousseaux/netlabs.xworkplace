@@ -15,10 +15,22 @@
  *
  *      Starting with V0.9.0, the files in classes\ contain only
  *      i.e. the methods themselves.
- *      The implementation for this class is mostly in filesys\filesys.c.
+ *      The implementation for this class is mostly in filesys\filesys.c
+ *      and (for extended file types) in filesys\filetype.c.
  *
- *@@somclass XFldDataFile xfdataf_
- *@@somclass M_XFldDataFile xfdatafM_
+ *      <B>Extended File Associations</B>
+ *
+ *      -- To get the new associated programs into the "Open" menu,
+ *         we override wpDisplayMenu (Warp 3) and wpModifyMenu
+ *         (Warp 4).
+ *
+ *      -- For general WPS support (including icons), we override
+ *         XFldDataFile::wpQueryAssociatedProgram.
+ *
+ *      -- The new selections are intercepted in XFldDataFile::wpOpen.
+ *
+ *@@somclass XFldDataFile xfdf_
+ *@@somclass M_XFldDataFile xfdfM_
  */
 
 /*
@@ -45,8 +57,8 @@
  *      SOM Emitter emitctm: 2.41
  */
 
-#ifndef SOM_Module_xfdataf_Source
-#define SOM_Module_xfdataf_Source
+#ifndef SOM_Module_xfdf_Source
+#define SOM_Module_xfdf_Source
 #endif
 #define XFldDataFile_Class_Source
 #define M_XFldDataFile_Class_Source
@@ -66,6 +78,7 @@
 #define INCL_DOSSEMAPHORES
 #define INCL_DOSERRORS
 #define INCL_WINMENUS
+#define INCL_WINPROGRAMLIST     // needed for wppgm.h
 #include <os2.h>
 
 // C library headers
@@ -75,6 +88,7 @@
 #include "setup.h"                      // code generation and debugging options
 
 // headers in /helpers
+#include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\linklist.h"           // linked list helper routines
 
 // SOM headers which don't crash with prec. header files
@@ -85,194 +99,23 @@
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
+#include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 #include "filesys\filesys.h"            // various file-system object implementation code
 #include "filesys\filetype.h"           // extended file types implementation
 #include "filesys\folder.h"             // XFolder implementation
 #include "filesys\menus.h"              // common XFolder context menu logic
+#include "filesys\program.h"            // program implementation
 
 // other SOM headers
 #pragma hdrstop                 // VAC++ keeps crashing otherwise
+#include <wppgmf.h>             // WPProgramFIle
 
 /* ******************************************************************
  *                                                                  *
  *   here come the XFldDataFile instance methods                    *
  *                                                                  *
  ********************************************************************/
-
-/*
- *@@ wpInitData:
- *      this WPObject instance method gets called when the
- *      object is being initialized (on wake-up or creation).
- *      We initialize our additional instance data here.
- *      Always call the parent method first.
- */
-
-SOM_Scope void  SOMLINK xfdataf_wpInitData(XFldDataFile *somSelf)
-{
-    XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
-    XFldDataFileMethodDebug("XFldDataFile","xfdataf_wpInitData");
-
-    XFldDataFile_parent_WPDataFile_wpInitData(somSelf);
-
-    _pvAssocObjectsList = 0;
-    _fAssocObjectsListReady = FALSE;
-}
-
-/*
- *@@ wpUnInitData:
- *      this WPObject instance method is called when the object
- *      is destroyed as a SOM object, either because it's being
- *      made dormant or being deleted. All allocated resources
- *      should be freed here.
- *      The parent method must always be called last.
- */
-
-SOM_Scope void  SOMLINK xfdataf_wpUnInitData(XFldDataFile *somSelf)
-{
-    XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
-    XFldDataFileMethodDebug("XFldDataFile","xfdataf_wpUnInitData");
-
-    if (_pvAssocObjectsList)
-        lstFree(_pvAssocObjectsList);
-
-    XFldDataFile_parent_WPDataFile_wpUnInitData(somSelf);
-}
-
-/*
- *@@ wpObjectReady:
- *      this WPObject notification method gets called by the
- *      WPS when object instantiation is complete, for any reason.
- *      ulCode and refObject signify why and where from the
- *      object was created.
- *      The parent method must be called first.
- *
- *      Even though WPSREF doesn't really say so, this method
- *      must be used similar to a C++ copy constructor
- *      when the instance data contains pointers. Since when
- *      objects are copied, SOM just copies the binary instance
- *      data, you get two objects with instance pointers pointing
- *      to the same object, which can only lead to problems.
- *
- *@@added V0.9.3 (2000-04-27) [umoeller]
- */
-
-SOM_Scope void  SOMLINK xfdataf_wpObjectReady(XFldDataFile *somSelf,
-                                              ULONG ulCode, WPObject* refObject)
-{
-    XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
-    XFldDataFileMethodDebug("XFldDataFile","xfdataf_wpObjectReady");
-
-    XFldDataFile_parent_WPDataFile_wpObjectReady(somSelf, ulCode,
-                                                 refObject);
-
-    if (ulCode & OR_REFERENCE)
-    {
-        // according to wpobject.h, this flag is set for
-        // OR_FROMTEMPLATE, OR_FROMCOPY, OR_SHADOW; this
-        // means that refObject is valid
-
-        // unset pointers in instance data so that these
-        // will be rebuilt
-        _pvAssocObjectsList = NULL;
-        _fAssocObjectsListReady = FALSE;
-    }
-}
-
-/*
- *@@ wpFilterPopupMenu:
- *      this WPObject instance method allows the object to
- *      filter out unwanted menu items from the context menu.
- *      This gets called before wpModifyPopupMenu.
- *
- *      We remove default entries according to Global Settings;
- *      even though XFldObject does this already, we need to
- *      override this for XFldDataFile again, because the
- *      WPS does it too for WPDataFile.
- *
- *      Also we need to do some fiddling with the "Open"
- *      submenu for the extended associations mechanism.
- */
-
-SOM_Scope ULONG  SOMLINK xfdataf_wpFilterPopupMenu(XFldDataFile *somSelf,
-                                                   ULONG ulFlags,
-                                                   HWND hwndCnr,
-                                                   BOOL fMultiSelect)
-{
-    ULONG ulMenuFilter = 0;
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
-    XFldDataFileMethodDebug("XFldDataFile","xfdataf_wpFilterPopupMenu");
-
-    ulMenuFilter = XFldDataFile_parent_WPDataFile_wpFilterPopupMenu(somSelf,
-                                                                    ulFlags,
-                                                                    hwndCnr,
-                                                                    fMultiSelect);
-
-    // now suppress default menu items according to
-    // Global Settings;
-    // the DefaultMenuItems field in pGlobalSettings is
-    // ready-made for this function; the "Workplace Shell"
-    // notebook page for removing menu items sets this field with
-    // the proper CTXT_xxx flags
-    ulMenuFilter &= ~pGlobalSettings->DefaultMenuItems;
-
-    return (ulMenuFilter);
-}
-
-/*
- *@@ wpModifyPopupMenu:
- *      this WPObject instance methods gets called by the WPS
- *      when a context menu needs to be built for the object
- *      and allows the object to manipulate its context menu.
- *      This gets called _after_ wpFilterPopupMenu.
- *
- *      We add the datafile object popup menu entries.
- *
- *      We don't need a wpMenuItemSelected method override
- *      for data  files, because the new menu items are
- *      completely handled by the subclassed folder frame
- *      window procedure by calling the functions in menus.c.
- */
-
-SOM_Scope BOOL  SOMLINK xfdataf_wpModifyPopupMenu(XFldDataFile *somSelf,
-                                                  HWND hwndMenu,
-                                                  HWND hwndCnr,
-                                                  ULONG iPosition)
-{
-    BOOL brc = TRUE;
-
-    /* somId MethodId = somIdFromString("wpModifyPopupMenu");
-    SOMClassMgr *cm = somEnvironmentNew();
-
-    // somTD_WPObject_wpModifyPopupMenu XFldDataFile_parent_WPFileSystem_wpModifyPopupmenu = 0;
-
-    somTD_WPObject_wpModifyPopupMenu
-        XFldDataFile_parent_WPFileSystem_wpModifyPopupmenu
-        = (somTD_WPObject_wpModifyPopupMenu)
-              _somLookupMethod(_WPObject, MethodId);
-
-    SOMFree(MethodId); */
-
-    /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
-    XFldDataFileMethodDebug("XFldDataFile","xfdataf_wpModifyPopupMenu");
-
-    brc = XFldDataFile_parent_WPDataFile_wpModifyPopupMenu(somSelf,
-                                                           hwndMenu,
-                                                           hwndCnr,
-                                                           iPosition);
-
-    if (brc)
-        // manipulate the data file menu according to our needs
-        brc = mnuModifyDataFilePopupMenu(somSelf, hwndMenu, hwndCnr, iPosition);
-
-    if (brc)
-        fdrAddHotkeysToMenu(somSelf,
-                            hwndCnr,
-                            hwndMenu);
-
-    return (brc);
-}
 
 /*
  *@@ wpDisplayMenu:
@@ -301,25 +144,32 @@ SOM_Scope BOOL  SOMLINK xfdataf_wpModifyPopupMenu(XFldDataFile *somSelf,
  *      for overriding this method and removing them all again, or
  *      breaking compatibility with Warp 3. Duh.
  *
- *      So for data files, after the menu has been completely
- *      built (in the parent method, which in turn calls
- *      wpModifyMenu), we call ftypModifyDataFileOpenSubmenu.
+ *      Soooo... to support extended file assocs on both Warp 3
+ *      and Warp 4, we had to split this.
+ *
+ *      1. For Warp 3, we do the processing in wpDisplayMenu.
+ *         Seems to work. After the menu has been completely
+ *         built, we call ftypModifyDataFileOpenSubmenu.
+ *
+ *      2. For Warp 4, we do some more ugly hacks. We override
+ *         wpModifyMenu and do the processing there. See
+ *         XFldDataFile::wpModifyMenu.
  *
  *@@added V0.9.0 [umoeller]
  */
 
-SOM_Scope HWND  SOMLINK xfdataf_wpDisplayMenu(XFldDataFile *somSelf,
-                                              HWND hwndOwner,
-                                              HWND hwndClient,
-                                              POINTL* ptlPopupPt,
-                                              ULONG ulMenuType,
-                                              ULONG ulReserved)
+SOM_Scope HWND  SOMLINK xfdf_wpDisplayMenu(XFldDataFile *somSelf,
+                                           HWND hwndOwner,
+                                           HWND hwndClient,
+                                           POINTL* ptlPopupPt,
+                                           ULONG ulMenuType,
+                                           ULONG ulReserved)
 {
     HWND hwndMenu = 0;
 
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
-    XFldDataFileMethodDebug("XFldDataFile","xfdataf_wpDisplayMenu");
+    XFldDataFileMethodDebug("XFldDataFile","xfdf_wpDisplayMenu");
 
     hwndMenu = XFldDataFile_parent_WPDataFile_wpDisplayMenu(somSelf,
                                                             hwndOwner,
@@ -328,13 +178,238 @@ SOM_Scope HWND  SOMLINK xfdataf_wpDisplayMenu(XFldDataFile *somSelf,
                                                             ulMenuType,
                                                             ulReserved);
 
-    if (pGlobalSettings->fExtAssocs)
+#ifdef __EXTASSOCS__
+    if (!doshIsWarp4())
     {
-        ftypModifyDataFileOpenSubmenu(somSelf,
-                                      hwndMenu);
+        // on Warp 3, manipulate the "Open" submenu...
+        if (pGlobalSettings->fExtAssocs)
+        {
+            MENUITEM        mi;
+            // find "Open" submenu
+            if (WinSendMsg(hwndMenu,
+                           MM_QUERYITEM,
+                           MPFROM2SHORT(WPMENUID_OPEN, TRUE),
+                           (MPARAM)&mi))
+            {
+                // found:
+                ftypModifyDataFileOpenSubmenu(somSelf,
+                                              mi.hwndSubMenu,
+                                              TRUE);        // delete existing
+            }
+        }
     }
+#endif
 
     return (hwndMenu);
+}
+
+/*
+ *@@ wpFilterPopupMenu:
+ *      this WPObject instance method allows the object to
+ *      filter out unwanted menu items from the context menu.
+ *      This gets called before wpModifyPopupMenu.
+ *
+ *      We remove default entries according to Global Settings;
+ *      even though XFldObject does this already, we need to
+ *      override this for XFldDataFile again, because the
+ *      WPS does it too for WPDataFile.
+ *
+ *      Also we need to do some fiddling with the "Open"
+ *      submenu for the extended associations mechanism.
+ */
+
+SOM_Scope ULONG  SOMLINK xfdf_wpFilterPopupMenu(XFldDataFile *somSelf,
+                                                ULONG ulFlags,
+                                                HWND hwndCnr,
+                                                BOOL fMultiSelect)
+{
+    ULONG ulMenuFilter = 0;
+    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
+    XFldDataFileMethodDebug("XFldDataFile","xfdf_wpFilterPopupMenu");
+
+    ulMenuFilter = XFldDataFile_parent_WPDataFile_wpFilterPopupMenu(somSelf,
+                                                                    ulFlags,
+                                                                    hwndCnr,
+                                                                    fMultiSelect);
+
+    // now suppress default menu items according to
+    // Global Settings;
+    // the DefaultMenuItems field in pGlobalSettings is
+    // ready-made for this function; the "Workplace Shell"
+    // notebook page for removing menu items sets this field with
+    // the proper CTXT_xxx flags
+    ulMenuFilter &= ~pGlobalSettings->DefaultMenuItems;
+
+    return (ulMenuFilter);
+}
+
+/*
+ *@@ wpModifyMenu:
+ *      this WPObject method is Warp-4 specific and
+ *      is a "supermethod" to wpModifyPopupMenu. This
+ *      supports manipulation of folder menu bars as
+ *      well.
+ *
+ *      The standard version of this calls wpModifyPopupMenu
+ *      in turn.
+ *
+ *      NOTE: This method is overridden "manually" in
+ *      M_XFldDataFile::wpclsInitData by patching the
+ *      class method table directly. As a result, this
+ *      must have the _System calling convention, since
+ *      this method stub was not generated by the SOM
+ *      compiler. Also we must use EXACTLY the same
+ *      prototype as the WPS does.
+ *
+ *@@added V0.9.6 (2000-10-16) [umoeller]
+ */
+
+BOOL _System xfdf_wpModifyMenu(XFldDataFile *somSelf,
+                               HWND hwndMenu,
+                               HWND hwndCnr,
+                               ULONG iPosition,
+                               ULONG ulMenuType,
+                               ULONG ulView,
+                               ULONG ulReserved)
+{
+    BOOL    brc = FALSE;
+    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    xfTD_wpModifyMenu _parent_wpModifyMenu = NULL;
+    BOOL    fExtAssocs = FALSE;
+    /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
+    XFldDataFileMethodDebug("XFldDataFile","xfdf_wpModifyMenu");
+
+#ifdef __EXTASSOCS__
+    fExtAssocs = pGlobalSettings->fExtAssocs;
+
+    // resolve parent method.... this is especially sick:
+
+    // a) if extended associations are disabled,
+    //    we go for WPDataFile
+    // b) if extended associations are enabled, this is fun:
+    //    we skip the _WPDataFile method completely and call WPFileSystem directly!
+    if (fExtAssocs)
+        // WPFileSystem
+        _parent_wpModifyMenu
+            = (xfTD_wpModifyMenu)wpshParentNumResolve(_WPFileSystem,
+                                                      WPFileSystemCClassData.parentMtab,
+                                                      "wpModifyMenu");
+
+    else
+#endif
+        // WPDataFile
+        _parent_wpModifyMenu
+            = (xfTD_wpModifyMenu)wpshParentNumResolve(_XFldDataFile,
+                                                      XFldDataFileCClassData.parentMtab,
+                                                      "wpModifyMenu");
+
+    if (!_parent_wpModifyMenu)
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "wpshParentNumResolve failed.");
+    else
+    {
+        // call parent method
+        brc = _parent_wpModifyMenu(somSelf, hwndMenu, hwndCnr,
+                                   iPosition, ulMenuType,
+                                   ulView, ulReserved);
+
+        if ((brc) && (fExtAssocs))
+        {
+            // extended assocs have been enabled:
+            // this means that the WPDataFile method has been SKIPPED
+            // and we need to manually tweak some of the data file
+            // settings, as WPDataFile would normally do it...
+
+            // now check which type of menu we have
+            switch (ulMenuType)
+            {
+                #ifndef MENU_SELECTEDPULLDOWN
+                    // Warp 4 definition...
+                    #define MENU_SELECTEDPULLDOWN     0x00000009
+                #endif
+                case MENU_OPENVIEWPOPUP:
+                case MENU_TITLEBARPULLDOWN:
+                case MENU_OBJECTPOPUP:
+                case MENU_SELECTEDPULLDOWN:
+                {
+                    // find "Open" submenu
+                    MENUITEM        mi;
+                    if (WinSendMsg(hwndMenu,
+                                   MM_QUERYITEM,
+                                   MPFROM2SHORT(WPMENUID_OPEN, TRUE),
+                                   (MPARAM)&mi))
+                    {
+                        // found:
+
+                        // check for program files hack
+                        BOOL    fIsProgramFile = _somIsA(somSelf, _WPProgramFile);
+                        LONG    lDefaultView = _wpQueryDefaultView(somSelf);
+
+                        if (    (lDefaultView == OPEN_RUNNING)
+                             && (!fIsProgramFile)
+                           )
+                        {
+                            // this is not a program file,
+                            // but this doesn't have its default view set yet:
+                            // set it then
+                            _wpSetDefaultView(somSelf, 0x1000);
+                            lDefaultView = 0x1000;
+                        }
+                        // but skip program files with OPEN_RUNNING
+
+                        ftypModifyDataFileOpenSubmenu(somSelf,
+                                                      mi.hwndSubMenu,
+                                                      FALSE);        // do not delete existing
+                    }
+                break; }
+            }
+        }
+    }
+
+    return (brc);
+}
+
+/*
+ *@@ wpModifyPopupMenu:
+ *      this WPObject instance methods gets called by the WPS
+ *      when a context menu needs to be built for the object
+ *      and allows the object to manipulate its context menu.
+ *      This gets called _after_ wpFilterPopupMenu.
+ *
+ *      We add the datafile object popup menu entries.
+ *
+ *      We don't need a wpMenuItemSelected method override
+ *      for data files, because the new menu items are
+ *      completely handled by the subclassed folder frame
+ *      window procedure by calling the functions in menus.c.
+ */
+
+SOM_Scope BOOL  SOMLINK xfdf_wpModifyPopupMenu(XFldDataFile *somSelf,
+                                               HWND hwndMenu,
+                                               HWND hwndCnr,
+                                               ULONG iPosition)
+{
+    BOOL brc = TRUE;
+
+    /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
+    XFldDataFileMethodDebug("XFldDataFile","xfdf_wpModifyPopupMenu");
+
+    brc = XFldDataFile_parent_WPDataFile_wpModifyPopupMenu(somSelf,
+                                                           hwndMenu,
+                                                           hwndCnr,
+                                                           iPosition);
+
+    if (brc)
+        // manipulate the data file menu according to our needs
+        brc = mnuModifyDataFilePopupMenu(somSelf, hwndMenu, hwndCnr, iPosition);
+
+    if (brc)
+        fdrAddHotkeysToMenu(somSelf,
+                            hwndCnr,
+                            hwndMenu);
+
+    return (brc);
 }
 
 /*
@@ -342,11 +417,11 @@ SOM_Scope HWND  SOMLINK xfdataf_wpDisplayMenu(XFldDataFile *somSelf,
  *      display help for a context menu item.
  */
 
-SOM_Scope BOOL  SOMLINK xfdataf_wpMenuItemHelpSelected(XFldDataFile *somSelf,
-                                                       ULONG MenuId)
+SOM_Scope BOOL  SOMLINK xfdf_wpMenuItemHelpSelected(XFldDataFile *somSelf,
+                                                    ULONG MenuId)
 {
     /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
-    XFldDataFileMethodDebug("XFldDataFile","xfdataf_wpMenuItemHelpSelected");
+    XFldDataFileMethodDebug("XFldDataFile","xfdf_wpMenuItemHelpSelected");
 
     // call the common help processor in menus.c;
     if (mnuMenuItemHelpSelected(somSelf, MenuId))
@@ -357,6 +432,99 @@ SOM_Scope BOOL  SOMLINK xfdataf_wpMenuItemHelpSelected(XFldDataFile *somSelf,
         // else: none of our menu items, call default
         return (XFldDataFile_parent_WPDataFile_wpMenuItemHelpSelected(somSelf,
                                                                  MenuId));
+}
+
+/*
+ *@@ wpOpen:
+ *      this WPObject instance method gets called when
+ *      a new view needs to be opened. Normally, this
+ *      gets called after wpViewObject has scanned the
+ *      object's USEITEMs and has determined that a new
+ *      view is needed, mostly in response to a menu
+ *      selection from the "Open" submenu or a double-click
+ *      in the folder.
+ *
+ *      Of course, for data files, the "views" are the
+ *      various associations in the "Open" submenu, which
+ *      have ulView IDs >= 0x1000. If the default view
+ *      has been manually set for the object, wpOpen
+ *      always receives this ID.
+ *
+ *      By contrast, we can also get OPEN_RUNNING or
+ *      OPEN_DEFAULT. I think OPEN_RUNNING comes in
+ *      for "standard" data files which have been
+ *      double-clicked on.
+ *
+ *      There are two more problems with starting the
+ *      associated program (damn it, IBM, do you ever
+ *      read the specs that you've written yourself?):
+ *
+ *      --  The WPS always uses its internal list of associations,
+ *          no matter what we return from XFldDataFile::wpQueryAssociatedProgram,
+ *          so we need to override this method as well and intercept
+ *          the new menu items that we have changed.
+ *
+ *      --  We cannot use the WPProgram/WPProgramFile classes
+ *          to start the associated programs. These things do not
+ *          accept parameters, and of course there's no export for
+ *          resolving all the parameter placeholders.
+ *          So we need to start the program ourselves with
+ *          the data file as the parameter, using progOpenProgram.
+ *
+ *@@added V0.9.6 (2000-10-16) [umoeller]
+ */
+
+SOM_Scope HWND  SOMLINK xfdf_wpOpen(XFldDataFile *somSelf,
+                                    HWND hwndCnr,
+                                    ULONG ulView,
+                                    ULONG param)
+{
+    HWND        hwnd = NULLHANDLE;
+    BOOL        fCallParent = TRUE;
+    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
+    XFldDataFileMethodDebug("XFldDataFile","xfdf_wpOpen");
+
+    _Pmpf(("xfdf_wpOpen, ulView: 0x%lX", ulView));
+
+#ifdef __EXTASSOCS__
+    if (pGlobalSettings->fExtAssocs)
+        // "extended associations" allowed:
+        if (    ((ulView >= 0x1000) && (ulView < 0x1100))
+             || (ulView == OPEN_RUNNING)    // double-click on data file... what's this, IBM?
+             || (ulView == OPEN_DEFAULT)
+           )
+            // use our replacement mechanism
+            fCallParent = FALSE;
+
+    if (!fCallParent)
+    {
+        // replacement desired:
+        WPObject    *pAssocObject = ftypQueryAssociatedProgram(somSelf,
+                                                               ulView);
+                                        // object is locked
+        _Pmpf(("ftypQueryAssociatedProgram got 0x%lX", pAssocObject));
+
+        if (pAssocObject)
+        {
+            hwnd = (HWND)progOpenProgram(pAssocObject,
+                                         somSelf);
+
+            _wpUnlockObject(pAssocObject);
+        }
+    }
+    else
+#endif
+
+        hwnd = XFldDataFile_parent_WPDataFile_wpOpen(somSelf,
+                                                     hwndCnr,
+                                                     ulView,
+                                                     param);
+
+    _Pmpf(("End of xfdf_wpOpen, returning hwnd 0x%lX", hwnd));
+
+    return (hwnd);
+
 }
 
 /*
@@ -373,12 +541,12 @@ SOM_Scope BOOL  SOMLINK xfdataf_wpMenuItemHelpSelected(XFldDataFile *somSelf,
  *@@added V0.9.0
  */
 
-SOM_Scope ULONG  SOMLINK xfdataf_wpAddFile1Page(XFldDataFile *somSelf,
-                                                HWND hwndNotebook)
+SOM_Scope ULONG  SOMLINK xfdf_wpAddFile1Page(XFldDataFile *somSelf,
+                                             HWND hwndNotebook)
 {
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
-    XFldDataFileMethodDebug("XFldDataFile","xfdataf_wpAddFile1Page");
+    XFldDataFileMethodDebug("XFldDataFile","xfdf_wpAddFile1Page");
 
     if (pGlobalSettings->fReplaceFilePage)
     {
@@ -403,12 +571,12 @@ SOM_Scope ULONG  SOMLINK xfdataf_wpAddFile1Page(XFldDataFile *somSelf,
  *@@added V0.9.0
  */
 
-SOM_Scope ULONG  SOMLINK xfdataf_wpAddFile2Page(XFldDataFile *somSelf,
-                                                HWND hwndNotebook)
+SOM_Scope ULONG  SOMLINK xfdf_wpAddFile2Page(XFldDataFile *somSelf,
+                                             HWND hwndNotebook)
 {
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
-    XFldDataFileMethodDebug("XFldDataFile","xfdataf_wpAddFile2Page");
+    XFldDataFileMethodDebug("XFldDataFile","xfdf_wpAddFile2Page");
 
     if (pGlobalSettings->fReplaceFilePage)
         return (SETTINGS_PAGE_REMOVED);
@@ -430,12 +598,12 @@ SOM_Scope ULONG  SOMLINK xfdataf_wpAddFile2Page(XFldDataFile *somSelf,
  *@@added V0.9.0
  */
 
-SOM_Scope ULONG  SOMLINK xfdataf_wpAddFile3Page(XFldDataFile *somSelf,
-                                                HWND hwndNotebook)
+SOM_Scope ULONG  SOMLINK xfdf_wpAddFile3Page(XFldDataFile *somSelf,
+                                             HWND hwndNotebook)
 {
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
-    XFldDataFileMethodDebug("XFldDataFile","xfdataf_wpAddFile3Page");
+    XFldDataFileMethodDebug("XFldDataFile","xfdf_wpAddFile3Page");
 
     if (pGlobalSettings->fReplaceFilePage)
         return (SETTINGS_PAGE_REMOVED);
@@ -445,45 +613,14 @@ SOM_Scope ULONG  SOMLINK xfdataf_wpAddFile3Page(XFldDataFile *somSelf,
 }
 
 /*
- *@@ wpQueryAssociatedFileIcon:
- *      this method should return the icon of the associated
- *      program (file) object.
- *
- *      From what I see, this only gets called while a folder
- *      is being populated (in order to find out the correct
- *      data file icon), but not when a context menu is opened.
- *
- *      The default version of this method calls
- *      XFldDataFile::wpQueryAssociatedProgram.
- *
- *@@added V0.9.0 [umoeller]
- */
-
-SOM_Scope HPOINTER  SOMLINK xfdataf_wpQueryAssociatedFileIcon(XFldDataFile *somSelf)
-{
-    HPOINTER hp = 0;
-    /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
-    // XFldDataFileMethodDebug("XFldDataFile","xfdataf_wpQueryAssociatedFileIcon");
-
-    #if defined DEBUG_ASSOCS || defined DEBUG_SOMMETHODS
-        _Pmpf(("Entering wpQueryAssociatedFileIcon for %s", _wpQueryTitle(somSelf)));
-    #endif
-
-    hp =  XFldDataFile_parent_WPDataFile_wpQueryAssociatedFileIcon(somSelf);
-
-    #if defined DEBUG_ASSOCS || defined DEBUG_SOMMETHODS
-        _Pmpf(("End of wpQueryAssociatedFileIcon for %s", _wpQueryTitle(somSelf)));
-    #endif
-
-    return (hp);
-}
-
-/*
  *@@ wpQueryAssociatedProgram:
  *      this method returns the associated WPProgram or
  *      WPProgramFile object for a data file.
  *
- *      Per default, this gets called from
+ *      The WPS docs say that this should be overridden
+ *      to introduce new association mechanisms.
+ *
+ *      Yeah, right. Per default, this gets called from
  *      XFldDataFile::wpQueryAssociatedFileIcon -- that
  *      is, only while a folder is being populated, but
  *      _not_ when a context menu is opened. There seems
@@ -495,8 +632,10 @@ SOM_Scope HPOINTER  SOMLINK xfdataf_wpQueryAssociatedFileIcon(XFldDataFile *somS
  *      data file icons which get set to the default icon
  *      then.
  *
- *      The WPS docs say that this should be overridden
- *      to introduce new association mechanisms.
+ *      Soooo... to give the data files new icons, we need
+ *      to override this method since it gets called from
+ *      wpQueryAssociatedFileIcon (which normally gets called
+ *      during folder populate).
  *
  *      From what I see, ulView is normally 0x1000, which
  *      is the WPS-internal code for the first associated
@@ -505,24 +644,32 @@ SOM_Scope HPOINTER  SOMLINK xfdataf_wpQueryAssociatedFileIcon(XFldDataFile *somS
  *      of a data file (1001 for the second assoc, 1002
  *      for the third, etc.).
  *
+ *      However, this also needs to support OPEN_RUNNING
+ *      and OPEN_DEFAULT.
+ *
  *      This returns NULL if there's no associated program
- *      for the specified view.
+ *      for the specified view. Otherwise it returns a
+ *      WPProgram or WPProgramFile, which is locked.
+ *
+ *      The caller should unlock the object after it's
+ *      done using it. AFAIK, WPS wpQueryAssociatedFileIcon
+ *      does this.
  *
  *@@added V0.9.0 [umoeller]
  */
 
-SOM_Scope WPObject*  SOMLINK xfdataf_wpQueryAssociatedProgram(XFldDataFile *somSelf,
-                                                              ULONG ulView,
-                                                              PULONG pulHowMatched,
-                                                              PSZ pszMatchString,
-                                                              ULONG cbMatchString,
-                                                              PSZ pszDefaultType)
+SOM_Scope WPObject*  SOMLINK xfdf_wpQueryAssociatedProgram(XFldDataFile *somSelf,
+                                                           ULONG ulView,
+                                                           PULONG pulHowMatched,
+                                                           PSZ pszMatchString,
+                                                           ULONG cbMatchString,
+                                                           PSZ pszDefaultType)
 {
     WPObject* pobj = 0;
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
-    // XFldDataFileMethodDebug("XFldDataFile","xfdataf_wpQueryAssociatedProgram");
+    // XFldDataFileMethodDebug("XFldDataFile","xfdf_wpQueryAssociatedProgram");
 
     #if defined DEBUG_ASSOCS || defined DEBUG_SOMMETHODS
         _Pmpf(("Entering wpQueryAssociatedProgram for %s; ulView = %lX, "
@@ -538,16 +685,14 @@ SOM_Scope WPObject*  SOMLINK xfdataf_wpQueryAssociatedProgram(XFldDataFile *somS
                ));
     #endif
 
+#ifdef __EXTASSOCS__
     if (pGlobalSettings->fExtAssocs)
         // "extended associations" allowed:
         // use our replacement mechanism
         pobj = ftypQueryAssociatedProgram(somSelf,
-                                          ulView,
-                                          pulHowMatched,
-                                          pszMatchString,
-                                          cbMatchString,
-                                          pszDefaultType);
+                                          ulView);
     else
+#endif
         pobj = XFldDataFile_parent_WPDataFile_wpQueryAssociatedProgram(somSelf,
                                                                        ulView,
                                                                        pulHowMatched,
@@ -575,10 +720,10 @@ SOM_Scope WPObject*  SOMLINK xfdataf_wpQueryAssociatedProgram(XFldDataFile *somS
  *@@added V0.9.0 [umoeller]
  */
 
-SOM_Scope void  SOMLINK xfdataf_wpSetAssociatedFileIcon(XFldDataFile *somSelf)
+SOM_Scope void  SOMLINK xfdf_wpSetAssociatedFileIcon(XFldDataFile *somSelf)
 {
     /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
-    XFldDataFileMethodDebug("XFldDataFile","xfdataf_wpSetAssociatedFileIcon");
+    XFldDataFileMethodDebug("XFldDataFile","xfdf_wpSetAssociatedFileIcon");
 
     // _Pmpf(("Entering wpSetAssociatedFileIcon for %s", _wpQueryTitle(somSelf)));
     XFldDataFile_parent_WPDataFile_wpSetAssociatedFileIcon(somSelf);
@@ -596,13 +741,18 @@ SOM_Scope void  SOMLINK xfdataf_wpSetAssociatedFileIcon(XFldDataFile *somSelf)
  *@@ wpclsInitData:
  *      initialize XFldDataFile class data.
  *
+ *      We also manually patch the class method table to
+ *      override some WPDataFile methods that IBM didn't
+ *      want us to see.
+ *
  *@@changed V0.9.0 [umoeller]: added class object to KERNELGLOBALS
+ *@@changed V0.9.6 (2000-10-16) [umoeller]: added method tables override
  */
 
-SOM_Scope void  SOMLINK xfdatafM_wpclsInitData(M_XFldDataFile *somSelf)
+SOM_Scope void  SOMLINK xfdfM_wpclsInitData(M_XFldDataFile *somSelf)
 {
     // M_XFldDataFileData *somThis = M_XFldDataFileGetData(somSelf);
-    M_XFldDataFileMethodDebug("M_XFldDataFile","xfdatafM_wpclsInitData");
+    M_XFldDataFileMethodDebug("M_XFldDataFile","xfdfM_wpclsInitData");
 
     M_XFldDataFile_parent_M_WPDataFile_wpclsInitData(somSelf);
 
@@ -611,6 +761,34 @@ SOM_Scope void  SOMLINK xfdatafM_wpclsInitData(M_XFldDataFile *somSelf)
         // store the class object in KERNELGLOBALS
         pKernelGlobals->fXFldDataFile = TRUE;
         krnUnlockGlobals();
+    }
+
+    /*
+     *  Manually patch method tables of this class...
+     *
+     */
+
+    // this gets called for subclasses too, so patch
+    // this only for the parent class... descendant
+    // classes will inherit this anyway
+    if (somSelf == _XFldDataFile)
+    {
+        somId somidMethod = 0;
+        if (doshIsWarp4())
+        {
+            // on Warp 4, override wpModifyMenu (Warp 4-specific method)
+            somidMethod = somIdFromString("wpModifyMenu");
+            if (!somidMethod)
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "xfobjM_somClassReady: Cannot get id for wpModifyMenu");
+            else
+            {
+                _somOverrideSMethod(somSelf,
+                                    somidMethod,
+                                    (somMethodPtr)xfdf_wpModifyMenu);
+                SOMFree(somidMethod);
+            }
+        }
     }
 }
 
@@ -625,11 +803,11 @@ SOM_Scope void  SOMLINK xfdatafM_wpclsInitData(M_XFldDataFile *somSelf)
  *      crowd the Templates folder.
  */
 
-SOM_Scope BOOL  SOMLINK xfdatafM_wpclsCreateDefaultTemplates(M_XFldDataFile *somSelf,
-                                                             WPObject* Folder)
+SOM_Scope BOOL  SOMLINK xfdfM_wpclsCreateDefaultTemplates(M_XFldDataFile *somSelf,
+                                                          WPObject* Folder)
 {
     // M_XFldDataFileData *somThis = M_XFldDataFileGetData(somSelf);
-    M_XFldDataFileMethodDebug("M_XFldDataFile","xfdatafM_wpclsCreateDefaultTemplates");
+    M_XFldDataFileMethodDebug("M_XFldDataFile","xfdfM_wpclsCreateDefaultTemplates");
 
     // we only override this class method if it is
     // being called for the _XFldDataFile class object itself.
@@ -654,14 +832,14 @@ SOM_Scope BOOL  SOMLINK xfdatafM_wpclsCreateDefaultTemplates(M_XFldDataFile *som
  *      This is loaded from /ICONS/ICONS.DLL.
  */
 
-SOM_Scope ULONG  SOMLINK xfdatafM_wpclsQueryIconData(M_XFldDataFile *somSelf,
-                                                     PICONINFO pIconInfo)
+SOM_Scope ULONG  SOMLINK xfdfM_wpclsQueryIconData(M_XFldDataFile *somSelf,
+                                                  PICONINFO pIconInfo)
 {
     ULONG       ulrc;
     HMODULE     hmodIconsDLL = NULLHANDLE;
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // M_XFldDataFileData *somThis = M_XFldDataFileGetData(somSelf);
-    M_XFldDataFileMethodDebug("M_XFldDataFile","xfdatafM_wpclsQueryIconData");
+    M_XFldDataFileMethodDebug("M_XFldDataFile","xfdfM_wpclsQueryIconData");
 
     if (pGlobalSettings->fReplaceIcons)
     {

@@ -80,7 +80,7 @@
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 
-// #include "filesys\xthreads.h"           // extra XWorkplace threads
+#include "config\sound.h"               // XWPSound implementation
 
 #include "media\media.h"                // XWorkplace multimedia support
 
@@ -169,9 +169,10 @@ typedef struct _SOUNDPAGEDATA
  *      sounds are installed in MMPM.INI.
  *
  *@@added V0.9.1 (99-12-30) [umoeller]
+ *@@changed V0.9.6 (2000-10-16) [umoeller]: added proper HAB param
  */
 
-BOOL sndAddtlSoundsInstalled(VOID)
+BOOL sndAddtlSoundsInstalled(HAB hab)
 {
     BOOL brc = TRUE;
 
@@ -181,7 +182,7 @@ BOOL sndAddtlSoundsInstalled(VOID)
          ul < (sizeof(aulAddtlSystemSounds) / sizeof(ULONG)); // sizeof array
          ul++)
     {
-        if (!sndQuerySystemSound(aulAddtlSystemSounds[ul], NULL, NULL, NULL))
+        if (!sndQuerySystemSound(hab, aulAddtlSystemSounds[ul], NULL, NULL, NULL))
         {
             // not found: return FALSE
             brc = FALSE;
@@ -203,9 +204,12 @@ BOOL sndAddtlSoundsInstalled(VOID)
  *      REXX script wasn't found.
  *
  *@@added V0.9.1 (99-12-30) [umoeller]
+ *@@changed V0.9.6 (2000-10-16) [umoeller]: added proper HAB param
+ *@@changed V0.9.6 (2000-10-16) [umoeller]: forgot to close MMPM.INI, fixed
  */
 
-BOOL sndInstallAddtlSounds(BOOL fInstall) // in: TRUE: install sounds; FALSE: de-install sounds
+BOOL sndInstallAddtlSounds(HAB hab,
+                           BOOL fInstall) // in: TRUE: install sounds; FALSE: de-install sounds
 {
     BOOL    brc = FALSE;
     CHAR    szPath[CCHMAXPATH], szCmdFile[CCHMAXPATH];
@@ -238,17 +242,21 @@ BOOL sndInstallAddtlSounds(BOOL fInstall) // in: TRUE: install sounds; FALSE: de
     else
     {
         // deinstall system sounds:
-        HINI hiniMmpm = sndOpenMmpmIni();
-        ULONG ul = 0;
-
-        for (ul = 0;
-             ul < (sizeof(aulAddtlSystemSounds) / sizeof(ULONG)); // sizeof array
-             ul++)
+        HINI hiniMmpm = sndOpenMmpmIni(hab);
+        if (hiniMmpm)       // V0.9.6 (2000-10-16) [umoeller]
         {
-            sndWriteSoundData(hiniMmpm,
-                              aulAddtlSystemSounds[ul],
-                              NULL, NULL, 0);
-            brc = TRUE;
+            ULONG ul = 0;
+
+            for (ul = 0;
+                 ul < (sizeof(aulAddtlSystemSounds) / sizeof(ULONG)); // sizeof array
+                 ul++)
+            {
+                sndWriteSoundData(hiniMmpm,
+                                  aulAddtlSystemSounds[ul],
+                                  NULL, NULL, 0);
+                brc = TRUE;
+            }
+            PrfCloseProfile(hiniMmpm);  // V0.9.6 (2000-10-16) [umoeller]
         }
     }
 
@@ -426,7 +434,7 @@ BOOL SaveSoundSchemeAs(PCREATENOTEBOOKPAGE pcnbp,
                                 sizeof(szNewScheme)-1, szNewScheme);
 
             if (strlen(szNewScheme) < 3)
-                DebugBox(pcnbp->hwndFrame,
+                winhDebugBox(pcnbp->hwndFrame,
                          "Error",
                          "This is not a valid scheme name.");
 
@@ -485,7 +493,7 @@ BOOL SaveSoundSchemeAs(PCREATENOTEBOOKPAGE pcnbp,
                     {
                         CHAR szTemp[100];
                         sprintf(szTemp, "Error code: %d", arc);
-                        DebugBox(pcnbp->hwndFrame,
+                        winhDebugBox(pcnbp->hwndFrame,
                                  "Error saving scheme",
                                  szTemp);
                     }
@@ -539,7 +547,7 @@ BOOL LoadSoundSchemeFrom(PCREATENOTEBOOKPAGE pcnbp)
         {
             CHAR szTemp[100];
             sprintf(szTemp, "Error code: %d", arc);
-            DebugBox(pcnbp->hwndFrame,
+            winhDebugBox(pcnbp->hwndFrame,
                      "Error loading scheme",
                      szTemp);
         }

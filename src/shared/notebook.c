@@ -1472,7 +1472,7 @@ ULONG ntbInsertPage(PCREATENOTEBOOKPAGE pcnbp)
                        "hmtxNotebookLists mutex request failed");
         }
         else
-            DebugBox(HWND_DESKTOP,
+            winhDebugBox(HWND_DESKTOP,
                      "XWorkplace: Error in ntbInsertPage",
                      "Notebook page could not be inserted (wpInsertSettingsPage failed).");
     }

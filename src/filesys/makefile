@@ -57,12 +57,15 @@ OBJS = $(OUTPUTDIR)\desktop.obj \
        $(OUTPUTDIR)\fhandles.obj \
        $(OUTPUTDIR)\fileops.obj \
        $(OUTPUTDIR)\filesys.obj \
+!ifdef EXTASSOCS
        $(OUTPUTDIR)\filetype.obj \
+!endif
        $(OUTPUTDIR)\folder.obj \
        $(OUTPUTDIR)\fops_bottom.obj \
        $(OUTPUTDIR)\fops_top.obj \
        $(OUTPUTDIR)\menus.obj \
        $(OUTPUTDIR)\object.obj \
+       $(OUTPUTDIR)\program.obj \
        $(OUTPUTDIR)\statbars.obj \
        $(OUTPUTDIR)\trash.obj \
        $(OUTPUTDIR)\xthreads.obj
@@ -258,6 +261,15 @@ $(OUTPUTDIR)\object.obj: \
     $(INC)\hook\xwphook.h \
     $(INC)\filesys\filesys.h $(INC)\filesys\folder.h \
     $(INC)\config\hookintf.h \
+    $(@B).c $(MYOWNINC)\$(@B).h
+
+$(OUTPUTDIR)\program.obj: \
+    $(INC)\setup.h \
+    $(HLPINC)\except.h $(HLPINC)\linklist.h $(HLPINC)\prfh.h $(HLPINC)\stringh.h $(HLPINC)\xstring.h \
+    $(INC)\classes\xfdataf.ih \
+    $(INC)\dlgids.h \
+    $(INC)\shared\common.h $(INC)\shared\kernel.h \
+    $(INC)\hook\xwphook.h \
     $(@B).c $(MYOWNINC)\$(@B).h
 
 $(OUTPUTDIR)\statbars.obj: \

@@ -848,7 +848,7 @@ VOID fdrHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                               G_szLBEntries[i])
                      == 0)
             {
-                DebugBox(pcnbp->hwndFrame,
+                winhDebugBox(pcnbp->hwndFrame,
                          "XFolder",
                          "Unable to load strings.");
                 break;

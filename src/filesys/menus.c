@@ -1854,7 +1854,7 @@ BOOL mnuModifyDataFilePopupMenu(WPDataFile *somSelf,
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
 
-    if (pGlobalSettings->fExtAssocs)
+    /* if (pGlobalSettings->fExtAssocs)
     {
 
         // if extended associations are on, we need to remove
@@ -1864,8 +1864,6 @@ BOOL mnuModifyDataFilePopupMenu(WPDataFile *somSelf,
         // I got when I enumerated the submenu items in the "Open"
         // submenu IN THIS FUNCTION (WPDataFile).
 
-        /*
-
         mnuModifyDataFilePopupMenu: removing 0x70 (Propertie~s)
         mnuModifyDataFilePopupMenu: removing 0x12F (~Icon view)
         mnuModifyDataFilePopupMenu: removing 0x7B (~Tree view)
@@ -1874,14 +1872,12 @@ BOOL mnuModifyDataFilePopupMenu(WPDataFile *somSelf,
         mnuModifyDataFilePopupMenu: removing 0x13D (~Palette)
         mnuModifyDataFilePopupMenu: removing 0x67B (Date/~Time)
 
-        */
-
         // Now you guys explain why the **DATAFILE** "Open" menu
         // initially has "Palette" and "Tree view" menu items, and
         // where this is removed. COME ON.
 
         // get handle to "Open" submenu
-        /*
+
         MENUITEM        mi;
         if (WinSendMsg(hwndMenu,
                        MM_QUERYITEM,
@@ -1912,10 +1908,10 @@ BOOL mnuModifyDataFilePopupMenu(WPDataFile *somSelf,
                     break;
 
             } while (TRUE);
-        } */
+        }
 
         // OK, here's the new approach.
-        /* winhInsertSubmenu(hwndMenu,
+        winhInsertSubmenu(hwndMenu,
                           0,            // iPosition
                           WPMENUID_OPEN,
                           "O~pen as",
@@ -1924,8 +1920,7 @@ BOOL mnuModifyDataFilePopupMenu(WPDataFile *somSelf,
                           "Prrrrroperties",
                           MIS_TEXT,
                           0);
-        */
-    }
+    } */
 
     // insert separator V0.9.4 (2000-06-09) [umoeller]
     if (    (pGlobalSettings->FileAttribs)
@@ -2153,7 +2148,7 @@ BOOL mnuProgramObjectSelected(WPObject *somSelf, WPProgram *pProgram)
                                 }
                             }
                             else
-                                DebugBox(HWND_DESKTOP,
+                                winhDebugBox(HWND_DESKTOP,
                                          "XFolder",
                                          "Unable to open clipboard.");
                         }
@@ -2190,7 +2185,7 @@ BOOL mnuProgramObjectSelected(WPObject *somSelf, WPProgram *pProgram)
                 if (StartupChanged || ParamsChanged || TitleChanged)
                     if (!_wpSetProgDetails(pProgram, pProgDetails))
                     {
-                        DebugBox(HWND_DESKTOP,
+                        winhDebugBox(HWND_DESKTOP,
                                  "XFolder",
                                  "Unable to set new startup directory.");
                         brc = FALSE;
@@ -2414,6 +2409,7 @@ VOID mnuCreateFromTemplate(WPObject *pTemplate,
  *@@changed V0.9.1 (99-11-29) [umoeller]: "Open parent and close" closed even the Desktop; fixed
  *@@changed V0.9.1 (99-12-01) [umoeller]: "Open parent" crashed for root folders; fixed
  *@@changed V0.9.4 (2000-06-09) [umoeller]: added default document
+ *@@changed V0.9.6 (2000-10-16) [umoeller]: fixed "Refresh now"
  */
 
 BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
@@ -2614,14 +2610,31 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
                  */
 
                 case ID_XFMI_OFS_REFRESH:
-                    xthrPostFileMsg(FIM_REFRESH,
+                    // we used to call _wpRefresh ourselves...
+                    // apparently this wasn't such a good idea,
+                    // because the WPS is doing a lot more things
+                    // than just calling "Refresh". We get messed
+                    // up container record cores if we just call
+                    // _wpRefresh this way, so instead we post the
+                    // WPS the command as if the item from the
+                    // "View" submenu was selected...
+
+                    WinPostMsg(hwndFrame,
+                               WM_COMMAND,
+                               MPFROMSHORT(WPMENUID_REFRESH),
+                               MPFROM2SHORT(CMDSRC_MENU,
+                                            FALSE));     // keyboard
+
+                    /* xthrPostFileMsg(FIM_REFRESH,
                                     (MPARAM)somSelf,
                                     (MPARAM)hwndFrame);
-                    brc = TRUE;
+                    brc = TRUE; */
                 break;
 
                 /*
                  * ID_XFMI_OFS_CLOSE:
+                 *      this is only used for the "close window"
+                 *      folder hotkey;
                  *      repost sys command
                  */
 
@@ -2636,7 +2649,8 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
 
                 /*
                  * ID_XFMI_OFS_BORED:
-                 *      "[Config folder empty]"
+                 *      "[Config folder empty]" menu item...
+                 *      show a msg box
                  */
 
                 case ID_XFMI_OFS_BORED:

@@ -415,7 +415,7 @@ SOM_Scope ULONG  SOMLINK xfobj_xwpQuerySetup(XFldObject *somSelf,
  *          idea that XFldObject is actually a parent class of all
  *          other WPS classes. You must manually resolve the SOM
  *          method pointer for the parent class of your class using
- *          wpshResolveForParent. See the code sample below.
+ *          wpshParentResolve. See the code sample below.
  *
  *      2.  You must call the parent method _after_ your implementation
  *          to make sure XFldObject gets called last, because the OBJECTID
@@ -440,7 +440,7 @@ SOM_Scope ULONG  SOMLINK xfobj_xwpQuerySetup(XFldObject *somSelf,
  +
  +          // manually resolve method for parent class
  +          somTD_XFldObject_xwpQuerySetup pfn_xwpQuerySetup2
- +              = wpshResolveForParent(somSelf,    // object
+ +              = wpshParentResolve(somSelf,    // object
  +                                     _YourClass, // class object; replace this with
  +                                          // the class you're coding this method for
  +                                     "xwpQuerySetup2"); // method name
@@ -772,23 +772,15 @@ SOM_Scope HWND  SOMLINK xfobj_wpDisplayMenu(XFldObject *somSelf,
                                             ULONG ulMenuType,
                                             ULONG ulReserved)
 {
-    HWND    hwndMenu = NULLHANDLE;
-    // XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    // XFldObjectMethodDebug("XFldObject","xfobj_wpDisplayMenu");
+    XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectMethodDebug("XFldObject","xfobj_wpDisplayMenu");
 
-    #if defined DEBUG_MENUS || defined DEBUG_SOMMETHODS
-        _Pmpf(("wpDisplayMenu for %s, ulMenuType: 0x%lX (%d)",
-                _wpQueryTitle(somSelf), ulMenuType, ulMenuType));
-    #endif
-
-    hwndMenu = XFldObject_parent_WPObject_wpDisplayMenu(somSelf,
-                                                        hwndOwner,
-                                                        hwndClient,
-                                                        ptlPopupPt,
-                                                        ulMenuType,
-                                                        ulReserved);
-
-    return (hwndMenu);
+    return (XFldObject_parent_WPObject_wpDisplayMenu(somSelf,
+                                                     hwndOwner,
+                                                     hwndClient,
+                                                     ptlPopupPt,
+                                                     ulMenuType,
+                                                     ulReserved));
 }
 
 /*
@@ -968,7 +960,7 @@ SOM_Scope BOOL  SOMLINK xfobj_wpMenuItemSelected(XFldObject *somSelf,
 
                 _wpFreeMem(somSelf, (PVOID)pCFI);
 
-                DebugBox(szTitle, szMsg);
+                winhDebugBox(szTitle, szMsg);
 
                 brc = TRUE;
             break; }

@@ -813,6 +813,16 @@ SOM_Scope BOOL  SOMLINK xwstr_wpMenuItemHelpSelected(XWPString *somSelf,
 
 /*
  *@@ wpOpen:
+ *      this WPObject instance method gets called when
+ *      a new view needs to be opened. Normally, this
+ *      gets called after wpViewObject has scanned the
+ *      object's USEITEMs and has determined that a new
+ *      view is needed, mostly in response to a menu
+ *      selection from the "Open" submenu or a double-click
+ *      in the folder.
+ *
+ *      The "view" of setup strings is to invoke the setup
+ *      string on a separate thread.
  *
  *@@added V0.9.3 (2000-04-27) [umoeller]
  */

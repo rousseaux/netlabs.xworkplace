@@ -91,7 +91,7 @@
 #include "shared\wpsh.h"
 
 /*
- *@@ wpshResolveForParent:
+ *@@ wpshParentResolve:
  *      this resolves a method pointer for the first
  *      parent class of somSelf's class which implements
  *      that method.
@@ -100,16 +100,32 @@
  *
  *      Use this helper to explicitly call a parent method
  *      if you don't have access to the SOM header files of
- *      a class.
+ *      a class. This is mostly useful in two situations:
+ *
+ *      a)  To call a parent method if you have introduced
+ *          methods to replacement classes. See the example
+ *          below.
+ *
+ *      b)  If you have manually patched a SOM method table
+ *          using _somOverrideSMethod to override a static
+ *          WPS method which is undocumented.
  *
  *      Remarks:
  *
  *      1.  This returns a PVOID. You must manually cast
  *          the return pointer to a function prototype
- *          pointer. The SOM header files usually prototype
- *          all functions as somTD_Classname_Methodname,
+ *          pointer.
+ *
+ *          For documented WPS methods, you will find that
+ *          the SOM header files prototype all functions as
+ *
+ +              somTD_Classname_Methodname,
+ *
  *          e.g. somTD_XFldObject_xwpQuerySetup for xwpQuerySetup
  *          as implemented by XFldObject.
+ *
+ *          For some other methods, you will find prototypes
+ *          in wpsh.h.
  *
  *      2.  Do not pass the underscore with the method name.
  *
@@ -133,12 +149,10 @@
  *      the instance pointer (somSelf), and you'll get a method
  *      pointer for XFldObject's method.
  *
- *
- *
  *@@added V0.9.4 (2000-08-02) [umoeller]
  */
 
-PVOID wpshResolveForParent(SOMObject *somSelf,  // in: instance
+PVOID wpshParentResolve(SOMObject *somSelf,  // in: instance
                            SOMClass *pClass,    // in: class whose parent we should resolve for
                            const char *pcszMethodName) // in: method name (e.g. "wpQueryTitle")
 {
@@ -158,6 +172,48 @@ PVOID wpshResolveForParent(SOMObject *somSelf,  // in: instance
                                          tok);
             SOMFree(somidMethod);
         }
+    }
+
+    return (pvrc);
+}
+
+/*
+ *@@ wpshParentNumResolve:
+ *      similar to wpshParentResolve, but this uses
+ *      somParentNumResolve, which should be faster.
+ *
+ *@@added V0.9.6 (2000-10-16) [umoeller]
+ */
+
+PVOID wpshParentNumResolve(SOMClass *pClass,    // in: class whose parent we should resolve for
+                           somMethodTabs parentMTab, // in: parent method table
+                                                     // (e.g. XFldDataFileCClassData.parentMtab)
+                           const char *pcszMethodName) // in: method name (e.g. "wpQueryTitle")
+{
+    PVOID pvrc = 0;
+
+    somId somidMethod = somIdFromString((PSZ)pcszMethodName);
+    if (somidMethod)
+    {
+        // get method token for parent class
+        SOMClass *pParentClass = _somGetParent(pClass);
+                    // we must manually get the parent, because
+                    // e.g. _WPDataFile would return _XFldDataFile
+        if (pParentClass)
+        {
+            somMToken tok = _somGetMethodToken(pParentClass,
+                                               somidMethod);
+            if (tok)
+            {
+                // somMethodTabs pmt = _somGetPClsMtabs(pParentClass);
+                // finally, resolve method for parent
+                pvrc = (PVOID)somParentNumResolve(parentMTab,
+                                                  1,      // first parent
+                                                  tok);
+
+            }
+        }
+        SOMFree(somidMethod);
     }
 
     return (pvrc);

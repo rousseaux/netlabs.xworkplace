@@ -94,6 +94,8 @@
      *      listed below are required, all the others are
      *      optional and have safe defaults.
      *
+     *      See ntbInsertPage for how to use this.
+     *
      *@@changed V0.9.0 [umoeller]: typedef was missing, thanks RÅdiger Ihle
      *@@changed V0.9.4 (2000-07-11) [umoeller]: added fPassCnrHelp
      */
@@ -140,7 +142,9 @@
                                     // will be called with this frequency (in ms)
         MPARAM      *pampControlFlags; // if != NULL, winhAdjustControls will be
                                     // called when the notebook gets resized with
-                                    // the array of MPARAM's specified here
+                                    // the array of MPARAM's specified here; this
+                                    // allows for automatic resizing of notebook
+                                    // pages
         ULONG       cControlFlags;  // if (pampControlFlags != NULL), specify the
                                     // array item count here
         PVOID       pUser,

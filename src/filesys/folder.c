@@ -892,6 +892,87 @@ BOOL fdrUpdateAllFrameWndTitles(WPFolder *somSelf)
 }
 
 /* ******************************************************************
+ *
+ *   Quick Open
+ *
+ ********************************************************************/
+
+/*
+ *@@ fdrQuickOpen:
+ *      implementation for the "Quick open" feature.
+ *      This populates the specified folder and loads
+ *      the icons for all its objects.
+ *
+ *      This gets called on the Worker thread upon
+ *      WOM_QUICKOPEN, but can be called separately
+ *      as well. For example, XFolder::wpSetup calls
+ *      this on "QUICKOPEN=IMMEDIATE" now.
+ *
+ *@@added V0.9.6 (2000-10-16) [umoeller]
+ */
+
+BOOL fdrQuickOpen(WPFolder *pFolder,
+                  PFNWP pfnwpCallback)
+{
+    BOOL        brc = TRUE;
+    WPObject    *pObject = NULL;
+    ULONG       ulNow = 0,
+                ulMax = 0;
+    BOOL        fFolderLocked = FALSE;
+
+    // pre-resolve _wpQueryContent for speed V0.9.3 (2000-04-28) [umoeller]
+    somTD_WPFolder_wpQueryContent rslv_wpQueryContent
+            = SOM_Resolve(pFolder, WPFolder, wpQueryContent);
+
+    // populate folder
+    wpshCheckIfPopulated(pFolder);
+
+    TRY_LOUD(excpt1, NULL)
+    {
+        // lock folder contents
+        fFolderLocked = !_wpRequestObjectMutexSem(pFolder, 5000);
+
+        // count objects
+        for (   pObject = rslv_wpQueryContent(pFolder, NULL, (ULONG)QC_FIRST);
+                (pObject);
+                pObject = rslv_wpQueryContent(pFolder, pObject, (ULONG)QC_NEXT)
+            )
+        {
+            ulMax++;
+        }
+
+        // collect icons for all objects
+        for (   pObject = rslv_wpQueryContent(pFolder, NULL, (ULONG)QC_FIRST);
+                (pObject);
+                pObject = rslv_wpQueryContent(pFolder, pObject, (ULONG)QC_NEXT)
+            )
+        {
+            _wpQueryIcon(pObject);
+            if (pfnwpCallback)
+            {
+                // callback
+                brc = (BOOL)pfnwpCallback((HWND)pFolder,
+                                          (ULONG)pObject,
+                                          (MPARAM)ulNow,
+                                          (MPARAM)ulMax);
+                if (!brc)
+                    break;
+            }
+            ulNow++;
+        }
+    }
+    CATCH(excpt1)
+    {
+        brc = FALSE;
+    } END_CATCH();
+
+    if (fFolderLocked)
+        _wpReleaseObjectMutexSem(pFolder);
+
+    return (brc);
+}
+
+/* ******************************************************************
  *                                                                  *
  *   Snap To Grid                                                   *
  *                                                                  *

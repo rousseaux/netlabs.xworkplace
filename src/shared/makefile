@@ -165,7 +165,7 @@ $(OUTPUTDIR)\kernel.obj: \
      $(INC)\dlgids.h \
      $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\wpsh.h \
      $(INC)\hook\xwphook.h \
-     $(INC)\filesys\xthreads.h \
+     $(INC)\filesys\program.h $(INC)\filesys\xthreads.h \
      $(INC)\media\media.h \
      $(INC)\security\xwpsecty.h \
      $(INC)\startshut\archives.h $(INC)\startshut\shutdown.h \

@@ -151,7 +151,7 @@ interface XFldObject : WPObject
     wpModifyPopupMenu: override;
     wpMenuItemSelected: override;
 
-    // wpAddSettingsPages: override;
+    //# wpAddSettingsPages: override;
     wpAddObjectGeneralPage: override;
 
     wpConfirmObjectTitle: override;

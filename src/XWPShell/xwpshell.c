@@ -58,7 +58,8 @@
  *      -- "Network Administrator Tasks" (BOOKS\A3AA3MST.INF
  *         on a WSeB installation).
  *
- *      -- Linux manpages for group(5) and passwd(5).
+ *      -- Linux manpages for group(5) and passwd(5); Linux info
+ *         page for chmod (follow the "File permissions" node).
  *
  *      <B>XWPSec Modules:</B>
  *
@@ -171,7 +172,7 @@
  *
  *            This is not implemented yet.
  *
- *      Example:
+ *      <B>Example:</B>
  *
  *      1.  XWPShell starts up on system bootup.
  *
@@ -243,7 +244,7 @@
  *
  *          Go back to 2.
  *
- *      XWPShell Setup:
+ *      <B>XWPShell Setup:</B>
  *
  *      In CONFIG.SYS, set RUNWORKPLACE to XWPSHELL.EXE's full path.
  *      This will make XWPShell initialize PM.
@@ -368,7 +369,7 @@ VOID Error(const char* pcszFormat,
     fprintf(G_LogFile, "\n");
     fflush(G_LogFile);
     va_end(args);
-    /* DebugBox(NULLHANDLE,
+    /* winhDebugBox(NULLHANDLE,
              "XWPShell",
              szError); */
     DosBeep(100, 1000);
@@ -1411,6 +1412,14 @@ APIRET ProcessRing0Event(PSECIOSHARED pSecIOShared)
 
 /*
  *@@ fntRing3Daemon:
+ *      ring-3 daemon thread for serving the ring-0
+ *      kernel hooks in XWPSEC32.SYS.
+ *
+ *      This gets started from InitDaemon() and calls
+ *      XWPSEC32.SYS with the XWPSECIO_REGISTER IOCtl.
+ *      After this, access control is ENABLED and the
+ *      daemon receives messages in a block of shared
+ *      memory every time access needs to be authorized.
  *
  *      This thread does not have a PM message queue.
  */
@@ -1460,8 +1469,8 @@ void _Optlink fntRing3Daemon(PTHREADINFO ptiMyself)
             // OK, daemon successfully registered:
 
             // ACCESS CONTROL IS NOW ENABLED!!!
-            // THE OS/2 KERNEL BLOCKS ON THIS THREAD
-            // FOR EACH RESOURCE ACCESS!
+            // ANY RESOURCE ACCESS ON ANY THREAD IN THE SYSTEM
+            // IS NOW BLOCKED UNTIL THIS THREAD HAS AUTHORIZED IT!!!
 
             // now loop and wait for ring-0 requests...
 
@@ -1492,9 +1501,10 @@ void _Optlink fntRing3Daemon(PTHREADINFO ptiMyself)
 
                 // ProcessRing0Event has put the access control
                 // result into SECIOSHARED.arc;
-                // pass this back to ring-0 driver
+                // notify ring-0 driver that access has been
+                // checked... this will unblock the application
+                // thread that was waiting
 
-                // arc = DosSemSet(&SecIORegister.rsemDaemonDone);
                 arc = SecIOCtl(hfSec32DD,
                                XWPSECIO_JOBDONE,
                                NULL, 0, NULL);
@@ -1540,7 +1550,7 @@ APIRET InitDaemon(VOID)
        sprintf(szMsg,
                "Cannot open XWPSEC32.SYS driver. DosOpen arc: %d",
                arc);
-       DebugBox(0,
+       winhDebugBox(0,
                 "XWPShell Warning",
                 szMsg);
     }
@@ -1643,7 +1653,8 @@ VOID DumpEnv(PDOSENVIRONMENT pEnv)
 
 /*
  *@@ fnwpShellObject:
- *
+ *      winproc for XWPShell's object window on thread 1.
+ *      This is created by main().
  */
 
 MRESULT EXPENTRY fnwpShellObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -1741,13 +1752,13 @@ MRESULT EXPENTRY fnwpShellObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM 
                 break;
             }
 
-            DebugBox(0,
+            winhDebugBox(0,
                      "XWPShell Error",
                      pszError);
         break; }
 
         case XM_MESSAGE:
-            DebugBox(0,
+            winhDebugBox(0,
                      "XWPShell Message",
                      (PSZ)mp1);
             free(mp1);
@@ -1784,7 +1795,7 @@ int main(int argc, char *argv[])
     if (winhAnotherInstance("\\SEM32\\XWPSHELL.MTX", FALSE))
     {
         // already running:
-        DebugBox(NULLHANDLE,
+        winhDebugBox(NULLHANDLE,
                  "XWorkplace Security",
                  "Another instance of XWPSHELL.EXE is already running. "
                  "This instance will terminate now.");

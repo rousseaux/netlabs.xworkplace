@@ -267,9 +267,9 @@ SOM_Scope ULONG  SOMLINK xfpgmf_xwpQuerySetup2(XFldProgramFile *somSelf,
 
     // manually resolve parent method
     pfn_xwpQuerySetup2
-        = (somTD_XFldObject_xwpQuerySetup)wpshResolveForParent(somSelf,
-                                                               _XFldProgramFile,
-                                                               "xwpQuerySetup2");
+        = (somTD_XFldObject_xwpQuerySetup)wpshParentResolve(somSelf,
+                                                            _XFldProgramFile,
+                                                            "xwpQuerySetup2");
     if (pfn_xwpQuerySetup2)
     {
         // now call XFldObject method

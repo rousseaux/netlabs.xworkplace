@@ -20,6 +20,14 @@ has changed in a source file. I recommend having some "grep"
 utility handy to be able to search for strings like "V0.9.0".
 \OS2\APPS\PMSEEK.EXE should do also.
 
+
+Changes for V0.9.6
+==================
+
+    --  ID_XSD_FILETYPES modified.
+    --  ID_XSD_NEWFILETYPE modified.
+
+
 Changes for V0.9.4/V0.9.5
 =========================
 
@@ -45,6 +53,7 @@ Changes for V0.9.4/V0.9.5
     --  ID_XSD_STARTUPFOLDER modified.
     --  ID_XTD_ICONPAGE added.
     --  ID_XTD_SETTINGS modified.
+
 
 Changes between V0.9.0 and V0.9.3
 =================================

@@ -176,9 +176,13 @@ FEATURESITEM G_FeatureItemsList[] =
 
             // file operations
             ID_XCSI_FILEOPERATIONS, 0, 0, NULL,
+#ifdef __EXTASSOCS__
             ID_XCSI_EXTASSOCS, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+#endif
             ID_XCSI_CLEANUPINIS, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+#ifdef __REPLHANDLES__
             ID_XCSI_REPLHANDLES, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+#endif
             ID_XCSI_REPLFILEEXISTS, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
             ID_XCSI_REPLDRIVENOTREADY, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
             ID_XCSI_XWPTRASHCAN, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
@@ -1380,12 +1384,16 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_XSHUTDOWN,
                 pGlobalSettings->fXShutdown);
 
+#ifdef __EXTASSOCS__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_EXTASSOCS,
                 pGlobalSettings->fExtAssocs);
+#endif
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_CLEANUPINIS,
                 pGlobalSettings->CleanupINIs);
+#ifdef __REPLHANDLES__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_REPLHANDLES,
                 pGlobalSettings->fReplaceHandles);
+#endif
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_REPLFILEEXISTS,
                 pGlobalSettings->fReplFileExists);
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_REPLDRIVENOTREADY,
@@ -1515,7 +1523,8 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case ID_XCSI_XSYSTEMSOUNDS:
             pGlobalSettings->fXSystemSounds = ulExtra;
             // check if sounds are to be installed or de-installed:
-            if (sndAddtlSoundsInstalled() != ulExtra)
+            if (sndAddtlSoundsInstalled(WinQueryAnchorBlock(pcnbp->hwndDlgPage))
+                         != ulExtra)
                 // yes: set msg for "ask for sound install"
                 // at the bottom when the global semaphores
                 // are unlocked
@@ -1596,6 +1605,7 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 fShowWarnXShutdown = TRUE;
         break;
 
+#ifdef __EXTASSOCS__
         case ID_XCSI_EXTASSOCS:
             pGlobalSettings->fExtAssocs = ulExtra;
             // re-enable controls on this page
@@ -1605,6 +1615,7 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 // mutex section)
                 fShowWarnExtAssocs = TRUE;
         break;
+#endif
 
         /* case ID_XCDI_IGNOREFILTERS:
             pGlobalSettings->fIgnoreFilters = ulExtra;
@@ -1622,9 +1633,11 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             pGlobalSettings->CleanupINIs = ulExtra;
         break;
 
+#ifdef __REPLHANDLES__
         case ID_XCSI_REPLHANDLES:
             pGlobalSettings->fReplaceHandles = ulExtra;
         break;
+#endif
 
         case ID_XCSI_XWPTRASHCAN:
             // pGlobalSettings->fTrashDelete = ulExtra;
@@ -1672,9 +1685,13 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             pGlobalSettings->fRestartWPS = pGSBackup->fRestartWPS;
             pGlobalSettings->fXShutdown = pGSBackup->fXShutdown;
 
+#ifdef __EXTASSOCS__
             pGlobalSettings->fExtAssocs = pGSBackup->fExtAssocs;
+#endif
             pGlobalSettings->CleanupINIs = pGSBackup->CleanupINIs;
+#ifdef __REPLHANDLES__
             pGlobalSettings->fReplaceHandles = pGSBackup->fReplaceHandles;
+#endif
             pGlobalSettings->fReplFileExists = pGSBackup->fReplFileExists;
             pGlobalSettings->fReplDriveNotReady = pGSBackup->fReplDriveNotReady;
             // trash can ### V0.9.4 (2000-06-05) [umoeller]
@@ -1752,7 +1769,8 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                              MB_YESNO)
                 == MBID_YES)
         {
-            sndInstallAddtlSounds(ulExtra);
+            sndInstallAddtlSounds(WinQueryAnchorBlock(pcnbp->hwndDlgPage),
+                                  ulExtra);
         }
     }
     else if (cEnableTrashCan != -1)
@@ -1924,7 +1942,7 @@ VOID setStatusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             pMsg += sprintf(pMsg, "pXWPClassList: 0x%lX\n", pKernelGlobals->pXWPClassList);
             pMsg += sprintf(pMsg, "pXWPString: 0x%lX\n", pKernelGlobals->pXWPString);
 
-            DebugBox("XWorkplace Class Objects", szMsg);
+            winhDebugBox("XWorkplace Class Objects", szMsg);
         #endif
     }
 
@@ -2014,7 +2032,7 @@ VOID setStatusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                               FIL_STANDARD);        // return level 1 file info
 
             if (rc != NO_ERROR)
-                DebugBox(pcnbp->hwndFrame,
+                winhDebugBox(pcnbp->hwndFrame,
                          "XFolder",
                          "XFolder was unable to find any National Language Support DLLs. You need to re-install XFolder.");
             else
@@ -2052,7 +2070,7 @@ VOID setStatusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
                 rc = DosFindClose(hdirFindHandle);    // close our find handle
                 if (rc != NO_ERROR)
-                    DebugBox(pcnbp->hwndFrame,
+                    winhDebugBox(pcnbp->hwndFrame,
                              "XFolder",
                              "DosFindClose error");
 

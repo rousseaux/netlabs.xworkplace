@@ -108,6 +108,7 @@
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
+#include "filesys\program.h"            // program implementation
 #include "filesys\xthreads.h"           // extra XWorkplace threads
 
 #include "media\media.h"                // XWorkplace multimedia support
@@ -878,6 +879,7 @@ VOID krn_T1M_OpenObjectFromHandle(HWND hwndObject,
  *@@changed V0.9.3 (2000-04-09) [umoeller]: fixed timer problem, which was never stopped... this solves the "disappearing windows" problem!!
  *@@changed V0.9.3 (2000-04-25) [umoeller]: startup folder was permanently disabled when panic flag was set; fixed
  *@@changed V0.9.4 (2000-06-05) [umoeller]: added exception handling
+ *@@changed V0.9.6 (2000-10-16) [umoeller]: added WM_APPTERMINATENOTIFY
  */
 
 MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -929,6 +931,24 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
                 WinStopTimer(WinQueryAnchorBlock(hwndObject),
                              hwndObject,
                              (USHORT)mp1);      // timer ID
+            break;
+
+            /*
+             * WM_APPTERMINATENOTIFY:
+             *      this gets posted from PM since we use
+             *      this object window as the notify window
+             *      to WinStartApp when we start program objects
+             *      (progOpenProgram, filesys/program.c).
+             *
+             *      We must then remove source emphasis for
+             *      the corresponding object.
+             */
+
+            case WM_APPTERMINATENOTIFY:
+                _Pmpf((__FUNCTION__ ": WM_APPTERMINATENOTIFY happ 0x%lX ulrc %d",
+                        mp1, mp2));
+                progRemoveRunningProgram((HAPP)mp1,
+                                         (ULONG)mp2);
             break;
 
             /*
@@ -1157,7 +1177,7 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
                     break;
                 }
 
-                // error or cancelled:
+                // error, done, or cancelled:
                 if (pGlobalSettings->ShowStartupProgress)
                     WinPostMsg(G_hwndQuickStatus, WM_CLOSE, MPNULL, MPNULL);
             break; }
@@ -1228,7 +1248,7 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
                                 "xworkplace-user@egroups.com and attach the the file "
                                 "XWPTRAP.LOG, which you will find in the root "
                                 "directory of your boot drive. ");
-                        DebugBox(HWND_DESKTOP, "XFolder: Exception caught", pszMsg);
+                        winhDebugBox(HWND_DESKTOP, "XFolder: Exception caught", pszMsg);
                     }
 
                     free(pszMsg);
@@ -1295,7 +1315,7 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
                     }
                     else
                     {
-                        DebugBox(0,
+                        winhDebugBox(0,
                                  "External XShutdown call",
                                  "Error calling DosGetSharedMem.");
                         mrc = (MPARAM)FALSE;
@@ -2029,7 +2049,7 @@ VOID krnInitializeXWorkplace(VOID)
                               NULL);       // pres params
 
         if (G_KernelGlobals.hwndThread1Object == NULLHANDLE)
-            DebugBox(HWND_DESKTOP, "XFolder: Error",
+            winhDebugBox(HWND_DESKTOP, "XFolder: Error",
                      "XFolder failed to create the XFolder Workplace object window.");
     }
 
@@ -2104,7 +2124,7 @@ VOID krnInitializeXWorkplace(VOID)
             #endif
 
             if (arc != NO_ERROR)
-                DebugBox(HWND_DESKTOP, "XWorkplace",
+                winhDebugBox(HWND_DESKTOP, "XWorkplace",
                          "Error allocating shared memory for daemon.");
             else
             {
@@ -2160,7 +2180,7 @@ VOID krnInitializeXWorkplace(VOID)
 
             if (!fDaemonStarted)
                 // error:
-                DebugBox(HWND_DESKTOP, "XWorkplace",
+                winhDebugBox(HWND_DESKTOP, "XWorkplace",
                          "The XWorkplace daemon (XWPDAEMON.EXE) could not be started.");
         } // end if DosGetNamedSharedMem
         else

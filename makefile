@@ -95,10 +95,13 @@ OBJS = \
     bin\cfgsys.obj bin\classlst.obj bin\drivdlgs.obj bin\drivers.obj bin\hookintf.obj \
     bin\pagemage.obj bin\partitions.obj bin\sound.obj \
 # code from filesys\
-    bin\disk.obj bin\fdrhotky.obj bin\fdrnotebooks.obj bin\fdrsubclass.obj \
-    bin\fhandles.obj bin\fileops.obj bin\filesys.obj bin\fops_bottom.obj bin\fops_top.obj \
-    bin\filetype.obj bin\folder.obj bin\menus.obj bin\object.obj bin\desktop.obj \
-    bin\statbars.obj bin\trash.obj bin\xthreads.obj \
+    bin\disk.obj bin\fdrhotky.obj bin\fdrnotebooks.obj bin\fdrsubclass.obj bin\fhandles.obj \
+    bin\fileops.obj bin\filesys.obj bin\fops_bottom.obj bin\fops_top.obj \
+!ifdef EXTASSOCS
+    bin\filetype.obj \
+!endif
+    bin\folder.obj bin\menus.obj bin\object.obj bin\desktop.obj \
+    bin\program.obj bin\statbars.obj bin\trash.obj bin\xthreads.obj \
 # code from media\
     bin\mmhelp.obj bin\mmthread.obj \
 # code from startshut\
@@ -296,7 +299,11 @@ nls:
     @cd inf.$(XWP_LANG_CODE)
     @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
     @cd ..
-    @echo $(MAKEDIR)\makefile: Going for subdir xwphelp
+    @echo $(MAKEDIR)\makefile: Going for subdir $(XWP_LANG_CODE)\misc
+    @cd misc
+    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
+    @cd ..
+    @echo $(MAKEDIR)\makefile: Going for subdir $(XWP_LANG_CODE)\xwphelp
     @cd xwphelp
     @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
     @cd ..\..

@@ -309,6 +309,13 @@ SOM_Scope BOOL  SOMLINK xctr_wpMenuItemHelpSelected(XCenter *somSelf,
 
 /*
  *@@ wpOpen:
+ *      this WPObject instance method gets called when
+ *      a new view needs to be opened. Normally, this
+ *      gets called after wpViewObject has scanned the
+ *      object's USEITEMs and has determined that a new
+ *      view is needed, mostly in response to a menu
+ *      selection from the "Open" submenu or a double-click
+ *      in the folder.
  *
  */
 

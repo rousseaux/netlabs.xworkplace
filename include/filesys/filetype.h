@@ -6,9 +6,10 @@
  *      This file is ALL new with V0.9.0.
  *
  *@@include #include <os2.h>
- *@@include #include "shared\notebook.h"
+ *@@include #include <wpdataf.h>                    // WPDataFile
+ *@@include #include "helpers\linklist.h"
+ *@@include #include "shared\notebook.h"            // for notebook callbacks
  *@@include #include "filesys\filetype.h"
- *@@include #include "classes\xfdataf.h"            // for method implementations
  */
 
 /*
@@ -27,6 +28,31 @@
 #ifndef FILETYPE_HEADER_INCLUDED
     #define FILETYPE_HEADER_INCLUDED
 
+#ifdef __EXTASSOCS__
+
+    /* ******************************************************************
+     *                                                                  *
+     *   XFldDataFile extended associations                             *
+     *                                                                  *
+     ********************************************************************/
+
+    #ifdef SOM_XFldDataFile_h
+        /* PSZ ftypQueryType(WPDataFile *somSelf,
+                          PSZ pszOriginalTypes,
+                          PCGLOBALSETTINGS pGlobalSettings); */
+
+        PLINKLIST ftypBuildAssocsList(WPDataFile *somSelf);
+
+        ULONG ftypFreeAssocsList(PLINKLIST pllAssocs);
+
+        WPObject* ftypQueryAssociatedProgram(WPDataFile *somSelf,
+                                             ULONG ulView);
+
+        BOOL ftypModifyDataFileOpenSubmenu(WPDataFile *somSelf,
+                                           HWND hwndOpenSubmenu,
+                                           BOOL fDeleteExisting);
+    #endif
+
     /* ******************************************************************
      *                                                                  *
      *   Notebook callbacks (notebook.c) for XFldWPS "File types" page  *
@@ -41,34 +67,14 @@
                                             USHORT usItemID,
                                             USHORT usNotifyCode,
                                             ULONG ulExtra);
-    #else
-        #error "shared\notebook.h needs to be included before including filetype.h".
+
+        extern MPARAM *G_pampFileTypesPage;
+        extern ULONG G_cFileTypesPage;
+
+        MRESULT EXPENTRY fnwpImportWPSFilters(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2);
     #endif
 
-    /* ******************************************************************
-     *                                                                  *
-     *   XFldDataFile extended associations                             *
-     *                                                                  *
-     ********************************************************************/
-
-    #ifdef SOM_XFldDataFile_h
-        /* PSZ ftypQueryType(WPDataFile *somSelf,
-                          PSZ pszOriginalTypes,
-                          PCGLOBALSETTINGS pGlobalSettings); */
-
-        ULONG ftypBuildAssocsList(XFldDataFile *somSelf,
-                                  BOOL fRefresh);
-
-        WPObject* ftypQueryAssociatedProgram(XFldDataFile *somSelf,
-                                             ULONG ulView,
-                                             PULONG pulHowMatched,
-                                             PSZ pszMatchString,
-                                             ULONG cbMatchString,
-                                             PSZ pszDefaultType);
-
-        BOOL ftypModifyDataFileOpenSubmenu(WPDataFile *somSelf,
-                                           HWND hwndMenu);
-    #endif
+#endif // __EXTASSOCS__
 
 #endif
 

@@ -13,9 +13,16 @@ some of the constructs in there. I am no assembler freak, so
 maybe someone else can help.
 
 All this code compiles into the XWPSEC32.SYS driver file,
-which forms the ring-0 part of XWorkplace Security. This
-driver must be copied to \OS2\BOOT and installed using
+which forms the ring-0 part of XWorkplace Security.
+
+Installation:
+Copy XWPSEC32.SYS to \OS2\BOOT.
+
+Add the following lines to CONFIG.SYS (in this order):
+    BASEDEV=SESDD32.SYS
     BASEDEV=XWPSEC32.SYS
-in CONFIG.SYS.
+
+Make sure you have SES installed (you should have an \OS2\security
+directory). The rest of the SES setup is NOT needed however.
 
 

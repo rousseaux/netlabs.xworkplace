@@ -422,6 +422,8 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
         case WOM_QUICKOPEN:
         {
             XFolder *pFolder = (XFolder*)mp1;
+            PFNWP   pfncb = (PFNWP)mp2;
+            BOOL    fContinue = FALSE;
 
             #ifdef DEBUG_STARTUP
                 _Pmpf(("WOM_QUICKOPEN %lX", mp1));
@@ -429,59 +431,16 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
 
             if (pFolder)
             {
-                WPObject    *pObject;
-                ULONG       ulNow = 0, ulMax = 0;
-                BOOL        fContinue = TRUE;
+                fContinue = fdrQuickOpen(pFolder,
+                                         pfncb);
 
-                // pre-resolve _wpQueryContent for speed V0.9.3 (2000-04-28) [umoeller]
-                somTD_WPFolder_wpQueryContent rslv_wpQueryContent
-                        = SOM_Resolve(pFolder, WPFolder, wpQueryContent);
-
-                // populate folder
-                wpshCheckIfPopulated(pFolder);
-
-                // count objects
-                for (   pObject = rslv_wpQueryContent(pFolder, NULL, (ULONG)QC_FIRST);
-                        (pObject);
-                        pObject = rslv_wpQueryContent(pFolder, pObject, (ULONG)QC_NEXT)
-                    )
-                {
-                    ulMax++;
-                }
-
-                // collect icons for all objects
-                for (   pObject = rslv_wpQueryContent(pFolder, NULL, (ULONG)QC_FIRST);
-                        (pObject);
-                        pObject = rslv_wpQueryContent(pFolder, pObject, (ULONG)QC_NEXT)
-                    )
-                {
-                    PFNWP pfncb = (PFNWP)mp2;
-                    _wpQueryIcon(pObject);
-                    if (pfncb)
-                    {
-                        // callback
-                        fContinue = (BOOL)
-                                  (*(pfncb))
-                                    (
-                                        (HWND)pFolder,
-                                        (ULONG)pObject,
-                                        (MPARAM)ulNow,
-                                        (MPARAM)ulMax
-                                    );
-                        if (!fContinue)
-                        {
-                            pObject = NULL;
-                            krnPostThread1ObjectMsg(T1M_NEXTQUICKOPEN, NULL, MPNULL);
-                            break;
-                        }
-                    }
-                    ulNow++;
-                }
-
-                if ( (fContinue) && (mp2 != NULL) )
+                if (fContinue)
                     // now go for the next folder
                     krnPostThread1ObjectMsg(T1M_NEXTQUICKOPEN, mp1, MPNULL);
+                    break;
             }
+
+            krnPostThread1ObjectMsg(T1M_NEXTQUICKOPEN, NULL, MPNULL);
         break; }
 
         /*
@@ -1098,7 +1057,7 @@ void _Optlink fntWorkerThread(PTHREADINFO pti)
                 hwndWorkerObjectTemp = winhCreateObjectWindow(WNDCLASS_WORKEROBJECT, NULL);
 
                 if (!hwndWorkerObjectTemp)
-                    DebugBox(HWND_DESKTOP,
+                    winhDebugBox(HWND_DESKTOP,
                              "XFolder: Error",
                              "XFolder failed to create the Worker thread object window.");
 
@@ -1710,18 +1669,20 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
         break;
 
         /*
-         *@@ FIM_REFRESH:
+         * FIM_REFRESH:
          *      this refreshes a folder's content by invoking
-         *      wpRefresh on it.
+         *      wpRefresh on it. This gets posted from
+         *      mnuMenuItemSelected if the
          *
          *      Parameters:
          *          WPFolder* mp1:  folder to refresh
          *          HWND hwndFrame:  frame of folder to refresh
          *
-         *@@changed V0.9.4 (2000-08-02) [umoeller]: now invalidating cnr also
+         *changed V0.9.4 (2000-08-02) [umoeller]: now invalidating cnr also
+         *      removed this   V0.9.6 (2000-10-16) [umoeller]
          */
 
-        case FIM_REFRESH:
+        /* case FIM_REFRESH:
         {
             WPFolder *pFolder = (WPFolder*)mp1;
             HWND hwndFrame = (HWND)mp2,
@@ -1736,7 +1697,9 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
             hwndCnr = wpshQueryCnrFromFrame(hwndFrame);
             if (hwndCnr)
                 cnrhInvalidateAll(hwndCnr);
-        break; }
+                        // ### buggy, this moves icons ....
+                        // do reget of reccs first
+        break; } */
 
         /*
          *@@ FIM_DOUBLEFILES:
@@ -1896,7 +1859,7 @@ void _Optlink fntFileThread(PTHREADINFO pti)
                         = winhCreateObjectWindow(WNDCLASS_FILEOBJECT, NULL);
 
                     if (!pKernelGlobals->hwndFileObject)
-                        DebugBox(HWND_DESKTOP,
+                        winhDebugBox(HWND_DESKTOP,
                                  "XFolder: Error",
                                  "XFolder failed to create the File thread object window.");
 
@@ -2301,7 +2264,7 @@ void _Optlink fntSpeedyThread(PTHREADINFO pti)
                         = winhCreateObjectWindow(WNDCLASS_QUICKOBJECT, NULL);
 
                     if (!pKernelGlobals->hwndSpeedyObject)
-                        DebugBox(HWND_DESKTOP,
+                        winhDebugBox(HWND_DESKTOP,
                                  "XFolder: Error",
                                  "XFolder failed to create the Speedy thread object window.");
 
@@ -2417,7 +2380,7 @@ BOOL xthrStartThreads(VOID)
                         _Pmpf(("SOUND.DLL could not be loaded. DosLoadModule rc: %d, "
                             "message: %d.", arc, szError));
                     #endif
-                    // DebugBox("XFolder: Error",
+                    // winhDebugBox("XFolder: Error",
                             // szTemp);
                     pKernelGlobals->ulMMPM2Working = MMSTAT_SOUNDLLNOTLOADED;
                 }

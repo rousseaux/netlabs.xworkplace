@@ -488,8 +488,14 @@ SOM_Scope HWND  SOMLINK xfdisk_wpViewObject(XFldDisk *somSelf,
 
 /*
  *@@ wpOpen:
- *      this method gets called when wpViewObject thinks a
- *      new view of the object needs to be opened.
+ *      this WPObject instance method gets called when
+ *      a new view needs to be opened. Normally, this
+ *      gets called after wpViewObject has scanned the
+ *      object's USEITEMs and has determined that a new
+ *      view is needed, mostly in response to a menu
+ *      selection from the "Open" submenu or a double-click
+ *      in the folder.
+ *
  *
  *      We call the parent first and then subclass the
  *      resulting frame window, similar to what we're doing

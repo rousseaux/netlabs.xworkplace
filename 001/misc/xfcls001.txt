@@ -397,6 +397,12 @@ PCDesk 1 Part of Process Commander by Stardock.
 SDFolder 1 Part of Object Desktop by Stardock.
 WPStickMouse 1 Part of the IBM wheel-mouse driver. This is a replacement class for WPMouse.
 
-
-
+// Items added with V0.9.6
+WSFILE 1 Sample WPS class from OS/2 Developer's Toolkit.
+WSFOLDER 1 Sample WPS class from OS/2 Developer's Toolkit.
+Browse_O_Matic 1 Sample WPS class from OS/2 Developer's Toolkit.
+Car 1 Sample WPS class from OS/2 Developer's Toolkit.
+Carpp 1 Sample WPS class from OS/2 Developer's Toolkit.
+ObjectUtility 1 Sample WPS class from OS/2 Developer's Toolkit.
+TSObjAdv 1 (Object Desktop) "Object Advisor" class.
 

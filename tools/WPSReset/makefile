@@ -10,7 +10,7 @@
 #
 #       Input:          files in this directory
 #
-#       Output:         wpsreset.exe, copied to parent directory (TOOLS\).
+#       Output:         wpsreset.exe, copied to modules directory.
 #
 #       Edit "setup.in" to set up the make process.
 #
@@ -37,20 +37,22 @@
 
 # OUTPUTDIR specifies the directory where all the output .OBJ
 # files will be created in.
-OUTPUTDIR_PARENT = ..\..\bin
-OUTPUTDIR = $(OUTPUTDIR_PARENT)\exes
+OUTPUTDIR = ..\..\bin\exe_st
+MODULESDIR = ..\..\bin\modules
 
 # create output directory
-!if [@md $(OUTPUTDIR_PARENT) 2> NUL]
+!if [@md ..\..\bin 2> NUL]
 !endif
 !if [@md $(OUTPUTDIR) 2> NUL]
+!endif
+!if [@md $(MODULESDIR) 2> NUL]
 !endif
 
 # The main target:
 # If we're called from the main makefile, MAINMAKERUNNING is defined,
 # and we'll set $(OBJS) as our targets (which will go on).
 # Otherwise, we call the main makefile, which will again call ourselves later.
-all: $(OUTPUTDIR)\wpsreset.exe
+all: $(MODULESDIR)\wpsreset.exe
     @echo ----- Leaving $(MAKEDIR)
 
 # main include path
@@ -79,9 +81,6 @@ MYOWNINC = $(INC)\hook
 # .OBJs for executables in this directory
 $(OUTPUTDIR)\wpsreset.obj: $(@B).c
 
-# "wpsreset" executable: link and copy to parent (TOOLS) directory
-$(OUTPUTDIR)\wpsreset.exe: $(OUTPUTDIR)\$(@B).obj makefile
-          $(LINK) /OUT:$(OUTPUTDIR)\$(@B).exe /PMTYPE:VIO $(OUTPUTDIR)\$(@B).obj
-          cmd.exe /c copy $(OUTPUTDIR)\$(@B).exe ..
-
-
+# "wpsreset" executable
+$(MODULESDIR)\wpsreset.exe: $(OUTPUTDIR)\$(@B).obj makefile
+          $(LINK) /OUT:$(MODULESDIR)\$(@B).exe /PMTYPE:VIO $(OUTPUTDIR)\$(@B).obj

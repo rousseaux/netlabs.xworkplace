@@ -32,9 +32,10 @@
      *                                                                  *
      ********************************************************************/
 
-    BOOL sndAddtlSoundsInstalled(VOID);
+    BOOL sndAddtlSoundsInstalled(HAB hab);
 
-    BOOL sndInstallAddtlSounds(BOOL fInstall);
+    BOOL sndInstallAddtlSounds(HAB hab,
+                               BOOL fInstall);
 
     /* ******************************************************************
      *                                                                  *

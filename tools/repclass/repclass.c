@@ -41,8 +41,9 @@
  *      and do all the (de)registering and (un)replacing.
  */
 
-void main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
+    int irc = 0;
     /* The argv array will contain the following:
      *         0         1          2            3
      *      repclass <oldclass> <newclass> [<dllname>]
@@ -58,15 +59,20 @@ void main(int argc, char *argv[])
         if (WinRegisterObjectClass(argv[2], argv[3]))
             printf("OK\n");
         else
+        {
             printf("failed!\n");
+            irc = 1;
+        }
 
         // Then replace <oldclass> with <newclass>.
         printf ("Replacing %s with %s: ", argv[1], argv[2]);
         if (WinReplaceObjectClass(argv[1], argv[2], TRUE))
             printf("OK\n");
         else
+        {
             printf("failed!\n");
-
+            irc = 2;
+        }
     }
     else if (argc == 3)
     {
@@ -76,14 +82,20 @@ void main(int argc, char *argv[])
         if (WinReplaceObjectClass(argv[1], argv[2], FALSE))
             printf("OK\n");
         else
+        {
             printf("failed!\n");
+            irc = 3;
+        }
 
         // Then deregister <newclass>.
         printf ("Deregistering %s: ", argv[2]);
         if (WinDeregisterObjectClass(argv[2]))
             printf("OK\n");
         else
+        {
             printf("failed!\n");
+            irc = 4;
+        }
     }
     else
     {
@@ -108,6 +120,9 @@ void main(int argc, char *argv[])
         printf("Examples:\n");
         printf(" repclass WPFolder XFolder xfolder.dll - register XFolder and replace WPFolder\n");
         printf(" repclass WPFolder XFolder        - deregister XFolder and un-replace WPFolder\n");
+        irc = 5;
     }
+
+    return (irc);
 }
 

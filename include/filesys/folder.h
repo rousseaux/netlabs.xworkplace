@@ -29,17 +29,17 @@
     #define FOLDER_HEADER_INCLUDED
 
     /* ******************************************************************
-     *                                                                  *
-     *   Global variables                                               *
-     *                                                                  *
+     *
+     *   Global variables
+     *
      ********************************************************************/
 
     extern PFNWP G_pfnwpFolderContentMenuOriginal;
 
     /* ******************************************************************
-     *                                                                  *
-     *   Additional declarations for xfldr.c                            *
-     *                                                                  *
+     *
+     *   Additional declarations for xfldr.c
+     *
      ********************************************************************/
 
     #ifdef LINKLIST_HEADER_INCLUDED
@@ -78,9 +78,9 @@
     #pragma linkage(FN_WPSETMENUBARVISIBILITY, system)
 
     /* ******************************************************************
-     *                                                                  *
-     *   Query setup strings                                            *
-     *                                                                  *
+     *
+     *   Query setup strings
+     *
      ********************************************************************/
 
     ULONG fdrQuerySetup(WPObject *somSelf,
@@ -88,9 +88,9 @@
                         ULONG cbSetupString);
 
     /* ******************************************************************
-     *                                                                  *
-     *   Folder view helpers                                            *
-     *                                                                  *
+     *
+     *   Folder view helpers
+     *
      ********************************************************************/
 
     BOOL fdrForEachOpenInstanceView(WPFolder *somSelf,
@@ -101,9 +101,9 @@
                                   PFNWP pfnwpCallback);
 
     /* ******************************************************************
-     *                                                                  *
-     *   Full path in title                                             *
-     *                                                                  *
+     *
+     *   Full path in title
+     *
      ********************************************************************/
 
     BOOL fdrSetOneFrameWndTitle(WPFolder *somSelf, HWND hwndFrame);
@@ -111,18 +111,27 @@
     BOOL fdrUpdateAllFrameWndTitles(WPFolder *somSelf);
 
     /* ******************************************************************
-     *                                                                  *
-     *   Snap To Grid                                                   *
-     *                                                                  *
+     *
+     *   Quick Open
+     *
+     ********************************************************************/
+
+    BOOL fdrQuickOpen(WPFolder *pFolder,
+                      PFNWP pfnwpCallback);
+
+    /* ******************************************************************
+     *
+     *   Snap To Grid
+     *
      ********************************************************************/
 
     BOOL fdrSnapToGrid(WPFolder *somSelf,
                        BOOL fNotify);
 
     /* ******************************************************************
-     *                                                                  *
-     *   Extended Folder Sort                                           *
-     *                                                                  *
+     *
+     *   Extended Folder Sort
+     *
      ********************************************************************/
 
     PFN fdrQuerySortFunc(USHORT usSort);
@@ -160,18 +169,18 @@
     #define ALWAYS_SORT ((_bAlwaysSortInstance == SET_DEFAULT) ? pGlobalSettings->AlwaysSort : _bAlwaysSortInstance)
 
     /* ******************************************************************
-     *                                                                  *
-     *   Status bars                                                    *
-     *                                                                  *
+     *
+     *   Status bars
+     *
      ********************************************************************/
 
     MRESULT EXPENTRY fncbUpdateStatusBars(HWND hwndView, ULONG ulActivate,
                                           MPARAM mpView, MPARAM mpFolder);
 
     /********************************************************************
-     *                                                                  *
-     *   Folder frame window subclassing                                *
-     *                                                                  *
+     *
+     *   Folder frame window subclassing
+     *
      ********************************************************************/
 
     #ifdef SOM_WPFolder_h
@@ -264,9 +273,9 @@
                                                    MPARAM mp2);
 
         /* ******************************************************************
-         *                                                                  *
-         *   Folder linked lists                                            *
-         *                                                                  *
+         *
+         *   Folder linked lists
+         *
          ********************************************************************/
 
         #ifdef LINKLIST_HEADER_INCLUDED
@@ -285,9 +294,9 @@
         #endif
 
         /* ******************************************************************
-         *                                                                  *
-         *   Folder status bars                                             *
-         *                                                                  *
+         *
+         *   Folder status bars
+         *
          ********************************************************************/
 
         HWND fdrCreateStatusBar(WPFolder *somSelf,
@@ -297,9 +306,9 @@
     #endif
 
     /* ******************************************************************
-     *                                                                  *
-     *   XFolder window procedures                                      *
-     *                                                                  *
+     *
+     *   XFolder window procedures
+     *
      ********************************************************************/
 
     MRESULT EXPENTRY fdr_fnwpStatusBar(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2);
@@ -311,9 +320,9 @@
     SHORT EXPENTRY fdrSortByICONPOS(PVOID pItem1, PVOID pItem2, PVOID psip);
 
     /* ******************************************************************
-     *                                                                  *
-     *   Notebook callbacks (notebook.c) for XFldWPS  "View" page       *
-     *                                                                  *
+     *
+     *   Notebook callbacks (notebook.c) for XFldWPS  "View" page
+     *
      ********************************************************************/
 
     #ifdef NOTEBOOK_HEADER_INCLUDED
@@ -325,9 +334,9 @@
                                               ULONG ulExtra);
 
     /* ******************************************************************
-     *                                                                  *
-     *   Notebook callbacks (notebook.c) for XFldWPS"Grid" page         *
-     *                                                                  *
+     *
+     *   Notebook callbacks (notebook.c) for XFldWPS"Grid" page
+     *
      ********************************************************************/
 
         VOID fdrGridInitPage(PCREATENOTEBOOKPAGE pcnbp,
@@ -339,9 +348,9 @@
                                             ULONG ulExtra);
 
     /* ******************************************************************
-     *                                                                  *
-     *   Notebook callbacks (notebook.c) for "XFolder" instance page    *
-     *                                                                  *
+     *
+     *   Notebook callbacks (notebook.c) for "XFolder" instance page
+     *
      ********************************************************************/
 
 
@@ -361,9 +370,9 @@
                                     ULONG ulExtra);
 
     /* ******************************************************************
-     *                                                                  *
-     *   XFldStartup notebook callbacks (notebook.c)                    *
-     *                                                                  *
+     *
+     *   XFldStartup notebook callbacks (notebook.c)
+     *
      ********************************************************************/
 
         VOID fdrStartupFolderInitPage(PCREATENOTEBOOKPAGE pcnbp,
@@ -375,9 +384,9 @@
     #endif
 
     /********************************************************************
-     *                                                                  *
-     *   Folder hotkey functions (fdrhotky.c)                           *
-     *                                                                  *
+     *
+     *   Folder hotkey functions (fdrhotky.c)
+     *
      ********************************************************************/
 
     // maximum no. of folder hotkeys
@@ -433,9 +442,9 @@
     #endif
 
     /********************************************************************
-     *                                                                  *
-     *   Folder messaging (fdrsubclass.c)                               *
-     *                                                                  *
+     *
+     *   Folder messaging (fdrsubclass.c)
+     *
      ********************************************************************/
 
     #ifdef INCL_WINHOOKS

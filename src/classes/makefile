@@ -192,10 +192,11 @@ $(OUTPUTDIR)\xdebug_folder.obj: \
 
 $(OUTPUTDIR)\xfdataf.obj: \
             $(INC)\setup.h \
-            $(HLPINC)\linklist.h \
+            $(HLPINC)\dosh.h $(HLPINC)\linklist.h \
             $(INC)\dlgids.h \
-            $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
-            $(INC)\filesys\filesys.h $(INC)\filesys\filetype.h $(INC)\filesys\folder.h $(INC)\filesys\menus.h \
+            $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \
+            $(INC)\filesys\filesys.h $(INC)\filesys\filetype.h $(INC)\filesys\folder.h \
+                $(INC)\filesys\menus.h $(INC)\filesys\program.h \
             $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h
 
 $(OUTPUTDIR)\xfdesk.obj: \

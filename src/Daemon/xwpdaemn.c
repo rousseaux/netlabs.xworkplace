@@ -2,8 +2,9 @@
 /*
  *@@sourcefile xwpdaemn.c:
  *      this has the code for the XWorkplace Daemon process
- *      (XWPDAEMN.EXE). This does not appear in the window
- *      list, but is only seen by the XWorkplace main DLL (XFLDR.DLL).
+ *      (XWPDAEMN.EXE). This is an invisible PM process which
+ *      does not appear in the window list, but is only seen
+ *      by the XWorkplace main DLL (XFLDR.DLL).
  *
  *      The daemon is started automatically by XFLDR.DLL upon
  *      first WPS startup (details follow). Currently, the
@@ -446,17 +447,17 @@ BOOL dmnStartPageMage(VOID)
              && (G_pHookData->fPreAccelHooked)
            )
         {
-            _Pmpf(("  Creating main window"));
+            // _Pmpf(("  Creating main window"));
             brc = pgmcCreateMainControlWnd();
                // this sets the global window handles;
                // the hook sees this and will start processing
                // PageMage messages
-            _Pmpf(("      returned %d", brc));
+            // _Pmpf(("      returned %d", brc));
 
-            _Pmpf(("dmnStartPageMage: calling pgmwScanAllWindows"));
+            // _Pmpf(("dmnStartPageMage: calling pgmwScanAllWindows"));
             pgmwScanAllWindows();
 
-            _Pmpf(("  starting Move thread"));
+            // _Pmpf(("  starting Move thread"));
             thrCreate(&G_tiMoveThread,
                       fntMoveQueueThread,
                       NULL, // running flag
@@ -555,7 +556,7 @@ VOID LoadHotkeysForHook(VOID)
 
     ULONG   ulSizeOfData = 0;
 
-    _Pmpf(("LoadHotkeysForHook, pHookData: 0x%lX", G_pHookData));
+    // _Pmpf(("LoadHotkeysForHook, pHookData: 0x%lX", G_pHookData));
 
     // 1) hotkeys
 
@@ -595,8 +596,8 @@ VOID LoadHotkeysForHook(VOID)
             // hotkeys successfully loaded:
             // calc no. of items in array
             cFunctionKeys = ulSizeOfData / sizeof(FUNCTIONKEY);
-            _Pmpf(("  Got %d function keys", cFunctionKeys));
-            _Pmpf(("  function key %d is 0x%lX", 1, pFunctionKeys[1].ucScanCode));
+            // _Pmpf(("  Got %d function keys", cFunctionKeys));
+            // _Pmpf(("  function key %d is 0x%lX", 1, pFunctionKeys[1].ucScanCode));
         }
     }
 
@@ -634,9 +635,9 @@ BOOL LoadHookConfig(BOOL fHook,         // in: reload hook settings
 {
     BOOL brc = FALSE;
 
-    _Pmpf(("XWPDAEMON: LoadHookConfig, pHookData: 0x%lX", G_pHookData));
-    _Pmpf(("    fHook: %d", fHook));
-    _Pmpf(("    fPageMage: %d", fPageMage));
+    // _Pmpf(("XWPDAEMON: LoadHookConfig, pHookData: 0x%lX", G_pHookData));
+    // _Pmpf(("    fHook: %d", fHook));
+    // _Pmpf(("    fPageMage: %d", fPageMage));
 
     if (G_pHookData)
     {
@@ -702,7 +703,7 @@ VOID InstallHook(VOID)
             // install hook
             G_pHookData = hookInit(G_pDaemonShared->hwndDaemonObject);
 
-            _Pmpf(("XWPDAEMON: hookInit called, pHookData: 0x%lX", G_pHookData));
+            // _Pmpf(("XWPDAEMON: hookInit called, pHookData: 0x%lX", G_pHookData));
 
             if (G_pHookData)
                 if (    (G_pHookData->fInputHooked)
@@ -758,7 +759,7 @@ VOID DeinstallHook(VOID)
                      G_pDaemonShared->hwndDaemonObject,
                      TIMERID_AUTOHIDEMOUSE);
 
-        _Pmpf(("XWPDAEMON: hookKilled called"));
+        // _Pmpf(("XWPDAEMON: hookKilled called"));
     }
     G_pHookData = NULL;
 }
@@ -960,12 +961,12 @@ VOID ProcessSlidingFocus(HWND hwndFrameInBetween, // in: != NULLHANDLE if hook h
                                              FID_CLIENT);
                 if (hwndClient)
                 {
-                    _Pmpf(("        giving focus 2 client"));
+                    // _Pmpf(("        giving focus 2 client"));
                     hwndNewFocus = hwndClient;
                 }
                 else
                 {
-                    _Pmpf(("        no client, giving focus 2 frame"));
+                    // _Pmpf(("        no client, giving focus 2 frame"));
                     // we don't even have a client:
                     // activate the frame directly
                     hwndNewFocus = hwnd2Activate;
@@ -1063,7 +1064,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
              */
 
             case XDM_HOOKINSTALL:
-                _Pmpf(("fnwpDaemonObject: got XDM_HOOKINSTALL (%d)", mp1));
+                // _Pmpf(("fnwpDaemonObject: got XDM_HOOKINSTALL (%d)", mp1));
                 if (mp1)
                     // install the hook:
                     InstallHook();
@@ -1092,8 +1093,8 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
              */
 
             case XDM_DESKTOPREADY:
-                _Pmpf(("fnwpDaemonObject: got XDM_DESKTOPREADY (hwnd 0x%lX)", mp1));
-                _Pmpf(("    G_pHookData is: 0x%lX", G_pHookData));
+                // _Pmpf(("fnwpDaemonObject: got XDM_DESKTOPREADY (hwnd 0x%lX)", mp1));
+                // _Pmpf(("    G_pHookData is: 0x%lX", G_pHookData));
                 if (G_pHookData)
                 {
                     G_pHookData->hwndWPSDesktop = (HWND)mp1;
@@ -1119,7 +1120,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
              */
 
             case XDM_HOOKCONFIG:
-                _Pmpf(("fnwpDaemonObject: got XDM_HOOKCONFIG"));
+                // _Pmpf(("fnwpDaemonObject: got XDM_HOOKCONFIG"));
                 // load config from OS2.INI
                 mrc = (MPARAM)LoadHookConfig(TRUE,      // hook
                                              FALSE);    // PageMage
@@ -1138,7 +1139,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
              */
 
             case XDM_STARTSTOPPAGEMAGE:
-                _Pmpf(("fnwpDaemonObject: got XDM_STARTSTOPPAGEMAGE (%d)", mp1));
+                // _Pmpf(("fnwpDaemonObject: got XDM_STARTSTOPPAGEMAGE (%d)", mp1));
                 if (mp1)
                     // install the hook:
                     dmnStartPageMage();
@@ -1171,7 +1172,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
              */
 
             case XDM_PAGEMAGECONFIG:
-                _Pmpf(("fnwpDaemonObject: got XDM_PAGEMAGECONFIG"));
+                // _Pmpf(("fnwpDaemonObject: got XDM_PAGEMAGECONFIG"));
                 // load config from OS2.INI
                 mrc = (MPARAM)pgmsLoadSettings((ULONG)mp1);
             break;
@@ -1342,10 +1343,12 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                                                 HWND_TOP,
                                                 0, 0, 0, 0,
                                                 SWP_ZORDER | SWP_SHOW | SWP_RESTORE);
+#ifdef __PAGEMAGE__
                                 // start or restart timer for flashing
                                 // fixed V0.9.4 (2000-07-10) [umoeller]
                                 if (G_pHookData->PageMageConfig.fFlash)
                                     pgmgcStartFlashTimer();
+#endif
                             }
                             else
                                 // no: let XFLDR.DLL thread-1 object handle this
@@ -1409,7 +1412,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
              */
 
             case XDM_PGMGWINLISTFULL:
-                DebugBox(NULLHANDLE,
+                winhDebugBox(NULLHANDLE,
                          "XWorkplace Daemon",
                          "The PageMage window list is full.");
             break;
@@ -1633,7 +1636,7 @@ int main(int argc, char *argv[])
                             G_pDaemonShared->hwndDaemonObject
                                 = winhCreateObjectWindow((PSZ)WNDCLASS_DAEMONOBJECT, NULL);
 
-                            _Pmpf(("hwndDaemonObject: 0x%lX", G_pDaemonShared->hwndDaemonObject));
+                            // _Pmpf(("hwndDaemonObject: 0x%lX", G_pDaemonShared->hwndDaemonObject));
 
                             if (G_pDaemonShared->hwndDaemonObject)
                             {
@@ -1648,21 +1651,21 @@ int main(int argc, char *argv[])
 
                                 // standard PM message loop
 
-                                _Pmpf(("Entering msg queue"));
+                                // _Pmpf(("Entering msg queue"));
 
                                 while (WinGetMsg(G_habDaemon, &qmsg, 0, 0, 0))
                                     WinDispatchMsg(G_habDaemon, &qmsg);
 
-                                _Pmpf(("Exited msg queue, WM_QUIT found"));
+                                // _Pmpf(("Exited msg queue, WM_QUIT found"));
 
                                 // then kill the hook again
                                 DeinstallHook();
-                                _Pmpf(("main: DeinstallHook() returned"));
+                                // _Pmpf(("main: DeinstallHook() returned"));
                             }
 
                             WinDestroyWindow(G_pDaemonShared->hwndDaemonObject);
                             G_pDaemonShared->hwndDaemonObject = NULLHANDLE;
-                            _Pmpf(("main: hwndDaemonObject destroyed"));
+                            // _Pmpf(("main: hwndDaemonObject destroyed"));
                         } // end if DosGetNamedSharedMem
                         else
                             WinMessageBox(HWND_DESKTOP, HWND_DESKTOP,

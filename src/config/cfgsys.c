@@ -610,7 +610,7 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
 
         // now read CONFIG.SYS file to initialize the dlg items
         if (doshReadTextFile((PSZ)pKernelGlobals->szConfigSys, &pszConfigSys) != NO_ERROR)
-            DebugBox(pcnbp->hwndFrame,
+            winhDebugBox(pcnbp->hwndFrame,
                      (PSZ)pKernelGlobals->szConfigSys,
                      "XFolder was unable to open the CONFIG.SYS file.");
         else
@@ -1450,7 +1450,7 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 if (pszConfigSys == NULL)
                 {
                     if (doshReadTextFile((PSZ)pKernelGlobals->szConfigSys, &pszConfigSys))
-                        DebugBox(pcnbp->hwndFrame,
+                        winhDebugBox(pcnbp->hwndFrame,
                                  (PSZ)pKernelGlobals->szConfigSys,
                                  "XFolder was unable to open the CONFIG.SYS file.");
                 }
@@ -1817,7 +1817,7 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                          136,       // ###
                                          MB_OK);
                     else
-                        DebugBox(NULLHANDLE, "Error", "Error writing CONFIG.SYS");
+                        winhDebugBox(NULLHANDLE, "Error", "Error writing CONFIG.SYS");
                                 // ###
 
                     if (pszConfigSys)

@@ -16,8 +16,9 @@
 example my Warp 3 with FixPak 35, but it does on my Warp 4. I was unable
 to figure out what the reason for this is, but a few users have also reported this, and the
 problem also occurs with the WarpEnhancer reboot feature, so I guess it's not XWorkplace's
-fault. (The reboot feature uses an undocumented trick anyway, so there is probably
-no guarantee by IBM that it will always work.) If you
+<!-- V0.9.6: changed the following line -->
+fault. (The reboot feature uses an undocumented IOCtl to <CODE>DOS.SYS</CODE> anyway,
+so there is probably no guarantee by IBM that it will always work.) If you
 have the IBM BootManager installed, you can circumvent this problem by specifying
 <CITE>SETBOOT.EXE</CITE> as a user reboot option (Desktop settings notebook -> "XDesktop"
 page 1 -> "Actions").
@@ -39,26 +40,33 @@ use OS/2's regular shutdown just once.
 
 <P><LI><B>Why do I keep getting errors while the INI files are being saved?</B>
 <!-- the following added with V0.9.0 -->
-<P>With earlier versions, this was mostly due to INI keys which do not contain any data,
-which shouldn't happen. Try deleting the offending INI key, since it contains no data
-anyway.
-<P>Still, many people have reported these errors to occur pretty randomly, even with
-INI keys which <I>do</I> contain data. Now that I have two new large hard disk, I
-suddenly get these errors too.
-<P>I have tried everything to track this error down, and I have come to the conclusion
-that these errors must be due to a PM bug, since the <CODE>WinGetLastError</CODE> API
-frequently returns PMERR_MEMORY_ALLOCATION_ERR, which is cooly described in the
-PM reference with "An error occured during memory management.". Now you explain what
-this means...
-<P>Anyways, I start getting these errors as soon as my INI files grow to
-more than 1 MB in size (each); as soon as I reduce the size of my INIs, XShutdown is
-working again. And it's not just XShutdown which fails on these INIs, but any other
-application which copies the user and system profiles bytewise also (I've checked this with
-WPSBackup once, which just crashes).
-<P>So for now, the only thing I can suggest is to reduce the size of the INIs.
-First of all, run CHECKINI (from Henk Kelder's WPTOOLS package) to have all invalid
-entries removed. Then use any INI editor to manually delete the following keys which
-can grow very large <I>(make a backup of your INIs before doing this):</I>
+<!-- completely rewritten with V0.9.6 -->
+<P>This is one of the all time favorites, and the problem has changed with several
+releases.
+<UL><LI>With early versions <B>before XFolder 0.85,</B> this was mostly due to INI keys
+which do not contain any data, which shouldn't happen. This has been fixed a long
+while ago.
+<P><LI>Still, many people reported these errors to occur pretty randomly, even with
+INI keys which <I>do</I> contain data. I was finally able to track this down to occur
+with pretty large INI files. I suspect that basically the problem sits in PM itself,
+since the <CODE>WinGetLastError</CODE> API
+frequently returns <CODE>PMERR_MEMORY_ALLOCATION_ERR</CODE>, which is cooly described
+in the PM reference with "An error occured during memory management.".
+I believe that with large INI files, PM runs out of shared memory, which is used for
+INI file management. The limit above which the errors start to occur is dependent on
+how much shared memory is already used on the respective machine, but it's usually
+way above 1 MB per INI file.
+<P>Basically, <B>before V0.9.5,</B> XWorkplace used PrfOpenProfile to create a
+new INI file (for the user and system INI file, respectively)
+and then went through all applications and keys in the profile and simply copied them.
+This caused quite some stress on the PM shared memory management.
+<P>Reducing the size of the INI files did help. By the way, it was not only XShutdown
+which fails on these INIs, but any other application which copies the user and system
+profiles bytewise also (I've checked this with WPSBackup once, which just crashes).
+<P>To reduce the size of the INIs, first of all, run CHECKINI (from Henk Kelder's
+WPTOOLS package) to have all invalid entries removed.
+In addition, use any INI editor to manually delete the following keys
+which can grow very large <I>(make a backup of your INIs before doing this):</I>
 <UL><LI><CODE>PM_Abstract:Icons</CODE>: this contains the icons for all abstract objects.
 By deleting this key, you will lose all user-defined icons for abstract objects, but
 in many cases, the data in here is redundant, because e.g. program objects use the
@@ -68,10 +76,13 @@ folders that were ever opened by the WPS, even if a folder was last opened five 
 ago. You will lose all your folder positions when deleting this, but except for maybe
 a dozen folders this should be acceptable, and for those, you can quickly resize them
 again.
-
-</UL>Maybe this helps until I've found another way of dealing with these problems.
-For now, I'm helpless myself.
-
+</UL>
+<LI>With <B>V0.9.5,</B> I have rewritten the routines so the PM APIs are no longer
+used for creating the new profiles. Since Carsten Arnold told me the file format
+of the INI files, I wrote a set of routines which write these without using shared
+memory. Apparently, this helped. This is the "new method" which is now selectable
+on the "XShutdown" page in the Desktop's settings notebook.
+</UL>
 <!-- the following Q&A added with V0.9.4 -->
 <P><LI><B>After using Xhutdown, at the next reboot, the screen is reset to VGA, and
 I get a dialog saying that the Desktop could not be found. What is this?</B>
