@@ -137,10 +137,8 @@ PSZ fsysQueryEASubject(WPFileSystem *somSelf)
     CHAR    szFilename[CCHMAXPATH];
     if (_wpQueryFilename(somSelf, szFilename, TRUE))
     {
-        PEABINDING  peab = NULL;
-        peab = eaPathReadOneByName(szFilename, ".SUBJECT");
-
-        if (peab)
+        PEABINDING  peab;
+        if (peab = eaPathReadOneByName(szFilename, ".SUBJECT"))
         {
             psz = eaCreatePSZFromBinding(peab);
             eaFreeBinding(peab);
@@ -172,10 +170,8 @@ PSZ fsysQueryEAComments(WPFileSystem *somSelf)
     CHAR    szFilename[CCHMAXPATH];
     if (_wpQueryFilename(somSelf, szFilename, TRUE))
     {
-        PEABINDING  peab = NULL;
-
-        peab = eaPathReadOneByName(szFilename, ".COMMENTS");
-        if (peab)
+        PEABINDING  peab;
+        if (peab = eaPathReadOneByName(szFilename, ".COMMENTS"))
         {
             psz = eaCreatePSZFromMVBinding(peab,
                                            "\r\n", // separator string
@@ -209,10 +205,8 @@ PSZ fsysQueryEAKeyphrases(WPFileSystem *somSelf)
     CHAR    szFilename[CCHMAXPATH];
     if (_wpQueryFilename(somSelf, szFilename, TRUE))
     {
-        PEABINDING  peab = NULL;
-
-        peab = eaPathReadOneByName(szFilename, ".KEYPHRASES");
-        if (peab)
+        PEABINDING  peab;
+        if (peab = eaPathReadOneByName(szFilename, ".KEYPHRASES"))
         {
             psz = eaCreatePSZFromMVBinding(peab,
                                            "\r\n", // separator string
@@ -248,7 +242,7 @@ BOOL fsysSetEASubject(WPFileSystem *somSelf, PCSZ psz)
         PCSZ pcszEA = ".SUBJECT";
         if (psz)
         {
-            PEABINDING  peab = NULL;
+            PEABINDING  peab;
             if (peab = eaCreateBindingFromPSZ(pcszEA, psz))
             {
                 brc = (NO_ERROR == eaPathWriteOne(szFilename, peab));
@@ -288,7 +282,7 @@ BOOL fsysSetEAComments(WPFileSystem *somSelf, PCSZ psz)
         PCSZ pcszEA = ".COMMENTS";
         if (psz)
         {
-            PEABINDING  peab = NULL;
+            PEABINDING  peab;
             if (peab = eaCreateMVBindingFromPSZ(pcszEA,
                                                 psz,
                                                 "\r\n",     // separator
@@ -760,7 +754,8 @@ PBYTE fsysFindEAValue(PFEA2LIST pFEA2List2,      // in: file EA list
  */
 
 BOOL DecodeLongname(PFEA2LIST pFEA2List2,
-                    PSZ pszLongname)          // out: .LONGNAME if TRUE is returned
+                    PSZ pszLongname,          // out: .LONGNAME if TRUE is returned
+                    PULONG pulNameLen)        // out: length of .LONGNAME string
 {
     PBYTE pbValue;
 
@@ -780,6 +775,7 @@ BOOL DecodeLongname(PFEA2LIST pFEA2List2,
                        pbValue + 4,
                        cb);
                 pszLongname[cb] = '\0';
+                *pulNameLen = cb;
                 return (TRUE);
             }
         }
@@ -878,7 +874,8 @@ PCSZ DecodeClassInfo(PFEA2LIST pFEA2List2,
  */
 
 PCSZ FindBestDataFileClass(PFEA2LIST pFEA2List2,
-                           PCSZ pcszObjectTitle)
+                           PCSZ pcszObjectTitle,
+                           ULONG ulTitleLen)      // in: length of title string (req.)
 {
     PCSZ pcszClassName = NULL;
 
@@ -947,7 +944,8 @@ PCSZ FindBestDataFileClass(PFEA2LIST pFEA2List2,
     if (!pcszClassName)
         // instance types didn't help: then go for the
         // instance filters
-        pcszClassName = ftypFindClassFromInstanceFilter(pcszObjectTitle);
+        pcszClassName = ftypFindClassFromInstanceFilter(pcszObjectTitle,
+                                                        ulTitleLen);
 
     return (pcszClassName);     // can be NULL
 }
@@ -1083,6 +1081,7 @@ WPFileSystem* RefreshOrAwake(WPFolder *pFolder,
 
         CHAR            szLongname[CCHMAXPATH];
         PSZ             pszTitle;
+        ULONG           ulTitleLen;
 
         PCSZ            pcszClassName = NULL;
         ULONG           ulClassNameLen;
@@ -1092,12 +1091,15 @@ WPFileSystem* RefreshOrAwake(WPFolder *pFolder,
         // for the title of the new object, use the real
         // name, unless we also find a .LONGNAME attribute,
         // so decode the EA buffer
-        if (DecodeLongname(pFEA2List2, szLongname))
+        if (DecodeLongname(pFEA2List2, szLongname, &ulTitleLen))
             // got .LONGNAME:
             pszTitle = szLongname;
         else
+        {
             // no .LONGNAME:
             pszTitle = pszRealName;
+            ulTitleLen = *puchNameLen;
+        }
 
         // NOTE about the class management:
         // At this point, we operate on class _names_
@@ -1120,7 +1122,7 @@ WPFileSystem* RefreshOrAwake(WPFolder *pFolder,
                                               &ulClassNameLen,
                                               &pObjData)))
         {
-            // no .CLASSINFO:
+            // no .CLASSINFO: use default class...
             // if this is a directory, use _WPFolder
             if (pfb3->attrFile & FILE_DIRECTORY)
                 pcszClassName = G_pcszWPFolder;
@@ -1154,7 +1156,8 @@ WPFileSystem* RefreshOrAwake(WPFolder *pFolder,
             // should be WPProgramFile instead)
             pcszClassName = FindBestDataFileClass(pFEA2List2,
                                                   // title (.LONGNAME or realname)
-                                                  pszTitle);
+                                                  pszTitle,
+                                                  ulTitleLen);
                     // this returns either NULL or the
                     // class object of a subclass
 

@@ -166,7 +166,7 @@ static const XCENTERWIDGETCLASS G_WidgetClasses[] =
                     WNDCLASS_WIDGET_MONITORS,
                     MWGT_DATE,
                     "Date",
-                    "Date monitor",
+                    "Date",
                     WGTF_UNIQUEPERXCENTER | WGTF_TOOLTIP | WGTF_TRAYABLE,
                     NULL        // no settings dlg
                 },
@@ -174,7 +174,7 @@ static const XCENTERWIDGETCLASS G_WidgetClasses[] =
                     WNDCLASS_WIDGET_MONITORS,
                     MWGT_TIME,
                     "Time",
-                    "Time monitor",
+                    "Time",
                     WGTF_UNIQUEPERXCENTER | WGTF_TOOLTIP | WGTF_TRAYABLE,
                     NULL        // no settings dlg
                 },
@@ -182,7 +182,7 @@ static const XCENTERWIDGETCLASS G_WidgetClasses[] =
                     WNDCLASS_WIDGET_MONITORS,
                     MWGT_MEMORY,
                     "PhysMemory",
-                    "Free physical memory monitor",
+                    "Free physical memory",
                     WGTF_UNIQUEPERXCENTER | WGTF_TOOLTIP | WGTF_TRAYABLE,
                     NULL        // no settings dlg
                 },
@@ -190,7 +190,7 @@ static const XCENTERWIDGETCLASS G_WidgetClasses[] =
                     WNDCLASS_WIDGET_MONITORS,
                     MWGT_POWER,
                     "Power",
-                    "Battery power monitor",
+                    "Battery power",
                     WGTF_UNIQUEGLOBAL | WGTF_TOOLTIP | WGTF_TRAYABLE,
                     NULL        // no settings dlg
                 },

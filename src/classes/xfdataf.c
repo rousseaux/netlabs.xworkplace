@@ -1127,6 +1127,23 @@ SOM_Scope HPOINTER  SOMLINK xdf_wpQueryIcon(XFldDataFile *somSelf)
 }
 
 /*
+ *@@ wpQueryIconData:
+ *      @@todo
+ *
+ *@@added V0.9.16 (2002-01-26) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xdf_wpQueryIconData(XFldDataFile *somSelf,
+                                             PICONINFO pIconInfo)
+{
+    /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
+    XFldDataFileMethodDebug("XFldDataFile","xdf_wpQueryIconData");
+
+    return (XFldDataFile_parent_WPDataFile_wpQueryIconData(somSelf,
+                                                           pIconInfo));
+}
+
+/*
  *@@ wpSetAssociatedFileIcon:
  *      this method gets called by the WPS when a data
  *      file object is being initialized, to have it

@@ -106,7 +106,9 @@
 static CONTROLDEF
     FolderViewGroup = CONTROLDEF_GROUP(
                             LOAD_STRING, // ""Folder view settings"
-                            ID_XSD_FOLDERVIEWGROUP),
+                            ID_XSD_FOLDERVIEWGROUP,
+                            -1,
+                            -1),
     FullPathCB = CONTROLDEF_AUTOCHECKBOX(
                             LOAD_STRING, // "Show full path in folder ~title",
                             ID_XSDI_FULLPATH,
@@ -155,7 +157,9 @@ static CONTROLDEF
                             -1),
     FdrDefaultViewGroup = CONTROLDEF_GROUP(
                             LOAD_STRING, // "Default folder view"
-                            ID_XSDI_FDRVIEWDEFAULT_GROUP),
+                            ID_XSDI_FDRVIEWDEFAULT_GROUP,
+                            -1,
+                            -1),
     FdrViewInheritCB = CONTROLDEF_FIRST_AUTORADIO(
                             LOAD_STRING, // "Use pare~nt folder's default view",
                             ID_XSDI_FDRVIEW_INHERIT,

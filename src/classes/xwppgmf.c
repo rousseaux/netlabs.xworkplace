@@ -799,6 +799,23 @@ SOM_Scope BOOL  SOMLINK xpgf_wpSetProgIcon(XWPProgramFile *somSelf,
 }
 
 /*
+ *@@ wpQueryIconData:
+ *      @@todo
+ *
+ *@@added V0.9.16 (2002-01-26) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xpgf_wpQueryIconData(XWPProgramFile *somSelf,
+                                              PICONINFO pIconInfo)
+{
+    XWPProgramFileData *somThis = XWPProgramFileGetData(somSelf);
+    XWPProgramFileMethodDebug("XWPProgramFile","xpgf_wpQueryIconData");
+
+    return (XWPProgramFile_parent_WPProgramFile_wpQueryIconData(somSelf,
+                                                                pIconInfo));
+}
+
+/*
  *@@ wpSetAssociationType:
  *      this WPProgram(File) method sets the types
  *      this object is associated with.

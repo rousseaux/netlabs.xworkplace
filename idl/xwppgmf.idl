@@ -107,6 +107,7 @@ interface XWPProgramFile : WPProgramFile
     wpRestoreData: override;
 
     wpSetProgIcon: override;
+    wpQueryIconData: override;
 
     wpSetAssociationType: override;
 

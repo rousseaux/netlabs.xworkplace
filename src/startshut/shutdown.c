@@ -2276,7 +2276,9 @@ BOOL xsdInitiateShutdownExt(PSHUTDOWNPARAMS psdpShared)
 static CONTROLDEF
     ShutdownGroup = CONTROLDEF_GROUP(
                             LOAD_STRING, // "File menus",
-                            ID_SDDI_SHUTDOWNGROUP),
+                            ID_SDDI_SHUTDOWNGROUP,
+                            -1,
+                            -1),
     RebootAfterwardsCB = CONTROLDEF_AUTOCHECKBOX(
                             LOAD_STRING, // "~Reboot afterwards"
                             ID_SDDI_REBOOT,
@@ -2352,7 +2354,9 @@ static CONTROLDEF
 #endif
     SharedGroup = CONTROLDEF_GROUP(
                             LOAD_STRING, // "Shutdown and Desktop restart settings"
-                            ID_SDDI_SHAREDGROUP),
+                            ID_SDDI_SHAREDGROUP,
+                            -1,
+                            -1),
     EmptyTrashCB = CONTROLDEF_AUTOCHECKBOX(
                             LOAD_STRING, // "~Empty trash can"
                             ID_SDDI_EMPTYTRASHCAN,

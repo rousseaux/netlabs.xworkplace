@@ -60,7 +60,7 @@ HelpLibrary = "HELPLIBRARY="pdir||"\help\xfldr"LanguageCode".hlp;"
 rc = SysCreateObject("XWPSetup", XWPSetup, "<WP_CONFIG>", "OBJECTID=<XWORKPLACE_SETUP>;", "U");
 
 /* create XCenter (V0.9.7) in eCS "Utilities" folder */
-rc = SysCreateObject("XCenter", "XCenter", "<WP_TOOLS>", "OBJECTID=<XWP_XCENTER>;", "U");
+rc = SysCreateObject("XCenter", "eCenter", "<WP_TOOLS>", "OBJECTID=<XWP_XCENTER>;", "U");
 
 /* "Font folder" ... added with V0.9.7 */
 rc = SysCreateObject("XWPFontFolder", FontFolder, "<WP_CONFIG>", "DEFAULTVIEW=DETAILS;DETAILSCLASS=XWPFontObject;SORTCLASS=XWPFontObject;OBJECTID=<XWP_FONTFOLDER>;", "U");

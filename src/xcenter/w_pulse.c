@@ -643,7 +643,11 @@ static CONTROLDEF
     OKButton = CONTROLDEF_DEFPUSHBUTTON(NULL, DID_OK, 100, 30),
     CancelButton = CONTROLDEF_PUSHBUTTON(NULL, DID_CANCEL, 100, 30),
 
-    ProcessorsGroup = CONTROLDEF_GROUP(NULL, -1),
+    ProcessorsGroup = CONTROLDEF_GROUP(
+                            NULL,
+                            -1,
+                            -1,
+                            -1),
 
     IRQLoadColor
                 = CONTROLDEF_TEXT(NULL,
@@ -657,7 +661,11 @@ static CONTROLDEF
                                   100,
                                   40),
 
-    OthersGroup = CONTROLDEF_GROUP(NULL, -1),
+    OthersGroup = CONTROLDEF_GROUP(
+                            NULL,
+                            -1,
+                            -1,
+                            -1),
 
     BackgroundColor
                 = CONTROLDEF_TEXT(NULL,

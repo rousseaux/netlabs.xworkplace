@@ -18,6 +18,10 @@ Tools readme:
     V0.83. This has been updated and bugfixed with V0.9.0.
     Start the program to have it explain itself.
 
+    V0.9.16: strrpl has been moved to the xwphelpers main directory.
+    The sources for strrpl are in the warpin repository in the tools
+    directory.
+
 --  unlock.exe is used by the XFolder makefiles to unlock the XFolder
     DLL currently locked by the WPS. This is taken from an old version
     of the lxLite package.

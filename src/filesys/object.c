@@ -3221,7 +3221,9 @@ MRESULT EXPENTRY fnwpObjectDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
 static CONTROLDEF
     DetailsGroup = CONTROLDEF_GROUP(
                             LOAD_STRING,
-                            ID_XSDI_DETAILS_GROUP),
+                            ID_XSDI_DETAILS_GROUP,
+                            -1,
+                            -1),
     DetailsCnr =
         {
             WC_CONTAINER,
@@ -3235,7 +3237,9 @@ static CONTROLDEF
         },
     SetupStringGroup = CONTROLDEF_GROUP(
                             LOAD_STRING,
-                            ID_XSDI_DETAILS_SETUPSTR_GROUP),
+                            ID_XSDI_DETAILS_SETUPSTR_GROUP,
+                            -1,
+                            -1),
     SetupStringEF = CONTROLDEF_ENTRYFIELD_RO(
                             NULL,
                             ID_XSDI_DETAILS_SETUPSTR_EF,

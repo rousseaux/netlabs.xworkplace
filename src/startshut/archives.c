@@ -158,7 +158,9 @@ static PCSZ     G_apcszPercentages[] =
 static CONTROLDEF
     ArcCriteriaGroup = CONTROLDEF_GROUP(
                             LOAD_STRING,
-                            ID_XSDI_ARC_CRITERIA_GROUP),
+                            ID_XSDI_ARC_CRITERIA_GROUP,
+                            -1,
+                            -1),
     EnableArchiveCB = CONTROLDEF_AUTOCHECKBOX(
                             LOAD_STRING,
                             ID_XSDI_ARC_ENABLE,
@@ -227,7 +229,9 @@ static CONTROLDEF
                             -1),
     Arc2Group = CONTROLDEF_GROUP(
                             LOAD_STRING,
-                            ID_XSDI_ARC_ARCHIVES_GROUP),
+                            ID_XSDI_ARC_ARCHIVES_GROUP,
+                            -1,
+                            -1),
     ArcNoTxt1 = CONTROLDEF_TEXT(
                             LOAD_STRING,
                             ID_XSDI_ARC_ARCHIVES_NO_TXT1,

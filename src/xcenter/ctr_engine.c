@@ -464,6 +464,11 @@ BOOL UpdateDesktopWorkarea(PXCENTERWINDATA pXCenterData,
                         if (pDataThat->fFrameFullyShown)
                         {
                             XCenterData *somThat = XCenterGetData(pDataThat->somSelf);
+
+                            _Pmpf(("%s cyFrame %d",
+                                    _wpQueryTitle(pDataThat->somSelf),
+                                    pDataThat->cyFrame));
+
                             if (somThat->ulPosition == XCENTER_BOTTOM)
                             {
                                 // XCenter on bottom:
@@ -483,6 +488,8 @@ BOOL UpdateDesktopWorkarea(PXCENTERWINDATA pXCenterData,
                                 // this might have caused endless loops
                     }
 
+                    _Pmpf(("  ulCutBottom %d", ulCutBottom));
+                    _Pmpf(("  ulCutTop %d", ulCutTop));
                     rclNew.yBottom += ulCutBottom;
                     rclNew.yTop -= ulCutTop;
 

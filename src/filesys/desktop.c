@@ -746,7 +746,9 @@ END
 static CONTROLDEF
     MenuItemsGroup = CONTROLDEF_GROUP(
                             LOAD_STRING,
-                            ID_XSDI_DTP_MENUITEMSGROUP),
+                            ID_XSDI_DTP_MENUITEMSGROUP,
+                            -1,
+                            -1),
     SortCB = CONTROLDEF_AUTOCHECKBOX(
                             LOAD_STRING,
                             ID_XSDI_DTP_SORT,
@@ -989,7 +991,9 @@ static CONTROLDEF
 #ifndef __NOBOOTLOGO__
     BootLogoGroup = CONTROLDEF_GROUP(
                             LOAD_STRING, // "Workplace Shell boot logo",
-                            ID_XSDI_DTP_LOGOGROUP),
+                            ID_XSDI_DTP_LOGOGROUP,
+                            -1,
+                            -1),
     BootLogoCB = CONTROLDEF_AUTOCHECKBOX(
                             LOAD_STRING, // "Enable ~boot logo"
                             ID_XSDI_DTP_BOOTLOGO,
@@ -997,7 +1001,9 @@ static CONTROLDEF
                             -1),
     LogoStyleGroup = CONTROLDEF_GROUP(
                             LOAD_STRING, // "Boot logo style"
-                            ID_XSDI_DTP_LOGOSTYLEGROUP),
+                            ID_XSDI_DTP_LOGOSTYLEGROUP,
+                            -1,
+                            -1),
     LogoTransparentRadio = CONTROLDEF_FIRST_AUTORADIO(
                             LOAD_STRING, // "~Transparent style"
                             ID_XSDI_DTP_LOGO_TRANSPARENT,
@@ -1010,7 +1016,9 @@ static CONTROLDEF
                             -1),
     LogoFrameGroup = CONTROLDEF_GROUP(
                             "",
-                            ID_XSDI_DTP_LOGOFRAME),
+                            ID_XSDI_DTP_LOGOFRAME,
+                            -1,
+                            -1),
     LogoBitmap =
         {
             WC_STATIC,
@@ -1621,6 +1629,8 @@ MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             break; }
 #endif
 
+            default:
+                ;
         }
     } // end if (!fProcessed)
 

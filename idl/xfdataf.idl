@@ -101,6 +101,7 @@ interface XFldDataFile : WPDataFile
     wpQueryAssociatedFileIcon: override;
 
     wpQueryIcon: override;
+    wpQueryIconData: override;
     wpSetAssociatedFileIcon: override;
 
 #ifdef __PRIVATE__

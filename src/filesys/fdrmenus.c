@@ -2719,7 +2719,9 @@ BOOL mnuFolderSelectingMenuItem(WPFolder *somSelf,
 static CONTROLDEF
     FileMenusGroup = CONTROLDEF_GROUP(
                             LOAD_STRING, // "File menus",
-                            ID_XSDI_FILEMENUS_GROUP),
+                            ID_XSDI_FILEMENUS_GROUP,
+                            -1,
+                            -1),
     AttributesCB = CONTROLDEF_AUTOCHECKBOX(
                             LOAD_STRING, // "Add \"A~ttributes\" menu",
                             ID_XSDI_FILEATTRIBS,
@@ -2733,7 +2735,9 @@ static CONTROLDEF
 
     FolderMenusGroup = CONTROLDEF_GROUP(
                             LOAD_STRING, // "Folder menus",
-                            ID_XSDI_FOLDERMENUS_GROUP),
+                            ID_XSDI_FOLDERMENUS_GROUP,
+                            -1,
+                            -1),
 #ifndef __NOMOVEREFRESHNOW__
     RefreshNowCB = CONTROLDEF_AUTOCHECKBOX(
                             LOAD_STRING, // "Add \"~Refresh now\" to main menu",

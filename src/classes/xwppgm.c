@@ -1100,8 +1100,9 @@ SOM_Scope BOOL  SOMLINK xpg_wpSetProgIcon(XWPProgram *somSelf,
 
 /*
  *@@ wpQueryIconData:
+ *      @@todo
  *
- *@@added V0.9.12 (2001-05-22) [umoeller]
+ *@@added V0.9.16 (2002-01-26) [umoeller]
  */
 
 SOM_Scope ULONG  SOMLINK xpg_wpQueryIconData(XWPProgram *somSelf,
@@ -1373,7 +1374,6 @@ SOM_Scope BOOL  SOMLINK xpg_wpSetProgDetails(XWPProgram *somSelf,
                                   NULL,
                                   NULL);
                         _usExecutableHandle = 0xFFFF;
-                        _Pmpf(("   set hfs 0x%lX", _usExecutableHandle));
                         fSetProgIcon = TRUE;
                     }
                 }
@@ -1391,7 +1391,6 @@ SOM_Scope BOOL  SOMLINK xpg_wpSetProgDetails(XWPProgram *somSelf,
                         // handle changed:
                         wpshStore(somSelf, &_pWszExecutable, NULL, NULL);
                         _usExecutableHandle = hfs;
-                        _Pmpf(("   set hfs 0x%lX", _usExecutableHandle));
                         fSetProgIcon = TRUE;
                     }
                 }
@@ -1409,7 +1408,6 @@ SOM_Scope BOOL  SOMLINK xpg_wpSetProgDetails(XWPProgram *somSelf,
                                   pProgDetails->pszExecutable,
                                   NULL);
                         _usExecutableHandle = 0;
-                        _Pmpf((" set _pszExecutable %s", _pWszExecutable));
                         fSetProgIcon = TRUE;
                     }
                 }
@@ -1421,6 +1419,9 @@ SOM_Scope BOOL  SOMLINK xpg_wpSetProgDetails(XWPProgram *somSelf,
                 _usExecutableHandle = NULLHANDLE;
                 fSetProgIcon = TRUE;
             }
+
+            _Pmpf(("   new hfs 0x%lX", _usExecutableHandle));
+            _Pmpf(("   new _pszExecutable %s", _pWszExecutable));
 
             // startup dir
             _usStartupDirHandle = GetFSHandle(pProgDetails->pszStartupDir);

@@ -259,7 +259,7 @@ RUN_BLDLEVEL = cmd.exe /c $(CVS_WORK_ROOT)\$(XWPDIR)\tools\BuildLevel.cmd
 
 RUN_UNLOCK = $(CVS_WORK_ROOT)\$(XWPDIR)\tools\unlock.exe
 
-RUN_STRRPL = $(CVS_WORK_ROOT)\$(XWPDIR)\tools\strrpl.exe
+RUN_STRRPL = $(HELPERS_BASE)\strrpl.exe
 
 !ifndef ENTITYDEFS
 !ifdef XWPLITE

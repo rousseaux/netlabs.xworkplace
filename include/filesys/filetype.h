@@ -34,7 +34,8 @@
 
         PCSZ ftypFindClassFromInstanceType(PCSZ pcszType);
 
-        PCSZ ftypFindClassFromInstanceFilter(PCSZ pcszObjectTitle);
+        PCSZ ftypFindClassFromInstanceFilter(PCSZ pcszObjectTitle,
+                                             ULONG ulTitleLen);
 
     #endif
 

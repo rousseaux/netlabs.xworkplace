@@ -330,7 +330,11 @@ static CONTROLDEF
             OKButton = CONTROLDEF_DEFPUSHBUTTON(NULL, DID_OK, 100, 30),
             CancelButton = CONTROLDEF_PUSHBUTTON(NULL, DID_CANCEL, 100, 30),
 
-            ChecksGroup = CONTROLDEF_GROUP(NULL, -1),
+            ChecksGroup = CONTROLDEF_GROUP(
+                            NULL,
+                            -1,
+                            -1,
+                            -1),
 
             CheckShutdown
                         = CONTROLDEF_AUTOCHECKBOX(NULL,

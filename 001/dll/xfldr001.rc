@@ -1133,7 +1133,7 @@ BEGIN
     ID_SDDI_MESSAGEAGAIN                "~Show this message next time"
 
     /* new "Icon" page replacement */
-    ID_XSDI_ICON_TITLE_TEXT             "T~itle:"
+    ID_XSDI_ICON_TITLE_TEXT             "T~itle"
     ID_XSDI_ICON_GROUP                  "Current icon"
     ID_XSDI_ICON_EXPLANATION_TXT        "Drag any object into the rectangle on the left, or find an icon file using the ""Browse"" button."
     ID_XSDI_ICON_EDIT_BUTTON            "~Edit icon"

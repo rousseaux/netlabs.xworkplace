@@ -2472,19 +2472,29 @@ BOOL icoIsUsingDefaultIcon(WPObject *pobj,
  ********************************************************************/
 
 static CONTROLDEF
-    TitleText = CONTROLDEF_TEXT(
+    /* TitleText = CONTROLDEF_TEXT(
+                            LOAD_STRING,
+                            ID_XSDI_ICON_TITLE_TEXT,
+                            -1,
+                            -1), */
+    TitleGroup = CONTROLDEF_GROUP(
                             LOAD_STRING,
                             ID_XSDI_ICON_TITLE_TEXT,
                             -1,
                             -1),
+#define ICON_WIDTH 80
+#define BUTTON_WIDTH 90
+#define GROUPS_WIDTH 350
     TitleEF = CONTROLDEF_MLE(
                             NULL,
                             ID_XSDI_ICON_TITLE_EF,
-                            300,
+                            GROUPS_WIDTH - 2 * COMMON_SPACING,
                             50),
     IconGroup = CONTROLDEF_GROUP(
                             LOAD_STRING,
-                            ID_XSDI_ICON_GROUP),
+                            ID_XSDI_ICON_GROUP,
+                            GROUPS_WIDTH,
+                            -1),
     IconStatic =
         {
             WC_STATIC,
@@ -2493,13 +2503,13 @@ static CONTROLDEF
             ID_XSDI_ICON_STATIC,
             CTL_COMMON_FONT,
             0,
-            {80, 80},
+            {ICON_WIDTH, ICON_WIDTH},
             COMMON_SPACING
         },
     IconExplanationText = CONTROLDEF_TEXT_WORDBREAK(
                             LOAD_STRING,
                             ID_XSDI_ICON_EXPLANATION_TXT,
-                            200),
+                            230),
     IconEditButton = CONTROLDEF_PUSHBUTTON(
                             LOAD_STRING,
                             ID_XSDI_ICON_EDIT_BUTTON,
@@ -2517,7 +2527,9 @@ static CONTROLDEF
                             30),
     ExtrasGroup = CONTROLDEF_GROUP(
                             LOAD_STRING,
-                            ID_XSDI_ICON_EXTRAS_GROUP),
+                            ID_XSDI_ICON_EXTRAS_GROUP,
+                            GROUPS_WIDTH,
+                            -1),
     HotkeyText = CONTROLDEF_TEXT(
                             LOAD_STRING,
                             ID_XSDI_ICON_HOTKEY_TEXT,
@@ -2561,9 +2573,13 @@ static const DLGHITEM dlgObjIconFront[] =
 
 static const DLGHITEM dlgObjIconTitle[] =
     {
-            START_ROW(ROW_VALIGN_TOP),       // row 1 in the root table, required
-                CONTROL_DEF(&TitleText),
-                CONTROL_DEF(&TitleEF)
+             START_ROW(ROW_VALIGN_TOP),       // row 1 in the root table, required
+            START_ROW(ROW_VALIGN_CENTER),
+                START_GROUP_TABLE(&TitleGroup),
+                // CONTROL_DEF(&TitleText),
+                    START_ROW(0),
+                        CONTROL_DEF(&TitleEF),
+                END_TABLE,
     };
 
 static const DLGHITEM dlgObjIconIcon[] =

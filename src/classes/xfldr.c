@@ -3137,8 +3137,9 @@ SOM_Scope BOOL  SOMLINK xf_wpAddToContent(XFolder *somSelf,
     XFolderData *somThis = XFolderGetData(somSelf);
     // XFolderMethodDebug("XFolder","xf_wpAddToContent");
 
-    BOOL    brc,
-            fCallParent = TRUE;
+    BOOL    brc = TRUE,
+            fCallParent = TRUE,
+            fFolderLocked = FALSE;
 
     #ifdef DEBUG_SOMMETHODS
          _Pmpf(("wpAddToContent, folder: %s, object: %s",
@@ -3152,10 +3153,25 @@ SOM_Scope BOOL  SOMLINK xf_wpAddToContent(XFolder *somSelf,
          || (cmnQuerySetting(sfTurboFolders))
 #endif
        )
-        brc = fdrAddToContent(somSelf, Object, &fCallParent);
+    {
+        TRY_LOUD(excpt1)
+        {
+            if (fFolderLocked = !fdrRequestFolderWriteMutexSem(somSelf))
+                brc = fdrAddToContent(somSelf, Object, &fCallParent);
+        }
+        CATCH(excpt1)
+        {
+            brc = FALSE;
+        } END_CATCH();
+    }
 
+    // keep the folder locked while calling the parent!
+    // V0.9.16 (2002-01-26) [umoeller]
     if (fCallParent)
         brc = XFolder_parent_WPFolder_wpAddToContent(somSelf, Object);
+
+    if (fFolderLocked)
+        fdrReleaseFolderWriteMutexSem(somSelf);
 
     if (!(_wpQueryFldrFlags(somSelf) & (FOI_POPULATEINPROGRESS | FOI_REFRESHINPROGRESS)))
         fdrForEachOpenInstanceView(somSelf,
@@ -3178,7 +3194,8 @@ SOM_Scope BOOL  SOMLINK xf_wpAddToContent(XFolder *somSelf,
 SOM_Scope BOOL  SOMLINK xf_wpDeleteFromContent(XFolder *somSelf,
                                                WPObject* Object)
 {
-    BOOL brc = FALSE;
+    BOOL    brc = FALSE,
+            fFolderLocked = FALSE;
 
     // XFolderData *somThis = XFolderGetData(somSelf);
     // XFolderMethodDebug("XFolder","xf_wpDeleteFromContent");
@@ -3191,10 +3208,24 @@ SOM_Scope BOOL  SOMLINK xf_wpDeleteFromContent(XFolder *somSelf,
 
 #ifndef __NOTURBOFOLDERS__
     if (cmnQuerySetting(sfTurboFolders))
-        fdrDeleteFromContent(somSelf, Object);
+    {
+        TRY_LOUD(excpt1)
+        {
+            if (fFolderLocked = !fdrRequestFolderWriteMutexSem(somSelf))
+                brc = fdrDeleteFromContent(somSelf, Object);
+        }
+        CATCH(excpt1)
+        {
+            brc = FALSE;
+        } END_CATCH();
+    }
 #endif
 
+    // keep the folder locked while calling the parent!
     brc = XFolder_parent_WPFolder_wpDeleteFromContent(somSelf, Object);
+
+    if (fFolderLocked)
+        fdrReleaseFolderWriteMutexSem(somSelf);
 
     if (!(_wpQueryFldrFlags(somSelf) & (FOI_POPULATEINPROGRESS | FOI_REFRESHINPROGRESS)))
         fdrForEachOpenInstanceView(somSelf,
@@ -3231,18 +3262,15 @@ SOM_Scope WPObject*  SOMLINK xf_wpQueryContent(XFolder *somSelf,
                                                WPObject* Object,
                                                ULONG ulOption)
 {
-    WPObject *pobj = NULL;
     XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_wpQueryContent");
 
     if (_fDisableAutoCnrAdd)
         // do not call the parent!!
         // call our own implementation instead
-        pobj = fdrQueryContent(somSelf, Object, ulOption);
-    else
-        pobj = XFolder_parent_WPFolder_wpQueryContent(somSelf, Object, ulOption);
+        return (fdrQueryContent(somSelf, Object, ulOption));
 
-    return (pobj);
+    return (XFolder_parent_WPFolder_wpQueryContent(somSelf, Object, ulOption));
 }
 
 /*
@@ -3854,17 +3882,18 @@ SOM_Scope BOOL  SOMLINK xfM_wpclsCreateDefaultTemplates(M_XFolder *somSelf,
 
 SOM_Scope ULONG  SOMLINK xfM_wpclsQueryDefaultView(M_XFolder *somSelf)
 {
+    ULONG ul;
     // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // M_XFolderData *somThis = M_XFolderGetData(somSelf);
     M_XFolderMethodDebug("M_XFolder","xfM_wpclsQueryDefaultView");
 
-    if (cmnQuerySetting(sulDefaultFolderView))
+    if (ul = cmnQuerySetting(sulDefaultFolderView))
     {
         // something set (0 means standard WPS inheritance behavior):
         // return that
         // _Pmpf((__FUNCTION__ ": returning %u", cmnQuerySetting(sulDefaultFolderView)));
 
-        return (cmnQuerySetting(sulDefaultFolderView));
+        return (ul);
     }
 
     // return the stupid 103 code

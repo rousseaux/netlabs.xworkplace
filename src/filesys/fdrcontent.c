@@ -792,6 +792,10 @@ WPObject* fdrFindFSFromName(WPFolder *pFolder,
 /*
  *@@ HackContentPointers:
  *
+ *      Preconditions:
+ *
+ *      --  The caller must hold the folder write mutex.
+ *
  *@@added V0.9.16 (2001-10-25) [umoeller]
  */
 
@@ -870,6 +874,10 @@ BOOL HackContentPointers(WPFolder *somSelf,
  *@@ fdrAddToContent:
  *      implementation for the XFolder::wpAddToContent override.
  *
+ *      Preconditions:
+ *
+ *      --  The caller must hold the folder write mutex.
+ *
  *@@changed V0.9.9 (2001-04-02) [umoeller]: fixed mutex release order
  *@@changed V0.9.9 (2001-04-02) [umoeller]: removed object mutex request on folder
  *@@changed V0.9.16 (2001-10-25) [umoeller]: moved old code to HackContentPointers, added tree maintenance
@@ -879,120 +887,98 @@ BOOL fdrAddToContent(WPFolder *somSelf,
                      WPObject *pObject,
                      BOOL *pfCallParent)        // out: call parent method
 {
-    BOOL    brc = TRUE,
-            fFolderLocked = FALSE;
+    BOOL    brc = TRUE;
 
-    *pfCallParent = TRUE;
+    XFolderData *somThis = XFolderGetData(somSelf);
+    PFDRCONTENTITEM pNew;
 
-    TRY_LOUD(excpt1)
+    if (_fDisableAutoCnrAdd)
     {
-        if (fFolderLocked = !fdrRequestFolderWriteMutexSem(somSelf))
+        // do not call the parent!!
+        *pfCallParent = FALSE;
+        // call our own implementation instead
+        brc = HackContentPointers(somSelf, somThis, pObject);
+    }
+
+    // raise total objects count
+    _cObjects++;
+
+    // add to contents tree
+    if (_somIsA(pObject, _WPFileSystem))
+    {
+        // WPFileSystem added:
+        // add a new tree node and sort it according
+        // to the object's upper-case real name
+        PSZ pszUpperRealName;
+        if (    (pszUpperRealName = _xwpQueryUpperRealName(pObject))
+             && (pNew = NEW(FDRCONTENTITEM))
+           )
         {
-            XFolderData *somThis = XFolderGetData(somSelf);
-            PFDRCONTENTITEM pNew;
+            pNew->Tree.ulKey = (ULONG)pszUpperRealName;
+            pNew->pobj = pObject;
 
-            if (_fDisableAutoCnrAdd)
+            if (treeInsert((TREE**)&_FileSystemsTreeRoot,
+                           &_cFileSystems,
+                           (TREE*)pNew,
+                           treeCompareStrings))
             {
-                // do not call the parent!!
-                *pfCallParent = FALSE;
-                // call our own implementation instead
-                brc = HackContentPointers(somSelf, somThis, pObject);
-            }
+                PFDRCONTENTITEM pExisting;
 
-            // raise total objects count
-            _cObjects++;
+                // wow, this failed:
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "treeInsert failed for %s %s (0x%lX, %s)",
+                       _somGetClassName(pObject),
+                       pszUpperRealName,
+                       pObject,
+                       _wpQueryTitle(pObject));
 
-            // add to contents tree
-            if (_somIsA(pObject, _WPFileSystem))
-            {
-                // WPFileSystem added:
-                // add a new tree node and sort it according
-                // to the object's upper-case real name
-                PSZ pszUpperRealName;
-                if (    (pszUpperRealName = _xwpQueryUpperRealName(pObject))
-                     && (pNew = NEW(FDRCONTENTITEM))
-                   )
-                {
-                    pNew->Tree.ulKey = (ULONG)pszUpperRealName;
-                    pNew->pobj = pObject;
-
-                    if (treeInsert((TREE**)&_FileSystemsTreeRoot,
-                                   &_cFileSystems,
-                                   (TREE*)pNew,
-                                   treeCompareStrings))
-                    {
-                        PFDRCONTENTITEM pExisting;
-
-                        // wow, this failed:
-                        fdrReleaseFolderWriteMutexSem(somSelf);
-                        fFolderLocked = FALSE;
-
-                        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                               "treeInsert failed for %s %s (0x%lX, %s)",
-                               _somGetClassName(pObject),
-                               pszUpperRealName,
-                               pObject,
-                               _wpQueryTitle(pObject));
-
-                        if (pExisting = (PFDRCONTENTITEM)treeFind(
-                                             _FileSystemsTreeRoot,
-                                             (ULONG)pszUpperRealName,
-                                             treeCompareStrings))
-                            cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                                   "Existing object of %s (0x%lX, %s)",
-                                   _somGetClassName(pExisting->pobj),
-                                   pExisting->pobj,
-                                   (pExisting->pobj)
-                                       ? _wpQueryTitle(pExisting->pobj)
-                                       : "NULL");
-                        else
-                            cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                                   "cannot find existing object!");
-                    }
-                }
-            }
-            else if (_somIsA(pObject, _WPAbstract))
-            {
-                // WPAbstract added:
-                // add a new tree node and sort it according
-                // to the object's 32-bit handle (this is safe
-                // because abstracts _always_ have a handle)
-                HOBJECT hobj;
-                if (    (hobj = _wpQueryHandle(pObject))
-                     && (pNew = NEW(FDRCONTENTITEM))
-                   )
-                {
-                    // upper case!
-                    pNew->Tree.ulKey = hobj;
-                    pNew->pobj = pObject;
-
-                    if (treeInsert((TREE**)&_AbstractsTreeRoot,
-                                   &_cAbstracts,
-                                   (TREE*)pNew,
-                                   treeCompareKeys))
-                    {
-                        // wow, this failed:
-                        fdrReleaseFolderWriteMutexSem(somSelf);
-                        fFolderLocked = FALSE;
-
-                        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                               "treeInsert failed for %s 0x%lX (0x%lX, %s)",
-                               _somGetClassName(pObject),
-                               hobj,
-                               pObject,
-                               _wpQueryTitle(pObject));
-                    }
-                }
+                if (pExisting = (PFDRCONTENTITEM)treeFind(
+                                     _FileSystemsTreeRoot,
+                                     (ULONG)pszUpperRealName,
+                                     treeCompareStrings))
+                    cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                           "Existing object of %s (0x%lX, %s)",
+                           _somGetClassName(pExisting->pobj),
+                           pExisting->pobj,
+                           (pExisting->pobj)
+                               ? _wpQueryTitle(pExisting->pobj)
+                               : "NULL");
+                else
+                    cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                           "cannot find existing object!");
             }
         }
     }
-    CATCH(excpt1)
+    else if (_somIsA(pObject, _WPAbstract))
     {
-        brc = FALSE;
-    } END_CATCH();
+        // WPAbstract added:
+        // add a new tree node and sort it according
+        // to the object's 32-bit handle (this is safe
+        // because abstracts _always_ have a handle)
+        HOBJECT hobj;
+        if (    (hobj = _wpQueryHandle(pObject))
+             && (pNew = NEW(FDRCONTENTITEM))
+           )
+        {
+            // upper case!
+            pNew->Tree.ulKey = hobj;
+            pNew->pobj = pObject;
 
-    if (fFolderLocked)
-        fdrReleaseFolderWriteMutexSem(somSelf);
+            if (treeInsert((TREE**)&_AbstractsTreeRoot,
+                           &_cAbstracts,
+                           (TREE*)pNew,
+                           treeCompareKeys))
+            {
+                // wow, this failed:
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "treeInsert failed for %s 0x%lX (0x%lX, %s)",
+                       _somGetClassName(pObject),
+                       hobj,
+                       pObject,
+                       _wpQueryTitle(pObject));
+            }
+        }
+    }
 
     return (brc);
 }
@@ -1094,57 +1080,44 @@ BOOL fdrRealNameChanged(WPFolder *somSelf,          // in: folder of pFSObject
 BOOL fdrDeleteFromContent(WPFolder *somSelf,
                           WPObject* pObject)
 {
-    BOOL    brc = TRUE,
-            fFolderLocked = FALSE;
+    BOOL    brc = TRUE;
 
-    TRY_LOUD(excpt1)
+
+    XFolderData *somThis = XFolderGetData(somSelf);
+    PFDRCONTENTITEM pNode;
+
+    _cObjects--;
+
+    // remove from contents tree
+    if (_somIsA(pObject, _WPFileSystem))
     {
-        if (fFolderLocked = !fdrRequestFolderWriteMutexSem(somSelf))
+        // removing WPFileSystem:
+        PCSZ pcszUpperRealName;
+        if (pNode = (PFDRCONTENTITEM)treeFind(
+                             _FileSystemsTreeRoot,
+                             (ULONG)_xwpQueryUpperRealName(pObject),
+                             treeCompareStrings))
         {
-            XFolderData *somThis = XFolderGetData(somSelf);
-            PFDRCONTENTITEM pNode;
-
-            _cObjects--;
-
-            // remove from contents tree
-            if (_somIsA(pObject, _WPFileSystem))
-            {
-                // removing WPFileSystem:
-                PCSZ pcszUpperRealName;
-                if (pNode = (PFDRCONTENTITEM)treeFind(
-                                     _FileSystemsTreeRoot,
-                                     (ULONG)_xwpQueryUpperRealName(pObject),
-                                     treeCompareStrings))
-                {
-                    if (!treeDelete((TREE**)&_FileSystemsTreeRoot,
-                                    &_cFileSystems,
-                                    (TREE*)pNode))
-                        brc = TRUE;
-                }
-            }
-            else if (_somIsA(pObject, _WPAbstract))
-            {
-                // removing WPAbstract:
-                if (pNode = (PFDRCONTENTITEM)treeFind(
-                                     _AbstractsTreeRoot,
-                                     (ULONG)_wpQueryHandle(pObject),
-                                     treeCompareKeys))
-                {
-                    if (!treeDelete((TREE**)&_AbstractsTreeRoot,
-                                    &_cAbstracts,
-                                    (TREE*)pNode))
-                        brc = TRUE;
-                }
-            }
+            if (!treeDelete((TREE**)&_FileSystemsTreeRoot,
+                            &_cFileSystems,
+                            (TREE*)pNode))
+                brc = TRUE;
         }
     }
-    CATCH(excpt1)
+    else if (_somIsA(pObject, _WPAbstract))
     {
-        brc = FALSE;
-    } END_CATCH();
-
-    if (fFolderLocked)
-        fdrReleaseFolderWriteMutexSem(somSelf);
+        // removing WPAbstract:
+        if (pNode = (PFDRCONTENTITEM)treeFind(
+                             _AbstractsTreeRoot,
+                             (ULONG)_wpQueryHandle(pObject),
+                             treeCompareKeys))
+        {
+            if (!treeDelete((TREE**)&_AbstractsTreeRoot,
+                            &_cAbstracts,
+                            (TREE*)pNode))
+                brc = TRUE;
+        }
+    }
 
     if (!brc)
         cmnLog(__FILE__, __LINE__, __FUNCTION__,

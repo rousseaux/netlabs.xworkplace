@@ -1947,7 +1947,9 @@ static CONTROLDEF
 #ifndef __NOSLIDINGFOCUS__
     SlidingFocusGroup = CONTROLDEF_GROUP(
                             LOAD_STRING,
-                            ID_XSDI_MOUSE_SLIDINGFOCUS_GRP),
+                            ID_XSDI_MOUSE_SLIDINGFOCUS_GRP,
+                            -1,
+                            -1),
     SlidingFocusCB = CONTROLDEF_AUTOCHECKBOX(
                             LOAD_STRING,
                             ID_XSDI_MOUSE_SLIDINGFOCUS,
@@ -2007,7 +2009,9 @@ static CONTROLDEF
 #endif
     SlidingMenusGroup = CONTROLDEF_GROUP(
                             LOAD_STRING,
-                            ID_XSDI_MOUSE_SLIDINGMENU_GRP),
+                            ID_XSDI_MOUSE_SLIDINGMENU_GRP,
+                            -1,
+                            -1),
     SlidingMenusCB = CONTROLDEF_AUTOCHECKBOX(
                             LOAD_STRING,
                             ID_XSDI_MOUSE_SLIDINGMENU,

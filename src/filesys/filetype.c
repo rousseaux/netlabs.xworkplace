@@ -412,14 +412,13 @@ ULONG ftypRegisterInstanceTypesAndFilters(M_WPFileSystem *pClassObject)
                                                          + ulLength))
                    )
                 {
-                    // PSZ pszFilterThis = malloc(ulLength + 1);
                     memcpy(pNew->szFilter, pStart, ulLength);
                     pNew->szFilter[ulLength] = '\0';
                     nlsUpper(pNew->szFilter, ulLength);
 
                     pNew->pClassObject = pClassObject;
 
-                    // _Pmpf(("    got filter %s", pszFilterThis));
+                    _Pmpf(("    got filter %s", pNew->szFilter));
 
                     if (!fLocked)
                         fLocked = ftypLockInstances();
@@ -514,7 +513,8 @@ PCSZ ftypFindClassFromInstanceType(PCSZ pcszType)     // in: type string (case i
  *@@added V0.9.16 (2001-10-28) [umoeller]
  */
 
-PCSZ ftypFindClassFromInstanceFilter(PCSZ pcszObjectTitle)
+PCSZ ftypFindClassFromInstanceFilter(PCSZ pcszObjectTitle,
+                                     ULONG ulTitleLen)      // in: length of title string (req.)
 {
     PCSZ pcszClassName = NULL;
     BOOL fLocked = FALSE;
@@ -523,16 +523,19 @@ PCSZ ftypFindClassFromInstanceFilter(PCSZ pcszObjectTitle)
     {
         if (    (pcszObjectTitle)
              && (*pcszObjectTitle)
+             && (ulTitleLen)
              && (fLocked = ftypLockInstances())
            )
         {
-            ULONG ulObjectTitleLen;
             PLISTNODE pNode = lstQueryFirstNode(&G_llInstanceFilters);
+            PSZ pszUpperTitle = _alloca(ulTitleLen + 1);
+            memcpy(pszUpperTitle, pcszObjectTitle, ulTitleLen + 1);
+            nlsUpper(pszUpperTitle, ulTitleLen);
 
             while (pNode)
             {
                 PINSTANCEFILTER p = (PINSTANCEFILTER)pNode->pItemData;
-                if (doshMatch(p->szFilter, pcszObjectTitle))
+                if (doshMatchCase(p->szFilter, pszUpperTitle))
                 {
                     pcszClassName = _somGetName(p->pClassObject);
                     // and stop, we're done

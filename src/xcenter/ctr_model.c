@@ -55,6 +55,7 @@
 #define INCL_DOSERRORS
 
 #define INCL_WINMESSAGEMGR
+#define INCL_WINCOUNTRY
 #define INCL_WINMENUS
 
 #include <os2.h>
@@ -122,7 +123,11 @@ static const XCENTERWIDGETCLASS   G_aBuiltInWidgets[]
             WNDCLASS_WIDGET_OBJBUTTON,
             BTF_XBUTTON,
             "XButton",
+#ifdef __EWORKPLACE__
+            "eButton",
+#else
             "X-Button",
+#endif
             WGTF_UNIQUEPERXCENTER | WGTF_TOOLTIP,       // not trayable
             OwgtShowXButtonSettingsDlg          // V0.9.14 (2001-08-21) [umoeller]
         },
@@ -131,7 +136,7 @@ static const XCENTERWIDGETCLASS   G_aBuiltInWidgets[]
             WNDCLASS_WIDGET_PULSE,
             0,
             "Pulse",
-            "CPU load",
+            "Pulse (CPU load)",
             WGTF_SIZEABLE | WGTF_UNIQUEGLOBAL | WGTF_TOOLTIP, // not trayable
             PwgtShowSettingsDlg                 // V0.9.16 (2002-01-05) [umoeller]
         },
@@ -684,6 +689,33 @@ PCXCENTERWIDGETCLASS ctrpFindClass(PCSZ pcszWidgetClass)
     return (pReturn);    // can be NULL
 }
 
+typedef struct _CLASSTOINSERT
+{
+    ULONG               ulMenuID;
+    PPRIVATEWIDGETCLASS pClass;
+    ULONG               ulAttr;
+} CLASSTOINSERT, *PCLASSTOINSERT;
+
+signed short _System SortClasses(void* pItem1,
+                                 void* pItem2,
+                                 void* pStorage)       // HAB really
+{
+    switch (WinCompareStrings((HAB)pStorage,
+                              0,
+                              0,
+                              (PSZ)((PCLASSTOINSERT)pItem1)->pClass->Public.pcszClassTitle,
+                              (PSZ)((PCLASSTOINSERT)pItem2)->pClass->Public.pcszClassTitle,
+                              0))
+    {
+        case WCS_LT:
+            return -1;
+        case WCS_GT:
+            return +1;
+    }
+
+    return 0;
+}
+
 /*
  *@@ ctrpAddWidgetsMenu:
  *      adds the "Add widget" menu to the specified
@@ -693,6 +725,7 @@ PCXCENTERWIDGETCLASS ctrpFindClass(PCSZ pcszWidgetClass)
  *      Returns the submenu window handle.
  *
  *@@added V0.9.13 (2001-06-19) [umoeller]
+ *@@changed V0.9.16 (2002-02-02) [umoeller]: now sorting alphabetically
  */
 
 HWND ctrpAddWidgetsMenu(XCenter *somSelf,
@@ -702,9 +735,14 @@ HWND ctrpAddWidgetsMenu(XCenter *somSelf,
 {
     HWND hwndWidgetsSubmenu;
 
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     PLISTNODE       pClassNode;
     ULONG           ulIndex = 0;
+
+    // linked list of menu items to add so we can sort
+    // V0.9.16 (2002-02-02) [umoeller]
+    LINKLIST        llClasses;
+    PCLASSTOINSERT  pClass2Insert;
+    lstInit(&llClasses, TRUE);      // auto-free
 
     ctrpLoadClasses();
 
@@ -721,8 +759,7 @@ HWND ctrpAddWidgetsMenu(XCenter *somSelf,
     while (pClassNode)
     {
         ULONG ulAttr = 0;
-        PPRIVATEWIDGETCLASS pClass
-            = (PPRIVATEWIDGETCLASS)pClassNode->pItemData;
+        PPRIVATEWIDGETCLASS pClass = (PPRIVATEWIDGETCLASS)pClassNode->pItemData;
 
         // should this be added?
         if (pClass->Public.ulClassFlags & WGTF_NOUSERCREATE)
@@ -760,17 +797,42 @@ HWND ctrpAddWidgetsMenu(XCenter *somSelf,
                 }
         }
 
-        winhInsertMenuItem(hwndWidgetsSubmenu,
-                           MIT_END,
-                           cmnQuerySetting(sulVarMenuOffset) +
-                                 ID_XFMI_OFS_VARIABLE
-                                 + (ulIndex++),
-                           (PSZ)pClass->Public.pcszClassTitle,
-                           MIS_TEXT,
-                           ulAttr);
+        if (pClass2Insert = NEW(CLASSTOINSERT))
+        {
+            pClass2Insert->ulMenuID =    cmnQuerySetting(sulVarMenuOffset)
+                                       + ID_XFMI_OFS_VARIABLE
+                                       + (ulIndex++);
+            pClass2Insert->pClass = pClass;
+            pClass2Insert->ulAttr = ulAttr;
+
+            lstAppendItem(&llClasses,
+                          pClass2Insert);
+        }
 
         pClassNode = pClassNode->pNext;
     }
+
+    // sort alphabetically V0.9.16 (2002-02-02) [umoeller]
+    lstQuickSort(&llClasses,
+                 SortClasses,
+                 (PVOID)WinQueryAnchorBlock(hwndWidgetsSubmenu));
+
+
+    // now go insert the sorted list
+    for (pClassNode = lstQueryFirstNode(&llClasses);
+         pClassNode;
+         pClassNode = pClassNode->pNext)
+    {
+        pClass2Insert = (PCLASSTOINSERT)pClassNode->pItemData;
+        winhInsertMenuItem(hwndWidgetsSubmenu,
+                           MIT_END,
+                           pClass2Insert->ulMenuID,
+                           (PSZ)pClass2Insert->pClass->Public.pcszClassTitle,
+                           MIS_TEXT,
+                           pClass2Insert->ulAttr);
+    }
+
+    lstClear(&llClasses);
 
     ctrpFreeClasses();
 

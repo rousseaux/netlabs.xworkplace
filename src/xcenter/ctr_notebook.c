@@ -1305,7 +1305,9 @@ SLDCDATA
 static CONTROLDEF
     BorderWidthGroup = CONTROLDEF_GROUP(
                             LOAD_STRING,
-                            ID_CRDI_VIEW2_3DBORDER_GROUP),
+                            ID_CRDI_VIEW2_3DBORDER_GROUP,
+                            -1,
+                            -1),
     BorderWidthSlider =
         {
                 WC_SLIDER,
@@ -1334,7 +1336,9 @@ static CONTROLDEF
                             -1),
     BorderSpacingGroup = CONTROLDEF_GROUP(
                             LOAD_STRING,
-                            ID_CRDI_VIEW2_BDRSPACE_GROUP),
+                            ID_CRDI_VIEW2_BDRSPACE_GROUP,
+                            -1,
+                            -1),
     BorderSpacingSlider =
         {
                 WC_SLIDER,
@@ -1358,7 +1362,9 @@ static CONTROLDEF
                             -1),
     WidgetSpacingGroup = CONTROLDEF_GROUP(
                             LOAD_STRING,
-                            ID_CRDI_VIEW2_WGTSPACE_GROUP),
+                            ID_CRDI_VIEW2_WGTSPACE_GROUP,
+                            -1,
+                            -1),
     WidgetSpacingSlider =
         {
                 WC_SLIDER,
@@ -1392,7 +1398,9 @@ static CONTROLDEF
                             -1),
     DefWidgetStylesGroup = CONTROLDEF_GROUP(
                             LOAD_STRING,
-                            ID_CRDI_VIEW2_DEFSTYLES_GROUP),
+                            ID_CRDI_VIEW2_DEFSTYLES_GROUP,
+                            -1,
+                            -1),
 
     FlatButtonsCB = CONTROLDEF_AUTOCHECKBOX(
                             LOAD_STRING,
