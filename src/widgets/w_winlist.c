@@ -108,6 +108,7 @@ ew */
 #include "helpers\prfh.h"               // INI file helper routines;
                                         // this include is required for some
                                         // of the structures in shared\center.h
+#include "helpers\stringh.h"            // string helper routines
 #include "helpers\timer.h"              // replacement PM timers
 #include "helpers\winh.h"               // PM helper routines
 #include "helpers\xstring.h"            // extended string helpers
@@ -251,6 +252,8 @@ PWINHQUERYSWITCHLIST pwinhQuerySwitchList = NULL;
 PWINHQUERYWINDOWFONT pwinhQueryWindowFont = NULL;
 PWINHSETWINDOWFONT pwinhSetWindowFont = NULL;
 
+PSTRHBEAUTIFYTITLE pstrhBeautifyTitle = NULL;
+
 PXSTRCAT pxstrcat = NULL;
 PXSTRCPY pxstrcpy = NULL;
 PXSTRCLEAR pxstrClear = NULL;
@@ -302,6 +305,7 @@ static const RESOLVEFUNCTION G_aImports[] =
         "winhQuerySwitchList", (PFN*)&pwinhQuerySwitchList,
         "winhQueryWindowFont", (PFN*)&pwinhQueryWindowFont,
         "winhSetWindowFont", (PFN*)&pwinhSetWindowFont,
+        "strhBeautifyTitle", (PFN*)&pstrhBeautifyTitle,
         "xstrcat", (PFN*)&pxstrcat,
         "xstrcpy", (PFN*)&pxstrcpy,
         "xstrClear", (PFN*)&pxstrClear,
@@ -627,38 +631,6 @@ VOID WwgtSaveSetupAndSend(HWND hwndWidget,
  ********************************************************************/
 
 /*
- *@@ BeautifyTitle:
- *      replaces all line breaks (0xd, 0xa) with spaces.
- *      Returns the new length of the string or 0 on
- *      errors. Copied over from xwphelpers.
- */
-
-STATIC ULONG BeautifyTitle(PSZ psz)
-{
-    ULONG   ulrc;
-    PSZ     p = psz;
-
-    while (*p)
-    {
-        if (    (*p == '\r')
-             || (*p == '\n')
-           )
-        {
-            if (    (p != psz)
-                 && (p[-1] == ' ')
-               )
-                memmove(p, p + 1, strlen(p));
-            else
-                *p++ = ' ';
-        }
-        else
-            p++;
-    }
-
-    return (p - psz);
-}
-
-/*
  *@@ IsCtrlDesktopOrXCenter:
  *      returns TRUE if the given frame is either
  *      the desktop or an open XCenter frame.
@@ -689,7 +661,7 @@ STATIC BOOL IsCtrlDesktopOrXCenter(HWND hwndFrame)
  *@@ DumpSwitchList:
  *      puts the current switch list entries into the listbox.
  *
- *@@changed V1.0.1 (2002-12-14) [umoeller]: fixed \r\n display
+ *@@changed V0.9.21 (2002-09-26) [kai]: remove CRLFs from switchlist title
  */
 
 STATIC VOID DumpSwitchList(HWND hwnd)
@@ -711,10 +683,9 @@ STATIC VOID DumpSwitchList(HWND hwnd)
                             // V0.9.16 (2001-12-02) [umoeller]
                )
             {
-                // visible item:
-                BeautifyTitle(pCtrlThis->szSwtitle);
-                        // V1.0.1 (2002-12-14) [umoeller]
+                pstrhBeautifyTitle(pCtrlThis->szSwtitle);
 
+                // visible item:
                 WinInsertLboxItem(hwndCombo,
                                   LIT_SORTASCENDING,
                                   pCtrlThis->szSwtitle);
@@ -1215,6 +1186,7 @@ STATIC BOOL IsCtrlFiltered(PLINKLIST pllFilters,   // in: pPrivate->Setup.llFilt
                 brc = TRUE;
                 break;
             }
+
             pNode = pNode->pNext;
         }
     }
@@ -1263,7 +1235,6 @@ STATIC VOID FillEntry(PWINLISTENTRY pCtrl,
     memcpy(&pCtrl->swctl, pOrigEntry, sizeof(SWCNTRL));
     WinQueryWindowPos(pOrigEntry->hwnd,
                       &swp);
-    BeautifyTitle(pCtrl->swctl.szSwtitle);        // V1.0.1 (2002-12-14) [umoeller]
     pCtrl->flSWP = swp.fl;
 }
 
@@ -1318,6 +1289,7 @@ STATIC PWINLISTENTRY AddEntry(PWINLISTPRIVATE pPrivate,
  *      and now matches a filter.
  *
  *@@added V0.9.19 (2002-05-28) [umoeller]
+ *@@changed V0.9.21 (2002-09-26) [kai]: remove CRLFs from switchlist title
  */
 
 STATIC PWINLISTENTRY AddOrRefreshEntry(PWINLISTPRIVATE pPrivate,
@@ -1338,6 +1310,8 @@ STATIC PWINLISTENTRY AddOrRefreshEntry(PWINLISTPRIVATE pPrivate,
             pCtrl = (PWINLISTENTRY)pNode->pItemData;
             WinQuerySwitchEntry(hsw, &ctl);
 
+            pstrhBeautifyTitle(ctl.szSwtitle);
+
             // now, the item might be filtered now because its
             // title changed, so check filters list again
             if (IsCtrlFiltered(&pPrivate->Setup.llFilters,
@@ -1356,10 +1330,12 @@ STATIC PWINLISTENTRY AddOrRefreshEntry(PWINLISTPRIVATE pPrivate,
         else
         {
             // not in list: add it if it's not filtered
-            if (    (!WinQuerySwitchEntry(hsw, &ctl))
-                 && (pCtrl = AddEntry(pPrivate, &ctl))
-               )
-                *pfRefreshAll = TRUE;
+            if (!WinQuerySwitchEntry(hsw, &ctl))
+            {
+                pstrhBeautifyTitle(ctl.szSwtitle);
+                if (pCtrl = AddEntry(pPrivate, &ctl))
+                    *pfRefreshAll = TRUE;
+            }
         }
 
         // check if this is active
@@ -1383,6 +1359,7 @@ STATIC PWINLISTENTRY AddOrRefreshEntry(PWINLISTPRIVATE pPrivate,
  *@@changed V0.9.11 (2001-04-18) [umoeller]: rewritten
  *@@changed V0.9.12 (2001-04-28) [umoeller]: didn't pick up changes in the filters, fixed
  *@@changed V0.9.19 (2002-05-28) [umoeller]: rewritten to use XWPDAEMN
+ *@@changed V0.9.21 (2002-09-26) [kai]: remove CRLFs from switchlist title
  */
 
 STATIC VOID ScanSwitchList(HWND hwndWidget,
@@ -1406,11 +1383,11 @@ STATIC VOID ScanSwitchList(HWND hwndWidget,
     {
         // daemon has given us a block of shared memory:
         ULONG ul;
-
         for (ul = 0;
              ul < pswBlock->cswentry;
              ++ul)
         {
+            pstrhBeautifyTitle(pswBlock->aswentry[ul].swctl.szSwtitle);
             AddEntry(pPrivate,
                      &pswBlock->aswentry[ul].swctl);
         }

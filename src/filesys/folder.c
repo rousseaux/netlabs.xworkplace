@@ -456,6 +456,7 @@ BOOL fdrSetup(WPFolder *somSelf,
  *@@changed V0.9.3 (2000-05-30) [umoeller]: ICONSHADOWCOLOR was reported as TREESHADOWCOLOR. Fixed.
  *@@changed V0.9.12 (2001-05-20) [umoeller]: adjusted for new folder sorting
  *@@changed V0.9.20 (2002-07-12) [umoeller]: fixed MENUBAR defaults
+ *@@changed V1.0.1 (2002-12-20) [umoeller]: fixed trap if instance background settings existed, but had no bitmap
  */
 
 BOOL fdrQuerySetup(WPObject *somSelf,
@@ -561,22 +562,26 @@ BOOL fdrQuerySetup(WPObject *somSelf,
             {
                 CHAR    cType = 'S';
 
-                PSZ     pszBitmapFile;
+                PSZ     pszBitmap,
+                        pszBitmapCopy = NULL;
                 PCSZ    pcszUseFile = "(none)";
                 CHAR    cImageMode;
 
-                if (pszBitmapFile = strdup(pData->Background.BkgndStore.pszBitmapFile))
+                // fixed trap here if pszBitmapFile is NULL V1.0.1 (2002-12-20) [umoeller]
+                if (    (pszBitmap = pData->Background.BkgndStore.pszBitmapFile)
+                     && (pszBitmapCopy = strdup(pszBitmap))
+                   )
                 {
                     CHAR cBootDrive = doshQueryBootDrive();
 
-                    nlsUpper(pszBitmapFile);
+                    nlsUpper(pszBitmapCopy);
 
-                    if (*pszBitmapFile == cBootDrive)
+                    if (*pszBitmapCopy == cBootDrive)
                         // file on boot drive:
                         // replace with '?' to make it portable
-                        *pszBitmapFile = '?';
+                        *pszBitmapCopy = '?';
 
-                    pcszUseFile = pszBitmapFile;
+                    pcszUseFile = pszBitmapCopy;
                 }
 
                 switch (pData->Background.BkgndStore.usTiledOrScaled)
@@ -607,8 +612,8 @@ BOOL fdrQuerySetup(WPObject *somSelf,
                         GET_BLUE(pData->Background.BkgndStore.lcolBackground));
                 xstrcat(pstrSetup, szTemp, 0);
 
-                if (pszBitmapFile)
-                    free(pszBitmapFile);
+                if (pszBitmapCopy)
+                    free(pszBitmapCopy);
             }
         }
 
@@ -626,7 +631,7 @@ BOOL fdrQuerySetup(WPObject *somSelf,
                                                    PMINIKEY_ICONTEXTFONT, // "IconText",
                                                    NULL))
         {
-            if (strcmp(pszValue, pszDefaultValue) != 0)
+            if (strcmp(pszValue, pszDefaultValue))
             {
                 sprintf(szTemp, "ICONFONT=%s;", pszValue);
                 xstrcat(pstrSetup, szTemp, 0);
@@ -1162,19 +1167,20 @@ BOOL fdrSetOneFrameWndTitle(WPFolder *somSelf,
         _wpQueryFilename(somSelf, szTemp, TRUE);
 
         // now truncate path if it's longer than allowed by user
-        pFirstSlash = strchr(szTemp, '\\');
-        if ((pFirstSlash) && (cmnQuerySetting(sulMaxPathChars) > 10))
+        if (    (pFirstSlash = strchr(szTemp, '\\'))
+             && (cmnQuerySetting(sulMaxPathChars) > 10)
+           )
         {
-            pSrchSlash = pFirstSlash+3;
+            pSrchSlash = pFirstSlash + 3;
             while (strlen(szTemp) > cmnQuerySetting(sulMaxPathChars))
             {
                 if (pNextSlash = strchr(pSrchSlash, '\\'))
                 {
-                    strcpy(pFirstSlash+4, pNextSlash);
+                    strcpy(pFirstSlash + 4, pNextSlash);
                     pFirstSlash[1] = '.';
                     pFirstSlash[2] = '.';
                     pFirstSlash[3] = '.';
-                    pSrchSlash = pFirstSlash+5;
+                    pSrchSlash = pFirstSlash + 5;
                 }
                 else
                     break;
@@ -1204,6 +1210,7 @@ BOOL fdrSetOneFrameWndTitle(WPFolder *somSelf,
         WinSetWindowText(hwndFrame, _wpQueryTitle(somSelf));
         brc = FALSE;
     }
+
     return brc;
 }
 
@@ -2427,6 +2434,7 @@ ULONG ConfirmRename(HWND hwndOwner,
  *
  *@@added V0.9.19 (2002-06-18) [umoeller]
  *@@changed V0.9.20 (2002-07-25) [umoeller]: fixed wrong "rename everything to upper case"
+ *@@changed V1.0.1 (2002-12-19) [umoeller]: raised output buffer size to avoid "string too long"
  */
 
 VOID DoRename(HWND hwndDlg)
@@ -2524,7 +2532,7 @@ VOID DoRename(HWND hwndDlg)
                 {
                     // source matches:
                     // create target filename
-                    CHAR szNewTitle[CCHMAXPATH];
+                    CHAR szNewTitle[3 * CCHMAXPATH];        // raised V1.0.1 (2002-12-19) [umoeller]
                     int rc;
                     if (!rxpSubsWith(pcszTitleOrig, // pcszTitleMatch,
                                             // use orig title, or everything ends up in upper case

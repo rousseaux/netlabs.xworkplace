@@ -2389,7 +2389,8 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
         // responsible for, which was the case with XFolder < 0.85
         // (i.e. exceptions in WPFolder or Object Desktop or whatever).
         if (pfnwpOriginal)
-            mrc = pfnwpOriginal(hwndFrame, msg, mp1, mp2);
+            mrc = CMN_CALLWINPROC(pfnwpOriginal, hwndFrame, msg, mp1, mp2);
+                        // V1.0.1 (2002-12-19) [umoeller]
         else
         {
             cmnLog(__FILE__, __LINE__, __FUNCTION__,

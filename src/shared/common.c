@@ -7493,6 +7493,48 @@ BOOL cmnFileDlg(HWND hwndOwner,    // in: owner for file dlg
  *
  ********************************************************************/
 
+#ifdef __DEBUG__
+
+    /*
+     *@@ cmnDebugWindowProc:
+     *
+     *@@added V1.0.1 (2002-12-19) [umoeller]
+     */
+
+    MRESULT cmnDebugWindowProc(PCSZ pcszSourceFile,
+                               ULONG ulLine,
+                               PCSZ pcszFunction,
+                               PFNWP pfnwp,
+                               HWND hwnd,
+                               ULONG msg,
+                               MPARAM mp1,
+                               MPARAM mp2)
+    {
+        MRESULT mrc;
+
+        TRY_QUIET(excpt1)
+        {
+            mrc = pfnwp(hwnd, msg, mp1, mp2);
+        }
+        CATCH(excpt1)
+        {
+            CHAR szClass[100] = "unknown";
+            WinQueryClassName(hwnd, sizeof(szClass), szClass);
+            cmnLog(pcszSourceFile, ulLine, pcszFunction,
+                   "Exception calling pfnwp 0x%lX, hwnd 0x%lX [%s], msg 0x%lX, mp1 0x%lX, mp2 0x%lX",
+                   pfnwp,
+                   hwnd,
+                   szClass,
+                   msg,
+                   mp1,
+                   mp2);
+        } END_CATCH();
+
+        return mrc;
+    }
+
+#endif
+
 /*
  *@@ cmnIdentifyView:
  *      returns the name of the given view type as

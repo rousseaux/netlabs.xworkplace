@@ -1722,6 +1722,22 @@
      *
      ********************************************************************/
 
+#ifdef __DEBUG__
+    // window proc wrapper with an excpt handler so we can figure out
+    // why we get traps in WPS folder window procs V1.0.1 (2002-12-19) [umoeller]
+    MRESULT XWPENTRY cmnDebugWindowProc(PCSZ pcszSourceFile,
+                                        ULONG ulLine,
+                                        PCSZ pcszFunction,
+                                        PFNWP pfnwp,
+                                        HWND hwnd,
+                                        ULONG msg,
+                                        MPARAM mp1,
+                                        MPARAM mp2);
+    #define CMN_CALLWINPROC(pfnwp, hwnd, msg, mp1, mp2) cmnDebugWindowProc(__FILE__, __LINE__, __FUNCTION__, (pfnwp), (hwnd), (msg), (mp1), (mp2))
+#else
+    #define CMN_CALLWINPROC(pfnwp, hwnd, msg, mp1, mp2) pfnwp((pfnwp), (hwnd), (msg), (mp1), (mp2))
+#endif
+
     PCSZ cmnIdentifyView(ULONG ulView);
 
     #ifdef __DEBUG__

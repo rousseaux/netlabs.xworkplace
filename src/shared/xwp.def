@@ -111,6 +111,7 @@ EXPORTS
     nlsThousandsULong
     strhDateTime
     strhThousandsULong
+    strhBeautifyTitle
 ;    tmrStartTimer
 ;    tmrStopTimer
     tmrStartXTimer
