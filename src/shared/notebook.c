@@ -582,6 +582,7 @@ MRESULT EXPENTRY ntbPageWmControl(PCREATENOTEBOOKPAGE pcnbp,
  *@@changed V0.9.1 (99-12-06) [umoeller]: added notebook subclassing
  *@@changed V0.9.1 (99-12-19) [umoeller]: added EN_HOTKEY support (ctlMakeHotkeyEntryField)
  *@@changed V0.9.1 (99-12-31) [umoeller]: extracted ntbInitPage, ntbDestroyPage, ntbPageWmControl
+ *@@changed V0.9.3 (2000-05-01) [umoeller]: added WM_MOUSEMOVE pointer changing
  */
 
 MRESULT EXPENTRY ntb_fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -832,11 +833,29 @@ MRESULT EXPENTRY ntb_fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
                     break; } // WM_WINDOWPOSCHANGED
 
                     /*
+                     * WM_MOUSEMOVE:
+                     *      set mouse pointer to "wait" if the
+                     *      corresponding flag in pcnbp is on.
+                     */
+
+                    case WM_MOUSEMOVE:
+                        if (pcnbp)
+                            if (pcnbp->fShowWaitPointer)
+                            {
+                                WinSetPointer(HWND_DESKTOP,
+                                              WinQuerySysPointer(HWND_DESKTOP,
+                                                                 SPTR_WAIT,
+                                                                 FALSE));
+                                break;
+                            }
+
+                        mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
+                    break;
+
+                    /*
                      * WM_CONTROLPOINTER:
                      *      set mouse pointer to "wait" if the
                      *      corresponding flag in pcnbp is on.
-                     *
-                     *@@added V0.9.0 [umoeller]
                      */
 
                     case WM_CONTROLPOINTER:

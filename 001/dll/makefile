@@ -36,7 +36,8 @@ PROJECT_BASE_DIR = $(MAKEDIR)\..\..
 
 # This is the language code for the language that the NLS DLL
 # will support. Change this to a different language code, and
-# the makefile will support your langauge.
+# the makefile will support your language. The language code
+# MUST have three digits exactly.
 LANGUAGE = 001
 
 #

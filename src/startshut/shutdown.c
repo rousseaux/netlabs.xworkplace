@@ -149,12 +149,12 @@ HWND                G_hwndActiveDesktop = NULLHANDLE;
 
 // forward declarations
 MRESULT EXPENTRY fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2);
-void _Optlink xsd_fntUpdateThread(PVOID ptiMyself);
+void _Optlink xsd_fntUpdateThread(PTHREADINFO pti);
 VOID xsdFinishShutdown(HAB hab);
-VOID xsdFinishStandardMessage(HAB hab);
-VOID xsdFinishStandardReboot(VOID);
-VOID xsdFinishUserReboot(HAB hab);
-VOID xsdFinishAPMPowerOff(HAB hab);
+VOID xsdFinishStandardMessage(HAB hab, HPS hpsScreen);
+VOID xsdFinishStandardReboot(HPS hpsScreen);
+VOID xsdFinishUserReboot(HAB hab, HPS hpsScreen);
+VOID xsdFinishAPMPowerOff(HAB hab, HPS hpsScreen);
 
 /* ******************************************************************
  *                                                                  *
@@ -164,7 +164,7 @@ VOID xsdFinishAPMPowerOff(HAB hab);
 
 /*
  *@@ xsdInitiateShutdown:
- *      Shutdown entry point; checks pGlobalSettings->XShutdown
+ *      common shutdown entry point; checks GLOBALSETTINGS.ulXShutdownFlags
  *      for all the XSD_* flags (shutdown options).
  *      If compiled with XFLDR_DEBUG defined (in common.h),
  *      debug mode will also be turned on if the SHIFT key is
@@ -187,6 +187,7 @@ VOID xsdFinishAPMPowerOff(HAB hab);
  *@@changed V0.9.0 [umoeller]: this used to be an XFldDesktop instance method
  *@@changed V0.9.1 (99-12-10) [umoeller]: fixed KERNELGLOBALS locks
  *@@changed V0.9.1 (99-12-12) [umoeller]: fixed memory leak when shutdown was cancelled
+ *@@changed V0.9.3 (2000-05-22) [umoeller]: added animate on reboot
  */
 
 BOOL xsdInitiateShutdown(VOID)
@@ -219,7 +220,11 @@ BOOL xsdInitiateShutdown(VOID)
         psdp->optConfirm = ((pGlobalSettings->ulXShutdownFlags & XSD_CONFIRM) != 0);
         psdp->optAutoCloseVIO = ((pGlobalSettings->ulXShutdownFlags & XSD_AUTOCLOSEVIO) != 0);
         psdp->optLog = ((pGlobalSettings->ulXShutdownFlags & XSD_LOG) != 0);
-        psdp->optAnimate = ((pGlobalSettings->ulXShutdownFlags & XSD_ANIMATE) != 0);
+        if (psdp->optReboot)
+            // animate on reboot? V0.9.3 (2000-05-22) [umoeller]
+            psdp->optAnimate = ((pGlobalSettings->ulXShutdownFlags & XSD_ANIMATE_REBOOT) != 0);
+        else
+            psdp->optAnimate = ((pGlobalSettings->ulXShutdownFlags & XSD_ANIMATE_SHUTDOWN) != 0);
         psdp->optAPMPowerOff = (  ((pGlobalSettings->ulXShutdownFlags & XSD_APMPOWEROFF) != 0)
                           && (apmPowerOffSupported())
                          );
@@ -267,7 +272,8 @@ BOOL xsdInitiateShutdown(VOID)
             // which will handle the rest
             thrCreate(&(pKernelGlobals->ptiShutdownThread),
                         fntShutdownThread,
-                        FALSE,
+                        NULL, // running flag
+                        0,    // no msgq
                         (ULONG)psdp);           // pass SHUTDOWNPARAMS to thread
             cmnPlaySystemSound(MMSOUND_XFLD_SHUTDOWN);
         }
@@ -346,7 +352,8 @@ BOOL xsdInitiateRestartWPS(VOID)
             // which will handle the rest
             thrCreate(&(pKernelGlobals->ptiShutdownThread),
                         fntShutdownThread,
-                        FALSE,
+                        NULL, // running flag
+                        0,    // no msgq
                         (ULONG)psdp);           // pass SHUTDOWNPARAMS to thread
             cmnPlaySystemSound(MMSOUND_XFLD_SHUTDOWN);
         }
@@ -433,7 +440,8 @@ BOOL xsdInitiateShutdownExt(PSHUTDOWNPARAMS psdpShared)
             // which will handle the rest
             thrCreate(&(pKernelGlobals->ptiShutdownThread),
                         fntShutdownThread,
-                        FALSE,
+                        NULL, // running flag
+                        0,    // no msgq
                         (ULONG)psdpNew);           // pass SHUTDOWNPARAMS to thread
             cmnPlaySystemSound(MMSOUND_XFLD_SHUTDOWN);
         }
@@ -599,6 +607,7 @@ USHORT xsdWriteAutoCloseItems(PLINKLIST pllItems)
  *
  *@@added V0.9.0 [umoeller]
  *@@changed V0.9.2 (2000-03-04) [umoeller]: added "APM delay" support
+ *@@changed V0.9.3 (2000-05-22) [umoeller]: added animate on reboot
  */
 
 VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -647,8 +656,10 @@ VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             (pGlobalSettings->ulXShutdownFlags & XSD_ENABLED) != 0); */
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_REBOOT,
             (pGlobalSettings->ulXShutdownFlags & XSD_REBOOT) != 0);
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_ANIMATE,
-            (pGlobalSettings->ulXShutdownFlags & XSD_ANIMATE) != 0);
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_ANIMATE_SHUTDOWN,
+            (pGlobalSettings->ulXShutdownFlags & XSD_ANIMATE_SHUTDOWN) != 0);
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_ANIMATE_REBOOT,
+            (pGlobalSettings->ulXShutdownFlags & XSD_ANIMATE_REBOOT) != 0);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_APMPOWEROFF,
             (apmPowerOffSupported())
                 ? ((pGlobalSettings->ulXShutdownFlags & XSD_APMPOWEROFF) != 0)
@@ -681,14 +692,18 @@ VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_ENABLED, fXShutdownValid);
         WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_REBOOT,  fXShutdownEnabled);
         WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_REBOOTEXT, fXShutdownEnabled);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_ANIMATE, fXShutdownEnabled);
+
+        WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_ANIMATE_SHUTDOWN, fXShutdownEnabled);
+        WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_ANIMATE_REBOOT, fXShutdownEnabled);
+
         WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_APMPOWEROFF,
                     ( fXShutdownEnabled && (apmPowerOffSupported()) )
                 );
         WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_DELAY,
                     (      fXShutdownEnabled
                         && (apmPowerOffSupported())
-                        && (pGlobalSettings->ulXShutdownFlags & XSD_APMPOWEROFF) != 0)
+                        && ((pGlobalSettings->ulXShutdownFlags & XSD_APMPOWEROFF) != 0)
+                    )
                 );
 
         WinEnableControl(pcnbp->hwndDlgPage, ID_SDDI_CONFIRM, fXShutdownOrWPSValid);
@@ -711,6 +726,7 @@ VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *
  *@@added V0.9.0 [umoeller]
  *@@changed V0.9.2 (2000-03-04) [umoeller]: added "APM delay" support
+ *@@changed V0.9.3 (2000-05-22) [umoeller]: added animate on reboot
  */
 
 MRESULT xsdShutdownItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -733,8 +749,12 @@ MRESULT xsdShutdownItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             ulFlag = XSD_REBOOT;
         break;
 
-        case ID_SDDI_ANIMATE:
-            ulFlag = XSD_ANIMATE;
+        case ID_SDDI_ANIMATE_SHUTDOWN:
+            ulFlag = XSD_ANIMATE_SHUTDOWN;
+        break;
+
+        case ID_SDDI_ANIMATE_REBOOT:
+            ulFlag = XSD_ANIMATE_REBOOT;
         break;
 
         case ID_SDDI_APMPOWEROFF:
@@ -2944,15 +2964,11 @@ BOOL            G_fAwakeObjectsSemOwned = FALSE,
  *@@changed V0.9.1 (99-12-10) [umoeller]: extracted auto-close list code to xsdLoadAutoCloseItems
  */
 
-void _Optlink fntShutdownThread(PVOID ulpti)
+void _Optlink fntShutdownThread(PTHREADINFO pti)
 {
     PSZ             pszErrMsg = NULL;
     QMSG            qmsg;
     APIRET          arc;
-
-    // get the THREADINFO structure;
-    // ulData points to SHUTDOWNPARAMS
-    PTHREADINFO     pti = (PTHREADINFO)ulpti;
 
     // exception-occured flag
     BOOL fExceptionOccured = FALSE;
@@ -3003,7 +3019,7 @@ void _Optlink fntShutdownThread(PVOID ulpti)
                 fprintf(G_fileShutdownLog, "-----------------------------------------------------------\n");
                 fprintf(G_fileShutdownLog, "\nXWorkplace version: %s\n", XFOLDER_VERSION);
                 fprintf(G_fileShutdownLog, "\nShutdown thread started, TID: 0x%lX\n",
-                        thrQueryID((PTHREADINFO)ulpti));
+                        thrQueryID(pti));
                 fprintf(G_fileShutdownLog, "Settings: RestartWPS %s, Confirm %s, Reboot %s, WPSCloseWnds %s, CloseVIOs %s, APMPowerOff %s\n\n",
                         (G_psdParams->optRestartWPS) ? "ON" : "OFF",
                         (G_psdParams->optConfirm) ? "ON" : "OFF",
@@ -3722,7 +3738,8 @@ MRESULT EXPENTRY fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
                     // first call; this one's called twice!
                     thrCreate(&(pKernelGlobals->ptiUpdateThread),
                               xsd_fntUpdateThread,
-                              FALSE,
+                              NULL, // running flag
+                              0,    // no msgq
                               NULLHANDLE);
 
                     xsdLog("    Update thread started, tid: 0x%lX\n",
@@ -4390,8 +4407,6 @@ MRESULT EXPENTRY fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
  *  All of these routines run on the Shutdown thread.
  */
 
-HPS         hpsScreen = NULLHANDLE;
-
 /*
  *@@ xsdFinishShutdown:
  *      this is the generic routine called by
@@ -4407,6 +4422,8 @@ HPS         hpsScreen = NULLHANDLE;
  *      For "Restart WPS", xsdRestartWPS is called instead.
  *
  *      Runs on the Shutdown thread.
+ *
+ *@@changed V0.9.3 (2000-05-22) [umoeller]: added reboot animation
  */
 
 VOID xsdFinishShutdown(HAB hab)
@@ -4414,6 +4431,7 @@ VOID xsdFinishShutdown(HAB hab)
     // change the mouse pointer to wait state
     HPOINTER    hptrOld = winhSetWaitPointer();
     ULONG       ulShutdownFunc2 = 0;
+    HPS         hpsScreen = NULLHANDLE;
 
     if (G_psdParams->optAnimate)
         // hps for animation later
@@ -4467,10 +4485,10 @@ VOID xsdFinishShutdown(HAB hab)
         // reboot:
         if (strlen(G_psdParams->szRebootCommand) == 0)
             // no user reboot action:
-            xsdFinishStandardReboot();
+            xsdFinishStandardReboot(hpsScreen);
         else
             // user reboot action:
-            xsdFinishUserReboot(hab);
+            xsdFinishUserReboot(hab, hpsScreen);
     }
     else if (G_psdParams->optDebug)
     {
@@ -4480,11 +4498,11 @@ VOID xsdFinishShutdown(HAB hab)
     else if (G_psdParams->optAPMPowerOff)
     {
         // no reboot, but APM power off?
-        xsdFinishAPMPowerOff(hab);
+        xsdFinishAPMPowerOff(hab, hpsScreen);
     }
     else
         // normal shutdown: show message
-        xsdFinishStandardMessage(hab);
+        xsdFinishStandardMessage(hab, hpsScreen);
 
     // the xsdFinish* functions never return;
     // so we only get here in debug mode and
@@ -4500,7 +4518,8 @@ VOID xsdFinishShutdown(HAB hab)
  *      Runs on the Shutdown thread.
  */
 
-VOID xsdFinishStandardMessage(HAB hab)
+VOID xsdFinishStandardMessage(HAB hab,
+                              HPS hpsScreen)
 {
     // setup Ctrl+Alt+Del message window; this needs to be done
     // before DosShutdown, because we won't be able to reach the
@@ -4519,21 +4538,21 @@ VOID xsdFinishStandardMessage(HAB hab)
         G_fileShutdownLog = NULL;
     }
 
-    DosShutdown(0);
-
     if (G_psdParams->optAnimate)
         // cute power-off animation
         anmPowerOff(hpsScreen, 50);
     else
         // only hide the status window if
         // animation is off, because otherwise
-        // we get screen display errors
-        // (hpsScreen...)
+        // PM will repaint part of the animation
         WinShowWindow(G_hwndShutdownStatus, FALSE);
+
+
+    DosShutdown(0);
 
     // now, this is fun:
     // here's a fine example of how to completely
-    // block the system without any chance to escape.
+    // block the system without ANY chance to escape.
     // Since we have called DosShutdown(), all file
     // access is blocked already. In addition, we
     // do the following:
@@ -4559,9 +4578,11 @@ VOID xsdFinishStandardMessage(HAB hab)
  *      There's no shutdown animation here.
  *
  *      Runs on the Shutdown thread.
+ *
+ *@@changed V0.9.3 (2000-05-22) [umoeller]: added reboot animation
  */
 
-VOID xsdFinishStandardReboot(VOID)
+VOID xsdFinishStandardReboot(HPS hpsScreen)
 {
     HFILE       hIOCTL;
     ULONG       ulAction;
@@ -4588,14 +4609,21 @@ VOID xsdFinishStandardReboot(VOID)
         G_fileShutdownLog = NULL;
     }
 
+    if (G_psdParams->optAnimate)        // V0.9.3 (2000-05-22) [umoeller]
+        // cute power-off animation
+        anmPowerOff(hpsScreen, 50);
+
     DosShutdown(0);
 
     // say "Rebooting..."
-    WinSetDlgItemText(G_hwndShutdownStatus, ID_SDDI_STATUS,
-                      G_pNLSStrings->pszSDRebooting);
+    if (!G_psdParams->optAnimate)        // V0.9.3 (2000-05-22) [umoeller]
+    {
+        WinSetDlgItemText(G_hwndShutdownStatus, ID_SDDI_STATUS,
+                          G_pNLSStrings->pszSDRebooting);
+        DosSleep(500);
+    }
 
     // restart the machine via DOS.SYS (opened above)
-    DosSleep(500);
     DosDevIOCtl(hIOCTL, 0xd5, 0xab, NULL, 0, NULL, NULL, 0, NULL);
 
     // don't know if this function returns, but
@@ -4613,9 +4641,12 @@ VOID xsdFinishStandardReboot(VOID)
  *      There's no shutdown animation here.
  *
  *      Runs on the Shutdown thread.
+ *
+ *@@changed V0.9.3 (2000-05-22) [umoeller]: added reboot animation
  */
 
-VOID xsdFinishUserReboot(HAB hab)
+VOID xsdFinishUserReboot(HAB hab,
+                         HPS hpsScreen)
 {
     // user reboot item: in this case, we don't call
     // DosShutdown(), which is supposed to be done by
@@ -4624,10 +4655,16 @@ VOID xsdFinishUserReboot(HAB hab)
     PID     pid;
     ULONG   sid;
 
-    sprintf(szTemp,
-            G_pNLSStrings->pszStarting, G_psdParams->szRebootCommand);
-    WinSetDlgItemText(G_hwndShutdownStatus, ID_SDDI_STATUS,
-                      szTemp);
+    if (G_psdParams->optAnimate)        // V0.9.3 (2000-05-22) [umoeller]
+        // cute power-off animation
+        anmPowerOff(hpsScreen, 50);
+    else
+    {
+        sprintf(szTemp,
+                G_pNLSStrings->pszStarting, G_psdParams->szRebootCommand);
+        WinSetDlgItemText(G_hwndShutdownStatus, ID_SDDI_STATUS,
+                          szTemp);
+    }
 
     if (G_fileShutdownLog)
     {
@@ -4639,9 +4676,11 @@ VOID xsdFinishUserReboot(HAB hab)
 
     sprintf(szTemp, "/c %s", G_psdParams->szRebootCommand);
     if (doshQuickStartSession("cmd.exe", szTemp,
+                              FALSE, // background
                               SSF_CONTROL_INVISIBLE, // but auto-close
                               TRUE,  // wait flag
-                              &sid, &pid) != NO_ERROR)
+                              &sid, &pid)
+               != NO_ERROR)
     {
         DebugBox(HWND_DESKTOP, "XShutdown",
                  "The user-defined restart command failed. "
@@ -4665,7 +4704,8 @@ VOID xsdFinishUserReboot(HAB hab)
  *      Runs on the Shutdown thread.
  */
 
-VOID xsdFinishAPMPowerOff(HAB hab)
+VOID xsdFinishAPMPowerOff(HAB hab,
+                          HPS hpsScreen)
 {
     CHAR        szAPMError[500];
     ULONG       ulrcAPM = 0;
@@ -4682,7 +4722,7 @@ VOID xsdFinishAPMPowerOff(HAB hab)
         xsdLog("APM_IGNORE, continuing with normal shutdown\n",
                ulrcAPM);
 
-        xsdFinishStandardMessage(hab);
+        xsdFinishStandardMessage(hab, hpsScreen);
         // this does not return
     }
     else if (ulrcAPM & APM_CANCEL)
@@ -4814,7 +4854,7 @@ VOID APIENTRY xsdOnKillUpdateThread(VOID)
  *@@changed V0.9.0 [umoeller]: code has been re-ordered for semaphore safety.
  */
 
-void _Optlink xsd_fntUpdateThread(PVOID ptiMyself)
+void _Optlink xsd_fntUpdateThread(PTHREADINFO pti)
 {
     HAB             habUpdateThread;
     HMQ             hmqUpdateThread;

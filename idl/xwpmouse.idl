@@ -74,6 +74,10 @@ interface XWPMouse : WPMouse
      *
      */
 
+    PSZ         pszCurrentSettings;
+    HWND        hwndNotebookPage;
+    PRECORDCORE pcnrrec;
+
     /*
      * WPMouse methods overridden by XWPMouse:
      *
@@ -137,17 +141,10 @@ interface M_XWPMouse : M_WPMouse
      */
 
     wpclsInitData: override;
-        /*@@ wpclsInitData:
-           initialize XWPMouse class data. */
+
+    wpclsUnInitData: override;
 
     wpclsQuerySettingsPageSize: override;
-        /*@@ wpclsQuerySettingsPageSize:
-           this WPObject class method should return the
-           size of the largest settings page in dialog
-           units; if a settings notebook is initially
-           opened, i.e. no window pos has been stored
-           yet, the WPS will use this size, to avoid
-           truncated settings pages. */
 
   };
 #endif /* __SOMIDL__ */

@@ -78,11 +78,11 @@ CATEGORY "General"
 
         DRIVER ( "DEVICE=", "DOS.SYS",
                  "DOS support",
-                 DRVF_CMDREF)
+                 0)
 
         DRIVER ( "DEVICE=", "TESTCFG.SYS",
                  "Test-configuration driver for OS/2 installation",
-                 DRVF_CMDREF)
+                 DRVF_NOPARAMS)
 
         DRIVER ( "DEVICE=", "RESERVE.SYS",
                  "Resource manager",
@@ -94,16 +94,16 @@ CATEGORY "General"
                  "IBM I2O Storage OSM",
                  DRVF_NOPARAMS)
         DRIVER ( "DEVICE=", "VEMM.SYS",
-                 "Extended memory support for MVDM",
+                 "DOS Extended Memory support",
                  DRVF_CMDREF)
         DRIVER ( "DEVICE=", "VDPMI.SYS",
-                 "DPMI memory support for MVDM",
+                 "DOS DPMI memory support",
                  DRVF_NOPARAMS)
         DRIVER ( "DEVICE=", "VAPM.SYS",
-                 "Advanced Power Management support for MVDM",
+                 "DOS Advanced Power Management support",
                  DRVF_NOPARAMS)
         DRIVER ( "DEVICE=", "VXMS.SYS",
-                 "eXtended Memory Specification support for MVDM",
+                 "DOS eXtended Memory Specification support",
                  DRVF_CMDREF)
     }
 
@@ -160,7 +160,7 @@ CATEGORY "CD-ROM"
                  DRVF_CMDREF)
 
         DRIVER ( "DEVICE=", "VCDROM.SYS",
-                 "CD-ROM access support driver for MVDM",
+                 "DOS CD-ROM support",
                  DRVF_NOPARAMS)
     }
 
@@ -220,7 +220,7 @@ CATEGORY "SCSI"
                  "Plextor CD-ROM Manager/2 support driver",
                  DRVF_NOPARAMS)
         DRIVER ( "DEVICE=", "VASPI.SYS",
-                 "Advanced SCSI Programming Interface access for MVDM",
+                 "DOS Advanced SCSI Programming Interface",
                  DRVF_CMDREF)
     }
 
@@ -356,10 +356,10 @@ CATEGORY "Other peripherals"
                  "SIO enhanced serial (COM) port driver",
                  0)
         DRIVER ( "DEVICE=", "VCOM.SYS",
-                 "Standard serial (COM) port vdriver for MVDM",
+                 "DOS standard serial (COM) port",
                  DRVF_CMDREF)
         DRIVER ( "DEVICE=", "VSIO.SYS",
-                 "SIO enhanced serial (COM) port vdrier for MVDM",
+                 "DOS SIO enhanced serial (COM) port",
                  0)
 
         DRIVER ( "DEVICE=", "USBCOM.SYS",

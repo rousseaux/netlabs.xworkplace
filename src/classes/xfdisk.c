@@ -347,9 +347,9 @@ SOM_Scope ULONG  SOMLINK xfdisk_wpFilterPopupMenu(XFldDisk *somSelf,
  */
 
 SOM_Scope BOOL  SOMLINK xfdisk_wpModifyPopupMenu(XFldDisk *somSelf,
-                                               HWND hwndMenu,
-                                               HWND hwndCnr,
-                                               ULONG iPosition)
+                                                 HWND hwndMenu,
+                                                 HWND hwndCnr,
+                                                 ULONG iPosition)
 {
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     BOOL            rc;
@@ -421,7 +421,7 @@ SOM_Scope BOOL  SOMLINK xfdisk_wpMenuItemSelected(XFldDisk *somSelf,
  */
 
 SOM_Scope BOOL  SOMLINK xfdisk_wpMenuItemHelpSelected(XFldDisk *somSelf,
-                                                    ULONG MenuId)
+                                                      ULONG MenuId)
 {
     XFolder         *pFolder = _wpQueryRootFolder(somSelf);
     // XFldDiskData *somThis = XFldDiskGetData(somSelf);

@@ -59,6 +59,7 @@
  *  8)  #pragma hdrstop and then more SOM headers which crash with precompiled headers
  */
 
+#define INCL_DOSSEMAPHORES
 #define INCL_WINWINDOWMGR
 #define INCL_WINPOINTERS
 #define INCL_WINMENUS
@@ -78,6 +79,7 @@
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\common.h"              // the majestic XWorkplace include file
+#include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 
 #include "config\hookintf.h"            // daemon/hook interface
@@ -113,7 +115,7 @@ SOM_Scope ULONG  SOMLINK xkb_xwpAddKeyboardHotkeysPage(XWPKeyboard *somSelf,
         pcnbp->somSelf = somSelf;
         pcnbp->hwndNotebook = hwndDlg;
         pcnbp->hmod = savehmod;
-        pcnbp->ulDlgID = ID_XSD_KEYB_OBJHOTKEYS;
+        pcnbp->ulDlgID = ID_XFD_CONTAINERPAGE; // generic cnr page
         pcnbp->usPageStyleFlags = BKA_MAJOR;
         pcnbp->pszName = pNLSStrings->pszObjectHotkeysPage;
         pcnbp->ulDefaultHelpPanel  = ID_XSH_KEYB_OBJHOTKEYS;
@@ -155,7 +157,7 @@ SOM_Scope ULONG  SOMLINK xkb_xwpAddKeyboardFunctionKeysPage(XWPKeyboard *somSelf
         pcnbp->somSelf = somSelf;
         pcnbp->hwndNotebook = hwndDlg;
         pcnbp->hmod = savehmod;
-        pcnbp->ulDlgID = ID_XSD_KEYB_FUNCTIONKEYS;
+        pcnbp->ulDlgID = ID_XFD_CONTAINERPAGE; // generic cnr page
         pcnbp->usPageStyleFlags = BKA_MAJOR;
         pcnbp->pszName = pNLSStrings->pszFunctionKeysPage;
         pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_FUNCTIONKEYS;
@@ -230,6 +232,13 @@ SOM_Scope void  SOMLINK xkbM_wpclsInitData(M_XWPKeyboard *somSelf)
     M_XWPKeyboardMethodDebug("M_XWPKeyboard","xkbM_wpclsInitData");
 
     M_XWPKeyboard_parent_M_WPKeyboard_wpclsInitData(somSelf);
+
+    {
+        PKERNELGLOBALS pKernelGlobals = krnLockGlobals(5000);
+        // store the class object in KERNELGLOBALS
+        pKernelGlobals->fXWPKeyboard = TRUE;
+        krnUnlockGlobals();
+    }
 }
 
 /*

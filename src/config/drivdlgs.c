@@ -113,9 +113,7 @@
 #include <os2.h>
 
 // C library headers
-#include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
 
 // generic headers
 #include "setup.h"                      // code generation and debugging options

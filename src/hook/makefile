@@ -118,7 +118,7 @@ $(EXE_OUTPUTDIR)\pgmg_control.obj: \
 
 $(EXE_OUTPUTDIR)\pgmg_move.obj: \
         $(INC)\setup.h \
-        $(HLPINC)\except.h \
+        $(HLPINC)\except.h $(HLPINC)\threads.h \
         $(@B).c $(MYOWNINC)\xwphook.h $(MYOWNINC)\hook_private.h $(MYOWNINC)\xwpdaemn.h
 
 $(EXE_OUTPUTDIR)\pgmg_settings.obj: \
@@ -143,11 +143,5 @@ $(BASE_OUTPUTDIR)\xwphook.obj: \
 !else
     $(CC_DLL) /fi"$(PRECH)\$(@B).pch" /si"$(PRECH)\$(@B).pch" -I$(INCLUDE) /Fo$(BASE_OUTPUTDIR)\$(@B).obj $(@B).c
 !endif
-
-
-
-
-
-
 
 

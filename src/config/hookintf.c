@@ -112,6 +112,26 @@ PFNWP G_pfnwpEntryFieldOrig = 0;
  ********************************************************************/
 
 /*
+ *@@ hifLoadHookConfig:
+ *      loads the hook configuration data into the
+ *      specified buffer.
+ *
+ *@@added V0.9.3 (2000-05-21) [umoeller]
+ */
+
+BOOL hifLoadHookConfig(PHOOKCONFIG phc)
+{
+    ULONG cb = sizeof(HOOKCONFIG);
+    memset(phc, 0, sizeof(HOOKCONFIG));
+    // overwrite from INI, if found
+    return (PrfQueryProfileData(HINI_USER,
+                                INIAPP_XWPHOOK,
+                                INIKEY_HOOK_CONFIG,
+                                phc,
+                                &cb));
+}
+
+/*
  *@@ hifEnableHook:
  *      installs or deinstalls the hook.
  *
@@ -131,9 +151,15 @@ BOOL hifEnableHook(BOOL fEnable)
     _Pmpf(("hifEnableHook (%d)", fEnable));
 
     // (de)install the hook by notifying the daemon
-    if (pDaemonShared)
+    if (!pDaemonShared)
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "pDaemonShared is NULL.");
+    else
     {
-        if (pDaemonShared->hwndDaemonObject)
+        if (!pDaemonShared->hwndDaemonObject)
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                   "pDaemonShared->hwndDaemonObject is NULLHANDLE.");
+        else
         {
             _Pmpf(("  Sending XDM_HOOKINSTALL"));
             if (WinSendMsg(pDaemonShared->hwndDaemonObject,
@@ -206,9 +232,15 @@ BOOL hifEnablePageMage(BOOL fEnable)
     _Pmpf(("hifEnablePageMage: %d", fEnable));
 
     // (de)install the hook by notifying the daemon
-    if (pDaemonShared)
+    if (!pDaemonShared)
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "pDaemonShared is NULL.");
+    else
     {
-        if (pDaemonShared->hwndDaemonObject)
+        if (!pDaemonShared->hwndDaemonObject)
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                   "pDaemonShared->hwndDaemonObject is NULLHANDLE.");
+        else
         {
             _Pmpf(("hifEnablePageMage: Sending XDM_STARTSTOPPAGEMAGE"));
             if (WinSendMsg(pDaemonShared->hwndDaemonObject,
@@ -264,15 +296,26 @@ BOOL hifHookConfigChanged(PVOID pvdc)
                                   pdc,
                                   sizeof(HOOKCONFIG));
 
-        if (brc)
-            if (pDaemonShared)
-                if (pDaemonShared->hwndDaemonObject)
+        if (!brc)
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                   "PrfWriteProfileData failed.");
+        else
+        {
+            if (!pDaemonShared)
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "pDaemonShared is NULL.");
+            else
+                if (!pDaemonShared->hwndDaemonObject)
+                    cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                           "pDaemonShared->hwndDaemonObject is NULLHANDLE.");
+                else
                     // cross-process send msg: this
                     // does not return until the daemon
                     // has re-read the data
                     brc = (BOOL)WinSendMsg(pDaemonShared->hwndDaemonObject,
                                            XDM_HOOKCONFIG,
                                            0, 0);
+        }
     }
 
     return (brc);
@@ -325,16 +368,10 @@ VOID hifEnableObjectHotkeys(BOOL fEnable)
     BOOL    brc = FALSE;
     HOOKCONFIG  HookConfig;
     ULONG       cb = sizeof(HookConfig);
-    if (PrfQueryProfileData(HINI_USER,
-                            INIAPP_XWPHOOK,
-                            INIKEY_HOOK_CONFIG,
-                            &HookConfig,
-                            &cb))
-    {
-        HookConfig.fGlobalHotkeys = fEnable;
-        // write back to OS2.INI and notify hook
-        hifHookConfigChanged(&HookConfig);
-    }
+    hifLoadHookConfig(&HookConfig);
+    HookConfig.fGlobalHotkeys = fEnable;
+    // write back to OS2.INI and notify hook
+    hifHookConfigChanged(&HookConfig);
 }
 
 /*
@@ -762,7 +799,7 @@ VOID hifKeybdHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struc
         XFIELDINFO      xfi[7];
         PFIELDINFO      pfi = NULL;
         int             i = 0;
-        HWND            hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_HOTK_CNR);
+        HWND            hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
         PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
 
         // recreate container at the same position as
@@ -780,7 +817,7 @@ VOID hifKeybdHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struc
                                   swpCnr.x, swpCnr.y, swpCnr.cx, swpCnr.cy,
                                   pcnbp->hwndDlgPage,        // owner
                                   HWND_TOP,
-                                  ID_XSDI_HOTK_CNR,
+                                  ID_XFDI_CNR_CNR,
                                   NULL, NULL);
         WinShowWindow(hwndCnr, TRUE);
 
@@ -835,7 +872,7 @@ VOID hifKeybdHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struc
         // several seconds, so have this done by the
         // file thread
         xthrPostFileMsg(FIM_INSERTHOTKEYS,
-                        (MPARAM)WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_HOTK_CNR),
+                        (MPARAM)WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR),
                         (MPARAM)&pcnbp->fShowWaitPointer);
     }
 }
@@ -858,7 +895,7 @@ MRESULT hifKeybdHotkeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
     switch (usItemID)
     {
-        case ID_XSDI_HOTK_CNR:
+        case ID_XFDI_CNR_CNR:
             switch (usNotifyCode)
             {
                 /*
@@ -1166,7 +1203,7 @@ VOID hifKeybdFunctionKeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info 
         XFIELDINFO      xfi[4];
         PFIELDINFO      pfi = NULL;
         int             i = 0;
-        HWND            hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_FUNCK_CNR);
+        HWND            hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
         PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
 
         // set up cnr details view
@@ -1210,7 +1247,7 @@ VOID hifKeybdFunctionKeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info 
         ULONG   cKeys = 0,
                 ul = 0;
         PFUNCTIONKEY paFuncKeys = hifQueryFunctionKeys(&cKeys);
-        HWND    hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_FUNCK_CNR);
+        HWND    hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
         cnrhRemoveAll(hwndCnr);
 
         for (ul = 0;
@@ -1241,7 +1278,7 @@ MRESULT hifKeybdFunctionKeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
     switch (usItemID)
     {
-        case ID_XSDI_FUNCK_CNR:
+        case ID_XFDI_CNR_CNR:
 
             switch (usNotifyCode)
             {
@@ -1349,7 +1386,7 @@ MRESULT hifKeybdFunctionKeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                         // if we have "edit" (not "new"), use the
                         // existing record
                         HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage,
-                                                       ID_XSDI_FUNCK_CNR);
+                                                       ID_XFDI_CNR_CNR);
 
                         PFUNCTIONKEYRECORD precc = (PFUNCTIONKEYRECORD)pcnbp->preccSource;
 
@@ -1408,7 +1445,7 @@ MRESULT hifKeybdFunctionKeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                         FuncKey.fModifier
                             = winhIsDlgItemChecked(hwndEditDlg, ID_XSDI_FUNCK_MODIFIER);
                         hifAppendFunctionKey(&FuncKey);
-                        AddFuncKeyRecord(WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_FUNCK_CNR),
+                        AddFuncKeyRecord(WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR),
                                          &FuncKey,
                                          cKeys);        // new index == item count
                     }
@@ -1430,7 +1467,7 @@ MRESULT hifKeybdFunctionKeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case ID_XSMI_FUNCK_DELETE:
         {
             HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage,
-                                           ID_XSDI_FUNCK_CNR);
+                                           ID_XFDI_CNR_CNR);
 
             PFUNCTIONKEYRECORD precc = (PFUNCTIONKEYRECORD)pcnbp->preccSource;
 
@@ -1492,16 +1529,7 @@ VOID hifMouseMappings2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info str
             // the notebook page is destroyed
             pcnbp->pUser = malloc(sizeof(HOOKCONFIG));
             if (pcnbp->pUser)
-            {
-                ULONG cb = sizeof(HOOKCONFIG);
-                memset(pcnbp->pUser, 0, sizeof(HOOKCONFIG));
-                // overwrite from INI, if found
-                PrfQueryProfileData(HINI_USER,
-                                    INIAPP_XWPHOOK,
-                                    INIKEY_HOOK_CONFIG,
-                                    pcnbp->pUser,
-                                    &cb);
-            }
+                hifLoadHookConfig(pcnbp->pUser);
 
             // make backup for "undo"
             pcnbp->pUser2 = malloc(sizeof(HOOKCONFIG));
@@ -1604,14 +1632,17 @@ MRESULT hifMouseMappings2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     switch (usItemID)
     {
         case ID_XSDI_MOUSE_CHORDWINLIST:
+            hifLoadHookConfig(pdc);
             pdc->fChordWinList = ulExtra;
         break;
 
         case ID_XSDI_MOUSE_SYSMENUMB2:
+            hifLoadHookConfig(pdc);
             pdc->fSysMenuMB2TitleBar = ulExtra;
         break;
 
         case ID_XSDI_MOUSE_MB3SCROLL:
+            hifLoadHookConfig(pdc);
             pdc->fMB3Scroll = ulExtra;
             (pcnbp->pfncbInitPage)(pcnbp, CBI_ENABLE);
         break;
@@ -1627,15 +1658,18 @@ MRESULT hifMouseMappings2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                lSliderIndex + 1,
                                FALSE);      // unsigned
 
+            hifLoadHookConfig(pdc);
             pdc->usMB3ScrollMin = lSliderIndex;
         break; }
 
         case ID_XSDI_MOUSE_MB3LINEWISE:
+            hifLoadHookConfig(pdc);
             pdc->usScrollMode = SM_LINEWISE;
             (pcnbp->pfncbInitPage)(pcnbp, CBI_ENABLE);
         break;
 
         case ID_XSDI_MOUSE_MB3AMPLIFIED:
+            hifLoadHookConfig(pdc);
             pdc->usScrollMode = SM_AMPLIFIED;
             (pcnbp->pfncbInitPage)(pcnbp, CBI_ENABLE);
         break;
@@ -1652,10 +1686,12 @@ MRESULT hifMouseMappings2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                               ID_XSDI_MOUSE_MB3AMP_TXT2,
                               szText);
 
+            hifLoadHookConfig(pdc);
             pdc->sAmplification = lSliderIndex - 9;
         break; }
 
         case ID_XSDI_MOUSE_MB3SCROLLREVERSE:
+            hifLoadHookConfig(pdc);
             pdc->fMB3ScrollReverse = ulExtra;
         break;
 
@@ -1665,6 +1701,7 @@ MRESULT hifMouseMappings2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
          */
 
         case DID_DEFAULT:
+            hifLoadHookConfig(pdc);
             pdc->fChordWinList = 0;
             pdc->fSysMenuMB2TitleBar = 0;
             pdc->fMB3Scroll = 0;
@@ -1752,16 +1789,7 @@ VOID hifMouseMovementInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
             // the notebook page is destroyed
             pcnbp->pUser = malloc(sizeof(HOOKCONFIG));
             if (pcnbp->pUser)
-            {
-                ULONG cb = sizeof(HOOKCONFIG);
-                memset(pcnbp->pUser, 0, sizeof(HOOKCONFIG));
-                // overwrite from INI, if found
-                PrfQueryProfileData(HINI_USER,
-                                    INIAPP_XWPHOOK,
-                                    INIKEY_HOOK_CONFIG,
-                                    pcnbp->pUser,
-                                    &cb);
-            }
+                hifLoadHookConfig(pcnbp->pUser);
 
             // make backup for "undo"
             pcnbp->pUser2 = malloc(sizeof(HOOKCONFIG));
@@ -1904,23 +1932,28 @@ MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
          */
 
         case ID_XSDI_MOUSE_SLIDINGFOCUS:
+            hifLoadHookConfig(pdc);
             pdc->fSlidingFocus = ulExtra;
             (pcnbp->pfncbInitPage)(pcnbp, CBI_ENABLE);
         break;
 
         case ID_XSDI_MOUSE_BRING2TOP:
+            hifLoadHookConfig(pdc);
             pdc->fSlidingBring2Top = ulExtra;
         break;
 
         case ID_XSDI_MOUSE_IGNORESEAMLESS:
+            hifLoadHookConfig(pdc);
             pdc->fSlidingIgnoreSeamless = ulExtra;
         break;
 
         case ID_XSDI_MOUSE_IGNOREDESKTOP:
+            hifLoadHookConfig(pdc);
             pdc->fSlidingIgnoreDesktop = ulExtra;
         break;
 
         case ID_XSDI_MOUSE_IGNOREPAGEMAGE:
+            hifLoadHookConfig(pdc);
             pdc->fSlidingIgnorePageMage = ulExtra;
         break;
 
@@ -1931,6 +1964,7 @@ MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             LONG lSliderIndex = winhQuerySliderArmPosition(pcnbp->hwndControl,
                                                            SMA_INCREMENTVALUE);
             // convert to ms
+            hifLoadHookConfig(pdc);
             pdc->ulSlidingFocusDelay = lSliderIndex * 100;
             sprintf(szTemp, "%d ms", pdc->ulSlidingFocusDelay);
             WinSetDlgItemText(pcnbp->hwndDlgPage,
@@ -1939,6 +1973,7 @@ MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         break; }
 
         case ID_XSDI_MOUSE_SLIDINGMENU:
+            hifLoadHookConfig(pdc);
             pdc->fSlidingMenus = ulExtra;
             (pcnbp->pfncbInitPage)(pcnbp, CBI_ENABLE);
         break;
@@ -1950,6 +1985,7 @@ MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             LONG lSliderIndex = winhQuerySliderArmPosition(pcnbp->hwndControl,
                                                            SMA_INCREMENTVALUE);
             // convert to ms
+            hifLoadHookConfig(pdc);
             pdc->ulSubmenuDelay = lSliderIndex * 100;
             sprintf(szTemp, "%d ms", pdc->ulSubmenuDelay);
             WinSetDlgItemText(pcnbp->hwndDlgPage,
@@ -1959,10 +1995,12 @@ MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         break; }
 
         case ID_XSDI_MOUSE_MENUHILITE:
+            hifLoadHookConfig(pdc);
             pdc->fMenuImmediateHilite = ulExtra;
         break;
 
         case ID_XSDI_MOUSE_AUTOHIDE_CHECK:
+            hifLoadHookConfig(pdc);
             pdc->fAutoHideMouse = ulExtra;
             (pcnbp->pfncbInitPage)(pcnbp, CBI_ENABLE);
         break;
@@ -1974,6 +2012,7 @@ MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             LONG lSliderIndex = winhQuerySliderArmPosition(pcnbp->hwndControl,
                                                            SMA_INCREMENTVALUE);
             // convert to seconds
+            hifLoadHookConfig(pdc);
             pdc->ulAutoHideDelay = lSliderIndex;
             sprintf(szTemp, "%d s", pdc->ulAutoHideDelay + 1);
             WinSetDlgItemText(pcnbp->hwndDlgPage,
@@ -1987,6 +2026,7 @@ MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
          */
 
         case DID_DEFAULT:
+            hifLoadHookConfig(pdc);
             memset(pdc, 0, sizeof(HOOKCONFIG));
             (pcnbp->pfncbInitPage)(pcnbp, CBI_SET | CBI_ENABLE);
         break;
@@ -1998,6 +2038,7 @@ MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         case DID_UNDO:
             // restore data which was backed up in INIT callback
+            hifLoadHookConfig(pdc);
             if (pcnbp->pUser2)
                 memcpy(pdc, pcnbp->pUser2, sizeof(HOOKCONFIG));
             (pcnbp->pfncbInitPage)(pcnbp, CBI_SET | CBI_ENABLE);
@@ -2035,16 +2076,7 @@ VOID hifMouseCornersInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struc
             // the notebook page is destroyed
             pcnbp->pUser = malloc(sizeof(HOOKCONFIG));
             if (pcnbp->pUser)
-            {
-                ULONG cb = sizeof(HOOKCONFIG);
-                memset(pcnbp->pUser, 0, sizeof(HOOKCONFIG));
-                // overwrite from INI, if found
-                PrfQueryProfileData(HINI_USER,
-                                    INIAPP_XWPHOOK,
-                                    INIKEY_HOOK_CONFIG,
-                                    pcnbp->pUser,
-                                    &cb);
-            }
+                hifLoadHookConfig(pcnbp->pUser);
 
             // make backup for "undo"
             pcnbp->pUser2 = malloc(sizeof(HOOKCONFIG));
@@ -2201,6 +2233,7 @@ MRESULT hifMouseCornersItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         case ID_XSDI_MOUSE_INACTIVEOBJ:
             // disable hot corner
+            hifLoadHookConfig(pdc);
             pdc->ahobjHotCornerObjects[ulScreenCornerSelectedIndex] = 0;
             (pcnbp->pfncbInitPage)(pcnbp, CBI_SET | CBI_ENABLE);
         break;
@@ -2211,6 +2244,7 @@ MRESULT hifMouseCornersItemChanged(PCREATENOTEBOOKPAGE pcnbp,
          */
 
         case ID_XSDI_MOUSE_OPEN_CHECK:
+            hifLoadHookConfig(pdc);
             if (    (pdc->ahobjHotCornerObjects[ulScreenCornerSelectedIndex] == 0)
                  ||  (pdc->ahobjHotCornerObjects[ulScreenCornerSelectedIndex] >= 0xFFFF0000)
                 )
@@ -2223,6 +2257,7 @@ MRESULT hifMouseCornersItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         break;
 
         case ID_XSDI_MOUSE_OPEN_CNR:
+            hifLoadHookConfig(pdc);
             switch (usNotifyCode)
             {
                 case CN_DRAGOVER:
@@ -2248,6 +2283,7 @@ MRESULT hifMouseCornersItemChanged(PCREATENOTEBOOKPAGE pcnbp,
          */
 
         case ID_XSDI_MOUSE_SPECIAL_CHECK:
+            hifLoadHookConfig(pdc);
             pdc->ahobjHotCornerObjects[ulScreenCornerSelectedIndex] = 0xFFFF0000;
             (pcnbp->pfncbInitPage)(pcnbp, CBI_SET | CBI_ENABLE);
         break;
@@ -2257,6 +2293,7 @@ MRESULT hifMouseCornersItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             // new special function selected from drop-down box:
             HWND hwndDrop = WinWindowFromID(pcnbp->hwndDlgPage, usItemID);
             LONG lIndex = winhQueryLboxSelectedItem(hwndDrop, LIT_FIRST);
+            hifLoadHookConfig(pdc);
             if (lIndex == LIT_NONE)
                 // disable hot corner
                 pdc->ahobjHotCornerObjects[ulScreenCornerSelectedIndex] = 0;
@@ -2272,6 +2309,7 @@ MRESULT hifMouseCornersItemChanged(PCREATENOTEBOOKPAGE pcnbp,
          */
 
         case DID_DEFAULT:
+            hifLoadHookConfig(pdc);
             memset(pdc, 0, sizeof(HOOKCONFIG));
             (pcnbp->pfncbInitPage)(pcnbp, CBI_SET | CBI_ENABLE);
         break;
@@ -2282,6 +2320,7 @@ MRESULT hifMouseCornersItemChanged(PCREATENOTEBOOKPAGE pcnbp,
          */
 
         case DID_UNDO:
+            hifLoadHookConfig(pdc);
             // restore data which was backed up in INIT callback
             if (pcnbp->pUser2)
                 memcpy(pdc, pcnbp->pUser2, sizeof(HOOKCONFIG));

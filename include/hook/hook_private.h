@@ -34,12 +34,12 @@
     #define SHMEM_FUNCTIONKEYS    "\\SHAREMEM\\XWORKPLC\\FUNCKEYS.DAT"
                 // added V0.9.3 (2000-04-20) [umoeller]
 
-    #define IDMUTEX_ONEINSTANCE     "\\SEM32\\XWORKPLC\\ONEINST.SEM"
+    #define IDMUTEX_ONEINSTANCE     "\\SEM32\\XWORKPLC\\ONEINST.MTX"
     #define SEM_TIMEOUT             4000
 
-    #define PAGEMAGE_MUTEX          "\\SEM32\\XWORKPLC\\PAGEMAGE"
-    #define PAGEMAGE_WNDLSTMTX      "\\SEM32\\XWORKPLC\\PGMG_WNDLSTMTX"
-    #define PAGEMAGE_WNDLSTEV       "\\SEM32\\XWORKPLC\\PGMG_WNDLSTEV"
+    #define PAGEMAGE_MUTEX          "\\SEM32\\XWORKPLC\\PAGEMAGE.MTX"
+    #define PAGEMAGE_WNDLSTMTX      "\\SEM32\\XWORKPLC\\PGMGWINS.MTX"
+    #define PAGEMAGE_WNDLSTEV       "\\SEM32\\XWORKPLC\\PGMGWINS.EVT"
     #define PAGEMAGE_WNDQUEUE       "\\QUEUES\\XWORKPLC\\PGMG_Q"
 
     // timer IDs for fnwpDaemonObject
@@ -70,10 +70,10 @@
     {
         HWND        hwndScrollBar;
                 // actual scroll bar window or NULLHANDLE if none
-        HWND        hwndScrollOwner;
-                // WinQueryWindow(hwndScrollBar, QW_OWNER)
-        SHORT       usScrollBarID;
-                // scroll bar of hwndScrollBarsOwner or NULLHANDLE if none
+        HWND        hwndScrollLastOwner;
+                // WinQueryWindow(hwndScrollBar, QW_OWNER);
+                // this gets recalculated with every mouse move
+                // V0.9.3 (2000-04-30) [umoeller]
 
         // cached data used while MB3 is down; V0.9.1 (99-12-03)
         // LONG        lScrollBarSize;
@@ -83,11 +83,12 @@
                 // V0.9.2 (2000-03-23) [umoeller]: removed this from SCROLLDATA
                 // because this might change while the user holds down MB3, so this
                 // needs to be recalculated with every WM_MOUSEMOVE
-        SHORT       sMB3InitialMousePos,
-                // mouse position when MB3 was depressed (in window coordinates)
-                    sMB3InitialThumbPos,
+        SHORT       sMB3InitialScreenMousePos,
+                // mouse position when MB3 was depressed (in screen coordinates)
+                // V0.9.3 (2000-04-30) [umoeller]: changed to screen
+                    sMB3InitialThumbPosUnits,
                 // scroll bar thumb position when MB3 was depressed (in scroll bar units)
-                    sCurrentThumbPos;
+                    sCurrentThumbPosUnits;
                 // current scroll bar thumb position (in scroll bar units); this gets updated
                 // when the mouse is moved while MB3 is depressed
 
@@ -179,9 +180,16 @@
                 // daemon with sliding focus
 
         // MB3 scrolling data; added V0.9.1 (99-12-03)
-        BOOL        fCurrentlyMB3Scrolling;
+        // BOOL        fCurrentlyMB3Scrolling;
                 // this is TRUE only while MB3 is down dragging;
                 // we will scroll the window contents then
+        HWND        hwndCurrentlyScrolling;
+                // this is != NULLHANDLE if MB3 has been depressed
+                // over a window with scroll bars and reset to
+                // NULLHANDLE once MB3 is released. This allows us
+                // to simulate capturing the mouse without actually
+                // capturing it, which isn't such a good idea in
+                // a hook, apparently (changed V0.9.3 (2000-04-30) [umoeller])
 
         SCROLLDATA  SDXHorz,
                     SDYVert;
@@ -194,6 +202,13 @@
 
         // PageMage
         BOOL        fDisableSwitching;
+        // HMTX        hmtxPageMage;
+                // PageMage requests this mutex when it's doing tricky
+                // stuff with windows; during that time, the hooks must
+                // not intercept messages. Vice versa, the hook requests
+                // this while processing messages.
+                // The mutex is created by PageMage (the daemon process),
+                // so the hook must open it before requesting it.
 
         // sliding menus
         HWND        hwndMenuUnderMouse;

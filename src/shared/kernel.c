@@ -566,9 +566,15 @@ BOOL krnPostDaemonMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
     PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
     // cast PVOID
     PDAEMONSHARED pDaemonShared = pKernelGlobals->pDaemonShared;
-    if (pDaemonShared)
+    if (!pDaemonShared)
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "pDaemonShared is NULL.");
+    else
         // get the handle of the daemon's object window
-        if (pDaemonShared->hwndDaemonObject)
+        if (!pDaemonShared->hwndDaemonObject)
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                   "pDaemonShared->hwndDaemonObject is NULLHANDLE.");
+        else
             brc = WinPostMsg(pDaemonShared->hwndDaemonObject, msg, mp1, mp2);
 
     return (brc);
@@ -809,7 +815,7 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
                     WinDestroyWindow(hwndArchiveStatus);
                 break;
 
-                case 2:
+                case 2: // started from T1M_PAGEMAGECONFIGDELAYED
                 {
                     PDAEMONSHARED   pDaemonShared = G_KernelGlobals.pDaemonShared;
 
@@ -1713,8 +1719,10 @@ VOID krnShowStartupDlgs(VOID)
                          pGlobalSettings->fReplaceArchiving);
         WinEnableControl(hwndPanic, ID_XFDI_PANIC_DISABLEREPLICONS,
                          pGlobalSettings->fReplaceIcons);
-        WinEnableControl(hwndPanic, ID_XFDI_PANIC_NOPAGEMAGE,
+        WinEnableControl(hwndPanic, ID_XFDI_PANIC_DISABLEPAGEMAGE,
                          pGlobalSettings->fEnablePageMage);
+        WinEnableControl(hwndPanic, ID_XFDI_PANIC_DISABLEMULTIMEDIA,
+                         (xmmQueryStatus() == MMSTAT_WORKING));
 
         if (WinProcessDlg(hwndPanic) == DID_OK)
         {
@@ -1737,12 +1745,16 @@ VOID krnShowStartupDlgs(VOID)
                 cmnUnlockGlobalSettings();
                 cmnStoreGlobalSettings();
             }
-            if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_NOPAGEMAGE))
+            if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLEPAGEMAGE))
             {
                 GLOBALSETTINGS *pGlobalSettings2 = cmnLockGlobalSettings(5000);
                 pGlobalSettings2->fEnablePageMage = FALSE;  // ###
                 cmnUnlockGlobalSettings();
                 cmnStoreGlobalSettings();
+            }
+            if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLEMULTIMEDIA))
+            {
+                xmmDisable();
             }
             if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLEFEATURES))
             {
@@ -1864,6 +1876,9 @@ VOID krnInitializeXWorkplace(VOID)
         // store WPS startup time
         DosGetDateTime(&G_KernelGlobals.StartupDateTime);
 
+        // initialize multimedia V0.9.3 (2000-04-25) [umoeller]
+        xmmInit();
+
         // get PM system error windows V0.9.3 (2000-04-28) [umoeller]
         winhFindPMErrorWindows(&G_KernelGlobals.hwndHardError,
                                &G_KernelGlobals.hwndSysError);
@@ -1926,13 +1941,6 @@ VOID krnInitializeXWorkplace(VOID)
      */
 
     xthrStartThreads();
-
-    /*
-     *  initialize multimedia
-     *      V0.9.3 (2000-04-25) [umoeller]
-     */
-
-    xmmInit();
 
     /*
      *  start XWorkplace daemon (XWPDAEMN.EXE)

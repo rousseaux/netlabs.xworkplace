@@ -119,6 +119,7 @@
     #define MMSTAT_DLLNOTFOUND         3        // MMPM/2 DLLs not found
     #define MMSTAT_IMPORTSFAILED       4        // MMPM/2 imports failed
     #define MMSTAT_CRASHED             5        // SOUND.DLL crashed, sounds disabled
+    #define MMSTAT_DISABLED            6        // explicitly disabled in startup panic dlg
 
     /* ******************************************************************
      *                                                                  *
@@ -182,6 +183,8 @@
      ********************************************************************/
 
     BOOL xmmInit(VOID);
+
+    VOID xmmDisable(VOID);
 
     ULONG xmmQueryStatus(VOID);
 

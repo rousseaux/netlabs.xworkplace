@@ -25,8 +25,6 @@
 #define INCL_GPI
 #include <os2.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <process.h>
 
 #include "setup.h"                      // code generation and debugging options
@@ -291,6 +289,8 @@ BOOL pgmwWindowListRescan(VOID)
 
 /*
  *@@ pgmwStickyCheck:
+ *      returns TRUE if the window with the specified window
+ *      and switch titles is a sticky window.
  *
  *@@added V0.9.2 (2000-02-21) [umoeller]
  */
@@ -302,9 +302,12 @@ BOOL pgmwStickyCheck(CHAR *pszWindowName,
     BOOL    bFound;
 
     bFound = FALSE;
-    for (usIdx = 0; usIdx < G_pHookData->PageMageConfig.usStickyTextNum; usIdx++)
+    for (usIdx = 0;
+         usIdx < G_pHookData->PageMageConfig.usStickyTextNum;
+         usIdx++)
     {
-        if (strstr(pszWindowName, G_pHookData->PageMageConfig.aszSticky[usIdx]))
+        if (strstr(pszWindowName,
+                   G_pHookData->PageMageConfig.aszSticky[usIdx]))
         {
             bFound = TRUE;
             break;
@@ -312,9 +315,12 @@ BOOL pgmwStickyCheck(CHAR *pszWindowName,
     }
 
     if (!bFound)
-        for (usIdx = 0; usIdx < G_pHookData->PageMageConfig.usStickyTextNum; usIdx++)
+        for (usIdx = 0;
+             usIdx < G_pHookData->PageMageConfig.usStickyTextNum;
+             usIdx++)
         {
-            if (strstr(pszSwitchName, G_pHookData->PageMageConfig.aszSticky[usIdx]))
+            if (strstr(pszSwitchName,
+                       G_pHookData->PageMageConfig.aszSticky[usIdx]))
             {
                 bFound = TRUE;
                 break;
@@ -356,8 +362,8 @@ BOOL pgmwSticky2Check(HWND hwndTest) // in: window to test for stickyness
  *@@added V0.9.2 (2000-02-21) [umoeller]
  */
 
-HWND pgmwGetWindowFromClientPoint(ULONG ulX,  // in: x coordinate within the PageMage Window
-                                  ULONG ulY)  // in: y coordinate within the PageMage Window
+HWND pgmwGetWindowFromClientPoint(ULONG ulX,  // in: x coordinate within the PageMage client
+                                  ULONG ulY)  // in: y coordinate within the PageMage client
 {
     POINTL  ptlCalc;
     float   flCalcX, flCalcY;
@@ -411,19 +417,4 @@ HWND pgmwGetWindowFromClientPoint(ULONG ulX,  // in: x coordinate within the Pag
     return (hwndResult);
 } // pgmwGetWindowFromClientPoint
 
-/*
- *@@ RecoverOneWindowThread:
- *
- *@@added V0.9.2 (2000-02-21) [umoeller]
- */
-
-VOID _Optlink RecoverOneWindowThread(PVOID pdummy)
-{
-    WinSetWindowPos(G_swpRecover.hwnd,
-                    0,
-                    G_swpRecover.x,
-                    G_swpRecover.y,
-                    0, 0,
-                    SWP_MOVE);
-}
 

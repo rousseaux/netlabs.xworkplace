@@ -1030,7 +1030,7 @@ VOID APIENTRY xthrOnKillWorkerThread(VOID)
  *          This thread is created by krnInitializeXWorkplace.
  */
 
-void _Optlink fntWorkerThread(PVOID ptiMyself)
+void _Optlink fntWorkerThread(PTHREADINFO pti)
 {
     QMSG            qmsg;
     PSZ             pszErrMsg = NULL;
@@ -1634,6 +1634,7 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                     WinShowWindow(hwndCreating, TRUE);
                     doshQuickStartSession("cmd.exe",
                                           szPath2,
+                                          FALSE, // background
                                           SSF_CONTROL_INVISIBLE, // but auto-close
                                           TRUE,  // wait
                                           &sid, &pid);
@@ -1887,7 +1888,7 @@ VOID APIENTRY xthrOnKillFileThread(VOID)
  *@@added V0.9.0 [umoeller]
  */
 
-void _Optlink fntFileThread(PVOID ptiMyself)
+void _Optlink fntFileThread(PTHREADINFO pti)
 {
     QMSG                  qmsg;
     PSZ                   pszErrMsg = NULL;
@@ -2036,7 +2037,9 @@ MRESULT EXPENTRY fnwpSpeedyObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                         // blow-up mode:
                         HDC         hdcMem;
                         HPS         hpsMem;
+                        SIZEL       szlPage = {0, 0};
                         if (gpihCreateMemPS(G_habSpeedyThread,
+                                            &szlPage,
                                             &hdcMem,
                                             &hpsMem))
                         {
@@ -2228,7 +2231,7 @@ VOID APIENTRY xthrOnKillSpeedyThread(VOID)
  *@@changed V0.9.3 (2000-04-25) [umoeller]: moved all multimedia stuff to media\mmthread.c
  */
 
-void _Optlink fntSpeedyThread(PVOID ptiMyself)
+void _Optlink fntSpeedyThread(PTHREADINFO pti)
 {
     QMSG                  qmsg;
     PSZ                   pszErrMsg = NULL;
@@ -2449,18 +2452,21 @@ BOOL xthrStartThreads(VOID)
             pKernelGlobals->ulWorkerMsgCount = 0;
             thrCreate(&(pKernelGlobals->ptiWorkerThread),
                       fntWorkerThread,
-                      FALSE,        // no create msgq
+                      NULL, // running flag
+                      0,    // no msgq
                       0);
 
             thrCreate(&(pKernelGlobals->ptiSpeedyThread),
                       fntSpeedyThread,
-                      FALSE,        // no create msgq
+                      NULL, // running flag
+                      0,    // no msgq
                       0);
         }
 
         thrCreate(&(pKernelGlobals->ptiFileThread),
                   fntFileThread,
-                  FALSE,        // no create msgq
+                  NULL, // running flag
+                  0,    // no msgq
                   0);
     }
 

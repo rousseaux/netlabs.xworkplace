@@ -1600,6 +1600,7 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         case ID_XCSI_GLOBALHOTKEYS:
             hifEnableObjectHotkeys(ulExtra);
+            ulUpdateFlags = CBI_SET | CBI_ENABLE;
         break;
 
         case ID_XCSI_PAGEMAGE:
@@ -1997,7 +1998,9 @@ VOID setStatusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                : (ulSoundStatus == MMSTAT_IMPORTSFAILED)
                        ? "MMPM/2 imports failed"
                : (ulSoundStatus == MMSTAT_CRASHED)
-                       ? "Speedy thread crashed"
+                       ? "Media thread crashed"
+               : (ulSoundStatus == MMSTAT_DISABLED)
+                       ? "Disabled"
                : "unknown"
                );
         WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XCDI_INFO_SOUNDSTATUS,

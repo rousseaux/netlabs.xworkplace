@@ -42,7 +42,6 @@
     #define FOPSERR_INVALID_OBJECT            2
     #define FOPSERR_INTEGRITY_ABORT           3
     #define FOPSERR_CANCELLEDBYUSER           4
-    // #define FOPSERR_NODELETETRASHOBJECT       5
     #define FOPSERR_MOVE2TRASH_READONLY       6         // non-fatal
             // moving WPFileSystem which has read-only:
             // this should prompt the user
@@ -53,7 +52,6 @@
             // this should prompt the user
     #define FOPSERR_DELETE_NOT_DELETABLE      9         // fatal
             // deleting not-deletable; this should abort
-    // #define FOPSERR_DESTROYNONTRASHOBJECT     10        // fatal
     #define FOPSERR_TRASHDRIVENOTSUPPORTED    11         // non-fatal
     #define FOPSERR_WPFREE_FAILED             12        // fatal
     #define FOPSERR_LOCK_FAILED               13        // fatal
@@ -110,7 +108,8 @@
         VOID fopsFreeExpandedObject(PEXPANDEDOBJECT pSOI);
 
         FOPSRET fopsExpandObjectFlat(PLINKLIST pllObjects,
-                                     WPObject *pObject);
+                                     WPObject *pObject,
+                                     PULONG pulObjectCount);
     #endif
 
     /********************************************************************
@@ -138,15 +137,41 @@
     // file operation identifiers
     #define XFT_MOVE2TRASHCAN       1
     #define XFT_RESTOREFROMTRASHCAN 2
-    // #define XFT_DESTROYTRASHOBJECTS 3
-    #define XFT_TRUEDELETE          4
+    #define XFT_TRUEDELETE          3
 
     typedef PVOID HFILETASKLIST;
 
-    // status id for FOPSUPDATE
-    #define FOPSUPD_EXPANDINGOBJECT         1
-    #define FOPSUPD_SOURCEOBJECT            2
-    #define FOPSUPD_SUBOBJECT               3
+    // status flags for FOPSUPDATE
+
+    // only one of the following:
+    // #define FOPSUPD_EXPANDINGOBJECT         1
+    // #define FOPSUPD_SOURCEOBJECT            2
+    // #define FOPSUPD_SUBOBJECT               3
+
+    // to reduce flicker, the fields which have changed:
+    #define FOPSUPD_SOURCEFOLDER_CHANGED        0x0010
+    #define FOPSUPD_TARGETFOLDER_CHANGED        0x0020
+
+    #define FOPSUPD_SOURCEOBJECT_CHANGED        0x0100
+                // pSourceObject changed
+    #define FOPSUPD_SUBOBJECT_CHANGED           0x0200
+                // pSubObject changed; this can be NULL if the
+                // subobjects have been processed and we're going
+                // for the next source object
+
+    #define FOPSUPD_EXPANDING_SOURCEOBJECT_1ST  0x1000
+                // pSourceObject is currently being expanded;
+                // only set after the first call for pSourceObject
+                // without any other flags being set; after this,
+                // several FOPSUPD_SUBOBJECT_CHANGED calls come in
+    #define FOPSUPD_EXPANDING_SOURCEOBJECT_DONE 0x2000
+                // done expanding pSourceObject
+
+    // flags for FOPSUPDATE.flProgress:
+    #define FOPSPROG_FIRSTCALL                  0x0001
+    #define FOPSPROG_LASTCALL_DONE              0x0002
+    #define FOPSPROG_UPDATE_PROGRESS            0x1000
+                // progress fields have changed: update progress bar
 
     /*
      *@@ FOPSUPDATE:
@@ -154,6 +179,7 @@
      *      FNFOPSPROGRESSCALLBACK.
      *
      *@@added V0.9.1 (2000-01-30) [umoeller]
+     *@@changed V0.9.3 (2000-04-30) [umoeller]: changed completely for cleaner interface
      */
 
     typedef struct _FOPSUPDATE
@@ -163,29 +189,24 @@
         WPFolder    *pSourceFolder;     // source folder; see fopsCreateFileTaskList
         WPFolder    *pTargetFolder;     // source folder; see fopsCreateFileTaskList
 
-        ULONG       ulStatus;
-                        // one of the following:
-                        //  -- FOPSUPD_EXPANDINGOBJECT: collecting objects before
-                        //     actual processing is started (with XFT_TRUEDELETE);
-                        //     in that case, pObject points to the object
-                        //     being expanded.
-                        // --  FOPSUPD_SOURCEOBJECT: pObject is one of the
-                        //     objects on the file task list (in pSourceFolder)
-                        //     and is currently being processed. The title should be
-                        //     displayed, and the progress bar should be updated.
-                        // --  FOPSUPD_SUBOBJECT: pObject is an object in one
-                        //     of the subfolders of the actual source objects.
-                        //     The title should be
-                        //     displayed, but the progress bar should not be updated,
-                        //     since the values below are constant (speed).
-        WPObject    *pObject;    // current object being worked on
+        ULONG       flChanged;
+        ULONG       flProgress;
 
-        ULONG       ulCurrentObject;
-                        // index of pCurrentObject (out of ulTotalObjects); useful
-                        // for progress bar. This only changes when
-                        // (ulStatus == FOPSUPD_SOURCEOBJECT).
-        ULONG       ulTotalObjects;
-                        // total objects count (100%).
+        WPObject    *pSourceObject;
+                        // current source object being worked on
+        WPObject    *pSubObject;
+                        // for some operations,
+
+        ULONG       ulProgressScalar;
+                        // a scalar signalling the total progress of the operation;
+                        // this is between 0 and ulProgressMax, which represents 100%.
+                        // The scalars are the number of objects * 100 plus a value
+                        // between 0 and 100 for the subobjects. If there are no
+                        // subobjects, the scalar advances in steps of 100.
+                        // If flProgress & FOPSPROG_UPDATE_PROGRESS, the progress
+                        // has changed and should be updated in the progress dialog.
+        ULONG       ulProgressMax;
+                        // maximum progress value
     } FOPSUPDATE, *PFOPSUPDATE;
 
     /*
@@ -312,11 +333,10 @@
      *                                                                  *
      ********************************************************************/
 
-    FOPSRET fopsStartTrashDeleteFromCnr(WPFolder *pSourceFolder,
-                                        WPObject *pSourceObject,
-                                        ULONG ulSelection,
-                                        HWND hwndCnr,
-                                        BOOL fTrueDelete);
+    FOPSRET fopsStartDeleteFromCnr(WPObject *pSourceObject,
+                                   ULONG ulSelection,
+                                   HWND hwndCnr,
+                                   BOOL fTrueDelete);
 
     FOPSRET fopsStartTrashRestoreFromCnr(WPFolder *pTrashSource,
                                          WPFolder *pTargetFolder,

@@ -41,6 +41,11 @@ PROJECT_BASE_DIR = $(MAKEDIR)\..\..
 # files will be created in.
 OUTPUTDIR = ..\..\bin
 
+!ifdef ANIMATED_MOUSE_POINTERS
+CC_DLL_THIS = $(CC_DLL) /D__ANIMATED_MOUSE_POINTERS__=1
+!else
+CC_DLL_THIS = $(CC_DLL)
+!endif
 # create output directory
 !if [@md $(OUTPUTDIR) 2> NUL]
 !endif
@@ -48,7 +53,14 @@ OUTPUTDIR = ..\..\bin
 # The OBJS macro contains all the .OBJ files which need to be
 # created from the files in this directory.
 # These will be put into BIN\.
-OBJS = $(OUTPUTDIR)\xdebug.obj \
+OBJS = \
+!ifdef ANIMATED_MOUSE_POINTERS
+       $(OUTPUTDIR)\anand.obj \
+       $(OUTPUTDIR)\anos2ptr.obj \
+       $(OUTPUTDIR)\anwani.obj \
+       $(OUTPUTDIR)\anwcur.obj \
+!endif
+       $(OUTPUTDIR)\xdebug.obj \
        $(OUTPUTDIR)\xclslist.obj \
        $(OUTPUTDIR)\xfdataf.obj \
        $(OUTPUTDIR)\xfdesk.obj \
@@ -104,9 +116,9 @@ callmainmake:
 .c.{$(OUTPUTDIR)}.obj:
         @echo $(MAKEDIR)\makefile: Compiling $(@B).c
 !ifndef PRECH
-        $(CC_DLL) -I$(INCLUDE) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
+        $(CC_DLL_THIS) -I$(INCLUDE) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
 !else
-        $(CC_DLL) /fi"$(PRECH)\$(@B).pch" /si"$(PRECH)\$(@B).pch" -I$(INCLUDE) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
+        $(CC_DLL_THIS) /fi"$(PRECH)\$(@B).pch" /si"$(PRECH)\$(@B).pch" -I$(INCLUDE) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
 !endif
 
 # main include path
@@ -128,6 +140,26 @@ MYOWNINC = $(INC)\classes
 # Here follow the .OBJs for the SOM/WPS classes. Each class needs to be
 # recompiled when its SOM header files change (due to SOM recompilation)
 # or when other headers (in MAIN or HELPERS) have changed.
+
+$(OUTPUTDIR)\anand.obj: \
+            $(INC)\setup.h \
+            $(INC)\shared\common.h $(INC)\shared\kernel.h \
+            $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h
+
+$(OUTPUTDIR)\anos2ptr.obj: \
+            $(INC)\setup.h \
+            $(INC)\shared\common.h $(INC)\shared\kernel.h \
+            $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h
+
+$(OUTPUTDIR)\anwani.obj: \
+            $(INC)\setup.h \
+            $(INC)\shared\common.h $(INC)\shared\kernel.h \
+            $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h
+
+$(OUTPUTDIR)\anwcur.obj: \
+            $(INC)\setup.h \
+            $(INC)\shared\common.h $(INC)\shared\kernel.h \
+            $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h
 
 $(OUTPUTDIR)\xclslist.obj: \
             $(INC)\setup.h \
@@ -234,7 +266,7 @@ $(OUTPUTDIR)\xtrash.obj: \
 $(OUTPUTDIR)\xwpkeybd.obj: \
             $(INC)\setup.h \
             $(INC)\dlgids.h \
-            $(INC)\shared\common.h $(INC)\shared\notebook.h \
+            $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
             $(INC)\config\hookintf.h \
             $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h
 
@@ -248,7 +280,7 @@ $(OUTPUTDIR)\xwpmedia.obj: \
 $(OUTPUTDIR)\xwpmouse.obj: \
             $(INC)\setup.h \
             $(INC)\dlgids.h \
-            $(INC)\shared\common.h $(INC)\shared\notebook.h \
+            $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
             $(INC)\config\hookintf.h \
             $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h
 

@@ -507,7 +507,7 @@ MRESULT EXPENTRY xmm_fnwpMediaObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPA
  *@@added V0.9.3 (2000-04-25) [umoeller]
  */
 
-void _Optlink xmm_fntMediaThread(PVOID ptiMyself)
+void _Optlink xmm_fntMediaThread(PTHREADINFO pti)
 {
     QMSG                  qmsg;
     PSZ                   pszErrMsg = NULL;
@@ -608,10 +608,25 @@ BOOL xmmInit(VOID)
     if (G_ulMMPM2Working == MMSTAT_WORKING)
         thrCreate(&G_ptiMediaThread,
                   xmm_fntMediaThread,
-                  FALSE,
+                  NULL, // running flag
+                  0,    // no msgq
                   0);
 
     return (G_ulMMPM2Working == MMSTAT_WORKING);
+}
+
+/*
+ *@@ xmmDisable:
+ *      disables multimedia completely.
+ *      Called from krnInitializeXWorkplace if
+ *      the flag in the panic dialog has been set.
+ *
+ *@@added V0.9.3 (2000-04-30) [umoeller]
+ */
+
+VOID xmmDisable(VOID)
+{
+    G_ulMMPM2Working = MMSTAT_DISABLED;
 }
 
 /*

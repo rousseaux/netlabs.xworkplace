@@ -7,7 +7,7 @@
  *
  *      This class implements the "WPS Class List" object,
  *      which defines a new view for editing the WPS class list.
- *      With V1.0, this is now in a separate object,
+ *      With V0.9.0, this is now in a separate object,
  *      because the container window in the "Workplace Shell"
  *      object was a bit small.
  *
@@ -132,7 +132,6 @@
 #include <os2.h>
 
 // C library headers
-#include <stdlib.h>
 #include <stdio.h>
 #include <setjmp.h>
 
@@ -163,7 +162,7 @@
  ********************************************************************/
 
 // "XWPClassList" key for wpRestoreData etc.
-const char* pcszXWPClassList = "XWPClassList";
+const char *pcszXWPClassList = "XWPClassList";
 
 /* ******************************************************************
  *                                                                  *
@@ -377,9 +376,13 @@ SOM_Scope ULONG  SOMLINK xwlist_wpQueryDefaultView(XWPClassList *somSelf)
 
 /*
  *@@ wpQueryDefaultHelp:
- *      this instance method specifies the default
- *      help panel for this instance; we will display
- *      some help for the XWPClassList object.
+ *      this WPObject instance method specifies the default
+ *      help panel for an object (when "Extended help" is
+ *      selected from the object's context menu). This should
+ *      describe what this object can do in general.
+ *      We must return TRUE to report successful completion.
+ *
+ *      We will display some help for the XWPClassList object.
  */
 
 SOM_Scope BOOL  SOMLINK xwlist_wpQueryDefaultHelp(XWPClassList *somSelf,

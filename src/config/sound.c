@@ -226,6 +226,7 @@ BOOL sndInstallAddtlSounds(BOOL fInstall) // in: TRUE: install sounds; FALSE: de
                     cmnQueryLanguageCode());
             if (doshQuickStartSession("cmd.exe",
                                       szCmdFile,
+                                      FALSE, // background
                                       SSF_CONTROL_INVISIBLE, // but auto-close
                                       TRUE,  // wait
                                       &sid,

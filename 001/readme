@@ -1,7 +1,7 @@
 
 XWorkplace 0.9.3 README
 (W) Ulrich M”ller, Feb 7, 2000
-Last updated April 28, 2000
+Last updated May 20, 2000
 
 
 0. CONTENTS OF THIS FILE
@@ -74,13 +74,13 @@ Last updated April 28, 2000
 
     You can then read through XWorkplace's documentation first
     and decide then whether to actually register XWorkplace's
-    classes. To do this later, simply open this WarpIN archive
-    again.
+    classes. To do this later, simply double-click on
+    XWorkplace's WarpIN (.WPI) archive again.
 
-    Note: Use WarpIN V0.9.1 or higher to install this archive.
+    Note: Use WarpIN V0.9.3 or higher to install this archive.
     Since WarpIN V0.9.0 will be unable to create the XWorkplace
     objects on your Desktop, with that version, you'll have to
-    execute BIN\CROB001.CMD manually after installation (in the
+    execute BIN\CROBJ001.CMD manually after installation (in the
     XWorkplace target directory tree).
 
 
@@ -91,7 +91,7 @@ Last updated April 28, 2000
     -------------------------
 
     If you have an older XWorkplace installed when installing
-    this version, you MUST use WarpIN V0.9.2 also. If you are
+    this version, you MUST use WarpIN V0.9.3 also. If you are
     still using an older WarpIN version, you must completely
     de-install XWorkplace before installing this version.
     Alternatively, manually kill XWPDAEMN.EXE before installing.
@@ -160,6 +160,9 @@ Last updated April 28, 2000
     This version has known bugs. I have it running on my system for
     everyday work, but some things are a bit annoying, so be warned.
 
+    Please check the BUGS and FEATURES files in this package also
+    before reporting bugs or suggesting features. Thank you.
+
     As opposed to what XFLDR001.INF might be saying, the following
     does not work:
 
@@ -176,17 +179,34 @@ Last updated April 28, 2000
 
     4)  Trash can auto-delete on startup and shutdown don't work yet.
 
-    5)  Trash can icons are somewhat shaky.
+    5)  Trash can icons are somewhat shaky. Do not attempt to change
+        them using the "Icon" page.
 
     6)  VIO windows started via object hotkeys never come up right to
         the foreground.
 
-    7)  PageMage is completely experimental at this point. There's no
-        configuration pages yet, and it moves windows around more than
-        it really should. Please don't complain.
+    7)  PageMage is completely experimental at this point. We have
+        problems during WPS startup and the configuration is quite
+        unstable. Don't use it unless you're daring.
 
-    Please check the BUGS and FEATURES files in this package also
-    before reporting bugs or suggesting features. Thank you.
+    8)  I am currently having some problems with WPS restarts since
+        I have installed FP13. The WPS crashes on exit and/or becomes
+        terminally slow after the restart. This might be due to XWorkplace
+        or to FP13, I still have to find out.
+
+    9)  From time to time, creating folders from templates (using the
+        context menu items) can solidly crash the system with a black
+        screen. Some people never get this, but I do from time to time.
+        I think I have found the problem, but solving it requires some
+        more debugging and a major redesign of my folder object
+        initialization. This problem has been reported for all XFolder
+        and XWorkplace versions. If you have never had problems with
+        "Create another", don't worry, nothing has changed.
+
+        If, after using "Create another", the system freezes and the
+        hard disk rattles like crazy, press Ctrl+Alt+Del IMMEDIATELY
+        to avoid the black screen. This is a symptom of the swap file
+        growing constantly until the swap disk is full.
 
 
 7. LICENSE, COPYRIGHT, DISCLAIMER

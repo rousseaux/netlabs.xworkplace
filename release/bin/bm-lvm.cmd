@@ -5,11 +5,26 @@
 /* (W) (C) 1998 Duane A. Chamblee <duanec@ibm.net>      */
 /* Part of the XFolder package.                         */
 
-/****************************************************
-  Modified to support Logical Volume Manager output
-     from Warp Server for e-business (Aurora) by
-    Nenad Milenkovic (nenad@softhome.net) Nov '99
-****************************************************/
+
+/**********************************************************
+ Modified by
+   Nenad Milenkovic (nenad_milenkovic@softhome.net)
+
+ Nov 1999:
+   - Improved to support Logical Volume Manager output
+     from Warp Server for e-business (Aurora) in addition
+     to standard FDISK output from Warp 4
+
+ Apr 2000:
+   - Updated to work with XWorkplace instead XFolder
+   - Improved to support bootable partitions hidden
+     from OS/2 (those without drive letter assigned,
+     Linux for example)
+
+ Donated to XWorkplace authors to be used and released
+ with XWorkplace in any form and under any lincense
+ they wish.
+**********************************************************/
 
 call RxFuncAdd 'SysLoadFuncs', 'RexxUtil', 'SysLoadFuncs'
 call SysLoadFuncs
@@ -21,7 +36,7 @@ if SysOS2ver()='2.45' then
     '@call lvm /query:bootable,all 2>&1 | RXQUEUE.EXE'
     ver='wseb'
   end
-else 
+else
   do
     '@call fdisk /query /bootable:1 2>&1 | RXQUEUE.EXE'
     ver='warp'
@@ -40,7 +55,7 @@ Do until LINES("QUEUE:")=0
    if ver='wseb' then
      do
        parse var oneline drive 4 name 20 .
-       if POS(':', drive)\=2 then iterate     
+       if POS('Bootable', oneline)\=41 then iterate
      end
 
    if ver='warp' then
@@ -56,6 +71,6 @@ Do until LINES("QUEUE:")=0
 end
 
 if inistring<>'' then
-   call SysINI 'USER','XFolder', 'RebootTo', inistring||'00'x||'00'x
+   call SysINI 'USER','XWorkplace', 'RebootTo', inistring||'00'x||'00'x
 
 '@call RXQUEUE.EXE /CLEAR'

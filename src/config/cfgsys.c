@@ -1452,7 +1452,8 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 {
                     // PSZ     p;
                     ULONG   ul = 0, ulMinFree = 0, ulMinSize = 0;
-                    CHAR    szSwapPath[CCHMAXPATH];
+                    CHAR    szSwapPath[CCHMAXPATH],
+                            szBackup[CCHMAXPATH];
 
                     switch (pcnbp->ulPageID)
                     {
@@ -1798,13 +1799,19 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     } // end switch
 
                     // write file!
-                    doshWriteTextFile((PSZ)pKernelGlobals->szConfigSys,
-                                      pszConfigSys,
-                                      TRUE);        // backup
-                    // "file written" msg
-                    cmnMessageBoxMsg(pcnbp->hwndFrame, // pcnbp->hwndPage,
-                                     100, 136,
-                                     MB_OK);
+                    if (doshWriteTextFile((PSZ)pKernelGlobals->szConfigSys,
+                                          pszConfigSys, // contents
+                                          NULL,         // pulWritten
+                                          szBackup)     // backup
+                                == NO_ERROR)
+                        // "file written" msg
+                        cmnMessageBoxMsg(pcnbp->hwndFrame, // pcnbp->hwndPage,
+                                         100,
+                                         136,       // ###
+                                         MB_OK);
+                    else
+                        DebugBox(NULLHANDLE, "Error", "Error writing CONFIG.SYS");
+                                // ###
 
                     if (pszConfigSys)
                     {
@@ -2320,7 +2327,7 @@ VOID cfgSyslevelInitPage(PCREATENOTEBOOKPAGE pcnbp,
 {
     if (flFlags & CBI_INIT)
     {
-        HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_OSDI_SYSLEVEL_CNR);
+        HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
 
         XFIELDINFO      xfi[5];
         PFIELDINFO      pfi = NULL;
@@ -2368,7 +2375,7 @@ VOID cfgSyslevelInitPage(PCREATENOTEBOOKPAGE pcnbp,
 
     if (flFlags & CBI_SET)
     {
-        HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_OSDI_SYSLEVEL_CNR);
+        HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
 
         AddSyslevelsForDir(hwndCnr,
                            "?:\\OS2\\INSTALL\\");

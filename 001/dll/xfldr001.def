@@ -5,9 +5,11 @@
 ;       A module definition file contains information which is needed
 ;       after code modules have been compiled and need to be linked
 ;       together.
-;       You must change the XFLDR001 string just below to the file
-;       name that the NLS DLL will carry. You can also change the
-;       DESCRIPTION string, but this is not evaluated by XWorkplace.
+;       You must change the "XFLDR001" string just below to the file
+;       name that the NLS DLL will carry (for example, "XFLDR039" for
+;       Italian).
+;       You can also change the DESCRIPTION string, but this is not
+;       evaluated by XWorkplace.
 ;       Do not change anything else.
 ;
 ;       Copyright (C) 1997-2000 Ulrich M”ller.

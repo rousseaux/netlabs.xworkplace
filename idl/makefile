@@ -38,7 +38,11 @@ SOMTEMP = $(TEMP)
 
 # Specify the main target.
 
-all: $(OUTPUTDIR)\xclslist.h \
+all: $(OUTPUTDIR)\anand.h \
+     $(OUTPUTDIR)\anos2ptr.h \
+     $(OUTPUTDIR)\anwani.h \
+     $(OUTPUTDIR)\anwcur.h \
+     $(OUTPUTDIR)\xclslist.h \
      $(OUTPUTDIR)\xdebug.h \
      $(OUTPUTDIR)\xfdataf.h \
      $(OUTPUTDIR)\xfdesk.h \
@@ -83,6 +87,14 @@ all: $(OUTPUTDIR)\xclslist.h \
 # using the SOM inference rule above.
 
 # Special macros used here: $(@B) is the current target w/out ext.
+
+$(OUTPUTDIR)\anand.h:            $(@B).idl
+
+$(OUTPUTDIR)\anos2ptr.h:         $(@B).idl
+
+$(OUTPUTDIR)\anwani.h:           $(@B).idl
+
+$(OUTPUTDIR)\anwcur.h:           $(@B).idl
 
 $(OUTPUTDIR)\xclslist.h:         $(@B).idl
 

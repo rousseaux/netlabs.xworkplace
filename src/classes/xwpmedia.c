@@ -12,7 +12,7 @@
  *
  *@@added V0.9.3 (2000-04-29) [umoeller]
  *@@somclass XWPMedia xwmm_
- *@@somclass M_XWPMedia xwmm_
+ *@@somclass M_XWPMedia xwmmM_
  */
 
 /*
@@ -130,7 +130,7 @@ PTHREADINFO     G_ptiInsertDevices = NULL,
  *      which can be used by container sort procs.
  */
 
-SHORT EXPENTRY fnCompareName(PSZ psz1, PSZ psz2)
+/* SHORT EXPENTRY fnCompareName(PSZ psz1, PSZ psz2)
 {
     HAB habDesktop = WinQueryAnchorBlock(HWND_DESKTOP);
     if ((psz1) && (psz2))
@@ -142,7 +142,7 @@ SHORT EXPENTRY fnCompareName(PSZ psz1, PSZ psz2)
         }
 
     return (0);
-}
+} */
 
 /* ******************************************************************
  *                                                                  *
@@ -175,39 +175,47 @@ typedef struct _MMDEVRECORD
  *      This thread is created with a msg queue.
  */
 
-void _Optlink fntInsertDevices(PVOID ptiMyself)
+void _Optlink fntInsertDevices(PTHREADINFO pti)
 {
+    PCREATENOTEBOOKPAGE pcnbp = (PCREATENOTEBOOKPAGE)(pti->ulData);
+
     TRY_LOUD(excpt1, NULL)
     {
-        PCREATENOTEBOOKPAGE pcnbp = (PCREATENOTEBOOKPAGE)(((PTHREADINFO)ptiMyself)->ulData);
-        HWND        hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XCD_MM_CNR);
-
         ULONG       cDevices = 0,
                     ul;
-        PXMMDEVICE  paDevices = xmmQueryDevices(&cDevices);
+        PXMMDEVICE  paDevices;
 
-        for (ul = 0;
-             ul < cDevices;
-             ul++)
+        pcnbp->fShowWaitPointer = TRUE;
+
+        paDevices = xmmQueryDevices(&cDevices);
+
+        if (paDevices)
         {
-            PMMDEVRECORD precc
-                = (PMMDEVRECORD)cnrhAllocRecords(hwndCnr,
-                                                 sizeof(MMDEVRECORD),
-                                                 1);
-            if (precc)
-            {
-                precc->pszDeviceType = paDevices[ul].pszDeviceType;
-                precc->ulDeviceIndex = paDevices[ul].ulDeviceIndex;
-                precc->pszInfo = paDevices[ul].szInfo;
-                precc->pDevice = &paDevices[ul];
+            HWND        hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
 
-                cnrhInsertRecords(hwndCnr,
-                                  NULL,
-                                  (PRECORDCORE)precc,
-                                  TRUE, // invalidate
-                                  NULL,
-                                  CRA_RECORDREADONLY,
-                                  1);
+            for (ul = 0;
+                 ul < cDevices;
+                 ul++)
+            {
+                PMMDEVRECORD precc
+                    = (PMMDEVRECORD)cnrhAllocRecords(hwndCnr,
+                                                     sizeof(MMDEVRECORD),
+                                                     1);
+                if (precc)
+                {
+                    precc->pszDeviceType = paDevices[ul].pszDeviceType;
+                    precc->ulDeviceIndex = paDevices[ul].ulDeviceIndex;
+                    precc->pszInfo = paDevices[ul].szInfo;
+                    precc->pDevice = &paDevices[ul];
+
+                    cnrhInsertRecords(hwndCnr,
+                                      NULL,
+                                      (PRECORDCORE)precc,
+                                      TRUE, // invalidate
+                                      NULL,
+                                      CRA_RECORDREADONLY,
+                                      1);
+                }
             }
         }
 
@@ -217,6 +225,8 @@ void _Optlink fntInsertDevices(PVOID ptiMyself)
         pcnbp->pUser = paDevices;
     }
     CATCH(excpt1) {}  END_CATCH();
+
+    pcnbp->fShowWaitPointer = FALSE;
 }
 
 /*
@@ -234,7 +244,7 @@ VOID xwmmDevicesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 {
     if (flFlags & CBI_INIT)
     {
-        HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XCD_MM_CNR);
+        HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
 
         XFIELDINFO      xfi[5];
         PFIELDINFO      pfi = NULL;
@@ -274,7 +284,8 @@ VOID xwmmDevicesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
     {
         thrCreate(&G_ptiInsertDevices,
                   fntInsertDevices,
-                  TRUE, // create msgq
+                  NULL, // running flag
+                  THRF_PMMSGQUEUE,
                   (ULONG)pcnbp);
     }
 
@@ -382,18 +393,20 @@ typedef struct _IOPROCRECORD
  *      This thread is created with a msg queue.
  */
 
-void _Optlink fntInsertIOProcs(PVOID ptiMyself)
+void _Optlink fntInsertIOProcs(PTHREADINFO pti)
 {
+    PCREATENOTEBOOKPAGE pcnbp = (PCREATENOTEBOOKPAGE)(pti->ulData);
     TRY_LOUD(excpt1, NULL)
     {
-        PCREATENOTEBOOKPAGE pcnbp = (PCREATENOTEBOOKPAGE)(((PTHREADINFO)ptiMyself)->ulData);
-        HWND        hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XCD_MM_CNR);
+        HWND        hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
 
         MMFORMATINFO    mmfi;
         LONG            lFormatCount;
 
         memset(&mmfi, 0, sizeof(mmfi));     // zeroed struct means get all
         mmfi.ulStructLen = sizeof(mmfi);
+
+        pcnbp->fShowWaitPointer = TRUE;
 
         if (G_mmioQueryFormatCount(&mmfi,
                                    &lFormatCount,
@@ -503,6 +516,8 @@ void _Optlink fntInsertIOProcs(PVOID ptiMyself)
         }
     }
     CATCH(excpt1) {}  END_CATCH();
+
+    pcnbp->fShowWaitPointer = FALSE;
 }
 
 /*
@@ -520,7 +535,7 @@ VOID xwmmIOProcsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 {
     if (flFlags & CBI_INIT)
     {
-        HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XCD_MM_CNR);
+        HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
 
         XFIELDINFO      xfi[6];
         PFIELDINFO      pfi = NULL;
@@ -575,7 +590,8 @@ VOID xwmmIOProcsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
     {
         thrCreate(&G_ptiInsertCodecs,
                   fntInsertIOProcs,
-                  TRUE, // create msgq
+                  NULL, // running flag
+                  THRF_PMMSGQUEUE,
                   (ULONG)pcnbp);
     }
 }
@@ -623,17 +639,19 @@ typedef struct _CODECRECORD
  *      This thread is created with a msg queue.
  */
 
-void _Optlink fntInsertCodecs(PVOID ptiMyself)
+void _Optlink fntInsertCodecs(PTHREADINFO pti)
 {
+    PCREATENOTEBOOKPAGE pcnbp = (PCREATENOTEBOOKPAGE)(pti->ulData);
     TRY_LOUD(excpt1, NULL)
     {
-        PCREATENOTEBOOKPAGE pcnbp = (PCREATENOTEBOOKPAGE)(((PTHREADINFO)ptiMyself)->ulData);
-        HWND        hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XCD_MM_CNR);
+        HWND        hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
 
         CODECINIFILEINFO    cifi;
         BOOL                fContinue = TRUE;
         ULONG               ulIndex = 0,
                             ulFlags = MMIO_FINDPROC | MMIO_MATCHFIRST;
+
+        pcnbp->fShowWaitPointer = TRUE;
 
         memset(&cifi, 0, sizeof(cifi));
         cifi.ulStructLen = sizeof(cifi);
@@ -644,7 +662,7 @@ void _Optlink fntInsertCodecs(PVOID ptiMyself)
         do
         {
             if (G_mmioIniFileCODEC(&cifi,
-                                   ulFlags)
+                                   ulFlags) // initially MMIO_FINDPROC | MMIO_MATCHFIRST
                         != MMIO_SUCCESS)
                 fContinue = FALSE;
             else
@@ -682,9 +700,18 @@ void _Optlink fntInsertCodecs(PVOID ptiMyself)
                                 strhncpy0(precc->szCodecName,
                                           pszCodecName,
                                           sizeof(precc->szCodecName) - 1);
+                            #ifdef __DEBUG__
+                            else
+                                strcpy(precc->szCodecName, "mmioQueryCODECName failed.");
+                            #endif
+
                             free(pszCodecName);
                         }
                     }
+                    #ifdef __DEBUG__
+                    else
+                        strcpy(precc->szCodecName, "mmioQueryCODECNameLength failed.");
+                    #endif
 
                     precc->pszCodecName = precc->szCodecName;
 
@@ -714,6 +741,8 @@ void _Optlink fntInsertCodecs(PVOID ptiMyself)
         } while (fContinue);
     }
     CATCH(excpt1) {}  END_CATCH();
+
+    pcnbp->fShowWaitPointer = FALSE;
 }
 
 /*
@@ -731,7 +760,7 @@ VOID xwmmCodecsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 {
     if (flFlags & CBI_INIT)
     {
-        HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XCD_MM_CNR);
+        HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
 
         XFIELDINFO      xfi[6];
         PFIELDINFO      pfi = NULL;
@@ -786,7 +815,8 @@ VOID xwmmCodecsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
     {
         thrCreate(&G_ptiInsertCodecs,
                   fntInsertCodecs,
-                  TRUE, // create msgq
+                  NULL, // running flag
+                  THRF_PMMSGQUEUE,
                   (ULONG)pcnbp);
     }
 }
@@ -817,7 +847,7 @@ SOM_Scope ULONG  SOMLINK xwmm_xwpAddXWPMediaPages(XWPMedia *somSelf,
         pcnbp->hmod = savehmod;
         pcnbp->usPageStyleFlags = BKA_MAJOR;
         pcnbp->pszName = "Codecs";          // ###
-        pcnbp->ulDlgID = ID_XCD_MULTIMEDIA;
+        pcnbp->ulDlgID = ID_XFD_CONTAINERPAGE; // generic cnr page
         pcnbp->ulDefaultHelpPanel  = ID_XSH_MEDIA_CODECS;
         pcnbp->ulPageID = SP_MEDIA_CODECS;
         pcnbp->pfncbInitPage    = xwmmCodecsInitPage;
@@ -831,7 +861,7 @@ SOM_Scope ULONG  SOMLINK xwmm_xwpAddXWPMediaPages(XWPMedia *somSelf,
         pcnbp->hmod = savehmod;
         pcnbp->usPageStyleFlags = BKA_MAJOR;
         pcnbp->pszName = "IOProcs";          // ###
-        pcnbp->ulDlgID = ID_XCD_MULTIMEDIA;
+        pcnbp->ulDlgID = ID_XFD_CONTAINERPAGE; // generic cnr page
         pcnbp->ulDefaultHelpPanel  = ID_XSH_MEDIA_IOPROCS;
         pcnbp->ulPageID = SP_MEDIA_IOPROCS;
         pcnbp->pfncbInitPage    = xwmmIOProcsInitPage;
@@ -845,7 +875,7 @@ SOM_Scope ULONG  SOMLINK xwmm_xwpAddXWPMediaPages(XWPMedia *somSelf,
         pcnbp->hmod = savehmod;
         pcnbp->usPageStyleFlags = BKA_MAJOR;
         pcnbp->pszName = "Devices";          // ###
-        pcnbp->ulDlgID = ID_XCD_MULTIMEDIA;
+        pcnbp->ulDlgID = ID_XFD_CONTAINERPAGE; // generic cnr page
         pcnbp->ulDefaultHelpPanel  = ID_XSH_MEDIA_DEVICES; // ###
         pcnbp->ulPageID = SP_MEDIA_DEVICES;
         pcnbp->pfncbInitPage    = xwmmDevicesInitPage;
@@ -882,7 +912,13 @@ SOM_Scope ULONG  SOMLINK xwmm_wpFilterPopupMenu(XWPMedia *somSelf,
 
 /*
  *@@ wpQueryDefaultHelp:
+ *      this WPObject instance method specifies the default
+ *      help panel for an object (when "Extended help" is
+ *      selected from the object's context menu). This should
+ *      describe what this object can do in general.
+ *      We must return TRUE to report successful completion.
  *
+ *      We'll display some help for the XWPMedia class.
  */
 
 SOM_Scope BOOL  SOMLINK xwmm_wpQueryDefaultHelp(XWPMedia *somSelf,
@@ -1007,7 +1043,7 @@ SOM_Scope PSZ  SOMLINK xwmmM_wpclsQueryTitle(M_XWPMedia *somSelf)
     /* M_XWPMediaData *somThis = M_XWPMediaGetData(somSelf); */
     M_XWPMediaMethodDebug("M_XWPMedia","xwmmM_wpclsQueryTitle");
 
-    return ("Multimedia");
+    return ("XWorkplace Multimedia");
 }
 
 /*
@@ -1023,7 +1059,7 @@ SOM_Scope ULONG  SOMLINK xwmmM_wpclsQueryIconData(M_XWPMedia *somSelf,
 
     if (pIconInfo) {
         pIconInfo->fFormat = ICON_RESOURCE;
-        pIconInfo->resid   = ID_ICONXWPCONFG;       // ###
+        pIconInfo->resid   = ID_ICONXWPMEDIA;
         pIconInfo->hmod    = cmnQueryMainModuleHandle();
     }
 

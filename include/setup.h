@@ -185,14 +185,25 @@
         #endif
     #endif
 
-    #ifdef __DEBUG__
-        #ifndef __stdlib_h          // <stdlib.h>
-            #include <stdlib.h>
-        #endif
-        #ifndef __string_h          // <string.h>
-            #include <string.h>
-        #endif
+    #define _min(a,b) ( ((a) > (b)) ? b : a )
+    #define _max(a,b) ( ((a) > (b)) ? a : b )
 
+    // all this added V0.9.2 (2000-03-10) [umoeller]
+    #if ( defined (  __IBMCPP__ ) && (  __IBMCPP__ < 400 ) )
+        typedef int bool;
+        #define true 1
+        #define false 0
+        #define _BooleanConst    // needed for some VAC headers, which define bool also
+    #endif
+
+    #ifndef __stdlib_h          // <stdlib.h>
+        #include <stdlib.h>
+    #endif
+    #ifndef __string_h          // <string.h>
+        #include <string.h>
+    #endif
+
+    #ifdef __DEBUG__
         // enable memory debugging; comment out this line
         // if you don't want it
         // #define __XWPMEMDEBUG__

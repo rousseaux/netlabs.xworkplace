@@ -122,29 +122,6 @@
 <--XFL0139-->: The class "%1" is currently replaced by the class "%2". You must undo this replacement before this class can be deregistered.
 
 ;
-; the following items have changed with V0.9.0
-
-<--XFL0140-->: Copyright (C) 1997-2000 Ulrich Mîller.
-Copyright (C) 2000 Christian Langanke.
-English National Language Support:
-Copyright (C) 1998-2000 Ulrich Mîller.
-
-Contact xworkplace-user@egroups.com for bug reports and suggestions.
-Contact xworkplace-dev@egroups.com if you are familiar with the XWorkplace source code.
-
-XWorkplace is free software. The full source code is available from the author's homepage in a separate package. You are welcome to redistribute and/or modify XWorkplace under the conditions of the GNU General Public License (GPL).
-XWorkplace comes with absolutely NO WARRANTY. For details, refer to the "Notices" section of the XWorkplace User Guide and the GPL itself, which is contained in the COPYING file in the XWorkplace installation directory.
-
-Among others, XWorkplace contains copyrighted code from the following people:
-    ARAKAWA Atsushi (APM power off)
-    Achim HasenmÅller (WarpEnhancer code)
-    Henk Kelder (OS2SYS.INI handles)
-    Stefan Mielcke (WPS archiving)
-    Kai Uwe Rommel (process queries)
-    Roman Stangl (various hook code)
-    Carlos Ugarte (PageMage)
-See the "XWorkplace User Guide" for more detailed credits.
-;
 ; the following items are new with V0.9.0
 
 <--XFL0141-->: This will create an object of the class "%1" named "%2" on the Desktop. Warning: Some WPS classes were not designed to have objects created of them, and some may cause trouble with your system configuration only. Continue anyway?
@@ -274,6 +251,34 @@ Should we do this now?
 <--XFL0184-->: "%1" is a read-only file. Do you want to permanently delete it anyways?
 
 <--XFL0185-->: "%1" cannot be deleted.
+
+<--XFL0186-->: Do you wish to cancel the file operation in progress? Press "Retry" to continue, press "Cancel" to abort.
+
+;
+; the following items have been changed with V0.9.3
+;
+
+<--XFL0140-->: Copyright (C) 1997-2000 Ulrich Mîller.
+Copyright (C) 2000 Christian Langanke.
+English National Language Support:
+Copyright (C) 1998-2000 Ulrich Mîller.
+
+Contains code from WarpEnhancer (C) 1996-1997 Innotek Systemberatung.
+Contains code from WPTools (C) 1991-1998 Henk Kelder.
+Contains code from WPSArcO (C) 1997-1999 Stefan Milcke.
+Contains code from APM/2 (C) 1997-1998 Roman Stangl; ported to XFolder (C) 1998 ARAKAWA Atsushi.
+Contains code from ProcessCommander/2 (C) 1993-1999 Roman Stangl.
+Contains code from PageMage (C) 1995-1999 Carlos Ugarte.
+
+Compiled using IBM VisualAge C++ 3.08.
+
+See the "Notices" section in the XWorkplace User Guide for more detailed credits and trademark notices.
+
+Contact xworkplace-user@egroups.com for bug reports and suggestions.
+Contact xworkplace-dev@egroups.com if you are familiar with the XWorkplace source code.
+
+XWorkplace is free software under the GNU General Public Licence (GPL), which is contained in the COPYING file in the XWorkplace installation directory. The full source code is available from http://xworkplace.netlabs.org in a separate package. You are welcome to redistribute and/or modify XWorkplace under the conditions of the GPL.
+XWorkplace comes with absolutely NO WARRANTY. For details, refer to the "Notices" section of the XWorkplace User Guide and the GPL itself.
 
 ; ---------------------------------------------------------------------------------
 ;

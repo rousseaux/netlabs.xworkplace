@@ -145,9 +145,7 @@
 #define INCL_WINSYS
 #define INCL_WINWORKPLACE
 #include <os2.h>
-#include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
 #include <time.h>
 #include <setjmp.h>
 
@@ -183,9 +181,9 @@ HPOINTER        G_hptrDaemon = NULLHANDLE;
 
 // sliding focus data
 ULONG           G_ulSlidingFocusTimer = 0;    // timer ID for delayed sliding focus
-HWND            G_hwndToActivate = 0;         // window to activate
+// HWND            G_hwndToActivate = 0;         // window to activate
                                             // (valid while timer is running)
-BOOL            G_fIsSeamless = FALSE;        // hwndToActive is seamless Win-OS/2 window
+// BOOL            G_fIsSeamless = FALSE;        // hwndToActive is seamless Win-OS/2 window
                                             // (valid while timer is running)
 // sliding menu data
 ULONG           G_ulSlidingMenuTimer = 0;
@@ -337,6 +335,7 @@ int CheckRemoveableDrive(void)
  *      notice this and process more messages.
  *
  *@@added V0.9.2 (2000-02-22) [umoeller]
+ *@@changed V0.9.3 (2000-05-21) [umoeller]: fixed startup problems, added new thread flags
  */
 
 BOOL dmnStartPageMage(VOID)
@@ -348,20 +347,23 @@ BOOL dmnStartPageMage(VOID)
              && (G_pHookData->fPreAccelHooked)
            )
         {
-            _Pmpf(("dmnStartPageMage: Scanning windows"));
-            pgmwScanAllWindows();
-
-            _Pmpf(("  Windows scanned, starting Move thread"));
-            thrCreate(&G_ptiMoveThread,
-                      fntMoveQueueThread,
-                      FALSE,
-                      0);
-
             _Pmpf(("  Creating main window"));
             brc = pgmcCreateMainControlWnd();
                // this sets the global window handles;
                // the hook sees this and will start processing
                // PageMage messages
+            _Pmpf(("      returned %d", brc));
+
+            _Pmpf(("dmnStartPageMage: Scanning windows"));
+            pgmwScanAllWindows();
+            _Pmpf(("  Windows scanned"));
+
+            _Pmpf(("  starting Move thread"));
+            thrCreate(&G_ptiMoveThread,
+                      fntMoveQueueThread,
+                      NULL, // running flag
+                      THRF_WAIT | THRF_PMMSGQUEUE,    // PM msgq
+                      0);
         }
 
     return (brc);
@@ -391,12 +393,17 @@ VOID dmnKillPageMage(BOOL fNotifyKernel)    // in: if TRUE, we post T1M_PAGEMAGE
     if (G_pHookData->hwndPageMageFrame)
     {
         // PageMage running:
-        ULONG ulRequest;
+        ULONG   ulRequest;
+        // save page mage frame
+        HWND    hwndPageMageFrame = G_pHookData->hwndPageMageFrame;
+
+        // stop move thread
+        ulRequest = PGMGQENCODE(PGMGQ_QUIT, 0, 0);
+        DosWriteQueue(G_hqPageMage, ulRequest, 0, NULL, 0);
+        thrFree(&G_ptiMoveThread);
 
         if (G_pHookData->PageMageConfig.fRecoverOnShutdown)
             pgmmRecoverAllWindows();
-
-        WinDestroyWindow(G_pHookData->hwndPageMageFrame);
 
         // set global window handles to NULLHANDLE;
         // the hook sees this and will stop processing
@@ -404,10 +411,8 @@ VOID dmnKillPageMage(BOOL fNotifyKernel)    // in: if TRUE, we post T1M_PAGEMAGE
         G_pHookData->hwndPageMageClient = NULLHANDLE;
         G_pHookData->hwndPageMageFrame = NULLHANDLE;
 
-        // stop move thread
-        ulRequest = PGMGQENCODE(PGMGQ_QUIT, 0, 0);
-        DosWriteQueue(G_hqPageMage, ulRequest, 0, NULL, 0);
-        thrFree(&G_ptiMoveThread);
+        // then destroy the PageMage window
+        WinDestroyWindow(hwndPageMageFrame);
 
         // notify kernel that PageMage has been closed
         // so that the global settings can be updated
@@ -577,24 +582,34 @@ BOOL LoadHookConfig(BOOL fHook,         // in: reload hook settings
 
 VOID InstallHook(VOID)
 {
-    // install hook
-    G_pHookData = hookInit(G_pDaemonShared->hwndDaemonObject);
+    HMTX hmtx;
+    if (NO_ERROR == DosCreateMutexSem(NULL,  // unnamed
+                                      &hmtx,
+                                      DC_SEM_SHARED,
+                                            // shared mutex; the hook requests
+                                            // this, so this is needed by every
+                                            // PM process
+                                      FALSE))    // unowned
+    {
+        // install hook
+        G_pHookData = hookInit(G_pDaemonShared->hwndDaemonObject);
 
-    _Pmpf(("XWPDAEMON: hookInit called, pHookData: 0x%lX", G_pHookData));
+        _Pmpf(("XWPDAEMON: hookInit called, pHookData: 0x%lX", G_pHookData));
 
-    if (G_pHookData)
-        if (    (G_pHookData->fInputHooked)
-             && (G_pHookData->fPreAccelHooked)
-           )
-        {
-            // success:
-            G_pDaemonShared->fAllHooksInstalled = TRUE;
-            // load hotkeys list from OS2.INI
-            LoadHotkeysForHook();
-            // load config from OS2.INI
-            LoadHookConfig(TRUE,
-                           TRUE);
-        }
+        if (G_pHookData)
+            if (    (G_pHookData->fInputHooked)
+                 && (G_pHookData->fPreAccelHooked)
+               )
+            {
+                // success:
+                G_pDaemonShared->fAllHooksInstalled = TRUE;
+                // load hotkeys list from OS2.INI
+                LoadHotkeysForHook();
+                // load config from OS2.INI
+                LoadHookConfig(TRUE,
+                               TRUE);
+            }
+    }
 }
 
 /*
@@ -616,6 +631,9 @@ VOID DeinstallHook(VOID)
         _Pmpf(("XWPDAEMON: hookKilled called"));
         G_pDaemonShared->fAllHooksInstalled = FALSE;
 
+        // DosCloseMutexSem(G_pHookData->hmtxPageMage);
+        // G_pHookData->hmtxPageMage = NULLHANDLE;
+
         // if mouse pointer is currently hidden,
         // show it now (otherwise it'll be lost...)
         if (G_pHookData)
@@ -633,39 +651,54 @@ VOID DeinstallHook(VOID)
 
 /*
  *@@ ProcessSlidingFocus:
- *      this gets called from fnwpDaemonObject when
- *      XDM_SLIDINGFOCUS comes in to implement the
- *      "sliding focus" feature.
+ *      this gets called from fnwpDaemonObject to
+ *      implement the "sliding focus" feature.
  *
- *      At this point, the global hwndToActivate
- *      variable has been set to the desktop window
- *      which is to be activated.
+ *      This gets called in two situations:
+ *
+ *      -- If sliding focus delay is off, directly
+ *         when the daemon receives XDM_SLIDINGFOCUS
+ *         from the hook.
+ *
+ *      -- If we have a delay of sliding focus,
+ *         fnwpDaemonObject starts a timer on receiving
+ *         XDM_SLIDINGFOCUS and calls this func when
+ *         the timer elapsed.
+ *
+ *      This was initially based on code from
+ *      ProgramCommander/2, but I had a few bugs fixed
+ *      now.
+ *
+ *@@changed V0.9.3 (2000-05-23) [umoeller]: fixed MDI-subframes problem (VIEW.EXE)
  */
 
-VOID ProcessSlidingFocus(VOID)
+VOID ProcessSlidingFocus(HWND hwndFrameInBetween,
+                         HWND hwnd2Activate)     // in: highest parent of hwndUnderMouse, child of desktop
 {
     HWND    hwndPreviousActive;
+    BOOL    fIsSeamless = FALSE;
+    CHAR szClassName[200];
 
     // rule out desktops, if "ignore desktop" is on
     if (G_pHookData->HookConfig.fSlidingIgnoreDesktop)
-        if (G_hwndToActivate == G_pHookData->hwndPMDesktop)
+        if (hwnd2Activate == G_pHookData->hwndPMDesktop)
             // target is PM desktop:
             return;
-        else if (G_hwndToActivate == G_pHookData->hwndWPSDesktop)
+        else if (hwnd2Activate == G_pHookData->hwndWPSDesktop)
             // target is WPS desktop:
             return;
 
     // rule out PageMage, if "ignore PageMage" is on
     if (G_pHookData->HookConfig.fSlidingIgnorePageMage)
-        if (G_hwndToActivate == G_pHookData->hwndPageMageFrame)
+        if (hwnd2Activate == G_pHookData->hwndPageMageFrame)
             // target is PM desktop:
             return;
 
     // always ignore window list
-    if (G_hwndToActivate == G_pHookData->hwndWindowList)
+    if (hwnd2Activate == G_pHookData->hwndWindowList)
         return;
 
-    if (WinQueryWindowULong(G_hwndToActivate, QWL_STYLE) & WS_DISABLED)
+    if (WinQueryWindowULong(hwnd2Activate, QWL_STYLE) & WS_DISABLED)
         // window is disabled: ignore
         return;
 
@@ -675,75 +708,157 @@ VOID ProcessSlidingFocus(VOID)
     if (hwndPreviousActive == G_pHookData->hwndWindowList)
         return;
 
+    WinQueryClassName(hwnd2Activate, sizeof(szClassName), szClassName);
+    if (strcmp(szClassName, "SeamlessClass") == 0)
+        fIsSeamless = TRUE;
+
     // rule out redundant processing:
     // we might come here if the mouse has moved
     // across several desktop windows while the
     // sliding-focus delay has not elapsed yet
     // so that the active window really hasn't changed
-    if (hwndPreviousActive != G_hwndToActivate)
+    // if (hwndPreviousActive != hwnd2Activate)
     {
         if (    (G_pHookData->HookConfig.fSlidingBring2Top)
-             || (   (G_fIsSeamless)
+             || (   (fIsSeamless)
                  && (!G_pHookData->HookConfig.fSlidingIgnoreSeamless)
                 )
            )
         {
-            // bring-to-top mode
-            // or window to activate is seamless Win-OS/2 window
-            // and should be brought to the top:
-            WinSetActiveWindow(HWND_DESKTOP, G_hwndToActivate);
-            G_pHookData->hwndActivatedByUs = G_hwndToActivate;
+            if (hwndPreviousActive != hwnd2Activate)
+            {
+                // bring-to-top mode
+                // or window to activate is seamless Win-OS/2 window
+                // and should be brought to the top:
+                WinSetActiveWindow(HWND_DESKTOP, hwnd2Activate);
+                G_pHookData->hwndActivatedByUs = hwnd2Activate;
+            }
         }
         else
         {
             // preserve-Z-order mode:
-
-            if (!G_fIsSeamless)
+            if (!fIsSeamless)
             {
                 // not seamless Win-OS/2 window:
-                HWND    hwndFocusSave = WinQueryWindowULong(G_hwndToActivate,
-                                                            QWL_HWNDFOCUSSAVE);
                 HWND    hwndNewFocus = NULLHANDLE,
                         hwndTitlebar;
 
-                if (hwndFocusSave)
-                    // frame window has control with focus:
-                    hwndNewFocus = hwndFocusSave;
+                // let's check if we have an MDI frame, that is,
+                // another frame below the subframe:
+                HWND    hwndFocusSubwin = NULLHANDLE;
+
+                if (hwndFrameInBetween)
+                    // hook has already detected another sub-frame under
+                    // the mouse: use that subframe's client
+                    hwndFocusSubwin = WinWindowFromID(hwndFrameInBetween, FID_CLIENT);
+
+                if (!hwndFocusSubwin)
+                    // not found: try if maybe the main frame has saved
+                    // the focus of a subclient
+                    hwndFocusSubwin = WinQueryWindowULong(hwnd2Activate,
+                                                          QWL_HWNDFOCUSSAVE);
+                    // typical cases of this are:
+                    // 1) a dialog window with controls, one of which had the focus;
+                    // 2) a plain frame window with a client which had the focus;
+                    // 3) complex case: a main frame window with several frame subwindows.
+                    //    Best example is VIEW.EXE, which has the following hierachy:
+                    //      main frame -- main client
+                    //                      +--- another view frame with a sub-client
+                    //                      +--- another view frame with a sub-client
+                    //    hwndFocusSubwin then has one of the sub-clients, so we better
+                    //    check:
+
+                if (hwndFocusSubwin)
+                {
+                    // frame window has control or client with focus stored:
+
+                    CHAR    szFocusSaveClass[200] = "";
+
+                    // from the hwndFocusSubwin, climb up the parents tree until
+                    // we reach the main frame. If we find another frame between
+                    // hwndFocusSubwin and the main frame, activate that one as well.
+                    HWND    hwndTemp = hwndFocusSubwin,
+                            hwndMDIFrame = NULLHANDLE;
+                                    // this receives the "in-between" frame
+                    while (     (hwndTemp)
+                             && (hwndTemp != hwnd2Activate)
+                          )
+                    {
+                        WinQueryClassName(hwndTemp,
+                                          sizeof(szFocusSaveClass),
+                                          szFocusSaveClass);
+                        if (strcmp(szFocusSaveClass, "#1") == 0)
+                        {
+                            // found another frame in between:
+                            hwndMDIFrame = hwndTemp;
+                            break;
+                        }
+
+                        hwndTemp = WinQueryWindow(hwndTemp, QW_PARENT);
+                    }
+
+                    if (hwndMDIFrame)
+                    {
+                        // yes, we found another frame in between:
+                        // make that active as well
+                        hwndTitlebar = WinWindowFromID(hwndMDIFrame, FID_TITLEBAR);
+                        if (hwndTitlebar)
+                        {
+                            WinPostMsg(hwndMDIFrame,
+                                       WM_ACTIVATE,
+                                       MPFROMSHORT(TRUE),
+                                       MPFROMHWND(hwndTitlebar));
+                        }
+                    }
+
+                    hwndNewFocus = hwndFocusSubwin;
+                }
                 else
                 {
                     // frame window has no saved focus:
                     // try if we can activate the client
-                    HWND hwndClient = WinWindowFromID(G_hwndToActivate,
+                    HWND hwndClient = WinWindowFromID(hwnd2Activate,
                                                       FID_CLIENT);
                     if (hwndClient)
+                    {
+                        _Pmpf(("        giving focus 2 client"));
                         hwndNewFocus = hwndClient;
+                    }
                     else
+                    {
+                        _Pmpf(("        no client, giving focus 2 frame"));
                         // we don't even have a client:
                         // activate the frame directly
-                        hwndNewFocus = G_hwndToActivate;
+                        hwndNewFocus = hwnd2Activate;
+                    }
                 }
 
-                WinFocusChange(HWND_DESKTOP,
-                               hwndNewFocus,
-                               FC_NOSETACTIVE);
+                // now give the new window the focus
+                if (hwndNewFocus)
+                    WinFocusChange(HWND_DESKTOP,
+                                   hwndNewFocus,
+                                   FC_NOSETACTIVE);
+
                 // deactivate old window
                 WinPostMsg(hwndPreviousActive,
                            WM_ACTIVATE,
                            MPFROMSHORT(FALSE),      // deactivate
                            MPFROMHWND(hwndNewFocus));
+
                 // activate new window
-                hwndTitlebar = WinWindowFromID(G_hwndToActivate, FID_TITLEBAR);
+                hwndTitlebar = WinWindowFromID(hwnd2Activate, FID_TITLEBAR);
                 if (hwndTitlebar)
                 {
-                    WinPostMsg(G_hwndToActivate,
+                    WinPostMsg(hwnd2Activate,
                                WM_ACTIVATE,
                                MPFROMSHORT(TRUE),
                                MPFROMHWND(hwndTitlebar));
-                    // store activated window in hook data
-                    // so that the hook knows that we activated
-                    // this window
                 }
-                G_pHookData->hwndActivatedByUs = G_hwndToActivate;
+
+                // store activated window in hook data
+                // so that the hook knows that we activated
+                // this window
+                G_pHookData->hwndActivatedByUs = hwnd2Activate;
             }
         }
     }
@@ -770,6 +885,10 @@ VOID ProcessSlidingFocus(VOID)
 MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc;
+
+    // window to be activated (sliding focus)
+    static HWND     S_hwndUnderMouse = NULLHANDLE;
+    static HWND     S_hwnd2Activate = NULLHANDLE;
 
     TRY_LOUD(excpt1, NULL)
     {
@@ -957,15 +1076,17 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
              *      pointer has moved to a new frame window.
              *
              *      Parameters:
-             *      -- HWND mp1: new desktop window handle
-             *              (child of HWND_DESKTOP)
-             *      -- BOOL mp2: TRUE if mp1 is a seamless Win-OS/2
-             *              window
+             *      -- HWND mp1: window which was under the mouse
+             *              (qmsg.hwnd in hook)
+             *      -- HWND mp2: highest parent of that window,
+             *              child of PM desktop; this is probably
+             *              a WC_FRAME, but doesn't have to be
              */
 
             case XDM_SLIDINGFOCUS:
-                G_hwndToActivate = (HWND)mp1;
-                G_fIsSeamless = (BOOL)mp2;
+                S_hwndUnderMouse = (HWND)mp1;
+                S_hwnd2Activate = (HWND)mp2;
+                // DosBeep(10000, 10);
                 if (G_pHookData->HookConfig.ulSlidingFocusDelay)
                 {
                     // delayed sliding focus:
@@ -980,7 +1101,8 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                 }
                 else
                     // immediately
-                    ProcessSlidingFocus();
+                    ProcessSlidingFocus(S_hwndUnderMouse,
+                                        S_hwnd2Activate);
             break;
 
             /*
@@ -1061,7 +1183,8 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                                      (ULONG)mp1);   // timer ID
                         G_ulSlidingFocusTimer = NULLHANDLE;
 
-                        ProcessSlidingFocus();
+                        ProcessSlidingFocus(S_hwndUnderMouse,
+                                            S_hwnd2Activate);
                     break;
 
                     /*

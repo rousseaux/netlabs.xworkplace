@@ -1,6 +1,6 @@
 XWorkplace 0.9.3 README
 (W) Ulrich M”ller, July 2, 1999
-Last updated April 17, 2000, Ulrich M”ller
+Last updated May 20 2000, Ulrich M”ller
 
 
 0. CONTENTS OF THIS FILE
@@ -18,7 +18,7 @@ Last updated April 17, 2000, Ulrich M”ller
 
     Copyright (C) 1997-2000 Ulrich M”ller,
                             Christian Langanke,
-                            and others.
+                            and others (see the individual source files).
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as contained in
@@ -58,6 +58,19 @@ Last updated April 17, 2000, Ulrich M”ller
     tree. As a result, you also need to check out the WarpIN source
     code before compiling XWorkplace.
 
+    To check out the most current XWorkplace sources, use:
+        CVSROOT=:pserver:guest@www.netlabs.org:d:/netlabs.src/xworkplace
+        USER = guest
+
+    To check out the most current WarpIN sources, use:
+        CVSROOT=:pserver:guest@www.netlabs.org:d:/netlabs.src/warpin
+        USER = guest
+
+    Then do a "cvs checkout".
+
+    Alternatively, use the Netlabs Open Source Archive Client (NOSAC).
+    See http://www.netlabs.org/nosa for details.
+
     Here comes a quick-start guide; for details, please refer to
     PROGREF.INF.
 
@@ -74,17 +87,18 @@ Last updated April 17, 2000, Ulrich M”ller
            work on XWorkplace while it is installed. DLLs which
            are in use will be unlocked.
 
-           You can point XWPRUNNING to an existing XFolder 0.85
-           or XWorkplace installation tree. In that case, copy the
-           files from RELEASE to that tree, because some have been
-           updated.
+           Do one of the following:
 
-           Alternatively, copy the entire "release" subtree to some
-           new location and specify that location with XWPRUNNING
-           to start.
+           -- Install the latest XWorkplace binary WarpIN archive.
+              Set XWPRUNNING to the same directory which you
+              specified as the target path to WarpIN.
 
-           With XWPRUNNING, specify the parent directory of BIN,
-           where XFLDR.DLL shall reside, like this:
+           -- Alternatively, copy the entire "release" subtree to
+              some new location and specify that location with
+              XWPRUNNING to start.
+
+              With XWPRUNNING, specify the parent directory of BIN,
+              where XFLDR.DLL shall reside, like this:
 
                 SET XWPRUNNING=J:\Tools\XWorkplace
 
@@ -118,10 +132,10 @@ Last updated April 17, 2000, Ulrich M”ller
            must set XWPRELEASE to something, or the makefiles
            will fail, like this:
 
-                SET XWPRELEASE=K:\temp\xwp_release
+                SET XWPRELEASE=dummy
 
-        -- SET XWP_DEBUG=YES enables debug code. If XWP_DEBUG
-           is not defined, release code is produced.
+        -- SET XWP_DEBUG=YES enables debug code. By contrast,
+           if XWP_DEBUG is not defined, release code is produced.
 
     2)  Put the .EXE and .CMD files from \TOOLS somewhere on your
         PATH. These are used by the makefiles. Or add the tools

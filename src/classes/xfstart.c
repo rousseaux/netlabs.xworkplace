@@ -275,9 +275,12 @@ SOM_Scope BOOL  SOMLINK xfstup_wpMenuItemHelpSelected(XFldStartup *somSelf,
 
 /*
  *@@ wpQueryDefaultHelp:
- *      this instance method specifies the default
- *      help panel for this instance; display some
- *      help for the Startup folder.
+ *      this WPObject instance method specifies the default
+ *      help panel for an object (when "Extended help" is
+ *      selected from the object's context menu). This should
+ *      describe what this object can do in general.
+ *
+ *      We'll display some help for the Startup folder.
  */
 
 SOM_Scope BOOL  SOMLINK xfstup_wpQueryDefaultHelp(XFldStartup *somSelf,
@@ -427,9 +430,13 @@ SOM_Scope ULONG  SOMLINK xfstupM_wpclsQueryIconDataN(M_XFldStartup *somSelf,
 
 /*
  *@@ wpQueryDefaultHelp:
- *      this instance method specifies the default
- *      help panel for this instance; display some
- *      help for the Shutdown folder.
+ *      this WPObject instance method specifies the default
+ *      help panel for an object (when "Extended help" is
+ *      selected from the object's context menu). This should
+ *      describe what this object can do in general.
+ *      We must return TRUE to report successful completion.
+ *
+ *      We'll display some help for the Shutdown folder.
  */
 
 SOM_Scope BOOL  SOMLINK xfshut_wpQueryDefaultHelp(XFldShutdown *somSelf,

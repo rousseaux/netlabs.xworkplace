@@ -73,7 +73,6 @@
 #include <os2.h>
 
 // C library headers
-#include <stdlib.h>
 
 // generic headers
 #include "setup.h"                      // code generation and debugging options
@@ -279,7 +278,7 @@ SOM_Scope ULONG  SOMLINK xfsys_xwpAddXFldSystemPages(XFldSystem *somSelf,
     pcnbp->pfncbItemChanged = cfgSyslevelItemChanged;
     pcnbp->usPageStyleFlags = BKA_MAJOR;
     pcnbp->pszName = pNLSStrings->pszSyslevelPage;
-    pcnbp->ulDlgID = ID_OSD_SETTINGS_SYSLEVEL;
+    pcnbp->ulDlgID = ID_XFD_CONTAINERPAGE; // generic cnr page
     pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_SYSLEVEL;
     // give this page a unique ID (common.h), which
     // is passed to the common config.sys callbacks
@@ -318,9 +317,13 @@ SOM_Scope ULONG  SOMLINK xfsys_wpFilterPopupMenu(XFldSystem *somSelf,
 
 /*
  *@@ wpQueryDefaultHelp:
- *      this instance method specifies the default
- *      help panel for this instance; we will display
- *      some introduction to "OS/2 Kernel".
+ *      this WPObject instance method specifies the default
+ *      help panel for an object (when "Extended help" is
+ *      selected from the object's context menu). This should
+ *      describe what this object can do in general.
+ *      We must return TRUE to report successful completion.
+ *
+ *      We'll display some introduction to "OS/2 Kernel".
  *
  *@@added V0.9.0 [umoeller]
  */

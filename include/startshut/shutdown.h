@@ -199,6 +199,6 @@
      *                                                                  *
      ********************************************************************/
 
-    void _Optlink fntShutdownThread(PVOID ptiMyself);
+    void _Optlink fntShutdownThread(PTHREADINFO pti);
 
 #endif

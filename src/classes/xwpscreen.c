@@ -12,7 +12,9 @@
  *
  *      This is all new with V0.9.2 (2000-02-23) [umoeller].
  *
- *      The implementation for this class is mostly in config\screen.c.
+ *      Starting with V0.9.0, the files in classes\ contain only
+ *      the SOM interface, i.e. the methods themselves.
+ *      The implementation for this class is mostly in config\pagemage.c.
  *
  *@@added V0.9.2 (2000-02-23) [umoeller]
  *@@somclass XWPScreen xwpscr_
@@ -184,9 +186,13 @@ SOM_Scope ULONG  SOMLINK xwpscr_wpFilterPopupMenu(XWPScreen *somSelf,
 
 /*
  *@@ wpQueryDefaultHelp:
- *      this instance method specifies the default
- *      help panel for this instance; display some
- *      help for the "Screen" object.
+ *      this WPObject instance method specifies the default
+ *      help panel for an object (when "Extended help" is
+ *      selected from the object's context menu). This should
+ *      describe what this object can do in general.
+ *      We must return TRUE to report successful completion.
+ *
+ *      We'll display some help for the "Screen" object.
  */
 
 SOM_Scope BOOL  SOMLINK xwpscr_wpQueryDefaultHelp(XWPScreen *somSelf,

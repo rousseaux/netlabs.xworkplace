@@ -243,9 +243,13 @@ SOM_Scope ULONG  SOMLINK xwset_wpFilterPopupMenu(XWPSetup *somSelf,
 
 /*
  *@@ wpQueryDefaultHelp:
- *      this instance method specifies the default
- *      help panel for this instance; we will display
- *      some introduction to "XWorkplace Setup".
+ *      this WPObject instance method specifies the default
+ *      help panel for an object (when "Extended help" is
+ *      selected from the object's context menu). This should
+ *      describe what this object can do in general.
+ *      We must return TRUE to report successful completion.
+ *
+ *      We will display some introduction to "XWorkplace Setup".
  *
  *@@added V0.9.0 [umoeller]
  */

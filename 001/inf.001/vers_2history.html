@@ -32,10 +32,14 @@ to the questions whether system sounds should be removed and installed.
 <P><LI>Implemented arrow hotkeys for quick PageMage desktop switching.
 <P><LI>Added new "Paranoia" setting for disabling the more advanced XFolder menu functions,
 in case these still don't work right somewhere.
-<P><LI>Major rework of the file operations engine. Added "True delete" support
-(Shift + delete). Trash can can finally delete subfolders with read-only files.
+<P><LI>Major rework of the XWP file operations engine. Added "True delete" support
+(Shift + delete).
+Proper error handling and progress display for folders containing other objects.
+Trash can can finally delete subfolders with read-only files.
 <P><LI>Implemented confirmations for trash object destruction.
 <P><LI>Added error explanation to "Drive not ready" dialog.
+<P><LI>Updated bm-lvm.cmd by Nenad Milenkovic.
+<P><LI>Shutdown animation can now be enabled for reboots too.
 
 </UL>Miscellaneous changes:
 <UL><LI>Removed "HPFS" page from "OS/2 Kernel" since we have a "Configure" dialog on the
@@ -76,10 +80,6 @@ kept running, it kept trying to destroy that window, which resulted in random wi
 being destroyed from time to time in the WPS process... fixed that. This is maybe the
 strangest bug I've ever managed to get into a piece of software, and I only found it
 by accident. Duh.
-<P><LI>Strangely, after applying Warp 4 FP13, I got frequent WPS hangs right after
-startup. After throwing out some of the new V0.9.0 code and replacing it with the
-ugly routines from XFolder 0.85 to check whether the Desktop was ready, those
-hangs were gone. Whatever this means.
 <P><LI>Fixed a few quirks with invisible trash can directory management. Sometimes
 the trash can left lots of empty hidden directories on the drives.
 <P><LI>When "Disable startup folder once" was checked in the "Panic" dialog at startup,
@@ -94,18 +94,26 @@ Fixed.
 <P><LI>"Drivers" page in "OS/2 Kernel" didn't detect non-existent drivers. Fixed.
 <P><LI>Driver dialog for IBM1S506/DANIS506.ADD crashed if the driver had no parameters
 at all in CONFIG.SYS. Fixed.
+<P><LI>DRVF_NOPARAMS broke. Fixed.
 <P><LI>"Dos window" replacement icon was missing a detail in 32x32 resolution. Thanks,
 Alfredo whatever-your-last-name-is from Spain, for supplying a replacement.
 <P><LI>"8.Helv" font wasn't set right in "Restart WPS" confirmation dlg.
 <P><LI>PageMage kept appearing in tasklist. Fixed that, because the daemon should not
 be closed.
 <P><LI>Extended system sounds were played even if disabled in XWPSetup. Fixed.
+<P><LI>Fixed a few quirks with daemon/hook settings, which weren't always serialized
+right.
 <P><LI>Virtual keys (such as function keys) didn't work as hotkeys in VIO windows.
 For some reason, WM_CHAR doesn't have the KC_VIRTUALKEY flag set with VIO
 sessions. Fixed that.
 <P><LI>Mouse pointer was gone forever when hook was deinstalled while the mouse pointer
 was hidden. Fixed.
+<P><LI>Fixed the problems with sliding focus combo-boxes closing all the time.
+<P><LI>Fixed the problems with sliding focus and frames within frames (VIEW.EXE). You
+can now even slide between subframes of a main frame. ;-)
 <P><LI>Invoking XShutdown via launch pad broke with V0.9.0. Fixed.
+<P><LI>Fixed a few quirks at the end of shutdown, which prevented the system from displaying
+the animation and/or end box right.
 
 </UL></H6><B>XWorkplace 0.9.2 (March 24, 2000)</B>
 <H6>New features:

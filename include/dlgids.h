@@ -106,7 +106,8 @@
 #define ID_ICONXWPTRASHEMPTY   121
 #define ID_ICONXWPTRASHFILLED  122
 
-#define ID_ICONXWPSTRING       123
+#define ID_ICONXWPMEDIA        123
+#define ID_ICONXWPSTRING       124
 
 #define ID_XFLDRBITMAP         130
 
@@ -185,7 +186,8 @@
 #define ID_XFDI_PANIC_DISABLEFEATURES   265
 #define ID_XFDI_PANIC_DISABLEREPLICONS  266
 #define ID_XFDI_PANIC_REMOVEHOTKEYS     267
-#define ID_XFDI_PANIC_NOPAGEMAGE        268
+#define ID_XFDI_PANIC_DISABLEPAGEMAGE   268
+#define ID_XFDI_PANIC_DISABLEMULTIMEDIA 269
 
 /* Dialog box templates */
 #define ID_XFD_NOCONFIG                 270
@@ -203,8 +205,15 @@
 
 #define ID_XFD_FILEOPSSTATUS            293
 #define ID_XSDI_SOURCEFOLDER            294
-#define ID_XSDI_CURRENTOBJECT           295
-#define ID_XSDI_TARGETFOLDER            296
+#define ID_XSDI_SOURCEOBJECT            295
+#define ID_XSDI_SUBOBJECT               296
+#define ID_XSDI_TARGETFOLDER            297
+#define ID_XSDI_TARGETFOLDER_TXT        298
+
+// generic container page
+#define ID_XFD_CONTAINERPAGE            300
+#define ID_XFDI_CNR_CNR                 301
+#define ID_XFDI_CNR_GROUPTITLE          302
 
 /******************************************
  * "Workplace Shell" (XFldWPS)     >= 500 *
@@ -449,11 +458,6 @@
 // #define ID_XCDI_REPLFILEEXISTS          1154
 // #define ID_XCDI_REPLDRIVENOTREADY       1155
 
-// XWPSetup "Multimedia" page V0.9.3 (2000-04-29) [umoeller]
-#define ID_XCD_MULTIMEDIA               1150
-#define ID_XCD_MM_CNR                   1151
-#define ID_XCD_MM_GROUPTITLE            1152
-
 // XWPSetup "Paranoia" page (V0.9.0)
 #define ID_XCD_PARANOIA                 1160
 #define ID_XCDI_VARMENUOFFSET           1161
@@ -679,8 +683,9 @@
 #define ID_OSDI_DANIS506_U_REMOVEABLE       1675
 
 // syslevel page V0.9.2 (2000-03-08) [umoeller]
-#define ID_OSD_SETTINGS_SYSLEVEL            1900
-#define ID_OSDI_SYSLEVEL_CNR                1901
+            // uses generic cnr page
+// #define ID_OSD_SETTINGS_SYSLEVEL            1900
+// #define ID_OSDI_SYSLEVEL_CNR                1901
 
 /******************************************
  * XWPClassList (V0.9.0)                   *
@@ -759,24 +764,25 @@
 #define ID_XSD_DTP_SHUTDOWN             2125
 #define ID_SDDI_ENABLED                 2126
 #define ID_SDDI_REBOOT                  2127
-#define ID_SDDI_ANIMATE                 2128
-#define ID_SDDI_APMPOWEROFF             2129
-#define ID_SDDI_DELAY                   2130
-#define ID_SDDI_CONFIRM                 2131
-#define ID_SDDI_AUTOCLOSEVIO            2132
-#define ID_SDDI_LOG                     2133
+#define ID_SDDI_ANIMATE_SHUTDOWN        2128
+#define ID_SDDI_ANIMATE_REBOOT          2129
+#define ID_SDDI_APMPOWEROFF             2130
+#define ID_SDDI_DELAY                   2131
+#define ID_SDDI_CONFIRM                 2132
+#define ID_SDDI_AUTOCLOSEVIO            2133
+#define ID_SDDI_LOG                     2134
 
-#define ID_SDDI_CREATESHUTDOWNFLDR      2134
-#define ID_SDDI_SHOWSTARTUPPROGRESS     2135
+#define ID_SDDI_CREATESHUTDOWNFLDR      2135
+#define ID_SDDI_SHOWSTARTUPPROGRESS     2136
 
-#define ID_SDDI_STARTUPDELAY            2136
-#define ID_SDDI_STARTUPDELAYTXT         2137
-#define ID_SDDI_REBOOTEXT               2138
-#define ID_SDDI_AUTOCLOSEDETAILS        2139
-#define ID_SDDI_APMVERSION              2140
-#define ID_SDDI_APMVERSION_TXT          2141
-#define ID_SDDI_APMSYS                  2142
-#define ID_SDDI_APMSYS_TXT              2143
+#define ID_SDDI_STARTUPDELAY            2137
+#define ID_SDDI_STARTUPDELAYTXT         2138
+#define ID_SDDI_REBOOTEXT               2139
+#define ID_SDDI_AUTOCLOSEDETAILS        2140
+#define ID_SDDI_APMVERSION              2141
+#define ID_SDDI_APMVERSION_TXT          2142
+#define ID_SDDI_APMSYS                  2143
+#define ID_SDDI_APMSYS_TXT              2144
 
 // XFldDesktop "Archives" replacement page (V0.9.0)
 #define ID_XSD_DTP_ARCHIVES             2150
@@ -834,11 +840,11 @@
  * XWPKeyboard (V0.9.0)          >= 3200   *
  ******************************************/
 
-#define ID_XSD_KEYB_OBJHOTKEYS          3200
-#define ID_XSDI_HOTK_CNR                3201
+// #define ID_XSD_KEYB_OBJHOTKEYS          3200
+// #define ID_XSDI_HOTK_CNR                3201
 
-#define ID_XSD_KEYB_FUNCTIONKEYS        3220
-#define ID_XSDI_FUNCK_CNR               3221
+// #define ID_XSD_KEYB_FUNCTIONKEYS        3220
+// #define ID_XSDI_FUNCK_CNR               3221
 
 #define ID_XSD_KEYB_EDITFUNCTIONKEY     3230
 #define ID_XSDI_FUNCK_DESCRIPTION_EF    3231

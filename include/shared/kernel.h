@@ -127,6 +127,8 @@
                                 fXFldDataFile,
                                 fXFldProgramFile,
                                 fXWPSound,
+                                fXWPMouse,
+                                fXWPKeyboard,
 
             // new classes
                                 fXWPSetup,

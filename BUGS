@@ -13,21 +13,33 @@ XWorkplace features in the "XWorkplace Setup" object.
 
 Ulrich M”ller.
 
+
+SERIOUS PROBLEMS
+----------------
+
+--  "create another" for folders can lead to black-screen trap (see readme)
+
+file page:
+    -- Opening the context menu of swapper.dat and selecting the "file" strap(?)
+       causes a WPS-hangup.
+    -- Same with chkdsk.log. Apparently EA handling is buggy somewhere.
+
+
+NOT-SO-SERIOUS PROBLEMS
+-----------------------
+
 misc:
     -- install: XWPScreen no work; probably the old DLL is still in use
        when replaced (DosReplaceModule)
-    -- XShutdown and Launchpad no work: did I change "Shutdown" menu ID?
 
 folders:
     -- using WarpCenter moves icons upwards at each WPS startup
-    -- "File exists" always pops up when using "Create another" from
-       context menu
 
 status bars:
     -- hidden records are counted in total objects count (Templates folder)
 
 trash can:
-    -- close subfolders too when deleting parent folder
+    -- open subfolders are not closed when deleting parent folder
     -- sorting doesn't work right
     -- Drives page: multiple selections are not all moved
 
@@ -37,22 +49,13 @@ archiving:
        restored.
 
 startup folder:
-    -- 1) After pressing Shift during WPS-Startup and skipping the startup folder, a
-       RMB and "Start folder content" in the startup folder does not work.
     -- The range check at "XFolder Startup"'s settings book ("Setup"?) (why not
        "XWorkplace Startup"?) with "Xworkplace Startup folder" is wrong while getting
        down from 500 to 10000, but from 10000 up to 750. Why no option for 250ms?
-    -- startup folder hangs when white hard error box pops up while processing objects
-
-file page:
-    -- 2) Opening the context menu of swapper.dat and selecting the "file" strap(?)
-       causes a WPS-hangup.
-    -- Same with chkdsk.log. Apparently EA handling is buggy somewhere.
 
 OS/2 Kernel:
     -- "Help" button does nothing in "Configure" dialogs
     -- "Optimize" does nothing with CDFS.IFS
-    -- DRVF_NOPARAMS not recognized
 
 other settings pages:
     -- XWPSetup: "Undo" and "Default" don't affect newer settings (trashcan);
@@ -83,6 +86,9 @@ hook:
     -- MB3 scroll:
        -- Netscape hangs
        -- VIEW.EXE TOC not fully shown
+       -- I have found that "MB3 window scrolling" function by  XWorkplace 0.9.2
+          intercepts "MB3 double click emulation" function in Styler/2.
+            --> WM_BUTTON3BEGINDRAG?
 
     -- VIO copy conflicts with WM_CHORD; check window class
 
@@ -90,15 +96,8 @@ hook:
 
     -- function keys (F-keys, Del, Pos, ...) don't work as hotkeys when VIO has focus
 
-    -- sliding focus over MDI subframes no work (VIEW.EXE)
-
-    -- sliding focus windows appear/disappear
-
     -- Mouse object / Movement: "windows to top" and "Ignore WinOS/2" does not
        ignore WinOS/2 windows.
-
-    -- The displaying window in keyboard object / hotkeys should be a bit wider,
-       so you would not have to horizontally scroll all the time.
 
     -- I had problem with my second installation of XWp. I installed, but
        afterwards it was not possible to check "Enable global object hotkeys"
@@ -107,8 +106,6 @@ hook:
        But I reinstalled XWorkplace on a new partition (with a new Warp4, FP12, DDFix,
        ..) and the same happened. I was not able to enable the global hotkeys - unless
        I temporarily turned the sliding focus on. So it is definetely reproducable.
-
-    -- sliding focus closes drop-down box when mouse is above the box's scroll bar
 
     -- I was still able to trigger the Window list as mouse cursor bug (not as easily,
        though).  I think I did it from PMMail.

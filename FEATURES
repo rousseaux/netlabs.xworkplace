@@ -3,6 +3,9 @@ This file lists feature suggestions from XWorkplace users.
 Please don't suggest features which are already listed in
 this file. Thank you.
 
+shutdown:
+    -- reboot anim to reboot too
+
 install:
     -- give main XWP folder nicer icons
 
@@ -49,10 +52,29 @@ hook:
     -- 3) an extended Lockup (like the one from PC/2) which can be accessed through a
        shortcut (in the keyboard object).
     -- global special keys support (Win, notebook keys, Fujitsu...)
+    -- add screen edges to hot corners too
+    -- window list filtering from WarpEnhancer
 
 startup:
     -- environment var for X, Y pos of classes initialization dlg
 
 NetscDDE:
     -- prompt for whether to open a new window
+
+new classes:
+    The WPS classes FFolder and WPSAgentSam are used by Samuel Audet's
+    (<guardia@cam.org>) open util:
+
+    To be able to filter the contents of a folder using open.exe, you will need to
+    register a new folder class found in WPSExtS.dll.  This DLL also includes a fix
+    to the background open.  If you want to install both or either of them, you
+    will need OS/2 Warp 3 or higher and will need to run "reg.exe i". It is
+    preferable that the DLL be placed in a system DLL directory (for example
+    x:\os2\dll), unless you specify a directory, ex.: "reg.exe i x:\open" This is
+    the same DLL than in Hot Corners 2.0 package, but register with reg.exe just to
+    be sure everything is OK for Open. Current version of WPS Extention DLL is 1.0,
+    I will try to make all new versions backward compatible.
+
+    Note that the Include page in folder's setting pages is the solution for a
+    permanent filtering since open.exe filtering is dismissed on folder close.
 

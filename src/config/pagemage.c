@@ -92,6 +92,24 @@ PFNWP   G_pfnwpOrigStatic = NULL;
  ********************************************************************/
 
 /*
+ *@@ LoadPageMageConfig:
+ *
+ *@@added V0.9.3 (2000-05-21) [umoeller]
+ */
+
+BOOL LoadPageMageConfig(PAGEMAGECONFIG* pPgmgConfig)
+{
+    ULONG cb = sizeof(PAGEMAGECONFIG);
+    memset(pPgmgConfig, 0, sizeof(PAGEMAGECONFIG));
+    // overwrite from INI, if found
+    return (PrfQueryProfileData(HINI_USER,
+                                INIAPP_XWPHOOK,
+                                INIKEY_HOOK_PGMGCONFIG,
+                                pPgmgConfig,
+                                &cb));
+}
+
+/*
  *@@ SavePageMageConfig:
  *
  *@@added V0.9.3 (2000-04-09) [umoeller]
@@ -140,16 +158,7 @@ VOID pgmiPageMage1InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             // the notebook page is destroyed
             pcnbp->pUser = malloc(sizeof(PAGEMAGECONFIG));
             if (pcnbp->pUser)
-            {
-                ULONG cb = sizeof(PAGEMAGECONFIG);
-                memset(pcnbp->pUser, 0, sizeof(PAGEMAGECONFIG));
-                // overwrite from INI, if found
-                PrfQueryProfileData(HINI_USER,
-                                    INIAPP_XWPHOOK,
-                                    INIKEY_HOOK_PGMGCONFIG,
-                                    pcnbp->pUser,
-                                    &cb);
-            }
+                LoadPageMageConfig(pcnbp->pUser);
 
             // make backup for "undo"
             pcnbp->pUser2 = malloc(sizeof(PAGEMAGECONFIG));
@@ -251,6 +260,7 @@ MRESULT pgmiPageMage1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                lSliderIndex + 1,
                                FALSE);      // unsigned
 
+            LoadPageMageConfig(pcnbp->pUser);
             pPgmgConfig->ptlMaxDesktops.x = lSliderIndex + 1;
             ulPgmgChangedFlags = PGMGCFG_REPAINT | PGMGCFG_REFORMAT;
         break; }
@@ -265,43 +275,52 @@ MRESULT pgmiPageMage1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                lSliderIndex + 1,
                                FALSE);      // unsigned
 
+            LoadPageMageConfig(pcnbp->pUser);
             pPgmgConfig->ptlMaxDesktops.y = lSliderIndex + 1;
             ulPgmgChangedFlags = PGMGCFG_REPAINT | PGMGCFG_REFORMAT;
         break; }
 
         case ID_SCDI_PGMG1_TITLEBAR:
+            LoadPageMageConfig(pcnbp->pUser);
             pPgmgConfig->fShowTitlebar = ulExtra;
             ulPgmgChangedFlags = PGMGCFG_REFORMAT;
         break;
 
         case ID_SCDI_PGMG1_PRESERVEPROPS:
+            LoadPageMageConfig(pcnbp->pUser);
             pPgmgConfig->fPreserveProportions = ulExtra;
             ulPgmgChangedFlags = PGMGCFG_REFORMAT;
         break;
 
         case ID_SCDI_PGMG1_STAYONTOP:
+            LoadPageMageConfig(pcnbp->pUser);
             pPgmgConfig->fStayOnTop = ulExtra;
         break;
 
         case ID_SCDI_PGMG1_FLASHTOTOP:
+            LoadPageMageConfig(pcnbp->pUser);
             pPgmgConfig->fFlash = ulExtra;
         break;
 
         case ID_SCDI_PGMG1_SHOWWINDOWS:
+            LoadPageMageConfig(pcnbp->pUser);
             pPgmgConfig->fMirrorWindows = ulExtra;
             ulPgmgChangedFlags = PGMGCFG_REPAINT;
         break;
 
         case ID_SCDI_PGMG1_SHOWWINTITLES:
+            LoadPageMageConfig(pcnbp->pUser);
             pPgmgConfig->fShowWindowText = ulExtra;
             ulPgmgChangedFlags = PGMGCFG_REPAINT;
         break;
 
         case ID_SCDI_PGMG1_CLICK2ACTIVATE:
+            LoadPageMageConfig(pcnbp->pUser);
             pPgmgConfig->fClick2Activate = ulExtra;
         break;
 
         case ID_SCDI_PGMG1_ARROWHOTKEYS:
+            LoadPageMageConfig(pcnbp->pUser);
             pPgmgConfig->fEnableArrowHotkeys = ulExtra;
             (pcnbp->pfncbInitPage)(pcnbp, CBI_ENABLE);
         break;
@@ -310,7 +329,9 @@ MRESULT pgmiPageMage1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case ID_SCDI_PGMG1_HOTKEYS_SHIFT:
         case ID_SCDI_PGMG1_HOTKEYS_ALT:
         {
-            ULONG ulOldKeyShift = pPgmgConfig->ulKeyShift;
+            ULONG ulOldKeyShift;
+            LoadPageMageConfig(pcnbp->pUser);
+            ulOldKeyShift = pPgmgConfig->ulKeyShift;
 
             pPgmgConfig->ulKeyShift = 0;
             if (winhIsDlgItemChecked(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_HOTKEYS_CTRL))
@@ -336,6 +357,7 @@ MRESULT pgmiPageMage1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
          */
 
         case DID_DEFAULT:
+            LoadPageMageConfig(pcnbp->pUser);
             pPgmgConfig->ptlMaxDesktops.x = 3;
             pPgmgConfig->ptlMaxDesktops.y = 2;
             pPgmgConfig->fStayOnTop = FALSE;
@@ -363,6 +385,7 @@ MRESULT pgmiPageMage1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         {
             PAGEMAGECONFIG* pBackup = (PAGEMAGECONFIG*)pcnbp->pUser2;
 
+            LoadPageMageConfig(pcnbp->pUser);
             pPgmgConfig->ptlMaxDesktops.x = pBackup->ptlMaxDesktops.x;
             pPgmgConfig->ptlMaxDesktops.y = pBackup->ptlMaxDesktops.y;
             pPgmgConfig->fShowTitlebar = pBackup->fShowTitlebar;
@@ -549,16 +572,7 @@ VOID pgmiPageMage2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             // the notebook page is destroyed
             pcnbp->pUser = malloc(sizeof(PAGEMAGECONFIG));
             if (pcnbp->pUser)
-            {
-                ULONG cb = sizeof(PAGEMAGECONFIG);
-                memset(pcnbp->pUser, 0, sizeof(PAGEMAGECONFIG));
-                // overwrite from INI, if found
-                PrfQueryProfileData(HINI_USER,
-                                    INIAPP_XWPHOOK,
-                                    INIKEY_HOOK_PGMGCONFIG,
-                                    pcnbp->pUser,
-                                    &cb);
-            }
+                LoadPageMageConfig(pcnbp->pUser);
 
             // make backup for "undo"
             pcnbp->pUser2 = malloc(sizeof(PAGEMAGECONFIG));
@@ -621,6 +635,7 @@ MRESULT pgmiPageMage2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case DID_DEFAULT:
         {
             PAGEMAGECONFIG* pPgmgConfig = (PAGEMAGECONFIG*)pcnbp->pUser;
+            LoadPageMageConfig(pcnbp->pUser);
             pPgmgConfig->lcNormal = RGBCOL_DARKBLUE;
             pPgmgConfig->lcCurrent = RGBCOL_BLUE;
             pPgmgConfig->lcDivider = RGBCOL_GRAY;
@@ -647,6 +662,7 @@ MRESULT pgmiPageMage2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             PAGEMAGECONFIG* pPgmgConfig = (PAGEMAGECONFIG*)pcnbp->pUser;
             PAGEMAGECONFIG* pBackup = (PAGEMAGECONFIG*)pcnbp->pUser2;
 
+            LoadPageMageConfig(pcnbp->pUser);
             pPgmgConfig->lcNormal = pBackup->lcNormal;
             pPgmgConfig->lcCurrent = pBackup->lcCurrent;
             pPgmgConfig->lcDivider = pBackup->lcDivider;

@@ -1,0 +1,46 @@
+<HTML NOSUBLINKS="config"  WIDTH=70% XPOS=right>
+<HEAD>
+<TITLE>Problems</TITLE>
+</HEAD>
+<!-- this is all new with V0.9.3 -->
+<BODY>
+<B>Classes: XWPScreen</B>
+<HR>
+The following is from the original PageMage documentation by Carlos Ugarte
+and lists known problems:
+
+<UL>
+<P>
+<LI>Some IAK applications (NR/2, FTP-PM most notably)
+cause very lengthy delays in PageMage's operation.  I have found the "bug",
+but don't really consider it a bug of PageMage.  If WinQueryWindowTitle()
+API is called on these windows, it takes an eternity to return (on the IAK
+windows).  This call was made by PageMage whenever it switches desktops,
+and whenever it must draw the window.  The number of times this call is
+being made has been minimized, but you may still experience some delays
+- whenever PageMage starts up (if IAK apps are running) or whenever
+IAK apps are started (if PageMage) is running.  Thanks to Giles Orr
+(giles@gold.interlog.com) and Matteo Castelli (piu1673@cdc8g5.cdc.polimi.it)
+for taking the time to determine just what was causing the delay :-).
+<P>
+<LI>If you drag a window by its Titlebar and try to move
+it to another desktop, it "doesn't move".  Actually, this is not true, PageMage
+will flip to the new desktop, but the screen does not reflect this.
+ What happens is that whenever you move a window (by dragging on its Titlebar,
+or selecting move from the System Menu), PM disables any output to the screen.
+ Tejaswi Kasturi (kasturi@ccsf.caltech.edu) suggested using <A HREF="032_L2_FeelX.html">FeelX
+</A>for this purpose.  Supposedly, this problem no longer appears after
+doing so.
+<P>
+<LI>PageMage causes TaskBar 2.5 to function improperly.  Thanks to Peter Grashoff (grashoff@mmm.xs4all.nl)
+for pointing this out.
+<P>
+<LI>Problems with WebExplorer.  I now run WebEx once in
+a while, and now most of the problems are gone.  The PageMage window
+may not be 100% correct, but otherwise, everything seems ok.
+<P>
+<LI>On starting a new program/window, if you quickly switch
+desktops, PageMage may get confused.  This happens seldom, but it
+is most likely to occur with (you guessed it) WebExplorer (aaargh)...
+</BODY>
+</HTML>

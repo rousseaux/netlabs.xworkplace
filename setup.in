@@ -17,11 +17,11 @@
 #           CONFIG.SYS.
 #
 #           As a result, there is NORMALLY NO NEED to modify this
-#           file. Set external variables instead (see MAKE.CMD for
-#           a list).
+#           file. Set external variables instead. See readme.txt
+#           and PROGREF.INF for a detailed listing.
 #
-#       After including this file, you can use the following macros,
-#       which will all be properly set for debug or non-debug mode
+#       After including this file, the makefiles can use the following
+#       macros, which will all be properly set for debug or non-debug mode
 #       and with the include directories set properly:
 #
 #       $(CC_DLL)    compile DLL code (multi-threaded)
@@ -35,6 +35,16 @@
 !ifndef PROJECT_BASE_DIR
 !error in setup.in: PROJECT_BASE_DIR must be set before including "setup.in". Terminating.
 !endif
+
+HELPERS_OUTPUT_DIR = $(PROJECT_BASE_DIR)\bin
+
+# ANIMATED MOUSE POINTERS
+# -----------------------
+
+# If the following is uncommented, the makefiles will compile the
+# animated mouse pointers as well.
+
+# SET ANIMATED_MOUSE_POINTERS=YES
 
 # DEBUG CODE
 # ----------
@@ -104,6 +114,7 @@ XWPRELEASE = K:\projects\distrib\XWorkplace\current
 
 XWPRELEASE_MAIN = $(XWPRELEASE)\kernel
 XWPRELEASE_NLS = $(XWPRELEASE)\$(XWP_LANG_CODE)
+XWPRELEASE_MAP = $(XWPRELEASE)\map
 
 # HELPERS DIRECTORIES
 # -------------------
@@ -188,7 +199,13 @@ PRECH = $(TEMP)
 # No need to change this. Change the variables above instead.
 #
 !ifndef MAINMAKERUNNING
-PROJECT_INCLUDE = $(PROJECT_BASE_DIR)\include;$(PROJECT_BASE_DIR)\include\classes;$(HELPERS_BASE)\include
+!ifdef SES_MAIN_DIR
+# SES defined:
+PROJECT_INCLUDE = $(PROJECT_BASE_DIR)\include;$(PROJECT_BASE_DIR)\include\classes;$(HELPERS_BASE)\include;$(SES_MAIN_DIR)\h;$(STL_DIR)
+!else
+# SES not defined:
+PROJECT_INCLUDE = $(PROJECT_BASE_DIR)\include;$(PROJECT_BASE_DIR)\include\classes;$(HELPERS_BASE)\include;$(STL_DIR)
+!endif
 !endif
 
 
@@ -204,15 +221,16 @@ PROJECT_INCLUDE = $(PROJECT_BASE_DIR)\include;$(PROJECT_BASE_DIR)\include\classe
 
 CC = error_in_setup_in_do_not_use_CC_directly
 
+# CC_WARNINGS  = /w3 /Wcmp+ /Wcnd- /Wcns+ /Wcnv+ /Wgen /Wcns /Wcpy /Wobs /Word- /Wpro /Wrea /Wret /Wtru
 CC_WARNINGS  = /w3 /Wcmp+ /Wcnd- /Wcns+ /Wcnv+ /Wgen /Wcns /Wcpy /Wobs /Word- /Wpro /Wrea /Wret /Wtru
 # /Wuse+ /Wuni+
 
 # compiler options which are the same with debug and release code
-CC_SHARED    = icc /I$(PROJECT_INCLUDE) $(CC_WARNINGS) /c /gd- /gi+ /q+ /se /ss /tn+
+CC_SHARED    = icc /I$(PROJECT_INCLUDE) /c /gd- /gi+ /q+ /se /ss /tn+
 
 !ifdef XWP_DEBUG
 # debug code
-CC_TEMP      = $(CC_SHARED) /o- /oi- /ol- /ti+ /D__DEBUG__=1
+CC_TEMP      = $(CC_SHARED) /o- /oi- /ol- /gh /ti+ /D__DEBUG__=1
 # /tm+
 !else
 # release code
@@ -220,16 +238,18 @@ CC_TEMP      = $(CC_SHARED) /o+ /oi- /ol-
 !endif
 
 # DLL code (multi-threaded)
-CC_DLL = $(CC_TEMP) /ge- /gm+
+CC_DLL = $(CC_TEMP) /ge- /gm+ $(CC_WARNINGS)
 # EXE code (multi-threaded)
-CC_EXE_MT = $(CC_TEMP) /ge+ /gm+
+CC_EXE_MT = $(CC_TEMP) /ge+ /gm+ $(CC_WARNINGS)
 # EXE code (single-threaded)
-CC_EXE_ST = $(CC_TEMP) /ge+ /gm-
+CC_EXE_ST = $(CC_TEMP) /ge+ /gm- $(CC_WARNINGS)
 
 # compiler options for WarpIN helpers;
 # this is necessary because WarpIN uses a different compiler
 # setup to compile the helpers
 CC_HELPERS=$(CC_EXE_MT)
+CCPP_HELPERS= $(CC_TEMP) /ge+ /gm+ /w1
+# CCPP_HELPERS=$(CC_EXE_MT)
 # V0.9.3 (2000-04-17) [umoeller]
 
 # /oi- /w2 /fi+ /Tn+
@@ -245,6 +265,7 @@ CC_HELPERS=$(CC_EXE_MT)
 #           for the .OBJ file. /ge+ is only needed when the object
 #           file contains a main() function. For libraries to be
 #           used either with EXE's or DLL's, use /ge+.
+# /gh+: generate profiling hooks for VAC profiler
 # /gi+: fast integer execution
 # /Gl+: remove unreferenced functions (when comp.+link in 1 step)
 # /gm+: multithread libraries
@@ -293,7 +314,7 @@ CC_HELPERS=$(CC_EXE_MT)
 LINK_BASE = ilink /nologo /noe /map:$(MODULESDIR)\$(@B).map /linenumbers
 
 !ifdef XWP_DEBUG
-LINK =  $(LINK_BASE) /linenumbers /debug
+LINK =  $(LINK_BASE) /debug
 !else
 LINK =  $(LINK_BASE) /exepack:2 /packcode /packdata
 # /optfunc

@@ -15,17 +15,16 @@ introduction.
 
 <UL>
   <LI>
-<CODE>INSTxxx.MSG</CODE> (with &quot;xxx&quot; being your country code, which you need to
-change) is -- I'm sorry -- in a proprietary format. It's not difficult
-to understand though: The file is used by <CODE>XHELP.CMD</CODE> (in the XWorkplace
-package), which is capable of extracting single text messages in
-between the <CODE>&lt;TOPIC&gt;</CODE>; and <CODE>&lt;/TOPIC&gt;</CODE>
+<CODE>INSTxxx.MSG</CODE> (with &quot;xxx&quot; being your country code)
+was used for installation messages before the WarpIN installer was used.
+Even though the old <CODE>INSTALL.CMD</CODE> still works for XWorkplace,
+<B>it really doesn't make much sense to translate this message file any more.</B>
+
+<P>The file was used by <CODE>XHELP.CMD</CODE> (in the XWorkplace
+package, taken from my CommandPak), which is capable of extracting single
+text messages in between the <CODE>&lt;TOPIC&gt;</CODE>; and <CODE>&lt;/TOPIC&gt;</CODE>
 tags in this file. The text
 between these tags is then displayed on the screen.
-<P>
-<B>Please note that this file will disappear in a future release of XWorkplace, as soon
-as the WarpIn installer is functioning, which I am currently working on. See my WWW
-homepage for details.</B>
 <P>
 If you still wish to translate this file,
 what you need to do here is simply translate all the text which follows
@@ -52,12 +51,23 @@ don't worry: you only have to change the strings on top of the file,
 which contain all the language-dependent things. Be careful with the quotes.
 Do not change anything else, because XWorkplace relies on it.
 
+<P>This REXX script now gets called by WarpIN after all files have been unpacked.
+Also, this gets called when the "Recreate config folder" button is pressed on the
+"Objects" page in the "XWorkplace Setup" object.
+
+<P><LI>
+Similarly, <CODE>INSTLxxx.CMD</CODE> creates the default XWorkplace installation
+objects (the "XWorkplace" folder plus all the new settings objects).
+
+<P>This REXX script now gets called by WarpIN after all files have been unpacked.
 
 <P><LI>
 <CODE>SOUNDxxx.CMD</CODE> is the REXX script which creates the neccessary INI
 entries for having the new XWorkplace system sounds in your &quot;Sound&quot;
 object. Only change the strings at the top of the file to your language.
 
+<P>This REXX script gets called from the "Features" page in the "XWorkplace Setup"
+object when extended system sounds are enabled.
 
 <P><LI>
 <CODE>XFLDRxxx.SGS</CODE> is a Warp 4 SmartGuide script to display the &quot;Welcome&quot;
@@ -66,7 +76,6 @@ window after XWorkplace has been installed and the WPS has been restarted.
 has IBM developed good software, but then lets it rot), but it seems
 to be some HTML-like syntax, except that <B>the tags MUST be in
 lower case,</B> or they won't work.
-
 
 </UL>
 </BODY>

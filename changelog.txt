@@ -21,6 +21,15 @@ utility handy to be able to search for strings like "V0.9.0".
 \OS2\APPS\PMSEEK.EXE should do also.
 
 
+Changes since V0.9.0
+====================
+
+    Sorry, I have lost track about the changes in the dialog
+    resources. I guess more than 70% of the dialogs have
+    changed since XFolder 0.85, so it really doesn't make
+    much sense tracking the changes here any more.
+
+
 Changes for V0.9.0
 ==================
 

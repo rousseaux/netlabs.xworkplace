@@ -823,9 +823,12 @@ SOM_Scope BOOL  SOMLINK xtrc_wpMenuItemHelpSelected(XWPTrashCan *somSelf,
 
 /*
  *@@ wpQueryDefaultHelp:
- *      this instance method specifies the default
- *      help panel for this instance; display some
- *      help for the trash can.
+ *      this WPObject instance method specifies the default
+ *      help panel for an object (when "Extended help" is
+ *      selected from the object's context menu). This should
+ *      describe what this object can do in general.
+ *
+ *      We'll display some help for the trash can.
  */
 
 SOM_Scope BOOL  SOMLINK xtrc_wpQueryDefaultHelp(XWPTrashCan *somSelf,
@@ -2033,9 +2036,13 @@ SOM_Scope BOOL  SOMLINK xtro_wpMenuItemHelpSelected(XWPTrashObject *somSelf,
 
 /*
  *@@ wpQueryDefaultHelp:
- *      this instance method specifies the default
- *      help panel for this instance; display some
- *      help for the trash object.
+ *      this WPObject instance method specifies the default
+ *      help panel for an object (when "Extended help" is
+ *      selected from the object's context menu). This should
+ *      describe what this object can do in general.
+ *      We must return TRUE to report successful completion.
+ *
+ *      We'll display some help for the trash object.
  */
 
 SOM_Scope BOOL  SOMLINK xtro_wpQueryDefaultHelp(XWPTrashObject *somSelf,

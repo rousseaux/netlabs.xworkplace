@@ -1,0 +1,118 @@
+
+/*
+ * anand.idl  - XWPAnimouse
+ *
+ */
+
+#ifndef anand_idl
+#define anand_idl
+
+#include "wpdataf.idl"
+#include <somcls.idl>
+
+interface M_XWPAnimouse;
+
+interface XWPAnimouse : WPDataFile
+{
+   // neue Methoden
+   VOID  wpRefreshFileIcon();
+   ULONG wpGetAnimationTimeframeValue();
+   BOOL  wpSetAnimationTimeframeValue( in ULONG ulNewValue);
+   ULONG InsertAnimationPage1( in HWND hwndDlg );
+   ULONG InsertAnimationPage2( in HWND hwndDlg );
+   ULONG InsertAnimationPage3( in HWND hwndDlg );
+
+   #ifdef __SOMIDL__
+   implementation
+   {
+      releaseorder:
+         wpRefreshFileIcon,
+         wpGetAnimationTimeframeValue,
+         wpSetAnimationTimeframeValue,
+         InsertAnimationPage1,
+         InsertAnimationPage2,
+         InsertAnimationPage3;
+
+      /*
+       * Class Modifiers
+       */
+      functionprefix = and_;
+      externalprefix = and_;
+      local;
+      majorversion   = 1;
+      minorversion   = 2;
+      filestem       = anand;
+      metaclass      = M_XWPAnimouse;
+      callstyle      = oidl;
+      dllname        = "xfldr.dll";
+
+      /*
+       * Internal Instance Variables
+       */
+      PICONINFO       piconinfo;
+      HPOINTER        hptr;
+      ULONG           ulDataLen;
+      PVOID           pfs3;
+      ULONG           ulLastStyle;
+
+      HPOINTER       *phpointerTable;
+      ULONG          *pulTimeoutTable;
+      ULONG           ulAnimationCount;
+
+      /*
+       * Method Modifiers
+       */
+
+      wpAddFile1Page:                  override;
+      wpAddObjectGeneralPage:          override;
+      wpObjectReady:                   override;
+      wpQueryIcon:                     override;
+      wpQueryIconData:                 override;
+      wpSetIcon:                       override;
+      wpSetIconData:                   override;
+
+      wpModifyPopupMenu:               override;
+      wpFilterPopupMenu:               override;
+      wpMenuItemSelected:              override;
+      wpMenuItemHelpSelected:          override;
+
+      wpInitData:                      override;
+      wpUnInitData:                    override;
+
+   };
+   #endif /* __SOMIDL__ */
+};
+
+interface M_XWPAnimouse : M_WPDataFile
+{
+   #ifdef __SOMIDL__
+   implementation
+   {
+
+      /*
+       * Class Modifiers
+       */
+      functionprefix = andM_;
+      externalprefix = andM_;
+      local;
+      majorversion   = 1;
+      minorversion   = 2;
+      filestem       = anand;
+      callstyle      = oidl;
+      dllname        = "xfldr.dll";
+
+      /*
+       * Method Modifiers
+       */
+
+      wpclsQueryStyle:                 override;
+      wpclsQueryInstanceFilter:        override;
+      wpclsQueryInstanceType:          override;
+      wpclsQueryTitle:                 override;
+      wpclsInitData:                   override;
+      wpclsUnInitData:                 override;
+   };
+   #endif /* __SOMIDL__ */
+};
+#endif  /* anand_idl */
+

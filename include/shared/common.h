@@ -197,87 +197,13 @@
 
     // The following are constant (I hope) help panel IDs
     // for the various XWorkplace menu items, settings pages,
-    // and dialog items therein. Many of these have changed
-    // with V0.9.0.
+    // and dialog items therein.
 
-    #define ID_XMH_VARIABLE         2
-    #define ID_XMH_CONFIGFOLDER     3
-    #define ID_XMH_REFRESH          4
-    #define ID_XMH_SNAPTOGRID       5
-    #define ID_XMH_COPYFILENAME     6
-    #define ID_XMH_XSHUTDOWN        7
-    #define ID_XMH_RESTARTWPS       8
-
-    #define ID_XSH_SETTINGS1                 9
-    #define ID_XSH_SETTINGS_REMOVEMENUS      10
-    #define ID_XSH_SETTINGS_ADDMENUS         11
-    #define ID_XSH_SETTINGS_PARANOIA         15
-    #define ID_XSH_SETTINGS_DTP_MENUITEMS    16
-    #define ID_XSH_SETTINGS_DTP_SHUTDOWN     17     // XShutdown
-    #define ID_XSH_SETTINGS_FLDRSORT         18
-    #define ID_XSH_SETTINGS_FLDR1            19
-    #define ID_XSH_SETTINGS_SB2              20
-    #define ID_XSH_SETTINGS_WPSCLASSES       21
-    #define ID_XSH_SETTINGS_OBJINTERNALS     22
-    #define ID_XSH_SETTINGS_KERNEL1          23
-    #define ID_XSH_SETTINGS_KERNEL2          24
-    #define ID_XMH_STARTUPSHUTDOWN           25
-    #define ID_XMH_FOLDERCONTENT             26
-    #define ID_XSH_SETTINGS_HPFS             27
-    #define ID_XSH_SETTINGS_FAT              27     // same page as HPFS
-    #define ID_XSH_SETTINGS_CFGM             28     // "Config folder menu items"
-    #define ID_XSH_SETTINGS_FILEOPS          29     // "File operations"
-    #define ID_XSH_SETTINGS_WPS              30
-    #define ID_XSH_SETTINGS_ERRORS           31
-    #define ID_XSH_SETTINGS_SYSPATHS         32     // V0.9.0: "System paths"
-    #define ID_XSH_SETTINGS_FILETYPES        33     // V0.9.0: "File Types"
-    #define ID_XSH_SETTINGS_TRASHCAN         36     // V0.9.0: XWPTrashCan (two pages)
-    #define ID_XSH_SETTINGS_XC_INFO          38     // V0.9.0: XWPSetup "Status" page
-    #define ID_XSH_SETTINGS_XC_FEATURES      39     // V0.9.0: XWPSetup "Features" page
-    #define ID_XSH_SETTINGS_FILEPAGE1        40     // V0.9.0: file-system objects "File" page replacment
-    #define ID_XSH_SETTINGS_FILEPAGE2        41     // V0.9.1 (2000-01-22) [umoeller]
-    #define ID_XSH_SETTINGS_DISKDETAILS      42     // V0.9.0: disk "Details" replacement
-    #define ID_XSH_SETTINGS_DTP_STARTUP      43     // V0.9.0: disk "Details" replacement
-    #define ID_XSH_SETTINGS_DTP_ARCHIVES     44     // V0.9.0: disk "Details" replacement
-    #define ID_XSH_SETTINGS_XFLDSTARTUP      45     // V0.9.0: startup folder settings page
-    #define ID_XSH_SETTINGS_PGMFILE_MODULE   46     // V0.9.0: progfile "Module" page
-    #define ID_XSH_SETTINGS_CLASSLIST        47     // V0.9.0: XWPClassList settings page
-    #define ID_XSH_XFLDWPS                   48     // V0.9.0: default help for XFldWPS
-    #define ID_XSH_XFLDSYSTEM                49     // V0.9.0: default help for XFldSystem
-    #define ID_XSH_XWPSETUP                  50     // V0.9.0: default help for XWPSetup
-    #define ID_XSH_SETTINGS_OBJECTS          51     // V0.9.0: XWPSetup "Objects" page
-    #define ID_XSH_SETTINGS_DRIVERS          52     // V0.9.0: XFldSystem "Drivers" page
-    #define ID_XSH_DRIVER_HPFS               53     // V0.9.0: XFldSystem "Drivers" page
-    #define ID_XSH_DRIVER_CDFS               54     // V0.9.0: XFldSystem "Drivers" page
-    #define ID_XSH_DRIVER_S506               55     // V0.9.0: XFldSystem "Drivers" page
-    #define ID_XSH_KEYB_OBJHOTKEYS           56     // V0.9.0: XWPKeyboard "Object hotkeys" page
-    #define ID_XSH_MOUSE_MOVEMENT            57     // V0.9.0: XWPMouse "Movement" page 1
-    #define ID_XSH_MOUSEMAPPINGS2            58     // V0.9.1: XWPMouse "Mappings" page 2
-    #define ID_XSH_XWPSCREEN                 59     // V0.9.2: default help for XWPScreen
-    #define ID_XSH_MOUSE_CORNERS             60     // V0.9.2: XWPMouse "Movement" page 2
-    #define ID_XSH_SETTINGS_TRASH_DRIVES     61     // V0.9.2: XWPTrashCan "Drives" page
-    #define ID_XSH_SETTINGS_SYSLEVEL         62     // V0.9.3: XFldSystem "Syslevel" page
-    #define ID_XSH_SETTINGS_PAGEMAGE1        63     // V0.9.3: XWPScreen "PageMage" page 1
-    #define ID_XSH_SETTINGS_PAGEMAGE2        64     // V0.9.3: XWPScreen "PageMage" page 2
-                // 65 is for "Mouse actions" descriptions linked to from the above pages
-    #define ID_XSH_SETTINGS_FUNCTIONKEYS     66     // V0.9.3: XWPKeyboard "Function keys" page
-                // 67 is for the "edit function key" dlg
-    #define ID_XSH_SETTINGS_XWPSTRING        68     // V0.9.3: XWPString page
-    #define ID_XSH_MEDIA_DEVICES             69     // V0.9.3: XWPMedia "Devices" page
-    #define ID_XSH_MEDIA_CODECS              70     // V0.9.3: XWPMedia "Codecs" page
-    #define ID_XSH_MEDIA_IOPROCS             71     // V0.9.3: XWPMedia "IOProcs" page
-
-    // "subpanels" for pages with context-sensitive help
-    // #define ID_XSH_SETTINGS_REMOVEMENUS_SUB  81+19  // "Find" item on "Remove menus" page
-    // #define ID_XSH_SETTINGS_ADDMENUS_SUB     98+19
-    // #define ID_XSH_SETTINGS_PARANOIA_SUB     110+19
-    // #define ID_XSH_SETTINGS_DTP1_SUB         121+19
-    // #define ID_XSH_SETTINGS_DTP_SHUTDOWN_SUB 127+19
-    // #define ID_XSH_SETTINGS_CFGM_SUB         135+19
-    // #define ID_XSH_SETTINGS_FILEOPS_SUB      142+19
+    // All help panel IDs have been changed with V0.9.3 (2000-05-04) [umoeller]
+    // because I've rearranged the help HTML files.
 
     // help panel IDs for various dlg boxes
-    #define ID_XFH_BORED            74
+    #define ID_XFH_BORED            2
     #define ID_XFH_NOCONFIG         (ID_XFH_BORED+1)
     #define ID_XFH_NOOBJECT         (ID_XFH_BORED+2)
     #define ID_XFH_LIMITREACHED     (ID_XFH_BORED+3)
@@ -289,7 +215,84 @@
     #define ID_XFH_TITLECLASH       (ID_XFH_BORED+9)
     #define ID_XFH_CLOSEVIO         (ID_XFH_BORED+10)
 
-    #define ID_XFH_SELECTSOME       121
+    #define ID_XFH_SELECTSOME       110
+
+    #define ID_XMH_VARIABLE         12
+    #define ID_XMH_CONFIGFOLDER     13
+    #define ID_XMH_REFRESH          14
+    #define ID_XMH_SNAPTOGRID       15
+    #define ID_XMH_COPYFILENAME     16
+    #define ID_XMH_XSHUTDOWN        17
+    #define ID_XMH_RESTARTWPS       18
+
+    #define ID_XSH_SETTINGS1                 19
+    #define ID_XSH_SETTINGS_REMOVEMENUS      20
+    #define ID_XSH_SETTINGS_ADDMENUS         21
+    #define ID_XSH_SETTINGS_PARANOIA         25
+    #define ID_XSH_SETTINGS_DTP_MENUITEMS    26
+    #define ID_XSH_SETTINGS_DTP_SHUTDOWN     27     // XShutdown
+    #define ID_XSH_SETTINGS_FLDRSORT         28
+    #define ID_XSH_SETTINGS_FLDR1            29
+    #define ID_XSH_SETTINGS_SB2              30
+    #define ID_XSH_SETTINGS_WPSCLASSES       31
+    #define ID_XSH_SETTINGS_OBJINTERNALS     32
+    #define ID_XSH_SETTINGS_KERNEL1          33
+    #define ID_XSH_SETTINGS_KERNEL2          34
+    #define ID_XMH_STARTUPSHUTDOWN           35
+    #define ID_XMH_FOLDERCONTENT             36
+    #define ID_XSH_SETTINGS_HPFS             37
+    #define ID_XSH_SETTINGS_FAT              37     // same page as HPFS
+    #define ID_XSH_SETTINGS_CFGM             38     // "Config folder menu items"
+    #define ID_XSH_SETTINGS_FILEOPS          39     // "File operations"
+    #define ID_XSH_SETTINGS_WPS              40
+    #define ID_XSH_SETTINGS_ERRORS           41
+    #define ID_XSH_SETTINGS_SYSPATHS         42     // V0.9.0: "System paths"
+    #define ID_XSH_SETTINGS_FILETYPES        43     // V0.9.0: "File Types"
+    #define ID_XSH_SETTINGS_TRASHCAN         46     // V0.9.0: XWPTrashCan (two pages)
+    #define ID_XSH_SETTINGS_XC_INFO          48     // V0.9.0: XWPSetup "Status" page
+    #define ID_XSH_SETTINGS_XC_FEATURES      49     // V0.9.0: XWPSetup "Features" page
+    #define ID_XSH_SETTINGS_FILEPAGE1        50     // V0.9.0: file-system objects "File" page replacment
+    #define ID_XSH_SETTINGS_FILEPAGE2        51     // V0.9.1 (2000-01-22) [umoeller]
+    #define ID_XSH_SETTINGS_DISKDETAILS      52     // V0.9.0: disk "Details" replacement
+    #define ID_XSH_SETTINGS_DTP_STARTUP      53     // V0.9.0: disk "Details" replacement
+    #define ID_XSH_SETTINGS_DTP_ARCHIVES     54     // V0.9.0: disk "Details" replacement
+    #define ID_XSH_SETTINGS_XFLDSTARTUP      55     // V0.9.0: startup folder settings page
+    #define ID_XSH_SETTINGS_PGMFILE_MODULE   56     // V0.9.0: progfile "Module" page
+    #define ID_XSH_SETTINGS_CLASSLIST        57     // V0.9.0: XWPClassList settings page
+    #define ID_XSH_XFLDWPS                   58     // V0.9.0: default help for XFldWPS
+    #define ID_XSH_XFLDSYSTEM                59     // V0.9.0: default help for XFldSystem
+    #define ID_XSH_XWPSETUP                  60     // V0.9.0: default help for XWPSetup
+    #define ID_XSH_SETTINGS_OBJECTS          61     // V0.9.0: XWPSetup "Objects" page
+    #define ID_XSH_SETTINGS_DRIVERS          62     // V0.9.0: XFldSystem "Drivers" page
+    #define ID_XSH_DRIVER_HPFS               63     // V0.9.0: XFldSystem "Drivers" page
+    #define ID_XSH_DRIVER_CDFS               64     // V0.9.0: XFldSystem "Drivers" page
+    #define ID_XSH_DRIVER_S506               65     // V0.9.0: XFldSystem "Drivers" page
+    #define ID_XSH_KEYB_OBJHOTKEYS           66     // V0.9.0: XWPKeyboard "Object hotkeys" page
+    #define ID_XSH_MOUSE_MOVEMENT            67     // V0.9.0: XWPMouse "Movement" page 1
+    #define ID_XSH_MOUSEMAPPINGS2            68     // V0.9.1: XWPMouse "Mappings" page 2
+    #define ID_XSH_XWPSCREEN                 69     // V0.9.2: default help for XWPScreen
+    #define ID_XSH_MOUSE_CORNERS             70     // V0.9.2: XWPMouse "Movement" page 2
+    #define ID_XSH_SETTINGS_TRASH_DRIVES     71     // V0.9.2: XWPTrashCan "Drives" page
+    #define ID_XSH_SETTINGS_SYSLEVEL         72     // V0.9.3: XFldSystem "Syslevel" page
+    #define ID_XSH_SETTINGS_PAGEMAGE1        73     // V0.9.3: XWPScreen "PageMage" page 1
+    #define ID_XSH_SETTINGS_PAGEMAGE2        74     // V0.9.3: XWPScreen "PageMage" page 2
+                // 75 is for "Mouse actions" descriptions linked to from the above pages
+    #define ID_XSH_SETTINGS_FUNCTIONKEYS     76     // V0.9.3: XWPKeyboard "Function keys" page
+                // 77 is for the "edit function key" dlg
+    #define ID_XSH_SETTINGS_XWPSTRING_MAIN   78     // V0.9.3: XWPString main help
+    #define ID_XSH_SETTINGS_XWPSTRING_PAGE   79     // V0.9.3: XWPString settings page
+    #define ID_XSH_MEDIA_DEVICES             80     // V0.9.3: XWPMedia "Devices" page
+    #define ID_XSH_MEDIA_CODECS              81     // V0.9.3: XWPMedia "Codecs" page
+    #define ID_XSH_MEDIA_IOPROCS             82     // V0.9.3: XWPMedia "IOProcs" page
+
+    // "subpanels" for pages with context-sensitive help
+    // #define ID_XSH_SETTINGS_REMOVEMENUS_SUB  81+19  // "Find" item on "Remove menus" page
+    // #define ID_XSH_SETTINGS_ADDMENUS_SUB     98+19
+    // #define ID_XSH_SETTINGS_PARANOIA_SUB     110+19
+    // #define ID_XSH_SETTINGS_DTP1_SUB         121+19
+    // #define ID_XSH_SETTINGS_DTP_SHUTDOWN_SUB 127+19
+    // #define ID_XSH_SETTINGS_CFGM_SUB         135+19
+    // #define ID_XSH_SETTINGS_FILEOPS_SUB      142+19
 
     /********************************************************************
      *                                                                  *
@@ -487,9 +490,10 @@
     #define XSD_AUTOCLOSEVIO        0x02000
     #define XSD_WPS_CLOSEWINDOWS    0x04000
     #define XSD_LOG                 0x08000
-    #define XSD_ANIMATE             0x10000
+    #define XSD_ANIMATE_SHUTDOWN    0x10000     // renamed V0.9.3 (2000-05-22) [umoeller]
     #define XSD_APMPOWEROFF         0x20000
     #define XSD_APM_DELAY           0x40000     // added V0.9.2 (2000-03-04) [umoeller]
+    #define XSD_ANIMATE_REBOOT      0x80000     // added V0.9.3 (2000-05-22) [umoeller]
 
     // flags for GLOBALSETTINGS.ulIntroHelpShown
     #define HLPS_CLASSLIST          0x00000001

@@ -365,6 +365,7 @@ void InsertDrivers(HWND hwndCnr,              // in: container
  *@@changed V0.9.1 (99-12-04) [umoeller]: fixed memory leaks
  *@@changed V0.9.3 (2000-04-01) [umoeller]: added DRVF_CMDREF support, finally
  *@@changed V0.9.3 (2000-04-10) [umoeller]: now zeroing DRIVERSPEC properly
+ *@@changed V0.9.3 (2000-05-21) [umoeller]: DRVF_NOPARAMS wasn't recognized, fixed
  */
 
 PLINKLIST InsertDriverCategories(HWND hwndCnr,
@@ -460,6 +461,10 @@ PLINKLIST InsertDriverCategories(HWND hwndCnr,
                         // DRVF_CMDREF specified:
                         pSpec->ulFlags |= DRVF_CMDREF;
 
+                    if (strstr(pszDriverSpec, "DRVF_NOPARAMS"))
+                        // DRVF_CMDREF specified:
+                        pSpec->ulFlags |= DRVF_NOPARAMS;
+
                     // the following routine sets up
                     // the driver configuration dialog
                     // based on the filename, if one
@@ -531,7 +536,7 @@ PLINKLIST InsertDriverCategories(HWND hwndCnr,
  *@@added V0.9.1 (2000-02-11) [umoeller]
  */
 
-void _Optlink fntDriversThread(PVOID ptiMyself)
+void _Optlink fntDriversThread(PTHREADINFO pti)
 {
     HAB     habDriversThread;
     HMQ     hmqDriversThread;
@@ -677,7 +682,8 @@ VOID cfgDriversInitPage(PCREATENOTEBOOKPAGE pcnbp,
             G_pcnbpDrivers = pcnbp;
             thrCreate(&G_ptiDriversThread,
                       fntDriversThread,
-                      FALSE,        // no create msgq
+                      NULL, // running flag
+                      0,        // no msgq
                       0);
         }
     }
@@ -807,16 +813,18 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                             {
                                 // driver description
                                 xstrcat(&pszText2MLE,
-                                         "Version: ");
+                                         "Version: ");    // ###
                                 xstrcat(&pszText2MLE,
                                          precc->szVersion);
 
                                 xstrcat(&pszText2MLE,
                                          "\n");
                                 xstrcat(&pszText2MLE,
-                                         "Vendor: ");
+                                         "Vendor: ");     // ###
                                 xstrcat(&pszText2MLE,
                                          precc->szVendor);
+                                xstrcat(&pszText2MLE,
+                                         "\n");
                             }
                             else
                             {
@@ -843,22 +851,20 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
                     if (pszText2MLE)
                     {
-                        /* WinSetDlgItemText(pcnbp->hwndDlgPage,
+                        WinSetDlgItemText(pcnbp->hwndDlgPage,
                                           ID_OSDI_DRIVR_STATICDATA,
-                                          pszText2MLE);*/
-                        WinSendMsg(WinWindowFromID(pcnbp->hwndDlgPage,
+                                          pszText2MLE);
+                        /* WinSendMsg(WinWindowFromID(pcnbp->hwndDlgPage,
                                                    ID_OSDI_DRIVR_STATICDATA),
                                    TXM_NEWTEXT,
                                    (MPARAM)pszText2MLE,
-                                   0);
+                                   0); */
                         free(pszText2MLE);
                     }
                     else
-                        WinSendMsg(WinWindowFromID(pcnbp->hwndDlgPage,
-                                                   ID_OSDI_DRIVR_STATICDATA),
-                                   TXM_NEWTEXT,
-                                   (MPARAM)"",
-                                   0);
+                        WinSetDlgItemText(pcnbp->hwndDlgPage,
+                                          ID_OSDI_DRIVR_STATICDATA,
+                                          "");
 
                     WinSetDlgItemText(pcnbp->hwndDlgPage,
                                       ID_OSDI_DRIVR_PARAMS,
@@ -1102,6 +1108,7 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                  "XFolder was unable to open the CONFIG.SYS file.");
                     else
                     {
+                        CHAR    szBackup[CCHMAXPATH];
                         xstrrpl(&pszConfigSys,
                                  0, // offset
                                  precc->szConfigSysLine,
@@ -1111,11 +1118,18 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                         strcpy(precc->szConfigSysLine, szNewLine);
                         strcpy(precc->szParams, szNewParams);
                         // write file!
-                        doshWriteTextFile(pKernelGlobals->szConfigSys, pszConfigSys, TRUE);
-                        // "file written" msg
-                        cmnMessageBoxMsg(pcnbp->hwndFrame, // pcnbp->hwndPage,
-                                         100, 136,
-                                         MB_OK);
+                        if (doshWriteTextFile(pKernelGlobals->szConfigSys,
+                                              pszConfigSys,
+                                              NULL,     // pulWritten
+                                              szBackup)
+                                == NO_ERROR)
+                            // "file written" msg
+                            cmnMessageBoxMsg(pcnbp->hwndFrame, // pcnbp->hwndPage,
+                                             100,
+                                             136,   // ###
+                                             MB_OK);
+                        else
+                            DebugBox(NULLHANDLE, "Error", "Error writing CONFIG.SYS");
 
                         free(pszConfigSys);
                     }

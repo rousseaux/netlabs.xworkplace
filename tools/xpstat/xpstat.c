@@ -20,9 +20,7 @@
 #define  INCL_DOS
 #define  INCL_DOSERRORS
 #include <os2.h>
-#include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
 
 #include "setup.h"
 #include "helpers\pmprintf.h"
@@ -37,6 +35,7 @@
 #include "helpers\stringh.h"
 #include "helpers\textview.h"           // PM text view control
 #include "helpers\winh.h"
+#include "helpers\xstring.h"
 
 #include "dlgids.h"
 
@@ -185,6 +184,7 @@ VOID SetupWindows(HWND hwndClient)
 {
     SPLITBARCDATA sbcd;
     XTEXTVIEWCDATA xtxvCData;
+    XFMTPARAGRAPH fmtp;
     G_hwndProcListCnr = WinCreateWindow(hwndClient,
                                         WC_CONTAINER,
                                         "",
@@ -198,9 +198,8 @@ VOID SetupWindows(HWND hwndClient)
 
     memset(&xtxvCData, 0, sizeof(xtxvCData));
     xtxvCData.cbData = sizeof(xtxvCData);
-    xtxvCData.flFormat = XTXF_PLAIN
-                | XTXF_HSCROLL | XTXF_VSCROLL
-                | XTXF_AUTOHHIDE | XTXF_AUTOVHIDE;
+    xtxvCData.flStyle = XTXF_HSCROLL | XTXF_VSCROLL
+                          | XTXF_AUTOHHIDE | XTXF_AUTOVHIDE;
     xtxvCData.ulXBorder = 20;
     xtxvCData.ulYBorder = 20;
     G_hwndProcView = WinCreateWindow(hwndClient,
@@ -214,8 +213,22 @@ VOID SetupWindows(HWND hwndClient)
                                      &xtxvCData,
                                      0);
 
-    winhSetWindowFont(G_hwndProcListCnr, "9.WarpSans");
     winhSetWindowFont(G_hwndProcView, "10.System VIO");
+
+    // change default format
+    WinSendMsg(G_hwndProcView,
+               TXM_QUERYPARFORMAT,
+               (MPARAM)0,       // default format
+               (MPARAM)&fmtp);
+    fmtp.fWordWrap = FALSE;
+    fmtp.lLeftMargin = 30;
+    fmtp.lFirstLineMargin = -30;
+    WinSendMsg(G_hwndProcView,
+               TXM_SETPARFORMAT,
+               (MPARAM)0,       // default format
+               (MPARAM)&fmtp);
+
+    winhSetWindowFont(G_hwndProcListCnr, "9.WarpSans");
 
     sbcd.ulSplitWindowID = ID_PROCSPLIT;
     sbcd.ulCreateFlags = SBCF_VERTICAL | SBCF_PERCENTAGE | SBCF_3DSUNK | SBCF_MOVEABLE;
@@ -557,6 +570,7 @@ VOID ProcessSelected(VOID)
                  i++, pThread++)
             {
                 CHAR    szState[30] = "block";
+                HAB     habhmq = 0;
                 HMQ     hmq = 0;
 
                 switch(pThread->ucState)
@@ -574,8 +588,9 @@ VOID ProcessSelected(VOID)
                                    pThread->ulSleepID,
                                    pThread->ulPriority,
                                    szState);
-                if (hmq = FindMsgQueue(pProcess->pid,
-                                       pThread->usTID))
+                if (hmq = winhFindMsgQueue(pProcess->pid,
+                                           pThread->usTID,
+                                           &habhmq))
                 {
                     pszTemp += sprintf(pszTemp, "0x%lX", hmq);
                     cMsgQueues++;
@@ -814,10 +829,7 @@ VOID ProcessSelected(VOID)
 
     xstrcat(&pszCurrentInfo, "End of dump\n");
 
-    WinSendMsg(G_hwndProcView,
-               TXM_NEWTEXT,
-               (MPARAM)pszCurrentInfo,
-               (MPARAM)0);
+    WinSetWindowText(G_hwndProcView, pszCurrentInfo);
     if (pszCurrentInfo)
         free(pszCurrentInfo);
     // WinInvalidateRect(G_hwndProcView, NULL, FALSE);
@@ -1246,10 +1258,7 @@ VOID ModuleSelected(VOID)
 
     xstrcat(&pszCurrentInfo, "End of dump\n");
 
-    WinSendMsg(G_hwndProcView,
-               TXM_NEWTEXT,
-               (MPARAM)pszCurrentInfo,
-               (MPARAM)0);
+    WinSetWindowText(G_hwndProcView, pszCurrentInfo);
     if (pszCurrentInfo)
         free(pszCurrentInfo);
 }

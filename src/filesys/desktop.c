@@ -643,6 +643,7 @@ VOID dtpStartupInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
         HPOINTER hptrOld = winhSetWaitPointer();
 
+        SIZEL       szlPage = {0, 0};
         PSZ         pszBootLogoFile = cmnQueryBootLogoFile();
 
         // "boot logo enabled"
@@ -664,6 +665,7 @@ VOID dtpStartupInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
         // attempt to display the boot logo
         if (gpihCreateMemPS(WinQueryAnchorBlock(pcnbp->hwndDlgPage),
+                            &szlPage,
                             &hdcMem,
                             &hpsMem))
         {
@@ -899,13 +901,14 @@ MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 HPS         hpsMem;
                 HBITMAP     hbmBootLogo;
                 ULONG       ulError;
-
+                SIZEL       szlPage = {0, 0};
                 HPOINTER    hptrOld = winhSetWaitPointer();
 
                 PSZ         pszBootLogoFile = cmnQueryBootLogoFile();
 
                 // attempt to load the boot logo
                 if (gpihCreateMemPS(WinQueryAnchorBlock(pcnbp->hwndDlgPage),
+                                    &szlPage,
                                     &hdcMem,
                                     &hpsMem))
                 {

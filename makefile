@@ -98,17 +98,18 @@ OBJS = \
 # code from startshut\
     bin\apm.obj bin\archives.obj bin\shutdown.obj
 
-OBJS_ANISOM = bin\sominit.obj bin\wpwcur.obj
-# bin\wpwani.obj bin\wpand.obj bin\wpoptr.obj
-OBJS_ANICONVERT = bin\cursor.obj bin\pointer.obj \
-    bin\script.obj bin\eas.obj bin\expire.obj
-# bin\dll.obj bin\dllbin.obj
+OBJS_ANICLASSES = bin\anand.obj bin\anos2ptr.obj bin\anwani.obj bin\anwcur.obj
+OBJS_ANICONVERT = bin\cursor.obj bin\pointer.obj bin\script.obj bin\expire.obj
+OBJS_ANIDLL = bin\dll.obj bin\dllbin.obj
 OBJS_ANIANI = bin\mptranim.obj bin\mptrcnr.obj bin\mptredit.obj bin\mptrlset.obj \
     bin\mptrpag1.obj bin\mptrppl.obj bin\mptrprop.obj bin\mptrptr.obj bin\mptrset.obj \
-    bin\mptrutil.obj bin\mptrfile.obj
+    bin\mptrutil.obj bin\mptrfile.obj bin\wpamptr.obj
 
+!ifdef ANIMATED_MOUSE_POINTERS
+ANIOBJS = $(OBJS_ANICLASSES) $(OBJS_ANICONVERT) $(OBJS_ANIANI) $(OBJS_ANIDLL)
+!else
 ANIOBJS =
-# bin\wpamptr.obj $(OBJS_ANISOM) $(OBJS_ANIANI) $(OBJS_ANICONVERT)
+!endif
 
 # The HLPOBJS macro contains all the .OBJ files which have been
 # created from the files in HELPERS\. You probably won't have to change this.
@@ -154,7 +155,11 @@ really_all: tools all nls
 
 # If you add a subdirectory to SRC\, add a target to
 # "cpl_main" also to have automatic recompiles.
-cpl_main: helpers classes config filesys media shared startshut hook treesize netscdde xshutdwn
+cpl_main: helpers classes config filesys media \
+!ifdef ANIMATED_MOUSE_POINTERS
+pointers \
+!endif
+shared startshut hook treesize netscdde xshutdwn
 #animouse
 
 # COMPILER PSEUDOTARGETS
@@ -223,12 +228,6 @@ startshut:
     @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
     @cd ..\..
 
-animouse:
-    @echo $(MAKEDIR)\makefile: Going for subdir src\animouse
-    @cd src\animouse
-    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
-    @cd ..\..
-
 hook:
     @echo $(MAKEDIR)\makefile: Going for subdir src\hook
     @cd src\hook
@@ -244,6 +243,12 @@ treesize:
 netscdde:
     @echo $(MAKEDIR)\makefile: Going for subdir src\NetscapeDDE
     @cd src\NetscapeDDE
+    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
+    @cd ..\..
+
+pointers:
+    @echo $(MAKEDIR)\makefile: Going for subdir src\pointers
+    @cd src\pointers
     @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
     @cd ..\..
 
@@ -459,6 +464,8 @@ release: really_all
 !endif
 !if [@md $(XWPRELEASE_NLS) 2> NUL]
 !endif
+!if [@md $(XWPRELEASE_MAP) 2> NUL]
+!endif
     @echo $(MAKEDIR)\makefile: Now copying files to $(XWPRELEASE).
     $(COPY) release\* $(XWPRELEASE_MAIN)
     $(COPY) $(XWP_LANG_CODE)\readme $(XWPRELEASE_NLS)
@@ -477,13 +484,20 @@ release: really_all
     $(COPY) $(MODULESDIR)\xfldr.sym $(XWPRELEASE_MAIN)\bin
     $(COPY) $(MODULESDIR)\xwphook.dll $(XWPRELEASE_MAIN)\bin
     $(COPY) $(MODULESDIR)\xwphook.sym $(XWPRELEASE_MAIN)\bin
-    $(COPY) $(MODULESDIR)\*.exe $(XWPRELEASE_MAIN)\bin
-    $(COPY) $(MODULESDIR)\*.sym $(XWPRELEASE_MAIN)\bin
+    $(COPY) $(MODULESDIR)\netscdde.exe $(XWPRELEASE_MAIN)\bin
+    $(COPY) $(MODULESDIR)\treesize.exe $(XWPRELEASE_MAIN)\bin
+    $(COPY) $(MODULESDIR)\xshutdwn.exe $(XWPRELEASE_MAIN)\bin
+    $(COPY) $(MODULESDIR)\xwpdaemn.exe $(XWPRELEASE_MAIN)\bin
+    $(COPY) $(MODULESDIR)\xfldr.sym $(XWPRELEASE_MAIN)\bin
+    $(COPY) $(MODULESDIR)\xwpdaemn.sym $(XWPRELEASE_MAIN)\bin
+    $(COPY) $(MODULESDIR)\xwphook.sym $(XWPRELEASE_MAIN)\bin
     $(COPY) tools\repclass.exe $(XWPRELEASE_MAIN)\bin
     $(COPY) tools\wpsreset.exe $(XWPRELEASE_MAIN)\bin
 #    b) NLS
     $(COPY) bin\xfldr$(XWP_LANG_CODE).dll $(XWPRELEASE_NLS)\bin
     $(COPY) $(XWP_LANG_CODE)\misc\*.sgs $(XWPRELEASE_NLS)\bin
+#    b) mapfiles
+    $(COPY) $(MODULESDIR)\*.map $(XWPRELEASE_MAP)
 #
 # 3) bootlogo
 !if [@md $(XWPRELEASE_MAIN)\bootlogo 2> NUL]

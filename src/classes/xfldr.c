@@ -6,11 +6,33 @@
  *      --  XFolder class (WPFolder replacement)
  *
  *      XFolder is probably the most complex class of this
- *      package. Not only are context menus manipulated, but
- *      open folder view windows are also subclassed to
- *      introduce additional functionality (fdr_fnwpSubclassedFolderFrame),
- *      and we manipulate folder sorting and add status bars
- *      to open folder views.
+ *      package. The main functionalities of XFolder are
+ *      hooked into the WPS thru the following method
+ *      overrides:
+ *
+ *      -- XFolder::wpModifyPopupMenu adds all the XFolder menu items
+ *         to folder context menus. This calls code in
+ *         src/filesys/menus.c which is shared with XFldDisk,
+ *         because both classes largely do the same thing.
+ *
+ *      -- XFolder::wpOpen calls fdrManipulateNewView, which
+ *         subclasses a newly opened folder view frame window
+ *         with fdr_fnwpSubclassedFolderFrame -- one of the most
+ *         complex parts of XWorkplace.
+ *         This window procedure intercepts lots of messages
+ *         which are needed for the more advanced features.
+ *         See src\filesys\fdrsubclass.c for an introduction.
+ *
+ *         The subclassed folder frame window procedure also
+ *         handles WM_COMMAND messages directly to start the
+ *         enhanced XWorkplace file operations, such as moving
+ *         files to the XWorkplace trash can.
+ *
+ *      -- Extended folder sorting is mostly implemented thru
+ *         fdr_fnwpSubclassedFolderFrame as well.
+ *
+ *      -- Lots of wpAdd* settings pages overrides to replace
+ *         XFolder settings pages.
  *
  *      Installation of XFolder is now optional (V0.9.0).
  *      However, if any of XFldDisk, XFldStartup, or XFldShutdown are
@@ -3132,9 +3154,13 @@ SOM_Scope BOOL  SOMLINK xf_wpSetFldrSort(XFolder *somSelf,
 
 /*
  *@@ wpQueryDefaultHelp:
- *      this instance method specifies the default
- *      help panel for this instance; XFolder will
- *      return something different for the
+ *      this WPObject instance method specifies the default
+ *      help panel for an object (when "Extended help" is
+ *      selected from the object's context menu). This should
+ *      describe what this object can do in general.
+ *      We must return TRUE to report successful completion.
+ *
+ *      XFolder will return something different for the
  *      Config folder and its subfolders.
  */
 

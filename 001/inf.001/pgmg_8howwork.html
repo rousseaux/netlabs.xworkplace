@@ -1,0 +1,33 @@
+<HTML NOSUBLINKS="config"  WIDTH=70% XPOS=right>
+<HEAD>
+<TITLE>How It Works</TITLE>
+</HEAD>
+<!-- this is all new with V0.9.3 -->
+<BODY>
+<B>Classes: XWPScreen</B>
+<HR>
+PageMage needs <B>no special hardware</B> to implement these virtual desktops.
+As opposed to the X windowing system, which can actually use additional memory
+on your video card to have room for several desktops, PageMage simply moves
+windows around your screen.
+
+<P>To make this clear: With PageMage, technically, you still only have one screen.
+All PageMage does when switching desktops is to move windows off of and onto your
+one visible screen. That is, if you switch one desktop to the right, PageMage moves
+all windows to the left by the size of your physical screen.
+As a result, no special hardware or software or drivers are required. If your
+computer can move windows, it can use PageMage.
+
+<P>The PageMage window then does a number of calculations to make all windows look
+as if they were part of a huge virtual screen, but your physical screen really doesn't
+change -- it's the windows that are moved.
+
+<P>PageMage also needs to XWorkplace PM hook to be able to track window movement --
+for one, to reflect window changes in the PageMage window, secondly to be informed
+when windows are created or destroyed for any reason. It can then, for example,
+automatically switch desktops (that is, move all windows) if the focus is given
+to a window of another desktop.
+
+<BR>
+</BODY>
+</HTML>

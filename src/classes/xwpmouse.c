@@ -59,6 +59,11 @@
  *  8)  #pragma hdrstop and then more SOM headers which crash with precompiled headers
  */
 
+#define INCL_DOSERRORS
+#define INCL_DOSSEMAPHORES
+#define INCL_WINDIALOGS
+#define INCL_WINSTDBOOK
+#define INCL_GPIBITMAPS
 #include <os2.h>
 
 // C library headers
@@ -75,9 +80,20 @@
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\common.h"              // the majestic XWorkplace include file
+#include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 
 #include "config\hookintf.h"            // daemon/hook interface
+
+#ifdef __ANIMATED_MOUSE_POINTERS__
+#include "pointers\mptrcnr.h"           // Animated Mouse Pointers
+#include "pointers\macros.h"            // Animated Mouse Pointers
+#include "pointers\mptrutil.h"          // Animated Mouse Pointers
+#include "pointers\mptrset.h"           // Animated Mouse Pointers
+#include "pointers\r_wpamptr.h"         // Animated Mouse Pointers -- resources
+
+#include "pointers\mptrpage.h"          // Animated Mouse Pointers -- entrypoints
+#endif
 
 // other SOM headers
 #pragma hdrstop
@@ -192,13 +208,37 @@ SOM_Scope ULONG  SOMLINK xms_xwpAddMouseMappings2Page(XWPMouse *somSelf,
 SOM_Scope ULONG  SOMLINK xms_xwpAddAnimatedMousePointerPage(XWPMouse *somSelf,
                                                             HWND hwndDlg)
 {
-    /* XWPMouseData *somThis = XWPMouseGetData(somSelf); */
-    XWPMouseMethodDebug("XWPMouse","xms_xwpAddAnimatedMousePointerPage");
+    #ifdef __ANIMATED_MOUSE_POINTERS__
+        PAGEINFO pi;
+        CHAR szTabName[MAX_RES_STRLEN];
+        HAB hab = WinQueryAnchorBlock(HWND_DESKTOP);
+        HMODULE hmodResource = cmnQueryNLSModuleHandle(FALSE); // cmnQueryNLSModuleHandle(FALSE); // V0.9.3 (2000-05-21) [umoeller] V0.9.3 (2000-05-21) [umoeller]
 
-    // ### this is the place where to insert the animated mouse
-    // pointers page
+        XWPMouseData *somThis = XWPMouseGetData(somSelf);
+        XWPMouseMethodDebug("XWPMouse","xms_xwpAddAnimatedMousePointerPage");
 
-    return (0);
+        LOADSTRING(IDTAB_NBPAGE, szTabName);
+
+        memset((PCH) & pi, 0, sizeof(PAGEINFO));
+        pi.cb = sizeof(PAGEINFO);
+        pi.hwndPage = NULLHANDLE;
+        pi.usPageStyleFlags = BKA_MAJOR;
+        pi.usPageInsertFlags = BKA_FIRST;
+        pi.usSettingsFlags = SETTINGS_PAGE_NUMBERS;
+        pi.pfnwp = AnimatedMousePointerPageProc;
+        pi.resid = hmodResource;
+        pi.dlgid = IsWARP3()
+                        ? IDDLG_DLG_ANIMATEDWAITPOINTER_230
+                        : IDDLG_DLG_ANIMATEDWAITPOINTER;
+        pi.pszName = szTabName;
+        pi.pCreateParams = somSelf;
+        pi.idDefaultHelpPanel = IDPNL_USAGE_NBPAGE;
+        pi.pszHelpLibraryName = (PSZ)cmnQueryHelpLibrary(); // (PSZ)cmnQueryHelpLibrary(); // V0.9.3 (2000-05-21) [umoeller]
+
+        return _wpInsertSettingsPage(somSelf, hwndDlg, &pi);
+    #else
+        return (0);
+    #endif
 }
 
 /*
@@ -211,10 +251,14 @@ SOM_Scope ULONG  SOMLINK xms_xwpAddAnimatedMousePointerPage(XWPMouse *somSelf,
 
 SOM_Scope void  SOMLINK xms_wpInitData(XWPMouse *somSelf)
 {
-    /* XWPMouseData *somThis = XWPMouseGetData(somSelf); */
+    XWPMouseData *somThis = XWPMouseGetData(somSelf);
     XWPMouseMethodDebug("XWPMouse","xms_wpInitData");
 
     XWPMouse_parent_WPMouse_wpInitData(somSelf);
+
+    _pszCurrentSettings = NULL;
+    _hwndNotebookPage = NULLHANDLE;
+    _pcnrrec = NULL;
 }
 
 /*
@@ -228,8 +272,11 @@ SOM_Scope void  SOMLINK xms_wpInitData(XWPMouse *somSelf)
 
 SOM_Scope void  SOMLINK xms_wpUnInitData(XWPMouse *somSelf)
 {
-    /* XWPMouseData *somThis = XWPMouseGetData(somSelf); */
+    XWPMouseData *somThis = XWPMouseGetData(somSelf);
     XWPMouseMethodDebug("XWPMouse","xms_wpUnInitData");
+
+    if (_pszCurrentSettings)
+        free(_pszCurrentSettings);
 
     XWPMouse_parent_WPMouse_wpUnInitData(somSelf);
 }
@@ -243,10 +290,50 @@ SOM_Scope void  SOMLINK xms_wpUnInitData(XWPMouse *somSelf)
 
 SOM_Scope BOOL  SOMLINK xms_wpSetup(XWPMouse *somSelf, PSZ pszSetupString)
 {
-    /* XWPMouseData *somThis = XWPMouseGetData(somSelf); */
-    XWPMouseMethodDebug("XWPMouse","xms_wpSetup");
+    BOOL fResult;
 
-    return (XWPMouse_parent_WPMouse_wpSetup(somSelf, pszSetupString));
+    #ifdef __ANIMATED_MOUSE_POINTERS__
+        PSZ pszSetupCopy = NULL;
+        ULONG ulAnimationInitDelay = 0;
+
+        XWPMouseData *somThis = XWPMouseGetData(somSelf);
+        XWPMouseMethodDebug("XWPMouse", "xms_wpSetup");
+
+        // make a duplicate of the setup string, so that we may modify it
+        pszSetupCopy = strdup(pszSetupString);
+
+        if (pszSetupString != NULL)
+        {
+            // DEBUGMSG("SOM: setup with data: %s" NEWLINE, pszSetupCopy);
+
+            // falls Klasse noch nicht initialisiert wurde
+            // Initialisierung verz”gern
+            if (!IsSettingsInitialized())
+            {
+                // numerischen Wert fr Animtion Init delay holen
+                ulAnimationInitDelay = getAnimationInitDelay();
+                setAnimationInitDelay(ulAnimationInitDelay);
+
+                ScanSetupString(_hwndNotebookPage, _pcnrrec, pszSetupCopy, TRUE, TRUE);
+            }
+            else
+                ScanSetupString(_hwndNotebookPage, _pcnrrec, pszSetupCopy, TRUE, FALSE);
+
+            fResult = XWPMouse_parent_WPMouse_wpSetup(somSelf,
+                                                                    pszSetupCopy);
+            free(pszSetupCopy);
+        }
+        else
+    #endif
+    {
+        // DEBUGMSG("SOM: not enough memory for strdup !" NEWLINE, 0);
+        fResult = XWPMouse_parent_WPMouse_wpSetup(somSelf,
+                                                  pszSetupString);
+    }
+
+    return fResult;
+
+    // return (XWPMouse_parent_WPMouse_wpSetup(somSelf, pszSetupString));
 }
 
 /*
@@ -260,8 +347,52 @@ SOM_Scope BOOL  SOMLINK xms_wpSetup(XWPMouse *somSelf, PSZ pszSetupString)
 
 SOM_Scope BOOL  SOMLINK xms_wpSaveState(XWPMouse *somSelf)
 {
-    /* XWPMouseData *somThis = XWPMouseGetData(somSelf); */
-    XWPMouseMethodDebug("XWPMouse","xms_wpSaveState");
+    #ifdef __ANIMATED_MOUSE_POINTERS__
+        APIRET rc = NO_ERROR;
+        PSZ pszSettingsTmp = NULL;
+        PSZ pszSettings = NULL;
+        ULONG ulMaxLen = 0;
+
+        XWPMouseData *somThis = XWPMouseGetData(somSelf);
+
+        XWPMouseMethodDebug("XWPMouse","xms_wpSaveState");
+
+        do
+        {
+            // Settings holen
+            rc = QueryCurrentSettings(&pszSettingsTmp);
+            if (rc != NO_ERROR)
+                break;
+            if (*pszSettingsTmp == 0)
+                break;
+
+            // SOM Speicher holen
+            pszSettings = _wpAllocMem(somSelf, strlen(pszSettingsTmp) + 1, &rc);
+            if (!pszSettings)
+                break;
+
+            // Settings kopieren
+            strcpy(pszSettings, pszSettingsTmp);
+
+            // alte Settings verwerfen
+            if (_pszCurrentSettings != NULL)
+                _wpFreeMem(somSelf, _pszCurrentSettings);
+            _pszCurrentSettings = pszSettings;
+
+            // jetzt speichern
+            _wpSaveString(somSelf, "XWPMouse", 1, pszSettings);
+            if (getAnimationInitDelay() != getDefaultAnimationInitDelay())
+                _wpSaveLong(somSelf, "XWPMouse", 2, getAnimationInitDelay());
+            else
+                _wpSaveLong(somSelf, "XWPMouse", 2, -1);
+
+        }
+        while (FALSE);
+
+        // cleanup
+        if (pszSettingsTmp)
+            free(pszSettingsTmp);
+    #endif
 
     return (XWPMouse_parent_WPMouse_wpSaveState(somSelf));
 }
@@ -276,8 +407,61 @@ SOM_Scope BOOL  SOMLINK xms_wpSaveState(XWPMouse *somSelf)
 SOM_Scope BOOL  SOMLINK xms_wpRestoreState(XWPMouse *somSelf,
                                            ULONG ulReserved)
 {
-    /* XWPMouseData *somThis = XWPMouseGetData(somSelf); */
-    XWPMouseMethodDebug("XWPMouse","xms_wpRestoreState");
+    #ifdef __ANIMATED_MOUSE_POINTERS__
+        APIRET rc = NO_ERROR;
+        PSZ pszSettings = NULL;
+        ULONG ulMaxLen = 0;
+        ULONG ulAnimationInitDelay = 0;
+
+        XWPMouseData *somThis = XWPMouseGetData(somSelf);
+        XWPMouseMethodDebug("XWPMouse", "xms_wpRestoreState");
+
+        do
+        {
+            // numerischen Wert fr Animtion Init delay holen
+            if (    (!_wpRestoreLong(somSelf, "XWPMouse", 2, &ulAnimationInitDelay))
+                 || (ulAnimationInitDelay == -1)
+               )
+                ulAnimationInitDelay = getDefaultAnimationInitDelay();
+
+            setAnimationInitDelay(ulAnimationInitDelay);
+
+            // ben”tigte L„nge abfragen
+            if (!_wpRestoreString(somSelf, "XWPMouse", 1, NULL, &ulMaxLen))
+                break;
+
+            if (ulMaxLen == 0)
+                break;
+
+            // Speicher holen
+            pszSettings = _wpAllocMem(somSelf, ulMaxLen, &rc);
+            if (rc != NO_ERROR)
+                break;
+
+            // Settings holen
+            _wpRestoreString(somSelf, "XWPMouse", 1, pszSettings, &ulMaxLen);
+            // DEBUGMSG("SOM: restored settings" NEWLINE, 0);
+            // DEBUGMSG("SOM: %s" NEWLINE, pszSettings);
+
+            // alte Settings verwerfen
+            if (_pszCurrentSettings != NULL)
+                _wpFreeMem(somSelf, _pszCurrentSettings);
+            _pszCurrentSettings = pszSettings;
+
+        }
+        while (FALSE);
+
+        // ggfs. leeren Settings-String anlegen, damit ScanSetupString
+        // auf jeden fall die Notebook Page notifiziert
+        if (_pszCurrentSettings == NULL)
+        {
+            _pszCurrentSettings = _wpAllocMem(somSelf, 1, &rc);
+            *_pszCurrentSettings = 0;
+        }
+
+        // Settings verwenden
+        ScanSetupString(_hwndNotebookPage, _pcnrrec, _pszCurrentSettings, FALSE, TRUE);
+    #endif
 
     return (XWPMouse_parent_WPMouse_wpRestoreState(somSelf, ulReserved));
 }
@@ -347,6 +531,9 @@ SOM_Scope ULONG  SOMLINK xms_wpAddMousePtrPage(XWPMouse *somSelf,
     /* XWPMouseData *somThis = XWPMouseGetData(somSelf); */
     XWPMouseMethodDebug("XWPMouse","xms_wpAddMousePtrPage");
 
+    // return _InsertAnimatedMousePointerPage(somSelf, hwndNotebook);
+            // ###
+
     return (XWPMouse_parent_WPMouse_wpAddMousePtrPage(somSelf,
                                                       hwndNotebook));
 }
@@ -385,6 +572,27 @@ SOM_Scope void  SOMLINK xmsM_wpclsInitData(M_XWPMouse *somSelf)
     M_XWPMouseMethodDebug("M_XWPMouse","xmsM_wpclsInitData");
 
     M_XWPMouse_parent_M_WPMouse_wpclsInitData(somSelf);
+
+    {
+        PKERNELGLOBALS pKernelGlobals = krnLockGlobals(5000);
+        // store the class object in KERNELGLOBALS
+        pKernelGlobals->fXWPMouse = TRUE;
+        krnUnlockGlobals();
+    }
+}
+
+/*
+ *@@ wpclsUnInitData:
+ *
+ *@@added V0.9.3 (2000-05-21) [umoeller]
+ */
+
+SOM_Scope void  SOMLINK xmsM_wpclsUnInitData(M_XWPMouse *somSelf)
+{
+    /* M_XWPMouseData *somThis = M_XWPMouseGetData(somSelf); */
+    M_XWPMouseMethodDebug("M_XWPMouse","xmsM_wpclsUnInitData");
+
+    M_XWPMouse_parent_M_WPMouse_wpclsUnInitData(somSelf);
 }
 
 /*
@@ -405,5 +613,10 @@ SOM_Scope BOOL  SOMLINK xmsM_wpclsQuerySettingsPageSize(M_XWPMouse *somSelf,
 
     return (M_XWPMouse_parent_M_WPMouse_wpclsQuerySettingsPageSize(somSelf,
                                                                    pSizl));
+
+    // fr WARP 3 ein wenig h”her
+    /* if (IsWARP3())
+        pSizl->cy += 20; */
+
 }
 

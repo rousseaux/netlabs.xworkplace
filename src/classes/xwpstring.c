@@ -136,12 +136,12 @@ const char *G_pcszXWPString = "XWPString";
  *@@added V0.9.3 (2000-04-27) [umoeller]
  */
 
-void _Optlink xwstrfntSetupThread(PVOID ptiMyself)
+void _Optlink xwstrfntSetupThread(PTHREADINFO pti)
 {
     BOOL brc = FALSE;
     TRY_LOUD(excpt1, NULL)
     {
-        XWPString *somSelf = (XWPString*)(((PTHREADINFO)ptiMyself)->ulData);
+        XWPString *somSelf = (XWPString*)(pti->ulData);
         XWPStringData *somThis = XWPStringGetData(somSelf);
         // get SOM pointer from handle
         WPObject *pobjStatic = _wpclsQueryObject(_WPObject, _hobjStatic);
@@ -498,7 +498,7 @@ SOM_Scope ULONG  SOMLINK xwstr_xwpAddXWPStringPages(XWPString *somSelf,
     pcnbp->usPageStyleFlags = BKA_MAJOR;
     pcnbp->pszName = "Setup string";    // ###
     pcnbp->ulDlgID = ID_XSD_XWPSTRING_PAGE;
-    pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_XWPSTRING;
+    pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_XWPSTRING_PAGE;
     pcnbp->ulPageID = SP_XWPSTRING;
     pcnbp->pfncbInitPage    = xwstrStringInitPage;
     pcnbp->pfncbItemChanged = xwstrStringItemChanged;
@@ -824,7 +824,8 @@ SOM_Scope HWND  SOMLINK xwstr_wpOpen(XWPString *somSelf, HWND hwndCnr,
             {
                 thrCreate((PTHREADINFO*)(&_ptiSetupThread),
                           xwstrfntSetupThread,
-                          TRUE, // create msgq
+                          NULL, // running flag
+                          THRF_PMMSGQUEUE,
                           (ULONG)somSelf);
                 brc = TRUE;
             }
@@ -842,7 +843,13 @@ SOM_Scope HWND  SOMLINK xwstr_wpOpen(XWPString *somSelf, HWND hwndCnr,
 
 /*
  *@@ wpQueryDefaultHelp:
+ *      this WPObject instance method specifies the default
+ *      help panel for an object (when "Extended help" is
+ *      selected from the object's context menu). This should
+ *      describe what this object can do in general.
+ *      We must return TRUE to report successful completion.
  *
+ *      We'll display some help for the XWPString class.
  */
 
 SOM_Scope BOOL  SOMLINK xwstr_wpQueryDefaultHelp(XWPString *somSelf,
@@ -852,9 +859,13 @@ SOM_Scope BOOL  SOMLINK xwstr_wpQueryDefaultHelp(XWPString *somSelf,
     /* XWPStringData *somThis = XWPStringGetData(somSelf); */
     XWPStringMethodDebug("XWPString","xwstr_wpQueryDefaultHelp");
 
-    return (XWPString_parent_WPAbstract_wpQueryDefaultHelp(somSelf,
+    strcpy(HelpLibrary, cmnQueryHelpLibrary());
+    *pHelpPanelId = ID_XSH_SETTINGS_XWPSTRING_MAIN;
+    return (TRUE);
+
+    /* return (XWPString_parent_WPAbstract_wpQueryDefaultHelp(somSelf,
                                                            pHelpPanelId,
-                                                           HelpLibrary));
+                                                           HelpLibrary)); */
 }
 
 /*

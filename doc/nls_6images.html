@@ -69,18 +69,23 @@ image converter for BMP if no BMP file of the same name exists.
 <B>Tricks to reduce file sizes:</B>
 <P>
 Keep in mind that HLP/INF files have their own compression scheme which
-works best when much redundant data is in the bitmap files. That is,
-large areas of a plain color can be compressed best.
-<P>So taking screenshots of folders with background bitmaps is a no-no, because
-this will really blow up the files.
-<P>And use as few colors as possible. You can use PMView to reduce the number
-of colors to, say, 12 colors, which usually still looks alright. Make
+works best when much redundant data is in the bitmap files. For those who know
+what that is: IPFC compresses using a modified Lempel-Ziv-Welch algorithm
+(similar to the GIF format).
+In plain English, large areas which have the same color can be compressed best.
+
+<P>This leads to the following recommendations:
+<UL><LI>Do not take screenshots of folders with background bitmaps. There will
+be practically no compression on those.
+<P><LI>Use as few colors as possible. You can use PMView to reduce the number
+of colors to, say, 12 colors, which usually still looks alright.
+<P><LI>When converting images, make
 sure you don't have &quot;dithering&quot; or &quot;error diffusion&quot; enabled, because
 this will add lots of extra pixels which will make compression less
 efficient.
-<P>Also, if you need to scale images to a smaller size, make sure not to
+<P><LI>Also, if you need to scale images to a smaller size, make sure not to
 enable any "interpolation", i.e. introducing extra pixels to make colors smoother.
-This adds lots more colors to the file, which cannot be compressed well.
-<BR>
+This adds lots more colors to the file, which cannot be compressed well either.
+</UL>
 </BODY>
 </HTML>

@@ -10,6 +10,9 @@
  *      also initializes the whole XWorkplace environment
  *      at WPS bootup by overriding M_XFldObject::wpclsInitData.
  *
+ *      Also this class is needed for storing some extra data
+ *      when objects have been deleted into the trash can.
+ *
  *      This class must always be installed.
  *
  *      Starting with V0.9.0, the files in classes\ contain only
@@ -113,10 +116,10 @@
  ********************************************************************/
 
 // "XFldObject" key for wpRestoreData etc.
-const char* pcszXFldObject = "XFldObject";
+const char* G_pcszXFldObject = "XFldObject";
 
 // global variable whether XWorkplace is initialized yet
-BOOL fXWorkplaceInitialized = FALSE;
+BOOL        G_fXWorkplaceInitialized = FALSE;
 
 /* ******************************************************************
  *                                                                  *
@@ -161,7 +164,10 @@ SOM_Scope ULONG  SOMLINK xfobj_xwpAddObjectInternalsPage(XFldObject *somSelf,
 
 /*
  *@@ xwpQueryDeletion:
- *      if this object has been deleted into the XWorkplace trash can
+ *      this method may be called at any time to determine if and
+ *      when an object has been deleted into the trash can.
+ *
+ *      If this object has been deleted into the XWorkplace trash can
  *      (that is, if the actual object currently resides in the hidden
  *      \TRASH directory tree and a related XWPTrashObject exists),
  *      this returns TRUE and puts the date and time of deletion into
@@ -169,8 +175,6 @@ SOM_Scope ULONG  SOMLINK xfobj_xwpAddObjectInternalsPage(XFldObject *somSelf,
  *
  *      If this object has not been deleted, FALSE is returned and the
  *      structures are not changed.
- *
- *      This method may be called at any time.
  *
  *@@added V0.9.0 [umoeller]
  */
@@ -612,9 +616,9 @@ SOM_Scope BOOL  SOMLINK xfobj_wpSaveState(XFldObject *somSelf)
     if (_fDeleted)
     {
         // save deletion data:
-        _wpSaveData(somSelf, (PSZ)pcszXFldObject, 1,
+        _wpSaveData(somSelf, (PSZ)G_pcszXFldObject, 1,
                     (PBYTE)&_cdateDeleted, sizeof(CDATE));
-        _wpSaveData(somSelf, (PSZ)pcszXFldObject, 2,
+        _wpSaveData(somSelf, (PSZ)G_pcszXFldObject, 2,
                     (PBYTE)&_ctimeDeleted, sizeof(CTIME));
     }
 
@@ -642,9 +646,9 @@ SOM_Scope BOOL  SOMLINK xfobj_wpRestoreState(XFldObject *somSelf,
     brc = XFldObject_parent_WPObject_wpRestoreState(somSelf,
                                                     ulReserved);
 
-    if (    (_wpRestoreData(somSelf, (PSZ)pcszXFldObject, 1,
+    if (    (_wpRestoreData(somSelf, (PSZ)G_pcszXFldObject, 1,
                             (PBYTE)&_cdateDeleted, &cbcdate))
-         && (_wpRestoreData(somSelf, (PSZ)pcszXFldObject, 2,
+         && (_wpRestoreData(somSelf, (PSZ)G_pcszXFldObject, 2,
                             (PBYTE)&_ctimeDeleted, &cbctime))
        )
         // both keys successfully restored:
@@ -1247,7 +1251,7 @@ SOM_Scope void  SOMLINK xfobjM_wpclsInitData(M_XFldObject *somSelf)
     // since this code is reached for every single WPS class
     // that gets initialized, we need to check if we're being
     // called for the first time
-    if (!fXWorkplaceInitialized)
+    if (!G_fXWorkplaceInitialized)
     {
         // check if we have any open folder windows;
         // if so, we're not really in the process of starting
@@ -1269,7 +1273,7 @@ SOM_Scope void  SOMLINK xfobjM_wpclsInitData(M_XFldObject *somSelf)
         }
         WinEndEnumWindows(henum);
 
-        fXWorkplaceInitialized = TRUE;
+        G_fXWorkplaceInitialized = TRUE;
 
         if (!fOpenFoldersFound)
             // only if no open folders are found:

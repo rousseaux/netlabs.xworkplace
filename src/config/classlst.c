@@ -599,9 +599,8 @@ VOID CleanupMethodsInfo(PCLASSLISTCLIENTDATA pClientData)
  *@@added V0.9.1 (99-12-20) [umoeller]
  */
 
-void _Optlink cll_fntMethodCollectThread(PVOID ptiMyself)
+void _Optlink cll_fntMethodCollectThread(PTHREADINFO pti)
 {
-    PTHREADINFO pti = (PTHREADINFO)ptiMyself;
     PMETHODTHREADINFO pmti = (PMETHODTHREADINFO)(pti->ulData);
     // now update method info
     PMETHODINFO pMethodInfo = clsQueryMethodInfo(pmti->pClassObject,
@@ -735,7 +734,8 @@ VOID NewClassSelected(PCLASSLISTCLIENTDATA pClientData)
             // start thread for collecting method info
             thrCreate(&pClientData->ptiMethodCollectThread,
                       cll_fntMethodCollectThread,
-                      FALSE,        // no create msgq
+                      NULL, // running flag
+                      0,    // no msgq
                       (ULONG)pmti);
 
         } // end if (pwps->pClassObject)
@@ -3119,6 +3119,16 @@ HWND cllCreateClassListView(WPObject *somSelf,
             // finally, show window
             WinShowWindow(hwndFrame, TRUE);
 
+            // add the use list item to the object's use list
+            pClientData->clvi.UseItem.type    = USAGE_OPENVIEW;
+            pClientData->clvi.UseItem.pNext   = NULL;
+            memset(&pClientData->clvi.ViewItem.view, 0, sizeof(pClientData->clvi.ViewItem.view));
+            pClientData->clvi.ViewItem.view   = ulView;
+            pClientData->clvi.ViewItem.handle = hwndFrame;
+            if (!_wpAddToObjUseList(somSelf, &(pClientData->clvi.UseItem)))
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "_wpAddToObjUseList failed.");
+
             // register this view; I've moved this here from WM_CREATE
             // in cllCreateClassListView because apparently this doesn't
             // work right if the window has not been fully created
@@ -3126,13 +3136,6 @@ HWND cllCreateClassListView(WPObject *somSelf,
                             hwndFrame,
                             pNLSStrings->pszOpenClassList); // view title
 
-            // add the use list item to the object's use list
-            pClientData->clvi.UseItem.type    = USAGE_OPENVIEW;
-            pClientData->clvi.ViewItem.view   = ulView;
-            pClientData->clvi.ViewItem.handle = hwndFrame;
-            if (!_wpAddToObjUseList(somSelf, &(pClientData->clvi.UseItem)))
-                cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "_wpAddToObjUseList failed.");
         }
     }
     CATCH(excpt1) { } END_CATCH();

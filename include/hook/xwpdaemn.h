@@ -36,7 +36,10 @@
     #define MOVE_UP             4
     #define MOVE_DOWN           8
 
-    #define LCID_FONT                   ((ULONG) 1)
+    // font ID to use for the PageMage window titles;
+    // we always use the same one, because there's only one
+    // in the daemon process
+    #define LCID_PAGEMAGE_FONT  ((ULONG) 1)
 
     /* Window types */
     // these have been moved to hook_private.h because
@@ -71,22 +74,6 @@
         SWP     swp;
     } HWNDLIST;
 
-    typedef struct _CONFIG_HWND
-    {
-        HWND    hwndNotebook;
-        HWND    hwndPage1;
-        HWND    hwndPage2;
-        HWND    hwndPage3;
-        HWND    hwndPage4;
-        HWND    hwndPage5;
-        HWND    hwndPage6;
-        HWND    hwndPage7;
-        HWND    hwndPage8;
-    } CONFIG_HWND;
-
-    /* Window Procedures */
-    VOID    _Optlink    fntWindowScanThread(PVOID);
-
     // xwpdaemn.c
     VOID                dmnKillPageMage(BOOL fNotifyKernel);
 
@@ -98,7 +85,9 @@
     BOOL                pgmcCreateMainControlWnd(VOID);
 
     // pgmg_move.c
-    VOID    _Optlink    fntMoveQueueThread(PVOID);
+    #ifdef THREADS_HEADER_INCLUDED
+        VOID    _Optlink    fntMoveQueueThread(PTHREADINFO pti);
+    #endif
     INT                 pgmmMoveIt(LONG, LONG, BOOL);
     INT                 pgmmZMoveIt(LONG, LONG);
     VOID                pgmmRecoverAllWindows(VOID);

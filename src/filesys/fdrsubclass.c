@@ -1,9 +1,15 @@
 
 /*
  *@@sourcefile fdrsubclass.c:
- *      This file is ALL new with V0.9.3 and now implements
+ *      this file is ALL new with V0.9.3 and now implements
  *      folder frame subclassing, which has been largely
- *      rewritten with V0.9.3.
+ *      redesigned with V0.9.3.
+ *
+ *      XFolder::wpOpen calls fdrManipulateNewView, which in
+ *      turn subclasses each newly created folder frame
+ *      window procedure with fdr_fnwpSubclassedFolderFrame
+ *      to intercept lots of PM messages which we need for the
+ *      more advanced XWorkplace operations.
  *
  *      While we had an ugly global linked list of subclassed
  *      folder views in all XFolder and XWorkplace versions
@@ -444,56 +450,6 @@ VOID fdrManipulateNewView(WPFolder *somSelf,        // in: folder with new view
  ********************************************************************/
 
 /*
- * CalcFrameRect:
- *      this gets called from fdr_fnwpSubclassedFolderFrame
- *      when WM_CALCFRAMERECT is received. This implements
- *      folder status bars.
- *
- *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
- */
-
-VOID CalcFrameRect(MPARAM mp1, MPARAM mp2)
-{
-    PRECTL prclPassed = (PRECTL)mp1;
-    ULONG ulStatusBarHeight = cmnQueryStatusBarHeight();
-
-    if (SHORT1FROMMP(mp2))
-        //     TRUE:  Frame rectangle provided, calculate client
-        //     FALSE: Client area rectangle provided, calculate frame
-    {
-        //  TRUE: calculate the rectl of the client;
-        //  call default window procedure to subtract child frame
-        //  controls from the rectangle's height
-        LONG lClientHeight;
-
-        //  position the static text frame extension below the client
-        lClientHeight = prclPassed->yTop - prclPassed->yBottom;
-        if ( ulStatusBarHeight  > lClientHeight  )
-        {
-            // extension is taller than client, so set client height to 0
-            prclPassed->yTop = prclPassed->yBottom;
-        }
-        else
-        {
-            //  set the origin of the client and shrink it based upon the
-            //  static text control's height
-            prclPassed->yBottom += ulStatusBarHeight;
-            prclPassed->yTop -= ulStatusBarHeight;
-        }
-    }
-    else
-    {
-        //  FALSE: calculate the rectl of the frame;
-        //  call default window procedure to subtract child frame
-        //  controls from the rectangle's height;
-        //  set the origin of the frame and increase it based upon the
-        //  static text control's height
-        prclPassed->yBottom -= ulStatusBarHeight;
-        prclPassed->yTop += ulStatusBarHeight;
-    }
-}
-
-/*
  * FormatFrame:
  *      this gets called from fdr_fnwpSubclassedFolderFrame
  *      when WM_FORMATFRAME is received. This implements
@@ -583,6 +539,56 @@ VOID FormatFrame(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
             break;  // we're done
         } // end if WinQueryWindowUShort
     } // end for (ul = 0; ul < ulCount; ul++)
+}
+
+/*
+ * CalcFrameRect:
+ *      this gets called from fdr_fnwpSubclassedFolderFrame
+ *      when WM_CALCFRAMERECT is received. This implements
+ *      folder status bars.
+ *
+ *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
+ */
+
+VOID CalcFrameRect(MPARAM mp1, MPARAM mp2)
+{
+    PRECTL prclPassed = (PRECTL)mp1;
+    ULONG ulStatusBarHeight = cmnQueryStatusBarHeight();
+
+    if (SHORT1FROMMP(mp2))
+        //     TRUE:  Frame rectangle provided, calculate client
+        //     FALSE: Client area rectangle provided, calculate frame
+    {
+        //  TRUE: calculate the rectl of the client;
+        //  call default window procedure to subtract child frame
+        //  controls from the rectangle's height
+        LONG lClientHeight;
+
+        //  position the static text frame extension below the client
+        lClientHeight = prclPassed->yTop - prclPassed->yBottom;
+        if ( ulStatusBarHeight  > lClientHeight  )
+        {
+            // extension is taller than client, so set client height to 0
+            prclPassed->yTop = prclPassed->yBottom;
+        }
+        else
+        {
+            //  set the origin of the client and shrink it based upon the
+            //  static text control's height
+            prclPassed->yBottom += ulStatusBarHeight;
+            prclPassed->yTop -= ulStatusBarHeight;
+        }
+    }
+    else
+    {
+        //  FALSE: calculate the rectl of the frame;
+        //  call default window procedure to subtract child frame
+        //  controls from the rectangle's height;
+        //  set the origin of the frame and increase it based upon the
+        //  static text control's height
+        prclPassed->yBottom -= ulStatusBarHeight;
+        prclPassed->yTop += ulStatusBarHeight;
+    }
 }
 
 /*
@@ -985,12 +991,12 @@ VOID WMChar_Delete(PSUBCLASSEDFOLDERVIEW psfv)
     {
         // collect objects from cnr and start
         // moving them to trash can
-        FOPSRET frc = fopsStartTrashDeleteFromCnr(psfv->somSelf, // source folder
-                                                  pSelected,    // first selected object
-                                                  ulSelection,  // can only be SEL_SINGLESEL
-                                                                 // or SEL_MULTISEL
-                                                  psfv->hwndCnr,
-                                                  FALSE);   // move to trash can
+        FOPSRET frc = fopsStartDeleteFromCnr(// psfv->somSelf, // source folder
+                                             pSelected,    // first selected object
+                                             ulSelection,  // can only be SEL_SINGLESEL
+                                                            // or SEL_MULTISEL
+                                             psfv->hwndCnr,
+                                             FALSE);   // move to trash can
         #ifdef DEBUG_TRASHCAN
             _Pmpf(("    got FOPSRET %d", frc));
         #endif
@@ -999,6 +1005,9 @@ VOID WMChar_Delete(PSUBCLASSEDFOLDERVIEW psfv)
 
 /*
  *@@ ProcessFolderMsgs:
+ *      actual folder view message processing. Called
+ *      from fdr_fnwpSubclassedFolderFrame. See remarks
+ *      there.
  *
  *@@added V0.9.3 (2000-04-08) [umoeller]
  */
@@ -1345,20 +1354,21 @@ MRESULT ProcessFolderMsgs(HWND hwndFrame,
                     if (fCallXWPFops)
                     {
                         // this is TRUE if
-                        // -- delete to trash can has been enabled and regular delete
-                        //    has been selected
+                        // -- delete to trash can is enabled and "regular" delete
+                        //    has been selected -> move to trash can
                         // -- delete to trash can has been enabled, but Shift was pressed
+                        //    --> "true" delete
                         // -- delete to trash can has been disabled, but regular delete
-                        //    was replaced
+                        //    is replaced --> "true" delete
 
                         // collect objects from container and start deleting
-                        FOPSRET frc = fopsStartTrashDeleteFromCnr(psfv->somSelf,
-                                                                    // source folder
-                                                                  psfv->pSourceObject,
-                                                                    // first source object
-                                                                  psfv->ulSelection,
-                                                                  psfv->hwndCnr,
-                                                                  fTrueDelete);
+                        FOPSRET frc = fopsStartDeleteFromCnr(// psfv->somSelf,
+                                                               // source folder
+                                                             psfv->pSourceObject,
+                                                               // first source object
+                                                             psfv->ulSelection,
+                                                             psfv->hwndCnr,
+                                                             fTrueDelete);
                         #ifdef DEBUG_TRASHCAN
                             _Pmpf(("WM_COMMAND WPMENUID_DELETE: got FOPSRET %d", frc));
                         #endif
@@ -1576,8 +1586,8 @@ MRESULT ProcessFolderMsgs(HWND hwndFrame,
 
             /*
              * WM_DESTROY:
-             *      upon this, we need to clean up our linked list
-             *      of subclassed windows
+             *      clean up resources we allocated for
+             *      this folder view.
              */
 
             case WM_DESTROY:
@@ -1639,46 +1649,7 @@ MRESULT ProcessFolderMsgs(HWND hwndFrame,
 
 /*
  *@@ fdr_fnwpSubclassedFolderFrame:
- *      new window procedure for subclassed folder frames.
- *      This replaces the old procedure which was present
- *      before V0.9.3, and is needed for the new
- *      subclassing implementation.
- *
- *@@added @@changed V0.9.3 (2000-04-08) [umoeller]
- */
-
-MRESULT EXPENTRY fdr_fnwpSubclassedFolderFrame(HWND hwndFrame,
-                                               ULONG msg,
-                                               MPARAM mp1,
-                                               MPARAM mp2)
-{
-    MRESULT     mrc = 0;
-    PSUBCLASSEDFOLDERVIEW psfv = fdrQuerySFV(hwndFrame,
-                                            NULL);
-    if (psfv)
-        mrc = ProcessFolderMsgs(hwndFrame,
-                                msg,
-                                mp1,
-                                mp2,
-                                psfv,
-                                psfv->pfnwpOriginal);
-    else
-    {
-        // SFV not found: use the default
-        // folder window procedure, but issue
-        // a warning to the log
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "Folder SUBCLASSEDFOLDERVIEW not found.");
-
-        mrc = G_WPFolderWinClassInfo.pfnWindowProc(hwndFrame, msg, mp1, mp2);
-    }
-
-    return (mrc);
-}
-
-/*
- *@@ fdr_fnwpSubclassedFolderFrame:
- *      New window proc for subclassed folder frame windows.
+ *      new window proc for subclassed folder frame windows.
  *      Folder frame windows are subclassed in fdrSubclassFolderView
  *      (which gets called from XFolder::wpOpen or XFldDisk::wpOpen
  *      for Disk views) with the address of this window procedure.
@@ -1727,7 +1698,37 @@ MRESULT EXPENTRY fdr_fnwpSubclassedFolderFrame(HWND hwndFrame,
  *@@changed V0.9.1 (2000-01-31) [umoeller]: added "Del" key support
  *@@changed V0.9.2 (2000-02-22) [umoeller]: moved default winproc out of exception handler
  *@@changed V0.9.3 (2000-03-28) [umoeller]: added freaky menus setting
+ *@@changed V0.9.3 (2000-04-08) [umoeller]: extracted ProcessFolderMsgs
  */
+
+MRESULT EXPENTRY fdr_fnwpSubclassedFolderFrame(HWND hwndFrame,
+                                               ULONG msg,
+                                               MPARAM mp1,
+                                               MPARAM mp2)
+{
+    MRESULT     mrc = 0;
+    PSUBCLASSEDFOLDERVIEW psfv = fdrQuerySFV(hwndFrame,
+                                            NULL);
+    if (psfv)
+        mrc = ProcessFolderMsgs(hwndFrame,
+                                msg,
+                                mp1,
+                                mp2,
+                                psfv,
+                                psfv->pfnwpOriginal);
+    else
+    {
+        // SFV not found: use the default
+        // folder window procedure, but issue
+        // a warning to the log
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "Folder SUBCLASSEDFOLDERVIEW not found.");
+
+        mrc = G_WPFolderWinClassInfo.pfnWindowProc(hwndFrame, msg, mp1, mp2);
+    }
+
+    return (mrc);
+}
 
 /* MRESULT EXPENTRY fdr_fnwpSubclassedFolderFrame(HWND hwndFrame,
                                                ULONG msg,

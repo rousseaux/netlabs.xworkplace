@@ -1,35 +1,58 @@
 
 /*
  *@@sourcefile fileops.c:
- *      file operations code. This gets called from various
- *      method overrides to implement certain file-operations
- *      features.
+ *      this has the XWorkplace file operations engine.
+ *      This gets called from various method overrides to
+ *      implement certain file-operations features.
  *
  *      Current features:
  *
- *      -- Replacement "File exists" dialog implementation
- *         (fopsConfirmObjectTitle).
+ *      --  Replacement "File exists" dialog implementation
+ *          (fopsConfirmObjectTitle).
  *
- *      -- Expanding objects to hold all sub-objects if the
- *         object is a folder. See fopsExpandObjectDeep
- *         for details.
+ *      --  Expanding objects to hold all sub-objects if the
+ *          object is a folder. See fopsExpandObjectDeep
+ *          and fopsExpandObjectFlat for details.
  *
- *      -- Generic file-operations framework to process
- *         files (actually, any objects) on the XWorkplace
- *         File thread. The common functionality of this code
- *         is to build a list of objects which need to be processed
- *         and pass that list to the XWorkplace File thread, which
- *         will then do the actual processing.
- *         See fopsCreateFileTaskList and fopsStartTaskFromCnr for details.
+ *      --  Generic file-operations framework to process
+ *          files (actually, any objects) on the XWorkplace
+ *          File thread. The common functionality of this code
+ *          is to build a list of objects which need to be processed
+ *          and pass that list to the XWorkplace File thread, which
+ *          will then do the actual processing.
  *
- *         The actual file operation calls are then made on the
- *         XWorkplace File thread (xthreads.c) which calls
- *         fopsFileThreadProcessing in this file.
+ *          The framework is separated into two layers:
  *
- *         Concrete implementations currently are
- *         fopsStartCnrDelete2Trash, fopsStartCnrRestoreFromTrash,
- *         and fopsStartCnrDestroyTrashObjects for the XWorkplace
- *         trash can (XWPTrashCan class).
+ *          --  The bottom layer is independent of the GUI and uses
+ *              callbacks for reporting progress and errors. This
+ *              is different from the ugly WPS implementation where
+ *              you get message boxes when calling a file operations
+ *              method, and there's no way to suppress them. (Try
+ *              _wpFree on a read-only file system object.)
+ *
+ *              This bottom layer operates on "file task lists" which
+ *              tell it what to do and which objects need to be
+ *              processed. See fopsCreateFileTaskList for details.
+ *              This list is then passed to the File thread which
+ *              starts processing the objects. See fopsStartTaskAsync
+ *              for details.
+ *
+ *          --  The top layer then uses the bottom layer for the
+ *              XWorkplace file operations. This implements a generic
+ *              progress window and proper error handling (hopefully).
+ *
+ *              You can use fopsStartTaskFromCnr and fopsStartTaskFromList
+ *              to have the top layer start processing. These functions
+ *              return quickly after collecting the objects, while processing
+ *              then runs asynchronously on the File thread.
+ *
+ *              Concrete implementations currently are
+ *              fopsStartDeleteFromCnr, fopsStartTrashRestoreFromCnr,
+ *              and fopsStartTrashDestroyFromCnr for the XWorkplace
+ *              trash can (XWPTrashCan class).
+ *
+ *          The framework uses the special FOPSRET error return type,
+ *          which is FOPSERR_OK (0) if no error occured.
  *
  *      This file is ALL new with V0.9.0.
  *
@@ -517,9 +540,12 @@ VOID fopsFreeExpandedObject(PEXPANDEDOBJECT pSOI)
  */
 
 FOPSRET fopsExpandObjectFlat(PLINKLIST pllObjects,  // in: list to append to
-                             WPObject *pObject)     // in: object to start with
+                             WPObject *pObject,     // in: object to start with
+                             PULONG pulObjectCount) // out: objects count on list;
+                                                    // the ULONG must be set to 0 before calling this!
 {
     FOPSRET frc = FOPSERR_OK;
+
     if (_somIsA(pObject, _WPFolder))
     {
         // it's a folder:
@@ -547,7 +573,8 @@ FOPSRET fopsExpandObjectFlat(PLINKLIST pllObjects,  // in: list to append to
                     // recurse!
                     // this will add pSubObject to pllObjects
                     frc = fopsExpandObjectFlat(pllObjects,
-                                                  pSubObject);
+                                               pSubObject,
+                                               pulObjectCount);
                     if (frc != FOPSERR_OK)
                         // error:
                         break;
@@ -571,6 +598,8 @@ FOPSRET fopsExpandObjectFlat(PLINKLIST pllObjects,  // in: list to append to
     // contents come before the folder in the list
     _Pmpf(("Appending %s", _wpQueryTitle(pObject) ));
     lstAppendItem(pllObjects, pObject);
+    if (pulObjectCount)
+        (*pulObjectCount)++;
 
     return (frc);
 }
@@ -892,6 +921,184 @@ BOOL fopsProposeNewTitle(PSZ pszTitle,          // in: title to modify
 }
 
 /*
+ *@@ PrepareFileExistsDlg:
+ *      prepares the "file exists" dialog by setting
+ *      up all the controls.
+ *
+ *@@added V0.9.3 (2000-05-03) [umoeller]
+ */
+
+HWND PrepareFileExistsDlg(WPObject *somSelf,
+                          ULONG menuID,
+                          WPFolder *Folder,    // in: from fopsConfirmObjectTitle
+                          PSZ pszFolder,
+                          WPFileSystem *pFSExisting,
+                          PSZ pszRealNameFound,
+                          PSZ pszTitle)    // in/out: from fopsConfirmObjectTitle
+{
+    CHAR    szProposeTitle[CCHMAXPATH] = "????",
+            szExistingFilename[CCHMAXPATH],
+            szTemp[500];
+    ULONG   ulDlgReturn = 0,
+            ulLastFocusID = 0,
+            ulLastDot = 0;
+    HWND    hwndConfirm;
+    PSZ     pszTemp = 0;
+
+    // prepare file date/time etc. for
+    // display in window
+    FILESTATUS3         fs3;
+    COUNTRYSETTINGS     cs;
+    prfhQueryCountrySettings(&cs);
+
+    // *** load confirmation dialog
+    hwndConfirm = WinLoadDlg(HWND_DESKTOP, HWND_DESKTOP,
+                             fnwpTitleClashDlg,
+                             cmnQueryNLSModuleHandle(FALSE),
+                             ID_XFD_TITLECLASH,
+                             NULL);
+
+    // disable window updates for the following changes
+    WinEnableWindowUpdate(hwndConfirm, FALSE);
+
+    // replace placeholders in introductory strings
+    pszTemp = winhQueryWindowText(WinWindowFromID(hwndConfirm,
+                                                  ID_XFDI_CLASH_TXT1));
+    xstrrpl(&pszTemp, 0, "%1", pszRealNameFound, 0);
+    xstrrpl(&pszTemp, 0, "%2", pszFolder, 0);
+    WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_TXT1,
+                      pszTemp);
+    free(pszTemp);
+
+    // set object information fields
+    _wpQueryFilename(pFSExisting, szExistingFilename, TRUE);
+    DosQueryPathInfo(szExistingFilename,
+                     FIL_STANDARD,
+                     &fs3, sizeof(fs3));
+    strhFileDate(szTemp, &(fs3.fdateLastWrite),
+                 cs.ulDateFormat, cs.cDateSep);
+    WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_DATEOLD, szTemp);
+    strhFileTime(szTemp, &(fs3.ftimeLastWrite),
+                 cs.ulTimeFormat, cs.cTimeSep);
+    WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_TIMEOLD, szTemp);
+
+    strhThousandsULong(szTemp, fs3.cbFile, // )+512) / 1024 ,
+                       cs.cThousands);
+    WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_SIZEOLD, szTemp);
+
+    if (pFSExisting != somSelf)
+    {
+        // if we're not copying within the same folder,
+        // i.e. if the two objects are different,
+        // give info on ourselves too
+        CHAR szSelfFilename[CCHMAXPATH];
+        _wpQueryFilename(somSelf, szSelfFilename, TRUE);
+        DosQueryPathInfo(szSelfFilename,
+                         FIL_STANDARD,
+                         &fs3, sizeof(fs3));
+        strhFileDate(szTemp, &(fs3.fdateLastWrite),
+                     cs.ulDateFormat, cs.cDateSep);
+        WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_DATENEW, szTemp);
+        strhFileTime(szTemp, &(fs3.ftimeLastWrite),
+                     cs.ulTimeFormat, cs.cTimeSep);
+        WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_TIMENEW, szTemp);
+        strhThousandsULong(szTemp, fs3.cbFile, // )+512) / 1024,
+                           cs.cThousands);
+        WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_SIZENEW, szTemp);
+    }
+    else
+    {
+        // if we're copying within the same folder,
+        // set the "new object" fields empty
+        WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_DATENEW, "");
+        WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_TIMENEW, "");
+        WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_SIZENEW, "");
+    }
+
+    // get new title which doesn't exist in the folder yet
+    fopsProposeNewTitle(pszTitle,
+                        Folder,
+                        szProposeTitle);
+
+    // OK, we've found a new filename: set dlg items
+    WinSendDlgItemMsg(hwndConfirm, ID_XFDI_CLASH_RENAMENEWTXT,
+                      EM_SETTEXTLIMIT,
+                      (MPARAM)(250), MPNULL);
+    WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_RENAMENEWTXT,
+                      szProposeTitle);
+    WinSendDlgItemMsg(hwndConfirm, ID_XFDI_CLASH_RENAMEOLDTXT,
+                      EM_SETTEXTLIMIT,
+                      (MPARAM)(250), MPNULL);
+    WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_RENAMEOLDTXT,
+                      szProposeTitle);
+
+    // select the first characters up to the extension
+    // in the edit field
+    pszTemp = strrchr(szProposeTitle, '.');       // last dot == extension
+    if (pszTemp)
+        ulLastDot = (pszTemp - szProposeTitle);
+    else
+        ulLastDot = 300;                    // too large == select all
+
+    WinSendDlgItemMsg(hwndConfirm, ID_XFDI_CLASH_RENAMENEWTXT,
+                      EM_SETSEL,
+                      MPFROM2SHORT(0, ulLastDot),
+                      MPNULL);
+    WinSendDlgItemMsg(hwndConfirm, ID_XFDI_CLASH_RENAMEOLDTXT,
+                      EM_SETSEL,
+                      MPFROM2SHORT(0, ulLastDot),
+                      MPNULL);
+
+    // find the selection the user has made last time;
+    // this INI key item is maintained by fnwpTitleClashDlg above
+    ulLastFocusID = PrfQueryProfileInt(HINI_USER, INIAPP_XWORKPLACE,
+                                       INIKEY_NAMECLASHFOCUS,
+                                       ID_XFDI_CLASH_RENAMENEWTXT);
+                                            // default value if not set
+
+    // disable "Replace" and "Rename old"
+    // if we're copying within the same folder
+    // or if we're copying a folder to its parent
+    if (    (pFSExisting == somSelf)
+         || (pFSExisting == _wpQueryFolder(somSelf))
+       )
+    {
+        WinEnableControl(hwndConfirm, ID_XFDI_CLASH_REPLACE, FALSE);
+        WinEnableControl(hwndConfirm, ID_XFDI_CLASH_RENAMEOLD, FALSE);
+        WinEnableControl(hwndConfirm, ID_XFDI_CLASH_RENAMEOLDTXT, FALSE);
+        // if the last focus is one of the disabled items,
+        // change it
+        if (   (ulLastFocusID == ID_XFDI_CLASH_REPLACE)
+            || (ulLastFocusID == ID_XFDI_CLASH_RENAMEOLDTXT)
+           )
+            ulLastFocusID = ID_XFDI_CLASH_RENAMENEWTXT;
+    }
+    else if (menuID == 0x006E)
+    {
+        // disable "Replace" for "Rename" mode; this is
+        // not allowed
+        WinEnableControl(hwndConfirm, ID_XFDI_CLASH_REPLACE, FALSE);
+        // if the last focus is one of the disabled items,
+        // change it
+        if (ulLastFocusID == ID_XFDI_CLASH_REPLACE)
+            ulLastFocusID = ID_XFDI_CLASH_RENAMENEWTXT;
+    }
+
+    // set focus to that item
+    winhSetDlgItemFocus(hwndConfirm, ulLastFocusID);
+        // this will automatically select the corresponding
+        // radio button, see fnwpTitleClashDlg above
+
+    // *** go!
+    winhRestoreWindowPos(hwndConfirm,
+                         HINI_USER,
+                         INIAPP_XWORKPLACE, INIKEY_WNDPOSNAMECLASH,
+                         SWP_MOVE | SWP_SHOW | SWP_ACTIVATE);
+                                // move only, no resize
+    return (hwndConfirm);
+}
+
+/*
  *@@ fopsConfirmObjectTitle:
  *      this gets called from XFldObject::wpConfirmObjectTitle
  *      to actually implement the "File exists" dialog. This
@@ -903,6 +1110,7 @@ BOOL fopsProposeNewTitle(PSZ pszTitle,          // in: title to modify
  *
  *@@changed V0.9.1 (2000-01-30) [umoeller]: extracted some functions for clarity; this was a total mess
  *@@changed V0.9.3 (2000-04-08) [umoeller]: fixed "Create another" problem
+ *@@changed V0.9.3 (2000-05-03) [umoeller]: extracted ProcessFileExistsDlg
  */
 
 ULONG fopsConfirmObjectTitle(WPObject *somSelf,
@@ -962,166 +1170,15 @@ ULONG fopsConfirmObjectTitle(WPObject *somSelf,
                  || (menuID != 0x6E)    // not "rename"
                )
             {
-                CHAR    szProposeTitle[CCHMAXPATH] = "????",
-                        szExistingFilename[CCHMAXPATH],
-                        szTemp[500];
-                ULONG   ulDlgReturn = 0,
-                        ulLastFocusID = 0,
-                        ulLastDot = 0;
-                HWND    hwndConfirm;
-                PSZ     pszTemp = 0;
+                HWND hwndConfirm = PrepareFileExistsDlg(somSelf,
+                                                        menuID,
+                                                        Folder,
+                                                        szFolder,
+                                                        pFSExisting,
+                                                        szRealNameFound,
+                                                        pszTitle);
 
-                // prepare file date/time etc. for
-                // display in window
-                FILESTATUS3         fs3;
-                COUNTRYSETTINGS     cs;
-                prfhQueryCountrySettings(&cs);
-
-                // *** load confirmation dialog
-                hwndConfirm = WinLoadDlg(HWND_DESKTOP, HWND_DESKTOP,
-                                         fnwpTitleClashDlg,
-                                         cmnQueryNLSModuleHandle(FALSE),
-                                         ID_XFD_TITLECLASH,
-                                         NULL);
-
-                // disable window updates for the following changes
-                WinEnableWindowUpdate(hwndConfirm, FALSE);
-
-                // replace placeholders in introductory strings
-                pszTemp = winhQueryWindowText(WinWindowFromID(hwndConfirm,
-                                                              ID_XFDI_CLASH_TXT1));
-                xstrrpl(&pszTemp, 0, "%1", szRealNameFound, 0);
-                xstrrpl(&pszTemp, 0, "%2", szFolder, 0);
-                WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_TXT1,
-                                  pszTemp);
-                free(pszTemp);
-
-                // set object information fields
-                _wpQueryFilename(pFSExisting, szExistingFilename, TRUE);
-                DosQueryPathInfo(szExistingFilename,
-                                 FIL_STANDARD,
-                                 &fs3, sizeof(fs3));
-                strhFileDate(szTemp, &(fs3.fdateLastWrite),
-                             cs.ulDateFormat, cs.cDateSep);
-                WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_DATEOLD, szTemp);
-                strhFileTime(szTemp, &(fs3.ftimeLastWrite),
-                             cs.ulTimeFormat, cs.cTimeSep);
-                WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_TIMEOLD, szTemp);
-
-                strhThousandsULong(szTemp, fs3.cbFile, // )+512) / 1024 ,
-                                   cs.cThousands);
-                WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_SIZEOLD, szTemp);
-
-                if (pFSExisting != somSelf)
-                {
-                    // if we're not copying within the same folder,
-                    // i.e. if the two objects are different,
-                    // give info on ourselves too
-                    CHAR szSelfFilename[CCHMAXPATH];
-                    _wpQueryFilename(somSelf, szSelfFilename, TRUE);
-                    DosQueryPathInfo(szSelfFilename,
-                                     FIL_STANDARD,
-                                     &fs3, sizeof(fs3));
-                    strhFileDate(szTemp, &(fs3.fdateLastWrite),
-                                 cs.ulDateFormat, cs.cDateSep);
-                    WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_DATENEW, szTemp);
-                    strhFileTime(szTemp, &(fs3.ftimeLastWrite),
-                                 cs.ulTimeFormat, cs.cTimeSep);
-                    WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_TIMENEW, szTemp);
-                    strhThousandsULong(szTemp, fs3.cbFile, // )+512) / 1024,
-                                       cs.cThousands);
-                    WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_SIZENEW, szTemp);
-                }
-                else
-                {
-                    // if we're copying within the same folder,
-                    // set the "new object" fields empty
-                    WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_DATENEW, "");
-                    WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_TIMENEW, "");
-                    WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_SIZENEW, "");
-                }
-
-                // get new title which doesn't exist in the folder yet
-                fopsProposeNewTitle(pszTitle,
-                                    Folder,
-                                    szProposeTitle);
-
-                // OK, we've found a new filename: set dlg items
-                WinSendDlgItemMsg(hwndConfirm, ID_XFDI_CLASH_RENAMENEWTXT,
-                                  EM_SETTEXTLIMIT,
-                                  (MPARAM)(250), MPNULL);
-                WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_RENAMENEWTXT,
-                                  szProposeTitle);
-                WinSendDlgItemMsg(hwndConfirm, ID_XFDI_CLASH_RENAMEOLDTXT,
-                                  EM_SETTEXTLIMIT,
-                                  (MPARAM)(250), MPNULL);
-                WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_RENAMEOLDTXT,
-                                  szProposeTitle);
-
-                // select the first characters up to the extension
-                // in the edit field
-                pszTemp = strrchr(szProposeTitle, '.');       // last dot == extension
-                if (pszTemp)
-                    ulLastDot = (pszTemp - szProposeTitle);
-                else
-                    ulLastDot = 300;                    // too large == select all
-
-                WinSendDlgItemMsg(hwndConfirm, ID_XFDI_CLASH_RENAMENEWTXT,
-                                  EM_SETSEL,
-                                  MPFROM2SHORT(0, ulLastDot),
-                                  MPNULL);
-                WinSendDlgItemMsg(hwndConfirm, ID_XFDI_CLASH_RENAMEOLDTXT,
-                                  EM_SETSEL,
-                                  MPFROM2SHORT(0, ulLastDot),
-                                  MPNULL);
-
-                // find the selection the user has made last time;
-                // this INI key item is maintained by fnwpTitleClashDlg above
-                ulLastFocusID = PrfQueryProfileInt(HINI_USER, INIAPP_XWORKPLACE,
-                                                   INIKEY_NAMECLASHFOCUS,
-                                                   ID_XFDI_CLASH_RENAMENEWTXT);
-                                                        // default value if not set
-
-                // disable "Replace" and "Rename old"
-                // if we're copying within the same folder
-                // or if we're copying a folder to its parent
-                if (    (pFSExisting == somSelf)
-                     || (pFSExisting == _wpQueryFolder(somSelf))
-                   )
-                {
-                    WinEnableControl(hwndConfirm, ID_XFDI_CLASH_REPLACE, FALSE);
-                    WinEnableControl(hwndConfirm, ID_XFDI_CLASH_RENAMEOLD, FALSE);
-                    WinEnableControl(hwndConfirm, ID_XFDI_CLASH_RENAMEOLDTXT, FALSE);
-                    // if the last focus is one of the disabled items,
-                    // change it
-                    if (   (ulLastFocusID == ID_XFDI_CLASH_REPLACE)
-                        || (ulLastFocusID == ID_XFDI_CLASH_RENAMEOLDTXT)
-                       )
-                        ulLastFocusID = ID_XFDI_CLASH_RENAMENEWTXT;
-                }
-                else if (menuID == 0x006E)
-                {
-                    // disable "Replace" for "Rename" mode; this is
-                    // not allowed
-                    WinEnableControl(hwndConfirm, ID_XFDI_CLASH_REPLACE, FALSE);
-                    // if the last focus is one of the disabled items,
-                    // change it
-                    if (ulLastFocusID == ID_XFDI_CLASH_REPLACE)
-                        ulLastFocusID = ID_XFDI_CLASH_RENAMENEWTXT;
-                }
-
-                // set focus to that item
-                winhSetDlgItemFocus(hwndConfirm, ulLastFocusID);
-                    // this will automatically select the corresponding
-                    // radio button, see fnwpTitleClashDlg above
-
-                // *** go!
-                winhRestoreWindowPos(hwndConfirm,
-                                     HINI_USER,
-                                     INIAPP_XWORKPLACE, INIKEY_WNDPOSNAMECLASH,
-                                     SWP_MOVE | SWP_SHOW | SWP_ACTIVATE);
-                                            // move only, no resize
-                ulDlgReturn = WinProcessDlg(hwndConfirm);
+                ULONG ulDlgReturn = WinProcessDlg(hwndConfirm);
 
                 // check return value
                 switch (ulDlgReturn)
@@ -1137,6 +1194,7 @@ ULONG fopsConfirmObjectTitle(WPObject *somSelf,
 
                     case ID_XFDI_CLASH_RENAMEOLD:
                     {
+                        CHAR szTemp[1000];
                         // rename old: use wpSetTitle on existing object
                         WinQueryDlgItemText(hwndConfirm, ID_XFDI_CLASH_RENAMEOLDTXT,
                                             sizeof(szTemp)-1, szTemp);
@@ -1242,7 +1300,7 @@ BOOL fopsMoveObjectConfirmed(WPObject *pObject,
                                         pReplaceThis,       // set by wpConfirmObjectTitle
                                         TRUE);              // move and replace
                */
-                    // ### after this pObject is deleted, so
+                    // after this pObject is deleted, so
                     // this cannot be used any more
         break;
 
@@ -1303,14 +1361,25 @@ typedef struct _FILETASKLIST
  *@@ fopsCreateFileTaskList:
  *      creates a new task list for the given file operation
  *      to which items can be added using fopsAddFileTask.
+ *      Part of the bottom layer of the XWorkplace file
+ *      operations engine.
  *
- *      WARNING: This requests the object mutex semaphores
+ *      To start such a file task, three steps are required:
+ *
+ *      -- call fopsCreateFileTaskList (this function;
+ *
+ *      -- add objects to that list using fopsAddFileTask;
+ *
+ *      -- pass the task to the File thread using fopsStartTaskAsync,
+ *         OR delete the list using fopsDeleteFileTaskList.
+ *
+ *      WARNING: This function requests the object mutex semaphore
  *      for pSourceFolder. You must add objects to the returned
  *      task list (using fopsAddFileTask) as quickly as possible.
  *
  *      The mutex will only be released after all
  *      file processing has been completed (thru
- *      fopsStartProcessingTasks) or if you call
+ *      fopsStartTaskAsync) or if you call
  *      fopsDeleteFileTaskList explicitly. So you MUST
  *      call either one of those two functions after a
  *      task list was successfully created using this
@@ -1341,19 +1410,15 @@ typedef struct _FILETASKLIST
  *          If (pTargetFolder != NULL), the objects will all be moved
  *          to that folder.
  *
- *      -- XFT_DESTROYTRASHOBJECTS: destroy trash objects.
- *          This will invoke XWPTrashObject::xwpDestroyTrashObject
- *          on every object on the list.
- *
- *      -- XFT_DELETE: delete list items without moving them
- *          into the trash can first.
+ *      -- XFT_DELETE: delete list items from pSourceFolder without
+ *          moving them into the trash can first.
  *          In that case, pTargetFolder is ignored.
  *
  *@@added V0.9.1 (2000-01-27) [umoeller]
  *@@changed V0.9.2 (2000-03-04) [umoeller]: added error callback
  */
 
-HFILETASKLIST fopsCreateFileTaskList(ULONG ulOperation,
+HFILETASKLIST fopsCreateFileTaskList(ULONG ulOperation,     // in: XFT_* flag
                                      WPFolder *pSourceFolder,
                                      WPFolder *pTargetFolder,
                                      FNFOPSPROGRESSCALLBACK *pfnProgressCallback, // in: callback procedure
@@ -1401,6 +1466,8 @@ HFILETASKLIST fopsCreateFileTaskList(ULONG ulOperation,
  *@@ fopsValidateObjOperation:
  *      returns 0 (FOPSERR_OK) only if ulOperation is valid
  *      on pObject.
+ *      Part of the bottom layer of the XWorkplace file
+ *      operations engine.
  *
  *      If an error has been found and (pfnErrorCallback != NULL),
  *      that callback gets called and its return value is returned.
@@ -1480,14 +1547,16 @@ FOPSRET fopsValidateObjOperation(ULONG ulOperation,        // in: operation
  *@@ fopsAddFileTask:
  *      adds an object to be processed to the given
  *      file task list.
+ *      Part of the bottom layer of the XWorkplace file
+ *      operations engine.
  *
  *      Note: This function is reentrant only for the
- *      same HFILETASKLIST. Once fopsStartProcessingTasks
+ *      same HFILETASKLIST. Once fopsStartTaskAsync
  *      has been called for the task list, you must not
  *      modify the task list again.
  *      There's no automatic protection against this!
  *      So call this function only AFTER fopsCreateFileTaskList
- *      and BEFORE fopsStartProcessingTasks.
+ *      and BEFORE fopsStartTaskAsync.
  *
  *      This calls fopsValidateObjOperation on the object.
  *
@@ -1522,6 +1591,8 @@ FOPSRET fopsAddObjectToTask(HFILETASKLIST hftl,      // in: file-task-list handl
  *      this starts processing the tasks which have
  *      been previously added to the file tasks lists
  *      using fopsAddFileTask.
+ *      Part of the bottom layer of the XWorkplace file
+ *      operations engine.
  *
  *      This function returns almost immediately
  *      because further processing is done on the
@@ -1561,9 +1632,88 @@ BOOL fopsStartTaskAsync(HFILETASKLIST hftl)
  ********************************************************************/
 
 /*
+ *@@ fopsCallProgressCallback:
+ *      Part of the bottom layer of the XWorkplace file
+ *      operations engine.
+ *
+ *      Returns FALSE to abort.
+ *
+ *@@added V0.9.2 (2000-03-30) [cbo]:
+ */
+
+FOPSRET fopsCallProgressCallback(PFILETASKLIST pftl,
+                                 ULONG flChanged,
+                                 BOOL fUpdateProgress,
+                                 FOPSUPDATE *pfu)   // in: update structure in fopsFileThreadProcessing;
+                                                    // NULL means done
+{
+    FOPSRET frc = FOPSERR_OK;
+    BOOL    fFirstCall = ((pfu->flProgress & FOPSPROG_FIRSTCALL) != 0);
+
+    // store changed flags
+    pfu->flChanged = flChanged;
+
+    // set "progress changed" flag
+    if (fUpdateProgress)
+        pfu->flProgress |= FOPSPROG_UPDATE_PROGRESS;
+    else
+        pfu->flProgress &= ~FOPSPROG_UPDATE_PROGRESS;
+
+    // set source and target folders
+    // depending on operation
+    switch (pftl->ulOperation)
+    {
+        case XFT_MOVE2TRASHCAN:
+            if (fFirstCall)
+            {
+                // update source and target;
+                // the target has been set to the trash can before
+                // the first call by fopsFileThreadProcessing
+                pfu->flChanged |= (FOPSUPD_SOURCEFOLDER_CHANGED
+                                        | FOPSUPD_TARGETFOLDER_CHANGED);
+            }
+        break;
+
+        case XFT_RESTOREFROMTRASHCAN:
+            if (fFirstCall)
+                // source is trash can, which is needed only for
+                // the first call
+                pfu->flChanged |= FOPSUPD_SOURCEFOLDER_CHANGED;
+
+            // target folder can change with any call
+            pfu->flChanged |= FOPSUPD_TARGETFOLDER_CHANGED;
+        break;
+
+        case XFT_TRUEDELETE:
+            if (fFirstCall)
+                // update source on first call; there is
+                // no target folder
+                pfu->flChanged |= FOPSUPD_SOURCEFOLDER_CHANGED;
+        break;
+
+    }
+
+    if (pftl->pfnProgressCallback)
+        if (!((pftl->pfnProgressCallback)(pfu,
+                                          pftl->ulUser)))
+            // FALSE means abort:
+            frc = FOPSERR_CANCELLEDBYUSER;
+
+    if (pfu)
+        // unset first-call flag, which
+        // was initially set
+        pfu->flProgress &= ~FOPSPROG_FIRSTCALL;
+
+    return (frc);
+}
+
+/*
  *@@ fopsFileThreadTrueDelete:
  *      gets called from fopsFileThreadProcessing with
  *      XFT_TRUEDELETE for every object on the list.
+ *      Part of the bottom layer of the XWorkplace file
+ *      operations engine.
+ *
  *      This checks if pObject is a folder and will
  *      recurse, if necessary.
  *      This finally allows cancelling a "delete"
@@ -1571,6 +1721,7 @@ BOOL fopsStartTaskAsync(HFILETASKLIST hftl)
  *      processed.
  *
  *@@added V0.9.3 (2000-04-27) [umoeller]
+ *@@changed V0.9.3 (2000-04-30) [umoeller]: reworked progress reports
  */
 
 FOPSRET fopsFileThreadTrueDelete(HFILETASKLIST hftl,
@@ -1586,51 +1737,66 @@ FOPSRET fopsFileThreadTrueDelete(HFILETASKLIST hftl,
     lstInit(&llObjects,
              FALSE);    // no free, we have WPObject* pointers
 
-    // say "collecting objects
-    if (pftl->pfnProgressCallback)
-    {
-        pfu->ulStatus = FOPSUPD_EXPANDINGOBJECT;
-                // all the other fields have been set by the caller
-        if ((pftl->pfnProgressCallback)(pfu,
-                                        pftl->ulUser)
-                == FALSE)
-        {
-            // FALSE means abort:
-            frc = FOPSERR_CANCELLEDBYUSER;
-        }
-    }
+    // say "collecting objects"
+    // pfu->pSourceObject = *ppObject;      // callback has already been called
+                                            // for this one
+    frc = fopsCallProgressCallback(pftl,
+                                   FOPSUPD_EXPANDING_SOURCEOBJECT_1ST,
+                                   FALSE,    // update progress
+                                   pfu);
 
     if (frc == FOPSERR_OK)
     {
         // build list of all objects to be deleted;
         // this can take a loooong time
+        ULONG ulSubObjectsCount = 0;
         frc = fopsExpandObjectFlat(&llObjects,
-                                   *ppObject);
+                                   *ppObject,
+                                   &ulSubObjectsCount);
+                // now ulSubObjectsCount has the no. of objects
+
         if (frc == FOPSERR_OK)
+            // "done collecting objects"
+            frc = fopsCallProgressCallback(pftl,
+                                           FOPSUPD_EXPANDING_SOURCEOBJECT_DONE,
+                                           FALSE,    // update progress
+                                           pfu);
+
+        if (    (frc == FOPSERR_OK)
+             && (ulSubObjectsCount) // avoid division by zero below
+           )
         {
+            ULONG ulSubObjectThis = 0,
+                  // save progress scalar
+                  ulProgressScalarFirst = pfu->ulProgressScalar;
+
             // all objects collected:
             // go thru the whole list and start deleting.
             // Note that folder contents come before the
             // folder ("bottom-up" directory list).
             PLISTNODE pNode = lstQueryFirstNode(&llObjects);
-            pfu->ulStatus = FOPSUPD_SUBOBJECT;
             while (pNode)
             {
                 WPObject *pObjThis = (WPObject*)pNode->pItemData;
 
-                // call callback
-                if (pftl->pfnProgressCallback)
+                // call callback for subobject
+                pfu->pSubObject = pObjThis;
+                // calc new sub-progress: this is the value we first
+                // had before working on the subobjects (which
+                // is a multiple of 100) plus a sub-progress between
+                // 0 and 100 for the subobjects
+                pfu->ulProgressScalar = ulProgressScalarFirst
+                                        + ((ulSubObjectThis * 100 )
+                                             / ulSubObjectsCount);
+                frc = fopsCallProgressCallback(pftl,
+                                               FOPSUPD_SUBOBJECT_CHANGED,
+                                               TRUE, // update progress
+                                               pfu);
+                if (frc)
                 {
-                    pfu->pObject = pObjThis;
-                    if ((pftl->pfnProgressCallback)(pfu,
-                                                    pftl->ulUser)
-                            == FALSE)
-                    {
-                        // FALSE means abort:
-                        frc = FOPSERR_CANCELLEDBYUSER;
-                        *ppObject = pObjThis;
-                        break;      // no prompt
-                    }
+                    // error or cancelled:
+                    *ppObject = pObjThis;
+                    break;
                 }
 
                 if (!_wpIsDeleteable(pObjThis))
@@ -1672,6 +1838,17 @@ FOPSRET fopsFileThreadTrueDelete(HFILETASKLIST hftl,
                 }
 
                 pNode = pNode->pNext;
+                ulSubObjectThis++;
+            }
+
+            // done with subobjects: report NULL subobject
+            if (frc == FOPSERR_OK)
+            {
+                pfu->pSubObject = NULL;
+                frc = fopsCallProgressCallback(pftl,
+                                               FOPSUPD_SUBOBJECT_CHANGED,
+                                               FALSE, // no update progress
+                                               pfu);
             }
         }
     }
@@ -1686,10 +1863,12 @@ FOPSRET fopsFileThreadTrueDelete(HFILETASKLIST hftl,
  *      this actually performs the file operations
  *      on the objects which have been added to
  *      the given file task list.
+ *      Part of the bottom layer of the XWorkplace file
+ *      operations engine.
  *
  *      WARNING: NEVER call this function manually.
  *      This gets called on the File thread (xthreads.c)
- *      automatically  after fopsStartProcessingTasks has
+ *      automatically  after fopsStartTaskAsync has
  *      been called.
  *
  *      This runs on the File thread.
@@ -1697,6 +1876,7 @@ FOPSRET fopsFileThreadTrueDelete(HFILETASKLIST hftl,
  *@@added V0.9.1 (2000-01-29) [umoeller]
  *@@changed V0.9.3 (2000-04-25) [umoeller]: reworked error management
  *@@changed V0.9.3 (2000-04-26) [umoeller]: added "true delete" support
+ *@@changed V0.9.3 (2000-04-30) [umoeller]: reworked progress reports
  */
 
 VOID fopsFileThreadProcessing(HFILETASKLIST hftl)
@@ -1716,6 +1896,9 @@ VOID fopsFileThreadProcessing(HFILETASKLIST hftl)
              * 1) preparations before collecting objects
              *
              */
+
+            // objects count
+            ULONG ulCurrentObject = 0;
 
             // get first node
             PLISTNODE   pNode = lstQueryFirstNode(&pftl->llObjects);
@@ -1745,8 +1928,9 @@ VOID fopsFileThreadProcessing(HFILETASKLIST hftl)
             fu.ulOperation = pftl->ulOperation;
             fu.pSourceFolder = pftl->pSourceFolder;
             fu.pTargetFolder = pftl->pTargetFolder;
-            fu.ulCurrentObject = 0;
-            fu.ulTotalObjects = lstCountItems(&pftl->llObjects);
+            fu.flProgress = FOPSPROG_FIRSTCALL;   // unset by CallProgressCallback after first call
+            fu.ulProgressScalar = 0;
+            fu.ulProgressMax = lstCountItems(&pftl->llObjects) * 100;
 
             #ifdef DEBUG_TRASHCAN
                 _Pmpf(("    %d items on list", fu.ulTotalObjects));
@@ -1771,16 +1955,14 @@ VOID fopsFileThreadProcessing(HFILETASKLIST hftl)
                     // call progress callback with this object
                     if (pftl->pfnProgressCallback)
                     {
-                        fu.ulStatus = FOPSUPD_SOURCEOBJECT;
-                        fu.pObject = pObjectThis;
-                        if ((pftl->pfnProgressCallback)(&fu,
-                                                        pftl->ulUser)
-                                == FALSE)
-                        {
-                            // FALSE means abort:
-                            frc = FOPSERR_CANCELLEDBYUSER;
+                        fu.pSourceObject = pObjectThis;
+                        frc = fopsCallProgressCallback(pftl,
+                                                       FOPSUPD_SOURCEOBJECT_CHANGED,
+                                                       TRUE, // update progress
+                                                       &fu);
+                        if (frc)
+                            // error or cancelled:
                             break;
-                        }
                     }
                 }
                 else
@@ -1872,13 +2054,16 @@ VOID fopsFileThreadProcessing(HFILETASKLIST hftl)
                 }
 
                 pNode = pNode->pNext;
-                fu.ulCurrentObject++;
+                ulCurrentObject++;
+                fu.ulProgressScalar = ulCurrentObject * 100; // for progress
             } // end while (pNode)
 
             // call progress callback to say  "done"
-            if (pftl->pfnProgressCallback)
-                (pftl->pfnProgressCallback)(NULL,           // NULL means done
-                                            pftl->ulUser);
+            fu.flProgress = FOPSPROG_LASTCALL_DONE;
+            fopsCallProgressCallback(pftl,
+                                     0,         // no update flags, just "done"
+                                     TRUE,      // update progress
+                                     &fu);         // NULL means done
         } // end if (pftl)
     }
     CATCH(excpt2)
@@ -1903,12 +2088,12 @@ VOID fopsFileThreadProcessing(HFILETASKLIST hftl)
  *      or the WPS will probably hang itself up.
  *
  *      Do NOT call this function after you have
- *      called fopsStartProcessingTasks because
+ *      called fopsStartTaskAsync because
  *      then the File thread is working on the
  *      list already. The file list will automatically
  *      get cleaned up then, so you only need to
  *      call this function yourself if you choose
- *      NOT to call fopsStartProcessingTasks.
+ *      NOT to call fopsStartTaskAsync.
  *
  *@@added V0.9.1 (2000-01-29) [umoeller]
  */
@@ -1964,6 +2149,9 @@ typedef struct _GENERICPROGRESSWINDATA
  *@@ fopsGenericProgressCallback:
  *      progress callback which gets specified when
  *      fopsStartTaskFromCnr calls fopsCreateFileTaskList.
+ *      Part of the top layer of the XWorkplace file
+ *      operations engine.
+ *
  *      This assumes that a progress window using
  *      fops_fnwpGenericProgress has been created and
  *      ulUser is a PGENERICPROGRESSWINDATA.
@@ -1991,6 +2179,8 @@ BOOL APIENTRY fopsGenericProgressCallback(PFOPSUPDATE pfu,
  *@@ fopsGenericErrorCallback:
  *      error callback which gets specified when
  *      fopsStartTaskFromCnr calls fopsCreateFileTaskList.
+ *      Part of the top layer of the XWorkplace file
+ *      operations engine.
  *
  *      This is usually called on the thread of the folder view
  *      from which the file operation was started (mostly
@@ -2082,6 +2272,9 @@ FOPSRET APIENTRY fopsGenericErrorCallback(ULONG ulOperation,
  *      the window's status bar and the informational
  *      static texts for the objects and folders.
  *
+ *      Part of the top layer of the XWorkplace file
+ *      operations engine.
+ *
  *      This receives messages from fopsGenericProgressCallback.
  *
  *@@added V0.9.1 (2000-01-30) [umoeller]
@@ -2132,113 +2325,125 @@ MRESULT EXPENTRY fops_fnwpGenericProgress(HWND hwndProgress, ULONG msg, MPARAM m
             mrc = (MRESULT)TRUE;
 
             if (pfu)
-            {
-                BOOL        fGetSourceFolder = FALSE;
-                PSZ         pszTargetFolder = NULL;
-                BOOL        fGetTargetFolder = FALSE;
-
-                switch (pfu->ulOperation)
+                if ((pfu->flProgress & FOPSPROG_LASTCALL_DONE) == 0)
                 {
-                    case XFT_RESTOREFROMTRASHCAN:
-                        // restore from trash can:
-                        // update target folder for every object,
-                        // because this might change
-                        pszTargetFolder = _xwpQueryRelatedPath(pfu->pObject);
-                        // and don't use
-                    break;
+                    CHAR    szTargetFolder[CCHMAXPATH] = "";
+                    PSZ     pszTargetFolder = NULL;
+                    PSZ     pszSubObject = NULL;
 
-                    default:
-                        if (    (pfu->ulCurrentObject == 0)
-                             && (pfu->ulStatus == FOPSUPD_SOURCEOBJECT)
-                           )
+                    // update source folder?
+                    if (pfu->flChanged & FOPSUPD_SOURCEFOLDER_CHANGED)
+                    {
+                        CHAR        szSourceFolder[CCHMAXPATH] = "";
+                        if (pfu->pSourceFolder)
+                            _wpQueryFilename(pfu->pSourceFolder, szSourceFolder, TRUE);
+                        WinSetDlgItemText(hwndProgress,
+                                          ID_XSDI_SOURCEFOLDER,
+                                          szSourceFolder);
+                    }
+
+                    // update target folder?
+                    if (pfu->flChanged & FOPSUPD_TARGETFOLDER_CHANGED)
+                    {
+                        if (pfu->pTargetFolder)
                         {
-                            // first call: set folders
-                            fGetSourceFolder = TRUE;
-                            fGetTargetFolder = TRUE;
+                            _wpQueryFilename(pfu->pTargetFolder, szTargetFolder, TRUE);
+                            pszTargetFolder = szTargetFolder;
                         }
-                    break;
-                }
-
-                // update current object
-                WinSetDlgItemText(hwndProgress,
-                                  ID_XSDI_CURRENTOBJECT,
-                                  _wpQueryTitle(pfu->pObject));
-
-                // now update controls
-                if (fGetSourceFolder)
-                {
-                    CHAR        szSourceFolder[CCHMAXPATH] = "";
-                    if (pfu->pSourceFolder)
-                        _wpQueryFilename(pfu->pSourceFolder, szSourceFolder, TRUE);
-                    WinSetDlgItemText(hwndProgress,
-                                      ID_XSDI_SOURCEFOLDER,
-                                      szSourceFolder);
-                }
-
-                if (fGetTargetFolder)
-                {
-                    CHAR        szTargetFolder[CCHMAXPATH] = "";
-                    if (pfu->pTargetFolder)
-                    {
-                        _wpQueryFilename(pfu->pTargetFolder, szTargetFolder, TRUE);
-                        pszTargetFolder = pszTargetFolder;
-                    }
-                }
-                if (pszTargetFolder)
-                    WinSetDlgItemText(hwndProgress,
-                                      ID_XSDI_TARGETFOLDER,
-                                      pszTargetFolder);
-
-                if (pfu->ulStatus == FOPSUPD_SOURCEOBJECT)
-                    // source object changed:
-                    // update status bar
-                    WinSendMsg(WinWindowFromID(hwndProgress, ID_SDDI_PROGRESSBAR),
-                               WM_UPDATEPROGRESSBAR,
-                               (MPARAM)pfu->ulCurrentObject,
-                               (MPARAM)pfu->ulTotalObjects);
-
-                if (ppwd->fCancelPressed)
-                {
-                    PSZ pszTitle = winhQueryWindowText(hwndProgress);
-                    // this msg box halts the File thread because
-                    // we're being SENT this message
-                    if (cmnMessageBox(hwndProgress, // owner
-                                      pszTitle,
-                                      "Do you wish to cancel the operation in progress?",
-                                            // ###
-                                      MB_YESNO)
-                            == MBID_YES)
-                    {
-                        // cancel: return FALSE
-                        mrc = (MRESULT)FALSE;
-                    }
-                    else
-                    {
-                        WinEnableControl(hwndProgress, DID_CANCEL, TRUE);
-                        ppwd->fCancelPressed = FALSE;
                     }
 
-                    if (pszTitle)
-                        free(pszTitle);
+                    if (pfu->flChanged & FOPSUPD_SOURCEOBJECT_CHANGED)
+                    {
+                        if (pfu->pSourceObject)
+                            WinSetDlgItemText(hwndProgress,
+                                              ID_XSDI_SOURCEOBJECT,
+                                              _wpQueryTitle(pfu->pSourceObject));
+                    }
+
+                    if (pfu->flChanged & FOPSUPD_EXPANDING_SOURCEOBJECT_1ST)
+                    {
+                        // expanding source objects list:
+                        PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+                        pszSubObject = pNLSStrings->pszPopulating;
+                                            // "Collecting objects..."
+                    }
+
+                    if (pfu->flChanged & FOPSUPD_SUBOBJECT_CHANGED)
+                    {
+                        if (pfu->pSubObject)
+                            // can be null!
+                            pszSubObject = _wpQueryTitle(pfu->pSubObject);
+                        else
+                            // clear:
+                            pszSubObject = "";
+                    }
+
+                    // set controls text composed above
+                    if (pszTargetFolder)
+                        WinSetDlgItemText(hwndProgress,
+                                          ID_XSDI_TARGETFOLDER,
+                                          pszTargetFolder);
+
+                    if (pszSubObject)
+                        WinSetDlgItemText(hwndProgress,
+                                          ID_XSDI_SUBOBJECT,
+                                          pszSubObject);
+                    // update status bar?
+                    if (pfu->flProgress & FOPSPROG_UPDATE_PROGRESS)
+                        WinSendMsg(WinWindowFromID(hwndProgress, ID_SDDI_PROGRESSBAR),
+                                   WM_UPDATEPROGRESSBAR,
+                                   (MPARAM)pfu->ulProgressScalar,
+                                   (MPARAM)pfu->ulProgressMax);
+
+                    // has cancel been pressed?
+                    // (flag is set from WM_COMMAND)
+                    if (ppwd->fCancelPressed)
+                    {
+                        // display "confirm cancel" message box;
+                        // this msg box suspends the File thread because
+                        // we're being SENT this message...
+                        // so file operations are suspended until we
+                        // return TRUE from here!
+                        PSZ pszTitle = winhQueryWindowText(hwndProgress);
+                        CHAR szMsg[1000];
+                        cmnGetMessage(NULL, 0, szMsg, sizeof(szMsg),
+                                      186);     // "really cancel?"
+                        if (cmnMessageBox(hwndProgress, // owner
+                                          pszTitle,
+                                          szMsg,
+                                          MB_RETRYCANCEL)
+                                != MBID_RETRY)
+                        {
+                            // cancel: return FALSE
+                            mrc = (MRESULT)FALSE;
+                        }
+                        else
+                        {
+                            WinEnableControl(hwndProgress, DID_CANCEL, TRUE);
+                            ppwd->fCancelPressed = FALSE;
+                        }
+
+                        if (pszTitle)
+                            free(pszTitle);
+                    }
+                } // end if (pfu)
+                else
+                {
+                    // FOPSPROG_LASTCALL_DONE set:
+                    // disable "Cancel"
+                    WinEnableControl(hwndProgress, DID_CANCEL, FALSE);
+                    if (!ppwd->fCancelPressed)
+                        // set progress to 100%
+                        WinSendMsg(ppwd->hwndProgressBar,
+                                   WM_UPDATEPROGRESSBAR,
+                                   (MPARAM)100,
+                                   (MPARAM)100);
+                    // start timer to destroy window
+                    WinStartTimer(WinQueryAnchorBlock(hwndProgress),
+                                  hwndProgress,
+                                  1,
+                                  500);
                 }
-            } // end if (pfu)
-            else
-            {
-                // pfu == NULL means done:
-                // disable "Cancel"
-                WinEnableControl(hwndProgress, DID_CANCEL, FALSE);
-                if (!ppwd->fCancelPressed)
-                    // set progress to 100%
-                    WinSendMsg(ppwd->hwndProgressBar,
-                               WM_UPDATEPROGRESSBAR,
-                               (MPARAM)100,
-                               (MPARAM)100);
-                // start timer to destroy window
-                WinStartTimer(WinQueryAnchorBlock(hwndProgress),
-                              hwndProgress,
-                              1,
-                              500);
-            }
         break; }
 
         case WM_TIMER:
@@ -2273,8 +2478,10 @@ MRESULT EXPENTRY fops_fnwpGenericProgress(HWND hwndProgress, ULONG msg, MPARAM m
  *      starts processing the given file task list
  *      with the generic XWorkplace file progress
  *      dialog (fops_fnwpGenericProgress).
+ *      Part of the top layer of the XWorkplace file
+ *      operations engine.
  *
- *      This calls fopsStartProcessingTasks in turn.
+ *      This calls fopsStartTaskAsync in turn.
  *
  *      Gets called by fopsStartTaskFromCnr.
  *
@@ -2340,8 +2547,11 @@ BOOL fopsStartWithGenericProgress(HFILETASKLIST hftl,
  *      dialog (fops_fnwpGenericProgress), creates a file
  *      task list for the given job (fopsCreateFileTaskList),
  *      adds objects to that list (fopsAddObjectToTask), and
- *      starts processing (fopsStartProcessingTasks), all in
+ *      starts processing (fopsStartTaskAsync), all in
  *      one shot.
+ *
+ *      Entry point to the top layer of the XWorkplace file
+ *      operations engine.
  *
  *      The actual file operation calls are then made on the
  *      XWorkplace File thread (xthreads.c), which calls
@@ -2530,6 +2740,9 @@ FOPSRET fopsStartTaskFromCnr(ULONG ulOperation,       // in: operation; see fops
  *      but adds the objects from the specified
  *      list.
  *
+ *      Entry point to the top layer of the XWorkplace file
+ *      operations engine.
+ *
  *      pllObjects must be a list containing
  *      simple WPObject* pointers. The list is
  *      not freed or modified by this function,
@@ -2629,35 +2842,48 @@ FOPSRET fopsStartTaskFromList(ULONG ulOperation,
  ********************************************************************/
 
 /*
- *@@ fopsStartTrashDeleteFromCnr:
+ *@@ fopsStartDeleteFromCnr:
  *      this gets called from fdr_fnwpSubclassedFolderFrame
- *      if trash can "delete" support is on and WM_COMMAND
- *      with WPMENUID_DELETE has been intercepted.
+ *      if trash can "delete" support is on and a "delete"
+ *      command was intercepted for a number of objects.
+ *
+ *      Entry point to the top layer of the XWorkplace file
+ *      operations engine.
  *
  *      This calls fopsStartTaskFromCnr with the proper parameters
- *      to start moving objects which are selected in pSourceFolder
+ *      to start moving objects which are selected in hwndCnr
  *      to the default trash can on the File thread.
+ *
+ *      Note: The "source folder" for fopsStartTaskFromCnr is
+ *      automatically determined as the folder in which pSourceObject
+ *      resides. This is because if an object somewhere deep in a
+ *      Tree view hierarchy gets deleted, the progress window would
+ *      otherwise display the main folder being deleted, which
+ *      might panic the user. The source folder for delete operations
+ *      is only for display anyways; the file operations engine
+ *      doesn't really need it.
  *
  *@@added V0.9.1 (2000-01-29) [umoeller]
  *@@changed V0.9.3 (2000-04-25) [umoeller]: reworked error management
+ *@@changed V0.9.3 (2000-04-30) [umoeller]: removed pSourceFolder parameter
  */
 
-FOPSRET fopsStartTrashDeleteFromCnr(WPFolder *pSourceFolder, // in: folder with objects to be moved
-                                    WPObject *pSourceObject, // in: first object with source emphasis
-                                    ULONG ulSelection,       // in: SEL_* flag
-                                    HWND hwndCnr,            // in: container to collect objects from
-                                    BOOL fTrueDelete)        // in: if TRUE, perform true delete; if FALSE, move to trash can
+FOPSRET fopsStartDeleteFromCnr(WPObject *pSourceObject, // in: first object with source emphasis
+                               ULONG ulSelection,       // in: SEL_* flag
+                               HWND hwndCnr,            // in: container to collect objects from
+                               BOOL fTrueDelete)        // in: if TRUE, perform true delete; if FALSE, move to trash can
 {
     FOPSRET frc;
 
-    ULONG   ulOperation = XFT_MOVE2TRASHCAN,
-            ulMsgSingle = 0,
-            ulMsgMultiple = 0;
-    ULONG   ulConfirmations = _wpQueryConfirmations(pSourceObject);
-    BOOL    fConfirm = FALSE;
+    ULONG       ulOperation = XFT_MOVE2TRASHCAN,
+                ulMsgSingle = 0,
+                ulMsgMultiple = 0;
+    ULONG       ulConfirmations = _wpQueryConfirmations(pSourceObject);
+    BOOL        fConfirm = FALSE;
+    WPFolder    *pParentFolder;
 
     #ifdef DEBUG_TRASHCAN
-        _Pmpf(("fopsStartTrashDeleteFromCnr: first obj is %s", _wpQueryTitle(pSourceObject)));
+        _Pmpf(("fopsStartDeleteFromCnr: first obj is %s", _wpQueryTitle(pSourceObject)));
         _Pmpf(("ulConfirmations: 0x%lX", ulConfirmations));
     #endif
 
@@ -2681,32 +2907,43 @@ FOPSRET fopsStartTrashDeleteFromCnr(WPFolder *pSourceFolder, // in: folder with 
             ulMsgMultiple = 183;
         }
 
-    frc = fopsStartTaskFromCnr(ulOperation,
-                               pSourceFolder,
-                               NULL,         // target folder: not needed
-                               pSourceObject,
-                               ulSelection,
-                               FALSE,       // no related objects
-                               hwndCnr,
-                               ulMsgSingle,
-                               ulMsgMultiple);
-
-    if (    (!fTrueDelete)      // delete into trashcan
-         && (frc == FOPSERR_TRASHDRIVENOTSUPPORTED) // and trash drive not supported
-       )
+    if (!pSourceObject)
+        frc = FOPSERR_INVALID_OBJECT;
+    else
     {
-        // source folder is not supported by trash can:
-        // start a "delete" job instead, with the proper
-        // confirmation messages ("Drive not supported, delete instead?")
-        frc = fopsStartTaskFromCnr(XFT_TRUEDELETE,
-                                   pSourceFolder,
-                                   NULL,         // target folder: not needed
-                                   pSourceObject,
-                                   ulSelection,
-                                   FALSE,       // no related objects
-                                   hwndCnr,
-                                   180, // ulMsgSingle
-                                   181); // ulMsgMultiple
+        pParentFolder = _wpQueryFolder(pSourceObject);
+        if (!pParentFolder)
+            frc = FOPSERR_INVALID_OBJECT;
+        else
+        {
+            frc = fopsStartTaskFromCnr(ulOperation,
+                                       pParentFolder, // pSourceFolder,
+                                       NULL,         // target folder: not needed
+                                       pSourceObject,
+                                       ulSelection,
+                                       FALSE,       // no related objects
+                                       hwndCnr,
+                                       ulMsgSingle,
+                                       ulMsgMultiple);
+
+            if (    (!fTrueDelete)      // delete into trashcan
+                 && (frc == FOPSERR_TRASHDRIVENOTSUPPORTED) // and trash drive not supported
+               )
+            {
+                // source folder is not supported by trash can:
+                // start a "delete" job instead, with the proper
+                // confirmation messages ("Drive not supported, delete instead?")
+                frc = fopsStartTaskFromCnr(XFT_TRUEDELETE,
+                                           pParentFolder, // pSourceFolder,
+                                           NULL,         // target folder: not needed
+                                           pSourceObject,
+                                           ulSelection,
+                                           FALSE,       // no related objects
+                                           hwndCnr,
+                                           180, // ulMsgSingle
+                                           181); // ulMsgMultiple
+            }
+        }
     }
 
     return (frc);
@@ -2716,6 +2953,9 @@ FOPSRET fopsStartTrashDeleteFromCnr(WPFolder *pSourceFolder, // in: folder with 
  *@@ fopsStartTrashRestoreFromCnr:
  *      this gets called from trsh_fnwpSubclassedTrashCanFrame
  *      if WM_COMMAND with ID_XFMI_OFS_TRASHRESTORE has been intercepted.
+ *
+ *      Entry point to the top layer of the XWorkplace file
+ *      operations engine.
  *
  *      This calls fopsStartTaskFromCnr with the proper parameters
  *      to start restoring the selected trash objects on the File thread.
@@ -2745,6 +2985,9 @@ FOPSRET fopsStartTrashRestoreFromCnr(WPFolder *pTrashSource,  // in: XWPTrashCan
  *@@ fopsStartTrashDestroyFromCnr:
  *      this gets called from trsh_fnwpSubclassedTrashCanFrame
  *      if WM_COMMAND with ID_XFMI_OFS_TRASHDESTROY has been intercepted.
+ *
+ *      Entry point to the top layer of the XWorkplace file
+ *      operations engine.
  *
  *      This calls fopsStartTaskFromCnr with the proper parameters
  *      to start destroying the selected trash objects on the File thread.

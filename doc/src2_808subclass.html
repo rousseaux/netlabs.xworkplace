@@ -50,17 +50,16 @@ classes in the WPS class list which one sits on top.
 <P>
 In order to be able to relate the original frame window proc to a
 folder frame (which can be different for each WPFolder window),
-XWorkplace maintains a global linked list of <CODE>PSUBCLASSEDLISTITEM</CODE>
-structures (declared in <CODE>include\filesys\folder.h</CODE>). This might be a bit slow, but I
-have found no other way to store the original window proc. Using
-window words does not work (believe me: it <I>does</I> crash the WPS),
-because either the WPFolder frame window class does not have window words
-or the window words seem to be used by the WPS already, and (of
-course) this is not documented. If you have a better idea for this,
-let me know.
+XWorkplace re-registers the PM "wpFolder window" window class, which the WPS
+is using for folders. We add more window words to that window class in order
+to be able to store a pointer to a <CODE>SUBCLASSEDFOLDERVIEW</CODE>
+structure with every folder window. One of these structures is created for each
+open folder view to store all kinds of data which we need while the folder is
+open.
 
-<P>As with all linked lists, XWorkplace uses the <CODE>lst*</CODE> functions in
-<CODE>src\helpers\linklist.c</CODE> for adding/removing/searching etc. list items.
-<BR>
+<P>This implementation is new with V0.9.3. The old ugly, slow linked lists are gone.
+I wonder why I haven't come up with this earlier. See
+<CODE>src\filesys\fdrsubclass.c</CODE> for details.
+
 </BODY>
 </HTML>

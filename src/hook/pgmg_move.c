@@ -24,13 +24,12 @@
 #define INCL_GPI
 #include <os2.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <setjmp.h>
 
 #include "setup.h"                      // code generation and debugging options
 
 #include "helpers\except.h"
+#include "helpers\threads.h"
 
 #include "hook\xwphook.h"
 #include "hook\hook_private.h"
@@ -52,7 +51,7 @@
  *@@change3d V0.9.3 (2000-04-10) [umoeller]: renamed from fntMoveThread
  */
 
-VOID _Optlink fntMoveQueueThread(PVOID pvDummy)
+VOID _Optlink fntMoveQueueThread(PTHREADINFO pti)
 {
     REQUESTDATA rdRequest;
     ULONG       ulDataLength;
@@ -292,7 +291,7 @@ VOID _Optlink fntMoveQueueThread(PVOID pvDummy)
 
 /*
  *@@ pgmmMoveIt:
- *      Moves all windows around the desktop according to the
+ *      moves all windows around the desktop according to the
  *      given X and Y deltas.
  *
  *      Parameters:

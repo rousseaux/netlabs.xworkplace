@@ -33,8 +33,8 @@
  */
 
 /*
- *      Copyright (C) 1997-2000 Stefan Milcke,
- *                              Ulrich M”ller.
+ *      Copyright (C) 1997-2000 Stefan Milcke.
+ *      Copyright (C) 1999-2000 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -71,9 +71,7 @@
 #include <os2.h>
 
 #include <string.h>
-#include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
 #include <io.h>
 #include <fcntl.h>
 #include <sys\stat.h>
