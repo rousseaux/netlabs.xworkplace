@@ -38,28 +38,24 @@ interface M_WPImageFile;
 
 interface WPImageFile : XFldDataFile
 {
-    BOOL wpQueryBitmapHandle(in HBITMAP *phBitmap,
-                             in HPAL *phPalette,
-                             in ULONG ulWidth,
-                             in ULONG ulHeight,
-                             in ULONG ulFlags,
-                             in LONG lBackgroundColor,
-                             in BOOL *pbQuitEarly);
+    BOOL32 wpQueryBitmapHandle(inout HBITMAP phBitmap,
+                               inout HPAL phPalette,
+                               in ULONG ulWidth,
+                               in ULONG ulHeight,
+                               in ULONG ulFlags,
+                               in LONG lBackgroundColor,
+                               inout BOOL pbQuitEarly);
 
-    PBITMAPINFOHEADER2 wpQueryBitmapInfoHeader();
-            // in WPREF, this is said to return a PBYTE value,
-            // but really the WPS crashes if it doesn't return
-            // a BITMAPINFOHEADER2... so I've added that struct
-            // def to wps\wptypes.idl and changed this prototype
+    PBYTE wpQueryBitmapInfoHeader();
 
-    PBITMAPFILEHEADER2 wpQueryBitmapData(in ULONG *pulSize);
+    PBYTE wpQueryBitmapData(inout ULONG pulSize);
 
-    BOOL wpSetBitmapData(in PBYTE pBitmapData,
-                         in ULONG ulSize);
+    BOOL32 wpSetBitmapData(in PBYTE pBitmapData,
+                           in ULONG ulSize);
 
-    BOOL wpReadImageFile();
+    BOOL32 wpReadImageFile();
 
-    BOOL wpWriteImageFile();
+    BOOL32 wpWriteImageFile();
 
 #ifdef __SOMIDL__
     implementation
@@ -81,6 +77,20 @@ interface WPImageFile : XFldDataFile
         metaclass = M_WPImageFile;
         callstyle = oidl;
         dllname = "pmwp.dll";
+
+        /*
+         * The following is forced into the .H file:
+         *
+         */
+
+        //# the following is necessary or we'll stop the compiler
+        //# on the new method definitions above
+
+        passthru C_h =
+"#ifndef PMBITMAP_INCLUDED"
+"#include <pmbitmap.h>"
+"#endif"
+"";
 
         somDefaultInit: override;
         somDestruct: override;

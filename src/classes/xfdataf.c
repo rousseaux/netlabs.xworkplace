@@ -126,6 +126,8 @@
 // other SOM headers
 #pragma hdrstop                 // VAC++ keeps crashing otherwise
 
+#include <wpimage.h>
+
 /* ******************************************************************
  *
  *   Global variables
@@ -518,6 +520,41 @@ SOM_Scope BOOL  SOMLINK xdf_xwpSetThumbnail(XFldDataFile *somSelf,
 
 /*
  *@@ xwpLazyLoadThumbnail:
+ *      this new XFldDataFile instance method gets called on
+ *      the thumbnail thread if XFldObject::xwpOwnerDrawIcon
+ *      returned the OWDRFL_LAZYLOADTHUMBNAIL bit set. If this
+ *      method can display itself as a bitmap, it must create
+ *      one and return it.
+ *
+ *      This method is similar to XFldObject::xwpLazyLoadIcon
+ *      in that it is called asynchronously on a background
+ *      thread to defer thumbnail loading. However, there
+ *      are differences:
+ *
+ *      --  This method actually gets called from the
+ *          XFldDataFile::xwpLazyLoadIcon override and is
+ *          thus specific to data files. In other words,
+ *          only data files can ever have thumbnails.
+ *
+ *      --  It must create the bitmap with the given width
+ *          and height, which are the current settings for
+ *          folder thumbnails. If those are changed by the
+ *          user, this method must get called again.
+ *
+ *      --  The caller takes care of repainting the object,
+ *          which is different from XFldObject::xwpLazyLoadIcon,
+ *          where the method must invalidate itself.
+ *
+ *      If this returns NULLHANDLE, this means that the
+ *      method could not understand the file's format, and
+ *      regular lazy icon processing takes place, i.e. the
+ *      object will then receive an icon according to the
+ *      usual data file rules. It will only get called
+ *      again on explicit refresh.
+ *
+ *      The XFldDataFile base implementation calls
+ *      _wpQueryBitmapHandle for instances of WPImageFile
+ *      only and will return NULLHANDLE otherwise.
  *
  *@@added V1.0.1 (2003-01-29) [umoeller]
  */
@@ -527,8 +564,23 @@ SOM_Scope HBITMAP  SOMLINK xdf_xwpLazyLoadThumbnail(XFldDataFile *somSelf,
                                                     ULONG ulHeight,
                                                     BOOL* pbQuitEarly)
 {
+    HBITMAP hbm;
     // XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
     XFldDataFileMethodDebug("XFldDataFile","xdf_xwpLazyLoadThumbnail");
+
+    _PmpfF(("entering"));
+
+    if (    (ctsIsImageFile(somSelf))
+         && (_wpQueryBitmapHandle(somSelf,
+                                  &hbm,
+                                  NULL,
+                                  ulWidth,
+                                  ulHeight,
+                                  0,
+                                  0,
+                                  pbQuitEarly))
+       )
+        return hbm;
 
     return NULLHANDLE;
 }
@@ -559,6 +611,14 @@ SOM_Scope void  SOMLINK xdf_wpInitData(XFldDataFile *somSelf)
         _xwpModifyFlags(somSelf,
                         OBJFL_WPDATAFILE | OBJFL_WPICONORPOINTER,
                         OBJFL_WPDATAFILE | OBJFL_WPICONORPOINTER);
+    // do a hard test for WPImageFile here for compatibility
+    // if XWPImageFile is not replacing WPImageFile
+    // V1.0.1 (2003-01-29) [umoeller]
+    else if (ctsIsImageFile(somSelf))
+        // we can do thumbnails
+        _xwpModifyFlags(somSelf,
+                        OBJFL_WPDATAFILE | OBJFL_OWNERDRAWTHUMBNAIL,
+                        OBJFL_WPDATAFILE | OBJFL_OWNERDRAWTHUMBNAIL);
     else
         _xwpModifyFlags(somSelf,
                         OBJFL_WPDATAFILE,
@@ -1351,8 +1411,6 @@ SOM_Scope ULONG  SOMLINK xdf_xwpOwnerDrawIcon(XFldDataFile *somSelf,
  */
 
 SOM_Scope void  SOMLINK xdf_xwpLazyLoadIcon(XFldDataFile *somSelf,
-                                            HAB hab,
-                                            HPS* phpsMem,
                                             ULONG flOwnerDraw,
                                             BOOL* pbQuitEarly)
 {
@@ -1377,10 +1435,14 @@ SOM_Scope void  SOMLINK xdf_xwpLazyLoadIcon(XFldDataFile *somSelf,
             TRY_LOUD(excpt1)
             {
                 if (fLocked = !_xwpRequestContentMutexSem(somSelf, 2000))
-                    hbmThumbnail = _xwpLazyLoadThumbnail(somSelf,
-                                                         80,
-                                                         80,
-                                                         pbQuitEarly);
+                    // if this fails, make sure we set a -1 handle,
+                    // or we'll keep looping in here!
+                    if (!(hbmThumbnail = _xwpLazyLoadThumbnail(somSelf,
+                                                               80,
+                                                               80,
+                                                               pbQuitEarly)))
+                        hbmThumbnail = -1;
+                    // if the method returns -1 itself, that's fine too
             }
             CATCH(excpt1)
             {
@@ -1399,8 +1461,6 @@ SOM_Scope void  SOMLINK xdf_xwpLazyLoadIcon(XFldDataFile *somSelf,
          || (hbmThumbnail == -1)
        )
         XFldDataFile_parent_WPDataFile_xwpLazyLoadIcon(somSelf,
-                                                       hab,
-                                                       phpsMem,
                                                        flOwnerDraw,
                                                        pbQuitEarly);
 }
@@ -2227,11 +2287,13 @@ SOM_Scope BOOL  SOMLINK xdf_wpSetRealName(XFldDataFile *somSelf,
     // XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
     XFldDataFileMethodDebug("XFldDataFile","xdf_wpSetRealName");
 
+#ifndef __NOTURBOFOLDERS__
     if (cmnQuerySetting(sfTurboFolders))
         // call this new XWPFileSystem method, which calls
         // the real _wpSetRealName, skipping the WPDataFile
         // implementation
         return _xwpSetRealNameNoOverride(somSelf, pszName);
+#endif
 
     return XFldDataFile_parent_WPDataFile_wpSetRealName(somSelf,
                                                         pszName);
@@ -2539,10 +2601,11 @@ SOM_Scope ULONG  SOMLINK xdfM_xwpclsListAssocsForType(M_XFldDataFile *somSelf,
             }
 
         } while (TRUE);
-    #endif
     }
 #ifdef __DEBUG__
     CATCH(dbgexc) {} END_CATCH();
+#endif
+
 #endif
 
     return ulrc;

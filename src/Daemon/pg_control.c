@@ -1126,6 +1126,7 @@ STATIC VOID PagerPresParamChanged(HWND hwnd, MPARAM mp1)
  *@@ PagerPositionFrame:
  *
  *@@added V0.9.19 (2002-05-07) [umoeller]
+ *@@changed V1.0.1 (2003-02-02) [umoeller]: adjusted bottom CY to avoid overlap with bottom XCenter
  */
 
 STATIC VOID PagerPositionFrame(VOID)
@@ -1137,22 +1138,26 @@ STATIC VOID PagerPositionFrame(VOID)
         SWP     swpPager;
 
         ULONG   cb = sizeof(swpPager);
-        swpPager.x = 10;
-        swpPager.y = 10;
-        swpPager.cx = G_pHookData->cxScreen * 18 / 100;
-        swpPager.cy = pgrCalcClientCY(swpPager.cx);
 
-        swpPager.cx += 2 * WinQuerySysValue(HWND_DESKTOP,
-                                            SV_CXSIZEBORDER);
-        swpPager.cy += 2 * WinQuerySysValue(HWND_DESKTOP,
-                                            SV_CYSIZEBORDER);
+        if (    (!PrfQueryProfileData(HINI_USER,
+                                      INIAPP_XWPHOOK,
+                                      INIKEY_HOOK_PAGERWINPOS,
+                                      &swpPager,
+                                      &cb))
+             || (cb != sizeof(swpPager))
+           )
+        {
+            swpPager.x = 10;
+            swpPager.y = 20 + WinQuerySysValue(HWND_DESKTOP,
+                                               SV_CYICON) / 2;  // V1.0.1 (2003-02-02) [umoeller]
+            swpPager.cx = G_pHookData->cxScreen * 18 / 100;
+            swpPager.cy = pgrCalcClientCY(swpPager.cx);
 
-        PrfQueryProfileData(HINI_USER,
-                            INIAPP_XWPHOOK,
-                            INIKEY_HOOK_PAGERWINPOS,
-                            &swpPager,
-                            &cb);
-                // might fail, we then use the default settings above
+            swpPager.cx += 2 * WinQuerySysValue(HWND_DESKTOP,
+                                                SV_CXSIZEBORDER);
+            swpPager.cy += 2 * WinQuerySysValue(HWND_DESKTOP,
+                                                SV_CYSIZEBORDER);
+        }
 
         WinSetWindowPos(G_pHookData->hwndPagerFrame,
                         NULLHANDLE,

@@ -895,6 +895,7 @@ BOOL fcmdProcessViewCommand(WPFolder *somSelf,
  *      folder's, inserting clipboard data and so on.
  *
  *@@changed V0.9.19 (2002-04-24) [umoeller]: replaced embarassing dialog from XFolder days
+ *@@changed V1.0.1 (2003-01-30) [umoeller]: replaced some really embarassing buffer overflows from XFolder days
  */
 
 STATIC BOOL ProgramObjectSelected(WPObject *pFolder,        // in: folder or disk object
@@ -905,7 +906,7 @@ STATIC BOOL ProgramObjectSelected(WPObject *pFolder,        // in: folder or dis
 
     CHAR            szRealName[CCHMAXPATH];    // Buffer for wpQueryFilename()
 
-    BOOL            ValidRealName,
+    BOOL            ValidRealName = FALSE,
                     StartupChanged = FALSE,
                     ParamsChanged = FALSE,
                     TitleChanged = FALSE,
@@ -921,6 +922,9 @@ STATIC BOOL ProgramObjectSelected(WPObject *pFolder,        // in: folder or dis
     if ((pDetails = progQueryDetails(pProgram)))
     {
         XSTRING         strNewParams;       // V0.9.16 (2001-10-06)
+        ULONG           lenRealName;
+        CHAR            szPassRealName[CCHMAXPATH + 2];
+
         xstrInit(&strNewParams, 0);
 
         brc = TRUE;
@@ -937,8 +941,13 @@ STATIC BOOL ProgramObjectSelected(WPObject *pFolder,        // in: folder or dis
 
         // there seems to be a bug in wpQueryFilename for
         // root folders, so we might need to append a "\"
-        if (strlen(szRealName) == 2)
-            strcat(szRealName, "\\");
+        lenRealName = strlen(szRealName);
+        if (lenRealName == 2)
+        {
+            szRealName[2] =  '\\';
+            szRealName[3] =  '\0';
+            ++lenRealName;
+        }
 
         // *** first trick:
         // if the program object's startup dir has not been
@@ -957,21 +966,30 @@ STATIC BOOL ProgramObjectSelected(WPObject *pFolder,        // in: folder or dis
         // if the global settings allow it
         if (cmnQuerySetting(sfAppdParam))
         {
-            CHAR            szPassRealName[CCHMAXPATH];
+            ULONG   lenParams;
 
             // if the folder's real name contains spaces,
             // we need to enclose it in quotes
             if (strchr(szRealName, ' '))
             {
-                strcpy(szPassRealName, "\"");
-                strcat(szPassRealName, szRealName);
-                strcat(szPassRealName, "\"");
+                // turn     name
+                // into     "name"
+                szPassRealName[0] = '\"';
+                memcpy(szPassRealName + 1,
+                       szRealName,
+                       lenRealName);
+                szPassRealName[lenRealName + 1] = '\"';
+                szPassRealName[lenRealName + 2] = '\0';
             }
             else
-                strcpy(szPassRealName, szRealName);
+                memcpy(szPassRealName,
+                       szRealName,
+                       lenRealName + 1);
 
             // backup prog data for later restore
-            if (pszOldParams = pDetails->pszParameters)
+            if (    (pszOldParams = pDetails->pszParameters)
+                 && (lenParams = strlen(pDetails->pszParameters))
+               )
             {
                 // parameter list not empty:
 
@@ -980,11 +998,12 @@ STATIC BOOL ProgramObjectSelected(WPObject *pFolder,        // in: folder or dis
                 // if the program object's parameter list does not
                 // end in "%" ("Netscape support")
                 if (    (ValidRealName)
-                     && (pDetails->pszParameters[strlen(pDetails->pszParameters)-1] != '%'))
+                     && (pszOldParams[lenParams - 1] != '%')
+                   )
                 {
                     ParamsChanged = TRUE;
 
-                    xstrcpy(&strNewParams, pszOldParams, 0);
+                    xstrcpy(&strNewParams, pszOldParams, lenParams);
                     xstrcatc(&strNewParams, ' ');
                     xstrcat(&strNewParams, szPassRealName, 0);
                 }
@@ -998,6 +1017,7 @@ STATIC BOOL ProgramObjectSelected(WPObject *pFolder,        // in: folder or dis
                     if (WinOpenClipbrd(hab))
                     {
                         PSZ pszClipText;
+
                         if (pszClipText = (PSZ)WinQueryClipbrdData(hab, CF_TEXT))
                         {
                             CHAR            szClipBuf[CCHMAXPATH];
@@ -1006,8 +1026,9 @@ STATIC BOOL ProgramObjectSelected(WPObject *pFolder,        // in: folder or dis
                             PSZ pszPos = NULL;
                             // copy clipboard text from shared memory,
                             // but limit to 256 chars
-                            strncpy(szClipBuf, pszClipText, CCHMAXPATH);
-                            szClipBuf[CCHMAXPATH-2] = '\0'; // make sure the string is terminated
+                            strlcpy(szClipBuf,
+                                    pszClipText,
+                                    sizeof(szClipBuf));
                             WinCloseClipbrd(hab);
 
                             if (!ParamsChanged) // did we copy already?
@@ -1076,12 +1097,15 @@ STATIC BOOL ProgramObjectSelected(WPObject *pFolder,        // in: folder or dis
              && (cmnQuerySetting(sfRemoveX))
            )
         {
-            PSZ pszPos;
-            if (pszPos = strchr(pszOldTitle, '~'))
+            PSZ     pszPos;
+            ULONG   lenTitle = strlcpy(szNewTitle,
+                                       pszOldTitle,
+                                       sizeof(szNewTitle));
+            if (strhKillChar(szNewTitle,
+                             '~',
+                             &lenTitle))
             {
                 TitleChanged = TRUE;
-                strncpy(szNewTitle, pszOldTitle, (pszPos - pszOldTitle));
-                strcat(szNewTitle, pszPos+1);
                 pDetails->pszTitle = szNewTitle;
             }
         }

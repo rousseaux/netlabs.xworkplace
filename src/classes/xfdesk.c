@@ -285,6 +285,8 @@ SOM_Scope void  SOMLINK xfdesk_wpInitData(XFldDesktop *somSelf)
     XFldDesktop_parent_WPDesktop_wpInitData(somSelf);
 
     _fOpened = FALSE;
+
+    // _somDumpSelf(somSelf, 1);
 }
 
 /*
@@ -433,7 +435,7 @@ SOM_Scope BOOL  SOMLINK xfdesk_wpQueryDefaultHelp(XFldDesktop *somSelf,
  *      causes WPS startup to hang.
  *
  *@@added V1.0.1 (2003-01-25) [umoeller]
- *@@changed V1.0.1 (2003-01-25) [umoeller]: this could return the split view for the desktop, fixed @@fixes XXX
+ *@@changed V1.0.1 (2003-01-25) [umoeller]: this could return the split view for the desktop, fixed @@fixes 325
  */
 
 SOM_Scope ULONG  SOMLINK xfdesk_wpQueryDefaultView(XFldDesktop *somSelf)
@@ -448,7 +450,7 @@ SOM_Scope ULONG  SOMLINK xfdesk_wpQueryDefaultView(XFldDesktop *somSelf)
     // for the desktop explicitly, we can still end up with the split view
     // as the default if "inherit from parent" is on and the parent has
     // it as the default, which causes WPS startup to fail miserably, so CHECK:
-    // V1.0.1 (2003-01-25) [umoeller] @@fixes XXX
+    // V1.0.1 (2003-01-25) [umoeller] @@fixes 325
     if (    (ulDefaultView != OPEN_CONTENTS)
          && (ulDefaultView != OPEN_DETAILS)
          && (ulDefaultView != OPEN_TREE)
@@ -459,7 +461,6 @@ SOM_Scope ULONG  SOMLINK xfdesk_wpQueryDefaultView(XFldDesktop *somSelf)
     }
 
     return ulDefaultView;
-
 }
 
 /*

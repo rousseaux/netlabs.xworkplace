@@ -827,7 +827,6 @@ BOOL LoadNLSResources(VOID)
             if ((pszDest + usLen) > (pNLSData->achBuf + sizeof(pNLSData->achBuf)))
                 break;
 
-            // strcpy(pszDest, pszSrc);
             memcpy(pszDest, pszSrc, usLen + 1); // V1.0.0 (2002-09-17) [umoeller]
 
             pNLSData->apszNLSStrings[us] = pszDest;

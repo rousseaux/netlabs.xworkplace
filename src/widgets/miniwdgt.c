@@ -54,14 +54,31 @@
  *      Copyright (C) 2000-2003 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
- *      XWorkplace is free software; you can redistribute it and/or modify
- *      it under the terms of the GNU General Public License as published
- *      by the Free Software Foundation, in version 2 as it comes in the
- *      "COPYING" file of the XWorkplace main distribution.
- *      This program is distributed in the hope that it will be useful,
- *      but WITHOUT ANY WARRANTY; without even the implied warranty of
- *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *      GNU General Public License for more details.
+ *      Even though XWorkplace is free software under the GNU General
+ *      Public License version 2 (GPL), permission is granted, free
+ *      of charge, to use this file for the purpose of creating software
+ *      that integrates into XWorkplace or eComStation, even if that
+ *      software is not published under that license.
+ *
+ *      This permission  extends to this single file only, but NOT to
+ *      other files of the XWorkplace sources, not even those that
+ *      are based on or include this file.
+ *
+ *      As a special exception to the GPL, using this file for the
+ *      purpose of creating software that integrates into XWorkplace
+ *      or eComStation is not considered creating a derivative work
+ *      in the sense of the GPL. In plain English, you are not bound
+ *      to the terms and conditions of the GPL if you use only this
+ *      file for that purpose. You are bound by the GPL however if
+ *      you incorporate code from GPL'ed XWorkplace source files where
+ *      this notice is not present.
+ *
+ *      This file is distributed in the hope that it will be useful,
+ *      but still WITHOUT ANY WARRANTY; without even the implied
+ *      warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *      In no event shall the authors and/or copyright holders be
+ *      liable for any damages or other claims arising from the use
+ *      of this software.
  */
 
 #pragma strings(readonly)
@@ -301,10 +318,10 @@ BOOL WgtControl(PXCENTERWIDGET pWidget,
 VOID WgtPaint(HWND hwnd,
               PXCENTERWIDGET pWidget)
 {
-    HPS hps = WinBeginPaint(hwnd, NULLHANDLE, NULL);
-    if (hps)
+    HPS hps;
+    if (hps = WinBeginPaint(hwnd, NULLHANDLE, NULL))
     {
-        RECTL       rclWin;
+        RECTL   rclWin;
 
         // switch HPS to RGB mode
         GpiCreateLogColorTable(hps, 0, LCOLF_RGB, 0, 0, NULL);
@@ -370,8 +387,9 @@ MRESULT EXPENTRY fnwpSampleWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 
         case WM_CREATE:
             WinSetWindowPtr(hwnd, QWL_USER, mp1);
-            pWidget = (PXCENTERWIDGET)mp1;
-            if ((!pWidget) || (!pWidget->pfnwpDefWidgetProc))
+            if (    (!(pWidget = (PXCENTERWIDGET)mp1))
+                 || (!pWidget->pfnwpDefWidgetProc)
+               )
                 // shouldn't happen... stop window creation!!
                 mrc = (MPARAM)TRUE;
         break;
@@ -419,6 +437,7 @@ MRESULT EXPENTRY fnwpSampleWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 
         default:
             mrc = pWidget->pfnwpDefWidgetProc(hwnd, msg, mp1, mp2);
+
     } // end switch(msg)
 
     return mrc;

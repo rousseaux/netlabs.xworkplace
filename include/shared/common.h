@@ -432,7 +432,7 @@
         DECLARE_CMN_STRING(ENTITY_XSHUTDOWN, "XShutdown");
         DECLARE_CMN_STRING(ENTITY_PAGER, "XPager");
 
-        #define F_ALLOW_BOOTROOT_LOGFILE  FALSE
+        #define F_ALLOW_BOOTROOT_LOGFILE  TRUE
 
     #else
         #define XWORKPLACE_STRING "eComStation"
@@ -445,7 +445,7 @@
         DECLARE_CMN_STRING(ENTITY_XSHUTDOWN, "eShutdown");
         DECLARE_CMN_STRING(ENTITY_PAGER, "ePager");
 
-        #define F_ALLOW_BOOTROOT_LOGFILE  TRUE
+        #define F_ALLOW_BOOTROOT_LOGFILE  FALSE
 
     #endif
 
@@ -582,9 +582,6 @@
 #ifndef __EASYSHUTDOWN__
     #define XSD_NOCONFIRM           0x800000     // added V0.9.16 (2002-01-09) [umoeller]
 #endif
-
-    // flags for GLOBALSETTINGS.ulIntroHelpShown
-    #define HLPS_CLASSLIST          0x00000001
 
     // flags for GLOBALSETTINGS.ulConfirmEmpty
     #define TRSHCONF_EMPTYTRASH     0x00000001
@@ -930,6 +927,12 @@
             // HLPS_* flags for various classes, whether
             // an introductory help page has been shown
             // the first time it's been opened
+                #define HLPS_NOSHOWCLASSLIST    0x00000001
+                #define HLPS_NOSHOWXCENTER      0x00000002      // added V1.0.1 (2003-02-02) [umoeller]
+#ifdef __XWPLITE__
+                #define HLPS_NOSHOWDESKTOP      0x00000004      // added V1.0.1 (2003-02-02) [umoeller]
+#endif
+
         sfFdrAutoRefreshDisabled,
             // "Folder auto-refresh" on "Workplace Shell" "View" page;
             // this only has an effect if folder auto-refresh has
@@ -1115,6 +1118,14 @@
     PCSZ XWPENTRY cmnGetString(ULONG ulStringID);
     typedef PCSZ XWPENTRY CMNGETSTRING(ULONG ulStringID);
     typedef CMNGETSTRING *PCMNGETSTRING;
+
+    ULONG XWPENTRY cmnGetString2(PSZ pszBuf,
+                                 ULONG ulStringID,
+                                 ULONG cbBuf);
+
+    ULONG XWPENTRY cmnGetStringNoMnemonic(PSZ pszBuf,
+                                          ULONG ulStringID,
+                                          ULONG cbBuf);
 
     VOID XWPENTRY cmnLoadDaemonNLSStrings(VOID);
 
@@ -1444,7 +1455,8 @@
 
     BOOL XWPENTRY cmnDescribeKey(PSZ pszBuf,
                                  USHORT usFlags,
-                                 USHORT usKeyCode);
+                                 USHORT usKeyCode,
+                                 ULONG cbBuf);
 
     VOID cmnInsertSeparator(HWND hwndMenu,
                             SHORT sPosition);

@@ -616,7 +616,8 @@ STATIC VOID AddHotkeyToMenuItem(HWND hwndMenu,
 
         cmnDescribeKey(szDescription,
                        usFlags,
-                       usKeyCode);
+                       usKeyCode,
+                       sizeof(szDescription));
 
         winhAppend2MenuItemText(hwndMenu,
                                 usMenuCommand,
@@ -705,7 +706,8 @@ VOID fdrAddHotkeysToMenu(WPObject *somSelf,
                 // open settings
                 cmnDescribeKey(szDescription,
                                KC_ALT | KC_VIRTUALKEY,
-                               VK_ENTER);
+                               VK_ENTER,
+                               sizeof(szDescription));
                 winhAppend2MenuItemText(hwndMenu,
                                         WPMENUID_PROPERTIES,
                                         szDescription,
@@ -714,7 +716,8 @@ VOID fdrAddHotkeysToMenu(WPObject *somSelf,
                 // default help
                 cmnDescribeKey(szDescription,
                                KC_VIRTUALKEY,
-                               VK_F1);
+                               VK_F1,
+                               sizeof(szDescription));
                 winhAppend2MenuItemText(hwndMenu,
                                         WPMENUID_EXTENDEDHELP,
                                         szDescription,
@@ -872,7 +875,10 @@ STATIC MRESULT EXPENTRY fnwpFolderHotkeyEntryField(HWND hwndEdit, ULONG msg, MPA
                         pshef->usFlags = usFlags;
                         pshef->usKeyCode = usKeyCode;
 
-                        cmnDescribeKey(szKeyName, usFlags, usKeyCode);
+                        cmnDescribeKey(szKeyName,
+                                       usFlags,
+                                       usKeyCode,
+                                       sizeof(szKeyName));
                         WinSetWindowText(hwndEdit, szKeyName);
 
                         WinEnableWindow(pshef->hwndSet, TRUE);
@@ -1125,7 +1131,8 @@ STATIC VOID AdjustHotkeyRecord(PHOTKEYRECORD pRec)
 
     cmnDescribeKey(pRec->szHotkeyName,
                    pRec->usFlags,
-                   pRec->usKey);
+                   pRec->usKey,
+                   sizeof(pRec->szHotkeyName));
 
     pRec->pcszKeyName = pRec->szHotkeyName;
     pRec->pcszParameters = "n/a";

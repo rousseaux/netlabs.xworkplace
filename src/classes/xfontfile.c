@@ -154,7 +154,7 @@ SOM_Scope void  SOMLINK fonfM_wpclsInitData(M_XWPFontFile *somSelf)
     /* M_XWPFontFileData *somThis = M_XWPFontFileGetData(somSelf); */
     M_XWPFontFileMethodDebug("M_XWPFontFile","fonfM_wpclsInitData");
 
-    M_XWPFontFile_parent_M_WPDataFile_wpclsInitData(somSelf);
+    M_XWPFontFile_parent_M_XFldDataFile_wpclsInitData(somSelf);
 
     krnClassInitialized(G_pcszXWPFontFile);
 }

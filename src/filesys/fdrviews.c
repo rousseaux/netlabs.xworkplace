@@ -70,13 +70,13 @@
 #include "helpers\gpih.h"               // GPI helper routines
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\standards.h"          // some standard macros
+#include "helpers\stringh.h"            // string helper routines
 #include "helpers\winh.h"               // PM helper routines
 
 // SOM headers which don't crash with prec. header files
 #include "xfldr.ih"
 #include "xfdisk.ih"
 #include "xfdataf.ih"
-// #include "xfobj.ih"
 
 // XWorkplace implementation headers
 #include "shared\classtest.h"           // some cheap funcs for WPS class checks
@@ -801,6 +801,7 @@ LONG ResolveColor(LONG lcol)         // in: explicit color or SYSCLR_* index
  *      removes the given object from the image cache.
  *
  *@@added V1.0.0 (2002-08-24) [umoeller]
+ *@@changed V1.0.1 (2003-01-31) [umoeller]: fixed dangling linklist ptr
  */
 
 BOOL fdrvRemoveFromImageCache(WPObject *pobjImage)
@@ -815,7 +816,9 @@ BOOL fdrvRemoveFromImageCache(WPObject *pobjImage)
             PLISTNODE pNode = lstQueryFirstNode(&G_llImages);
             while (pNode)
             {
+                PLISTNODE pNext = pNode->pNext;     // fixed V1.0.1 (2003-01-29) [umoeller]
                 PIMAGECACHEENTRY pice = (PIMAGECACHEENTRY)pNode->pItemData;
+
                 if (pice->pobjImage == pobjImage)
                 {
                     // found:
@@ -829,7 +832,7 @@ BOOL fdrvRemoveFromImageCache(WPObject *pobjImage)
                     break;
                 }
 
-                pNode = pNode->pNext;
+                pNode = pNext;      // fixed V1.0.1 (2003-01-29) [umoeller]
             }
         }
     }
@@ -867,8 +870,10 @@ BOOL fdrvRemoveFromImageCache(WPObject *pobjImage)
 
 HBITMAP GetBitmap(PIBMFDRBKGND pBkgnd)
 {
-    HBITMAP hbm = NULLHANDLE;
-    BOOL    fLocked = FALSE;
+    HBITMAP     hbm = NULLHANDLE;
+    BOOL        fLocked = FALSE;
+
+    WPDataFile  *pobjLocked = NULL;
 
     TRY_LOUD(excpt1)
     {
@@ -900,7 +905,9 @@ HBITMAP GetBitmap(PIBMFDRBKGND pBkgnd)
                 // struct, or the WPS will go boom
                 CHAR    szTemp[CCHMAXPATH];
                 if (strchr(pBkgnd->BkgndStore.pszBitmapFile, '\\'))
-                    strcpy(szTemp, pBkgnd->BkgndStore.pszBitmapFile);
+                    strlcpy(szTemp,
+                            pBkgnd->BkgndStore.pszBitmapFile,
+                            sizeof(szTemp));
                 else
                 {
                     // not fully qualified: assume ?:\os2\bitmap then
@@ -959,33 +966,44 @@ HBITMAP GetBitmap(PIBMFDRBKGND pBkgnd)
                     {
                         // image file was not in cache:
                         // then create a HBITMAP and add a cache entry
-                        if (hbm = _wpQueryHandleFromContents(pobjImage))
+
+                        // added new mutex request V1.0.1 (2003-01-29) [umoeller]
+                        if (!_xwpRequestContentMutexSem(pobjImage, SEM_INDEFINITE_WAIT))
                         {
-                            PIMAGECACHEENTRY pice;
-                            if (pice = NEW(IMAGECACHEENTRY))
+                            pobjLocked = pobjImage;
+
+                            if (hbm = _wpQueryHandleFromContents(pobjImage))
                             {
-                                ZERO(pice);
-                                pice->pobjImage = pobjImage;
-                                pice->hbm = hbm;
+                                PIMAGECACHEENTRY pice;
+                                if (pice = NEW(IMAGECACHEENTRY))
+                                {
+                                    ZERO(pice);
+                                    pice->pobjImage = pobjImage;
+                                    pice->hbm = hbm;
 
-                                lstAppendItem(&G_llImages,
-                                              pice);
+                                    lstAppendItem(&G_llImages,
+                                                  pice);
 
-                                // remove from cache when it goes dormant
-                                _xwpModifyFlags(pobjImage,
-                                                OBJLIST_IMAGECACHE,
-                                                OBJLIST_IMAGECACHE);
+                                    // remove from cache when it goes dormant
+                                    _xwpModifyFlags(pobjImage,
+                                                    OBJLIST_IMAGECACHE,
+                                                    OBJLIST_IMAGECACHE);
+                                }
                             }
                         }
                     }
                 } // end if (fLocked = LockImages())
-            }
-        }
+            } // if (pobjImage)
+        } // if (    (pBkgnd->BkgndStore.usColorOrBitmap == BKGND_BITMAP)
     }
     CATCH(excpt1)
     {
     }
     END_CATCH();
+
+    // V1.0.1 (2003-01-29) [umoeller]
+    if (pobjLocked)
+        _xwpReleaseContentMutexSem(pobjLocked);
 
     if (fLocked)
         UnlockImages();

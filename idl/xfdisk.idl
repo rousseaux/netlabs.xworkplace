@@ -64,7 +64,7 @@ interface XFldDisk : WPDisk
         externalprefix = xfdisk_;
         externalstem = xfdisk;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xfdisk;           //# specifies the filestem for sc-generated files
         metaclass = M_XFldDisk;
         dllname = "xfldr.dll";
@@ -149,7 +149,7 @@ interface M_XFldDisk : M_WPDisk
         externalstem = xfdiskM;
         functionprefix = xfdiskM_;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xfdisk;           //# specifies the filestem for sc-generated files
         dllname = "xfldr.dll";
         callstyle = oidl;

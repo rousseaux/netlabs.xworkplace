@@ -773,7 +773,8 @@ VOID hifCollectHotkeys(MPARAM mp1,  // in: HWND hwndCnr
                 else
                     cmnDescribeKey(preccThis->szHotkey,
                                    pHotkeyThis->usFlags,
-                                   pHotkeyThis->usKeyCode);
+                                   pHotkeyThis->usKeyCode,
+                                   sizeof(preccThis->szHotkey));
 
                 preccThis->pszHotkey = preccThis->szHotkey;
 
@@ -2927,10 +2928,9 @@ VOID hifMouseCornersInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                 // V0.9.20 (2002-07-03) [umoeller]
                 PSZ p;
                 LONG l;
-                strcpy(szTemp, cmnGetString(aIDsWithFuncs[ul].ulStringID));
-                if (p = strchr(szTemp, '~'))
-                    // found: remove that
-                    strcpy(p, p + 1);
+                cmnGetStringNoMnemonic(szTemp,
+                                       aIDsWithFuncs[ul].ulStringID,
+                                       sizeof(szTemp));
 
                 l = WinInsertLboxItem(hwndDrop,
                                       LIT_END,

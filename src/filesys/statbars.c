@@ -512,7 +512,8 @@ HWND stbCreate(PSUBCLFOLDERVIEW psli2)
                     // set a flag for the subclassed folder frame
                     // window proc that this folder view needs no additional scrolling
                     // (this is evaluated in WM_FORMATFRAME msgs)
-                    psli2->fNeedCnrScroll = FALSE;
+                    // changed V1.0.1 (2003-02-02) [umoeller]
+                    psli2->bNeedCnrScroll = SCROLL_ADJUSTFORSB;
 
                     if (fInflate)
                     {
@@ -538,18 +539,21 @@ HWND stbCreate(PSUBCLFOLDERVIEW psli2)
                                             &ulIni,
                                             sizeof(ulIni));
                     }
+                    else
+                        // always do this for icon view if auto-sort is off
+                        // V0.9.18 (2002-03-24) [umoeller]
+                        // WM_FORMATFRAME _will_ have to scroll the container
+                        // hrm, don't think so... scroll only if we did _not_
+                        // inflate because the view has already previously
+                        // been opened V1.0.1 (2003-02-02) [umoeller]
+                        if (    (ulView == OPEN_CONTENTS)
+                             && (  (_lAlwaysSort == SET_DEFAULT)
+                                        ? !cmnQuerySetting(sfAlwaysSort)
+                                        : !_lAlwaysSort)
+                           )
+                            psli2->bNeedCnrScroll = SCROLL_VERYFIRSTTIME;
 
-                    // always do this for icon view if auto-sort is off
-                    // V0.9.18 (2002-03-24) [umoeller]
-                    // WM_FORMATFRAME _will_ have to scroll the container
-                    if (    (ulView == OPEN_CONTENTS)
-                         && (  (_lAlwaysSort == SET_DEFAULT)
-                                    ? !cmnQuerySetting(sfAlwaysSort)
-                                    : !_lAlwaysSort)
-                       )
-                        psli2->fNeedCnrScroll = TRUE;
-
-                    PMPF_STATUSBARS(("    set psli2->fNeedCnrScroll: %d", psli2->fNeedCnrScroll));
+                    PMPF_STATUSBARS(("    set psli2->fNeedCnrScroll: %d", psli2->bNeedCnrScroll));
                     PMPF_STATUSBARS(("    sending WM_UPDATEFRAME"));
 
             } // end switch (ulView)
@@ -956,6 +960,7 @@ STATIC VOID StatusTimer(HWND hwndBar,
  *@@ StatusPaint:
  *
  *@@added V0.9.16 (2001-10-28) [umoeller]
+ *@@changed V1.0.1 (2003-01-30) [umoeller]: optimized, fixed possible buf overflow
  */
 
 STATIC VOID StatusPaint(HWND hwndBar)
@@ -970,7 +975,6 @@ STATIC VOID StatusPaint(HWND hwndBar)
                 rcl2;
         POINTL  ptl1;
         PSZ     pszText;
-        CHAR    szTemp[100] = "0";
         USHORT  usLength;
         LONG    lNextX;
         PSZ     p1, p2, p3;
@@ -1062,14 +1066,16 @@ STATIC VOID StatusPaint(HWND hwndBar)
                 if (p2 = strstr(p1, "$x("))
                 {
                     // tab found: calculate next x position into lNextX
-                    usLength = (p2-p1);
-                    strcpy(szTemp, "100");
+                    usLength =  p2 - p1;
+
                     if (p3 = strchr(p2, ')'))
                     {
-                        PSZ p4 = strchr(p2, '%');
-                        strncpy(szTemp, p2+3, p3-p2-3);
-                        // get the parameter
-                        sscanf(szTemp, "%d", &lNextX);
+                        PSZ     p4 = strchr(p2, '%');
+
+                        // optimized V1.0.1 (2003-01-30) [umoeller]
+                        *p3 = '\0';
+                        lNextX = atoi(p2 + 3);
+                        *p3 = ')';
 
                         if (lNextX < 0)
                         {
@@ -2150,7 +2156,10 @@ ULONG stbTranslateSingleMnemonics(SOMClass *pObject,       // in: object
                 ulrc++;
             }
             else
-                strcpy(szTemp, "?");
+            {
+                szTemp[0] = '?';
+                szTemp[1] = '\0';
+            }
 
             // now replace: since we have found the string
             // already, we can safely use xstrrpl directly
@@ -2197,7 +2206,10 @@ ULONG stbTranslateSingleMnemonics(SOMClass *pObject,       // in: object
                 ulrc++;
             }
             else
-                strcpy(szTemp, "?");
+            {
+                szTemp[0] = '?';
+                szTemp[1] = '\0';
+            }
 
             // now replace: since we have found the string
             // already, we can safely use xstrrpl directly
@@ -2226,7 +2238,10 @@ ULONG stbTranslateSingleMnemonics(SOMClass *pObject,       // in: object
                                         szTemp,
                                         sizeof(szTemp)))
                )
-                strcpy(szTemp, "?");
+            {
+                szTemp[0] = '?';
+                szTemp[1] = '\0';
+            }
 
             xstrrpl(pstrText,
                     // ofs of first char to replace:
@@ -2248,7 +2263,10 @@ ULONG stbTranslateSingleMnemonics(SOMClass *pObject,       // in: object
                  || (doshQueryDiskLabel(ulLogicalDrive,
                                         szTemp))
                )
-                strcpy(szTemp, "?");
+            {
+                szTemp[0] = '?';
+                szTemp[1] = '\0';
+            }
 
             xstrrpl(pstrText,
                     // ofs of first char to replace:
@@ -2309,7 +2327,9 @@ ULONG stbTranslateSingleMnemonics(SOMClass *pObject,       // in: object
 
         if (p = strstr(pstrText->psz, "\tD"))  // date
         {
-            strcpy(szTemp, "?");
+            szTemp[0] = '?';
+            szTemp[1] = '\0';
+
             _wpQueryDateInfo(pObject, &ffbuf4);
             fBufLoaded = TRUE;
             nlsFileDate(szTemp,
@@ -2328,7 +2348,9 @@ ULONG stbTranslateSingleMnemonics(SOMClass *pObject,       // in: object
 
         if (p = strstr(pstrText->psz, "\tT"))  // time
         {
-            strcpy(szTemp, "?");
+            szTemp[0] = '?';
+            szTemp[1] = '\0';
+
             if (!fBufLoaded)
                 _wpQueryDateInfo(pObject, &ffbuf4);
             nlsFileTime(szTemp,
@@ -2405,7 +2427,9 @@ ULONG stbTranslateSingleMnemonics(SOMClass *pObject,       // in: object
 
         if (p = strstr(pstrText->psz, "\tr")) // real name
         {
-            strcpy(szTemp, "?");
+            szTemp[0] = '?';
+            szTemp[1] = '\0';
+
             _wpQueryFilename(pObject, szTemp, FALSE);
             xstrrpl(pstrText,
                     // ofs of first char to replace:
@@ -2439,14 +2463,17 @@ ULONG stbTranslateSingleMnemonics(SOMClass *pObject,       // in: object
 
         if (p = strstr(pstrText->psz, "\tp"))  // program executable
         {
-            strcpy(szTemp, "?");
+            szTemp[0] = '?';
+            szTemp[1] = '\0';
+
             if (!pDetails)
                 pDetails = progQueryDetails(pObject);
 
             if (pDetails)
                 if (pDetails->pszExecutable)
-                    strcpy(szTemp, pDetails->pszExecutable);
-                else strcpy(szTemp, "");
+                    strlcpy(szTemp, pDetails->pszExecutable, sizeof(szTemp));
+                else
+                    szTemp[0] = '\0';
 
             xstrrpl(pstrText,
                     // ofs of first char to replace:
@@ -2461,15 +2488,17 @@ ULONG stbTranslateSingleMnemonics(SOMClass *pObject,       // in: object
 
         if (p = strstr(pstrText->psz, "\tP"))  // program parameters
         {
-            strcpy(szTemp, "?");
+            szTemp[0] = '?';
+            szTemp[1] = '\0';
+
             if (!pDetails)
                 pDetails = progQueryDetails(pObject);
 
             if (pDetails)
                 if (pDetails->pszParameters)
-                    strcpy(szTemp, pDetails->pszParameters);
+                    strlcpy(szTemp, pDetails->pszParameters, sizeof(szTemp));
                 else
-                    strcpy(szTemp, "");
+                    szTemp[0] = '\0';
 
             xstrrpl(pstrText,
                     // ofs of first char to replace:
@@ -2484,15 +2513,17 @@ ULONG stbTranslateSingleMnemonics(SOMClass *pObject,       // in: object
 
         if (p = strstr(pstrText->psz, "\td"))  // startup dir
         {
-            strcpy(szTemp, "?");
+            szTemp[0] = '?';
+            szTemp[1] = '\0';
+
             if (!pDetails)
                 pDetails = progQueryDetails(pObject);
 
             if (pDetails)
                 if (pDetails->pszStartupDir)
-                    strcpy(szTemp, pDetails->pszStartupDir);
+                    strlcpy(szTemp, pDetails->pszStartupDir, sizeof(szTemp));
                 else
-                    strcpy(szTemp, "");
+                    szTemp[0] = '\0';
 
             xstrrpl(pstrText,
                     // ofs of first char to replace:
@@ -2561,9 +2592,18 @@ ULONG stbTranslateSingleMnemonics(SOMClass *pObject,       // in: object
 
         if (p = strstr(pstrText->psz, "\tt"))          // object title
         {
-            strcpy(szTemp, "?");
-            strcpy(szTemp, _wpQueryTitle(pObject));
-            strhBeautifyTitle(szTemp);
+            PCSZ pcszTitle;
+            if (pcszTitle = _wpQueryTitle(pObject))
+            {
+                strlcpy(szTemp, pcszTitle, sizeof(szTemp));
+                strhBeautifyTitle(szTemp);
+            }
+            else
+            {
+                szTemp[0] = '?';
+                szTemp[1] = '\0';
+            }
+
             xstrrpl(pstrText,
                     // ofs of first char to replace:
                     (p - pstrText->psz),

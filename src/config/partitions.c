@@ -349,19 +349,7 @@ MRESULT EXPENTRY fnwpPartitionsClient(HWND hwndClient, ULONG msg, MPARAM mp1, MP
             ULONG           ul;
             PPRESPARAMS     ppp = NULL;
             CHAR            szFont[] = "9.WarpSans Bold";
-            // CHAR            szTitle[200];
             LONG            lBackColor = CLR_WHITE;
-            // PSZ             p = 0;
-
-            // V0.9.5 (2000-09-20) [pr] remove accelerator char
-            /* strcpy(szTitle, cmnGetString(ID_XSSI_OPENPARTITIONS)) ; // pszOpenPartitions
-            p = strchr(szTitle, '~');
-            if (p)
-                strcpy(p, p+1);
-            // register this view
-            _wpRegisterView(pCData->somSelf,
-                            hwndFrame,
-                            szTitle); */
 
             // now add the view to the object's use list;
             // this use list is used by wpViewObject and
@@ -371,13 +359,6 @@ MRESULT EXPENTRY fnwpPartitionsClient(HWND hwndClient, ULONG msg, MPARAM mp1, MP
                                                             sizeof(PARTITIONCLIENTDATA),
                                                             NULL);
             memset((PVOID)pClientData, 0, sizeof(PARTITIONCLIENTDATA));
-            /* pClientData->somSelf         = pCData->somSelf;
-            pClientData->UseItem.type    = USAGE_OPENVIEW;
-            pClientData->ViewItem.view   = pCData->ulView;
-            pClientData->ViewItem.handle = hwndFrame;
-
-            // add the use list item to the object's use list
-            _wpAddToObjUseList(pCData->somSelf, &(pClientData->UseItem)); */
 
             // save the pointer to the use item in the window words so that
             // the window procedure can remove it from the list when the window

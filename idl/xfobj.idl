@@ -81,7 +81,7 @@ interface XWPObjList : SOMObject
         externalprefix = xl_;
         externalstem = xl;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xfobj;           //# specifies the filestem for sc-generated files
         //# metaclass = M_XWPObjList;
         dllname = "xfldr.dll";
@@ -224,9 +224,7 @@ interface XFldObject : WPObject
                            in ULONG flOwnerDraw,
                            in PRECTL prcl);
 
-    VOID xwpLazyLoadIcon(in HAB hab,
-                         in HPS *phpsMem,
-                         in ULONG flOwnerDraw,
+    VOID xwpLazyLoadIcon(in ULONG flOwnerDraw,
                          in BOOL *pbQuitEarly);
 
     VOID xwpForceRepaint(in ULONG flRefresh);
@@ -287,7 +285,7 @@ interface XFldObject : WPObject
         externalprefix = xo_;
         externalstem = xo;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xfobj;           //# specifies the filestem for sc-generated files
         metaclass = M_XFldObject;
         dllname = "xfldr.dll";
@@ -491,7 +489,7 @@ interface M_XFldObject : M_WPObject
         externalstem = xoM;
         functionprefix = xoM_;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xfobj;           //# specifies the filestem for sc-generated files
         dllname = "xfldr.dll";
         callstyle = oidl;

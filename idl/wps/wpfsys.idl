@@ -36,8 +36,7 @@
 
 interface M_WPFileSystem;
 
-interface WPFileSystem : XFldObject     //# WPObject is replaced with XFldObject
-                                        //# V1.0.1 (2002-12-08) [umoeller]
+interface WPFileSystem : XFldObject
 {
 
 //# methods originally published with Warp 3 Toolkit IDL file

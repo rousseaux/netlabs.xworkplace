@@ -1513,7 +1513,6 @@ LONG GetPartitionColor(ULONG ulType,
             if (pszType)
                 strcpy(pszType, "Free space");
             return RGBCOL_DARKGRAY;
-        break;
 
         case 0x14:
         case 0x06:
@@ -1523,7 +1522,6 @@ LONG GetPartitionColor(ULONG ulType,
             if (pszType)
                 strcpy(pszType, "FAT16");
             return RGBCOL_DARKGREEN;
-        break;
 
         case 0x07: // compatibility volume
         case 0x35:  // LVM volume
@@ -1544,14 +1542,12 @@ LONG GetPartitionColor(ULONG ulType,
                 return RGBCOL_DARKBLUE;
 
             return RGBCOL_BLUE;
-        break;
 
         case 0x0b:
         case 0x0c:  // FAT32
             if (pszType)
                 strcpy(pszType, "FAT32");
             return RGBCOL_DARKYELLOW;
-        break;
 
         case 0x82:
             if (pszType)
@@ -1562,19 +1558,18 @@ LONG GetPartitionColor(ULONG ulType,
             if (pszType)
                 strcpy(pszType, "Linux ext2fs");
             return RGBCOL_DARKRED;
-        break;
 
         case 0x0a:  // boot manager
             if (pszType)
                 strcpy(pszType, "IBM boot manager");
             return RGBCOL_DARKCYAN;
-        break;
 
     }
 
     // unknown:
     if (pszType)
         strcpy(pszType, "unknown");
+
     return RGBCOL_DARKGRAY;
 }
 

@@ -1178,9 +1178,10 @@ BOOL fdrSetOneFrameWndTitle(WPFolder *somSelf,
                 if (pNextSlash = strchr(pSrchSlash, '\\'))
                 {
                     strcpy(pFirstSlash + 4, pNextSlash);
-                    pFirstSlash[1] = '.';
-                    pFirstSlash[2] = '.';
-                    pFirstSlash[3] = '.';
+                    pFirstSlash[1]
+                    = pFirstSlash[2]
+                    = pFirstSlash[3]
+                    = '.';
                     pSrchSlash = pFirstSlash + 5;
                 }
                 else
@@ -2508,7 +2509,9 @@ VOID DoRename(HWND hwndDlg)
 
                 if (!fCaseSense)
                 {
-                    strcpy(szThis, pcszTitleOrig);
+                    strlcpy(szThis,
+                            pcszTitleOrig,
+                            sizeof(szThis));
                     nlsUpper(szThis);
                     pcszTitleMatch = szThis;
                 }
@@ -3626,9 +3629,7 @@ void _Optlink fntProcessStartupFolder(PTHREADINFO ptiMyself)
             ppf->henum = _xwpBeginEnumContent(pFolder);
         }
 
-        if (!ppf->henum)
-            arc = ERROR_INVALID_HANDLE;     // whatever
-        else
+        if (ppf->henum)
         {
             // in any case, get first or next object
             ppf->pObject = _xwpEnumNext(pFolder, ppf->henum);
@@ -3653,10 +3654,10 @@ void _Optlink fntProcessStartupFolder(PTHREADINFO ptiMyself)
                     {
                         CHAR szStarting2[500], szTemp[500];
                         // update status text ("Starting xxx")
-                        strcpy(szTemp, _wpQueryTitle(ppf->pObject));
+                        strlcpy(szTemp, _wpQueryTitle(ppf->pObject), sizeof(szTemp));
                         strhBeautifyTitle(szTemp);
                         sprintf(szStarting2,
-                                cmnGetString(ID_SDSI_STARTING), // ->pszStarting,
+                                cmnGetString(ID_SDSI_STARTING),
                                 szTemp);
                         WinSetDlgItemText(ppf->hwndStatus, ID_SDDI_STATUS, szStarting2);
                     }

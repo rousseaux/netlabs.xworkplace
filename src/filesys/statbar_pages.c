@@ -215,7 +215,7 @@ STATIC MRESULT EXPENTRY fncbWPSStatusBarClassSelected(HWND hwndCnr,
     MRESULT mrc = (MPARAM)FALSE;
     PSZ pszClassTitle;
 
-    strcpy(szInfo, pwps->pszClassName);
+    strlcpy(szInfo, pwps->pszClassName, sizeof(szInfo));
 
     if (pwps->pClassObject)
     {
@@ -234,8 +234,9 @@ STATIC MRESULT EXPENTRY fncbWPSStatusBarClassSelected(HWND hwndCnr,
         mrc = (MPARAM)TRUE;
     }
     else
-        strcpy(szInfo,
-               cmnGetString(ID_XSSI_SB_CLASSNOTSUPPORTED));  // pszSBClassNotSupported
+        cmnGetString2(szInfo,
+                      ID_XSSI_SB_CLASSNOTSUPPORTED,
+                      sizeof(szInfo));
 
     WinSetWindowText((HWND)mphwndInfo, szInfo);
 
@@ -575,10 +576,12 @@ VOID stbStatusBar2InitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
             = NEW(STATUSBARPAGEDATA);
         ZERO(psbpd);
 
-        strcpy(psbpd->szSBTextNoneSelBackup,
-               cmnQueryStatusBarSetting(SBS_TEXTNONESEL));
-        strcpy(psbpd->szSBTextMultiSelBackup,
-               cmnQueryStatusBarSetting(SBS_TEXTMULTISEL));
+        strlcpy(psbpd->szSBTextNoneSelBackup,
+                cmnQueryStatusBarSetting(SBS_TEXTNONESEL),
+                sizeof(psbpd->szSBTextNoneSelBackup));
+        strlcpy(psbpd->szSBTextMultiSelBackup,
+                cmnQueryStatusBarSetting(SBS_TEXTMULTISEL),
+                sizeof(psbpd->szSBTextMultiSelBackup));
         // status bar settings page: get last selected
         // class from INIs (for single-object mode)
         // and query the SOM class object from this string
@@ -592,8 +595,9 @@ VOID stbStatusBar2InitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
             RefreshClassObject(psbpd);
 
         if (psbpd->pSBClassObjectSelected)
-            strcpy(psbpd->szSBText1SelBackup,
-                   stbQueryClassMnemonics(psbpd->pSBClassObjectSelected));
+            strlcpy(psbpd->szSBText1SelBackup,
+                    stbQueryClassMnemonics(psbpd->pSBClassObjectSelected),
+                    sizeof(psbpd->szSBText1SelBackup));
 
         ctlMakeMenuButton(WinWindowFromID(pnbp->hwndDlgPage, ID_XSDI_SBKEYSNONESEL), 0, 0);
         ctlMakeMenuButton(WinWindowFromID(pnbp->hwndDlgPage, ID_XSDI_SBKEYS1SEL), 0, 0);
@@ -977,7 +981,7 @@ MRESULT stbStatusBar2ItemChanged(PNOTEBOOKPAGE pnbp,
             scd.pszIntroText = strIntroText.psz;
             scd.pcszRootClass = G_pcszWPObject;
             scd.pcszOrphans = NULL;
-            strcpy(scd.szClassSelected, psbpd->szSBClassSelected);
+            strlcpy(scd.szClassSelected, psbpd->szSBClassSelected, sizeof(scd.szClassSelected));
 
             // these callback funcs are defined way more below
             scd.pfnwpReturnAttrForClass = fncbWPSStatusBarReturnClassAttr;
@@ -996,7 +1000,7 @@ MRESULT stbStatusBar2ItemChanged(PNOTEBOOKPAGE pnbp,
                                      &scd)
                           == DID_OK)
             {
-                strcpy(psbpd->szSBClassSelected, scd.szClassSelected);
+                strlcpy(psbpd->szSBClassSelected, scd.szClassSelected, sizeof(psbpd->szSBClassSelected));
                 WinSetDlgItemText(pnbp->hwndDlgPage,
                                   ID_XSDI_SBCURCLASS,
                                   psbpd->szSBClassSelected);
@@ -1013,8 +1017,9 @@ MRESULT stbStatusBar2ItemChanged(PNOTEBOOKPAGE pnbp,
                 pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
 
                 // refresh the "Undo" data for this
-                strcpy(psbpd->szSBText1SelBackup,
-                       stbQueryClassMnemonics(psbpd->pSBClassObjectSelected));
+                strlcpy(psbpd->szSBText1SelBackup,
+                        stbQueryClassMnemonics(psbpd->pSBClassObjectSelected),
+                        sizeof(psbpd->szSBText1SelBackup));
 
             }
 

@@ -248,18 +248,18 @@ PRECH = $(TEMP)
 !error TKBASE is not defined.
 !endif
 
-INCLUDE_TEMP1=
+!undef INCLUDE_TEMP1
 !ifdef DDKBASE
 INCLUDE_TEMP1=$(DDKBASE)\h;
 !endif
 
-INCLUDE_TEMP2=
-!ifdef SESBASE
+#!undef INCLUDE_TEMP2
+#!ifdef SESBASE
 # SES defined:
-INCLUDE_TEMP2=$(SESBASE)\h;
-!endif
+#INCLUDE_TEMP2=$(SESBASE)\h;
+#!endif
 
-INCLUDE_TEMP3=
+!undef INCLUDE_TEMP3
 !ifdef LANHEADERS
 INCLUDE_TEMP3=$(LANHEADERS);
 !endif

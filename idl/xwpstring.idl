@@ -79,7 +79,7 @@ interface XWPString : WPAbstract
         externalprefix = xwstr_;
         externalstem = xwstr;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xwpstring;           //# specifies the filestem for sc-generated files
         metaclass = M_XWPString;
         dllname = "xfldr.dll";
@@ -172,7 +172,7 @@ interface M_XWPString : M_WPAbstract
         externalstem = xwstrM;
         functionprefix = xwstrM_;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xwpstring;           //# specifies the filestem for sc-generated files
         dllname = "xfldr.dll";
         callstyle = oidl;

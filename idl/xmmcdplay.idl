@@ -88,7 +88,7 @@ interface XMMCDPlayer : WPAbstract
         externalprefix = cdp_;
         externalstem = cdp;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xmmcdplay;           //# specifies the filestem for sc-generated files
         metaclass = M_XMMCDPlayer;
         dllname = "xfldr.dll";
@@ -166,7 +166,7 @@ interface M_XMMCDPlayer : M_WPAbstract
         externalstem = cdpM;
         functionprefix = cdpM_;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xmmcdplay;           //# specifies the filestem for sc-generated files
         dllname = "xfldr.dll";
         callstyle = oidl;

@@ -1357,32 +1357,6 @@ MRESULT sndSoundsItemChanged(PNOTEBOOKPAGE pnbp,  // notebook info
         {
             CHAR szFile[CCHMAXPATH] = "*";
 
-            /* FILEDLG fd;
-            memset(&fd, 0, sizeof(FILEDLG));
-            fd.cbSize = sizeof(FILEDLG);
-            fd.fl = FDS_OPEN_DIALOG
-                      | FDS_CENTER;
-
-            // get initial directory for FOD from OS2.INI
-            if (PrfQueryProfileString(HINI_USER,
-                                  (PSZ)INIAPP_XWORKPLACE,         // "XFolder"
-                                  (PSZ)INIKEY_XWPSOUNDLASTDIR, // "XWPSound:LastDir"
-                                  "",      // default string
-                                  fd.szFullFile,
-                                  sizeof(fd.szFullFile)-10)
-                        < 2)
-                // not found:
-                strcpy(fd.szFullFile, "*");
-            else
-                // found: append "\*"
-                strcat(fd.szFullFile, "\\*");
-
-            if (    WinFileDlg(HWND_DESKTOP,    // parent
-                               pnbp->hwndFrame, // owner
-                               &fd)
-                && (fd.lReturn == DID_OK)
-               ) */
-
             if (cmnFileDlg(pnbp->hwndFrame,        // V0.9.16 (2001-10-19) [umoeller]
                            szFile,
                            WINH_FOD_INILOADDIR | WINH_FOD_INISAVEDIR,
@@ -1390,23 +1364,6 @@ MRESULT sndSoundsItemChanged(PNOTEBOOKPAGE pnbp,  // notebook info
                            INIAPP_XWORKPLACE,
                            INIKEY_XWPSOUNDLASTDIR)) // "XWPSound:LastDir"
             {
-                // get the directory that was used
-                /* PSZ p = strrchr(szFile, '\\');
-                if (p)
-                {
-                    // contains directory:
-                    // copy to OS2.INI
-                    PSZ pszDir = strhSubstr(fd.szFullFile, p);
-                    if (pszDir)
-                    {
-                        PrfWriteProfileString(HINI_USER,
-                                              (PSZ)INIAPP_XWORKPLACE,
-                                              (PSZ)INIKEY_XWPSOUNDLASTDIR, // "XWPSound:LastDir"
-                                              pszDir);
-                        free(pszDir);
-                    }
-                } */
-
                 // copy file from FOD to page
                 WinSetDlgItemText(pnbp->hwndDlgPage,
                                   ID_XSDI_SOUND_FILE,

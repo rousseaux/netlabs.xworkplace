@@ -24,7 +24,8 @@
  *      GNU General Public License for more details.
  */
 
-#include <wpdataf.idl>           // WPDataFile
+// #include <wpdataf.idl>           // WPDataFile
+#include "xfdataf.idl"           // WPDataFile
 
 /*
    CLASS: XWPFontFile
@@ -38,7 +39,7 @@
 
 interface M_XWPFontFile;            // forward reference to metaclass
 
-interface XWPFontFile : WPDataFile
+interface XWPFontFile : XFldDataFile
 {
 
     /*
@@ -64,7 +65,7 @@ interface XWPFontFile : WPDataFile
         externalprefix = fonf_;
         externalstem = fonf;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xfontfile;           //# specifies the filestem for sc-generated files
         metaclass = M_XWPFontFile;
         dllname = "xfldr.dll";
@@ -99,7 +100,7 @@ interface XWPFontFile : WPDataFile
 //# ---------------------
 //#
 
-interface M_XWPFontFile : M_WPDataFile
+interface M_XWPFontFile : M_XFldDataFile
 {
 
     /*
@@ -119,7 +120,7 @@ interface M_XWPFontFile : M_WPDataFile
         externalstem = fonfM;
         functionprefix = fonfM_;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xfontfile;           //# specifies the filestem for sc-generated files
         dllname = "xfldr.dll";
         callstyle = oidl;

@@ -61,7 +61,7 @@ interface XWPImageFile : WPImageFile
         externalprefix = img_;
         externalstem = img;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xwpimage;            //# specifies the filestem for sc-generated files
         metaclass = M_XWPImageFile;
         dllname = "xfldr.dll";
@@ -91,14 +91,11 @@ interface XWPImageFile : WPImageFile
 
         //# 1)  init/uninit methods
 
-        wpInitData: override;
         wpUnInitData: override;
 
         //# 2)  WPObject query/set methods
 
         //# 3)  icon methods
-
-        xwpLazyLoadThumbnail: override;
 
         //# 4)  class-specific query/set methods
 
@@ -148,7 +145,7 @@ interface M_XWPImageFile : M_WPImageFile
         externalstem = imgM;
         functionprefix = imgM_;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xwpimage;           //# specifies the filestem for sc-generated files
         dllname = "xfldr.dll";
         callstyle = oidl;

@@ -681,6 +681,7 @@ VOID fdrFormatFrame(HWND hwndFrame,
  *
  *@@added V1.0.0 (2002-08-21) [umoeller]
  *@@changed V1.0.0 (2002-09-09) [umoeller]: fixed annoying scroll bars in folder frame when always sort was off
+ *@@changed V1.0.1 (2003-02-02) [umoeller]: really fixed annoying scroll bars in folder frame when always sort was off
  */
 
 MRESULT FormatFrame2(PSUBCLFOLDERVIEW psfv,     // in: frame information
@@ -708,10 +709,18 @@ MRESULT FormatFrame2(PSUBCLFOLDERVIEW psfv,     // in: frame information
                        &hwndClient);
 
         PMPF_STATUSBARS(("fNeedCnrScroll = %d, hwndClient = 0x%lX",
-                         psfv->fNeedCnrScroll,
+                         psfv->bNeedCnrScroll,
                          hwndClient));
 
-        if (psfv->fNeedCnrScroll)
+        // sigh... reworked this code for the, what, fifth time?
+        // We really need to tell apart _three_ cases with the
+        // damn container scolling: V1.0.1 (2003-02-02) [umoeller]
+
+        // 1) The folder is being opened for the very first time.
+        //    In that case, stbCreate() has inflated the folder frame
+        //    and set the SCROLL_VERYFIRSTTIME. We then need to
+        //    adjust the container origin just a slight little bit.
+        if (psfv->bNeedCnrScroll == SCROLL_VERYFIRSTTIME)
         {
             CNRINFO     CnrInfo;
             ULONG       ulStatusBarHeight = cmnQueryStatusBarHeight();
@@ -742,7 +751,16 @@ MRESULT FormatFrame2(PSUBCLFOLDERVIEW psfv,     // in: frame information
                            (MPARAM)&CnrInfo,
                            (MPARAM)CMA_PTLORIGIN);
             }
-
+        } // end if (psfv->fNeedCnrScroll)
+        // 2) Subsequent folder opens, when the (inflated) frame
+        //    size has been correctly stored by the wps with the
+        //    folder position. In that case, we get really huge
+        //    scroll offsets for some very strange reason, and
+        //    I can't help this except for forcing cnr scroll
+        //    to the very bottom. We get in here for every
+        //    WM_FORMATFRAME, so do this only once!
+        else if (psfv->bNeedCnrScroll == SCROLL_ADJUSTFORSB)   // V1.0.1 (2003-02-01) [umoeller]
+        {
             // now scroll the damn container up the maximum;
             // we still get scroll bars in some situations if
             // always sort is off...
@@ -751,7 +769,7 @@ MRESULT FormatFrame2(PSUBCLFOLDERVIEW psfv,     // in: frame information
             // container's vertical scroll bar and _then_
             // another PAGEUP to the container itself
             // V0.9.18 (2002-03-24) [umoeller]
-            /* no longer needed since the above code works now V1.0.0 (2002-09-09) [umoeller]
+            // no longer needed since the above code works now V1.0.0 (2002-09-09) [umoeller]
             PostWMChar(WinWindowFromID(hwndClient, 0x7FF9),
                        KC_VIRTUALKEY | KC_CTRL,
                        MPFROM2SHORT(0,
@@ -760,11 +778,12 @@ MRESULT FormatFrame2(PSUBCLFOLDERVIEW psfv,     // in: frame information
                        KC_VIRTUALKEY,
                        MPFROM2SHORT(0,
                                     VK_PAGEUP));
-            */
+        }
+        // 3) subsequent WM_FORMATFRAME's when the window gets
+        //    resized or something: do nothing
 
-            // set flag to FALSE to prevent a second adjustment
-            psfv->fNeedCnrScroll = FALSE;
-        } // end if (psfv->fNeedCnrScroll)
+        // set flag to FALSE to prevent a second adjustment
+        psfv->bNeedCnrScroll = 0;
 
         // increment the number of frame controls
         // to include our status bar

@@ -1118,6 +1118,7 @@ VOID trshCalcTrashObjectSize(XWPTrashObject *pTrashObject,
  *      XWPTrashObject::xwpQueryRelatedPath.
  *
  *@@added V0.9.9 (2001-04-07) [umoeller]
+ *@@changed V1.0.1 (2003-01-30) [umoeller]: optimized
  */
 
 PSZ trshComposeRelatedPath(XWPTrashObject *somSelf)
@@ -1152,17 +1153,26 @@ PSZ trshComposeRelatedPath(XWPTrashObject *somSelf)
                 CHAR szPathInTrash[CCHMAXPATH];
                 if (_wpQueryFilename(pTrashDir, szPathInTrash, TRUE))
                 {
-                    CHAR szSourcePath[CCHMAXPATH];
+                    // CHAR    szSourcePath[CCHMAXPATH];
 
-                    PMPF_TRASHCAN(("    szPathInTrash: %s", szPathInTrash));
+                    // optimized the following V1.0.1 (2003-01-30) [umoeller]
 
-                    // copy drive letter
-                    szSourcePath[0] = szPathInTrash[0];
-                    // copy ':'
-                    szSourcePath[1] = ':';
-                    // copy stuff after "?:\Trash"
-                    strcpy(&(szSourcePath[2]), &(szPathInTrash[8]));
-                    _pszSourcePath = strdup(szSourcePath);
+                    // copy stuff after "?:\Trash", including the leading '\'
+                    ULONG   len = strlen(szPathInTrash + 8);
+
+                    if (_pszSourcePath = malloc(len + 2))
+                    {
+                        // copy drive letter
+                        _pszSourcePath[0] = szPathInTrash[0];
+                        // copy ':'
+                        _pszSourcePath[1] = ':';
+                        // copy stuff after "?:\Trash"
+                        memcpy(_pszSourcePath + 2,
+                               szPathInTrash + 8,
+                               len + 1);
+                    }
+
+                    PMPF_TRASHCAN(("    szPathInTrash: %s", STRINGORNULL(_pszSourcePath)));
                 }
             }
 

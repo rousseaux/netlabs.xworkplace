@@ -303,8 +303,28 @@ SOM_Scope PSZ SOMLINK xtro_xwpQueryRelatedPath(XWPTrashObject *somSelf)
  *@@changed V0.9.6 (2000-11-12) [umoeller]: now using thousands separator from "Country"
  */
 
-SOM_Scope void  SOMLINK xtro_xwpSetExpandedObjectSize(XWPTrashObject *somSelf,
-                                                      ULONG ulNewSize,
+
+/*
+ * SOM_Scope void  SOMLINK xtro_xwpSetExpandedObjectSize(XWPTrashObject *somSelf,
+ *                                                       ULONG ulNewSize,
+ *                                                       XWPTrashCan* pTrashCan)
+ */
+
+/*
+ * The prototype for xtro_xwpSetExpandedObjectSize was replaced by the following prototype:
+ */
+
+/*
+ * SOM_Scope void  SOMLINK xtro_xwpSetExpandedObjectSize(XWPTrashObject *somSelf, 
+ *                                                       ULONG ulNewSize, 
+ *                                                       XWPTrashCan pTrashCan)
+ */
+
+/*
+ * The prototype for xtro_xwpSetExpandedObjectSize was replaced by the following prototype:
+ */
+SOM_Scope void  SOMLINK xtro_xwpSetExpandedObjectSize(XWPTrashObject *somSelf, 
+                                                      ULONG ulNewSize, 
                                                       XWPTrashCan* pTrashCan)
 {
     XWPTrashObjectData *somThis = XWPTrashObjectGetData(somSelf);
@@ -369,34 +389,6 @@ SOM_Scope ULONG  SOMLINK xtro_xwpValidateTrashObject(XWPTrashObject *somSelf)
 }
 
 /*
- * xwpDestroyTrashObject:
- *      this deletes the object which this trash
- *      object represents from the "\Trash" directories
- *      by calling wpFree upon it.
- *
- *      Note that no confirmation is displayed. Also,
- *      all objects are destroyed, no matter whether
- *      they have the "no delete" style or not, or even
- *      if they are system or read-only files.
- *
- *      After that, if the delete was successful,
- *      the trash object (somSelf) destroys itself by
- *      calling wpFree (since it has no further
- *      meaning) and returns TRUE.
- *
- *      As a consequence, the somSelf pointer to the trash
- *      object is no longer valid if TRUE is returned here.
- *
- *      Note that there's no "Confirm" parameter here, since
- *      this method always operates on a single object only
- *      and the context menu operations are managed by the
- *      subclassed trashcan frame window procedure
- *      (trsh_fnwpSubclassedTrashCanFrame).
- *
- *          changed V0.9.3 (2000-04-28) [umoeller]: removed completely
- */
-
-/*
  *@@ xwpRestoreFromTrashCan:
  *      this restores the object which this trash
  *      object represents from the "\Trash" directories.
@@ -444,7 +436,10 @@ SOM_Scope void  SOMLINK xtro_wpInitData(XWPTrashObject *somSelf)
     // wpSetup, which apparently sets up the Details data...
     _pRelatedObject = NULL;
     _pszSourcePath = NULL;
-    strcpy(_szTotalSize, cmnGetString(ID_XTSI_CALCULATING)) ; // pszCalculating
+    _szTotalSize[0] = '\0';
+    /* cmnGetString2(_szTotalSize,
+                  ID_XTSI_CALCULATING,
+                  sizeof(_szTotalSize)); */
 
     XWPTrashObject_parent_WPTransient_wpInitData(somSelf);
 }
@@ -673,13 +668,15 @@ SOM_Scope BOOL  SOMLINK xtro_wpModifyPopupMenu(XWPTrashObject *somSelf,
     if (brc)
     {
         ULONG           ulAttr = 0;
-
         XWPTrashCan     *pTrashCan;
+
         if (    (pTrashCan = _wpQueryFolder(somSelf))
              && (_somIsA(pTrashCan, _XWPTrashCan))
            )
         {
-            CHAR    szDestroyItem[300];
+            CHAR    szDestroyItem[100];
+            ULONG   len;
+
             if (_xwpTrashCanBusy(pTrashCan,
                                  0))     // query busy
                 // currently populating:
@@ -696,10 +693,14 @@ SOM_Scope BOOL  SOMLINK xtro_wpModifyPopupMenu(XWPTrashObject *somSelf,
                                ulAttr);    // attributes, can be "disabled"
 
             // insert "Destroy object"
-            strcpy(szDestroyItem, cmnGetString(ID_XTSI_TRASHDESTROY)) ; // pszTrashDestroy
+            len = cmnGetString2(szDestroyItem,
+                                ID_XTSI_TRASHDESTROY,
+                                sizeof(szDestroyItem) - 4);
             if (cmnQuerySetting(sflTrashConfirmEmpty) & TRSHCONF_DESTROYOBJ)
                 // confirm destroy on:
-                strcat(szDestroyItem, "...");
+                memcpy(szDestroyItem + len,
+                       "...",
+                       4);
             winhInsertMenuItem(hwndMenu, MIT_END,
                                (*G_pulVarMenuOfs + ID_XFMI_OFS_TRASHDESTROY),
                                szDestroyItem,

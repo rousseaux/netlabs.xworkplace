@@ -39,6 +39,8 @@
 
     BOOL ctsIsPointer(WPObject *somSelf);
 
+    BOOL ctsIsImageFile(WPObject *somSelf);
+
     BOOL ctsIsCommandFile(WPObject *somSelf);
 
     SOMClass* ctsResolveWPUrl(VOID);

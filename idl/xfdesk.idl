@@ -74,7 +74,7 @@ interface XFldDesktop : WPDesktop
         externalprefix = xfdesk_;
         externalstem = xfdesk;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xfdesk;           //# specifies the filestem for sc-generated files
         metaclass = M_XFldDesktop;
         dllname = "xfldr.dll";
@@ -168,7 +168,7 @@ interface M_XFldDesktop : M_WPDesktop
         externalstem = xfdeskM;
         functionprefix = xfdeskM_;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xfdesk;           //# specifies the filestem for sc-generated files
         dllname = "xfldr.dll";
         callstyle = oidl;

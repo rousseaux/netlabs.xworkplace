@@ -256,12 +256,10 @@ link: $(XWPRUNNING)\bin\xfldr.dll \
       $(XWPRUNNING)\plugins\xcenter\monitors.dll \
       $(XWPRUNNING)\plugins\xcenter\winlist.dll \
       $(XWPRUNNING)\plugins\xcenter\sentinel.dll \
-!ifndef XWPLITE
       $(XWPRUNNING)\plugins\xcenter\ipmon.dll \
-      $(XWPRUNNING)\plugins\xcenter\xwHealth.dll \
+#      $(XWPRUNNING)\plugins\xcenter\xwHealth.dll \ disabled V1.0.1 (2003-02-01) [umoeller]
       $(XWPRUNNING)\plugins\xcenter\sample.dll \
       $(XWPRUNNING)\plugins\drvdlgs\d_cdfs.dll \
-!endif
 #      $(XWPRUNNING)\bin\xwphook.dll \
 #      $(XWPRUNNING)\bin\xwpdaemn.exe
 #      $(XWPRUNNING)\bin\xwpfonts.fon

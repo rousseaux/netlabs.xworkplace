@@ -804,9 +804,9 @@ STATIC ULONG WriteOutObjectSetup(FILE *RexxFile,
 
         // get folder ID or name
         WPFolder    *pOwningFolder = _wpQueryFolder(pobj);
-        PSZ         pszOwningFolderID = _wpQueryObjectID(pOwningFolder);
-        if (pszOwningFolderID)
-            strcpy(szFolderName, pszOwningFolderID);
+        PSZ         pszOwningFolderID;
+        if (pszOwningFolderID = _wpQueryObjectID(pOwningFolder))
+            strlcpy(szFolderName, pszOwningFolderID, sizeof(szFolderName));
         else
             _wpQueryFilename(pOwningFolder, szFolderName, TRUE);
 

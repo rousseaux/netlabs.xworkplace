@@ -90,6 +90,7 @@
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\standards.h"          // some standard macros
+#include "helpers\stringh.h"            // string helper routines
 #include "helpers\winh.h"               // PM helper routines
 #include "helpers\wphandle.h"           // file-system object handles
 
@@ -1285,8 +1286,10 @@ WPFileSystem* wpshContainsFile(WPFolder *pFolder,   // in: folder to examine
         ULONG         ulFindCount    = 1;        // Look for 1 file at a time
         APIRET        rc             = NO_ERROR; // Return code
 
-        szRealName[cbRealName] =  '\\';
-        strcpy(szRealName+cbRealName+1, pcszRealName);
+        szRealName[cbRealName++] =  '\\';
+        strlcpy(szRealName + cbRealName,
+                pcszRealName,
+                sizeof(szRealName) - cbRealName);
 
         rc = DosFindFirst(szRealName,
                           &hdirFindHandle,

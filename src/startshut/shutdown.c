@@ -104,6 +104,7 @@
 #include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\procstat.h"           // DosQProcStat handling
 #include "helpers\standards.h"          // some standard macros
+#include "helpers\stringh.h"            // string helper routines
 #include "helpers\threads.h"            // thread helpers
 #include "helpers\winh.h"               // PM helper routines
 #include "helpers\wphandle.h"           // file-system object handles
@@ -1510,19 +1511,22 @@ void xsdUpdateListBox(HAB hab,
  *      set the Shutdown status wnd text to "Closing xxx".
  *
  *      Runs on the Shutdown thread.
+ *
+ *@@changed V1.0.1 (2003-01-30) [umoeller]: optimized, fixed buf overflows
  */
 
 VOID xsdUpdateClosingStatus(HWND hwndShutdownStatus,
                             PCSZ pcszProgTitle)   // in: window title from SHUTLISTITEM
 {
-    CHAR szTitle[300];
-    strcpy(szTitle,
-           cmnGetString(ID_SDSI_CLOSING)); // (cmnQueryNLSStrings())->pszSDClosing);
-    strcat(szTitle, " \"");
-    strcat(szTitle, pcszProgTitle);
-    strcat(szTitle, "\"...");
+    XSTRING str;
+
+    xstrInitCopy(&str, cmnGetString(ID_SDSI_CLOSING), 100);
+    xstrcat(&str, " \"", 2);
+    xstrcat(&str, pcszProgTitle, 0);
+    xstrcat(&str, "\"...", 4);
     WinSetDlgItemText(hwndShutdownStatus, ID_SDDI_STATUS,
-                      szTitle);
+                      str.psz);
+    xstrClear(&str);
 
     WinSetActiveWindow(HWND_DESKTOP, hwndShutdownStatus);
 }
@@ -2377,14 +2381,12 @@ STATIC void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
         krnUnlockGlobals();     // just to make sure
         // fExceptionOccured = TRUE;
 
-        if (pszErrMsg == NULL)
+        // only report the first error, or otherwise we will
+        // jam the system with msg boxes @@todo get rid of this shit
+
+        if (!pszErrMsg)
         {
-            // only report the first error, or otherwise we will
-            // jam the system with msg boxes
-            pszErrMsg = malloc(2000);
-            if (pszErrMsg)
-            {
-                strcpy(pszErrMsg, "An error occured in the XFolder Shutdown thread. "
+            if (pszErrMsg = strdup("An error occured in the XFolder Shutdown thread. "
                         "In the root directory of your boot drive, you will find a "
                         "file named XFLDTRAP.LOG, which contains debugging information. "
                         "If you had shutdown logging enabled, you will also find the "
@@ -2396,7 +2398,8 @@ STATIC void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
                         "the error occured during the saving of the INI files. In these "
                         "cases, please disable XShutdown and perform a regular OS/2 "
                         "shutdown to prevent loss of your WPS data."
-                        "\n\nRestart the Workplace Shell now?");
+                        "\n\nRestart the Workplace Shell now?"))
+            {
                 krnPostThread1ObjectMsg(T1M_EXCEPTIONCAUGHT, (MPARAM)pszErrMsg,
                                         (MPARAM)1); // enforce Desktop restart
 
@@ -2664,7 +2667,8 @@ VOID xsdCloseVIO(PSHUTDOWNDATA pShutdownData,
             } // end if (psdParams->optAutoCloseVIO)
             else
             {
-                CHAR            szText[500];
+                CHAR    szText[500];
+                ULONG   len;
 
                 // no auto-close: confirmation wnd
                 doshWriteLogEntry(pShutdownData->ShutdownLogFile, "    Not found on auto-close list, auto-close is off, query-action dlg:");
@@ -2678,10 +2682,15 @@ VOID xsdCloseVIO(PSHUTDOWNDATA pShutdownData,
 
                 // ID_SDDI_VDMAPPTEXT has "\"cannot be closed automatically";
                 // prefix session title
-                strcpy(szText, "\"");
-                strcat(szText, pShutdownData->VioItem.swctl.szSwtitle);
-                WinQueryDlgItemText(pShutdownData->SDConsts.hwndVioDlg, ID_SDDI_VDMAPPTEXT,
-                                    100, &(szText[strlen(szText)]));
+                szText[0] = '\"';
+                len = strlcpy(szText + 1,
+                              pShutdownData->VioItem.swctl.szSwtitle,
+                              sizeof(szText) - 1);
+                ++len;
+                WinQueryDlgItemText(pShutdownData->SDConsts.hwndVioDlg,
+                                    ID_SDDI_VDMAPPTEXT,
+                                    sizeof(szText) - len,
+                                    &szText[len]);
                 WinSetDlgItemText(pShutdownData->SDConsts.hwndVioDlg, ID_SDDI_VDMAPPTEXT,
                                   szText);
 
@@ -4062,16 +4071,14 @@ STATIC void _Optlink fntUpdateThread(PTHREADINFO ptiMyself)
             }
 
             // only report the first error, or otherwise we will
-            // jam the system with msg boxes
-            pszErrMsg = malloc(1000);
-            if (pszErrMsg)
-            {
-                strcpy(pszErrMsg, "An error occured in the XFolder Update thread. "
+            // jam the system with msg boxes @@todo get rid of this
+            if (pszErrMsg = strdup("An error occured in the XFolder Update thread. "
                         "In the root directory of your boot drive, you will find a "
                         "file named XFLDTRAP.LOG, which contains debugging information. "
                         "If you had shutdown logging enabled, you will also find the "
                         "file XSHUTDWN.LOG there. If not, please enable shutdown "
-                        "logging in the Desktop's settings notebook. ");
+                        "logging in the Desktop's settings notebook. "))
+            {
                 krnPostThread1ObjectMsg(T1M_EXCEPTIONCAUGHT, (MPARAM)pszErrMsg,
                         (MPARAM)0); // don't enforce Desktop restart
 

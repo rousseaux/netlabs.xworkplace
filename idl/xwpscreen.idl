@@ -64,7 +64,7 @@ interface XWPScreen : WPSystem
         externalprefix = xwpscr_;
         externalstem = xwpscr;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xwpscreen;           //# specifies the filestem for sc-generated files
         metaclass = M_XWPScreen;
         dllname = "xfldr.dll";
@@ -118,7 +118,7 @@ interface M_XWPScreen : M_WPSystem
         externalstem = xwpscrM;
         functionprefix = xwpscrM_;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xwpscreen;           //# specifies the filestem for sc-generated files
         dllname = "xfldr.dll";
         callstyle = oidl;

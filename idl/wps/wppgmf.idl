@@ -30,12 +30,13 @@
 #ifndef wppgmf_idl
 #define wppgmf_idl
 
-#include "wpdataf.idl"
+// #include "wpdataf.idl"
+#include "xfdataf.idl"
 #include <somcls.idl>
 
 interface M_WPProgramFile;
 
-interface WPProgramFile : WPDataFile
+interface WPProgramFile : XFldDataFile
 {
     ULONG wpAddProgramAssociationPage(in HWND hwndNotebook);
 
@@ -129,7 +130,7 @@ interface WPProgramFile : WPDataFile
 #endif
 };
 
-interface M_WPProgramFile : M_WPDataFile
+interface M_WPProgramFile : M_XFldDataFile
 {
 #ifdef __SOMIDL__
     implementation

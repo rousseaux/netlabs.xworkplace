@@ -204,7 +204,7 @@ BOOL APIENTRY fopsGenericProgressCallback(PFOPSUPDATE pfu,
  *@@changed V0.9.12 (2001-05-17) [pr]: beautified object title
  *@@changed V0.9.16 (2001-10-28) [pr]: prevent trap on null title
  *@@changed V0.9.16 (2001-12-06) [umoeller]: added delete folders confirmations
- *@@changed V1.0.1 (2002-12-15) [pr]: @@fixes 36
+ *@@changed V1.0.1 (2002-12-15) [pr]: fixed font uninstall message @@fixes 36
  */
 
 APIRET APIENTRY fopsGenericErrorCallback(ULONG ulOperation,

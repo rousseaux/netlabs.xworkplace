@@ -61,7 +61,7 @@ interface XWPAdmin : WPAbstract
         externalprefix = adm_;
         externalstem = adm;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xwpadmin;           //# specifies the filestem for sc-generated files
         metaclass = M_XWPAdmin;
         dllname = "xfldr.dll";
@@ -118,7 +118,7 @@ interface M_XWPAdmin : M_WPAbstract
         externalstem = admM;
         functionprefix = admM_;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xwpadmin;           //# specifies the filestem for sc-generated files
         dllname = "xfldr.dll";
         callstyle = oidl;

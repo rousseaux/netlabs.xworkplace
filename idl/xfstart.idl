@@ -73,7 +73,7 @@ interface XFldStartup : XFolder
         externalprefix = xfstup_;
         externalstem = xfstup;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xfstart;           //# specifies the filestem for sc-generated files
         metaclass = M_XFldStartup;
         dllname = "xfldr.dll";
@@ -154,7 +154,7 @@ interface M_XFldStartup : M_XFolder
         externalstem = xfstupM;
         functionprefix = xfstupM_;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xfstart;           //# specifies the filestem for sc-generated files
         dllname = "xfldr.dll";
         callstyle = oidl;
@@ -220,7 +220,7 @@ interface XFldShutdown : XFolder
         externalprefix = xfshut_;
         externalstem = xfshut;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xfstart;           //# specifies the filestem for sc-generated files
         metaclass = M_XFldShutdown;
         dllname = "xfldr.dll";
@@ -267,7 +267,7 @@ interface M_XFldShutdown : M_XFolder
         externalstem = xfshutM;
         functionprefix = xfshutM_;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xfstart;           //# specifies the filestem for sc-generated files
         dllname = "xfldr.dll";
         callstyle = oidl;

@@ -79,7 +79,10 @@
                     hwndSupplObject;    // supplementary object wnd
                                         // (fdr_fnwpSupplFolderObject)
 
-        BOOL        fNeedCnrScroll;     // scroll container after adding status bar?
+        BYTE        bNeedCnrScroll;     // scroll container after adding status bar?
+                        // changed V1.0.1 (2003-02-02) [umoeller]
+                        #define SCROLL_VERYFIRSTTIME        1
+                        #define SCROLL_ADJUSTFORSB          2
         BOOL        fRemoveSourceEmphasis; // flag for whether XFolder has added
                                         // container source emphasis
 

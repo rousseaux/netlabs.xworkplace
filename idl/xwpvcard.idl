@@ -60,7 +60,7 @@ interface XWPVCard : WPDataFile
         externalprefix = xvc_;
         externalstem = xvc;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xwpvcard;           //# specifies the filestem for sc-generated files
         metaclass = M_XWPVCard;
         dllname = "xfldr.dll";
@@ -121,7 +121,7 @@ interface M_XWPVCard : M_WPDataFile
         externalstem = xvcM;
         functionprefix = xvcM_;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xwpvcard;           //# specifies the filestem for sc-generated files
         dllname = "xfldr.dll";
         callstyle = oidl;

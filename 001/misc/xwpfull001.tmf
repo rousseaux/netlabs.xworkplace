@@ -36,18 +36,20 @@ Built &date;
 
 ;
 ; the following item has changed V0.9.20 (2002-08-10) [umoeller]
+; and V1.0.1 (2003-02-02) [umoeller]
 ;
 
-<--XFL0140-->: &copy;&nbsp;1997-2002 Ulrich M”ller.
-<BR>English National Language Support: &copy;&nbsp;1998-2002 Ulrich M”ller.
+<--XFL0140-->: &copy;&nbsp;1997-2003 Ulrich M”ller.
+<BR>English National Language Support: &copy;&nbsp;1998-2003 Ulrich M”ller.
 <P>
-Contains portions &copy;&nbsp;2000-2002 Martin Lafaix, Paul Ratcliffe, and others.
+Contains portions &copy;&nbsp;2000-2003 Martin Lafaix, Paul Ratcliffe, and others.
 <BR>Contains portions from the Standard Function Library &copy;&nbsp;1991-99 iMatix corporation.
 <BR>Contains portions from expat 1.95.1 &copy;&nbsp;1998-2000 Thai Open Source Software Center Ltd.
 <P>
 &xwp;'s home on the Internet is <A HREF="http://www.xworkplace.org">http://www.xworkplace.org</A>.
+<BR>To report bugs, use the official bugtracker at <a href="http://xtracker.netlabs.org">http://xtracker.netlabs.org</a>.
 <P>
-Contact &contact-user; for bug reports and suggestions.
+Contact &contact-user; for general discussion about &xwp;.
 <BR>Contact &contact-dev; if you are (or want to become) familiar with the &xwp; source code.
 <P>
 &xwp; is free software under the GNU General Public Licence (GPL), which is contained in the

@@ -1885,7 +1885,10 @@ SOM_Scope ULONG SOMLINK xo_xwpOwnerDrawIcon(XFldObject *somSelf,
  *
  *      However, this method can be overridden by subclasses
  *      that implement owner-draw icon/bitmap painting, for
- *      example to produce thumbnails.
+ *      example to produce thumbnails. XFldDataFile abuses
+ *      this method to implement its own system for that
+ *      with its new XFldDataFile::xwpLazyLoadThumbnail
+ *      method.
  *
  *      Parameters:
  *
@@ -1906,7 +1909,6 @@ SOM_Scope ULONG SOMLINK xo_xwpOwnerDrawIcon(XFldObject *somSelf,
  */
 
 SOM_Scope void  SOMLINK xo_xwpLazyLoadIcon(XFldObject *somSelf,
-                                           HAB hab, HPS* phpsMem,
                                            ULONG flOwnerDraw,
                                            BOOL* pbQuitEarly)
 {
@@ -4403,13 +4405,15 @@ SOM_Scope PMINIRECORDCORE  SOMLINK xo_wpCnrInsertObject(XFldObject *somSelf,
                                                         PMINIRECORDCORE preccParent,
                                                         PRECORDINSERT pRecInsert)
 {
-    PMINIRECORDCORE pmrcReturn = NULL;
+#ifndef __NOTURBOFOLDERS__
     PMINIRECORDCORE pmrc;
     HWND            hwndOwner;
+#endif
 
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xo_wpCnrInsertObject");
 
+#ifndef __NOTURBOFOLDERS__
     // some sanity checks first
     if (    (!G_fInsertRecordCrashed)
          && (cmnQuerySetting(sfTurboFolders))
@@ -4422,7 +4426,8 @@ SOM_Scope PMINIRECORDCORE  SOMLINK xo_wpCnrInsertObject(XFldObject *somSelf,
          && (ContainerSubclassHack(hwndOwner, somSelf))
        )
     {
-        PUSEITEM    pui = NULL;
+        PMINIRECORDCORE pmrcReturn = NULL;
+        PUSEITEM        pui = NULL;
 
         TRY_LOUD(excpt1)
         {
@@ -4508,14 +4513,16 @@ SOM_Scope PMINIRECORDCORE  SOMLINK xo_wpCnrInsertObject(XFldObject *somSelf,
         // thou shalt not leak
         if (pui)
             ShlFreeMem(pui);
+
+        return pmrcReturn;
     }
-    else
-        pmrcReturn = XFldObject_parent_WPObject_wpCnrInsertObject(somSelf,
-                                                                  hwndCnr,
-                                                                  pptlIcon,
-                                                                  preccParent,
-                                                                  pRecInsert);
-    return pmrcReturn;
+#endif
+
+    return XFldObject_parent_WPObject_wpCnrInsertObject(somSelf,
+                                                        hwndCnr,
+                                                        pptlIcon,
+                                                        preccParent,
+                                                        pRecInsert);
 }
 
 /*
@@ -5728,7 +5735,7 @@ SOM_Scope void  SOMLINK xoM_wpclsInitData(M_XFldObject *somSelf)
 
         // initialize the XWPObjList class explicitly
         // V1.0.1 (2002-12-11) [umoeller]
-        XWPObjListNewClass(1, 1);
+        XWPObjListNewClass(XWPObjList_MajorVersion, XWPObjList_MinorVersion);
 
         krnClassInitialized(G_pcszXFldObject);
     }
@@ -5780,13 +5787,13 @@ SOM_Scope BOOL  SOMLINK xoM_wpclsInsertMultipleObjects(M_XFldObject *somSelf,
                                                        PVOID pRecordParent,
                                                        ULONG NumRecords)
 {
-    BOOL        brc = TRUE;
     HWND        hwndOwner;
     WPObject    **papObjects;
 
     /* M_XFldObjectData *somThis = M_XFldObjectGetData(somSelf); */
     M_XFldObjectMethodDebug("M_XFldObject","xoM_wpclsInsertMultipleObjects");
 
+#ifndef __NOTURBOFOLDERS__
     // some sanity checks first
     if (    (!G_fInsertRecordCrashed)
          && (cmnQuerySetting(sfTurboFolders))
@@ -5800,6 +5807,8 @@ SOM_Scope BOOL  SOMLINK xoM_wpclsInsertMultipleObjects(M_XFldObject *somSelf,
          && (papObjects = (WPObject**)pObjectArray)
        )
     {
+        BOOL        brc = TRUE;
+
         TRY_LOUD(excpt1)
         {
             // now run through all objects in the array;
@@ -5901,15 +5910,17 @@ SOM_Scope BOOL  SOMLINK xoM_wpclsInsertMultipleObjects(M_XFldObject *somSelf,
             brc = FALSE;
             G_fInsertRecordCrashed = TRUE;      // don't _ever_ call this again!
         } END_CATCH();
+
+        return brc;
     }
-    else
-        brc = M_XFldObject_parent_M_WPObject_wpclsInsertMultipleObjects(somSelf,
-                                                                        hwndCnr,
-                                                                        pptlIcon,
-                                                                        pObjectArray,
-                                                                        pRecordParent,
-                                                                        NumRecords);
-    return brc;
+#endif
+
+    return M_XFldObject_parent_M_WPObject_wpclsInsertMultipleObjects(somSelf,
+                                                                     hwndCnr,
+                                                                     pptlIcon,
+                                                                     pObjectArray,
+                                                                     pRecordParent,
+                                                                     NumRecords);
 }
 
 /*

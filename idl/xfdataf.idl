@@ -82,7 +82,7 @@ interface XFldDataFile : WPDataFile
         externalprefix = xdf_;
         externalstem = xdf;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xfdataf;           //# specifies the filestem for sc-generated files
         metaclass = M_XFldDataFile;
         dllname = "xfldr.dll";
@@ -203,7 +203,7 @@ interface M_XFldDataFile : M_WPDataFile
         externalstem = xdfM;
         functionprefix = xdfM_;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xfdataf;           //# specifies the filestem for sc-generated files
         dllname = "xfldr.dll";
         callstyle = oidl;

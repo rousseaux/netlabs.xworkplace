@@ -296,6 +296,9 @@
     // global variable to WPS-internal drive data array, set in init.c
     extern PIBMDRIVEDATA    G_paDriveData;
 
+    PIBMDRIVEDATA EXPENTRY FsQueryDriveData(PSZ pszDrive);
+            // imported from PMWP.DLL
+
     /* ******************************************************************
      *
      *   Additional declarations for xfldr.c

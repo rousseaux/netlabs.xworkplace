@@ -179,7 +179,9 @@ SOM_Scope BOOL  SOMLINK fono_xwpQueryFontFile(XWPFontObject *somSelf,
         {
             if (_pszFontFile)
             {
-                strcpy(pszFontFile, _pszFontFile);
+                strlcpy(pszFontFile,
+                        _pszFontFile,
+                        CCHMAXPATH);
                 brc = TRUE;
             }
         }
@@ -254,7 +256,9 @@ SOM_Scope BOOL  SOMLINK fono_xwpQueryFontFamily(XWPFontObject *somSelf,
         {
             if (_pszFontFamily)
             {
-                strcpy(pszFontFamily, _pszFontFamily);
+                strlcpy(pszFontFamily,
+                        _pszFontFamily,
+                        32);        // CCHMAXPATH);
                 brc = TRUE;
             }
         }

@@ -65,7 +65,7 @@ interface XWPMouse : WPMouse
         externalprefix = xms_;
         externalstem = xms;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xwpmouse;           //# specifies the filestem for sc-generated files
         metaclass = M_XWPMouse;
         dllname = "xfldr.dll";
@@ -118,7 +118,7 @@ interface M_XWPMouse : M_WPMouse
         externalstem = xmsM;
         functionprefix = xmsM_;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xwpmouse;           //# specifies the filestem for sc-generated files
         dllname = "xfldr.dll";
         callstyle = oidl;

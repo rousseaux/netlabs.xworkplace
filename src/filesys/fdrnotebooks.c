@@ -120,6 +120,7 @@ static const CONTROLDEF
 #endif
     FdrAutoRefreshCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_FDRAUTOREFRESH),
     FdrLazyIconsCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_FDRVIEW_LAZYICONS), // V0.9.20 (2002-07-31) [umoeller]
+    FdrThumbnailsCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_FDRVIEW_THUMBNAILS), // V0.9.20 (2002-07-31) [umoeller]
     FdrShadowOverlayCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_FDRVIEW_SHADOWOVERLAY),   // V0.9.20 (2002-08-04) [umoeller]
     FdrDefaultViewGroup = LOADDEF_GROUP(ID_XSDI_FDRVIEWDEFAULT_GROUP, DEFAULT_TABLE_WIDTH),
     FdrViewInheritCB = LOADDEF_FIRST_AUTORADIO(ID_XSDI_FDRVIEW_INHERIT),
@@ -157,6 +158,8 @@ static const DLGHITEM dlgView[] =
                         CONTROL_DEF(&MaxPathCharsText2),
                     START_ROW(0),
                         CONTROL_DEF(&FdrLazyIconsCB),       // V0.9.20 (2002-07-31) [umoeller]
+                    START_ROW(0),
+                        CONTROL_DEF(&FdrThumbnailsCB),      // V1.0.1 (2003-01-31) [umoeller]
                     START_ROW(0),
                         CONTROL_DEF(&FdrShadowOverlayCB),   // V0.9.20 (2002-07-31) [umoeller]
                     START_ROW(0),
@@ -205,6 +208,8 @@ static const XWPSETTING G_ViewBackup[] =
  *@@changed V0.9.9 (2001-02-06) [umoeller]: added folder auto-refresh
  *@@changed V0.9.12 (2001-04-30) [umoeller]: added default folder views
  *@@changed V0.9.16 (2001-10-11) [umoeller]: now using dialog formatter
+ *@@changed V0.9.20 (2002-08-04) [umoeller]: added lazyload settings
+ *@@changed V1.0.1 (2003-01-31) [umoeller]: added thumbnail setting
  */
 
 VOID fdrViewInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
@@ -261,6 +266,8 @@ VOID fdrViewInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                               !!(flOwnerDraw & OWDRFL_LAZYLOADICON));
         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_FDRVIEW_SHADOWOVERLAY,
                               !!(flOwnerDraw & OWDRFL_SHADOWOVERLAY));
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_FDRVIEW_THUMBNAILS,
+                              !!(flOwnerDraw & OWDRFL_LAZYLOADTHUMBNAIL));
 
         // folder default views V0.9.12 (2001-04-30) [umoeller]
         switch (cmnQuerySetting(sulDefaultFolderView))
@@ -298,6 +305,8 @@ VOID fdrViewInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
  *@@changed V0.9.4 (2000-06-09) [umoeller]: added default documents
  *@@changed V0.9.9 (2001-02-06) [umoeller]: added folder auto-refresh
  *@@changed V0.9.12 (2001-04-30) [umoeller]: added default folder views
+ *@@changed V0.9.20 (2002-08-04) [umoeller]: added lazyload settings
+ *@@changed V1.0.1 (2003-01-31) [umoeller]: added thumbnail setting
  */
 
 MRESULT fdrViewItemChanged(PNOTEBOOKPAGE pnbp,
@@ -348,6 +357,11 @@ MRESULT fdrViewItemChanged(PNOTEBOOKPAGE pnbp,
         // V0.9.20 (2002-08-04) [umoeller]
         case ID_XSDI_FDRVIEW_LAZYICONS:
             flOwnerDrawChanged = OWDRFL_LAZYLOADICON;
+        break;
+
+        // V1.0.1 (2003-01-31) [umoeller]
+        case ID_XSDI_FDRVIEW_THUMBNAILS:
+            flOwnerDrawChanged = OWDRFL_LAZYLOADTHUMBNAIL;
         break;
 
         // V0.9.20 (2002-08-04) [umoeller]

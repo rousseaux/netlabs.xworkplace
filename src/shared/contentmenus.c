@@ -829,7 +829,10 @@ VOID cmnuInsertObjectsIntoMenu(WPFolder *pFolder,   // in: folder whose contents
                         {
                             PMENULISTITEM pmliNew = malloc(sizeof(MENULISTITEM));
                             pmliNew->pObject = pObject2;
-                            strcpy(pmliNew->szItemString, _wpQueryTitle(pObject2));
+                            strlcpy(pmliNew->szItemString,
+                                    _wpQueryTitle(pObject2),
+                                    sizeof(pmliNew->szItemString));
+
                             // remove line breaks
                             strhBeautifyTitle(pmliNew->szItemString);
 

@@ -30,12 +30,13 @@
 #ifndef wpdesk_idl
 #define wpdesk_idl
 
-#include "wpfolder.idl"
+// #include "wpfolder.idl"
+#include "xfldr.idl"
 #include <somcls.idl>
 
 interface M_WPDesktop;
 
-interface WPDesktop : WPFolder
+interface WPDesktop : XFolder
 {
     BOOL wpIsCurrentDesktop();
 
@@ -140,7 +141,7 @@ interface WPDesktop : WPFolder
 #endif
 };
 
-interface M_WPDesktop : M_WPFolder
+interface M_WPDesktop : M_XFolder
 {
 
     WPObject wpclsQueryObjectFromFrame(in HWND hwndFrame);

@@ -954,6 +954,9 @@ BOOL fdrDeleteFromContent(WPFolder *somSelf,
 BOOL fdrIsObjectFiltered(WPFolder *pFolder,
                          WPObject *pObject)
 {
+    BOOL    brc = TRUE;     // if we can't find the filter, make
+                            // the object visible!
+
     WPObject *pFilter;
 
     static xfTD_wpMatchesFilter pwpMatchesFilter = NULL;
@@ -974,10 +977,11 @@ BOOL fdrIsObjectFiltered(WPFolder *pFolder,
             )
        )
     {
-        return !pwpMatchesFilter(pFilter, pObject);
+        if (pwpMatchesFilter(pFilter, pObject))
+            brc = FALSE;
     }
 
-    return FALSE;    // if we can't find the filter, make the object visible!
+    return brc;
 }
 
 /*

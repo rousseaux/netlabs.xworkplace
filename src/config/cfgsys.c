@@ -263,8 +263,8 @@ STATIC MRESULT EXPENTRY fnwpNewSystemPathDlg(HWND hwndDlg,
                     fd.cbSize = sizeof(FILEDLG);
                     fd.fl = FDS_OPEN_DIALOG
                               | FDS_CENTER;
-                    // fd.pfnDlgProc = fnwpOpenFilter;
-                    strcpy(fd.szFullFile, "*");
+                    fd.szFullFile[0] = '*';
+                    fd.szFullFile[1] = '\0';
                     if (    WinFileDlg(HWND_DESKTOP,    // parent
                                        hwndDlg,
                                        &fd)
@@ -961,7 +961,7 @@ VOID cfgConfigInitPage(PNOTEBOOKPAGE pnbp,
                     if (p2)
                     {
                         if (!strncmp(p2+1, "AC:", 3))
-                            strcpy(szAutoCheck, p2+4);
+                            strcpy(szAutoCheck, p2 + 4);
                     }
 
                     winhSetDlgItemSpinData(hwndDlgPage, ID_OSDI_CACHESIZE,

@@ -187,9 +187,9 @@ SOM_Scope ULONG  SOMLINK xwlist_xwpAddXWPClassListPages(XWPClassList *somSelf,
     XWPClassListMethodDebug("XWPClassList","xwlist_xwpAddXWPClassListPages");
 
     // remove accelerator char
-    strcpy(szTitle, cmnGetString(ID_XFSI_OPENCLASSLIST)) ; // pszOpenClassList
-    if (p = strchr(szTitle, '~'))
-        strcpy(p, p + 1);
+    cmnGetStringNoMnemonic(szTitle,
+                           ID_XFSI_OPENCLASSLIST,
+                           sizeof(szTitle));
 
     memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
     inbp.somSelf = somSelf;

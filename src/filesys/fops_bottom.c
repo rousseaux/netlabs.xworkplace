@@ -102,6 +102,7 @@
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
 #include "helpers\linklist.h"           // linked list helper routines
+#include "helpers\stringh.h"            // string helper routines
 
 // SOM headers which don't crash with prec. header files
 // #include "xfobj.ih"
@@ -878,6 +879,7 @@ APIRET Call_wpFree(PFILETASKLIST pftl,
  *
  *@@added V0.9.6 (2000-10-25) [umoeller]
  *@@changed V0.9.20 (2002-07-16) [umoeller]: optimizations and adjustments for fopsUseForceDelete
+ *@@changed V1.0.1 (2003-01-30) [umoeller]: more optimizations
  */
 
 APIRET fopsFileThreadSneakyDeleteFolderContents(PFILETASKLIST pftl,
@@ -924,16 +926,23 @@ APIRET fopsFileThreadSneakyDeleteFolderContents(PFILETASKLIST pftl,
                 FILEFINDBUF3    ffb3 = {0};      // returned from FindFirst/Next
                 ULONG           cbFFB3 = sizeof(FILEFINDBUF3);
                 ULONG           ulFindCount = 1;  // look for 1 file at a time
-                ULONG           ulFullPathLen;
+                ULONG           lenFullPath;
 
                 // _PmpfF(("doing DosFindFirst for %s",
                    //          szFolderPath));
 
-                // prepare full path V0.9.19 (2002-04-17) [umoeller]
-                ulFullPathLen = sprintf(szFullPath, "%s\\", szFolderPath);
+                // prepare full path and search mask
+                // optimized V1.0.1 (2003-01-30) [umoeller]
+                lenFullPath = strlcpy(szFullPath, szFolderPath, sizeof(szFullPath));
+                memcpy(szSearchMask, szFolderPath, lenFullPath + 1);
 
-                // now go find...
-                sprintf(szSearchMask, "%s\\*", szFolderPath);
+                szSearchMask[lenFullPath] = '\\';
+                szSearchMask[lenFullPath + 1] = '*';
+                szSearchMask[lenFullPath + 2] = '\0';
+
+                szFullPath[lenFullPath] = '\\';
+                szFullPath[++lenFullPath] = '\0';
+
                 frc = DosFindFirst(szSearchMask,
                                    &hdirFindHandle,
                                    // find everything except directories
@@ -947,7 +956,7 @@ APIRET fopsFileThreadSneakyDeleteFolderContents(PFILETASKLIST pftl,
                 while (!frc)
                 {
                     // alright... we got the file's name in ffb3.achName
-                    strcpy(szFullPath + ulFullPathLen, ffb3.achName);
+                    strcpy(szFullPath + lenFullPath, ffb3.achName);
                             // optimized V0.9.19 (2002-04-17) [umoeller]
 
                     // _Pmpf(("    got file %s", szFullPath));
@@ -964,12 +973,11 @@ APIRET fopsFileThreadSneakyDeleteFolderContents(PFILETASKLIST pftl,
                     pfu->ulProgressScalar = ulProgressScalarFirst
                                             + (((*pulSubObjectThis) * 100 )
                                                  / cSubObjects);
-                    frc = fopsCallProgressCallback(pftl,
-                                                   FOPSUPD_SUBOBJECT_CHANGED
-                                                    | FOPSPROG_UPDATE_PROGRESS,
-                                                   pfu);
 
-                    if (!frc)
+                    if (!(frc = fopsCallProgressCallback(pftl,
+                                                         FOPSUPD_SUBOBJECT_CHANGED
+                                                          | FOPSPROG_UPDATE_PROGRESS,
+                                                         pfu)))
                     {
                         // no error, not cancelled:
                         // check file's attributes
@@ -979,10 +987,9 @@ APIRET fopsFileThreadSneakyDeleteFolderContents(PFILETASKLIST pftl,
                             // prompt!!
 
                             // 1) make object awake
-                            WPFileSystem *pFSObj = _wpclsQueryObjectFromPath(_WPFileSystem,
-                                                                             szFullPath);
-                            // _Pmpf(("        is readonly"));
-                            if (!pFSObj)
+                            WPFileSystem *pFSObj;
+                            if (!(pFSObj = _wpclsQueryObjectFromPath(_WPFileSystem,
+                                                                     szFullPath)))
                                 frc = FOPSERR_INVALID_OBJECT;
                             else
                             {

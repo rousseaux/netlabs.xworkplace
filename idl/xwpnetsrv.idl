@@ -23,7 +23,6 @@
  *      GNU General Public License for more details.
  */
 
-#include <xtrash.idl>           // XWPTrashCan
 #include <wptrans.idl>          // this is SOM for WPTransient
 
 /*
@@ -60,7 +59,7 @@ interface XWPNetServer : WPTransient
         externalprefix = xsrv_;
         externalstem = xsrv;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xwpnetsrv;           //# specifies the filestem for sc-generated files
         metaclass = M_XWPNetServer;
         dllname = "xfldr.dll";
@@ -136,7 +135,7 @@ interface M_XWPNetServer : M_WPTransient
         externalstem = xsrvM;
         functionprefix = xsrvM_;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xwpnetsrv;           //# specifies the filestem for sc-generated files
         dllname = "xfldr.dll";
         callstyle = oidl;

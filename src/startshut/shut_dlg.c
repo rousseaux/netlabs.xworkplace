@@ -87,6 +87,7 @@
 #include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\procstat.h"           // DosQProcStat handling
 #include "helpers\standards.h"          // some standard macros
+#include "helpers\stringh.h"            // string helper routines
 #include "helpers\threads.h"            // thread helpers
 #include "helpers\winh.h"               // PM helper routines
 #include "helpers\wphandle.h"           // file-system object handles
@@ -641,13 +642,15 @@ ULONG xsdConfirmShutdown(PSHUTDOWNPARAMS psdParms)
                     for (us = 0; us < usSelected; us++)
                     {
                         // skip description string
-                        p += (strlen(p)+1);
+                        p += (strlen(p) + 1);
                         // skip reboot command
-                        p += (strlen(p)+1);
+                        p += (strlen(p) + 1);
                     }
                     // skip description string to get to reboot command
-                    p += (strlen(p)+1);
-                    strcpy(psdParms->szRebootCommand, p);
+                    p += (strlen(p) + 1);
+                    strlcpy(psdParms->szRebootCommand,
+                            p,
+                            sizeof(psdParms->szRebootCommand));
 
     #ifndef __NOXSHUTDOWN__
                     flShutdown |= XSD_REBOOT;
@@ -698,9 +701,9 @@ static CONTROLDEF
                             LOAD_STRING,
                             ID_XSSI_XSD_CONFIRMLOGOFFMSG,
                             SZL_REMAINDER),         // changed V1.0.1 (2003-01-05) [umoeller]
-    RunShutdownFdr = LOADDEF_AUTOCHECKBOX(ID_SDDI_WPS_RUNSHUTDOWNFDR),
     CloseAllSessionsCB = LOADDEF_AUTOCHECKBOX(ID_SDDI_WPS_CLOSEWINDOWS),
 #ifndef __NOXWPSTARTUP__
+    RunShutdownFdr = LOADDEF_AUTOCHECKBOX(ID_SDDI_WPS_RUNSHUTDOWNFDR),
     StartupFoldersCB = LOADDEF_AUTOCHECKBOX(ID_SDDI_WPS_STARTUPFOLDER),
 #endif
     ArchiveOnceCB = LOADDEF_AUTOCHECKBOX(ID_SDDI_ARCHIVEONCE);
@@ -843,7 +846,9 @@ ULONG xsdConfirmRestartWPS(PSHUTDOWNPARAMS psdParms)
                                    FALSE))
             {
                 psdParms->optWPSProcessShutdown = FALSE;
+#ifndef __NOXWPSTARTUP__
                 WinEnableControl(hwndConfirm, ID_SDDI_WPS_RUNSHUTDOWNFDR, FALSE);
+#endif
             }
 
             winhSetDlgItemChecked(hwndConfirm, ID_SDDI_WPS_CLOSEWINDOWS, psdParms->optWPSCloseWindows);
@@ -878,9 +883,11 @@ ULONG xsdConfirmRestartWPS(PSHUTDOWNPARAMS psdParms)
 #ifndef __NOXSHUTDOWN__
                 ULONG fl = cmnQuerySetting(sflXShutdown);
 #endif
+#ifndef __NOXWPSTARTUP__
                 psdParms->optWPSProcessShutdown = winhIsDlgItemChecked(hwndConfirm,
                                                                        ID_SDDI_WPS_RUNSHUTDOWNFDR);
 
+#endif
                 psdParms->optWPSCloseWindows = winhIsDlgItemChecked(hwndConfirm,
                                                                     ID_SDDI_WPS_CLOSEWINDOWS);
 
@@ -978,7 +985,9 @@ USHORT xsdLoadAutoCloseItems(PLINKLIST pllItems,   // in: list of AUTOCLOSELISTI
             while (strlen(p))
             {
                 PAUTOCLOSELISTITEM pliNew = malloc(sizeof(AUTOCLOSELISTITEM));
-                strcpy(pliNew->szItemName, p);
+                strlcpy(pliNew->szItemName,
+                        p,
+                        sizeof(pliNew->szItemName));
                 lstAppendItem(pllItems, // pData->pllAutoClose,
                               pliNew);
 
@@ -988,7 +997,7 @@ USHORT xsdLoadAutoCloseItems(PLINKLIST pllItems,   // in: list of AUTOCLOSELISTI
                                (MPARAM)LIT_END,
                                (MPARAM)p);
 
-                p += (strlen(p)+1);
+                p += (strlen(p) + 1);
 
                 if (strlen(p))
                 {
@@ -998,6 +1007,7 @@ USHORT xsdLoadAutoCloseItems(PLINKLIST pllItems,   // in: list of AUTOCLOSELISTI
 
                 usItemCount++;
             }
+
             free(pINI);
         }
     }

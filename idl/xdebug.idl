@@ -50,7 +50,7 @@ interface DbgDataFile : WPDataFile
         externalprefix = ddf_;
         externalstem = ddf;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xdebug;           //# specifies the filestem for sc-generated files
         metaclass = M_DbgDataFile;
         dllname = "xdebug.dll";
@@ -296,7 +296,7 @@ interface M_DbgDataFile : M_WPDataFile
         externalstem = ddfM;
         functionprefix = ddfM_;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xdebug;           //# specifies the filestem for sc-generated files
         dllname = "xdebug.dll";
         callstyle = oidl;

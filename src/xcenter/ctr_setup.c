@@ -240,11 +240,12 @@ extern const XWPSETUPENTRY    G_XCenterSetupSet[] =
                0,       0,                  0,   60000,
 
         // type,  setup string,     offset,
-        STG_BOOL, NULL,               FIELDOFFSET(XCenterData, fHelpDisplayed),
+        // setting removed V1.0.1 (2003-02-02) [umoeller]
+        // STG_BOOL, NULL,               FIELDOFFSET(XCenterData, fHelpDisplayed),
         //     key for wpSaveState/wpRestoreState
-               5,
+        //        5,
         //     default, ulExtra,            min, max
-               FALSE,   0,                  0,   1,
+        //        FALSE,   0,                  0,   1,
 
         // type,  setup string,     offset,
         /*      removed V0.9.20 (2002-08-08) [umoeller]

@@ -59,7 +59,7 @@ interface DbgObject : WPObject
         externalprefix = do_;
         externalstem = do;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xdebug;           //# specifies the filestem for sc-generated files
         metaclass = M_DbgObject;
         dllname = "xdebug.dll";
@@ -367,7 +367,7 @@ interface M_DbgObject : M_WPObject
         externalstem = doM;
         functionprefix = doM_;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xdebug;           //# specifies the filestem for sc-generated files
         dllname = "xdebug.dll";
         callstyle = oidl;

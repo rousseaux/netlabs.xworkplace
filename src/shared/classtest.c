@@ -68,6 +68,7 @@
 #include <wptrans.h>                    // WPTransient
 #include <wpicon.h>                     // WPIcon
 #include <wpptr.h>                      // WPPointer
+#include <wpimage.h>                    // WPImageFile
 #include <wpcmdf.h>                     // WPCommandFile
 #include <wprootf.h>                    // WPRootFolder
 #include <wpserver.h>                   // WPServer
@@ -194,6 +195,19 @@ BOOL ctsIsIcon(WPObject *somSelf)
 BOOL ctsIsPointer(WPObject *somSelf)
 {
     return _somIsA(somSelf, _WPPointer);
+}
+
+/*
+ *@@ ctsIsImageFile:
+ *      returns TRUE if somSelf is an instance
+ *      of WPImageFile.
+ *
+ *@@added V1.0.1 (2003-01-29) [umoeller]
+ */
+
+BOOL ctsIsImageFile(WPObject *somSelf)
+{
+    return _somIsA(somSelf, _WPImageFile);
 }
 
 /*

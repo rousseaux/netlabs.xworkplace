@@ -486,7 +486,7 @@ BOOL cmnQueryXWPBasePath(PSZ pszPath)
         krnUnlock();
 
     if (brc)
-        strcpy(pszPath, G_szXWPBasePath);
+        strlcpy(pszPath, G_szXWPBasePath, CCHMAXPATH);
 
     return brc;
 }
@@ -550,7 +550,7 @@ BOOL cmnSetLanguageCode(PCSZ pcszLanguage)
             if (!pcszLanguage)
                 pcszLanguage = DEFAULT_LANGUAGECODE;
 
-            strcpy(G_szLanguageCode, pcszLanguage);
+            strlcpy(G_szLanguageCode, pcszLanguage, sizeof(G_szLanguageCode));
             G_szLanguageCode[3] = 0;
 
             brc = PrfWriteProfileString(HINI_USERPROFILE,
@@ -1159,7 +1159,7 @@ VOID cmnInitEntities(VOID)
         acp[0] = 437;
 
     if (acp[0] == 850)
-        strcpy(G_szCopyright, G_pcszCopyChar);
+        strlcpy(G_szCopyright, G_pcszCopyChar, sizeof(G_szCopyright));
     else
     {
         WinCpTranslateString(G_habThread1,
@@ -1169,7 +1169,7 @@ VOID cmnInitEntities(VOID)
                              sizeof(G_szCopyright),
                              G_szCopyright);
         if (G_szCopyright[0] == '\xFF')
-            strcpy(G_szCopyright, "(C)");
+            memcpy(G_szCopyright, "(C)", 4);
     }
 
     nlsInitStrings(G_habThread1,
@@ -1237,6 +1237,53 @@ VOID cmnInitEntities(VOID)
 PCSZ cmnGetString(ULONG ulStringID)
 {
     return nlsGetString(ulStringID);
+}
+
+/*
+ *@@ cmnGetString2:
+ *      like cmnGetString, but does not return a PCSZ,
+ *      but instead copies the string into the given
+ *      buffer of the caller.
+ *
+ *      Returns strlen(pszBuf) always.
+ *
+ *@@added V1.0.1 (2003-01-30) [umoeller]
+ */
+
+ULONG cmnGetString2(PSZ pszBuf,                     // out: new string
+                    ULONG ulStringID,               // in: string ID (passed to cmnGetString)
+                    ULONG cbBuf)                    // in: size of pszBuf
+{
+    return strlcpy(pszBuf,
+                   nlsGetString(ulStringID),
+                   cbBuf);
+}
+
+/*
+ *@@ cmnGetStringNoMnemonic:
+ *      calls cmnGetString and copies the result
+ *      to pszBuf, removing a single tilde (~)
+ *      character if found.
+ *
+ *      Returns strlen(pszBuf) always.
+ *
+ *@@added V1.0.1 (2003-01-30) [umoeller]
+ */
+
+ULONG cmnGetStringNoMnemonic(PSZ pszBuf,            // out: new string
+                             ULONG ulStringID,      // in: string ID (passed to cmnGetString)
+                             ULONG cbBuf)           // in: size of pszBuf
+{
+    PSZ    p;
+    ULONG   ulLen = strlcpy(pszBuf,
+                            cmnGetString(ulStringID),
+                            cbBuf);
+
+    strhKillChar(pszBuf,
+                 '~',
+                 &ulLen);
+
+    return ulLen;
 }
 
 /*
@@ -2130,7 +2177,7 @@ BOOL cmnSetStatusBarSetting(USHORT usSetting, PSZ pszSetting)
                     CHAR szDummy[CCHMAXMNEMONICS];
                     if (pszSetting)
                     {
-                        strcpy(G_szStatusBarFont, pszSetting);
+                        strlcpy(G_szStatusBarFont, pszSetting, sizeof(G_szStatusBarFont));
                         PrfWriteProfileString(HINI_USERPROFILE,
                                               (PSZ)INIAPP_XWORKPLACE,
                                               (PSZ)INIKEY_STATUSBARFONT,
@@ -2139,8 +2186,9 @@ BOOL cmnSetStatusBarSetting(USHORT usSetting, PSZ pszSetting)
                     else
                     {
                         // NULL:
-                        strcpy(G_szStatusBarFont,
-                               cmnQueryDefaultFont());      // V0.9.16 (2001-09-29) [umoeller]
+                        strlcpy(G_szStatusBarFont,
+                                cmnQueryDefaultFont(),      // V0.9.16 (2001-09-29) [umoeller]
+                                sizeof(G_szStatusBarFont));
                         PrfWriteProfileString(HINI_USERPROFILE,
                                               (PSZ)INIAPP_XWORKPLACE,
                                               (PSZ)INIKEY_STATUSBARFONT,
@@ -2157,7 +2205,7 @@ BOOL cmnSetStatusBarSetting(USHORT usSetting, PSZ pszSetting)
                 {
                     if (pszSetting)
                     {
-                        strcpy(G_szSBTextNoneSel, pszSetting);
+                        strlcpy(G_szSBTextNoneSel, pszSetting, sizeof(G_szSBTextNoneSel));
                         PrfWriteProfileString(HINI_USERPROFILE,
                                               (PSZ)INIAPP_XWORKPLACE,
                                               (PSZ)INIKEY_SBTEXTNONESEL,
@@ -2180,7 +2228,7 @@ BOOL cmnSetStatusBarSetting(USHORT usSetting, PSZ pszSetting)
                 {
                     if (pszSetting)
                     {
-                        strcpy(G_szSBTextMultiSel, pszSetting);
+                        strlcpy(G_szSBTextMultiSel, pszSetting, sizeof(G_szSBTextMultiSel));
                         PrfWriteProfileString(HINI_USERPROFILE,
                                               (PSZ)INIAPP_XWORKPLACE,
                                               (PSZ)INIKEY_SBTEXTMULTISEL,
@@ -3245,9 +3293,6 @@ ULONG cmnQuerySettingDebug(XWPSETTING s,
                            ULONG ulLine,
                            PCSZ pcszFunction)
 {
-    if (s == sflOwnerDrawIcons)     // @@todo
-        return G_aulSettings[s] | OWDRFL_LAZYLOADTHUMBNAIL;
-
 #ifndef __NOTURBOFOLDERS__
     if (s == sfTurboFolders)
         return G_fTurboSettingsEnabled;
@@ -5127,14 +5172,19 @@ BOOL cmnIsValidHotkey(USHORT usFlags,
  *      this stores a description of a certain
  *      key into pszBuf, using the NLS DLL strings.
  *      usFlags is as in WM_CHAR.
+ *
  *      If (usFlags & KC_VIRTUALKEY), usKeyCode must
  *      be usvk of WM_CHAR (VK_* code), or usch otherwise.
+ *
  *      Returns TRUE if this was a valid key combo.
+ *
+ *@@changed V1.0.1 (2003-01-30) [umoeller]: added cbBuf parameter, fixed buf overflows
  */
 
-BOOL cmnDescribeKey(PSZ pszBuf,
+BOOL cmnDescribeKey(PSZ pszBuf,            // out: key description
                     USHORT usFlags,
-                    USHORT usKeyCode)
+                    USHORT usKeyCode,
+                    ULONG cbBuf)           // in: size of pszBuf
 {
     BOOL brc = TRUE;
 
@@ -5143,11 +5193,13 @@ BOOL cmnDescribeKey(PSZ pszBuf,
 
     *pszBuf = 0;
     if (usFlags & KC_CTRL)
-        strcpy(pszBuf, cmnGetString(ID_XSSI_KEY_CTRL)) ; // pszCtrl
+        cmnGetString2(pszBuf,
+                      ID_XSSI_KEY_CTRL,
+                      cbBuf);
     if (usFlags & KC_SHIFT)
-        strcat(pszBuf, cmnGetString(ID_XSSI_KEY_SHIFT)) ; // pszShift
+        strlcat(pszBuf, cmnGetString(ID_XSSI_KEY_SHIFT), cbBuf);
     if (usFlags & KC_ALT)
-        strcat(pszBuf, cmnGetString(ID_XSSI_KEY_Alt)) ; // pszAlt
+        strlcat(pszBuf, cmnGetString(ID_XSSI_KEY_Alt), cbBuf);
 
     if (usFlags & KC_VIRTUALKEY)
     {
@@ -5224,7 +5276,7 @@ BOOL cmnDescribeKey(PSZ pszBuf,
         pcszCopy = cmnGetString(ulID);
 
     if (pcszCopy)
-        strcat(pszBuf, pcszCopy);
+        strlcat(pszBuf, pcszCopy, cbBuf);
 
     PMPF_KEYS(("Key: %s, usKeyCode: 0x%lX, usFlags: 0x%lX", pszBuf, usKeyCode, usFlags));
 
@@ -5305,6 +5357,7 @@ ULONG cmnQueryFCF(WPObject *somSelf)
  *      menu item's text.
  *
  *@@added V0.9.11 (2001-04-18) [umoeller]
+ *@@changed V1.0.1 (2003-01-30) [umoeller]: optimized
  */
 
 BOOL cmnRegisterView(WPObject *somSelf,
@@ -5315,8 +5368,9 @@ BOOL cmnRegisterView(WPObject *somSelf,
 {
     BOOL        brc = FALSE;
     PSZ         pszViewTitle;
+    ULONG       lenViewTitle;
 
-    if (pszViewTitle = strdup(pcszViewTitle))
+    if (pszViewTitle = strhdup(pcszViewTitle, &lenViewTitle))
     {
         PVIEWITEM   pViewItem = (PVIEWITEM)(((PBYTE)pUseItem) + sizeof(USEITEM));
         // add the use list item to the object's use list
@@ -5331,14 +5385,13 @@ BOOL cmnRegisterView(WPObject *somSelf,
         else
         {
             // create view title: remove ~ char
-            PSZ p;
-            if (p = strchr(pszViewTitle, '~'))
-                // found: remove that
-                strcpy(p, p + 1);
+            strhKillChar(pszViewTitle,
+                         '~',
+                         &lenViewTitle);
 
             brc = _wpRegisterView(somSelf,
                                   hwndFrame,
-                                  pszViewTitle); // view title
+                                  pszViewTitle);
         }
 
         free(pszViewTitle);
@@ -5703,7 +5756,7 @@ STATIC VOID UpdateRunHistory(HWND hwnd)
             else
                 break;
 
-        strcpy(G_szRunDirectory, pszExec);
+        strlcpy(G_szRunDirectory, pszExec, sizeof(G_szRunDirectory));
         free(pszExec);
     }
 }
@@ -5853,11 +5906,11 @@ STATIC MRESULT EXPENTRY fnwpRunCommandLine(HWND hwnd, ULONG msg, MPARAM mp1, MPA
                          < sizeof(filedlg.szFullFile)
                        )
                     {
-                        strcpy(filedlg.szFullFile, G_szRunDirectory);
-                        strcat(filedlg.szFullFile, pszFilespec);
+                        strlcpy(filedlg.szFullFile, G_szRunDirectory, sizeof(filedlg.szFullFile));
+                        strlcat(filedlg.szFullFile, pszFilespec, sizeof(filedlg.szFullFile));
                     }
                     else
-                        strcpy(filedlg.szFullFile, pszFilespec);
+                        strlcpy(filedlg.szFullFile, pszFilespec, sizeof(filedlg.szFullFile));
 
                     filedlg.papszITypeList = (PAPSZ)typelist;
                     if (    (WinFileDlg(HWND_DESKTOP, hwnd, &filedlg))
@@ -5875,7 +5928,7 @@ STATIC MRESULT EXPENTRY fnwpRunCommandLine(HWND hwnd, ULONG msg, MPARAM mp1, MPA
                             else
                                 break;
 
-                        strcpy(G_szRunDirectory, filedlg.szFullFile);
+                        strlcpy(G_szRunDirectory, filedlg.szFullFile, sizeof(G_szRunDirectory));
                     }
                 }
                 break;
@@ -7379,7 +7432,7 @@ BOOL cmnFileDlg2(HWND hwndOwner,    // in: owner for file dlg
         fd.fl |= FDS_OPEN_DIALOG;
 
     // default: copy pszFile
-    strcpy(fd.szFullFile, pszFile);
+    strlcpy(fd.szFullFile, pszFile, sizeof(fd.szFullFile));
 
     // _PmpfF(("pszFile = %s", pszFile));
 
@@ -7455,7 +7508,7 @@ BOOL cmnFileDlg2(HWND hwndOwner,    // in: owner for file dlg
             }
         }
 
-        strcpy(pszFile, fd.szFullFile);
+        strlcpy(pszFile, fd.szFullFile, CCHMAXPATH);
 
         return TRUE;
     }
@@ -7742,7 +7795,7 @@ PCSZ cmnIdentifyView(ULONG ulView)
                 if (pTaskRec->folder)
                     _wpQueryFilename(pTaskRec->folder, szFolder, TRUE);
                 else
-                    strcpy(szFolder, "null");
+                    memcpy(szFolder, "null", 5);
                 _Pmpf(("Index: %d", ul));
                 _Pmpf(("    useCount: %d", pTaskRec->useCount));
                 _Pmpf(("    pStdDlg: 0x%lX", pTaskRec->pStdDlg));

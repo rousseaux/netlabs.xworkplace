@@ -20,19 +20,25 @@
 # files created by this makefile.
 OUTPUTDIR = $(PROJECT_BASE_DIR)\include\classes
 
+!undef SMINCLUDE
+
 # Some SOM variables. You won't have to change these.
 SOMTEMP = $(TEMP)
 !if [set SOMTMP=$(TEMP)] || \
     [set SMTMP=$(SOMTEMP)] || \
     [set SMEMIT=ih;h;c] || \
     [set SMADDSTAR=1] || \
-    [set SMNOTC=1] || \
+    [set SMNOTC=1]
 #     [set SMINCLUDE=$(SMINCLUDE);$(TKBASE)\idl;$(TKBASE)\h;$(TKBASE)\SOM\include;.]
 #   hacked up SMINCLUDE to make sure idl\wps is before toolkit idl\
 #   V0.9.20 (2002-07-25) [umoeller]
-    [set SMINCLUDE=$(PROJECT_BASE_DIR)\idl\wps;$(SMINCLUDE);$(TKBASE)\idl;$(TKBASE)\SOM\include;.]
+#    [set SMINCLUDE=$(PROJECT_BASE_DIR)\idl\wps;$(SMINCLUDE);$(TKBASE)\idl;$(TKBASE)\SOM\include;.]
 !endif
 
+SMINCLUDE=$(PROJECT_BASE_DIR)\idl\wps;$(PROJECT_BASE_DIR)\idl;$(TKBASE)\idl;$(TKBASE)\SOM\include
+
+!if [@echo    TKBASE    is $(TKBASE)]
+!endif
 !if [@echo    SMINCLUDE is $(SMINCLUDE)]
 !endif
 
@@ -40,7 +46,6 @@ SOMTEMP = $(TEMP)
 # SMEMIT=ih;h;c
 # SMADDSTAR=1
 # SMNOTC=1
-# SMINCLUDE=$(TKBASE)\idl;$(TKBASE)\h;$(TKBASE)\SOM\include;.
 
 # Specify the main target.
 
@@ -62,6 +67,7 @@ $(OUTPUTDIR)\wps\wppgmf.h \
 $(OUTPUTDIR)\wps\wpshadow.h \
 $(OUTPUTDIR)\wps\wpsound.h \
 $(OUTPUTDIR)\wps\wpsystem.h \
+$(OUTPUTDIR)\wps\wptrans.h \
 $(OUTPUTDIR)\xcenter.h \
 $(OUTPUTDIR)\xclslist.h \
 $(OUTPUTDIR)\xdebug.h \
@@ -182,9 +188,11 @@ $(OUTPUTDIR)\xwpstring.h:        $(@B).idl $(OUTPUTDIR)\wps\wpabs.h
 
 # WPTransient and subclasses
 
-$(OUTPUTDIR)\xfontobj.h:         $(@B).idl $(OUTPUTDIR)\xfobj.h
+$(OUTPUTDIR)\wps\wptrans.h:      wps\$(@B).idl $(OUTPUTDIR)\xfobj.h
 
-$(OUTPUTDIR)\xtrashobj.h:        $(@B).idl $(OUTPUTDIR)\xfobj.h
+$(OUTPUTDIR)\xfontobj.h:         $(@B).idl $(OUTPUTDIR)\wps\wptrans.h
+
+$(OUTPUTDIR)\xtrashobj.h:        $(@B).idl $(OUTPUTDIR)\wps\wptrans.h
 
 # WPFileSystem and subclasses
 

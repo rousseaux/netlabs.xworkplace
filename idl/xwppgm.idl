@@ -69,7 +69,7 @@ interface XWPProgram : WPProgram
         externalprefix = xpg_;
         externalstem = xpg;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xwppgm;           //# specifies the filestem for sc-generated files
         metaclass = M_XWPProgram;
         dllname = "xfldr.dll";
@@ -179,7 +179,7 @@ interface M_XWPProgram : M_WPProgram
         externalstem = xpgM;
         functionprefix = xpgM_;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xwppgm;           //# specifies the filestem for sc-generated files
         dllname = "xfldr.dll";
         callstyle = oidl;

@@ -52,6 +52,7 @@
 
 #define INCL_DOSEXCEPTIONS
 #define INCL_DOSPROCESS
+#define INCL_DOSERRORS
 
 #define INCL_GPI                // required for INCL_MMIO_CODEC
 #define INCL_GPIBITMAPS         // required for INCL_MMIO_CODEC
@@ -70,9 +71,12 @@
 #include "setup.h"                      // code generation and debugging options
 
 // headers in /helpers
+#include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
 #include "helpers\gpih.h"               // GPI helper routines
 #include "helpers\mmpmh.h"              // MMPM/2 helpers
+#include "helpers\stringh.h"            // string helper routines
+#include "helpers\tree.h"               // red-black binary trees
 #include "helpers\xstring.h"            // extended string helpers
 
 // SOM headers which don't crash with prec. header files
@@ -99,32 +103,13 @@ PCSZ            G_pcszImageFileFilter = NULL;
 PMMFORMATINFO   G_aFormatInfos = NULL;
 LONG            G_cFormatInfos = 0;
 
+TREE            *G_FormatsTreeRoot;
+
 /* ******************************************************************
  *
  *   XWPImageFile instance methods
  *
  ********************************************************************/
-
-/*
- *@@ wpInitData:
- *      this WPObject instance method gets called when the
- *      object is being initialized (on wake-up or creation).
- *      We initialize our additional instance data here.
- *      Always call the parent method first.
- */
-
-SOM_Scope void  SOMLINK img_wpInitData(XWPImageFile *somSelf)
-{
-    /* XWPImageFileData *somThis = XWPImageFileGetData(somSelf); */
-    XWPImageFileMethodDebug("XWPImageFile","img_wpInitData");
-
-    XWPImageFile_parent_WPImageFile_wpInitData(somSelf);
-
-    // we can do thumbnails
-    _xwpModifyFlags(somSelf,
-                    OBJFL_OWNERDRAWTHUMBNAIL,
-                    OBJFL_OWNERDRAWTHUMBNAIL);
-}
 
 /*
  *@@ wpUnInitData:
@@ -143,44 +128,6 @@ SOM_Scope void  SOMLINK img_wpUnInitData(XWPImageFile *somSelf)
     }
 
     XWPImageFile_parent_WPImageFile_wpUnInitData(somSelf);
-}
-
-/*
- *@@ xwpLazyLoadThumbnail:
- *
- */
-
-SOM_Scope HBITMAP  SOMLINK img_xwpLazyLoadThumbnail(XWPImageFile *somSelf,
-                                                    ULONG ulWidth,
-                                                    ULONG ulHeight,
-                                                    BOOL* pbQuitEarly)
-{
-    HBITMAP     hbm;
-
-    /* XWPImageFileData *somThis = XWPImageFileGetData(somSelf); */
-    XWPImageFileMethodDebug("XWPImageFile","img_xwpLazyLoadThumbnail");
-
-    _PmpfF(("entering"));
-
-    if (_wpQueryBitmapHandle(somSelf,
-                             &hbm,
-                             NULL,
-                             ulWidth,
-                             ulHeight,
-                             0,
-                             0,
-                             pbQuitEarly))
-    {
-        _PmpfF(("success, returning hbm 0x%lX", hbm));
-        return hbm;
-    }
-
-    _PmpfF(("wpQueryBitmapHandle failed", hbm));
-
-    return XWPImageFile_parent_WPImageFile_xwpLazyLoadThumbnail(somSelf,
-                                                                ulWidth,
-                                                                ulHeight,
-                                                                pbQuitEarly);
 }
 
 /*
@@ -218,8 +165,8 @@ SOM_Scope PSZ  SOMLINK img_wpQueryType(XWPImageFile *somSelf)
  *      for cleaning up this data.
  */
 
-SOM_Scope PBITMAPFILEHEADER2  SOMLINK img_wpQueryBitmapData(XWPImageFile *somSelf,
-                                                            ULONG* pulSize)
+SOM_Scope PBYTE  SOMLINK img_wpQueryBitmapData(XWPImageFile *somSelf,
+                                               ULONG* pulSize)
 {
     /* XWPImageFileData *somThis = XWPImageFileGetData(somSelf); */
     XWPImageFileMethodDebug("XWPImageFile","img_wpQueryBitmapData");
@@ -238,8 +185,8 @@ SOM_Scope PBITMAPFILEHEADER2  SOMLINK img_wpQueryBitmapData(XWPImageFile *somSel
  *@@added V1.0.1 (2003-01-29) [umoeller]
  */
 
-VOID LoadImageHeader(XWPImageFile *somSelf,
-                     HMMIO hmmio)
+PMMIMAGEHEADER LoadImageHeader(XWPImageFile *somSelf,
+                               HMMIO hmmio)
 {
     XWPImageFileData *somThis = XWPImageFileGetData(somSelf);
 
@@ -260,6 +207,8 @@ VOID LoadImageHeader(XWPImageFile *somSelf,
                 ShlFreeMem(pmmih);
         }
     }
+
+    return (PMMIMAGEHEADER)_pbMMImageHeader;
 }
 
 /*
@@ -281,14 +230,14 @@ VOID LoadImageHeader(XWPImageFile *somSelf,
  *@@added V1.0.1 (2003-01-29) [umoeller]
  */
 
-SOM_Scope BOOL  SOMLINK img_wpQueryBitmapHandle(XWPImageFile *somSelf,
-                                                HBITMAP* phBitmap,
-                                                HPAL* phPalette,
-                                                ULONG ulWidth,
-                                                ULONG ulHeight,
-                                                ULONG ulFlags,
-                                                long lBackgroundColor,
-                                                BOOL* pbQuitEarly)
+SOM_Scope BOOL32  SOMLINK img_wpQueryBitmapHandle(XWPImageFile *somSelf,
+                                                  HBITMAP* phBitmap,
+                                                  HPAL* phPalette,
+                                                  ULONG ulWidth,
+                                                  ULONG ulHeight,
+                                                  ULONG ulFlags,
+                                                  long lBackgroundColor,
+                                                  BOOL* pbQuitEarly)
 {
     BOOL    brc = FALSE;
 
@@ -308,44 +257,85 @@ SOM_Scope BOOL  SOMLINK img_wpQueryBitmapHandle(XWPImageFile *somSelf,
     {
         TRY_LOUD(excpt1)
         {
-            APIRET  arc;
+            APIRET  arc = ERROR_OPEN_FAILED;
 
-            if (!(arc = mmhOpenImage(szFilename,
-                                     0, // fccIOProc,
-                                     &hmmio)))
+            PSZ pszExt;
+
+            if (pszExt = doshGetExtension(szFilename))
             {
-                MMIMAGEHEADER   mmihSource;
+                // try to find the ioproc that matches the extension
+                ULONG   ul;
+                nlsUpper(pszExt);
 
-                if (!(arc = mmhLoadImageHeader(hmmio,
-                                               &mmihSource,
-                                               &_cbPerRow)))
+                _PmpfF(("[%s] got ext \"%s\"",
+                        szFilename,
+                        pszExt));
+
+                for (ul = 0;
+                     ul < G_cFormatInfos;
+                     ++ul)
                 {
+                    if (!strcmp(G_aFormatInfos[ul].szDefaultFormatExt, pszExt))
+                    {
+                        CHAR szFourCC[5] = "1234";
+                        memcpy(szFourCC, &G_aFormatInfos[ul].fccIOProc, sizeof(ULONG));
+
+                        _PmpfF(("   %s (fcc: %s) matches",
+                                G_aFormatInfos[ul].szDefaultFormatExt,
+                                szFourCC));
+
+                        // extension matches: try that fourcc
+                        if (!(arc = mmhOpenImage(szFilename,
+                                                 G_aFormatInfos[ul].fccIOProc,
+                                                 &hmmio)))
+                            // worked:
+                            break;
+
+                        _PmpfF(("       mmioOpen returned %d", arc));
+                    }
+                    else
+                        _PmpfF(("   %s didn't match",
+                                G_aFormatInfos[ul].szDefaultFormatExt));
+
+                }
+            }
+
+            // arc is ERROR_OPEN_FAILED if we couldn't find that
+            // extension, or the mmhOpenImage error code if open
+            // didn't work for any; in those cases, still try
+            // the default open
+            if (    (!arc)
+                 || (!(arc = mmhOpenImage(szFilename,
+                                          0,
+                                          &hmmio)))
+               )
+            {
+                PMMIMAGEHEADER pmmihSelf;
+
+                if (pmmihSelf = LoadImageHeader(somSelf,
+                                                hmmio))
+                {
+                    // this sets _cbPerRow also
+
                     if (!(arc = mmhLoadImageBits(hmmio,
-                                                 &mmihSource,
+                                                 pmmihSelf,
                                                  _cbPerRow,
                                                  &pbBitmapBits)))
                     {
                         SIZEL   szlBitmap;
                         if (!(szlBitmap.cx = ulWidth))
-                            szlBitmap.cx = mmihSource.mmXDIBHeader.BMPInfoHeader2.cx;
+                            szlBitmap.cx = pmmihSelf->mmXDIBHeader.BMPInfoHeader2.cx;
                         if (!(szlBitmap.cy = ulHeight))
-                            szlBitmap.cy = mmihSource.mmXDIBHeader.BMPInfoHeader2.cy;
+                            szlBitmap.cy = pmmihSelf->mmXDIBHeader.BMPInfoHeader2.cy;
                         if (!(arc = mmhCreateBitmapFromBits(&szlBitmap,
-                                                            &mmihSource.mmXDIBHeader.BMPInfoHeader2,
+                                                            &pmmihSelf->mmXDIBHeader.BMPInfoHeader2,
                                                             pbBitmapBits,
                                                             phBitmap)))
                         {
-                            _PmpfF(("mmhCreateBitmapFromBits worked!"));
                             brc = TRUE;
                         }
-                        else
-                            _PmpfF(("mmhCreateBitmapFromBits returned %d", arc));
                     }
-                    else
-                        _PmpfF(("mmhLoadImageBits returned %d", arc));
                 }
-                else
-                    _PmpfF(("mmhLoadImageHeader returned %d", arc));
             }
         }
         CATCH(excpt1)
@@ -372,7 +362,7 @@ SOM_Scope BOOL  SOMLINK img_wpQueryBitmapHandle(XWPImageFile *somSelf,
  *      to a BITMAPINFOHEADER2 structure.
  */
 
-SOM_Scope PBITMAPINFOHEADER2 SOMLINK img_wpQueryBitmapInfoHeader(XWPImageFile *somSelf)
+SOM_Scope PBYTE  SOMLINK img_wpQueryBitmapInfoHeader(XWPImageFile *somSelf)
 {
     XWPImageFileData *somThis = XWPImageFileGetData(somSelf);
     XWPImageFileMethodDebug("XWPImageFile","img_wpQueryBitmapInfoHeader");
@@ -406,7 +396,7 @@ SOM_Scope PBITMAPINFOHEADER2 SOMLINK img_wpQueryBitmapInfoHeader(XWPImageFile *s
     }
 
     if (_pbMMImageHeader)
-        return &((PMMIMAGEHEADER)_pbMMImageHeader)->mmXDIBHeader.BMPInfoHeader2;
+        return (PBYTE)(&((PMMIMAGEHEADER)_pbMMImageHeader)->mmXDIBHeader.BMPInfoHeader2);
 
     return NULL;
 }
@@ -418,7 +408,7 @@ SOM_Scope PBITMAPINFOHEADER2 SOMLINK img_wpQueryBitmapInfoHeader(XWPImageFile *s
  *      not think it ever gets called by WPS code.
  */
 
-SOM_Scope BOOL  SOMLINK img_wpReadImageFile(XWPImageFile *somSelf)
+SOM_Scope BOOL32  SOMLINK img_wpReadImageFile(XWPImageFile *somSelf)
 {
     /* XWPImageFileData *somThis = XWPImageFileGetData(somSelf); */
     XWPImageFileMethodDebug("XWPImageFile","img_wpReadImageFile");
@@ -431,9 +421,9 @@ SOM_Scope BOOL  SOMLINK img_wpReadImageFile(XWPImageFile *somSelf)
  *
  */
 
-SOM_Scope BOOL  SOMLINK img_wpSetBitmapData(XWPImageFile *somSelf,
-                                            PBYTE pBitmapData,
-                                            ULONG ulSize)
+SOM_Scope BOOL32  SOMLINK img_wpSetBitmapData(XWPImageFile *somSelf,
+                                              PBYTE pBitmapData,
+                                              ULONG ulSize)
 {
     /* XWPImageFileData *somThis = XWPImageFileGetData(somSelf); */
     XWPImageFileMethodDebug("XWPImageFile","img_wpSetBitmapData");
@@ -448,7 +438,7 @@ SOM_Scope BOOL  SOMLINK img_wpSetBitmapData(XWPImageFile *somSelf,
  *
  */
 
-SOM_Scope BOOL  SOMLINK img_wpWriteImageFile(XWPImageFile *somSelf)
+SOM_Scope BOOL32  SOMLINK img_wpWriteImageFile(XWPImageFile *somSelf)
 {
     /* XWPImageFileData *somThis = XWPImageFileGetData(somSelf); */
     XWPImageFileMethodDebug("XWPImageFile","img_wpWriteImageFile");
@@ -554,12 +544,15 @@ SOM_Scope PSZ  SOMLINK imgM_wpclsQueryInstanceFilter(M_XWPImageFile *somSelf)
         {
             CHAR szExt[10] = "*.";
 
-            if (stricmp(G_aFormatInfos[ul].szDefaultFormatExt, "BMP"))
+            nlsUpper(G_aFormatInfos[ul].szDefaultFormatExt);
+
+            if (strcmp(G_aFormatInfos[ul].szDefaultFormatExt, "BMP"))
             {
-                ULONG   ulLen;
                 PSZ     p;
-                strcpy(szExt + 2, G_aFormatInfos[ul].szDefaultFormatExt);
-                ulLen = nlsUpper(szExt);
+                ULONG   ulLen = strlcpy(szExt + 2,
+                                        G_aFormatInfos[ul].szDefaultFormatExt,
+                                        sizeof(szExt) - 2)
+                                + 2;
 
                 // make sure we add each extension only once
                 // -- on the first loop, str.ulLength is 0

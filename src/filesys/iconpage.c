@@ -1092,7 +1092,10 @@ VOID XWPENTRY icoIcon1InitPage(PNOTEBOOKPAGE pnbp,
                             pFuncKey->szDescription);
                 }
                 else
-                    cmnDescribeKey(szKeyName, Hotkey.usFlags, Hotkey.usKeyCode);
+                    cmnDescribeKey(szKeyName,
+                                   Hotkey.usFlags,
+                                   Hotkey.usKeyCode,
+                                   sizeof(szKeyName));
 
                 // set entry field
                 WinSetWindowText(pData->hwndHotkeyEF, szKeyName);
@@ -1238,7 +1241,8 @@ STATIC MRESULT HandleENHotkey(POBJICONPAGEDATA pData,
                 // valid hotkey:
                 cmnDescribeKey(phkn->szDescription,
                                phkn->usFlags,
-                               phkn->usKeyCode);
+                               phkn->usKeyCode,
+                               sizeof(phkn->szDescription));
                 flReturn = HEFL_SETTEXT;
 
                 fStore = TRUE;

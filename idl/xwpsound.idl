@@ -62,7 +62,7 @@ interface XWPSound : WPSound
         externalprefix = xsnd_;
         externalstem = xsnd;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xwpsound;           //# specifies the filestem for sc-generated files
         metaclass = M_XWPSound;
         dllname = "xfldr.dll";
@@ -114,7 +114,7 @@ interface M_XWPSound : M_WPSound
         externalstem = xsndM;
         functionprefix = xsndM_;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xwpsound;           //# specifies the filestem for sc-generated files
         dllname = "xfldr.dll";
         callstyle = oidl;

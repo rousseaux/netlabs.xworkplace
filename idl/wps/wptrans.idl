@@ -1,10 +1,10 @@
 
 /*
- * wpabs.idl:
+ * wptrans.idl:
  *      beefed up SOM interface description file for the
  *      following classes built into the WPS:
  *
- *      --  WPAbstract
+ *      --  WPTransient
  *
  *      XWorkplace uses this file instead of the respective
  *      file from whatever Toolkit you have installed to
@@ -27,79 +27,78 @@
  *      GNU General Public License for more details.
  */
 
-#ifndef wpabs_idl
-#define wpabs_idl
+#ifndef wptrans_idl
+#define wptrans_idl
 // #include "wpobject.idl"
 #include "xfobj.idl"                    //# WPObject is replaced with XFldObject
-                                        //# V1.0.1 (2002-12-08) [umoeller]
+                                        //# V1.0.1 (2003-02-01) [umoeller]
 #include <somcls.idl>
 
-interface M_WPAbstract;
+interface M_WPTransient;
 
-interface WPAbstract : XFldObject       //# WPObject is replaced with XFldObject
-                                        //# V1.0.1 (2002-12-08) [umoeller]
+interface WPTransient : XFldObject
 {
 #ifdef __SOMIDL__
     implementation
     {
-        externalstem = wpab;
-        local;
-        externalprefix = ab_;
+        externalstem = wptrn;
+        //# local;
+        externalprefix = trn_;
         majorversion = 1;
         minorversion = 2;
-        filestem = wpabs;
-        metaclass = M_WPAbstract;
+        filestem = wptrans;
+        metaclass = M_WPTransient;
         callstyle = oidl;
         dllname = "pmwp.dll";
 
         wpQueryHandle: override;
-        wpSaveImmediate: override;
-        wpSaveState: override;
-        wpRestoreState: override;
-        wpSetTitle: override;
         wpCopyObject: override;
-        wpMoveObject: override;
-        wpQueryIcon: override;
-        wpQueryIconData: override;
-        wpSetIconData: override;
-        wpDragOver: override;
-        wpReplaceObject: override;
-        wpQueryNameClashOptions: override;
         somDefaultInit: override;
         somDestruct: override;
+        wpQueryIcon: override;
+        wpSaveImmediate: override;
+
+        wpIdentify: override;
+        //# wpMakeObject: override;
+        wpDestroyObject: override;
     };
 #endif
 };
 
-interface M_WPAbstract : M_XFldObject
+interface M_WPTransient : M_XFldObject
 {
-    ULONG wpclsQuerySetting(in PSZ pszSetting,
-                            in PVOID pValue,
-                            in ULONG ulValueLen);
-    BOOL wpclsSetSetting(in PSZ pszSetting,
-                         in PVOID pValue);
+
+    ULONG wpclsLockTransientList();
+
+    ULONG wpclsUnlockTransientList();
 
 #ifdef __SOMIDL__
     implementation
     {
         releaseorder:
-            wpclsSaveCache,
-            wpclsLockCache,
-            wpclsUnlockCache,
-            wpclsQuerySetting,
-            wpclsSetSetting;
+            wpclsLockTransientList,
+            wpclsUnlockTransientList;
 
-        externalstem = wpab;
-        local;
-        externalprefix = abM_;
+        externalstem = wptrn;
+        //# local;
+        externalprefix = trnM_;
         majorversion = 1;
         minorversion = 2;
-        filestem = wpabs;
+        filestem = wptrans;
         callstyle = oidl;
         dllname = "pmwp.dll";
 
+        HMTX hmtxTransientList;
+
         wpclsQueryTitle: override;
+        wpclsQueryStyle: override;
+
+        wpclsLockTransientList: procedure;
+        wpclsUnlockTransientList: procedure;
+        //# wpclsFindObjects: override;
+        wpclsObjectFromHandle: override;
     };
 #endif
 };
 #endif
+

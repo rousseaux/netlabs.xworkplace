@@ -1,10 +1,11 @@
 
 This file used to list bugs known to the current XWorkplace release.
 
-At the moment, I am setting up a bug tracker for XWorkplace and WarpIN that
-will probably be hosted on Netlabs. So there is no bugs list at the moment,
-but this will be available shortly. Please watch the usual OS/2 announcement
-places for updates.
+All bugs have been moved to the official XWorkplace bugtracker at
+
+    http://xtracker.netlabs.org
+
+Please use that thing for reporting bugs from now on. Thanks.
 
 Ulrich M”ller.
 

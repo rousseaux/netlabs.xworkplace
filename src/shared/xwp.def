@@ -35,15 +35,24 @@ SEGMENTS
     FREQ_CODE2   CLASS 'CODE'    LOADONCALL
 
 IMPORTS
-    DOSQPROCSTATUS      = DOSCALLS.154
-    DosQuerySysState    = DOSCALLS.368
-    DOS16GETINFOSEG     = DOSCALLS.8
+    DOSQPROCSTATUS              = DOSCALLS.154
+    DosQuerySysState            = DOSCALLS.368
+    DOS16GETINFOSEG             = DOSCALLS.8
 
 ; interesting PMWP entry points (see http://home.clara.net/orac/os2/pmwp.htm)
-    ShlAllocMem         = PMWP.150  ; added prefix to avoid confusion
-    ShlFreeMem          = PMWP.151  ; added prefix to avoid confusion
-    ShlStoreString      = PMWP.428
-    ShlFreeString       = PMWP.429
+    ShlAllocMem                 = PMWP.150  ; added prefix to avoid confusion
+    ShlFreeMem                  = PMWP.151  ; added prefix to avoid confusion
+    ShlStoreString              = PMWP.428
+    ShlFreeString               = PMWP.429
+    FsQueryDriveData            = PMWP.FsQueryDriveData      ; exported by name
+    vDriveData                  = PMWP.513
+
+    WPImageFileCClassData       = PMWP.491
+    WPImageFileClassData        = PMWP.492
+    WPImageFileNewClass         = PMWP.493
+    M_WPImageFileCClassData     = PMWP.494
+    M_WPImageFileClassData      = PMWP.495
+    M_WPImageFileNewClass       = PMWP.496
 
 EXPORTS
     apmhOpen

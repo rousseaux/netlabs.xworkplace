@@ -87,6 +87,7 @@
 #include "helpers\except.h"
 #include "helpers\prfh.h"
 #include "helpers\winh.h"
+#include "helpers\stringh.h"
 #include "helpers\threads.h"
 
 #include "helpers\xwpsecty.h"
@@ -252,8 +253,9 @@ APIRET SetNewUserProfile(HAB hab,                       // in: XWPSHELL anchor b
 
         if (!uid)
             // root gets default profile
-            strcpy(szNewProfile,
-                   getenv("USER_INI"));
+            strlcpy(szNewProfile,
+                    getenv("USER_INI"),
+                    sizeof(szNewProfile));
         else
             // non-root:
             sprintf(szNewProfile,

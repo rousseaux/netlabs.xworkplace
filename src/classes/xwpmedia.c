@@ -474,6 +474,7 @@ void _Optlink fntInsertIOProcs(PTHREADINFO pti)
                 else
                 {
                     PSZ     pszFormatName;
+                    ULONG   idString;
                     // index
                     precc->ulIndex = ul;
 
@@ -506,21 +507,29 @@ void _Optlink fntInsertIOProcs(PTHREADINFO pti)
                     switch(pmmfiThis->ulIOProcType)
                     {
                         case MMIO_IOPROC_STORAGESYSTEM:
-                            strcpy(precc->szIOProcType, cmnGetString(ID_MMSI_TYPE_STORAGE)) ; // pszTypeStorage
+                            idString = ID_MMSI_TYPE_STORAGE;
                         break;
 
                         case MMIO_IOPROC_FILEFORMAT:
-                            strcpy(precc->szIOProcType, cmnGetString(ID_MMSI_TYPE_FILE)) ; // pszTypeFile
+                            idString = ID_MMSI_TYPE_FILE;
                         break;
 
                         case MMIO_IOPROC_DATAFORMAT:
-                            strcpy(precc->szIOProcType, cmnGetString(ID_MMSI_TYPE_DATA)) ; // pszTypeData
+                            idString = ID_MMSI_TYPE_DATA;
                         break;
 
                         default:
-                            sprintf(precc->szIOProcType, "unknown (%d)",
-                                    pmmfiThis->ulIOProcType);
+                            idString = 0;
                     }
+
+                    if (idString)
+                        cmnGetString2(precc->szIOProcType,
+                                      idString,
+                                      sizeof(precc->szIOProcType));
+                    else
+                        sprintf(precc->szIOProcType,
+                                "unknown (%d)",     // @@todo localize
+                                pmmfiThis->ulIOProcType);
 
                     precc->pszIOProcType = precc->szIOProcType;
 
@@ -750,20 +759,23 @@ void _Optlink fntInsertCodecs(PTHREADINFO pti)
                                                        &cb)
                                 == MMIO_SUCCESS)
                         {
-                            PSZ pszCodecName = malloc(cb + 1); // null term.
-                            if (pszCodecName)
+                            PSZ pszCodecName;
+                            if (pszCodecName = malloc(cb + 1))
                             {
                                 // LONG lWritten;
                                 if (G_mmioQueryCODECName(&cifi,
                                                          pszCodecName,
                                                          &cb) // excluding null term.
                                             == MMIO_SUCCESS)
-                                    strhncpy0(precc->szCodecName,
-                                              pszCodecName,
-                                              sizeof(precc->szCodecName) - 1);
+                                {
+                                    strlcpy(precc->szCodecName,
+                                            pszCodecName,
+                                            sizeof(precc->szCodecName));
+                                    precc->pszCodecName = precc->szCodecName;
+                                }
                                 #ifdef __DEBUG__
                                 else
-                                    strcpy(precc->szCodecName, "mmioQueryCODECName failed.");
+                                    precc->pszCodecName = "mmioQueryCODECName failed.";
                                 #endif
 
                                 free(pszCodecName);
@@ -771,10 +783,8 @@ void _Optlink fntInsertCodecs(PTHREADINFO pti)
                         }
                         #ifdef __DEBUG__
                         else
-                            strcpy(precc->szCodecName, "mmioQueryCODECNameLength failed.");
+                            precc->pszCodecName = "mmioQueryCODECNameLength failed.";
                         #endif
-
-                        precc->pszCodecName = precc->szCodecName;
 
                         // media type
                         DescribeMediaType(precc->szMediaType,

@@ -61,7 +61,7 @@ interface XWPSetup : WPAbstract
         externalprefix = xwset_;
         externalstem = xwset;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xwpsetup;           //# specifies the filestem for sc-generated files
         metaclass = M_XWPSetup;
         dllname = "xfldr.dll";
@@ -118,7 +118,7 @@ interface M_XWPSetup : M_WPAbstract
         externalstem = xwsetM;
         functionprefix = xwsetM_;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xwpsetup;           //# specifies the filestem for sc-generated files
         dllname = "xfldr.dll";
         callstyle = oidl;

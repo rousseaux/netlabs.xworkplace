@@ -57,7 +57,7 @@
 #define INCL_DOSERRORS
 #include <os2.h>
 
-#include <netcons.h>
+// #include <netcons.h>
 
 // C library headers
 #include <stdio.h>              // needed for except.h

@@ -138,6 +138,7 @@
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\helppanels.h"          // all XWorkplace help panel IDs
+#include "shared\init.h"                // XWorkplace initialization
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 
@@ -990,10 +991,10 @@ SOM_Scope BOOL  SOMLINK xtrc_wpModifyPopupMenu(XWPTrashCan *somSelf,
          && (_ulTrashObjectCount)
        )
     {
-        // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
         CHAR        szEmptyItem[200];
         ULONG       ulAttr = 0;
         ULONG       ulOfs = *G_pulVarMenuOfs;
+        ULONG       len;
 
         if (_xwpTrashCanBusy(somSelf, 0))
             // currently populating:
@@ -1002,10 +1003,14 @@ SOM_Scope BOOL  SOMLINK xtrc_wpModifyPopupMenu(XWPTrashCan *somSelf,
         cmnInsertSeparator(hwndMenu, MIT_END);
 
         // "empty trash can"
-        strcpy(szEmptyItem, cmnGetString(ID_XTSI_TRASHEMPTY)) ; // pszTrashEmpty
+        len = strlcpy(szEmptyItem,
+                      cmnGetString(ID_XTSI_TRASHEMPTY),
+                      sizeof(szEmptyItem) - 4);
         if (cmnQuerySetting(sflTrashConfirmEmpty) & TRSHCONF_EMPTYTRASH)
             // confirm empty on:
-            strcat(szEmptyItem, "...");
+            memcpy(szEmptyItem + len,
+                   "...",
+                   4);
         winhInsertMenuItem(hwndMenu, MIT_END,
                            (ulOfs + ID_XFMI_OFS_TRASHEMPTY),
                            szEmptyItem,
@@ -1741,6 +1746,9 @@ SOM_Scope void  SOMLINK xtrcM_wpclsInitData(M_XWPTrashCan *somSelf)
     {
         // first call:
 
+        initLog(__FUNCTION__ ": pre-initialization  _XWPTrashObject is 0x%lX",
+                    XWPTrashObjectClassData.classObject);
+
         // enforce initialization of XWPTrashObject class
         if (pTrashObjectClassObject = XWPTrashObjectNewClass(XWPTrashObject_MajorVersion,
                                                              XWPTrashObject_MinorVersion))
@@ -1755,6 +1763,11 @@ SOM_Scope void  SOMLINK xtrcM_wpclsInitData(M_XWPTrashCan *somSelf)
         else
             cmnLog(__FILE__, __LINE__, __FUNCTION__,
                    "Cannot initialize XWPTrashObject class. Is it installed?!?");
+
+        initLog(__FUNCTION__ ": post-initialization _XWPTrashObject is 0x%lX",
+                    XWPTrashObjectClassData.classObject);
+        initLog(__FUNCTION__ ": pTrashObjectClassObject             is 0x%lX",
+                    XWPTrashObjectClassData.classObject);
     }
 
     // initialize supported drives

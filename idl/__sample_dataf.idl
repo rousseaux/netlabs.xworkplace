@@ -76,7 +76,7 @@ interface SampleDataFile : WPDataFile   //# &&& SampleDataFile is a WPDataFile s
                                             //# all XWorkplace classes!
         externalstem = sdf;                 //# &&& same as above, without "_"
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = spldataf;                //# &&& specifies the filestem for files generated
                                             //# by the SOM compiler (e.g. spldataf.h, spldataf.ih,
                                             //# spldataf.c)
@@ -210,7 +210,7 @@ interface M_SampleDataFile : M_WPDataFile
         externalstem = sdfM;            //# &&&
         functionprefix = sdfM_;         //# &&&
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = spldataf;            //# must be same as above
         dllname = "xfldr.dll";          //# target DLL, do not modify
         callstyle = oidl;

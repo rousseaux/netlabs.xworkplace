@@ -1635,7 +1635,7 @@ STATIC ULONG GetDeviceInfo(PXMMDEVICE pDevice,         // out: device info
     //    differentiates the flag from the structure. Geese.)
 
     ZERO(&siNames);
-    strcpy(siNames.szLogicalName, pcszName);
+    strlcpy(siNames.szLogicalName, pcszName, sizeof(siNames.szLogicalName));
 
     ZERO(&sip);
     sip.ulItem = MCI_SYSINFO_QUERY_NAMES;
@@ -1678,7 +1678,7 @@ STATIC ULONG GetDeviceInfo(PXMMDEVICE pDevice,         // out: device info
         //    is one of the strings like "IBMCDAUDIO01"
         //    as in MMPM2.INI. This was returned above.
         ZERO(&siLogDevice);
-        strcpy(siLogDevice.szInstallName, siNames.szInstallName);
+        strlcpy(siLogDevice.szInstallName, siNames.szInstallName, sizeof(siLogDevice.szInstallName));
 
         ZERO(&sip);
         sip.ulItem = MCI_SYSINFO_QUERY_DRIVER;
@@ -1761,7 +1761,7 @@ STATIC ULONG GetDeviceInfo(PXMMDEVICE pDevice,         // out: device info
             //    as in MMPM2.INI. This was returned above.
 
             ZERO(&siDevParams);
-            strcpy(siDevParams.szInstallName, siNames.szInstallName);
+            strlcpy(siDevParams.szInstallName, siNames.szInstallName, sizeof(siDevParams.szInstallName));
 
             ZERO(&sip);
             sip.ulItem = MCI_SYSINFO_QUERY_PARAMS;

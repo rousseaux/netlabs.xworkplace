@@ -538,14 +538,18 @@ SOM_Scope ULONG  SOMLINK xf_xwpBeginEnumContent(XFolder *somSelf)
                         // for file-system objects, this is the object's real name
                         ULONG   ulSize = sizeof(poliNew->szIdentity) - 2;
 
+                        poliNew->szIdentity[0] = ':';
+
                         if (fl & OBJFL_WPFOLDER)
-                            strcpy(poliNew->szIdentity, ":D");
+                            poliNew->szIdentity[1] = 'D';
                         else
-                            strcpy(poliNew->szIdentity, ":F");
+                            poliNew->szIdentity[1] = 'F';
+
+                        poliNew->szIdentity[2] = '\0';
 
                         // append real name
                         _wpQueryRealName(pObj,
-                                         (poliNew->szIdentity)+2,
+                                         poliNew->szIdentity + 2,
                                          &ulSize,
                                          FALSE);    // file name only
                     }

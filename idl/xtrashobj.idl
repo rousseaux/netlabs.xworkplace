@@ -26,7 +26,7 @@
  *      GNU General Public License for more details.
  */
 
-#include <xtrash.idl>           // XWPTrashCan
+//# #include <xtrash.idl>           // XWPTrashCan
 #include <wptrans.idl>          // this is SOM for WPTransient
 
 /*
@@ -39,6 +39,8 @@
                ÀÄÄ WPTransient
                      ÀÄÄ XWPTrashObject
 */
+
+interface XWPTrashCan;                 // declare trash can too
 
 interface M_XWPTrashObject;            // forward reference to metaclass
 
@@ -79,7 +81,7 @@ interface XWPTrashObject : WPTransient
         externalprefix = xtro_;
         externalstem = xtro;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xtrashobj;           //# specifies the filestem for sc-generated files
         metaclass = M_XWPTrashObject;
         dllname = "xfldr.dll";
@@ -168,7 +170,7 @@ interface M_XWPTrashObject : M_WPTransient
         externalstem = xtroM;
         functionprefix = xtroM_;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xtrashobj;           //# specifies the filestem for sc-generated files
         dllname = "xfldr.dll";
         callstyle = oidl;

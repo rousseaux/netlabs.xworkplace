@@ -1246,8 +1246,9 @@ STATIC VOID SaveStickies(HWND hwndCnr,
         if ((pRec) && ((ULONG)pRec != -1))
         {
             pPagerCfg->aulStickyFlags[usStickyIndex] = pRec->ulFlags;
-            strcpy(pPagerCfg->aszStickies[usStickyIndex],
-                   pRec->szSticky);
+            strlcpy(pPagerCfg->aszStickies[usStickyIndex],
+                    pRec->szSticky,
+                    sizeof(pPagerCfg->aszStickies[usStickyIndex]));
             usStickyIndex++;
         }
         else

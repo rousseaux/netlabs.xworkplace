@@ -102,7 +102,7 @@ interface XWPTrashCan : XFolder         //# WPFolder is replaced with XFolder
         externalprefix = xtrc_;
         externalstem = xtrc;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xtrash;           //# specifies the filestem for sc-generated files
         metaclass = M_XWPTrashCan;
         dllname = "xfldr.dll";
@@ -227,7 +227,7 @@ interface M_XWPTrashCan : M_XFolder     // WPFolder is replaced with XFolder
         externalstem = xtrcM;
         functionprefix = xtrcM_;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xtrash;           //# specifies the filestem for sc-generated files
         dllname = "xfldr.dll";
         callstyle = oidl;

@@ -717,22 +717,18 @@ void _Optlink fntWorkerThread(PTHREADINFO pti)
                 }
 
                 if (fTrapped)
-                    if (pszErrMsg == NULL)
+                    // only report the first error, or otherwise we will
+                    // jam the system with msg boxes
+                    // @@todo get rid of this shit
+                    if (!pszErrMsg)
                     {
-                        // only report the first error, or otherwise we will
-                        // jam the system with msg boxes
-                        pszErrMsg = malloc(1000);
-                        if (pszErrMsg)
-                        {
-                            strcpy(pszErrMsg,
-                                   "An error occured in the XWorkplace Worker thread. "
+                        if (pszErrMsg = strdup("An error occured in the XWorkplace Worker thread. "
                                    "Since the error is probably not serious, "
                                    "the Worker thread will continue to run. "
                                    "However, if errors like these persist, "
                                    "you might want to disable the "
-                                   "Worker thread in the \"XWorkplace Setup\" object.");
+                                   "Worker thread in the \"XWorkplace Setup\" object."))
                             krnPostThread1ObjectMsg(T1M_EXCEPTIONCAUGHT, (MPARAM)pszErrMsg, MPNULL);
-                        }
                     }
 
             } while (!fExit);
@@ -867,7 +863,7 @@ STATIC VOID CollectDoubleFiles(MPARAM mp1)
                 }
 
                 // append file to temporary list
-                strcpy(pfliNew->szFilename, ffb3.achName);
+                strlcpy(pfliNew->szFilename, ffb3.achName, sizeof(pfliNew->szFilename));
                 pfliNew->pszDirectory = pszDirThis;
                 pfliNew->fDate = ffb3.fdateLastWrite;
                 pfliNew->fTime = ffb3.ftimeLastWrite;
@@ -1202,18 +1198,15 @@ void _Optlink fntFileThread(PTHREADINFO pti)
         // the thread exception handler puts us here if an exception occured:
         // clean up
 
-        if (pszErrMsg == NULL)
+        // only report the first error, or otherwise we will
+        // jam the system with msg boxes @@todo get rid of this shit
+        if (!pszErrMsg)
         {
-            // only report the first error, or otherwise we will
-            // jam the system with msg boxes
-            if (pszErrMsg = malloc(1000))
-            {
-                strcpy(pszErrMsg, "An error occured in the XFolder File thread.\n"
+            if (pszErrMsg = strdup("An error occured in the XFolder File thread.\n"
                                   "The File thread has been terminated. This severely limits "
                                   "XWorkplace's functionality. Please restart the WPS now "
-                                  "to have the File thread restarted also. ");
+                                  "to have the File thread restarted also. "))
                 krnPostThread1ObjectMsg(T1M_EXCEPTIONCAUGHT, (MPARAM)pszErrMsg, MPNULL);
-            }
         }
         // get out of here
     } END_CATCH();
@@ -1590,24 +1583,20 @@ void _Optlink fntBushThread(PTHREADINFO pti)
     CATCH(excpt1)
     {
         // the thread exception handler puts us here if an exception occured:
-        // clean up
-        if (pszErrMsg == NULL)
+        // clean up @@todo get rid of this shit
+        if (!pszErrMsg)
         {
             // only report the first error, or otherwise we will
             // jam the system with msg boxes
-            pszErrMsg = malloc(1000);
-            if (pszErrMsg)
-            {
-                strcpy(pszErrMsg, "An error occured in the XFolder Bush thread. "
+            if (pszErrMsg = strdup("An error occured in the XFolder Bush thread. "
                         "\n\nThe additional XFolder system sounds will be disabled for the "
                         "rest of this Workplace Shell session. You will need to restart "
                         "the WPS in order to re-enable them. "
                         "\n\nIf errors like these persist, you might want to disable the "
                         "additional XFolder system sounds again. For doing this, execute "
                         "SOUNDOFF.CMD in the BIN subdirectory of the XFolder installation "
-                        "directory. ");
+                        "directory. "))
                 krnPostThread1ObjectMsg(T1M_EXCEPTIONCAUGHT, (MPARAM)pszErrMsg, MPNULL);
-            }
         }
 
         // disable sounds

@@ -603,6 +603,7 @@
 #define ID_XSDI_FDRVIEW_DETAILS         664
 #define ID_XSDI_FDRVIEW_LAZYICONS       665     // added V0.9.20 (2002-08-04) [umoeller]
 #define ID_XSDI_FDRVIEW_SHADOWOVERLAY   666     // added V0.9.20 (2002-08-04) [umoeller]
+#define ID_XSDI_FDRVIEW_THUMBNAILS      667     // added V1.0.1 (2003-01-31) [umoeller]
 
 // "Add/Edit hotkey" dialog (added V1.0.0) [lafaix]
 #define ID_XSDI_HOTKEY_ADDTITLE         670

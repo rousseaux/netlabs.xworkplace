@@ -88,7 +88,7 @@ interface XWPFontFolder : XFolder       //# WPFolder is replaced with XFolder
         externalprefix = fon_;
         externalstem = fon;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xfont;           //# specifies the filestem for sc-generated files
         metaclass = M_XWPFontFolder;
         dllname = "xfldr.dll";
@@ -171,7 +171,7 @@ interface M_XWPFontFolder : M_XFolder       //# WPFolder is replaced with XFolde
         externalstem = fonM;
         functionprefix = fonM_;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xfont;           //# specifies the filestem for sc-generated files
         dllname = "xfldr.dll";
         callstyle = oidl;

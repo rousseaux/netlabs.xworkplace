@@ -207,7 +207,9 @@ STATIC void InsertDrivers(HWND hwndCnr,              // in: container
                                                                    sizeof(DRIVERRECORD),
                                                                    1);
     // we'll use the params buffer for the heading title
-    strcpy(preccHeading->szParams, pszHeading);
+    strlcpy(preccHeading->szParams,
+            pszHeading,
+            sizeof(preccHeading->szParams));
     cnrhInsertRecords(hwndCnr,
                       (PRECORDCORE)preccRoot, // parent
                       (PRECORDCORE)preccHeading,
@@ -299,22 +301,25 @@ STATIC void InsertDrivers(HWND hwndCnr,              // in: container
                     while (*pSpace2 == ' ')
                         pSpace2++;
                     // copy params
-                    strcpy(precc->szParams, pSpace2);
+                    strlcpy(precc->szParams,
+                            pSpace2,
+                            sizeof(precc->szParams));
                 }
                 else
                 {
-                    strcpy(precc->szDriverNameFound,
-                           szRestOfLine);
+                    strlcpy(precc->szDriverNameFound,
+                            szRestOfLine,
+                            sizeof(precc->szDriverNameFound));
                     precc->szParams[0] = 0;
                 }
 
                 // extract file name only from full name
                 pEODriver = strrchr(precc->szDriverNameFound, '\\');
                 if (pEODriver)
-                    strcpy(precc->szDriverNameOnly, pEODriver + 1);
+                    strlcpy(precc->szDriverNameOnly, pEODriver + 1, sizeof(precc->szDriverNameOnly));
                 else
                     // no path given: copy all
-                    strcpy(precc->szDriverNameOnly, precc->szDriverNameFound);
+                    strlcpy(precc->szDriverNameOnly, precc->szDriverNameFound, sizeof(precc->szDriverNameOnly));
 
                 // create full name
                 if (pDriverSpec2Store->ulFlags & DRVF_BASEDEV)
@@ -340,12 +345,12 @@ STATIC void InsertDrivers(HWND hwndCnr,              // in: container
                     {
                         if (pExec->pszVersion)
                         {
-                            strcpy(precc->szVersion, pExec->pszVersion);
+                            strlcpy(precc->szVersion, pExec->pszVersion, sizeof(precc->szVersion));
                             pDriverSpec2Store->pszVersion = strdup(pExec->pszVersion);
                         }
 
                         if (pExec->pszVendor)
-                            strcpy(precc->szVendor, pExec->pszVendor);
+                            strlcpy(precc->szVendor, pExec->pszVendor, sizeof(precc->szVendor));
                     }
                     exehClose(&pExec);
                 }
@@ -1183,8 +1188,8 @@ MRESULT cfgDriversItemChanged(PNOTEBOOKPAGE pnbp,
                                         precc->szConfigSysLine,
                                         szNewLine);
                         // update record core
-                        strcpy(precc->szConfigSysLine, szNewLine);
-                        strcpy(precc->szParams, szNewParams);
+                        strlcpy(precc->szConfigSysLine, szNewLine, sizeof(precc->szConfigSysLine));
+                        strlcpy(precc->szParams, szNewParams, sizeof(precc->szParams));
                         // write file!
                         if (csysWriteConfigSys(NULL,
                                                pszConfigSys,

@@ -81,10 +81,6 @@ $(XWP_OUTPUT_ROOT)\xwphook.lib
 # but never compile $(HLPOBJS) from here
 LINKOBJS = $(OBJS) $(HLPOBJS)
 
-# create import library from XWPHOOK.DLL
-$(XWP_OUTPUT_ROOT)\xwphook.lib: $(MODULESDIR)\$(@B).dll
-    implib /nologo $(XWP_OUTPUT_ROOT)\$(@B).lib $(MODULESDIR)\$(@B).dll
-
 # ***************************************************************************
 # *
 # *     4) define specific stuff for linker include
@@ -117,4 +113,9 @@ RESOURCE_SOURCES = $(MODULESTEM).rc *.bmp $(MODULESTEM).ico *.ptr
 # ***************************************************************************
 
 !include $(MAKE_INCLUDE_DIR)\targets.in
+
+# create import library from XWPHOOK.DLL
+$(XWP_OUTPUT_ROOT)\xwphook.lib: $(MODULESDIR)\$(@B).dll
+    implib /nologo $(XWP_OUTPUT_ROOT)\$(@B).lib $(MODULESDIR)\$(@B).dll
+
 

@@ -86,7 +86,7 @@ interface XFldWPS : WPSystem
         externalprefix = xwp_;
         externalstem = xwp;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xfwps;           //# specifies the filestem for sc-generated files
         metaclass = M_XFldWPS;
         dllname = "xfldr.dll";
@@ -150,7 +150,7 @@ interface M_XFldWPS : M_WPSystem
         externalstem = xwpM;
         functionprefix = xwpM_;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xfwps;           //# specifies the filestem for sc-generated files
         dllname = "xfldr.dll";
         callstyle = oidl;

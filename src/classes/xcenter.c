@@ -1306,6 +1306,7 @@ SOM_Scope ULONG  SOMLINK xctr_wpQueryDefaultView(XCenter *somSelf)
  *      thread 1.
  *
  *@@changed V0.9.9 (2001-02-06) [umoeller]: now redirecting settings to thread-1
+ *@@changed V1.0.1 (2003-02-02) [umoeller]: made introductory help a global flag
  */
 
 SOM_Scope HWND  SOMLINK xctr_wpOpen(XCenter *somSelf,
@@ -1322,17 +1323,24 @@ SOM_Scope HWND  SOMLINK xctr_wpOpen(XCenter *somSelf,
         if (!_tidRunning)       // V0.9.12 (2001-05-20) [umoeller]
         {
             // no open view yet (just make sure!)
-            HWND hwnd = (hwndCnr) ? hwndCnr : cmnQueryActiveDesktopHWND();
+            HWND    hwnd = (hwndCnr) ? hwndCnr : cmnQueryActiveDesktopHWND();
+            ULONG   fl;
 
             hwndNewView = ctrpCreateXCenterView(somSelf,
                                                 WinQueryAnchorBlock(hwnd),
                                                 ulView,
                                                 // store in instance data
                                                 &_pvOpenView);
-            if (!_fHelpDisplayed)
+
+            // V1.0.1 (2003-02-02) [umoeller]
+            fl = cmnQuerySetting(sflIntroHelpShown);
+            if (!(fl & HLPS_NOSHOWXCENTER))
             {
                 ULONG ulPanel = 0;
                 CHAR szHelp[CCHMAXPATH];
+
+                cmnSetSetting(sflIntroHelpShown, fl | HLPS_NOSHOWXCENTER);
+
                 _wpQueryDefaultHelp(somSelf,
                                     &ulPanel,
                                     szHelp);
@@ -1340,9 +1348,6 @@ SOM_Scope HWND  SOMLINK xctr_wpOpen(XCenter *somSelf,
                 _wpDisplayHelp(somSelf,
                                ulPanel,
                                szHelp);
-
-                _fHelpDisplayed = TRUE;
-                _wpSaveDeferred(somSelf);
             }
         }
     }

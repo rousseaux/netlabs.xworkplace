@@ -325,8 +325,9 @@ STATIC ULONG ParseFileString(PFILEDLGDATA pWinData,
            )
         {
             // get file name (mask) after that
-            strcpy(pWinData->szFileMask,
-                   pStartOfFile);
+            strlcpy(pWinData->szFileMask,
+                    pStartOfFile,
+                    sizeof(pWinData->szFileMask));
 
             PMPF_SPLITVIEW(("  new mask is %s", pWinData->szFileMask));
             flChanged |= FFL_FILEMASK;
@@ -392,8 +393,9 @@ STATIC ULONG ParseFileString(PFILEDLGDATA pWinData,
                     if (*pStartOfFile)
                     {
                         // and it has a length: V0.9.18 (2002-02-06) [umoeller]
-                        strcpy(pWinData->szFileName,
-                               pStartOfFile);
+                        strlcpy(pWinData->szFileName,
+                                pStartOfFile,
+                                sizeof(pWinData->szFileName));
                         PMPF_SPLITVIEW(("  new filename is %s", pWinData->szFileName));
                         flChanged |= FFL_FILENAME;
                     }
@@ -504,7 +506,7 @@ STATIC BOOL UpdateDlgWithFullFile(PFILEDLGDATA pWinData)
                 PMPF_SPLITVIEW(("       remaining: %s", pcThis));
 
                 if (!pBacksl)
-                    strcpy(szComponent, pcThis);
+                    strlcpy(szComponent, pcThis, sizeof(szComponent));
                 else
                 {
                     ULONG c = (pBacksl - pcThis);
@@ -1466,7 +1468,7 @@ HWND fdlgFileDlg(HWND hwndOwner,
         // we then call it a second time with
         // full path string given to us in FILEDLG.
         if (pcszStartupDir && *pcszStartupDir)
-            strcpy(szCurDir, pcszStartupDir);
+            strlcpy(szCurDir, pcszStartupDir, sizeof(szCurDir));
         else
             // startup not specified:
             doshQueryCurrentDir(szCurDir);

@@ -514,8 +514,6 @@ STATIC void _Optlink fntLazyIcons(PTHREADINFO ptiMyself)
                         break;
                     else
                         _xwpLazyLoadIcon(pDataFile,
-                                         ptiMyself->hab,
-                                         &hpsMem,
                                          flOwnerDraw,
                                          &ptiMyself->fExit);
                                 // replaced V1.0.1 (2003-01-25) [umoeller]

@@ -476,34 +476,43 @@ STATIC MRESULT EXPENTRY fnwpRegisterClass(HWND hwndDlg, ULONG msg, MPARAM mp1, M
  *@@changed V0.9.0 [umoeller]: moved this func here from xfsys.c.
  *@@changed V0.9.0 [umoeller]: fixed small memory leak
  *@@changed V0.9.6 (2000-10-25) [umoeller]: this didn't find words correctly, fixed
+ *@@changed V1.0.1 (2003-01-30) [umoeller]: optimized, fixed buffer overflows
  */
 
 STATIC BOOL ParseDescription(PSZ pszBuf,           // in: complete descriptions text file
                              PSZ pszSrch0,         // in: class name (token) to search for
                              PULONG pulFlags,      // out: if found, flags for the class
-                             PSZ pszDescription)   // out: if found, class's description
+                             PSZ pszDescription,   // out: if found, class's description
+                             ULONG cbDescription)  // in: size of pszDescription buffer
 {
-    BOOL brc = FALSE;
+    BOOL    brc = FALSE;
 
     // create search string for beginning of line
-    PSZ pszSrch2 = malloc(strlen(pszSrch0) + 4);
-    if (pszSrch2)
+    PSZ     pszSrch2;
+    ULONG   len = strlen(pszSrch0);
+    if (pszSrch2 = malloc(len + 4))
     {
         PSZ     p1, p2;
         BOOL    fFound = FALSE;
 
-        strcpy(pszSrch2, "\r\n");
-        strcat(pszSrch2, pszSrch0);
+        pszSrch2[0] = '\r';
+        pszSrch2[1] = '\n';
+        memcpy(pszSrch2 + 2,
+               pszSrch0,
+               len + 1);
 
         // find word V0.9.6 (2000-10-25) [umoeller]
         p1 = pszBuf;
-        while ((p1) && (!fFound))
+        len += 2;
+        while (p1)
         {
-            p1 = strstr(p1, pszSrch2);
-            if (p1)
+            if (p1 = strstr(p1, pszSrch2))
                 // item found:
-                if (*(p1 + strlen(pszSrch2)) == ' ')
+                if (p1[len] == ' ')
+                {
                     fFound = TRUE;
+                    break;
+                }
                 else
                     // not a word: search on
                     p1++;
@@ -513,29 +522,33 @@ STATIC BOOL ParseDescription(PSZ pszBuf,           // in: complete descriptions 
         {
             // found:
             p1 += 2; // skip \r\n
-            p1 = strchr(p1, ' ');
-            if (p1)
+            if (p1 = strchr(p1, ' '))
             {
                 // p1 now has ulFlags
-                sscanf(p1, "%lX ", pulFlags);
-                p1 = strchr(p1+1, ' ');
-                if (p1)
+                // sscanf(p1, "%lX ", pulFlags);
+                *pulFlags = atoi(p1);
+                if (p1 = strchr(p1 + 1, ' '))
                 {
                     brc = TRUE;
                     // p1 now has beginning of description
-                    p2 = strstr(p1, "\r\n");
-                    if (p2)
+                    if (p2 = strstr(p1, "\r\n"))
                     {
                         // p2 now has end of description
-                        strncpy(pszDescription, p1+1, (p2-p1-1));
+                        strlcpy(pszDescription,
+                                p1 + 1,
+                                min((p2 - p1 - 1), cbDescription));
                     }
                     else
-                        strncat(pszDescription, p1+1, 200);
+                        strlcat(pszDescription,
+                                p1 + 1,
+                                cbDescription);
                 }
             }
         }
+
         free(pszSrch2);
     }
+
     return brc;
 }
 
@@ -691,7 +704,7 @@ STATIC VOID NewClassSelected(PCLASSLISTCLIENTDATA pClientData)
         WinSetDlgItemText(pClientData->hwndClassInfoDlg, ID_XLDI_CLASSMODULE, pwps->pszModName);
 
         // class name
-        strcpy(szInfo, pwps->pszClassName);
+        strlcpy(szInfo, pwps->pszClassName, sizeof(szInfo));
         WinSetDlgItemText(pClientData->hwndClassInfoDlg, ID_XLDI_CLASSNAME, szInfo);
 
         // "replaced with"
@@ -725,12 +738,19 @@ STATIC VOID NewClassSelected(PCLASSLISTCLIENTDATA pClientData)
                 free(pszClassTitle);
             }
             else
-                strcpy(szInfo2, "?");
+            {
+                szInfo2[0] = '?';
+                szInfo2[1] = '\0';
+            }
         }
         else
-            strcpy(szInfo2, cmnGetString(ID_XSSI_WPSCLASSLOADINGFAILED)) ; // pszWpsClassLoadingFailed
+            cmnGetString2(szInfo2,
+                          ID_XSSI_WPSCLASSLOADINGFAILED,
+                          sizeof(szInfo2));
 
-        WinSetDlgItemText(pClientData->hwndClassInfoDlg, ID_XLDI_CLASSTITLE, szInfo2);
+        WinSetDlgItemText(pClientData->hwndClassInfoDlg,
+                          ID_XLDI_CLASSTITLE,
+                          szInfo2);
 
         // instance size V0.9.20 (2002-08-04) [umoeller]
         // check class object first V1.0.0 (2002-08-12) [umoeller]
@@ -742,7 +762,9 @@ STATIC VOID NewClassSelected(PCLASSLISTCLIENTDATA pClientData)
         else
             szInfo2[0] = '\0';
 
-        WinSetDlgItemText(pClientData->hwndClassInfoDlg, ID_XLDI_BYTESPERINSTANCE, szInfo2);
+        WinSetDlgItemText(pClientData->hwndClassInfoDlg,
+                          ID_XLDI_BYTESPERINSTANCE,
+                          szInfo2);
 
         // class information
         if (pszClassInfo)
@@ -751,13 +773,15 @@ STATIC VOID NewClassSelected(PCLASSLISTCLIENTDATA pClientData)
             if (!ParseDescription(pszClassInfo,
                                   pwps->pszClassName,
                                   &ulFlags,
-                                  szInfo))
+                                  szInfo,
+                                  sizeof(szInfo)))
             {
                 // not found: search for "UnknownClass"
                 ParseDescription(pszClassInfo,
                                  "UnknownClass",
                                  &ulFlags,
-                                 szInfo);
+                                 szInfo,
+                                 sizeof(szInfo));
             }
         }
 
@@ -789,7 +813,9 @@ STATIC VOID NewClassSelected(PCLASSLISTCLIENTDATA pClientData)
     {
         // if (pwps == NULL), the "Orphans" item has been
         // selected: give info for this
-        strcpy(szInfo, cmnGetString(ID_XSSI_WPSCLASSORPHANSINFO)) ; // pszWpsClassOrphansInfo
+        cmnGetString2(szInfo,
+                      ID_XSSI_WPSCLASSORPHANSINFO,
+                      sizeof(szInfo));
         WinSetDlgItemText(pClientData->hwndClassInfoDlg, ID_XLDI_CLASSMODULE, "");
         WinSetDlgItemText(pClientData->hwndClassInfoDlg, ID_XLDI_CLASSNAME, "");
         WinSetDlgItemText(pClientData->hwndClassInfoDlg, ID_XLDI_REPLACEDBY, "");
@@ -951,13 +977,15 @@ STATIC MRESULT EXPENTRY fncbReplaceClassSelected(HWND hwndCnr,
             if (!ParseDescription(pszClassInfo,
                                   pwps->pszClassName,
                                   &ulFlags,
-                                  szInfo))
+                                  szInfo,
+                                  sizeof(szInfo)))
             {
                 // not found: search for "UnknownClass"
                 ParseDescription(pszClassInfo,
                                  "UnknownClass",
                                  &ulFlags,
-                                 szInfo);
+                                 szInfo,
+                                 sizeof(szInfo));
             }
         }
     }
@@ -1559,7 +1587,8 @@ STATIC VOID ShowClassContextMenu(HWND hwndDlg,
             if (ParseDescription(pszClassInfo,
                                  pscd->preccSource->pwps->pszClassName,
                                  &ulFlagsSelected,
-                                 szDummy))
+                                 szDummy,
+                                 sizeof(szDummy)))
             {
                 // bit 0 signifies whether this class may
                 // be deregistered
@@ -1776,8 +1805,6 @@ STATIC MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1,
             case WM_FILLCNR:
             {
                 CHAR szClassInfoFile[CCHMAXPATH];
-                // ULONG ulCopied;
-                // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
 
                 HPOINTER hptrOld = winhSetWaitPointer();
 
@@ -1794,8 +1821,9 @@ STATIC MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1,
                         ? "SOMObject"
                         : G_pcszWPObject;
                 // class to select: the same
-                strcpy(pscd->szClassSelected,
-                       pscd->pcszRootClass);
+                strlcpy(pscd->szClassSelected,
+                        pscd->pcszRootClass,
+                        sizeof(pscd->szClassSelected));
 
                 pscd->pfnwpReturnAttrForClass = fncbReturnWPSClassAttr;
                     // callback for cnr recc attributes
@@ -2049,12 +2077,14 @@ STATIC MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1,
                                 pTable[0] = szTemp;
                                 pTable[1] = pscd->preccSource->pwps->pszReplacedWithClasses;
 
-                                strcpy(szTemp, pscd->preccSource->pwps->pszClassName);
+                                strlcpy(szTemp,
+                                        pscd->preccSource->pwps->pszClassName,
+                                        sizeof(szTemp));
                                     // save for later
 
                                 // do not allow deregistering if the class is currently
                                 // replaced by another class
-                                if ( pscd->preccSource->pwps->pszReplacedWithClasses)
+                                if (pscd->preccSource->pwps->pszReplacedWithClasses)
                                 {
                                     // show warning
                                     cmnMessageBoxExt(hwndDlg,
@@ -2145,7 +2175,9 @@ STATIC MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1,
                             scd.pszIntroText = strIntroText.psz;
                             scd.pcszRootClass = pszClassName;
                             scd.pcszOrphans = NULL;
-                            strcpy(scd.szClassSelected, scd.pcszRootClass);
+                            strlcpy(scd.szClassSelected,
+                                    scd.pcszRootClass,
+                                    sizeof(scd.szClassSelected));
 
                             scd.pfnwpReturnAttrForClass = NULL; // fncbStatusBarReturnClassAttr;
                             scd.pfnwpClassSelected = fncbReplaceClassSelected;

@@ -65,17 +65,19 @@
             // -- 2: yes, restart Desktop, but logoff also
             //          (only if XWPSHELL is running)
 
-        BOOL        optWPSProcessShutdown,
-                            // run shutdown folder? (SHUT_RESTARTWPS and SHUT_LOGOFF only;
-                            // ignored with SHUT_SHUTDOWN, which always runs it)
-                            // added V1.0.1 (2003-01-29) [umoeller]
-                    optWPSCloseWindows,
+        BOOL        optWPSCloseWindows,
                     optAutoCloseVIO,
                     optLog,
                     // optAnimate,          // removed V0.9.12 (2001-05-12) [umoeller]
                     optAPMPowerOff,
                     optAPMDelay,
+#ifndef __NOXSHUTDOWN__
+                    optWPSProcessShutdown,
+                            // run shutdown folder? (SHUT_RESTARTWPS and SHUT_LOGOFF only;
+                            // ignored with SHUT_SHUTDOWN, which always runs it)
+                            // added V1.0.1 (2003-01-29) [umoeller]
                     optWPSReuseStartupFolder,
+#endif
                     optEmptyTrashCan,
                     optWarpCenterFirst;
         CHAR        szRebootCommand[CCHMAXPATH];

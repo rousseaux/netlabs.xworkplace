@@ -839,14 +839,14 @@ BOOL fopsProposeNewTitle(const char *pcszTitle,          // in: title to modify
     // transform that one into a real name and keep
     // increasing "num" until no file with that
     // real name exists (as the WPS does it too)
-    strcpy(szFilenameWithoutCount, pcszTitle);
+    strlcpy(szFilenameWithoutCount, pcszTitle, sizeof(szFilenameWithoutCount));
 
     // check if title contains a ':num' already
     if (p2 = strchr(szFilenameWithoutCount, ':'))
     {
+        // if we have a valid number following ":", remove it
         if (lFileCount = atoi(p2 + 1))
         {
-            // if we have a valid number following ":", remove it
             if (p = strchr(p2, '.'))
                 strcpy(p2, p);
             else
@@ -1539,7 +1539,7 @@ BOOL fopsMoveObjectConfirmed(WPObject *pObject,
                 fDidMove = FALSE;
     ULONG       ulAction;
 
-    strcpy(szNewTitle, _wpQueryTitle(pObject));
+    strlcpy(szNewTitle, _wpQueryTitle(pObject), sizeof(szNewTitle));
     ulAction = _wpConfirmObjectTitle(pObject,      // object
                                      pTargetFolder, // folder
                                      &pReplaceThis,  // object to replace (if NAMECLASH_REPLACE)
@@ -1609,7 +1609,7 @@ BOOL fopsRenameObjectConfirmed(WPObject *pObject,
                 fDidRename = FALSE;
     ULONG       ulAction;
 
-    strcpy(szNewTitle, pcszNewTitle);
+    strlcpy(szNewTitle, pcszNewTitle, sizeof(szNewTitle));
     ulAction = _wpConfirmObjectTitle(pObject,      // object
                                      _wpQueryFolder(pObject), // folder
                                      &pReplaceThis,  // object to replace (if NAMECLASH_REPLACE)

@@ -91,7 +91,7 @@ XWPRUNNING = h:\Desktopextender\XWorkplace
 
 # MMPMDIR: directory where MMPM/2 is installed.
 !ifndef MMPMDIR
-MMPMDIR = J:\MMOS2
+MMPMDIR = I:\MMOS2
 !endif
 
 # DEBUG CODE
@@ -127,11 +127,9 @@ MMPMDIR = J:\MMOS2
 XWP_UNLOCK_MODULES = YES
 
 # XWP_LANG_CODE: language code of NLS resources
-# to compile. Presently only 001 for US English
-# exists.
+# to compile.
 !ifndef XWP_LANG_CODE
-XWP_LANG_CODE = 049
+XWP_LANG_CODE = 001
 !endif
-
 
 

@@ -181,55 +181,55 @@ STATIC VOID AddFolderView2Cnr(HWND hwndCnr,
                               ULONG idStringView)
 {
     XSTRING strTemp;
-    ULONG ulViewAttrs = _wpQueryFldrAttr(pObject, ulView);
-    PSZ pszView;
+    ULONG   ulViewAttrs = _wpQueryFldrAttr(pObject, ulView);
+    CHAR    szView[200];
+    ULONG   lenView;
 
-    if (pszView = strdup(cmnGetString(idStringView)))
-    {
-        PSZ p;
-        if (p = strchr(pszView, '~'))
-            strcpy(p, p + 1);
+    lenView = cmnGetString2(szView,
+                            idStringView,
+                            sizeof(szView));
 
-        xstrInit(&strTemp, 200);
+    strhKillChar(szView,
+                 '~',
+                 &lenView);
 
-        xstrcpy(&strTemp, pszView, 0);
-        xstrcat(&strTemp, ": ", 0);
+    xstrInit(&strTemp, lenView + 30);
 
-        if (ulViewAttrs & CV_ICON)
-            xstrcat(&strTemp, "CV_ICON ", 0);
-        if (ulViewAttrs & CV_NAME)
-            xstrcat(&strTemp, "CV_NAME ", 0);
-        if (ulViewAttrs & CV_TEXT)
-            xstrcat(&strTemp, "CV_TEXT ", 0);
-        if (ulViewAttrs & CV_TREE)
-            xstrcat(&strTemp, "CV_TREE ", 0);
-        if (ulViewAttrs & CV_DETAIL)
-            xstrcat(&strTemp, "CV_DETAIL ", 0);
-        if (ulViewAttrs & CA_DETAILSVIEWTITLES)
-            xstrcat(&strTemp, "CA_DETAILSVIEWTITLES ", 0);
+    xstrcpy(&strTemp, szView, lenView);
+    xstrcat(&strTemp, ": ", 2);
 
-        if (ulViewAttrs & CV_MINI)
-            xstrcat(&strTemp, "CV_MINI ", 0);
-        if (ulViewAttrs & CV_FLOW)
-            xstrcat(&strTemp, "CV_FLOW ", 0);
-        if (ulViewAttrs & CA_DRAWICON)
-            xstrcat(&strTemp, "CA_DRAWICON ", 0);
-        if (ulViewAttrs & CA_DRAWBITMAP)
-            xstrcat(&strTemp, "CA_DRAWBITMAP ", 0);
-        if (ulViewAttrs & CA_TREELINE)
-            xstrcat(&strTemp, "CA_TREELINE ", 0);
+    if (ulViewAttrs & CV_ICON)
+        xstrcat(&strTemp, "CV_ICON ", 0);
+    if (ulViewAttrs & CV_NAME)
+        xstrcat(&strTemp, "CV_NAME ", 0);
+    if (ulViewAttrs & CV_TEXT)
+        xstrcat(&strTemp, "CV_TEXT ", 0);
+    if (ulViewAttrs & CV_TREE)
+        xstrcat(&strTemp, "CV_TREE ", 0);
+    if (ulViewAttrs & CV_DETAIL)
+        xstrcat(&strTemp, "CV_DETAIL ", 0);
+    if (ulViewAttrs & CA_DETAILSVIEWTITLES)
+        xstrcat(&strTemp, "CA_DETAILSVIEWTITLES ", 0);
 
-        // owner...
+    if (ulViewAttrs & CV_MINI)
+        xstrcat(&strTemp, "CV_MINI ", 0);
+    if (ulViewAttrs & CV_FLOW)
+        xstrcat(&strTemp, "CV_FLOW ", 0);
+    if (ulViewAttrs & CA_DRAWICON)
+        xstrcat(&strTemp, "CA_DRAWICON ", 0);
+    if (ulViewAttrs & CA_DRAWBITMAP)
+        xstrcat(&strTemp, "CA_DRAWBITMAP ", 0);
+    if (ulViewAttrs & CA_TREELINE)
+        xstrcat(&strTemp, "CA_TREELINE ", 0);
 
-        AddObjectUsage2Cnr(hwndCnr,
-                           preccLevel2,
-                           strTemp.psz,
-                           CRA_RECORDREADONLY);
+    // owner...
 
-        xstrClear(&strTemp);
+    AddObjectUsage2Cnr(hwndCnr,
+                       preccLevel2,
+                       strTemp.psz,
+                       CRA_RECORDREADONLY);
 
-        free(pszView);
-    }
+    xstrClear(&strTemp);
 }
 
 /*
@@ -584,7 +584,10 @@ STATIC VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
                         "Error %d",
                         arc);
             else
-                strcpy(szObjectHandle, cmnGetString(ID_XSSI_OBJDET_NONESET));
+                cmnGetString2(szObjectHandle,
+                              ID_XSSI_OBJDET_NONESET,
+                              sizeof(szObjectHandle));
+
         AddObjectUsage2Cnr(hwndCnr, preccLevel2,
                            szObjectHandle,
                            CRA_RECORDREADONLY);
@@ -843,7 +846,7 @@ STATIC VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
             else
                 // error: shouldn't happen, because pObject
                 // itself is obviously valid
-                strcpy(szText, "broken");
+                memcpy(szText, "broken", 7);
 
             if (!preccLevel3)
                 preccLevel3 = AddObjectUsage2Cnr(hwndCnr, preccLevel2,
@@ -1174,8 +1177,9 @@ STATIC MRESULT EXPENTRY fnwpObjectDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, M
                                     else
                                     {
                                         // change aborted: restore old recc text
-                                        strcpy(((POBJECTUSAGERECORD)(pced->pRecord))->szText,
-                                                pWinData->strOldObjectID.psz);
+                                        strlcpy(((POBJECTUSAGERECORD)pced->pRecord)->szText,
+                                                pWinData->strOldObjectID.psz,
+                                                sizeof(((POBJECTUSAGERECORD)pced->pRecord)->szText));
                                         WinSendMsg(pWinData->hwndCnr,
                                                    CM_INVALIDATERECORD,
                                                    (MPARAM)&pced->pRecord,

@@ -502,6 +502,17 @@
 
     #ifndef DONTDEBUGATALL
 
+/* misc */
+
+        // debug SOM weirdos
+            DBGSET_SOMFREAK,
+                #define PMPF_SOMFREAK(b) { if (G_aDebugs[DBGSET_SOMFREAK]) PmpfF(b); }
+    #else
+                #define PMPF_SOMFREAK(b)
+    #endif
+
+    #ifndef DONTDEBUGATALL
+
             __LAST_DBGSET
 
         } DEBUGGINGFLAGS;

@@ -49,7 +49,7 @@ interface DbgFolder : WPFolder
         externalprefix = dfdr_;
         externalstem = dfdr;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xdebug_folder;           //# specifies the filestem for sc-generated files
         metaclass = M_DbgFolder;
         dllname = "xdebug.dll";
@@ -361,7 +361,7 @@ interface M_DbgFolder : M_WPFolder
         externalstem = dfdrM;
         functionprefix = dfdrM_;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xdebug_folder;           //# specifies the filestem for sc-generated files
         dllname = "xdebug.dll";
         callstyle = oidl;

@@ -420,9 +420,9 @@ STATIC VOID AddResourceDLLToLB(HWND hwndDlg,                   // in: dlg with l
 
     PMPF_LANGCODES(("entering, %s", pszFileName));
 
-    strcpy(szResourceModuleName, pszXFolderBasePath);
-    strcat(szResourceModuleName, "\\bin\\");
-    strcat(szResourceModuleName, pszFileName);
+    strlcpy(szResourceModuleName, pszXFolderBasePath, sizeof(szResourceModuleName));
+    strlcat(szResourceModuleName, "\\bin\\", sizeof(szResourceModuleName));
+    strlcat(szResourceModuleName, pszFileName, sizeof(szResourceModuleName));
 
     arc = DosLoadModule(NULL, 0,
                         szResourceModuleName,
@@ -2887,22 +2887,23 @@ VOID setStatusInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                           szSearchMask);
 
         // sound status
-        strcpy(szSearchMask,
-               (ulSoundStatus == MMSTAT_UNKNOWN)
-                       ? "not initialized"
-               : (ulSoundStatus == MMSTAT_WORKING)
-                       ? "OK"
-               : (ulSoundStatus == MMSTAT_MMDIRNOTFOUND)
-                       ? "MMPM/2 directory not found"
-               : (ulSoundStatus == MMSTAT_DLLNOTFOUND)
-                       ? "MMPM/2 DLLs not found"
-               : (ulSoundStatus == MMSTAT_IMPORTSFAILED)
-                       ? "MMPM/2 imports failed"
-               : (ulSoundStatus == MMSTAT_CRASHED)
-                       ? "Media thread crashed"
-               : (ulSoundStatus == MMSTAT_DISABLED)
-                       ? "Disabled"
-               : "unknown"
+        strlcpy(szSearchMask,       // @@todo localize
+                (ulSoundStatus == MMSTAT_UNKNOWN)
+                        ? "not initialized"
+                : (ulSoundStatus == MMSTAT_WORKING)
+                        ? "OK"
+                : (ulSoundStatus == MMSTAT_MMDIRNOTFOUND)
+                        ? "MMPM/2 directory not found"
+                : (ulSoundStatus == MMSTAT_DLLNOTFOUND)
+                        ? "MMPM/2 DLLs not found"
+                : (ulSoundStatus == MMSTAT_IMPORTSFAILED)
+                        ? "MMPM/2 imports failed"
+                : (ulSoundStatus == MMSTAT_CRASHED)
+                        ? "Media thread crashed"
+                : (ulSoundStatus == MMSTAT_DISABLED)
+                        ? "Disabled"
+                : "unknown",
+                sizeof(szSearchMask)
                );
         WinSetDlgItemText(pnbp->hwndDlgPage, ID_XCDI_INFO_SOUNDSTATUS,
                           szSearchMask);
@@ -3021,7 +3022,7 @@ MRESULT setStatusItemChanged(PNOTEBOOKPAGE pnbp,
                 WinQueryDlgItemText(pnbp->hwndDlgPage, ID_XCDI_INFO_LANGUAGE,
                                     sizeof(szTemp),
                                     szTemp);
-                p = strhistr(szTemp, " -- XFLDR")+9; // my own case-insensitive routine
+                p = strhistr(szTemp, " -- XFLDR") + 9; // my own case-insensitive routine
                 if (p)
                 {
                     strncpy(szTemp2, p, 3);
@@ -3860,6 +3861,7 @@ static const struct
         DEBUGSETTING(DBGSET_WINDOWLIST),
         DEBUGSETTING(DBGSET_SOUNDS),
         DEBUGSETTING(DBGSET_OBJLISTS),
+        DEBUGSETTING(DBGSET_SOMFREAK),       // added V1.0.1 (2003-02-01) [umoeller]
     };
 
 static MPARAM G_ampDebugPage[] =

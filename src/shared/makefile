@@ -56,13 +56,6 @@ OBJS = $(XFLDR_OBJS_SHARED) $(OUTPUTDIR)\dummyfont.obj
 # *
 # ***************************************************************************
 
-# in addition, compile the resources:
-$(OUTPUTDIR)\xwpres.res: grafx\*.ico grafx\*.bmp $(@B).rc
-        $(RC) -r $(@B).rc $(OUTPUTDIR)\$(@B).res
-
-$(OUTPUTDIR)\xwpfonts.res: *.fnt xwpfonts.rc
-        $(RC) -r $(@B).rc $(OUTPUTDIR)\$(@B).res
-
 # we do not link in here, so define ALLTARGET manually
 
 ALLTARGET = $(OBJS) $(OUTPUTDIR)\xwpres.res
@@ -75,4 +68,19 @@ ALLTARGET = $(OBJS) $(OUTPUTDIR)\xwpres.res
 
 !include $(MAKE_INCLUDE_DIR)\targets.in
 
+# additional targets: these must be below "all:", or nmake won't
+# process all by default
+
+!ifdef XWPLITE
+GRAFXDIR = grafx_lite
+!else
+GRAFXDIR = grafx
+!endif
+
+# compile the resources:
+$(OUTPUTDIR)\xwpres.res: $(GRAFXDIR)\*.ico $(GRAFXDIR)\*.bmp $(@B).rc
+    $(RC) -r $(@B).rc $(OUTPUTDIR)\$(@B).res
+
+$(OUTPUTDIR)\xwpfonts.res: *.fnt xwpfonts.rc
+    $(RC) -r $(@B).rc $(OUTPUTDIR)\$(@B).res
 

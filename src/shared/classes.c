@@ -86,6 +86,8 @@
 // headers in /helpers
 #include "helpers\cnrh.h"               // container helper routines
 #include "helpers\linklist.h"           // linked list helper routines
+#include "helpers\standards.h"          // some standard macros
+#include "helpers\stringh.h"            // string helper routines
 #include "helpers\winh.h"               // PM helper routines
 
 // SOM headers which don't crash with prec. header files
@@ -541,9 +543,7 @@ PWPSCLASSESINFO clsWpsClasses2Cnr(HWND hwndCnr, // in: guess what this is
     pwpsciReturn->pllClassList = lstCreate(TRUE);   // items are freeable
 
     // get WPS class list
-    WinEnumObjectClasses(NULL, &ulSize);        // query size
-    pwpsciReturn->pObjClass = malloc(ulSize+1); // allocate buffer
-    WinEnumObjectClasses(pwpsciReturn->pObjClass, &ulSize); // query list
+    pwpsciReturn->pObjClass = (POBJCLASS)winhQueryWPSClassList();
 
     /*
      * 2) handle orphans
@@ -560,35 +560,49 @@ PWPSCLASSESINFO clsWpsClasses2Cnr(HWND hwndCnr, // in: guess what this is
         // now go thru the WPS class list
         while (pObjClass)
         {
-            // the following will load the class, if it
+            // the following will LOAD the class, if it
             // hasn't been loaded by the WPS already
+            SOMClass    *pClassThis;
             somId       somidThis = somIdFromString(pObjClass->pszClassName);
-            SOMClass    *pClassThis = _somFindClass(SOMClassMgrObject, somidThis, 0, 0);
-            if (!pClassThis)
+            if (!(pClassThis = _somFindClass(SOMClassMgrObject, somidThis, 0, 0)))
             {
                 // class object == NULL: means that class loading failed,
                 // i.e. it is registered with the WPS, but could not
                 // be found
-                PWPSLISTITEM pwpsNew = malloc(sizeof(WPSLISTITEM));
-                memset(pwpsNew, 0, sizeof(WPSLISTITEM));
+                PWPSLISTITEM pwpsNew;
 
-                // create "orphaned" tree, if not yet created
-                if (preccOrphans == NULL)
-                    preccOrphans = clsAddClass2Cnr(hwndCnr,
-                                                   NULL,       // parent recc
-                                                   NULL,       // "orphans" string
-                                                   pscd);
+                PMPF_SOMFREAK(("[%s] is orphaned (somid 0x%lX)",
+                               pObjClass->pszClassName,
+                               somidThis));
 
-                // set up WPSLISTITEM data
-                pwpsNew->pszClassName = pObjClass->pszClassName;
-                pwpsNew->pszModName = pObjClass->pszModName;
-                // add orphaned class to "Orphaned" tree
-                clsAddClass2Cnr(hwndCnr, preccOrphans, pwpsNew,
-                                pscd);
-                // append list item to list V0.9.1 (99-12-07)
-                lstAppendItem(pwpsciReturn->pllClassList,
-                              pwpsNew);
+                if (pwpsNew = NEW(WPSLISTITEM))
+                {
+                    ZERO(pwpsNew);
+
+                    // create "orphaned" tree the first time
+                    if (!preccOrphans)
+                        preccOrphans = clsAddClass2Cnr(hwndCnr,
+                                                       NULL,       // parent recc
+                                                       NULL,       // "orphans" string
+                                                       pscd);
+
+                    // set up WPSLISTITEM data
+                    pwpsNew->pszClassName = pObjClass->pszClassName;
+                    pwpsNew->pszModName = pObjClass->pszModName;
+                    // add orphaned class to "Orphaned" tree
+                    clsAddClass2Cnr(hwndCnr, preccOrphans, pwpsNew,
+                                    pscd);
+                    // append list item to list V0.9.1 (99-12-07)
+                    lstAppendItem(pwpsciReturn->pllClassList,
+                                  pwpsNew);
+                }
             }
+
+            PMPF_SOMFREAK(("[%s] is 0x%lX (somid 0x%lX)",
+                           pObjClass->pszClassName,
+                           pClassThis,
+                           somidThis));
+
             SOMFree(somidThis);
 
             // next class
@@ -645,6 +659,8 @@ PWPSCLASSESINFO clsWpsClasses2Cnr(HWND hwndCnr, // in: guess what this is
              ul < RegisteredClasses._length;
              ul++)
         {
+            PWPSLISTITEM pwpsNew;
+
             // current class to work on
             SOMClass *pClass = RegisteredClasses._buffer[ul];
 
@@ -653,14 +669,20 @@ PWPSCLASSESINFO clsWpsClasses2Cnr(HWND hwndCnr, // in: guess what this is
             // repository and all that, which we don't want,
             // so we include only descendants of the "root"
             // class
-            if (_somDescendedFrom(pClass, pRootClassObject))
+            if (    (_somDescendedFrom(pClass, pRootClassObject))
+                 && (pwpsNew = NEW(WPSLISTITEM))
+               )
             {
                 // set up WPSLISTITEM data
-                PWPSLISTITEM pwpsNew = malloc(sizeof(WPSLISTITEM));
-                pObjClass = pwpsciReturn->pObjClass;
-                memset(pwpsNew, 0, sizeof(WPSLISTITEM));
+                ZERO(pwpsNew);
+
                 pwpsNew->pClassObject = pClass;
                 pwpsNew->pszClassName = _somGetName(pClass);
+
+                PMPF_SOMFREAK(("%d: found class [%s] at 0x%lX",
+                               ul,
+                               pwpsNew->pszClassName,
+                               pClass));
 
                 // are we currently working on the root class object?
                 // If so, store it for later
@@ -686,11 +708,19 @@ PWPSCLASSESINFO clsWpsClasses2Cnr(HWND hwndCnr, // in: guess what this is
 
                 // get class's parent
                 if (pwpsNew->pParentClassObject = _somGetParent(pClass))
-                    strcpy(pwpsNew->szParentClass,
-                           _somGetName(pwpsNew->pParentClassObject));
-
+                {
+                    strlcpy(pwpsNew->szParentClass,
+                            _somGetName(pwpsNew->pParentClassObject),
+                            sizeof(pwpsNew->szParentClass));
+                    PMPF_SOMFREAK(("    parent is [%s] at 0x%lX",
+                                   pwpsNew->szParentClass,
+                                   pwpsNew->pParentClassObject));
+                }
+                else
+                    PMPF_SOMFREAK(("    no parent found"));
                 // mark this list item as "not processed" for later
-                pwpsNew->fProcessed = FALSE;
+                // pwpsNew->fProcessed = FALSE; we zeroed above V1.0.1 (2003-02-01) [umoeller]
+
                 // append list item to list
                 lstAppendItem(pwpsciReturn->pllClassList,
                               pwpsNew);
@@ -755,6 +785,9 @@ PWPSCLASSESINFO clsWpsClasses2Cnr(HWND hwndCnr, // in: guess what this is
                             pscd);
 
         SOMFree(somidRoot);
+
+        // free the sequence buffer V1.0.1 (2003-02-01) [umoeller]
+        SOMFree(RegisteredClasses._buffer);
     }
 
     return pwpsciReturn;
@@ -980,8 +1013,9 @@ MRESULT EXPENTRY fnwpSelectWPSClass(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
             {
                 case DID_OK:
                     if (pscd->preccSelection)
-                        strcpy(pscd->szClassSelected,
-                                pscd->preccSelection->pwps->pszClassName);
+                        strlcpy(pscd->szClassSelected,
+                                pscd->preccSelection->pwps->pszClassName,
+                                sizeof(pscd->szClassSelected));
                 break;
             }
             // close dialog

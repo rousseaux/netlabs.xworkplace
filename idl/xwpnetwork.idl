@@ -61,7 +61,7 @@ interface XWPNetwork : WPFolder
         externalprefix = xnw_;
         externalstem = xnw;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xwpnetwork;           //# specifies the filestem for sc-generated files
         metaclass = M_XWPNetwork;
         dllname = "xfldr.dll";
@@ -136,7 +136,7 @@ interface M_XWPNetwork : M_WPFolder
         externalstem = xnwM;
         functionprefix = xnwM_;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xwpnetwork;           //# specifies the filestem for sc-generated files
         dllname = "xfldr.dll";
         callstyle = oidl;

@@ -949,7 +949,9 @@ MRESULT EXPENTRY drv_fnwpConfigHPFS386(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                         WinSetDlgItemText(hwndDlg, ID_OSDI_AUTOCHECK, pszToken+11);
                     else if (cParams == 0)
                         // probably HPFS386.INI location then
-                        strcpy(szIniFilename, pszToken);
+                        strlcpy(szIniFilename,
+                                pszToken,
+                                sizeof(szIniFilename));
 
                     cParams++;
 
@@ -1499,7 +1501,9 @@ STATIC VOID S506ParseParamsString(PDRIVERDLGDATA pddd)
                 else
                 {
                     pS506UnitThis->fGeometry = TRUE;
-                    strcpy(pS506UnitThis->szGeometry, pszToken+5);
+                    strlcpy(pS506UnitThis->szGeometry,
+                            pszToken + 5,
+                            sizeof(pS506UnitThis->szGeometry));
                 }
             else if (!memicmp(pszToken, "/SMS", 4))
                 if (pS506UnitThis == NULL)
@@ -2747,7 +2751,9 @@ MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
                         CHAR szText[1000];
                         WinQueryDlgItemText(hwndDlg, usItemID, sizeof(szText), szText);
                         if (usItemID == ID_OSDI_S506_U_GEO_ENTRY)
-                            strcpy(pS506UnitThis->szGeometry, szText);
+                            strlcpy(pS506UnitThis->szGeometry,
+                                    szText,
+                                    sizeof(pS506UnitThis->szGeometry));
                         else
                         {
                             ULONG ulAddr = strtoul(szText, NULL,
@@ -2772,6 +2778,7 @@ MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
                        )
                     {
                         CHAR szTemp[20];
+                        PCSZ pcszTemp;
                         LONG lIndex = winhQuerySliderArmPosition(WinWindowFromID(hwndDlg,
                                                                                  usItemID),
                                                                  SMA_INCREMENTVALUE);
@@ -2780,14 +2787,14 @@ MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
                             case ID_OSDI_DANIS506_CLOCK_SLIDER:
                                 switch (lIndex)
                                 {
-                                    case 0: strcpy(szTemp, "25 MHz"); break;
-                                    case 1: strcpy(szTemp, "33 MHz"); break;
-                                    case 2: strcpy(szTemp, "37 MHz"); break;
-                                    default: strcpy(szTemp, "41 MHz"); break;
+                                    case 0: pcszTemp = "25 MHz"; break;
+                                    case 1: pcszTemp = "33 MHz"; break;
+                                    case 2: pcszTemp = "37 MHz"; break;
+                                    default: pcszTemp = "41 MHz"; break;
                                 }
                                 WinSetDlgItemText(hwndDlg,
                                                   ID_OSDI_DANIS506_CLOCK_TXT,
-                                                  szTemp);
+                                                  (PSZ)pcszTemp);
                                 pS506All->ulPCIClock = lIndex;
                             break;
 
@@ -2836,7 +2843,9 @@ MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
                     WinSetDlgItemText(hwndDlg, ID_OSDI_S506_NEWPARAMS, pszNewParams);
                     if (pszNewParams)       // can be NULL V0.9.3 (2000-04-10) [umoeller]
                     {
-                        strcpy(pddd->szParams, pszNewParams);
+                        strlcpy(pddd->szParams,
+                                pszNewParams,
+                                sizeof(pddd->szParams));
                         free(pszNewParams);
                     }
                     mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);

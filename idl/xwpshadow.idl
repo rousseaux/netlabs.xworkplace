@@ -59,7 +59,7 @@ interface XWPShadow : WPShadow
         externalprefix = xsh_;
         externalstem = xsh;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xwpshadow;           //# specifies the filestem for sc-generated files
         metaclass = M_XWPShadow;
         dllname = "xfldr.dll";
@@ -117,7 +117,7 @@ interface M_XWPShadow : M_WPShadow
         externalstem = xshM;
         functionprefix = xshM_;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xwpshadow;           //# specifies the filestem for sc-generated files
         dllname = "xfldr.dll";
         callstyle = oidl;

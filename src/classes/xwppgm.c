@@ -1695,6 +1695,7 @@ SOM_Scope void  SOMLINK xpgM_wpclsInitData(M_XWPProgram *somSelf)
         // is initialized later
         // V0.9.17 (2002-02-05) [umoeller]
         initRepairDesktopIfBroken();
+        ;
 }
 
 /*

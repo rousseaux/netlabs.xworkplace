@@ -1750,7 +1750,7 @@ VOID progSetupStartupDir(PPROGDETAILS pProgDetails,
        )
     {
         CHAR    szNewStartupDir[CCHMAXPATH] = "";
-        ULONG cb;
+        ULONG   len;
         // no startup dir:
         // if we have a data file argument, use its directory
         if (pArgDataFile)
@@ -1766,22 +1766,26 @@ VOID progSetupStartupDir(PPROGDETAILS pProgDetails,
             PSZ p;
             if (p = strrchr(pProgDetails->pszExecutable + 2, '\\'))
             {
-                cb = _min(p - pProgDetails->pszExecutable,
+                len = _min(p - pProgDetails->pszExecutable,
                           CCHMAXPATH - 1);
                 memcpy(szNewStartupDir,
                        pProgDetails->pszExecutable,
-                       cb);
-                szNewStartupDir[cb] = '\0';
+                       len);
+                szNewStartupDir[len] = '\0';
             }
         }
 
         // this returns "K:" only for root folders, so check!!
-        if (    (cb = strlen(szNewStartupDir))
-             && (cb < 3)
+        if (    (len = strlen(szNewStartupDir))
+             && (len < 3)
            )
-            strcpy(szNewStartupDir + 1, ":\\");
+        {
+            szNewStartupDir[1] = ':';
+            szNewStartupDir[2] = '\\';
+            szNewStartupDir[3] = '\0';
+        }
 
-        xstrcpy(pstrStartupDirNew, szNewStartupDir, 0);
+        xstrcpy(pstrStartupDirNew, szNewStartupDir, len);
         pProgDetails->pszStartupDir = pstrStartupDirNew->psz;
     }
 }
@@ -1842,7 +1846,9 @@ PSZ progSetupEnv(WPObject *pProgObject,     // in: WPProgram or WPProgramFile
             // we can simply overwrite the string in there,
             // because WORKPLACE_PROCESS=YES has the same length
             // as      WORKPLACE__PROCESS=NO
-            strcpy(*pp, "WORKPLACE__PROCESS=NO");
+            memcpy(*pp,
+                   "WORKPLACE__PROCESS=NO",
+                   sizeof("WORKPLACE__PROCESS=NO"));
         }
 
         // 2) set WP_OBJHANDLE
@@ -2191,6 +2197,7 @@ VOID progFileInitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
                 PSZ     pszExeFormat = NULL,
                         pszOS = NULL;
                 CHAR    szOS[400] = "";
+                ULONG   len;
 
                 switch (pExec->ulExeFormat)
                 {
@@ -2253,14 +2260,14 @@ VOID progFileInitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
 
                 // fixed crash here V0.9.16 (2001-12-08) [umoeller]
                 if (pszOS)
-                    strcpy(szOS, pszOS);
+                    len = strlcpy(szOS, pszOS, sizeof(szOS));
                 else
-                    sprintf(szOS, "unknown OS code %d", pExec->ulOS);
+                    len = sprintf(szOS, "unknown OS code %d", pExec->ulOS);
 
                 if (pExec->f32Bits)
-                    strcat(szOS, " (32-bit)");
+                    strlcpy(szOS + len, " (32-bit)", sizeof(szOS) - len);
                 else
-                    strcat(szOS, " (16-bit)");
+                    strlcpy(szOS + len, " (16-bit)", sizeof(szOS) - len);
 
                 WinSetDlgItemText(pnbp->hwndDlgPage,
                                   ID_XSDI_PROG_TARGETOS,

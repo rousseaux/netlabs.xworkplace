@@ -275,7 +275,7 @@ BOOL dtpSetup(WPDesktop *somSelf,
                            &cbValue))
     {
         CHAR    szFullFile[CCHMAXPATH] = "";
-        strcpy(szFullFile, szValue);
+        strlcpy(szFullFile, szValue, sizeof(szFullFile));
         if (cmnFileDlg2(cmnQueryActiveDesktopHWND(),
                         szFullFile,
                         0,
@@ -1153,35 +1153,24 @@ MRESULT dtpStartupItemChanged(PNOTEBOOKPAGE pnbp,
             {
                 // FILEDLG fd;
                 CHAR szFile[CCHMAXPATH] = "*.BMP";
-                PSZ pszNewBootLogoFile = winhQueryWindowText(WinWindowFromID(pnbp->hwndDlgPage,
-                                                                             ID_XSDI_DTP_LOGOFILE));
-
-                /* memset(&fd, 0, sizeof(FILEDLG));
-                fd.cbSize = sizeof(FILEDLG);
-                fd.fl = FDS_OPEN_DIALOG
-                          | FDS_CENTER;
-                */
-
-                if (pszNewBootLogoFile)
+                PSZ pszNewBootLogoFile;
+                if (pszNewBootLogoFile = winhQueryDlgItemText(pnbp->hwndDlgPage,
+                                                              ID_XSDI_DTP_LOGOFILE))
                 {
                     // get last directory used
-                    PSZ p = strrchr(pszNewBootLogoFile, '\\');
-                    if (p)
+                    PSZ p;
+                    if (p = strrchr(pszNewBootLogoFile, '\\'))
                     {
                         // contains directory:
                         PSZ pszDir = strhSubstr(pszNewBootLogoFile, p + 1);
-                        strcpy(szFile, pszDir);
+                        strlcpy(szFile, pszDir, sizeof(szFile));
                         free(pszDir);
                     }
                     free(pszNewBootLogoFile);
                 }
-                strcat(szFile, "*.bmp");
 
-                /* if (    WinFileDlg(HWND_DESKTOP,    // parent
-                                   pnbp->hwndFrame, // owner
-                                   &fd)
-                    && (fd.lReturn == DID_OK)
-                   ) */
+                strlcat(szFile, "*.bmp", sizeof(szFile));
+
                 if (cmnFileDlg(pnbp->hwndFrame,
                                szFile,
                                0, // WINH_FOD_INILOADDIR | WINH_FOD_INISAVEDIR,

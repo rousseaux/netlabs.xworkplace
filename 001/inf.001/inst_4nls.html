@@ -4,44 +4,30 @@
         Installing National Language Support
     </TITLE>
 </HEAD>
-<!-- this page updated with V0.82; see notes below -->
-<!-- changes for V0.9.0: replace "XFolder" with &xwp;; also see notes below -->
 <BODY>
-<!-- the following lines changed with V0.9.0 -->
-Starting with V0.52, &xwp; is capable of supporting other languages
-than just English. This is called National Language Support (NLS).
-The &xwp; base package comes with English NLS.
-<P>
-<!-- the following is unchanged -->
-For languages other than English however, you will need an
-<B>&xwp; National Language Support (NLS) package.</B>
-Such a package will contain a number of files, among them
-a new Dynamic Link Library (<CODE>.DLL</CODE>) for &xwp; itself,
-a new help file (<CODE>.HLP</CODE>) and a new User Guide book (<CODE>.INF</CODE>).
-Each of these files carries a three-digit
-language code in its respective file name, as defined in the
-<A HREF="cmdref.inf#country">&os2; Online Reference</A>. For example,
-the English files, which are already
-included with &xwp;, all have a "001" code (for US English) in their names.
+<!-- V1.0.1: all the following rewritten -->
+&xwp; is capable of supporting languages other than English, even though per
+default it comes with English National Language Support (NLS).
+For those languages however, you will need an
+<B>&xwp; NLS package.</B> Such a package will
+contain only the language-specific files for a specific languages.
 
-<P>
-Please check
-<A HREF="http://xworkplace.netlabs.org"><CODE>http://xworkplace.netlabs.org</CODE></A>
-for available NLS packages.
-<P>
-<B>Note that &xwp; does not work with NLS packages written for XFolder V0.8x.</B>
-Do not attempt to run this &xwp; version with those NLS packages. Since many
-language-dependent items have been rewritten, this will lead to really awkward
-behavior of your WPS and probably system crashes also.
+<P>Please check <a href="http://www.xworkplace.org">http://www.xworkplace.org</a>
+for available NLS packages. I only maintain English myself, but I try to keep
+track of the translations done by other people as time permits.
+
+<P>Note that NLS packages are version specific. That is, for a given &xwp;
+version, install only a matching NLS package, or &xwp; might malfunction
+more or less badly.
+<!-- end V1.0.1 -->
 
 <!-- all the following with V0.9.0 -->
-<P>
-NLS packages are installed using WarpIN too. If you wish to use a language other
+<P>NLS packages are installed using WarpIN too. If you wish to use a language other
 than English, after &xwp; has been installed,
 do not restart your computer yet, but install your NLS package next.
 Then restart the WPS.
-<P>
-When several languages are installed, the
+
+<P>When several languages are installed, the
 <A HREF="sys_1intro.html">"&xwp; Setup" object</A> offers you a
 "Language" drop-down box to change the current language.
 <BR>

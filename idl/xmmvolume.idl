@@ -61,7 +61,7 @@ interface XMMVolume : WPAbstract
         externalprefix = vol_;
         externalstem = vol;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xmmvolume;           //# specifies the filestem for sc-generated files
         metaclass = M_XMMVolume;
         dllname = "xfldr.dll";
@@ -130,7 +130,7 @@ interface M_XMMVolume : M_WPAbstract
         externalstem = volM;
         functionprefix = volM_;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xmmvolume;           //# specifies the filestem for sc-generated files
         dllname = "xfldr.dll";
         callstyle = oidl;

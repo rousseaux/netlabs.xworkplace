@@ -160,6 +160,7 @@ extern KERNELGLOBALS    G_KernelGlobals;            // kernel.c
 static DATETIME         G_StartupDateTime = {0};
 
 extern PIBMDRIVEDATA    G_paDriveData = NULL;
+extern PIBMDRIVEDATA    vDriveData;         // imported from PMWP.DLL
 
 static THREADINFO       G_tiSentinel = {0};
 
@@ -1373,8 +1374,10 @@ BOOL initMain(VOID)
     // to be able to do both exception handling and startup
     // logging right:
 
+#ifndef __NOPARANOIA__
     if (pSettInfo = cmnFindSettingInfo(sfNoExcptBeeps))
         fNoExcptBeeps = cmnLoadOneSetting(pSettInfo);
+#endif
 
     if (pSettInfo = cmnFindSettingInfo(sfWriteXWPStartupLog))
         fWriteXWPStartupLog = cmnLoadOneSetting(pSettInfo);
@@ -1889,6 +1892,7 @@ BOOL initMain(VOID)
  *      not work.
  *
  *@@added V0.9.16 (2001-09-29) [umoeller]
+ *@@changed V1.0.1 (2003-02-02) [umoeller]: fixed XWPProgram breaking half of the system @@fixes 266
  */
 
 BOOL initRepairDesktopIfBroken(VOID)
@@ -1901,6 +1905,13 @@ BOOL initRepairDesktopIfBroken(VOID)
     WPFolder    *pBootRootFolder;
 
     initLog("Entering " __FUNCTION__"...");
+
+#if 0
+    // this code causes SOM pretty much to blow up its
+    // class management. This causes URL folders to crash
+    // and trash and font objects to disappear on my new
+    // system too (bug #266). Figured this out finally with
+    // V1.0.1 (2003-02-02) [umoeller]
 
     // get the global pointer to the WPS's drive data
     // array; we KNOW that the boot drive is valid,
@@ -1932,6 +1943,16 @@ BOOL initRepairDesktopIfBroken(VOID)
     else
         initLog("  WARNING: _wpclsQueryObjectFromPath(\"%s\") returned NULL",
                 szBootRoot);
+#else
+    // V1.0.1 (2003-02-02) [umoeller]
+    // FsQueryDriveData returns the drive data block for the given
+    // drive as well, so we can just call this PMWP export without
+    // having to blow up the whole WPS. I have checked,
+    // FsQueryDriveData("A:") gives us the same address as the
+    // G_paDriveData above.
+    G_paDriveData = FsQueryDriveData("A:");
+    initLog("FsQueryDriveData(A) = 0x%lX", G_paDriveData);
+#endif
 
     // now check if the desktop was considered valid
     // during initMain()
@@ -2042,7 +2063,7 @@ BOOL initRepairDesktopIfBroken(VOID)
             // if the user has set the DESKTOP variable, use that
             if (!DosScanEnv("DESKTOP",
                             &pszDesktopEnv))
-                strcpy(szDefault, pszDesktopEnv);
+                strlcpy(szDefault, pszDesktopEnv, sizeof(szDefault));
             else
                 // check if we can find the path that was last
                 // saved during XShutdown
@@ -2552,6 +2573,27 @@ STATIC void _Optlink fntStartupThread(PTHREADINFO ptiMyself)
 
         // say hello on thread 1
         krnPostThread1ObjectMsg(T1M_WELCOME, MPNULL, MPNULL);
+    }
+#else
+    {
+        // V1.0.1 (2003-02-02) [umoeller]
+        ULONG fl = cmnQuerySetting(sflIntroHelpShown);
+        if (!(fl & HLPS_NOSHOWDESKTOP))
+        {
+            ULONG ulPanel = 0;
+            CHAR szHelp[CCHMAXPATH];
+            WPObject *pDesktop = cmnQueryActiveDesktop();
+
+            cmnSetSetting(sflIntroHelpShown, fl | HLPS_NOSHOWDESKTOP);
+
+            _wpQueryDefaultHelp(pDesktop,
+                                &ulPanel,
+                                szHelp);
+            // help not displayed yet:
+            _wpDisplayHelp(pDesktop,
+                           ulPanel,
+                           szHelp);
+        }
     }
 #endif
 

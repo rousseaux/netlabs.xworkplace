@@ -1881,18 +1881,17 @@ STATIC BOOL ModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root fold
     CATCH(excpt1)
     {
         // exception caught:
-        PSZ     pszErrMsg = malloc(1000);
-        if (pszErrMsg)
+        PSZ pszErrMsg;      // @@todo get rid of this shit
+        if (pszErrMsg = strdup("An error occured while XFolder was trying to build "
+                               "a folder's context menu. This might be due to the fact "
+                               "that you have deleted objects from the Configuration folders, "
+                               "but you did "
+                               "not have these folders opened in the Icon or Details views "
+                               "while doing so. "
+                               "You should open and close the configuration folder and all "
+                               "of its subfolders once. Make sure that all the folders are either "
+                               "in Icon or Details view per default."))
         {
-            strcpy(pszErrMsg, "An error occured while XFolder was trying to build "
-                    "a folder's context menu. This might be due to the fact "
-                    "that you have deleted objects from the Configuration folders, "
-                    "but you did "
-                    "not have these folders opened in the Icon or Details views "
-                    "while doing so. "
-                    "You should open and close the configuration folder and all "
-                    "of its subfolders once. Make sure that all the folders are either "
-                    "in Icon or Details view per default.");
             krnPostThread1ObjectMsg(T1M_EXCEPTIONCAUGHT, (MPARAM)pszErrMsg, MPNULL);
             mnuInvalidateConfigCache();
         }
@@ -2074,7 +2073,8 @@ BOOL mnuModifyFolderMenu(WPFolder *somSelf,
                 // default help
                 cmnDescribeKey(szDescription,
                                KC_VIRTUALKEY,
-                               VK_F1);
+                               VK_F1,
+                               sizeof(szDescription));
                 winhAppend2MenuItemText(hwndMenu,
                                         WPMENUID_EXTENDEDHELP,
                                         szDescription,
@@ -2816,9 +2816,9 @@ STATIC VOID mnuItemsInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                 {
                     // no submenu, plain item
                     if (flConfig & CONFFL_NOQUOTES)
-                        strhncpy0(preccNew->szTitle,
-                                  cmnGetString(G_MenuItemsWithIDs[ul].ulString),
-                                  sizeof(preccNew->szTitle));
+                        cmnGetString2(preccNew->szTitle,
+                                      G_MenuItemsWithIDs[ul].ulString,
+                                      sizeof(preccNew->szTitle));
                     else
                     {
                         // enclose in quotes

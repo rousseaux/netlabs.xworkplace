@@ -272,7 +272,7 @@ interface XFolder : WPFolder
         externalprefix = xf_;
         externalstem = xf;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xfldr;           //# specifies the filestem for sc-generated files
         metaclass = M_XFolder;
         dllname = "xfldr.dll";
@@ -513,7 +513,7 @@ interface M_XFolder : M_WPFolder
         externalstem = xfM;
         functionprefix = xfM_;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xfldr;           //# specifies the filestem for sc-generated files
         dllname = "xfldr.dll";
         callstyle = oidl;

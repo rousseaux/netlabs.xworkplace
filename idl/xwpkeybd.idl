@@ -65,7 +65,7 @@ interface XWPKeyboard : WPKeyboard
         externalprefix = xkb_;
         externalstem = xkb;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xwpkeybd;           //# specifies the filestem for sc-generated files
         metaclass = M_XWPKeyboard;
         dllname = "xfldr.dll";
@@ -117,7 +117,7 @@ interface M_XWPKeyboard : M_WPKeyboard
         externalstem = xkbM;
         functionprefix = xkbM_;
         majorversion = 1;
-        minorversion = 1;
+        minorversion = 2;
         filestem = xwpkeybd;           //# specifies the filestem for sc-generated files
         dllname = "xfldr.dll";
         callstyle = oidl;
