@@ -531,8 +531,6 @@
      *
      ********************************************************************/
 
-    MRESULT EXPENTRY fdr_fnwpStatusBar(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2);
-
     MRESULT EXPENTRY fdr_fnwpSubclFolderContentMenu(HWND hwndMenu, ULONG msg, MPARAM mp1, MPARAM mp2);
 
     SHORT XWPENTRY fdrSortByICONPOS(PVOID pItem1, PVOID pItem2, PVOID psip);
@@ -636,7 +634,13 @@
             WPFolder        *pRootFolder;       // root folder to populate, whose contents
                                                 // appear in left tree (constant)
 
-            PMINIRECORDCORE precFolderContentsShowing;   // currently selected record
+            PMINIRECORDCORE precFolderContentsShowing;
+                                                // record that is currently selected
+                                                // in the tree on the left
+            PMINIRECORDCORE precContextMenu;    // record for which context menu is
+                                                // showing; we need this for figuring
+                                                // out whether we need to process WM_COMMAND
+                                                // ourselves
 
             // data for files view (right)
             PSUBCLFOLDERVIEW psfvFiles;         // XFolder subclassed view data (see above)

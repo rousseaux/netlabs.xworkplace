@@ -2485,8 +2485,8 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
                             mrc = (MRESULT)pfnwpOriginal(hwndFrame, msg, mp1, mp2);
                             if (cmnQuerySetting(sfTreeViewAutoScroll))
                                 xthrPostBushMsg(QM_TREEVIEWAUTOSCROLL,
-                                                  (MPARAM)hwndFrame,
-                                                  mp2); // PMINIRECORDCORE
+                                                (MPARAM)hwndFrame,
+                                                mp2); // PMINIRECORDCORE
                         }
                         break;
 

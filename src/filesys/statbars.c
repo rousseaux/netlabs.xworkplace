@@ -14,7 +14,7 @@
  *
  *      --  When selections change in a folder view (i.e.
  *          fnwpSubclassedFolderFrame receives CN_EMPHASIS
- *          notification), fdr_fnwpStatusBar is posted an STBM_UPDATESTATUSBAR
+ *          notification), fnwpStatusBar is posted an STBM_UPDATESTATUSBAR
  *          message, which in turn calls XFolder::xwpUpdateStatusBar,
  *          which normally calls stbComposeText in turn (the main entry
  *          point to the mess in this file).
@@ -158,6 +158,8 @@ static CHAR    G_szWPUrlStatusBarMnemonics[CCHMAXMNEMONICS] = "";
 // this class yet. After the first query, this either points
 // to the class object or is NULL if the class does not exist.
 static SOMClass    *G_WPUrl = (SOMClass*)-1;
+
+static MRESULT EXPENTRY fnwpStatusBar(HWND hwndBar, ULONG msg, MPARAM mp1, MPARAM mp2);
 
 /* ******************************************************************
  *
@@ -307,7 +309,7 @@ HWND stbCreateBar(WPFolder *somSelf,        // in: (root) folder
 
         // subclass static control to make it a status bar
         psbd->pfnwpStatusBarOriginal = WinSubclassWindow(hwndBar,
-                                                         fdr_fnwpStatusBar);
+                                                         fnwpStatusBar);
         WinSetPresParam(hwndBar,
                         PP_FONTNAMESIZE,
                         (ULONG)strlen(pszStatusBarFont) + 1,
@@ -1207,7 +1209,7 @@ static VOID StatusPresParamChanged(HWND hwndBar,
 }
 
 /*
- *@@ fdr_fnwpStatusBar:
+ *@@ fnwpStatusBar:
  *      since the status bar is just created as a static frame
  *      control, it is subclassed (by stbCreate),
  *      and this is the wnd proc for this.
@@ -1223,7 +1225,7 @@ static VOID StatusPresParamChanged(HWND hwndBar,
  *@@changed V0.9.1 (99-12-19) [umoeller]: finally fixed the context menu problems with MB2 right-click on status bar
  */
 
-MRESULT EXPENTRY fdr_fnwpStatusBar(HWND hwndBar, ULONG msg, MPARAM mp1, MPARAM mp2)
+static MRESULT EXPENTRY fnwpStatusBar(HWND hwndBar, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     PSTATUSBARDATA psbd = (PSTATUSBARDATA)WinQueryWindowPtr(hwndBar, QWL_USER);
     MRESULT        mrc = 0;
@@ -2645,7 +2647,7 @@ static VOID ReplaceKeyWithDouble(XSTRING *pstrText, // in/out: status bar text
  *@@ stbComposeText:
  *      this is the main entry point to the status bar
  *      logic which gets called by the status bar wnd
- *      proc (fdr_fnwpStatusBar) when the status
+ *      proc (fnwpStatusBar) when the status
  *      bar text needs updating (CN_EMPHASIS).
  *
  *      This function does the following:

@@ -17,6 +17,18 @@ Ulrich M”ller.
 CURRENT PROBLEMS
 ----------------
 
+--  split view
+
+    --  drag and drop
+
+    --  menus (menu bar and whitespace context menu)
+
+    --  object locking
+
+    --  double-clicking on folders in right view
+
+    --  folder refresh
+
 --  when hook is disabled, window list widget doesn't work; restart of
     XCenter required for getting it to work
 

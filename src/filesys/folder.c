@@ -186,10 +186,12 @@ BOOL fdrSetup(WPFolder *somSelf,
                            "OPEN", szValue, &cbValue))
     {
         if (!stricmp(szValue, "SPLITVIEW"))
-            _wpViewObject(somSelf,
-                          NULLHANDLE,
-                          cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_SPLITVIEW,
-                          0);
+            krnPostThread1ObjectMsg(T1M_OPENOBJECTFROMPTR,
+                                    (MPARAM)somSelf,
+                                    (MPARAM)(   cmnQuerySetting(sulVarMenuOffset)
+                                              + ID_XFMI_OFS_SPLITVIEW
+                                            )
+                                   );
     }
 
 #ifndef __NOSNAPTOGRID__
