@@ -795,13 +795,11 @@ VOID FindFolderForNotification(PXWPNOTIFY pNotify)
                                 // then the WPS will collect all the file-system
                                 // information on populate anyway...
 
+                                PULONG pulFlag = _wpQueryContainerFlagPtr(pNotify->pFolder);
+
                                 // keep the notification?
-                                if (    (flFolder & FOI_POPULATEDWITHALL)
-                                     || (    (flFolder & FOI_POPULATEDWITHFOLDERS)
-                                          && (    (pNotify->CNInfo.bAction == RCNF_DIR_ADDED)
-                                               || (pNotify->CNInfo.bAction == RCNF_DIR_DELETED)
-                                             )
-                                        )
+                                if (    (flFolder & (FOI_POPULATEDWITHALL | FOI_POPULATEDWITHFOLDERS))
+                                     || ( (pulFlag) && (*pulFlag) )
                                    )
                                 {
                                     // OK, this is worth storing:

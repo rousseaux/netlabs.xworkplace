@@ -169,7 +169,7 @@
     #ifdef __EMX__
         #define XWPENTRY
     #else
-        #ifdef __IBMC__
+        #if defined(__IBMC__) || defined(__IBMCPP__)
             #define XWPENTRY _Optlink
         #endif
     #endif

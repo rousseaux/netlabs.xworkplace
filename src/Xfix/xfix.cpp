@@ -40,8 +40,6 @@
 
 #include "setup.h"
 
-#define XWPENTRY
-
 #include "helpers\cnrh.h"
 #include "helpers\datetime.h"           // date/time helper routines
 #include "helpers\except.h"

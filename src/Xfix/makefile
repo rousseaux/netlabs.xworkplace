@@ -44,17 +44,19 @@ MODULESDIR = $(XWP_OUTPUT_ROOT)\modules
 !if [@md $(MODULESDIR) 2> NUL]
 !endif
 
+APPNAME = xfix
+
 # The OBJS macro contains all the .OBJ files which need to be
 # created from the files in this directory.
 # These will be put into BIN\.
-OBJS = $(OUTPUTDIR)\xfix.obj $(OUTPUTDIR)\helpers.lib $(HELPERS_BASE)\src\helpers\pmprintf.lib
+OBJS = $(OUTPUTDIR)\$(APPNAME).obj $(OUTPUTDIR)\helpers.lib $(HELPERS_BASE)\src\helpers\pmprintf.lib
 
 # The main target:
 # If we're called from the main makefile, MAINMAKERUNNING is defined,
 # and we'll set $(OBJS) as our targets (which will go on).
 # Otherwise, we call the main makefile, which will again call ourselves later.
-all:   \
-    $(XWPRUNNING)\bin\xfix.exe
+all: \
+    $(XWPRUNNING)\bin\$(APPNAME).exe
     @echo ----- Leaving $(MAKEDIR)
 
 # Now define inference rules for what to do with certain file
@@ -96,24 +98,23 @@ HLPINC = $(HELPERS_BASE)\include\helpers
 # you can enforce a complete recompile of XWorkplace if you update
 # that file (just save it once).
 
-$(OUTPUTDIR)\xfix.obj: \
+$(OUTPUTDIR)\$(APPNAME).obj: \
     $(INC)\setup.h $(INC)\bldlevel.h \
     $(HLPINC)\cnrh.h $(HLPINC)\datetime.h $(HLPINC)\except.h $(HLPINC)\linklist.h \
         $(HLPINC)\prfh.h $(HLPINC)\stringh.h $(HLPINC)\threads.h $(HLPINC)\winh.h \
         $(HLPINC)\wphandle.h $(HLPINC)\xstring.h \
     $(INC)\shared\common.h \
-    xfix.h
+    $(APPNAME).h
 
 # build targets
-xfix.def: ..\..\include\bldlevel.h
+$(APPNAME).def: ..\..\include\bldlevel.h
           cmd.exe /c BuildLevel.cmd $*.def ..\..\include\bldlevel.h "WPS handles fixer"
 
-$(OUTPUTDIR)\xfix.res: $(@B).rc *.ico
+$(OUTPUTDIR)\$(APPNAME).res: $(@B).rc *.ico
           $(RC) -r $(@B).rc $(OUTPUTDIR)\$(@B).res
 
-$(MODULESDIR)\xfix.exe: $(OBJS) $(@B).def $(OUTPUTDIR)\$(@B).res makefile
+$(MODULESDIR)\$(APPNAME).exe: $(OBJS) $(@B).def $(OUTPUTDIR)\$(@B).res makefile
           $(LINK) /out:$(MODULESDIR)\$(@B).exe $(OBJS) $(@B).def
-
           $(RC) $(OUTPUTDIR)\$(@B).res $(MODULESDIR)\$(@B).exe
 !ifdef XWP_OUTPUT_ROOT_DRIVE
         @$(XWP_OUTPUT_ROOT_DRIVE)
@@ -127,6 +128,6 @@ $(MODULESDIR)\xfix.exe: $(OBJS) $(@B).def $(OUTPUTDIR)\$(@B).res makefile
           cd $(MAKEDIR)
 
 # main target
-$(XWPRUNNING)\bin\xfix.exe: $(MODULESDIR)\$(@B).exe
+$(XWPRUNNING)\bin\$(APPNAME).exe: $(MODULESDIR)\$(@B).exe
           cmd.exe /c copy $(MODULESDIR)\$(@B).exe $(XWPRUNNING)\bin
 

@@ -295,7 +295,7 @@ helpers:
 helpers_exe_mt:
 # helpers_exe_mt:
 # same as the above, but this builds a multithread lib for EXEs.
-    @echo $(MAKEDIR)\makefile: Going for WarpIN subdir src\helpers (EXE MT version)
+    @echo $(MAKEDIR)\makefile: Going for src\helpers (EXE MT version)
     @cd $(HELPERS_BASE)\src\helpers
     @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING) \
 "HELPERS_OUTPUT_DIR=$(XWP_OUTPUT_ROOT)\exe_mt" "CC_HELPERS=$(CC_HELPERS_EXE_MT)"

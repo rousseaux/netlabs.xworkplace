@@ -21,13 +21,13 @@
 !if [@echo +++++ Entering $(MAKEDIR)]
 !endif
 
-PROJECT_BASE_DIR = $(CVS_WORK_ROOT)\xworkplace
-
 # include setup (compiler options etc.)
 !include ..\..\setup.in
 
-OUTPUTDIR = ..\..\bin\exe_mt
-MODULESDIR = ..\..\bin\modules
+# OUTPUTDIR specifies the directory where all the output .OBJ
+# files will be created in.
+OUTPUTDIR = $(XWP_OUTPUT_ROOT)\exe_mt
+MODULESDIR = $(XWP_OUTPUT_ROOT)\modules
 
 # create output directory
 !if [@md $(OUTPUTDIR) 2> NUL]

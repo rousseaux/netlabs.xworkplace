@@ -58,7 +58,7 @@
 #define INCL_GPILOGCOLORTABLE
 #define INCL_GPIREGIONS
 #define NO_STHEALTH_PRAGMA_LIBRARY
-#include <StHealth.h>
+#include "StHealth.h"
 #include <os2.h>
 
 // C library headers
@@ -70,21 +70,21 @@
 #include "setup.h"                      // code generation and debugging options
 
 // headers in /helpers
-#include <helpers\comctl.h>             // common controls (window procs)
-#include <helpers\dosh.h>               // Control Program helper routines
-#include <helpers\gpih.h>               // GPI helper routines
-#include <helpers\prfh.h>               // INI file helper routines;
+#include "helpers\comctl.h"             // common controls (window procs)
+#include "helpers\dosh.h"               // Control Program helper routines
+#include "helpers\gpih.h"               // GPI helper routines
+#include "helpers\prfh.h"               // INI file helper routines;
                                         // this include is required for some
                                         // of the structures in shared\center.h
-#include <helpers\stringh.h>            // string helper routines
-#include <helpers\timer.h>              // replacement PM timers
-#include <helpers\winh.h>               // PM helper routines
-#include <helpers\xstring.h>            // extended string helpers
+#include "helpers\stringh.h"            // string helper routines
+#include "helpers\timer.h"              // replacement PM timers
+#include "helpers\winh.h"               // PM helper routines
+#include "helpers\xstring.h"            // extended string helpers
 
 // XWorkplace implementation headers
-#include <dlgids.h>                     // all the IDs that are shared with NLS
-#include <shared\center.h>              // public XCenter interfaces
-#include <shared\common.h>              // the majestic XWorkplace include file
+#include "dlgids.h"                     // all the IDs that are shared with NLS
+#include "shared\center.h"              // public XCenter interfaces
+#include "shared\common.h"              // the majestic XWorkplace include file
 
 #pragma hdrstop                     // VAC++ keeps crashing otherwise
 

@@ -107,9 +107,8 @@ typedef struct _SNAPSHOT
     // calculated values
     ULONG   ulVirtTotal,        // (const) physical RAM plus swapper size
 
-            ulVirtInUseKB,       //  = (pThis->ulVirtTotal - pThis->ulPhysFree) / 1024,
-            ulSwapperKB,        //  = (pThis->ulSwapperSize / 1024),
-            ulPhysInUseKB;      //  = ulVirtInUseKB - ulSwapperKB;
+            ulVirtInUse,        //  = pThis->ulVirtTotal - pThis->ulPhysFree,
+            ulPhysInUse;        //  = ulVirtInUse - ulSwapper;
 
     /* ษอออออออออออออออออออป                  ฤฤฤฟ      ฤฤฤฟ
        บ                   บ                     ณ         ณ
@@ -625,7 +624,7 @@ BOOL TwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
 
 VOID PaintGraphLine(PWIDGETPRIVATE pPrivate,
                     PSNAPSHOT pThis,
-                    ULONG ulMaxMemKB,
+                    ULONG ulMaxMem,
                     LONG x,             // in: xpos to paint at
                     LONG yTop,          // in: yTop of bitmap rect
                     LONG lFillBkgnd)    // in: if != -1, bkgnd color
@@ -640,19 +639,19 @@ VOID PaintGraphLine(PWIDGETPRIVATE pPrivate,
                 pSetup->lcolSwap);
     ptl.y = 0;
     GpiMove(hpsMem, &ptl);
-    ptl.y += yTop * pThis->ulSwapperKB / ulMaxMemKB;
+    ptl.y += yTop * pThis->ulSwapperSize / ulMaxMem;
     GpiLine(hpsMem, &ptl);
 
     // paint "physically used mem"
     GpiSetColor(hpsMem,
                 pSetup->lcolPhysInUse);
-    ptl.y += yTop * pThis->ulPhysInUseKB / ulMaxMemKB;
+    ptl.y += yTop * pThis->ulPhysInUse / ulMaxMem;
     GpiLine(hpsMem, &ptl);
 
     // paint "free mem" in green
     GpiSetColor(hpsMem,
                 pSetup->lcolPhysFree);
-    ptl.y += yTop * (pThis->ulPhysFree / 1024) / ulMaxMemKB;
+    ptl.y += yTop * pThis->ulPhysFree / ulMaxMem;
     GpiLine(hpsMem, &ptl);
 
     if (lFillBkgnd != -1)
@@ -730,7 +729,7 @@ VOID TwgtUpdateGraph(HWND hwnd,
              ul++)
         {
             PSNAPSHOT pThis = &pPrivate->paSnapshots[ul];
-            ULONG ulThis = pThis->ulVirtTotal / 1024;
+            ULONG ulThis = pThis->ulVirtTotal;
             if (ulThis > ulMaxMemKB)
                 ulMaxMemKB = ulThis;
         }
@@ -902,19 +901,21 @@ VOID TwgtPaint2(HWND hwnd,
 
         LONG    y = 1;
 
+        #define MEGABYTE (1024*1024)    // what was that number again?
+
         DrawNumber(hps,
                    y,
-                   pLatest->ulSwapperSize / 1024 / 1024,
+                   (pLatest->ulSwapperSize + (MEGABYTE / 2)) / MEGABYTE,
                    pSetup->lcolSwap);
         y += pPrivate->ulSpacing;
         DrawNumber(hps,
                    y,
-                   pLatest->ulPhysInUseKB / 1024,
+                   (pLatest->ulPhysInUse + (MEGABYTE / 2)) / MEGABYTE,
                    pSetup->lcolPhysInUse);
         y += pPrivate->ulSpacing;
         DrawNumber(hps,
                    y,
-                   pLatest->ulPhysFree / 1024 / 1024,
+                   (pLatest->ulPhysFree + (MEGABYTE / 2)) / MEGABYTE,
                    pSetup->lcolPhysFree);
     }
 }
@@ -997,9 +998,8 @@ VOID TwgtTimer(HWND hwnd)
 
                     // now do calcs based on that... we don't wanna go thru
                     // this on every paint
-                    pLatest->ulVirtInUseKB = (pLatest->ulVirtTotal - pLatest->ulPhysFree) / 1024,
-                    pLatest->ulSwapperKB = (pLatest->ulSwapperSize / 1024),
-                    pLatest->ulPhysInUseKB = pLatest->ulVirtInUseKB - pLatest->ulSwapperKB;
+                    pLatest->ulVirtInUse = (pLatest->ulVirtTotal - pLatest->ulPhysFree);
+                    pLatest->ulPhysInUse = (pLatest->ulVirtInUse - pLatest->ulSwapperSize);
 
                     // update display
                     pPrivate->fUpdateGraph = TRUE;

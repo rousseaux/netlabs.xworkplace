@@ -11,11 +11,10 @@
  *      (on XCenter::wpOpen, which in turn calls ctrpCreateXCenterView).
  *
  *      The nice thing about the XCenter (compared to the WarpCenter)
- *      is that the XCenter "widgets" (that's how we call the things
- *      which are inside the XCenter bar) can be dynamically replaced,
+ *      is that the XCenter @widgets can be dynamically replaced,
  *      even while the XCenter is open.
  *
- *      To write your own widget, you only need to create a new
+ *      To write your own widgets, you only need to create a new
  *      standard PM window class which follows a few rules to
  *      interface with the XCenter. The XCenter is even capable
  *      of dynamically loading and unloading plugin widgets from a DLL.
@@ -26,45 +25,7 @@
  *      See fnwpXCenterMainClient for a description of the XCenter
  *      window hierarchy.
  *
- *      <B>Terminology</B>
- *
- *      -- An "XCenter instance" is an object of the XCenter WPS
- *         class. There can only be one open view per XCenter so
- *         that an XCenter instance is identical to an XCenter
- *         view when it's open, but there can be several XCenter
- *         instances on the system (i.e. one for each screen border).
- *
- *      -- A "widget" is a PM subwindow of an open XCenter which
- *         displays something. An open XCenter can contain zero,
- *         one, or many widgets. Every XCenter keeps a list of
- *         widgets together with their settings in its SOM instance
- *         data. This is totally transparent to the widgets.
- *
- *      -- A "widget class" defines a widget. Basically, it's a
- *         plain C structure (XCENTERWIDGETCLASS) with a PM window
- *         procedure which is used to create the PM widget windows
- *         (the "widget instances"). Depending on the widget
- *         class's attributes, there can be one or several
- *         instances of a widget class. If you want a different
- *         widget in the XCenter, you need to write a widget class.
- *
- *         A widget class basically boils down to writing a PM
- *         window class, with some additional rules to follow. To
- *         make things easier, several widget classes can share
- *         the same PM class though.
- *
- *         Some widget classes are built into the XCenter itself
- *         (i.e. reside in XFLDR.DLL), but the XCenter can load
- *         external DLLs too. Several of the widget classes that
- *         come with XWorkplace have been created as plugins to
- *         show you how it's done (see the src\widgets directory).
- *
- *      -- A "widget plugin DLL" is a separate DLL which resides
- *         in the "plugins\xcenter" directory of the XWorkplace
- *         installation directory. This must contain one or
- *         several widget classes. There are a couple of
- *         procedures that a widget plugin DLL is required to
- *         export to make the XCenter see the widget classes.
+ *      See @xcenter_instance, @widget, @widget_class, @plugin_dll.
  *
  *      <B>Structures</B>
  *
@@ -75,10 +36,10 @@
  *         created in the XCenter's window words, which is later
  *         made public to the widgets as well.
  *
- *      -- Each known widget class (either one of the built-ins in
+ *      -- Each known @widget_class (either one of the built-ins in
  *         XFLDR.DLL or those loaded from a plugin DLL) is described
  *         in an XCENTERWIDGETCLASS structure. An array of those
- *         structures must be returned by widget plugin DLLs so
+ *         structures must be returned by a widget @plugin_dll so
  *         that the XCenter can know what plugin classes are in
  *         a DLL.
  *
@@ -205,6 +166,58 @@
  *
  *@@added V0.9.7 (2000-11-27) [umoeller]
  *@@header "shared\center.h"
+ */
+
+/*
+ *@@gloss: xcenter_instance XCenter instance
+ *      An "XCenter instance" is an object of the XCenter WPS
+ *      class. There can only be one open view per XCenter so
+ *      that an XCenter instance is identical to an XCenter
+ *      view when it's open, but there can be several XCenter
+ *      instances on the system (i.e. one for each screen border).
+ */
+
+/*
+ *@@gloss: widget widget
+ *      A "widget" is a PM subwindow of an open XCenter which
+ *      displays something. An open XCenter can contain zero,
+ *      one, or many widgets. Every XCenter keeps a list of
+ *      widgets together with their settings in its SOM instance
+ *      data. This is totally transparent to the widgets.
+ *
+ *      Each widget is defined by its @widget_class.
+ */
+
+/*
+ *@@gloss: widget_class widget class
+ *      A "widget class" defines a @widget. Basically, it's a
+ *      plain C structure (XCENTERWIDGETCLASS) with a PM window
+ *      procedure which is used to create the PM widget windows
+ *      (the "widget instances"). Depending on the widget
+ *      class's attributes, there can be one or several
+ *      instances of a widget class. If you want a different
+ *      widget in the XCenter, you need to write a widget class.
+ *
+ *      A widget class basically boils down to writing a PM
+ *      window class, with some additional rules to follow. To
+ *      make things easier, several widget classes can share
+ *      the same PM class though.
+ *
+ *      Some widget classes are built into the XCenter itself
+ *      (i.e. reside in XFLDR.DLL), but the XCenter can load
+ *      them from a @plugin_dll too. Several of the widget classes
+ *      that come with XWorkplace have been created as plug-ins to
+ *      show you how it's done (see the src\widgets directory).
+ */
+
+/*
+ *@@gloss: plugin_dll plug-in DLL
+ *      A "widget plug-in DLL" is a separate DLL which resides
+ *      in the "plugins\xcenter" directory of the XWorkplace
+ *      installation directory. This must contain one or
+ *      several widget classes. There are a couple of
+ *      procedures that a widget plug-in DLL is required to
+ *      export to make the XCenter see the widget classes.
  */
 
 /*

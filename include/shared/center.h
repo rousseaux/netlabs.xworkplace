@@ -207,6 +207,16 @@
                     // some room for additional data the
                     // settings dialog might want
 
+        /*
+         *      The following fields have been added with
+         *      releases later than V0.9.7. Since they have
+         *      been added at the bottom, the structure is
+         *      still backward-compatible with old plugin
+         *      binaries... but you cannot use these new
+         *      fields unless you also require the corresponding
+         *      XCenter revision by using the "version" export @3.
+         */
+
         PCTRSETSETUPSTRING      pctrSetSetupString;
                     // ptr to ctrSetSetupString function in
                     // src\shared\center.c; this must be
@@ -693,6 +703,8 @@
 
     // init-module export (ordinal 1)
     // WARNING: THIS PROTOTYPE HAS CHANGED WITH V0.9.9
+    // IF QUERY-VERSION IS EXPORTED (@3, see below) THE NEW
+    // PROTOTYPE IS USED
     typedef ULONG EXPENTRY FNWGTINITMODULE_OLD(HAB hab,
                                                HMODULE hmodXFLDR,
                                                PXCENTERWIDGETCLASS *ppaClasses,
@@ -710,7 +722,9 @@
     typedef VOID EXPENTRY FNWGTUNINITMODULE(VOID);
     typedef FNWGTUNINITMODULE *PFNWGTUNINITMODULE;
 
-    // query version
+    // query version (ordinal 3; added V0.9.9 (2001-02-01) [umoeller])
+    // IF QUERY-VERSION IS EXPORTED (@3, see below) THE NEW
+    // PROTOTYPE FOR INIT_MODULE (above) WILL BE USED
     typedef VOID EXPENTRY FNWGTQUERYVERSION(PULONG pulMajor,
                                             PULONG pulMinor,
                                             PULONG pulRevision);
