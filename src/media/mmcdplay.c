@@ -606,6 +606,8 @@ MRESULT CDCreate(HWND hwnd,
                              + cxMiniIcon;
     LONG            x = 0;
 
+    XMMCDPlayerData *somThis = XMMCDPlayerGetData(pWinData->somSelf);
+
     WinSetWindowPtr(hwnd, QWL_USER, mp1);
 
     pWinData->hab = WinQueryAnchorBlock(hwnd);
@@ -651,6 +653,19 @@ MRESULT CDCreate(HWND hwnd,
     pWinData->cyTrackNTime = 20;        // overridden when presparam comes in
     pWinData->cx = x + 5;
     pWinData->cy = pWinData->yTrackNTime + pWinData->cyTrackNTime + 5;
+
+    if (_pvPlayer)
+    {
+        // we already have a device:
+        // enable position advise,
+        // get current data
+        PXMMCDPLAYER pPlayer = _pvPlayer;
+        xmmCDPositionAdvise(pPlayer,
+                            hwnd,           // client
+                            CDM_POSITIONUPDATE);        // msg to post
+        pWinData->ulTrack = pPlayer->ulTrack;
+        pWinData->ulSeconds = pPlayer->ulSecondsInTrack;
+    }
 
     return (mrc);
 }
@@ -974,7 +989,7 @@ VOID CDPositionUpdate(HWND hwnd, MPARAM mp1, MPARAM mp2)
     HPS hps = WinGetPS(hwnd);
     gpihSwitchToRGB(hps);
 
-    if (ulTrack)
+    if (ulTrack != -1)
     {
         pWinData->ulTrack = ulTrack;
         PaintTrack(pWinData,
@@ -982,7 +997,7 @@ VOID CDPositionUpdate(HWND hwnd, MPARAM mp1, MPARAM mp2)
                    FALSE);
     }
 
-    if (ulSeconds)
+    if (ulSeconds != -1)
     {
         pWinData->ulSeconds = ulSeconds;
         PaintTime(pWinData,
@@ -1070,13 +1085,10 @@ MRESULT EXPENTRY fnwpCDPlayerClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
                 XMMCDPlayerData *somThis = XMMCDPlayerGetData(pWinData->somSelf);
                 ULONG ul;
 
-                /* if (_fPositionAdvising)
-                {
-                    xmmCDPositionAdvise(_hwndOpenView,
-                                        _usMMDeviceID,
-                                        FALSE);         // stop
-                    _fPositionAdvising = FALSE;
-                } */
+                if (_pvPlayer)
+                    xmmCDPositionAdvise(_pvPlayer,
+                                        NULLHANDLE,         // disable
+                                        0);        // msg to post
 
                 _hwndOpenView = NULLHANDLE;
 
@@ -1244,13 +1256,6 @@ HWND xmmCreateCDPlayerView(WPObject *somSelf,
                     // PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
                     // view title: we remove "~" later
                     CHAR            szIniKey[100];
-                    /* PSZ             pszViewTitle = strdup(cmnGetString(ID_XSSI_CDPLAYERVIEW)) , // pszCDPlayerView
-                                    p = NULL; */
-
-                    // subclass frame
-                    WinSetWindowPtr(hwndFrame, QWL_USER, pWinData);
-                    pWinData->pfnwpFrameOrig = WinSubclassWindow(hwndFrame,
-                                                                 fnwpCDPlayerFrame);
 
                     // add the use list item to the object's use list
                     cmnRegisterView(somSelf,
@@ -1259,29 +1264,12 @@ HWND xmmCreateCDPlayerView(WPObject *somSelf,
                                     hwndFrame,
                                     cmnGetString(ID_XSSI_CDPLAYERVIEW));
 
-                    /* pWinData->UseItem.type    = USAGE_OPENVIEW;
-                    pWinData->UseItem.pNext   = NULL;
-                    pWinData->ViewItem.view   = ulView;
-                    pWinData->ViewItem.handle = hwndFrame;
-                    if (!_wpAddToObjUseList(somSelf, &(pWinData->UseItem))) // comes before view item
-                        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                               "_wpAddToObjUseList failed.");
-
-                    // create view title: remove ~ char
-                    p = strchr(pszViewTitle, '~');
-                    if (p)
-                        // found: remove that
-                        strcpy(p, p+1);
-
-                    // register this view; I've moved this here from WM_CREATE
-                    // in cllCreateClassListView because apparently this doesn't
-                    // work right if the window has not been fully created
-                    _wpRegisterView(somSelf,
-                                    hwndFrame,
-                                    pszViewTitle); // view title
-                    free(pszViewTitle); */
-
                     _hwndOpenView = hwndClient;
+
+                    // subclass frame
+                    WinSetWindowPtr(hwndFrame, QWL_USER, pWinData);
+                    pWinData->pfnwpFrameOrig = WinSubclassWindow(hwndFrame,
+                                                                 fnwpCDPlayerFrame);
 
                     winhSetWindowFont(hwndClient,
                                       (_pszFont)

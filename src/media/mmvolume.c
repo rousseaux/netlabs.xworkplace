@@ -84,12 +84,20 @@
  *
  ********************************************************************/
 
+/*
+ *@@ VOLUMEWINDATA:
+ *
+ */
+
 typedef struct _VOLUMEWINDATA
 {
     XMMVolume           *somSelf;
     PFNWP               pfnwpFrameOriginal;
     USEITEM             UseItem;            // use item; immediately followed by view item
     VIEWITEM            ViewItem;           // view item
+
+    BOOL                fViewReady;         // FALSE while we're creating
+                                            // to prevent stupid slider WM_CONTROL
 } VOLUMEWINDATA, *PVOLUMEWINDATA;
 
 MRESULT EXPENTRY fnwpSubclVolumeFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2);
@@ -114,6 +122,8 @@ MRESULT EXPENTRY fnwpSubclVolumeFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPA
  *
  *      The volume window is a regular standard PM
  *      frame with a circular slider inside.
+ *
+ *@@changed V0.9.12 (2001-05-27) [umoeller]: this is actually working now
  */
 
 HWND xmmCreateVolumeView(WPObject *somSelf,
@@ -171,6 +181,7 @@ HWND xmmCreateVolumeView(WPObject *somSelf,
 
             if (pWinData)
             {
+                ULONG ul;
 
                 memset(pWinData, 0, sizeof(*pWinData));
 
@@ -178,27 +189,39 @@ HWND xmmCreateVolumeView(WPObject *somSelf,
 
                 WinSetWindowPtr(hwndFrame, QWL_USER, pWinData);
 
-                // set up slider more
+                // set up slider range (0-100)
                 WinSendMsg(hwndClient,
                            CSM_SETRANGE,
                            (MPARAM)0,
                            (MPARAM)100);
+                // and increment (10)
                 WinSendMsg(hwndClient,
                            CSM_SETINCREMENT,
                            (MPARAM)1,           // scoll increment
                            (MPARAM)10);         // tick marks increment
 
+                // set slider value to current master volume
+                if (!LOUSHORT(xmmQueryMasterVolume(&ul)))
+                    WinSendMsg(hwndClient,
+                               CSM_SETVALUE,
+                               (MPARAM)ul,
+                               0);
+                else
+                    ul = -1;
 
-                // subclass frame
+                // add the use list item to the object's use list
+                cmnRegisterView(somSelf,
+                                &pWinData->UseItem,
+                                ulView,
+                                hwndFrame,
+                                cmnGetString(ID_XSSI_VOLUMEVIEW));
+
+                // subclass frame again; WPS has subclassed it
+                // with cmnRegisterView
                 pWinData->pfnwpFrameOriginal = WinSubclassWindow(hwndFrame,
                                                                  fnwpSubclVolumeFrame);
                 if (pWinData->pfnwpFrameOriginal)
                 {
-                    // PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
-                    // view title: we remove "~" later
-                    /* PSZ             pszViewTitle = strdup(cmnGetString(ID_XSSI_VOLUMEVIEW)),
-                                    p = NULL; */
-
                     // now position the frame and the client:
                     // 1) frame
                     if (!winhRestoreWindowPos(hwndFrame,
@@ -216,12 +239,21 @@ HWND xmmCreateVolumeView(WPObject *somSelf,
                     // finally, show window
                     WinShowWindow(hwndFrame, TRUE);
 
-                    // add the use list item to the object's use list
-                    cmnRegisterView(somSelf,
-                                    &pWinData->UseItem,
-                                    ulView,
-                                    hwndFrame,
-                                    cmnGetString(ID_XSSI_VOLUMEVIEW));
+                    pWinData->fViewReady = TRUE;
+
+                    if (ul == -1)
+                    {
+                        // error occured:
+                        cmnMessageBoxMsg(hwndFrame,
+                                         104,       // xwp: error
+                                         218,       // master not working, closing
+                                         MB_CANCEL);
+                        WinPostMsg(hwndFrame,
+                                   WM_SYSCOMMAND,
+                                   (MPARAM)SC_CLOSE,
+                                   MPFROM2SHORT(CMDSRC_OTHER,
+                                                FALSE));
+                    }
                 }
             }
         }
@@ -236,7 +268,7 @@ HWND xmmCreateVolumeView(WPObject *somSelf,
 
 /*
  *@@ fnwpSubclVolumeFrame:
- *
+ *      window proc the "volume" frame is subclassed with.
  */
 
 MRESULT EXPENTRY fnwpSubclVolumeFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -247,6 +279,11 @@ MRESULT EXPENTRY fnwpSubclVolumeFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPA
 
     switch (msg)
     {
+        /*
+         * WM_SYSCOMMAND:
+         *
+         */
+
         case WM_SYSCOMMAND:
             switch ((ULONG)mp1)
             {
@@ -263,12 +300,39 @@ MRESULT EXPENTRY fnwpSubclVolumeFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPA
                                       INIKEY_WNDPOSXMMVOLUME);
                     WinDestroyWindow(hwndSlider);
                     WinDestroyWindow(hwndFrame);
-                break; }
+                }
+                break;
 
                 default:
                     mrc = pWinData->pfnwpFrameOriginal(hwndFrame, msg, mp1, mp2);
             }
         break;
+
+        /*
+         * WM_CONTROL:
+         *
+         */
+
+        case WM_CONTROL:
+            switch (SHORT1FROMMP(mp1))      // id
+            {
+                case FID_CLIENT:        // circular slider?
+                    switch (SHORT2FROMMP(mp1)) // usNotifyCode
+                    {
+                        case CSN_CHANGED:
+                        case CSN_TRACKING:
+                            // mp2 has new value with both
+                            xmmSetMasterVolume((ULONG)mp2);
+                        break;
+                    }
+                break;
+            }
+        break;
+
+        /*
+         * WM_DESTROY:
+         *
+         */
 
         case WM_DESTROY:
             // remove this window from the object's use list

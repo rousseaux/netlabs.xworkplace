@@ -61,6 +61,7 @@
 #define INCL_DOSEXCEPTIONS
 #define INCL_DOSERRORS
 
+#define INCL_WINWINDOWMGR
 #define INCL_WINMESSAGEMGR
 #define INCL_WINPOINTERS
 
@@ -111,12 +112,10 @@ LINKLIST    G_lstOpenDevices;
 
 extern HWND G_hwndMediaObject;      // in mmthread.c
 
-extern PXMMCDPLAYER G_pPlayer = NULL;      // points to application ptr!
-
 /* ******************************************************************
- *                                                                  *
- *   Device manager                                                 *
- *                                                                  *
+ *
+ *   Device manager
+ *
  ********************************************************************/
 
 /*
@@ -152,20 +151,25 @@ BOOL xmmLockDevicesList(VOID)
  *@@added V0.9.3 (2000-04-29) [umoeller]
  */
 
-BOOL xmmUnlockDevicesList(VOID)
+VOID xmmUnlockDevicesList(VOID)
 {
-    return (DosReleaseMutexSem(G_hmtxOpenDevices) == 0); // APIRET NO_ERROR
+    DosReleaseMutexSem(G_hmtxOpenDevices);
 }
 
 /*
  *@@ xmmOpenDevice:
  *      opens any multimedia device.
+ *
  *      If *pusDeviceID is != 0, this simply
  *      returns TRUE. Otherwise, the device is
  *      opened from the specified parameters
  *      and *pusDeviceID receives the device ID.
  *      As a result, if TRUE is returned, you can
  *      always be sure that the device is open.
+ *
+ *      If hwndNotify is specified, the device is
+ *      opened in "shared" mode, and hwndNotify will
+ *      receive MM_MCIPASSDEVICE messages.
  *
  *      Use xmmCloseDevice to close the device again.
  *
@@ -175,17 +179,19 @@ BOOL xmmUnlockDevicesList(VOID)
  *@@added V0.9.3 (2000-04-29) [umoeller]
  */
 
-BOOL xmmOpenDevice(USHORT usDeviceTypeID,   // in: MCI_DEVTYPE_* ID
-                   USHORT usDeviceIndex,    // in: device index (0 for default)
-                   PUSHORT pusDeviceID)   // in/out: MMPM/2 device ID
+ULONG xmmOpenDevice(HWND hwndNotify,
+                    USHORT usDeviceTypeID,   // in: MCI_DEVTYPE_* ID
+                    USHORT usDeviceIndex,    // in: device index (0 for default)
+                    PUSHORT pusDeviceID)   // in/out: MMPM/2 device ID
 {
-    BOOL brc = FALSE;
+    ULONG ulrc = -1;
     if (*pusDeviceID == 0)
     {
         // device not opened yet:
-        ULONG ulrc;
         MCI_OPEN_PARMS  mop;
         memset(&mop, 0, sizeof(mop));
+
+        mop.hwndCallback = hwndNotify;
 
         // set device type (MCI_OPEN_TYPE_ID):
         // low word is standard device ID,
@@ -196,8 +202,6 @@ BOOL xmmOpenDevice(USHORT usDeviceTypeID,   // in: MCI_DEVTYPE_* ID
         ulrc = G_mciSendCommand(0,  // device ID, ignored on MCI_OPEN
                                 MCI_OPEN,
                                 MCI_WAIT
-                                    // | MCI_OPEN_ELEMENT
-                                    // | MCI_READONLY
                                     | MCI_OPEN_TYPE_ID // pszDeviceType is valid
                                     | MCI_OPEN_SHAREABLE,
                                 &mop,
@@ -214,8 +218,6 @@ BOOL xmmOpenDevice(USHORT usDeviceTypeID,   // in: MCI_DEVTYPE_* ID
                               (PVOID)mop.usDeviceID);
                 xmmUnlockDevicesList();
             }
-
-            brc = TRUE;
         }
         else
         {
@@ -231,11 +233,9 @@ BOOL xmmOpenDevice(USHORT usDeviceTypeID,   // in: MCI_DEVTYPE_* ID
                              0);
         }
     }
-    else
-        // device already open:
-        brc = TRUE;
+    // else: device already open:
 
-    return (brc);
+    return (ulrc);
 }
 
 /*
@@ -246,9 +246,8 @@ BOOL xmmOpenDevice(USHORT usDeviceTypeID,   // in: MCI_DEVTYPE_* ID
  *@@added V0.9.3 (2000-04-29) [umoeller]
  */
 
-BOOL xmmCloseDevice(PUSHORT pusDeviceID)
+ULONG xmmCloseDevice(PUSHORT pusDeviceID)
 {
-    BOOL brc;
     ULONG ulrc;
     MCI_GENERIC_PARMS mgp = {0};
     ulrc = G_mciSendCommand(*pusDeviceID,
@@ -263,13 +262,12 @@ BOOL xmmCloseDevice(PUSHORT pusDeviceID)
             lstRemoveItem(&G_lstOpenDevices,
                           (PVOID)*pusDeviceID);
             xmmUnlockDevicesList();
-            brc = TRUE;
         }
 
         *pusDeviceID = 0;
     }
 
-    return brc;
+    return ulrc;
 }
 
 /*
@@ -280,6 +278,7 @@ BOOL xmmCloseDevice(PUSHORT pusDeviceID)
  *      much for exit-list cleanup, IBM.
  *
  *@@added V0.9.3 (2000-04-29) [umoeller]
+ *@@changed V0.9.12 (2001-05-27) [umoeller]: fixed crashes on exit
  */
 
 VOID xmmCleanup(VOID)
@@ -288,15 +287,20 @@ VOID xmmCleanup(VOID)
     {
         // always delete the first node, because
         // xmmCloseDevice modifies the list
-        PLISTNODE pNode;
-        while (pNode = lstQueryFirstNode(&G_lstOpenDevices))
+        PLISTNODE pNode = lstQueryFirstNode(&G_lstOpenDevices);
+        while (pNode)
         {
+            PLISTNODE pNext = pNode->pNext;
             USHORT usDeviceID = (USHORT)(pNode->pItemData);
             #ifdef __DEBUG__
                 DosBeep(1000, 100);
             #endif
             xmmCloseDevice(&usDeviceID);
-            lstRemoveNode(&G_lstOpenDevices, pNode);       // V0.9.7 (2000-12-21) [umoeller]
+            // lstRemoveNode(&G_lstOpenDevices, pNode);
+                // V0.9.7 (2000-12-21) [umoeller]
+                // V0.9.12 (2001-05-27) [umoeller]: bull, this was removed already
+
+            pNode = pNode->pNext;
         }
 
         xmmUnlockDevicesList();
@@ -304,126 +308,74 @@ VOID xmmCleanup(VOID)
 }
 
 /* ******************************************************************
- *                                                                  *
- *   Sound helpers                                                  *
- *                                                                  *
+ *
+ *   Sound helpers
+ *
  ********************************************************************/
 
 /*
- *@@ xmmOpenSound:
+ *@@ xmmOpenWaveDevice:
  *      this is called by the Media thread (xmm_fnwpMediaObject)
- *      when it receives QM_PLAYSOUND to start playing a sound.
- *      In order to store the current status of
- *      the sound device, this func needs and modifies a MMPM/2
- *      device ID. "Device" in this context means an individual
- *      sound file.
+ *      when it receives QM_PLAYSOUND to start playing a sound
+ *      and the waveform device is not yet open.
  *
- *      We also need the object window of the calling
- *      thread (which is xmm_fnwpMediaObject)
- *      to inform MMPM/2 where to post notification
- *      messages.
- *
- *      We will only attempt to open the sound file here
- *      and then return; we will _not_ yet play the sound
- *      because we will need to wait for the MM_MCIPASSDEVICE
- *      message (which will be posted to xmm_fnwpMediaObject, the Media
- *      thread object window) for checking whether the device
- *      is actually available.
+ *      Note: The device is opened "shared" and will only play
+ *      anything after hwndObject receives MM_MCIPASSDEVICE.
  *
  *@@changed V0.9.3 (2000-04-26) [umoeller]: this was in SOUND.DLL previously
+ *@@changed V0.9.12 (2001-05-27) [umoeller]: mostly rewritten to allow device reuse
  */
 
-VOID xmmOpenSound(HWND hwndObject,       // in: Media thread object wnd
-                  PUSHORT pusDeviceID,   // in/out: "device" ID (= sound file).
-                         // This is != 0 if we're already playing something
-                  PSZ pszFile)           // in: sound file to play
+ULONG xmmOpenWaveDevice(HWND hwndObject,       // in: Media thread object wnd
+                        PUSHORT pusDeviceID)   // out: waveform device ID
 {
-    ULONG           ulrc;
-    MCI_OPEN_PARMS  mop;
-    MCI_GENERIC_PARMS mgp;
+    ULONG               ulrc = 0;
+    MCI_GENERIC_PARMS   mgp;
 
-    if (*pusDeviceID)
+    if (0 == *pusDeviceID)
     {
-        // if the device ID is != 0, that means
-        // that we're already playing: abort
-        // current job and close device first
-        memset(&mgp, 0, sizeof(mgp));
-        mgp.hwndCallback = hwndObject;
-        G_mciSendCommand(*pusDeviceID,
-                         MCI_STOP,
-                         MCI_WAIT,
-                         &mgp,
-                         0);
-        G_mciSendCommand(*pusDeviceID,
-                         MCI_CLOSE,
-                         MCI_WAIT,
-                         &mgp,
-                         0);
-        #ifdef DEBUG_SOUNDS
-            _Pmpf(("SOUND.DLL: Stopped old sound"));
-        #endif
-    }
-
-    #ifdef DEBUG_SOUNDS
-        _Pmpf(("SOUND.DLL: Opening sound file"));
-    #endif
-
-    // open new device
-    memset(&mop, 0, sizeof(mop));
-    mop.hwndCallback = hwndObject;       // callback hwnd
-    // mop.usDeviceID = 0;                  // we don't have one yet
-    // mop.pszDeviceType = NULL;            // using default device type
-    mop.pszElementName = pszFile;        // file name to open
-
-    // now we open the file; note the flags:
-    // --  MCI_READONLY is important for two reasons:
-    //     1)   otherwise, if the file doesn't exist, MMPM/2
-    //          will create a temporary file for writing into,
-    //          which costs too much time;
-    //     2)   if opening fails, the file would be blocked for
-    //          the rest of this session.
-    // --  MCI_OPEN_SHAREABLE allows us to share the device
-    //     with other applications and get MM_MCIPASSDEVICE msgs.
-    // From now on, the sound file will be our "device".
-    ulrc = G_mciSendCommand(0,
-                            MCI_OPEN,
-                            MCI_WAIT | MCI_OPEN_ELEMENT | MCI_READONLY | MCI_OPEN_SHAREABLE,
-                            &mop,
-                            0);                              // No user parm
-
-    if (LOUSHORT(ulrc) == MCIERR_SUCCESS)
-    {
-        // successful: go on
-        *pusDeviceID = mop.usDeviceID;     // remember device ID
+        // no device yet:
+        // open one then
 
         #ifdef DEBUG_SOUNDS
-            _Pmpf(("  SOUND.DLL: Device opened"));
+            _Pmpf((__FUNCTION__ ": Opening new device"));
         #endif
+
+        // now we open the default sound device;
+        // note, we DO NOT CLOSE the device any more,
+        // this is too slow. Instead, we keep loading
+        // files into the default sound device.
+        // V0.9.12 (2001-05-27) [umoeller]
+        ulrc = xmmOpenDevice(hwndObject,
+                             MCI_DEVTYPE_WAVEFORM_AUDIO,   // in: MCI_DEVTYPE_* ID
+                             0,             // in: device index (0 for default)
+                             pusDeviceID);   // in/out: MMPM/2 device ID
+        _Pmpf((__FUNCTION__ ": xmmOpenDevice returned 0x%lX", ulrc));
     }
     else
     {
-        // no success:
-        // we need to close the device again then, because
-        // otherwise we won't be able to play that sound again
-        // (remember: "device" is the sound file here)
+        // --  if the device ID was != 0, we could already
+        //     be playing something... so send MCI_STOP first
         memset(&mgp, 0, sizeof(mgp));
-        mgp.hwndCallback = hwndObject;
-        G_mciSendCommand(mop.usDeviceID,
-                         MCI_CLOSE,
-                         MCI_WAIT,
-                         &mgp,
-                         0);
+        ulrc = G_mciSendCommand(*pusDeviceID,
+                                MCI_STOP,
+                                MCI_WAIT,
+                                &mgp,
+                                0);
         #ifdef DEBUG_SOUNDS
-        {
-            CHAR szError[1000];
-            mciGetErrorString(ulrc, szError, sizeof(szError));
-            _Pmpf(("  DeviceID %d has error %d (\"%s\")",
-                   mop.usDeviceID, ulrc, szError));
-        }
+            _Pmpf((__FUNCTION__ ": MCI_STOP returned 0x%lX", ulrc));
         #endif
 
-        *pusDeviceID = 0;
+        // go acquire the device
+        mgp.hwndCallback = hwndObject;
+        ulrc = G_mciSendCommand(*pusDeviceID,
+                                MCI_ACQUIREDEVICE,
+                                MCI_NOTIFY,
+                                &mgp,
+                                0);
     }
+
+    return (ulrc);
 }
 
 /*
@@ -436,34 +388,52 @@ VOID xmmOpenSound(HWND hwndObject,       // in: Media thread object wnd
  *@@changed V0.9.3 (2000-04-26) [umoeller]: this was in SOUND.DLL previously
  */
 
-VOID xmmPlaySound(HWND hwndObject,     // in: Media thread object wnd
-                  PUSHORT pusDeviceID, // in: "device" ID (= sound file)
-                  ULONG ulVolume)      // in: volume for sound (0-100)
+ULONG xmmPlaySound(HWND hwndObject,     // in: Media thread object wnd
+                   PUSHORT pusDeviceID, // in: "device" ID (= sound file)
+                   const char *pcszFile,
+                   ULONG ulVolume)      // in: volume for sound (0-100)
 {
+    ULONG ulrc;
     MCI_PLAY_PARMS  mpp;
     MCI_SET_PARMS   msp;
 
-    #ifdef DEBUG_SOUNDS
-        _Pmpf(("  SOUND.DLL: Playing sound"));
-    #endif
+    // load the new sound file
+    MCI_LOAD_PARMS mlp;
+    memset(&mlp, 0, sizeof(mlp));
+    mlp.pszElementName = (PSZ)pcszFile;
+    ulrc = G_mciSendCommand(*pusDeviceID,
+                            MCI_LOAD,
+                            MCI_WAIT | MCI_OPEN_ELEMENT | MCI_READONLY,
+                            &mlp,
+                            0);
+    _Pmpf((__FUNCTION__ ": MCI_LOAD returned 0X%LX", ulrc));
 
-    // set the volume for this sound
-    msp.ulLevel = ulVolume;
-    msp.ulAudio = MCI_SET_AUDIO_ALL;
-    G_mciSendCommand(*pusDeviceID,
-                     MCI_SET,
-                     MCI_WAIT | MCI_SET_AUDIO |
-                     MCI_SET_VOLUME,
-                     &msp, 0);
+    if (LOUSHORT(ulrc) == MCIERR_SUCCESS)
+    {
+        // set the volume for this sound
+        msp.ulLevel = ulVolume;
+        msp.ulAudio = MCI_SET_AUDIO_ALL;
+        ulrc = G_mciSendCommand(*pusDeviceID,
+                                MCI_SET,
+                                MCI_WAIT | MCI_SET_AUDIO | MCI_SET_VOLUME,
+                                &msp, 0);
+        _Pmpf((__FUNCTION__ ": MCI_SET returned 0x%lX", ulrc));
+        if (LOUSHORT(ulrc) == MCIERR_SUCCESS)
+        {
+            // play and request MM_MCINOTIFY msg to
+            // the Media thread object window
+            mpp.hwndCallback = (HWND)hwndObject;
+            mpp.ulFrom = 0;
+            ulrc = G_mciSendCommand(*pusDeviceID,
+                                    MCI_PLAY,
+                                    MCI_FROM | MCI_NOTIFY,
+                                    (PVOID)&mpp,
+                                    0);
+            _Pmpf((__FUNCTION__ ": MCI_PLAY returned 0x%lX", ulrc));
+        }
+    }
 
-    // play and request MM_MCINOTIFY msg to
-    // the Media thread object window
-    mpp.hwndCallback = (HWND)hwndObject;
-    G_mciSendCommand(*pusDeviceID,
-                     MCI_PLAY,
-                     MCI_NOTIFY,
-                     (PVOID)&mpp,
-                     0);
+    return (ulrc);
 }
 
 /*
@@ -478,77 +448,156 @@ VOID xmmPlaySound(HWND hwndObject,     // in: Media thread object wnd
  *          device for playing, i.e. upon receiving
  *          MM_MCIPASSDEVICE with MCI_LOSING_USE set.
  *
- *      In both situations, we need to close our
- *      device.
+ *      In both situations, we need to stop playing.
  *
  *@@changed V0.9.3 (2000-04-26) [umoeller]: this was in SOUND.DLL previously
+ *@@changed V0.9.12 (2001-05-27) [umoeller]: no longer closing device
  */
 
-VOID xmmStopSound(PUSHORT pusDeviceID)
+ULONG xmmStopSound(PUSHORT pusDeviceID)
 {
+    ULONG ulrc;
     MCI_GENERIC_PARMS mgp;
     // stop playing the sound (this will probably do
     // nothing if the sound is already done with)
     memset(&mgp, 0, sizeof(mgp));
-    G_mciSendCommand(*pusDeviceID,
-                     MCI_STOP,
-                     MCI_WAIT,
-                     &mgp,
-                     0);
-    // close the device
-    memset(&mgp, 0, sizeof(mgp));
-    G_mciSendCommand(*pusDeviceID,
-                     MCI_CLOSE,
-                     MCI_WAIT,
-                     &mgp,
-                     0);
-    // set the Media thread's device ID to 0 so
-    // we know that we're not currently playing
-    // anything
-    *pusDeviceID = 0;
+    ulrc = G_mciSendCommand(*pusDeviceID,
+                            MCI_STOP,
+                            MCI_WAIT,
+                            &mgp,
+                            0);
+    _Pmpf((__FUNCTION__ ": MCI_STOP returned 0x%lX", ulrc));
+
+    return (ulrc);
 }
 
 /* ******************************************************************
- *                                                                  *
- *   CD player helpers                                              *
- *                                                                  *
+ *
+ *   CD player helpers
+ *
  ********************************************************************/
+
+/*
+ *@@ fnwpCDPlayerObject:
+ *      private object window for position advise.
+ *
+ *@@added V0.9.12 (2001-05-27) [umoeller]
+ */
+
+MRESULT EXPENTRY fnwpCDPlayerObject(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
+{
+    MRESULT mrc = 0;
+
+    switch (msg)
+    {
+        /*
+         * MM_MCIPOSITIONCHANGE:
+         *
+         */
+
+        case MM_MCIPOSITIONCHANGE:
+        {
+            if (xmmLockDevicesList())
+            {
+                PXMMCDPLAYER pPlayer = (PXMMCDPLAYER)WinQueryWindowPtr(hwnd, QWL_USER);
+                if (pPlayer)
+                {
+                    USHORT  usDeviceID = SHORT2FROMMP(mp1);
+
+                    if (    (usDeviceID == pPlayer->usDeviceID)
+                         && (pPlayer->hwndNotify)
+                       )
+                    {
+                        ULONG   ulMMTime = (ULONG)mp2;
+
+                        ULONG   ulSeconds;
+                        ULONG   ulTrack = xmmCDCalcTrack(pPlayer,
+                                                         ulMMTime,
+                                                         &ulSeconds);
+                        MPARAM  mp1Post = (MPARAM)-1,
+                                mp2Post = (MPARAM)-1;
+                        if (ulTrack != pPlayer->ulTrack)
+                        {
+                            pPlayer->ulTrack = ulTrack;
+                            mp1Post = (MPARAM)ulTrack;
+                        }
+                        if (ulSeconds != pPlayer->ulSecondsInTrack)
+                        {
+                            pPlayer->ulSecondsInTrack = ulSeconds;
+                            mp2Post = (MPARAM)ulSeconds;
+                        }
+
+                        WinPostMsg(pPlayer->hwndNotify,
+                                   pPlayer->ulNotifyMsg,
+                                   mp1Post,
+                                   mp2Post);
+                    }
+                }
+                xmmUnlockDevicesList();
+            } // end if (xmmLockDevicesList())
+        }
+        break;
+
+        default:
+            mrc = WinDefWindowProc(hwnd, msg, mp1, mp2);
+    }
+
+    return (mrc);
+}
 
 /*
  *@@ xmmCDOpenDevice:
  *      opens the CD device by calling xmmOpenDevice
  *      and prepares it for playing.
  *
- *      This expects a static XMMCDPLAYER structure
- *      which should better be valid at all times
- *      because the XWP media thread will also
- *      access it to update status information.
- *
- *      Use xmmCDCloseDevice to close the device
- *      again.
+ *      This creates a new XMMCDPLAYER structure in
+ *      *ppPlayer which should be closed using
+ *      xmmCDCloseDevice when done.
  *
  *@@added V0.9.3 (2000-04-25) [umoeller]
+ *@@changed V0.9.12 (2001-05-27) [umoeller]: now returning MMPM2 error code
+ *@@changed V0.9.12 (2001-05-27) [umoeller]: fixed too many things to count
  */
 
-BOOL xmmCDOpenDevice(PXMMCDPLAYER pPlayer,
-                     ULONG ulDeviceIndex)       // 0 for default
+ULONG xmmCDOpenDevice(PXMMCDPLAYER *ppPlayer,
+                      ULONG ulDeviceIndex)       // 0 for default
 {
-    BOOL brc = FALSE;
-    if (xmmLockDevicesList())
+    ULONG ulrc = 0;
+    if (ppPlayer)
     {
+        PXMMCDPLAYER pPlayer = malloc(sizeof(*pPlayer));
         if (pPlayer)
         {
-            brc = xmmOpenDevice(MCI_DEVTYPE_CD_AUDIO,
-                                ulDeviceIndex,
-                                &pPlayer->usDeviceID);
-            if (brc)
-                G_pPlayer = pPlayer;
-        }
+            memset(pPlayer, 0, sizeof(*pPlayer));
 
-        xmmUnlockDevicesList();
+            ulrc = xmmOpenDevice(NULLHANDLE,        // no notify
+                                 MCI_DEVTYPE_CD_AUDIO,
+                                 ulDeviceIndex,
+                                 &pPlayer->usDeviceID);
+            _Pmpf((__FUNCTION__ ": xmmOpenDevice returned 0x%lX, ID is 0x%lX",
+                                    ulrc,
+                                    pPlayer->usDeviceID));
+
+            if (LOUSHORT(ulrc) == MCIERR_SUCCESS)
+            {
+                // create our private object window
+                pPlayer->hwndObject = winhCreateObjectWindow(WC_STATIC,
+                                                             NULL);
+                WinSetWindowPtr(pPlayer->hwndObject,
+                                QWL_USER,
+                                pPlayer);
+                WinSubclassWindow(pPlayer->hwndObject,
+                                  fnwpCDPlayerObject);
+
+                // give caller the new player
+                *ppPlayer = pPlayer;
+            }
+            else
+                free(pPlayer);
+        }
     }
 
-    return (brc);
+    return (ulrc);
 }
 
 /*
@@ -556,26 +605,42 @@ BOOL xmmCDOpenDevice(PXMMCDPLAYER pPlayer,
  *      closes the CD player again.
  *
  *@@added V0.9.7 (2000-12-21) [umoeller]
+ *@@changed V0.9.12 (2001-05-27) [umoeller]: now returning MMPM2 error code
+ *@@changed V0.9.12 (2001-05-27) [umoeller]: fixed too many things to count
  */
 
-VOID xmmCDCloseDevice(PXMMCDPLAYER pPlayer)
+ULONG xmmCDCloseDevice(PXMMCDPLAYER *ppPlayer)
 {
-    if (xmmLockDevicesList())
+    ULONG ulrc = -1;
+    if (ppPlayer)
     {
-        if (pPlayer)
+        PXMMCDPLAYER pPlayer;
+        if (pPlayer = *ppPlayer)
         {
-            xmmCloseDevice(&pPlayer->usDeviceID);
+            ulrc = xmmCloseDevice(&pPlayer->usDeviceID);
+
+            _Pmpf((__FUNCTION__ ": xmmCloseDevice returned 0x%lX", ulrc));
+
+            if (pPlayer->hwndNotify && pPlayer->ulNotifyMsg)
+                WinPostMsg(pPlayer->hwndNotify,
+                           pPlayer->ulNotifyMsg,
+                           0,
+                           0);
 
             if (pPlayer->aTocEntries)
                 free(pPlayer->aTocEntries);
             pPlayer->aTocEntries = NULL;
             pPlayer->cTocEntries = 0;
+
+            if (pPlayer->hwndObject)
+                WinDestroyWindow(pPlayer->hwndObject);
+
+            free(pPlayer);
+            *ppPlayer = NULL;
         }
-
-        G_pPlayer = NULL;
-
-        xmmUnlockDevicesList();
     }
+
+    return (ulrc);
 }
 
 /*
@@ -601,12 +666,13 @@ VOID xmmCDCloseDevice(PXMMCDPLAYER pPlayer)
  +      typedef MCI_TOC_REC *PTOCREC;
  *
  *@@added V0.9.7 (2000-12-20) [umoeller]
+ *@@changed V0.9.12 (2001-05-27) [umoeller]: now returning MMPM2 error code
+ *@@changed V0.9.12 (2001-05-27) [umoeller]: fixed too many things to count
  */
 
-BOOL xmmCDGetTOC(PXMMCDPLAYER pPlayer)
+ULONG xmmCDGetTOC(PXMMCDPLAYER pPlayer)
 {
-    BOOL brc = FALSE;
-    ULONG ulrc = 0;
+    ULONG ulrc = -1;
 
     if (xmmLockDevicesList())
     {
@@ -630,6 +696,9 @@ BOOL xmmCDGetTOC(PXMMCDPLAYER pPlayer)
                                         | MCI_STATUS_ITEM, // msp.ulItem is valid
                                     &msp,
                                     0);                              // No user parm
+
+            _Pmpf((__FUNCTION__ ": MCI_STATUS returned 0x%lX", ulrc));
+
             if (LOUSHORT(ulrc) == MCIERR_SUCCESS)
             {
                 pPlayer->cTracks = LOUSHORT(msp.ulReturn);
@@ -652,7 +721,6 @@ BOOL xmmCDGetTOC(PXMMCDPLAYER pPlayer)
                     {
                         pPlayer->aTocEntries = mtp.pBuf;
                         pPlayer->cTocEntries = mtp.ulBufSize / sizeof(MCI_TOC_REC);
-                        brc = TRUE;
                     }
                     else
                     {
@@ -676,7 +744,7 @@ BOOL xmmCDGetTOC(PXMMCDPLAYER pPlayer)
         xmmUnlockDevicesList();
     }
 
-    return (brc);
+    return (ulrc);
 }
 
 /*
@@ -715,6 +783,9 @@ ULONG xmmCDQueryStatus(USHORT usDeviceID)
                                         | MCI_STATUS_ITEM, // msp.ulItem is valid
                                     &msp,
                                     0);                              // No user parm
+
+            _Pmpf((__FUNCTION__ ": MCI_STATUS returned 0x%lX", ulrc));
+
             if (LOUSHORT(ulrc) == MCIERR_SUCCESS)
                 ulReturn = LOUSHORT(msp.ulReturn);
             else
@@ -740,6 +811,7 @@ ULONG xmmCDQueryStatus(USHORT usDeviceID)
  *      Returns 0 on errors.
  *
  *@@added V0.9.3 (2000-04-25) [umoeller]
+ *@@changed V0.9.12 (2001-05-27) [umoeller]: now returning MMPM2 error code
  */
 
 ULONG xmmCDQueryCurrentTrack(USHORT usDeviceID)
@@ -761,6 +833,9 @@ ULONG xmmCDQueryCurrentTrack(USHORT usDeviceID)
                                         | MCI_STATUS_ITEM, // msp.ulItem is valid
                                     &msp,
                                     0);                              // No user parm
+
+            _Pmpf((__FUNCTION__ ": MCI_STATUS returned 0x%lX", ulrc));
+
             if (LOUSHORT(ulrc) == MCIERR_SUCCESS)
                 ulReturn = LOUSHORT(msp.ulReturn);
             else
@@ -784,14 +859,15 @@ ULONG xmmCDQueryCurrentTrack(USHORT usDeviceID)
  *      nothing and returns FALSE.
  *
  *@@added V0.9.3 (2000-04-27) [umoeller]
+ *@@changed V0.9.12 (2001-05-27) [umoeller]: now returning MMPM2 error code
+ *@@changed V0.9.12 (2001-05-27) [umoeller]: fixed too many things to count
  */
 
-BOOL xmmCDPlay(PXMMCDPLAYER pPlayer,
-               BOOL fShowWaitPointer)
+ULONG xmmCDPlay(PXMMCDPLAYER pPlayer,
+                BOOL fShowWaitPointer)
 {
-    BOOL brc = FALSE;
-
-    HPOINTER hptrOld = NULLHANDLE;
+    ULONG       ulrc = -1;
+    HPOINTER    hptrOld = NULLHANDLE;
     if (fShowWaitPointer)
         hptrOld = winhSetWaitPointer();
 
@@ -799,10 +875,7 @@ BOOL xmmCDPlay(PXMMCDPLAYER pPlayer,
     {
         if ((pPlayer) && (pPlayer->usDeviceID))
         {
-            ULONG ulrc = -1;
-
-            ULONG ulNewStatus = 0,
-                  ulNewTrack = 0;
+            ULONG ulNewTrack = 0;
 
             if (    (pPlayer->ulStatus != MCI_MODE_PAUSE)
                  && (pPlayer->ulStatus != MCI_MODE_PLAY)
@@ -810,10 +883,12 @@ BOOL xmmCDPlay(PXMMCDPLAYER pPlayer,
             {
                 // device stopped:
                 // start at beginning
-                brc = xmmCDPlayTrack(pPlayer,
-                                     1,
-                                     fShowWaitPointer);
-                                  // this also gets the TOC
+                ulrc = xmmCDPlayTrack(pPlayer,
+                                      1,
+                                      fShowWaitPointer);
+                                   // this also gets the TOC
+
+                _Pmpf((__FUNCTION__ ": xmmCDPlayTrack returned 0x%lX", ulrc));
 
                 /* MCI_PLAY_PARMS mpp = {0};
                 ULONG fl = 0;
@@ -831,18 +906,18 @@ BOOL xmmCDPlay(PXMMCDPLAYER pPlayer,
                 // device paused:
                 // resume
                 MCI_GENERIC_PARMS mgp = {0};
-                mgp.hwndCallback = G_hwndMediaObject;
+                mgp.hwndCallback = pPlayer->hwndObject;
                 ulrc = G_mciSendCommand(pPlayer->usDeviceID,
                                         MCI_RESUME,
                                         MCI_WAIT,
                                         &mgp,
                                         0);
-                ulNewStatus = MCI_MODE_PLAY;
+
+                _Pmpf((__FUNCTION__ ": MCI_RESUME returned 0x%lX", ulrc));
 
                 if (LOUSHORT(ulrc) == MCIERR_SUCCESS)
                 {
-                    pPlayer->ulStatus = ulNewStatus;
-                    brc = TRUE;
+                    pPlayer->ulStatus = MCI_MODE_PLAY;
                 }
                 else
                 {
@@ -859,7 +934,7 @@ BOOL xmmCDPlay(PXMMCDPLAYER pPlayer,
     if (hptrOld)
         WinSetPointer(HWND_DESKTOP, hptrOld);
 
-    return (brc);
+    return (ulrc);
 }
 
 /*
@@ -867,14 +942,16 @@ BOOL xmmCDPlay(PXMMCDPLAYER pPlayer,
  *      starts playing at the specified track.
  *
  *@@added V0.9.3 (2000-04-25) [umoeller]
+ *@@changed V0.9.12 (2001-05-27) [umoeller]: now returning MMPM2 error code
+ *@@changed V0.9.12 (2001-05-27) [umoeller]: fixed too many things to count
  */
 
-BOOL xmmCDPlayTrack(PXMMCDPLAYER pPlayer,
-                    USHORT usTrack,
-                    BOOL fShowWaitPointer)
+ULONG xmmCDPlayTrack(PXMMCDPLAYER pPlayer,
+                     USHORT usTrack,
+                     BOOL fShowWaitPointer)
 {
-    BOOL brc = FALSE;
-    HPOINTER hptrOld = NULLHANDLE;
+    ULONG       ulrc = -1;
+    HPOINTER    hptrOld = NULLHANDLE;
     if (fShowWaitPointer)
         hptrOld = winhSetWaitPointer();
 
@@ -882,13 +959,12 @@ BOOL xmmCDPlayTrack(PXMMCDPLAYER pPlayer,
     {
         if ((pPlayer) && (pPlayer->usDeviceID))
         {
-            ULONG ulrc = 0;
-
             if (pPlayer->aTocEntries == 0)
             {
                 // ain't got no toc yet:
                 // go get it
-                xmmCDGetTOC(pPlayer);
+                ulrc = xmmCDGetTOC(pPlayer);
+                _Pmpf((__FUNCTION__ ": xmmCDGetTOC returned 0x%lX", ulrc));
             }
 
             if (pPlayer->aTocEntries)
@@ -902,6 +978,8 @@ BOOL xmmCDPlayTrack(PXMMCDPLAYER pPlayer,
                                             | MCI_SET_TIME_FORMAT,
                                         &msetp,
                                         0);
+
+                _Pmpf((__FUNCTION__ ": MCI_SET returned 0x%lX", ulrc));
 
                 if (LOUSHORT(ulrc) == MCIERR_SUCCESS)
                 {
@@ -924,13 +1002,12 @@ BOOL xmmCDPlayTrack(PXMMCDPLAYER pPlayer,
                                             &mpp,
                                             0);
 
-                    _Pmpf(("NEXTTRACK MCI_SEEK ulrc: 0x%lX", ulrc));
+                    _Pmpf((__FUNCTION__ ": MCI_PLAY from returned 0x%lX", ulrc));
 
                     if (LOUSHORT(ulrc) == MCIERR_SUCCESS)
                     {
                         pPlayer->ulStatus = MCI_MODE_PLAY;
                         pPlayer->usCurrentTrack = usTrack;
-                        brc = TRUE;
                     }
                     else
                     {
@@ -955,7 +1032,7 @@ BOOL xmmCDPlayTrack(PXMMCDPLAYER pPlayer,
     if (hptrOld)
         WinSetPointer(HWND_DESKTOP, hptrOld);
 
-    return (brc);
+    return (ulrc);
 }
 
 /*
@@ -1013,19 +1090,21 @@ ULONG xmmCDCalcTrack(PXMMCDPLAYER pPlayer,
  *      If hwndNotify is NULLHANDLE, notifiations are stopped.
  *
  *@@added V0.9.7 (2000-12-20) [umoeller]
+ *@@changed V0.9.12 (2001-05-27) [umoeller]: now returning MMPM2 error code
+ *@@changed V0.9.12 (2001-05-27) [umoeller]: added private object window for notify
  */
 
-BOOL xmmCDPositionAdvise(PXMMCDPLAYER pPlayer,
-                         HWND hwndNotify,
-                         ULONG ulNotifyMsg)
+ULONG xmmCDPositionAdvise(PXMMCDPLAYER pPlayer,
+                          HWND hwndNotify,
+                          ULONG ulNotifyMsg)
 {
-    BOOL brc = FALSE;
+    ULONG ulrc = -1,
+          fl = MCI_WAIT;
+
     if (xmmLockDevicesList())
     {
         if ((pPlayer) && (pPlayer->usDeviceID))
         {
-            ULONG ulrc = 0,
-                  fl = MCI_WAIT;
             MCI_POSITION_PARMS mpp = {0};
             MCI_SET_PARMS msetp = {0};
 
@@ -1041,7 +1120,7 @@ BOOL xmmCDPositionAdvise(PXMMCDPLAYER pPlayer,
                                     &msetp,
                                     0);
 
-            mpp.hwndCallback = G_hwndMediaObject;
+            mpp.hwndCallback = pPlayer->hwndObject;
             mpp.ulUnits = MSECTOMM(200);
 
             if (hwndNotify)
@@ -1073,7 +1152,7 @@ BOOL xmmCDPositionAdvise(PXMMCDPLAYER pPlayer,
         xmmUnlockDevicesList();
     }
 
-    return (brc);
+    return (ulrc);
 }
 
 /*
@@ -1082,66 +1161,65 @@ BOOL xmmCDPositionAdvise(PXMMCDPLAYER pPlayer,
  *      playing.
  *
  *@@added V0.9.3 (2000-04-27) [umoeller]
+ *@@changed V0.9.12 (2001-05-27) [umoeller]: now returning MMPM2 error code
+ *@@changed V0.9.12 (2001-05-27) [umoeller]: status update was missing, fixed
  */
 
-BOOL xmmCDPause(PXMMCDPLAYER pPlayer)
+ULONG xmmCDPause(PXMMCDPLAYER pPlayer)
 {
-    BOOL brc = FALSE;
-
+    ULONG ulrc = -1;
     if (xmmLockDevicesList())
     {
         if ((pPlayer) && (pPlayer->usDeviceID))
         {
-            ULONG ulrc;
             MCI_GENERIC_PARMS mgp = {0};
-            mgp.hwndCallback = G_hwndMediaObject;
+            mgp.hwndCallback = pPlayer->hwndObject;
             ulrc = G_mciSendCommand(pPlayer->usDeviceID,
                                     MCI_PAUSE,
                                     MCI_WAIT,
                                     &mgp,
                                     0);
+            _Pmpf((__FUNCTION__ ": MCI_PAUSE returned 0x%lX", ulrc));
+
             if (LOUSHORT(ulrc) == MCIERR_SUCCESS)
-                brc = TRUE;
+                pPlayer->ulStatus = MCI_MODE_PAUSE;
         }
         xmmUnlockDevicesList();
     }
 
-    return (brc);
+    return (ulrc);
 }
 
 /*
  *@@ xmmCDStop:
- *      stops the CD playing and closes the device
- *      by calling xmmCDCloseDevice.
+ *      stops the CD playing and closes the
+ *      device by calling xmmCDCloseDevice.
  *
  *@@added V0.9.7 (2000-12-20) [umoeller]
+ *@@changed V0.9.12 (2001-05-27) [umoeller]: now returning MMPM2 error code
+ *@@changed V0.9.12 (2001-05-27) [umoeller]: now setting ppPlayer to NULL, changed prototype
  */
 
-BOOL xmmCDStop(PXMMCDPLAYER pPlayer)
+ULONG xmmCDStop(PXMMCDPLAYER *ppPlayer)
 {
-    BOOL brc = FALSE;
-
+    ULONG ulrc = -1;
     if (xmmLockDevicesList())
     {
-        if (pPlayer)
+        PXMMCDPLAYER pPlayer;
+        if (pPlayer = *ppPlayer)
         {
             if (pPlayer->usDeviceID)
             {
-                xmmCDPositionAdvise(pPlayer, NULLHANDLE, 0);
-
                 if (xmmCDQueryStatus(pPlayer->usDeviceID) == MCI_MODE_PLAY)
                 {
                     MCI_GENERIC_PARMS mgp = {0};
-                    ULONG ulrc;
-                    mgp.hwndCallback = G_hwndMediaObject;
+                    mgp.hwndCallback = pPlayer->hwndObject;
                     ulrc = G_mciSendCommand(pPlayer->usDeviceID,
                                             MCI_STOP,
                                             MCI_WAIT,
                                             &mgp,
                                             0);
-                    if (LOUSHORT(ulrc) == MCIERR_SUCCESS)
-                        brc = TRUE;
-                    else
+                    if (LOUSHORT(ulrc) != MCIERR_SUCCESS)
                     {
                         CHAR szError[1000];
                         G_mciGetErrorString(ulrc, szError, sizeof(szError));
@@ -1151,12 +1229,12 @@ BOOL xmmCDStop(PXMMCDPLAYER pPlayer)
                 }
             }
 
-            xmmCDCloseDevice(pPlayer);
+            xmmCDCloseDevice(ppPlayer);     // sets *ppPlayer to NULL
         }
         xmmUnlockDevicesList();
     }
 
-    return (brc);
+    return (ulrc);
 }
 
 /*
@@ -1165,30 +1243,28 @@ BOOL xmmCDStop(PXMMCDPLAYER pPlayer)
  *      by calling xmmCDCloseDevice.
  *
  *@@added V0.9.7 (2000-12-20) [umoeller]
+ *@@changed V0.9.12 (2001-05-27) [umoeller]: now returning MMPM2 error code
+ *@@changed V0.9.12 (2001-05-27) [umoeller]: now setting ppPlayer to NULL, changed prototype
  */
 
-BOOL xmmCDEject(PXMMCDPLAYER pPlayer)
+ULONG xmmCDEject(PXMMCDPLAYER *ppPlayer)
 {
-    BOOL brc = FALSE;
-
+    ULONG ulrc = -1;
     if (xmmLockDevicesList())
     {
-        if (pPlayer)
+        PXMMCDPLAYER pPlayer;
+        if (pPlayer = *ppPlayer)
         {
             if (pPlayer->usDeviceID)
             {
-                ULONG ulrc;
                 MCI_SET_PARMS msetp = {0};
-                xmmCDPositionAdvise(pPlayer, NULLHANDLE, 0);
 
                 ulrc = G_mciSendCommand(pPlayer->usDeviceID,
                                         MCI_SET,
                                         MCI_SET_DOOR_OPEN,
                                         &msetp,
                                         0);
-                if (LOUSHORT(ulrc) == MCIERR_SUCCESS)
-                    brc = TRUE;
-                else
+                if (LOUSHORT(ulrc) != MCIERR_SUCCESS)
                 {
                     CHAR szError[1000];
                     G_mciGetErrorString(ulrc, szError, sizeof(szError));
@@ -1197,18 +1273,78 @@ BOOL xmmCDEject(PXMMCDPLAYER pPlayer)
                 }
             }
 
-            xmmCDCloseDevice(pPlayer);
+            xmmCDCloseDevice(ppPlayer); // sets *ppPlayer to NULL
         }
         xmmUnlockDevicesList();
     }
 
-    return (brc);
+    return (ulrc);
 }
 
 /* ******************************************************************
- *                                                                  *
- *   MMPM/2 configuration queries                                   *
- *                                                                  *
+ *
+ *   Master volume helpers
+ *
+ ********************************************************************/
+
+/*
+ *@@ xmmQueryMasterVolume:
+ *      returns the current master volume setting,
+ *      which is a percentage in the range of 0 to 100.
+ *
+ *@@added V0.9.12 (2001-05-27) [umoeller]
+ */
+
+ULONG xmmQueryMasterVolume(PULONG pulVolume)
+{
+    ULONG ulrc = -1;
+
+    MCI_MASTERAUDIO_PARMS mvp;
+    memset(&mvp, 0, sizeof(mvp));
+
+    ulrc = G_mciSendCommand(0,              // device ID for master audio!
+                            MCI_MASTERAUDIO,
+                            MCI_MASTERVOL | MCI_QUERYCURRENTSETTING | MCI_WAIT,
+                            &mvp,
+                            0);
+    _Pmpf((__FUNCTION__ ": MCI_MASTERAUDIO returned 0x%lX", ulrc));
+
+    if (LOUSHORT(ulrc) == MCIERR_SUCCESS)
+        *pulVolume = mvp.ulReturn;
+
+    return (ulrc);
+}
+
+/*
+ *@@ xmmSetMasterVolume:
+ *      sets a new master volume value, which must
+ *      be in the range of 0 to 100.
+ *
+ *@@added V0.9.12 (2001-05-27) [umoeller]
+ */
+
+ULONG xmmSetMasterVolume(ULONG ulVolume)
+{
+    ULONG ulrc = -1;
+
+    MCI_MASTERAUDIO_PARMS mvp;
+    memset(&mvp, 0, sizeof(mvp));
+
+    mvp.ulMasterVolume = ulVolume;
+
+    ulrc = G_mciSendCommand(0,              // device ID for master audio!
+                            MCI_MASTERAUDIO,
+                            MCI_MASTERVOL | MCI_WAIT,
+                            &mvp,
+                            0);
+
+    return (ulrc);
+}
+
+/* ******************************************************************
+ *
+ *   MMPM/2 configuration queries
+ *
  ********************************************************************/
 
 /* typedef struct _DEVICETYPE
@@ -1400,9 +1536,11 @@ PXMMDEVICE xmmQueryDevices(PULONG pcDevices)
         {
             USHORT  usDeviceID = 0;
 
-            if (xmmOpenDevice(aulDeviceTypes[ulDevTypeThis],    // device type
-                              ulCurrentDeviceIndex,
-                              &usDeviceID))
+            ulrc = xmmOpenDevice(NULLHANDLE,        // no notify
+                                 aulDeviceTypes[ulDevTypeThis],    // device type
+                                 ulCurrentDeviceIndex,
+                                 &usDeviceID);
+            if (LOUSHORT(ulrc) == MCIERR_SUCCESS)
             {
                 // get info
                 MCI_INFO_PARMS minfop = {0};

@@ -130,13 +130,14 @@
 
     BOOL xmmLockDevicesList(VOID);
 
-    BOOL xmmUnlockDevicesList(VOID);
+    VOID xmmUnlockDevicesList(VOID);
 
-    BOOL xmmOpenDevice(USHORT usDeviceTypeID,
-                       USHORT usDeviceIndex,
-                       PUSHORT pusDeviceID);
+    ULONG xmmOpenDevice(HWND hwndNotify,
+                        USHORT usDeviceTypeID,
+                        USHORT usDeviceIndex,
+                        PUSHORT pusDeviceID);
 
-    BOOL xmmCloseDevice(PUSHORT pusDeviceID);
+    ULONG xmmCloseDevice(PUSHORT pusDeviceID);
 
     VOID xmmCleanup(VOID);
 
@@ -146,15 +147,15 @@
      *
      ********************************************************************/
 
-    VOID xmmOpenSound(HWND hwndObject,
-                      PUSHORT pusDeviceID,
-                      PSZ pszFile);
+    ULONG xmmOpenWaveDevice(HWND hwndObject,
+                            PUSHORT pusDeviceID);
 
-    VOID xmmPlaySound(HWND hwndObject,
-                      PUSHORT pusDeviceID,
-                      ULONG ulVolume);
+    ULONG xmmPlaySound(HWND hwndObject,
+                       PUSHORT pusDeviceID,
+                       const char *pcszFile,
+                       ULONG ulVolume);
 
-    VOID xmmStopSound(PUSHORT pusDeviceID);
+    ULONG xmmStopSound(PUSHORT pusDeviceID);
 
     /* ******************************************************************
      *
@@ -197,37 +198,49 @@
             ULONG       ulTrack;
             ULONG       ulSecondsInTrack;
 
+            HWND        hwndObject;         // private object window
+
         } XMMCDPLAYER, *PXMMCDPLAYER;
 
-        BOOL xmmCDOpenDevice(PXMMCDPLAYER pPlayer,
-                             ULONG ulDeviceIndex);
+        ULONG xmmCDOpenDevice(PXMMCDPLAYER *ppPlayer,
+                              ULONG ulDeviceIndex);
 
-        VOID xmmCDCloseDevice(PXMMCDPLAYER pPlayer);
+        ULONG xmmCDCloseDevice(PXMMCDPLAYER *ppPlayer);
 
-        BOOL xmmCDGetTOC(PXMMCDPLAYER pPlayer);
+        ULONG xmmCDGetTOC(PXMMCDPLAYER pPlayer);
 
-        BOOL xmmCDPlay(PXMMCDPLAYER pPlayer,
-                       BOOL fShowWaitPointer);
+        ULONG xmmCDPlay(PXMMCDPLAYER pPlayer,
+                        BOOL fShowWaitPointer);
 
-        BOOL xmmCDPlayTrack(PXMMCDPLAYER pPlayer,
-                            USHORT usTrack,
-                            BOOL fShowWaitPointer);
+        ULONG xmmCDPlayTrack(PXMMCDPLAYER pPlayer,
+                             USHORT usTrack,
+                             BOOL fShowWaitPointer);
 
         ULONG xmmCDCalcTrack(PXMMCDPLAYER pPlayer,
                              ULONG ulMMTime,
                              PULONG pulSecondsInTrack);
 
-        BOOL xmmCDPositionAdvise(PXMMCDPLAYER pPlayer,
-                                 HWND hwndNotify,
-                                 ULONG ulNotifyMsg);
+        ULONG xmmCDPositionAdvise(PXMMCDPLAYER pPlayer,
+                                  HWND hwndNotify,
+                                  ULONG ulNotifyMsg);
 
-        BOOL xmmCDPause(PXMMCDPLAYER pPlayer);
+        ULONG xmmCDPause(PXMMCDPLAYER pPlayer);
 
-        BOOL xmmCDStop(PXMMCDPLAYER pPlayer);
+        ULONG xmmCDStop(PXMMCDPLAYER *ppPlayer);
 
-        BOOL xmmCDEject(PXMMCDPLAYER pPlayer);
+        ULONG xmmCDEject(PXMMCDPLAYER *ppPlayer);
 
     #endif // MCIOS2
+
+    /* ******************************************************************
+     *
+     *   Master volume helpers
+     *
+     ********************************************************************/
+
+    ULONG xmmQueryMasterVolume(PULONG pulVolume);
+
+    BOOL xmmSetMasterVolume(ULONG ulVolume);
 
     /* ******************************************************************
      *

@@ -99,6 +99,8 @@ interface XWPString : WPAbstract
 
     PVOID       pvtiSetupThread;    // PTHREADINFO of setup thread
 
+    ULONG       tidRunning;         // or NULLHANDLE
+
     /*
      * WPAbstract methods overridden by XWPString:
      *

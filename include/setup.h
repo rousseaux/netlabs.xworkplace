@@ -158,7 +158,7 @@
             // #define DEBUG_TITLECLASH
 
         // debug new system sounds
-            // #define DEBUG_SOUNDS
+            #define DEBUG_SOUNDS
 
         // debug data/program file associations/icons
             // #define DEBUG_ASSOCS

@@ -106,10 +106,9 @@ ULONG       G_ulMMPM2Working = MMSTAT_UNKNOWN;
 
 USHORT      G_usSoundDeviceID = 0;
 ULONG       G_ulVolumeTemp = 0;
+PSZ         G_pszSoundFile = NULL;
 
 THREADINFO  G_tiMediaThread = {0};
-
-extern PXMMCDPLAYER G_pPlayer;      // in mmhelp.c
 
 const char *WNDCLASS_MEDIAOBJECT = "XWPMediaThread";
 
@@ -184,8 +183,9 @@ MRESULT EXPENTRY xmm_fnwpMediaObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPA
          *@@ XMM_PLAYSYSTEMSOUND:
          *      plays system sound specified in MMPM.INI.
          *      This is posted by xthrPostMediaMsg.
+         *
          *      (USHORT)mp1 must be the MMPM.INI index (see
-         *      sndQuerySystemSound in common.c for a list).
+         *      sndQuerySystemSound for a list).
          */
 
         case XMM_PLAYSYSTEMSOUND:
@@ -221,14 +221,16 @@ MRESULT EXPENTRY xmm_fnwpMediaObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPA
             else
                 // any error: do nothing
                 free(pszFile);
-        break; }
+        }
+        break;
 
         /*
          *@@ XMM_PLAYSOUND:
-         *      plays the sound file specified in
-         *      (PSZ)mp1; this PSZ is assumed to have
-         *      been allocated using malloc() and will
-         *      be freed afterwards.
+         *      plays a sound file.
+         *
+         *      (PSZ)mp1 must specify the full sound file
+         *      name. It is assumed to have been allocated
+         *      using malloc() and will be freed afterwards.
          *
          *      (ULONG)mp2 must be the volume (0-100).
          *
@@ -259,17 +261,37 @@ MRESULT EXPENTRY xmm_fnwpMediaObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPA
             {
                 // check for whether that sound file really exists
                 if (access(mp1, 0) == 0)
-                    xmmOpenSound(hwndObject,
-                                 &G_usSoundDeviceID,
-                                 (PSZ)mp1);
-                        // this will post MM_MCIPASSDEVICE
-                        // if the device is available
+                {
+                    G_ulVolumeTemp = (ULONG)mp2;
 
-                // free the PSZ passed to us
-                free((PSZ)mp1);
-                G_ulVolumeTemp = (ULONG)mp2;
+                    if (G_usSoundDeviceID)
+                    {
+                        // we have a device already:
+                        xmmPlaySound(hwndObject,
+                                     &G_usSoundDeviceID,
+                                     (PSZ)mp1,
+                                     G_ulVolumeTemp);
+                        // free the PSZ passed to us
+                        free((PSZ)mp1);
+                    }
+                    else
+                    {
+                        ULONG ulrc;
+                        if (G_pszSoundFile)
+                            free(G_pszSoundFile);
+                        G_pszSoundFile = (PSZ)mp1;      // malloc'd
+                        ulrc = xmmOpenWaveDevice(hwndObject,
+                                                 &G_usSoundDeviceID);
+                        // and play when MM_MCIPASSDEVICE comes in
+
+                        #ifdef DEBUG_SOUNDS
+                            _Pmpf((__FUNCTION__ ": xmmOpenWaveDevice returned 0x%lX", ulrc));
+                        #endif
+                    }
+                }
             }
-        break; }
+        }
+        break;
 
         /*
          * MM_MCIPASSDEVICE:
@@ -283,8 +305,7 @@ MRESULT EXPENTRY xmm_fnwpMediaObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPA
          *          other application needs exclusive access
          *          to that device); in this case, mp2 has the
          *          MCI_GAINING_USE flag set, and we can call
-         *          xmmPlaySound in SOUND.DLL to actually
-         *          play the sound.
+         *          xmmPlaySound to actually play the sound.
          *
          *          The device is _not_ available, for example,
          *          if a Win-OS/2 session is running which
@@ -308,21 +329,28 @@ MRESULT EXPENTRY xmm_fnwpMediaObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPA
             BOOL fGainingUse = (SHORT1FROMMP(mp2) == MCI_GAINING_USE);
 
             #ifdef DEBUG_SOUNDS
-                _Pmpf(( "MM_MCIPASSDEVICE: mp1 = 0x%lX, mp2 = 0x%lX", mp1, mp2 ));
-                _Pmpf(( "    %s use", (fGainingUse) ? "Gaining" : "Losing" ));
+                _Pmpf((__FUNCTION__ ": MM_MCIPASSDEVICE: mp1 = 0x%lX, mp2 = 0x%lX", mp1, mp2 ));
+                _Pmpf(( "    --> %s use", (fGainingUse) ? "Gaining" : "Losing" ));
             #endif
 
             if (fGainingUse)
             {
                 // we're gaining the device (1): play sound
-                xmmPlaySound(hwndObject,
-                             &G_usSoundDeviceID,
-                             G_ulVolumeTemp);
+                if (G_pszSoundFile)
+                {
+                    xmmPlaySound(hwndObject,
+                                 &G_usSoundDeviceID,
+                                 G_pszSoundFile,
+                                 G_ulVolumeTemp);
+                    free(G_pszSoundFile);
+                    G_pszSoundFile = NULL;
+                }
             }
             else
                 // we're losing the device (2): stop sound
                 xmmStopSound(&G_usSoundDeviceID);
-        break; }
+        }
+        break;
 
         /*
          * MM_MCINOTIFY:
@@ -337,58 +365,18 @@ MRESULT EXPENTRY xmm_fnwpMediaObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPA
                     usDeviceID = SHORT1FROMMP(mp2),
                     usMessage = SHORT2FROMMP(mp2);
 
-            if ((G_usSoundDeviceID) && (usDeviceID == G_usSoundDeviceID))
+            if (    (G_usSoundDeviceID)
+                 && (usDeviceID == G_usSoundDeviceID)
+               )
             {
+                #ifdef DEBUG_SOUNDS
+                    _Pmpf((__FUNCTION__ ": MM_MCINOTIFY: usNotifyCode = 0x%lX", usNotifyCode));
+                #endif
                 if (usNotifyCode == MCI_NOTIFY_SUCCESSFUL)
                     xmmStopSound(&G_usSoundDeviceID);
             }
-        break; }
-
-        /*
-         * MM_MCIPOSITIONCHANGE:
-         *
-         */
-
-        case MM_MCIPOSITIONCHANGE:
-        {
-            if (xmmLockDevicesList())
-            {
-                if (G_pPlayer)
-                {
-                    USHORT  usDeviceID = SHORT2FROMMP(mp1);
-
-                    if (    (usDeviceID == G_pPlayer->usDeviceID)
-                         && (G_pPlayer->hwndNotify)
-                       )
-                    {
-                        ULONG   ulMMTime = (ULONG)mp2;
-
-                        ULONG   ulSeconds;
-                        ULONG   ulTrack = xmmCDCalcTrack(G_pPlayer,
-                                                         ulMMTime,
-                                                         &ulSeconds);
-                        MPARAM  mp1Post = 0,
-                                mp2Post = 0;
-                        if (ulTrack != G_pPlayer->ulTrack)
-                        {
-                            G_pPlayer->ulTrack = ulTrack;
-                            mp1Post = (MPARAM)ulTrack;
-                        }
-                        if (ulSeconds != G_pPlayer->ulSecondsInTrack)
-                        {
-                            G_pPlayer->ulSecondsInTrack = ulSeconds;
-                            mp2Post = (MPARAM)ulSeconds;
-                        }
-
-                        WinPostMsg(G_pPlayer->hwndNotify,
-                                   G_pPlayer->ulNotifyMsg,
-                                   mp1Post,
-                                   mp2Post);
-                    }
-                }
-                xmmUnlockDevicesList();
-            } // end if (xmmLockDevicesList())
-        break; }
+        }
+        break;
 
         default:
             mrc = WinDefWindowProc(hwndObject, msg, mp1, mp2);

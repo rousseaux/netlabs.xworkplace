@@ -53,6 +53,8 @@
  *  8)  #pragma hdrstop and then more SOM headers which crash with precompiled headers
  */
 
+#define INCL_DOSEXCEPTIONS
+#define INCL_DOSPROCESS
 #define INCL_DOSSEMAPHORES
 
 #define INCL_WINMENUS
@@ -76,6 +78,7 @@
 #include "setup.h"                      // code generation and debugging options
 
 // headers in /helpers
+#include "helpers\except.h"             // exception handling
 #include "helpers\winh.h"               // PM helper routines
 
 // SOM headers which don't crash with prec. header files
@@ -139,27 +142,27 @@ SOM_Scope BOOL  SOMLINK cdp_xwpCDPlay(XMMCDPlayer *somSelf)
 
     if (xmmQueryStatus() == MMSTAT_WORKING)
     {
-        if (!_pvPlayer)
+        TRY_LOUD(excpt1)
         {
-            _pvPlayer = malloc(sizeof(XMMCDPLAYER));
-            if (_pvPlayer)
-                memset(_pvPlayer, 0, sizeof(XMMCDPLAYER));
-        }
+            PXMMCDPLAYER *ppPlayer = (PXMMCDPLAYER*)&_pvPlayer;
 
-        if (_pvPlayer)
-        {
-            if (xmmCDOpenDevice(_pvPlayer, 0))
+            if (!_pvPlayer)
+                xmmCDOpenDevice(ppPlayer, 0);
+
+            if (_pvPlayer)
             {
                 // device is open:
-                brc = xmmCDPlay(_pvPlayer,
-                                TRUE);  // show wait ptr
-                if ((brc) && (_hwndOpenView))
-                    // start position advise on media thread
-                    brc = xmmCDPositionAdvise(_pvPlayer,
-                                              _hwndOpenView,
-                                              CDM_POSITIONUPDATE);
+                PXMMCDPLAYER pPlayer = _pvPlayer;
+                brc = !xmmCDPlay(pPlayer,
+                                 TRUE);  // show wait ptr
+
+                if (_hwndOpenView)
+                    xmmCDPositionAdvise(pPlayer,
+                                        _hwndOpenView,
+                                        CDM_POSITIONUPDATE);
             }
         }
+        CATCH(excpt1) {} END_CATCH();
     }
 
     return (brc);
@@ -179,33 +182,31 @@ SOM_Scope BOOL  SOMLINK cdp_xwpCDTogglePlay(XMMCDPlayer *somSelf)
 
     if (xmmQueryStatus() == MMSTAT_WORKING)
     {
-        if (!_pvPlayer)
+        TRY_LOUD(excpt1)
         {
-            _pvPlayer = malloc(sizeof(XMMCDPLAYER));
-            if (_pvPlayer)
-                memset(_pvPlayer, 0, sizeof(XMMCDPLAYER));
-        }
+            PXMMCDPLAYER *ppPlayer = (PXMMCDPLAYER*)&_pvPlayer;
 
-        if (_pvPlayer)
-        {
-            if (xmmCDOpenDevice(_pvPlayer, 0))
+            if (!_pvPlayer)
+                xmmCDOpenDevice(ppPlayer, 0);
+
+            if (_pvPlayer)
             {
                 // device is open:
                 PXMMCDPLAYER pPlayer = _pvPlayer;
 
                 if (pPlayer->ulStatus == MCI_MODE_PLAY)
-                    brc = xmmCDPause(pPlayer);
+                    brc = !xmmCDPause(pPlayer);
                 else
-                    brc = xmmCDPlay(pPlayer,
-                                    TRUE);  // show wait ptr
+                    brc = !xmmCDPlay(pPlayer,
+                                     TRUE);  // show wait ptr
 
-                if ((brc) && (_hwndOpenView))
-                    // start position advise on media thread
-                    brc = xmmCDPositionAdvise(pPlayer,
-                                              _hwndOpenView,
-                                              CDM_POSITIONUPDATE);
+                if (_hwndOpenView)
+                    xmmCDPositionAdvise(pPlayer,
+                                        _hwndOpenView,
+                                        CDM_POSITIONUPDATE);
             }
         }
+        CATCH(excpt1) {} END_CATCH();
     }
 
     return (brc);
@@ -223,14 +224,25 @@ SOM_Scope BOOL  SOMLINK cdp_xwpCDPause(XMMCDPlayer *somSelf)
     XMMCDPlayerMethodDebug("XMMCDPlayer","cdp_xwpCDPause");
 
     if (xmmQueryStatus() == MMSTAT_WORKING)
-        if (_pvPlayer)
+    {
+        TRY_LOUD(excpt1)
         {
-            // device is open:
-            PXMMCDPLAYER pPlayer = _pvPlayer;
+            if (_pvPlayer)
+            {
+                // device is open:
+                PXMMCDPLAYER pPlayer = _pvPlayer;
 
-            if (pPlayer->ulStatus == MCI_MODE_PLAY)
-                brc = xmmCDPause(pPlayer);
+                if (pPlayer->ulStatus == MCI_MODE_PLAY)
+                    brc = !xmmCDPause(pPlayer);
+
+                if (_hwndOpenView)
+                    xmmCDPositionAdvise(pPlayer,
+                                        _hwndOpenView,
+                                        CDM_POSITIONUPDATE);
+            }
         }
+        CATCH(excpt1) {} END_CATCH();
+    }
 
     return (brc);
 }
@@ -248,9 +260,14 @@ SOM_Scope BOOL  SOMLINK cdp_xwpCDStop(XMMCDPlayer *somSelf)
 
     if (xmmQueryStatus() == MMSTAT_WORKING)
     {
-        if (_pvPlayer)
-            xmmCDStop(_pvPlayer);
-        _pvPlayer = NULL;
+        TRY_LOUD(excpt1)
+        {
+            PXMMCDPLAYER *ppPlayer = (PXMMCDPLAYER*)&_pvPlayer;
+
+            if (_pvPlayer)
+                xmmCDStop(ppPlayer);
+        }
+        CATCH(excpt1) {} END_CATCH();
     }
 
     return (brc);
@@ -270,12 +287,18 @@ SOM_Scope ULONG  SOMLINK cdp_xwpCDQueryCurrentTrack(XMMCDPlayer *somSelf)
 
     if (xmmQueryStatus() == MMSTAT_WORKING)
     {
-        if (_pvPlayer)
+        TRY_LOUD(excpt1)
         {
-            // device is open:
-            PXMMCDPLAYER pPlayer = _pvPlayer;
-            ulrc = pPlayer->usCurrentTrack;
+            PXMMCDPLAYER *ppPlayer = (PXMMCDPLAYER*)&_pvPlayer;
+
+            if (_pvPlayer)
+            {
+                // device is open:
+                PXMMCDPLAYER pPlayer = _pvPlayer;
+                ulrc = pPlayer->usCurrentTrack;
+            }
         }
+        CATCH(excpt1) {} END_CATCH();
     }
 
     return (ulrc);
@@ -294,24 +317,28 @@ SOM_Scope BOOL  SOMLINK cdp_xwpCDNextTrack(XMMCDPlayer *somSelf)
 
     if (xmmQueryStatus() == MMSTAT_WORKING)
     {
-        if (!_pvPlayer)
+        TRY_LOUD(excpt1)
         {
-            _pvPlayer = malloc(sizeof(XMMCDPLAYER));
-            if (_pvPlayer)
-                memset(_pvPlayer, 0, sizeof(XMMCDPLAYER));
-        }
+            PXMMCDPLAYER *ppPlayer = (PXMMCDPLAYER*)&_pvPlayer;
 
-        if (_pvPlayer)
-        {
-            if (xmmCDOpenDevice(_pvPlayer, 0))
+            if (!_pvPlayer)
+                xmmCDOpenDevice(ppPlayer, 0);
+
+            if (_pvPlayer)
             {
                 // device is open:
                 PXMMCDPLAYER pPlayer = _pvPlayer;
-                brc = xmmCDPlayTrack(pPlayer,
-                                     pPlayer->usCurrentTrack + 1,
-                                     TRUE);  // show wait ptr
+                brc = !xmmCDPlayTrack(pPlayer,
+                                      pPlayer->usCurrentTrack + 1,
+                                      TRUE);  // show wait ptr
+
+                if (_hwndOpenView)
+                    xmmCDPositionAdvise(pPlayer,
+                                        _hwndOpenView,
+                                        CDM_POSITIONUPDATE);
             }
         }
+        CATCH(excpt1) {} END_CATCH();
     }
 
     return (brc);
@@ -329,24 +356,28 @@ SOM_Scope BOOL  SOMLINK cdp_xwpCDPrevTrack(XMMCDPlayer *somSelf)
     XMMCDPlayerMethodDebug("XMMCDPlayer","cdp_xwpCDPrevTrack");
 
     {
-        if (!_pvPlayer)
+        TRY_LOUD(excpt1)
         {
-            _pvPlayer = malloc(sizeof(XMMCDPLAYER));
-            if (_pvPlayer)
-                memset(_pvPlayer, 0, sizeof(XMMCDPLAYER));
-        }
+            PXMMCDPLAYER *ppPlayer = (PXMMCDPLAYER*)&_pvPlayer;
 
-        if (_pvPlayer)
-        {
-            if (xmmCDOpenDevice(_pvPlayer, 0))
+            if (!_pvPlayer)
+                xmmCDOpenDevice(ppPlayer, 0);
+
+            if (_pvPlayer)
             {
                 // device is open:
                 PXMMCDPLAYER pPlayer = _pvPlayer;
-                brc = xmmCDPlayTrack(pPlayer,
-                                     pPlayer->usCurrentTrack - 1,
-                                     TRUE);  // show wait ptr
+                brc = !xmmCDPlayTrack(pPlayer,
+                                      pPlayer->usCurrentTrack - 1,
+                                      TRUE);  // show wait ptr
+
+                if (_hwndOpenView)
+                    xmmCDPositionAdvise(pPlayer,
+                                        _hwndOpenView,
+                                        CDM_POSITIONUPDATE);
             }
         }
+        CATCH(excpt1) {} END_CATCH();
     }
 
     return (brc);
@@ -365,9 +396,19 @@ SOM_Scope BOOL  SOMLINK cdp_xwpCDEject(XMMCDPlayer *somSelf)
 
     if (xmmQueryStatus() == MMSTAT_WORKING)
     {
-        if (_pvPlayer)
-            xmmCDEject(_pvPlayer);
-        _pvPlayer = NULL;
+        TRY_LOUD(excpt1)
+        {
+            PXMMCDPLAYER *ppPlayer = (PXMMCDPLAYER*)&_pvPlayer;
+
+            // we need an open device for eject,
+            // so create one if we don't have one
+            if (!_pvPlayer)
+                xmmCDOpenDevice(ppPlayer, 0);
+
+            if (_pvPlayer)
+                xmmCDEject(ppPlayer);       // closes the device
+        }
+        CATCH(excpt1) {} END_CATCH();
     }
 
     return (brc);
@@ -434,8 +475,7 @@ SOM_Scope void  SOMLINK cdp_wpUnInitData(XMMCDPlayer *somSelf)
     XMMCDPlayer_parent_WPAbstract_wpUnInitData(somSelf);
 
     if (_pvPlayer)
-        xmmCDStop(_pvPlayer);
-    _pvPlayer = NULL;
+        xmmCDStop((PXMMCDPLAYER*)&_pvPlayer);
 
     if (_pszFont)
     {
@@ -502,6 +542,8 @@ SOM_Scope BOOL  SOMLINK cdp_wpSetup(XMMCDPlayer *somSelf, PSZ pszSetupString)
                            szValue,
                            &cbValue))
     {
+        _Pmpf((__FUNCTION__ ": got XWPCDPLAY=%s", szValue));
+
         /*
          * "PLAY":
          *
@@ -559,6 +601,10 @@ SOM_Scope BOOL  SOMLINK cdp_wpSetup(XMMCDPlayer *somSelf, PSZ pszSetupString)
         else if (strcmp(szValue, "EJECT") == 0)
             brc = _xwpCDEject(somSelf);
 
+        else
+            _Pmpf(("  not recognized"));
+
+        _Pmpf(("Returning %d", brc));
     }
 
     return (brc);

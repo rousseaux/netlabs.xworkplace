@@ -412,6 +412,8 @@ WARNING: This feature is still slightly unstable. It will probably not hang your
 
 <--XFL0217-->: The file "%1" exists already. Do you wish to overwrite it with the new data?
 
+<--XFL0218-->: The master audio volume is not working correctly. The control will be closed.
+
 ; ---------------------------------------------------------------------------------
 ;
 ; V0.9.0:
