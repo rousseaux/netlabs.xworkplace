@@ -141,6 +141,9 @@ really_all:     compile_really_all tools link nls
     @echo ----- Leaving $(MAKEDIR)
     @echo Yo, done!
 
+# "full": shortcut to really_all V0.9.21 (2002-09-13) [umoeller]
+full: really_all
+
 # "dep": create dependencies.
 dep:
     @echo $(MAKEDIR)\makefile [$@]: Going for subdir src (dep)
@@ -675,7 +678,15 @@ release: really_all
 !endif
 !if [@md $(XWPRELEASE_NLS) 2> NUL]
 !endif
+!ifdef BUILD_049_TOO
+!if [@md $(XWPRELEASE_049) 2> NUL]
+!endif
+!endif
 !if [@md $(XWPRELEASE_NLSDOC) 2> NUL]
+!endif
+!ifdef BUILD_049_TOO
+!if [@md $(XWPRELEASE_049DOC) 2> NUL]
+!endif
 !endif
 !if [@md $(XWPRELEASE_MAP) 2> NUL]
 !endif
@@ -687,6 +698,9 @@ release: really_all
     $(COPY) release\install.ico $(XWPRELEASE_MAIN)
     $(COPY) $(XWP_LANG_CODE)\readme $(XWPRELEASE_NLSDOC)
     $(COPY) $(MODULESDIR)\xfldr$(XWP_LANG_CODE).inf $(XWPRELEASE_NLSDOC)
+!ifdef BUILD_049_TOO
+    $(COPY) $(MODULESDIR)\xfldr049.inf $(XWPRELEASE_049DOC)
+!endif
     $(COPY) BUGS $(XWPRELEASE_NLSDOC)
     $(COPY) FEATURES $(XWPRELEASE_NLSDOC)
     $(COPY) cvs.txt $(XWPRELEASE_MAIN)
@@ -699,6 +713,10 @@ release: really_all
 !if [@md $(XWPRELEASE_MAIN)\bin 2> NUL]
 !endif
 !if [@md $(XWPRELEASE_NLS)\bin 2> NUL]
+!endif
+!ifdef BUILD_049_TOO
+!if [@md $(XWPRELEASE_049)\bin 2> NUL]
+!endif
 !endif
 !ifndef XWPLITE
     $(COPY) release\bin\alwssort.cmd $(XWPRELEASE_MAIN)\bin
@@ -739,7 +757,9 @@ release: really_all
     $(COPY) $(MODULESDIR)\wpsreset.exe $(XWPRELEASE_MAIN)\bin
 #    b) NLS
     $(COPY) $(MODULESDIR)\xfldr$(XWP_LANG_CODE).dll $(XWPRELEASE_NLS)\bin
-#    $(COPY) $(XWP_LANG_CODE)\misc\*.sgs $(XWPRELEASE_NLS)\bin
+!ifdef BUILD_049_TOO
+    $(COPY) $(MODULESDIR)\xfldr049.dll $(XWPRELEASE_049)\bin
+!endif
 #    b) mapfiles
     $(COPY) $(MODULESDIR)\*.map $(XWPRELEASE_MAP)
 #
@@ -753,13 +773,26 @@ release: really_all
 # 4) help
 !if [@md $(XWPRELEASE_NLS)\help 2> NUL]
 !endif
-#    $(COPY) $(XWP_LANG_CODE)\misc\xfldr$(XWP_LANG_CODE).tmf $(XWPRELEASE_NLS)\help
+!ifdef BUILD_049_TOO
+!if [@md $(XWPRELEASE_049)\help 2> NUL]
+!endif
+!endif
     $(COPY) $(XWPRUNNING)\help\xfldr$(XWP_LANG_CODE).tmf $(XWPRELEASE_NLS)\help
+!ifdef BUILD_049_TOO
+    $(COPY) $(XWPRUNNING)\help\xfldr049.tmf $(XWPRELEASE_049)\help
+!endif
 !ifndef XWPLITE
     $(COPY) $(XWP_LANG_CODE)\misc\drvrs$(XWP_LANG_CODE).txt $(XWPRELEASE_NLS)\help
     $(COPY) $(XWP_LANG_CODE)\misc\xfcls$(XWP_LANG_CODE).txt $(XWPRELEASE_NLS)\help
+!ifdef BUILD_049_TOO
+    $(COPY) 049\misc\drvrs049.txt $(XWPRELEASE_049)\help
+    $(COPY) 049\misc\xfcls049.txt $(XWPRELEASE_049)\help
+!endif
 !endif
     $(COPY) $(MODULESDIR)\xfldr$(XWP_LANG_CODE).hlp $(XWPRELEASE_NLS)\help
+!ifdef BUILD_049_TOO
+    $(COPY) $(MODULESDIR)\xfldr049.hlp $(XWPRELEASE_049)\help
+!endif
 !ifndef XWPLITE
 # 5) themes
 #!if [@md $(XWPRELEASE_MAIN)\icons 2> NUL]
@@ -779,6 +812,10 @@ release: really_all
 !if [@md $(XWPRELEASE_MAIN)\install 2> NUL]
 !endif
 !if [@md $(XWPRELEASE_NLS)\install 2> NUL]
+!endif
+!ifdef BUILD_049_TOO
+!if [@md $(XWPRELEASE_049)\install 2> NUL]
+!endif
 !endif
 #    $(COPY) release\install\xwpusers.acc $(XWPRELEASE_MAIN)\install
     $(COPY) release\install\deinst.cmd $(XWPRELEASE_MAIN)\install
@@ -800,14 +837,32 @@ release: really_all
 !else
     $(COPY) $(XWP_LANG_CODE)\misc\crobj001_lite.cmd $(XWPRELEASE_NLS)\install\crobj001.cmd
 !endif
+!ifdef BUILD_049_TOO
+!ifndef XWPLITE
+    $(COPY) 049\misc\crobj049.cmd $(XWPRELEASE_049)\install\crobj049.cmd
+!else
+    $(COPY) 049\misc\crobj049_lite.cmd $(XWPRELEASE_049)\install\crobj049.cmd
+!endif
+!endif
 !ifndef XWPLITE
     $(COPY) $(XWP_LANG_CODE)\misc\instl001.cmd $(XWPRELEASE_NLS)\install\instl001.cmd
 !else
     $(COPY) $(XWP_LANG_CODE)\misc\instl001_lite.cmd $(XWPRELEASE_NLS)\install\instl001.cmd
 !endif
+!ifdef BUILD_049_TOO
+!ifndef XWPLITE
+    $(COPY) 049\misc\instl049.cmd $(XWPRELEASE_049)\install\instl049.cmd
+!else
+    $(COPY) 049\misc\instl049_lite.cmd $(XWPRELEASE_049)\install\instl049.cmd
+!endif
+!endif
 !ifndef XWPLITE
     $(COPY) $(XWP_LANG_CODE)\misc\sound001.cmd $(XWPRELEASE_NLS)\install
     $(COPY) $(XWP_LANG_CODE)\misc\*.msg $(XWPRELEASE_NLS)\install
+!ifdef BUILD_049_TOO
+    $(COPY) 049\misc\sound001.cmd $(XWPRELEASE_049)\install
+    $(COPY) 049\misc\*.msg $(XWPRELEASE_049)\install
+!endif
 !endif
 # 7) wav
 !ifndef XWPLITE
@@ -869,6 +924,9 @@ release: really_all
     $(LXLITEPATH)\lxlite \
 $(XWPRELEASE_MAIN)\bin\*.dll \
 $(XWPRELEASE_MAIN)\bin\*.exe \
+!ifdef BUILD_049_TOO
+$(XWPRELEASE_049)\bin\*.dll \
+!endif
 $(XWPRELEASE_NLS)\bin\*.dll
     $(LXLITEPATH)\lxlite \
 $(XWPRELEASE_MAIN)\plugins\xcenter\*.dll \

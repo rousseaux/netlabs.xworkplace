@@ -25,13 +25,11 @@ end
 parse source mydir;
 parse var mydir x1 x2 mydir;
 
-say mydir
-
 mydir = filespec("D", mydir)||filespec("P", mydir);
 if (right(mydir, 1) = "\") then
     mydir = left(mydir, length(mydir)-1);
 
-say mydir
+say 'freshini.cmd: install subdirectory is "'mydir'"'
 
 /* mydir now has the install subdir of the xwp dir...
         note that this works even if we are started from
@@ -54,6 +52,35 @@ if (rc == 0) then do
     exit;
 end
 
+nlscode = 001;
+
+/* check if xfldr049.dll exists in bin */
+
+say 'Searching for NLS DLLs in "'bindir'"...';
+
+rc = SysFileTree(bindir||"\xfldr???.dll", nlsdlls, "FO");
+do i = 1 to nlsdlls.0
+    p2 = lastpos("\", nlsdlls.i);
+    thisdll = substr(nlsdlls.i, p2 + 1);
+    thisdll = left(thisdll, pos(".", thisdll) - 1);
+    /* rule out xfldr.dll which is still found by the above mask */
+    if (length(thisdll) == 8) then do
+        say '  Found NLS DLL "'thisdll'"';
+        nlsthis = substr(thisdll, 6, 3);
+        if (nlsthis > nlscode) then do
+            nlscode = nlsthis;
+        end
+    end
+end
+
+/* set language code */
+
+say 'Setting language code "'nlscode'"';
+rc = SysINI(inifile, "XWorkplace", "Language", nlscode || '00'x);
+
+/* set base path */
+
+say 'Setting base path "'basedir'"';
 rc = SysINI(inifile, "XWorkplace", "XFolderPath", basedir || '00'x);
 
 rc = RegisterClass("XWPFileSystem");        /* V0.9.16 */

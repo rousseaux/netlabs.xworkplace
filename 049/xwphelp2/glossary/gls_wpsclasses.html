@@ -1,7 +1,7 @@
 <HTML>
 <HEAD>
     <TITLE>
-        &xwp;: Workplace Shell Classes
+        &xwp;: WPS-Klassen
     </TITLE>
 </HEAD>
 <!-- all new with V0.9.13
@@ -9,54 +9,57 @@
     V0.9.20: title changed
 -->
 <BODY>
-&os2;'s Workplace Shell (WPS) is frequently described as
-<B>"object-oriented".</B> This term suggests that -- as opposed to the
-user interfaces of other operating systems --
-everything the Workplace Shell
-deals with is first considered an <B>"object":</B> this applies, for example, to
+Die Workplace Shell (WPS) von &os2; wird hÑufig als
+<b>objekt-orientiert</b> beschrieben. Dieser Begriff besagt,
+da· -- im Gegensatz zu anderen Betriebssystemen -- alles auf der
+ArbeitsoberflÑche zunÑchst als <b>"Objekt"</b> betrachtet wird.
+Dies gilt beispielsweise fÅr
 <!-- V0.9.19: link added -->
 &link_folders;,
 <!-- V0.9.19: link added -->
 &link_datafiles;,
-printers, drive objects etc. All these objects have certain common
-characteristics (such as
+Drucker, Laufwerksobjekte, und so weiter. All diese Objekte haben bestimmte
+Gemeinsamkeiten wie
 <!-- V0.9.19: links added -->
-<A HREF="glossary/gls_popmenu.html">&popmenu;s</A> and
-<A HREF="glossary/gls_notebook.html">properties notebooks</A>), but differ in
-certain others: for example, what you see in a &popmenu; depends
-on the selected object.
+<A HREF="glossary/gls_popmenu.html">&popmenu;s</A> und
+<A HREF="glossary/gls_notebook.html">EinstellungsnotizbÅcher</A>), aber
+auch gewisse Unterschiede: beispielsweise hÑngt der Inhalt eines
+&popmenu;s von dem ausgewÑhlten Objekt ab.
 
-<P>In order to better handle these common and different
-characteristics, the WPS uses <B>"classes".</B> This term has been taken from
-object-oriented programming; a class is, so-to-say, an abstract concept, or
-a template, for an object.
-A class is therefore not visible on the Desktop, it thus does not
-"exist" in the same sense as objects do, but it contains all the information
-about properties and capabilities of an object and the executable code
-to make an object do something.
+<P>Um diese Gemeinsamkeiten und Unterschiede effizient verwalten zu kînnen,
+benutzt die WPS sogenannte <b>Klassen</b>. Dieser Begriff stammt aus
+der objektorientierten Programmierung. Eine Klasse ist sozusagen ein
+abstraktes Konzept, oder eine Schablone, fÅr ein Objekt.
+Eine Klasse ist daher auf der ArbeitsoberflÑche nicht sichtbar. Sie
+"existiert" nicht in demselben Sinne wie Objekte, aber sie enthÑlt
+alle Informationen Åber die Eigenschaften und FÑhigkeiten eines Objekts
+und den Programmcode, der ein Objekt Åberhaupt fÑhig macht, Aktionen
+auszufÅhren.
 
-<P>All WPS classes reside in
+<P>Alle WPS-Klassen mÅssen in
 <!-- V0.9.20: added link -->
-<A HREF="glossary/gls_dll.html">dynamic link libraries (DLLs)</A>.
-For example, most of the default WPS classes reside in the large <CODE>PMWP.DLL</CODE>
-file in the <CODE>\OS2\DLL</CODE> directory. All &xwp; classes reside in
-<CODE>XFLDR.DLL</CODE> in the &xwp; installation directory.
+<A HREF="glossary/gls_dll.html">DLLs</A> implementiert sein.
+Beispielsweise befinden sich die meisten Standard-WPS-Klassen in der gro·en
+Datei <CODE>PMWP.DLL</CODE> im Verzeichnis <CODE>\OS2\DLL</CODE>.
+Alle &xwp;-Klaseen befinden sich in <CODE>XFLDR.DLL</CODE>
+im Verzeichnis von &xwp;.
 
-<P>Now, every object on the Desktop is a so-called <B>"instance"</B> of some
-class. The names of most of the WPS classes start with "WP": for example, a
-printer is  an instance of the "WPPrinter" class, a folder one of the class
-"WPFolder", a datafile of "WPDataFile" and so on.
+<P>Nun ist jedes Objekt auf Ihrer ArbeitsoberflÑche eine sogenannte
+<b>Instanz</b> einer Klasse. Die Namen der meisten WPS-Klassen beginnen
+mit "WP": alle Drucker sind z.B. Instanzen der Klasse "WPPrinter",
+alle Ordner der Klasse "WPFolder", alle Datendateien der Klasse
+"WPDataFile", usw.
 
-<P>The reason for the power and flexibility of the class concept is that the
-different classes may <B>descend</B> from each other. Such a descendant
-class will <B>inherit</B> all of the properties and capabilities from its
-parent class. It is thus possible to make certain features of the
-user-interface more abstract, according to the old principle:
-the best way to handle complexity is abstraction.
+<P>Der Grund fÅr die LeistungsfÑhigkeit und FlexibilitÑt des Klassenkonzepts
+liegt darin, da· Klassen voneinander <b>abgeleitet</b> werden. Eine abgeleitete
+Klasse <b>erbt</b> alle Eigenschaften und FÑhigkeiten ihrer Elternklasse.
+Auf diese Weise ist es mîglich, bestimmte Eigenschaften der BenutzeroberflÑche
+zu abstrahieren, nach dem alten Grundsatz: das beste Mittel gegen KomplexitÑt
+ist Abstraktion.
 
-<P>The WPS contains many classes, which make up a very thoughtful
-inheritance hierarchy. The following excerpt from the WPS class list may
-make the general structure more lucid (where the lines represent parentship):
+<P>Die WPS enthÑlt viele Klassen, die eine durchdachte Vererbungshierarchie
+bilden. Der folgende Auszug aus der WPS-Klassenliste macht dies deutlich
+(wobei die Linien die Vererbung anzeigen):
 
 <PRE>
  WPObject
@@ -74,76 +77,76 @@ make the general structure more lucid (where the lines represent parentship):
    ¿ƒƒ WPTransient
 </PRE>
 
-You see that all classes are descendants of <CODE>WPObject</CODE>,
-which is therefore called the "root class" of all WPS classes.
-This implements all the features that are
-common to all Desktop objects: as mentioned before, e.g. &popmenu;s and
-properties notebooks. However, the WPObject class is too abstract to have
-instances of it: this class was only implemented to have other descendant
-classes. Objects of this class will not function.
+Wie Sie sehen, sind alle Klassen von <CODE>WPObject</CODE> abgeleitet, die
+daher die "Wurzelklasse" aller WPS-Klassen genannt wird. Diese Klasse
+bewirkt alle Eigenschaften, die sÑmtlichen Objekten der ArbeitsoberflÑche
+gemeinsam sind: wie bereits erwÑhnt, beispielsweise &popmenu;s und
+EinstellungsnotizbÅcher. Jedoch ist die WPObject-Klasse zu abstrakt,
+um von ihr direkt Instanzen erzeugen zu kînnen. Diese Klasse wurde
+aus dem ausschlie·lichen Grund entworfen, da· andere Klassen von ihr
+abgeleitet werden. Objekte dieser Klasse haben keine sinnvolle Funktion.
 
-<P>WPObject has only three descendant classes. All these classes are -- like
-WPObject -- only meant to be abstract parent classes, of which no objects
-should exist directly.
+<P>WPObject hat genau drei abgeleitete Klassen. Wie WPObject sind diese
+drei abgeleiteten Klassen ebenfalls abstrakte Elternklassen, von denen
+keine Objekte direkt erzeugt werden kînnen.
 
-<OL><LI><CODE>WPAbstract</CODE> is the common parent class for so-called "abstract"
-objects, i.e. those objects which do not physically exist on disk, but only
-store their data in <CODE>OS2.INI</CODE>. The most well-known
-examples for this are the classes <CODE>WPPrinter</CODE> for printer
-objects, <CODE>WPProgram</CODE> for program objects, and <CODE>WPShadow</CODE>
-for shadows. All these objects can appear in folders, but are not visible if
-you enter <CODE>DIR</CODE> at the command line, for example.
+<OL><LI><CODE>WPAbstract</CODE> ist die gemeinsame Elternklasse
+fÅr sogenannte "abstrakte" Objekte, d.h. Objekte, die nicht physisch
+auf einem Speichermedium existieren, sondern ihre Daten in der Datei
+<code>OS2.INI</code> speichern. Die bekanntesten Beispiele fÅr abstrakte
+Objekte sind die der Klassen <CODE>WPPrinter</CODE> fÅr Druckerobjekte,
+<CODE>WPProgram</CODE> fÅr Programmobjekte und <CODE>WPShadow</CODE> fÅr
+Referenzen. Diese Objekte kînnen alle in Ordnern erscheinen, sind jedoch
+nicht sichtbar, wenn Sie an einer Befehlszeile <code>DIR</code> eingeben.
 
-<P><LI>By contrast, <CODE>WPFileSystem</CODE> is the common superclass for
-objects which do exist physically in a file system of a drive. There are two subtypes:
-folders (<CODE>WPFolder</CODE> class) and data files (<CODE>WPDataFile</CODE>).
-In turn, there are
-several subclasses of WPDataFile, like <CODE>WPIcon</CODE> for icon files
-and <CODE>WPProgramFile</CODE> for program files (executables, usually with
-the <CODE>.EXE</CODE> extension).
-All data files for which no more specific subclass exists are instances of
-<CODE>WPDataFile</CODE>.
+<P><LI>Im Gegensatz dazu ist <CODE>WPFileSystem</CODE> die gemeinsame
+Oberklasse fÅr Objekte, die tatsÑchlich im Dateisystem eines Speichermediums
+existieren. Hiervon gibt es zwei Unterklassen: Ordner
+(<CODE>WPFolder</CODE>) und Datendateien (<CODE>WPDataFile</CODE>).
+Von WPDataFile gibt es wiederum eine Reihe von abgeleiteten Klassen
+wie <CODE>WPIcon</CODE> fÅr Symboldateien und
+<CODE>WPProgramFile</CODE> fÅr ausfÅhrbare Programmdateien (normalerweise
+mit der <CODE>.EXE</CODE>-Erweiterung).
+Alle Datendateien, fÅr die keine spezielle Unterklasse entworfen wurde,
+sind Instanzen von <code>WPDataFile</code> selbst.
 
-<P><LI>Finally, <CODE>WPTransient</CODE> is used by the WPS for objects which
-need not save their data at all, but only exist temporarily for representing
-something. Examples of this are print jobs in a printer object and all the
-devices in
-<!-- V0.9.19: removed warp 4 here -->
-the Hardware Manager.
+<P><LI><CODE>WPTransient</CODE> wird schlie·lich von der WPS fÅr Objekte
+benutzt, die ihre Daten Åberhaupt nicht speichern, sondern nur vorÅbergehend
+erstellt werden, um Daten zu reprÑsentieren. Beispiele hierfÅr sind die
+Jobs in einem Druckerobjekt und die GerÑte im Hardware-Manager.
 
-</OL>The WPS also offers an exceptional mechanism called <B>class replacements.</B>
-This feature is used extensively by &xwp; to hook all of its features
-into the WPS by replacing a number of standard WPS classes. For example, the
-<CODE>XFolder</CODE> class itself replaces the <CODE>WPFolder</CODE> class
-to implement all the new folder features.
+</OL>Die WPS bietet zusÑtzlich den bemerkenswerten Mechanismus der
+<b>Klassenersetzungen</b> an. Diese Funktion wird von &xwp; intensiv
+benutzt, um eine Vielzahl von Erweiterungen in die WPS zu integrieren.
+So ersetzt beispielsweise die Klasse
+<CODE>XFolder</CODE> die Standardklasse <CODE>WPFolder</CODE>, um die
+ganzen neuen Ordnerfunktionen zu implementieren.
 
-<P>Such a replacement class must always be a descendant of
-the class which it should replace; "replacing" the class then means that the
-WPS will always use the replacement class whenever the original class
-would normally be used. As a result, if &xwp; is installed, all
-folders of your system are no longer instances of <CODE>WPFolder</CODE>,
-but of <CODE>XFolder</CODE>.
-But since <CODE>XFolder</CODE> is a descendant of <CODE>WPFolder</CODE>,
-all standard folder characteristics are inherited and still exist with the folders
-on your system.
+<P>Eine Ersetzungsklasse mu· stets von der Klasse, die sie ersetzen soll,
+abgeleitet sein. Das "Ersetzen" einer Klasse bedeutet dann, da· die WPS
+stets diese Klasse anstelle der ursprÅnglichen Klasse benutzen wird.
+Alle Ordner des Systems sind also nicht mehr Instanzen der Klasse
+<CODE>WPFolder</CODE>, sondern der Klasse <CODE>XFolder</CODE>.
+Da die Klasse <CODE>XFolder</CODE> aber von der Klasse <CODE>WPFolder</CODE>
+abgeleitet ist, erbt sie alle Eigenschaften der Standardordner.
 
-<P>Using class replacements enables programmers to implement new features for a
-class without having to know in detail how a certain class works internally.
-This is an outstanding and powerful concept, which is unmatched by other
-operating systems.
+<P>Mit Klassenersetzungen kînnen Programmierer neue Funktionen in eine
+Klasse einfÅgen, ohne im Detail wissen zu mÅssen, wie eine Klasse intern
+funktioniert. Dies ist ein au·ergewîhnliches und leistungsfÑhiges Konzept,
+welches von keinem anderen Betriebssystem angeboten wird.
 
 <IFNDEF __NOWPSCLASSLIST__>
-<P>If you open &xwp;'s
-<A HREF="clst_main.html">"WPS Class List"</A> object, all of
-the classes installed on your system will be
-displayed. Regularily, these will be more than 100 classes, which will appear
-in a tree structure. Using &popmenu;s, you may register and replace
-classes here and also deregister classes and undo class replacements. Also,
-you can attempt to create an object (that is: an instance) of many classes
-on your Desktop.
+<P>Wenn Sie das Objekt
+<A HREF="clst_main.html">"WPS-Klassenliste"</A> object von &xwp; îffnen,
+werden alle Klassen, die derzeit auf Ihrem System installiert sind,
+angezeigt. öblicherweise sind dies mehr als 100 Klassen, die in einer
+Strukturanzeige aufgezÑhlt werden. Mit &popmenu;s kînnen Sie Klassen
+registrieren und ersetzen sowie deregistrieren und Ersetzungen
+rÅckgÑngig machen. Sie kînnen au·erdem versuchen, von einer bestimmten
+Klasse ein Objekt (d.h. eine Instanz) zu erzeugen.
 
-<P>Please note that you should be very careful when manipulating the WPS
-class list. By making the wrong change, you can make your system unusable!
+<P>Beachten Sie, da· Sie beim VerÑndern der WPS-Klassenliste gro·e Vorsicht
+walten lassen sollten. Eine falsche énderung kann Ihr System unbenutzbar machen!
 </IFNDEF>
 
 <BR>

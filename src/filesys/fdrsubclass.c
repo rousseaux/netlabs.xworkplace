@@ -1091,7 +1091,7 @@ STATIC BOOL MenuSelect(PSUBCLFOLDERVIEW psfv,   // in: frame information
                            )
                         {
                             PMPF_MENUS(("  un-checking 0x%lX in hMenu 0x%lX",
-                                        ulDefaultView,
+                                        usOldDefaultView,
                                         mp2));
 
                             WinSendMsg((HWND)mp2,

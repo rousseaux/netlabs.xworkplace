@@ -627,8 +627,8 @@ STATIC VOID TwgtDestroy(HWND hwnd)
     {
         if (pPrivate->ulTimerID)
             ptmrStopXTimer(pPrivate->pWidget->pGlobals->pvXTimerSet,
-                          hwnd,
-                          pPrivate->ulTimerID);
+                           hwnd,
+                           pPrivate->ulTimerID);
 
         libWin32kTerm();
 
@@ -637,7 +637,10 @@ STATIC VOID TwgtDestroy(HWND hwnd)
                     // this was missing V0.9.12 (2001-05-20) [umoeller]
 
         if (pPrivate->paSnapshots)
+        {
             free(pPrivate->paSnapshots);
+            pPrivate->paSnapshots = NULL;
+        }
 
         free(pPrivate);
     } // end if (pPrivate)
@@ -1175,7 +1178,7 @@ VOID TwgtTimer(HWND hwnd)
         {
             ULONG ulGraphCX = rclClient.xRight - 2;    // minus border
 
-            if (pPrivate->paSnapshots == NULL)
+            if (!pPrivate->paSnapshots)
             {
                 // create array of loads
                 ULONG cb = sizeof(SNAPSHOT) * ulGraphCX;
