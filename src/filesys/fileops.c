@@ -770,7 +770,9 @@ WPFileSystem* fopsFindObjectWithSameTitle(WPFolder *pFolder,    // in: folder to
                         continue;
                     }
 
-                    if (    (pszThis = _wpQueryTitle(pobj))
+                    // V1.0.3 (2004-06-19) [pr]: @@fixes 563
+                    if (    _somIsA(pobj, _WPFileSystem)
+                         && (pszThis = _wpQueryTitle(pobj))
                          && (!stricmp(pszThis, pszFind))
                        )
                     {
