@@ -346,6 +346,8 @@
     #define ID_XSH_SETTINGS_PGMFILE_MODULE1 122
     #define ID_XSH_SETTINGS_PGMFILE_MODULE2 123
 
+    #define ID_XSH_SETTINGS_PAGEMAGE_WINDOW 124     // V0.9.9: XWPScreen "PageMage" page V0.9.9 (2001-03-15) [lafaix]
+
     /********************************************************************
      *
      *   Various other identifiers/flag declarations
@@ -535,8 +537,10 @@
     #define SP_MOUSE_MAPPINGS2      132     // new with V0.9.1
 
     // 14) XWPScreen
-    #define SP_PAGEMAGE1            140     // new with V0.9.3 (2000-04-09) [umoeller]
-    #define SP_PAGEMAGE2            141     // new with V0.9.3 (2000-04-09) [umoeller]
+    #define SP_PAGEMAGE_MAIN        140     // new with V0.9.3 (2000-04-09) [umoeller]
+    #define SP_PAGEMAGE_WINDOW      141     // new with V0.9.9 (2001-03-27) [umoeller]
+    #define SP_PAGEMAGE_STICKY      142     // new with V0.9.3 (2000-04-09) [umoeller]
+    #define SP_PAGEMAGE_COLORS      143     // new with V0.9.3 (2000-04-09) [umoeller]
 
     // 15) XWPString
     #define SP_XWPSTRING            150     // new with V0.9.3 (2000-04-27) [umoeller]
@@ -1298,25 +1302,31 @@
                 pszArcNotNecc,          // "WPS archiving not necessary."
 
     // new Module subpages V0.9.9 (2001-03-11) [lafaix]
-                pszModule1Page,
-                pszModule2Page,
+                pszModule1Page,         // "Imported modules"
+                pszModule2Page,         // "Exported functions"
 
     // miscellaneous new columns headers V0.9.9 (2001-03-11) [lafaix]
-                pszColmnModuleName,
-                pszColmnExportOrdinal,
-                pszColmnExportType,
-                pszColmnExportName,
-                pszColmnResourceIcon,
-                pszColmnResourceID,
-                pszColmnResourceType,
-                pszColmnResourceSize,
-                pszColmnResourceFlags,
+                pszColmnModuleName,     // "Name"
+                pszColmnExportOrdinal,  // "Ordinal"
+                pszColmnExportType,     // "Type"
+                pszColmnExportName,     // "Name"
+                pszColmnResourceIcon,   // "Icon"
+                pszColmnResourceID,     // "ID"
+                pszColmnResourceType,   // "Type"
+                pszColmnResourceSize,   // "Size"
+                pszColmnResourceFlags,  // "Flags"
 
     // new special functions on XWPMouse "Movement" page V0.9.9 (2001-03-11) [lafaix]
-                pszSpecialPageMageUp,
-                pszSpecialPageMageRight,
-                pszSpecialPageMageDown,
-                pszSpecialPageMageLeft;
+                pszSpecialPageMageUp,   // "One screen up"
+                pszSpecialPageMageRight,// "One screen right"
+                pszSpecialPageMageDown, // "One screen down"
+                pszSpecialPageMageLeft, // "One screen left"
+
+    // new MB3 mappings labels V0.9.9 (2001-03-27) [umoeller]
+                pszMB3AutoScroll,       // "AutoScroll"
+                pszMB3DblClick,         // "Double click"
+                pszMB3NoConversion,     // "No conversion"
+                pszMB3PushToBottom;     // "Push to bottom"
     } NLSSTRINGS;
 
     typedef const NLSSTRINGS* PNLSSTRINGS;

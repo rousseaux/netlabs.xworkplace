@@ -113,9 +113,9 @@
         LONG         lcTxtCurrentApp;
 
         /* Panning */
-        BOOL         bPanAtTop;
-        BOOL         bPanAtBottom;
-        BOOL         bPanAtLeft;
+        BOOL         bPanAtTop;             // @@@ Martin, we can't comment this
+        BOOL         bPanAtBottom;          // out, because this is stored in binary
+        BOOL         bPanAtLeft;            // in OS2.INI.
         BOOL         bPanAtRight;
         BOOL         bWrapAround;
 
@@ -286,6 +286,14 @@
         BOOL            fSlidingIgnoreXCenter;
                             // on sliding focus
 
+        // screen corner objects sensitivity; in percent of the
+        // adjacents borders.  0 = off, 50 = borders objects disabled
+        // V0.9.9 (2001-03-15) [lafaix]
+        ULONG           ulCornerSensitivity;
+
+        // Mouse-button-3 autoscroll and push to bottom features
+        BOOL            fMB3AutoScroll;
+        BOOL            fMB3Push2Bottom;
     } HOOKCONFIG, *PHOOKCONFIG;
 
     /*
@@ -402,6 +410,11 @@
     #define XDM_WMCHORDWINLIST      (WM_USER + 411)
 
     // #define XDM_PGMGWINLISTFULL     (WM_USER + 412)
+
+    // added V0.9.9 (2001-03-18) [lafaix]
+    #define XDM_BEGINSCROLL         (WM_USER + 413)
+    #define XDM_SETPOINTER          (WM_USER + 414)
+    #define XDM_ENDSCROLL           (WM_USER + 415)
 
 #endif
 

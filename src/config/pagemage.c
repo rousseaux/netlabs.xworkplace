@@ -49,6 +49,7 @@
 #define INCL_WINLISTBOXES
 #define INCL_WINSTDCNR
 #define INCL_WINSTDSLIDER
+#define INCL_WINSTDVALSET
 #define INCL_WINSWITCHLIST
 #define INCL_GPILOGCOLORTABLE
 #include <os2.h>
@@ -154,6 +155,48 @@ VOID SavePageMageConfig(PAGEMAGECONFIG* pPgmgConfig,
 // #ifdef __PAGEMAGE__
 
 /*
+ *@@ UpdateValueSet:
+ *
+ *@@added V0.9.9 (2001-03-15) [lafaix]
+ */
+
+VOID UpdateValueSet(HWND hwndValueSet,
+                    PAGEMAGECONFIG *pPgmgConfig)
+{
+   int row, col;
+   BOOL bValid;
+
+   for (row = 1; row <= 10; row++)
+   {
+       for (col = 1; col <= 10; col++)
+       {
+           bValid = (col <= pPgmgConfig->ptlMaxDesktops.x)
+                 && (row <= pPgmgConfig->ptlMaxDesktops.y);
+
+           WinSendMsg(hwndValueSet,
+                      VM_SETITEM,
+                      MPFROM2SHORT(row, col),
+                      MPFROMLONG(bValid ? pPgmgConfig->lcNormal
+                                        : pPgmgConfig->lcDivider));
+
+           WinSendMsg(hwndValueSet,
+                      VM_SETITEMATTR,
+                      MPFROM2SHORT(row, col),
+                      MPFROM2SHORT(VIA_DISABLED, !bValid));
+       }
+   }
+
+   // highlight startup desktop
+   WinSendMsg(hwndValueSet,
+              VM_SETITEM,
+              MPFROM2SHORT(min(pPgmgConfig->ptlStartDesktop.y,
+                               pPgmgConfig->ptlMaxDesktops.y),
+                           min(pPgmgConfig->ptlStartDesktop.x,
+                               pPgmgConfig->ptlMaxDesktops.x)),
+              MPFROMLONG(pPgmgConfig->lcCurrent));
+}
+
+/*
  *@@ pgmiPageMageGeneralInitPage:
  *      notebook callback function (notebook.c) for the
  *      first "PageMage" page in the "Screen" settings object.
@@ -162,6 +205,7 @@ VOID SavePageMageConfig(PAGEMAGECONFIG* pPgmgConfig,
  *
  *@@changed V0.9.4 (2000-07-11) [umoeller]: fixed window flashing
  *@@changed V0.9.4 (2000-07-11) [umoeller]: added window flashing delay
+ *@@changed V0.9.9 (2001-03-15) [lafaix]: "window" part moved to pgmiPageMageWindowInitPage
  */
 
 VOID pgmiPageMageGeneralInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -198,6 +242,10 @@ VOID pgmiPageMageGeneralInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info s
     {
         PAGEMAGECONFIG* pPgmgConfig = (PAGEMAGECONFIG*)pcnbp->pUser;
 
+_Pmpf(("CBI_SET: %d %d %d %d", pPgmgConfig->ptlMaxDesktops.x,
+                                   pPgmgConfig->ptlMaxDesktops.y,
+                                   pPgmgConfig->ptlStartDesktop.x,
+                                   pPgmgConfig->ptlStartDesktop.y));
         // sliders
         winhSetSliderArmPosition(WinWindowFromID(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_X_SLIDER),
                                  SMA_INCREMENTVALUE,
@@ -206,26 +254,10 @@ VOID pgmiPageMageGeneralInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info s
                                  SMA_INCREMENTVALUE,
                                  pPgmgConfig->ptlMaxDesktops.y - 1);
 
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_TITLEBAR,
-                              pPgmgConfig->fShowTitlebar);
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_PRESERVEPROPS,
-                              pPgmgConfig->fPreserveProportions);
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_STAYONTOP,
-                              pPgmgConfig->fStayOnTop);
-
-        // flash
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_FLASHTOTOP,
-                              pPgmgConfig->fFlash);
-        winhSetDlgItemSpinData(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_FLASH_SPIN,
-                               1, 30,       // min, max
-                               pPgmgConfig->ulFlashDelay / 1000);  // current
-
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_SHOWWINDOWS,
-                              pPgmgConfig->fMirrorWindows);
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_SHOWWINTITLES,
-                              pPgmgConfig->fShowWindowText);
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_CLICK2ACTIVATE,
-                              pPgmgConfig->fClick2Activate);
+        // valueset
+        UpdateValueSet(WinWindowFromID(pcnbp->hwndDlgPage,
+                                       ID_SCDI_PGMG1_VALUESET),
+                       pPgmgConfig);
 
         // hotkeys
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_ARROWHOTKEYS,
@@ -236,27 +268,14 @@ VOID pgmiPageMageGeneralInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info s
                               ((pPgmgConfig->ulKeyShift & KC_SHIFT) != 0));
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_HOTKEYS_ALT,
                               ((pPgmgConfig->ulKeyShift & KC_ALT) != 0));
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_WRAPAROUND,
+                              ((pPgmgConfig->bWrapAround) ? TRUE : FALSE));
+_Pmpf(("CBI_SET ended"));
     }
 
     if (flFlags & CBI_ENABLE)
     {
-        BOOL fEnable = winhIsDlgItemChecked(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_SHOWWINDOWS);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_SHOWWINTITLES,
-                         fEnable);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_CLICK2ACTIVATE,
-                         fEnable);
-
-        // flash
-        fEnable = winhIsDlgItemChecked(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_FLASHTOTOP);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_FLASH_TXT1,
-                         fEnable);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_FLASH_SPIN,
-                         fEnable);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_FLASH_TXT2,
-                         fEnable);
-
-        // hotkeys
-        fEnable = winhIsDlgItemChecked(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_ARROWHOTKEYS);
+        BOOL fEnable = winhIsDlgItemChecked(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_ARROWHOTKEYS);
         WinEnableControl(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_HOTKEYS_CTRL,
                          fEnable);
         WinEnableControl(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_HOTKEYS_SHIFT,
@@ -274,6 +293,8 @@ VOID pgmiPageMageGeneralInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info s
  *
  *@@changed V0.9.4 (2000-07-11) [umoeller]: fixed window flashing
  *@@changed V0.9.4 (2000-07-11) [umoeller]: added window flashing delay
+ *@@changed V0.9.9 (2001-03-15) [lafaix]: "window" part moved to pgmiPageMageWindowItemChanged
+ *@@changed V0.9.9 (2001-03-15) [lafaix]: fixed odd undo/default behavior
  */
 
 MRESULT pgmiPageMageGeneralItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -302,6 +323,9 @@ MRESULT pgmiPageMageGeneralItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             LoadPageMageConfig(pcnbp->pUser);
             pPgmgConfig->ptlMaxDesktops.x = lSliderIndex + 1;
             ulPgmgChangedFlags = PGMGCFG_REPAINT | PGMGCFG_REFORMAT;
+            UpdateValueSet(WinWindowFromID(pcnbp->hwndDlgPage,
+                                           ID_SCDI_PGMG1_VALUESET),
+                           pPgmgConfig);
         break; }
 
         case ID_SCDI_PGMG1_Y_SLIDER:
@@ -317,8 +341,243 @@ MRESULT pgmiPageMageGeneralItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             LoadPageMageConfig(pcnbp->pUser);
             pPgmgConfig->ptlMaxDesktops.y = lSliderIndex + 1;
             ulPgmgChangedFlags = PGMGCFG_REPAINT | PGMGCFG_REFORMAT;
+            UpdateValueSet(WinWindowFromID(pcnbp->hwndDlgPage,
+                                           ID_SCDI_PGMG1_VALUESET),
+                           pPgmgConfig);
         break; }
 
+        case ID_SCDI_PGMG1_WRAPAROUND:
+            LoadPageMageConfig(pcnbp->pUser);
+            pPgmgConfig->bWrapAround = ulExtra;
+        break;
+
+        case ID_SCDI_PGMG1_VALUESET:
+            if (usNotifyCode == VN_ENTER)
+            {
+                pPgmgConfig->ptlStartDesktop.x = SHORT2FROMMP((MPARAM)ulExtra);
+                pPgmgConfig->ptlStartDesktop.y = SHORT1FROMMP((MPARAM)ulExtra);
+                UpdateValueSet(pcnbp->hwndControl,
+                               pPgmgConfig);
+            }
+        break;
+
+        case ID_SCDI_PGMG1_ARROWHOTKEYS:
+            LoadPageMageConfig(pcnbp->pUser);
+            pPgmgConfig->fEnableArrowHotkeys = ulExtra;
+            (pcnbp->pfncbInitPage)(pcnbp, CBI_ENABLE);
+        break;
+
+        case ID_SCDI_PGMG1_HOTKEYS_CTRL:
+        case ID_SCDI_PGMG1_HOTKEYS_SHIFT:
+        case ID_SCDI_PGMG1_HOTKEYS_ALT:
+        {
+            ULONG ulOldKeyShift;
+            LoadPageMageConfig(pcnbp->pUser);
+            ulOldKeyShift = pPgmgConfig->ulKeyShift;
+
+            pPgmgConfig->ulKeyShift = 0;
+            if (winhIsDlgItemChecked(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_HOTKEYS_CTRL))
+                 pPgmgConfig->ulKeyShift |= KC_CTRL;
+            if (winhIsDlgItemChecked(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_HOTKEYS_SHIFT))
+                 pPgmgConfig->ulKeyShift |= KC_SHIFT;
+            if (winhIsDlgItemChecked(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_HOTKEYS_ALT))
+                 pPgmgConfig->ulKeyShift |= KC_ALT;
+
+            if (pPgmgConfig->ulKeyShift == 0)
+            {
+                // no modifiers enabled: we really shouldn't allow this,
+                // so restore the old value
+                pPgmgConfig->ulKeyShift = ulOldKeyShift;
+                WinAlarm(HWND_DESKTOP, WA_ERROR);
+                (pcnbp->pfncbInitPage)(pcnbp, CBI_SET | CBI_ENABLE);
+            }
+        break; }
+
+        /*
+         * DID_DEFAULT:
+         *
+         *@@changed V0.9.9 (2001-03-15) [lafaix]: saves settings here
+         */
+
+        case DID_DEFAULT:
+            LoadPageMageConfig(pcnbp->pUser);
+            pPgmgConfig->ptlMaxDesktops.x = 3;
+            pPgmgConfig->ptlMaxDesktops.y = 2;
+            pPgmgConfig->ptlStartDesktop.x = 1;
+            pPgmgConfig->ptlStartDesktop.y = 1;
+            pPgmgConfig->fEnableArrowHotkeys = TRUE;
+            pPgmgConfig->ulKeyShift = KC_CTRL | KC_ALT;
+            pPgmgConfig->bWrapAround = FALSE;
+
+            ulPgmgChangedFlags = PGMGCFG_REPAINT | PGMGCFG_REFORMAT;
+
+            SavePageMageConfig(pPgmgConfig,
+                               ulPgmgChangedFlags);
+
+            // call INIT callback to reinitialize page
+            (pcnbp->pfncbInitPage)(pcnbp, CBI_SET | CBI_ENABLE);
+
+            fSave = FALSE;
+        break;
+
+        /*
+         * DID_UNDO:
+         *
+         *@@changed V0.9.9 (2001-03-15) [lafaix]: saves settings here
+         */
+
+        case DID_UNDO:
+        {
+            PAGEMAGECONFIG* pBackup = (PAGEMAGECONFIG*)pcnbp->pUser2;
+
+            LoadPageMageConfig(pcnbp->pUser);
+            pPgmgConfig->ptlMaxDesktops.x = pBackup->ptlMaxDesktops.x;
+            pPgmgConfig->ptlMaxDesktops.y = pBackup->ptlMaxDesktops.y;
+            pPgmgConfig->ptlStartDesktop.x = pBackup->ptlStartDesktop.x;
+            pPgmgConfig->ptlStartDesktop.y = pBackup->ptlStartDesktop.y;
+            pPgmgConfig->fEnableArrowHotkeys = pBackup->fEnableArrowHotkeys;
+            pPgmgConfig->ulKeyShift = pBackup->ulKeyShift;
+            pPgmgConfig->bWrapAround = pBackup->bWrapAround;
+
+            ulPgmgChangedFlags = PGMGCFG_REPAINT | PGMGCFG_REFORMAT;
+
+            SavePageMageConfig(pPgmgConfig,
+                               ulPgmgChangedFlags);
+
+            // call INIT callback to reinitialize page
+            (pcnbp->pfncbInitPage)(pcnbp, CBI_SET | CBI_ENABLE);
+
+            fSave = FALSE;
+        break; }
+
+        default:
+            fSave = FALSE;
+        break;
+    }
+
+    if (    (fSave)
+         && (pcnbp->fPageInitialized)   // page initialized yet?
+       )
+    {
+        SavePageMageConfig(pPgmgConfig,
+                           ulPgmgChangedFlags);
+    }
+
+    return (mrc);
+}
+
+/* ******************************************************************
+ *
+ *   PageMage Window page notebook functions (notebook.c)
+ *
+ ********************************************************************/
+
+// #ifdef __PAGEMAGE__
+
+/*
+ *@@ pgmiPageMageWindowInitPage:
+ *      notebook callback function (notebook.c) for the
+ *      second "PageMage" page in the "Screen" settings object.
+ *      Sets the controls on the page according to the
+ *      Global Settings.
+ *
+ *@@added V0.9.9 (2001-03-15) [lafaix]
+ */
+
+VOID pgmiPageMageWindowInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
+                                ULONG flFlags)        // CBI_* flags (notebook.h)
+{
+    if (flFlags & CBI_INIT)
+    {
+        if (pcnbp->pUser == 0)
+        {
+            // first call: create PAGEMAGECONFIG
+            // structure;
+            // this memory will be freed automatically by the
+            // common notebook window function (notebook.c) when
+            // the notebook page is destroyed
+            pcnbp->pUser = malloc(sizeof(PAGEMAGECONFIG));
+            if (pcnbp->pUser)
+                LoadPageMageConfig(pcnbp->pUser);
+
+            // make backup for "undo"
+            pcnbp->pUser2 = malloc(sizeof(PAGEMAGECONFIG));
+            if (pcnbp->pUser2)
+                memcpy(pcnbp->pUser2, pcnbp->pUser, sizeof(PAGEMAGECONFIG));
+        }
+
+    }
+
+    if (flFlags & CBI_SET)
+    {
+        PAGEMAGECONFIG* pPgmgConfig = (PAGEMAGECONFIG*)pcnbp->pUser;
+
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_TITLEBAR,
+                              pPgmgConfig->fShowTitlebar);
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_PRESERVEPROPS,
+                              pPgmgConfig->fPreserveProportions);
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_STAYONTOP,
+                              pPgmgConfig->fStayOnTop);
+
+        // flash
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_FLASHTOTOP,
+                              pPgmgConfig->fFlash);
+        winhSetDlgItemSpinData(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_FLASH_SPIN,
+                               1, 30,       // min, max
+                               pPgmgConfig->ulFlashDelay / 1000);  // current
+
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_SHOWWINDOWS,
+                              pPgmgConfig->fMirrorWindows);
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_SHOWWINTITLES,
+                              pPgmgConfig->fShowWindowText);
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_CLICK2ACTIVATE,
+                              pPgmgConfig->fClick2Activate);
+
+    }
+
+    if (flFlags & CBI_ENABLE)
+    {
+        BOOL fEnable = winhIsDlgItemChecked(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_SHOWWINDOWS);
+        WinEnableControl(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_SHOWWINTITLES,
+                         fEnable);
+        WinEnableControl(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_CLICK2ACTIVATE,
+                         fEnable);
+
+        // flash
+        fEnable = winhIsDlgItemChecked(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_FLASHTOTOP);
+        WinEnableControl(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_FLASH_TXT1,
+                         fEnable);
+        WinEnableControl(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_FLASH_SPIN,
+                         fEnable);
+        WinEnableControl(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_FLASH_TXT2,
+                         fEnable);
+
+    }
+}
+
+/*
+ *@@ pgmiPageMageWindowItemChanged:
+ *      notebook callback function (notebook.c) for the
+ *      second "PageMage" page in the "Screen" settings object.
+ *      Reacts to changes of any of the dialog controls.
+ *
+ *@@added V0.9.9 (2001-03-15) [lafaix]
+ *@@changed V0.9.9 (2001-03-15) [lafaix]: fixed odd undo/default behavior
+ */
+
+MRESULT pgmiPageMageWindowItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+                                      USHORT usItemID, USHORT usNotifyCode,
+                                      ULONG ulExtra)      // for checkboxes: contains new state
+{
+    MRESULT mrc = 0;
+    BOOL    fSave = TRUE;      // save settings per default; this is set to FALSE if not needed
+    ULONG   ulPgmgChangedFlags = 0;
+
+    // access settings
+    PAGEMAGECONFIG* pPgmgConfig = (PAGEMAGECONFIG*)pcnbp->pUser;
+
+    switch (usItemID)
+    {
         case ID_SCDI_PGMG1_TITLEBAR:
             LoadPageMageConfig(pcnbp->pUser);
             pPgmgConfig->fShowTitlebar = ulExtra;
@@ -370,38 +629,6 @@ MRESULT pgmiPageMageGeneralItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             pPgmgConfig->fClick2Activate = ulExtra;
         break;
 
-        case ID_SCDI_PGMG1_ARROWHOTKEYS:
-            LoadPageMageConfig(pcnbp->pUser);
-            pPgmgConfig->fEnableArrowHotkeys = ulExtra;
-            (pcnbp->pfncbInitPage)(pcnbp, CBI_ENABLE);
-        break;
-
-        case ID_SCDI_PGMG1_HOTKEYS_CTRL:
-        case ID_SCDI_PGMG1_HOTKEYS_SHIFT:
-        case ID_SCDI_PGMG1_HOTKEYS_ALT:
-        {
-            ULONG ulOldKeyShift;
-            LoadPageMageConfig(pcnbp->pUser);
-            ulOldKeyShift = pPgmgConfig->ulKeyShift;
-
-            pPgmgConfig->ulKeyShift = 0;
-            if (winhIsDlgItemChecked(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_HOTKEYS_CTRL))
-                 pPgmgConfig->ulKeyShift |= KC_CTRL;
-            if (winhIsDlgItemChecked(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_HOTKEYS_SHIFT))
-                 pPgmgConfig->ulKeyShift |= KC_SHIFT;
-            if (winhIsDlgItemChecked(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_HOTKEYS_ALT))
-                 pPgmgConfig->ulKeyShift |= KC_ALT;
-
-            if (pPgmgConfig->ulKeyShift == 0)
-            {
-                // no modifiers enabled: we really shouldn't allow this,
-                // so restore the old value
-                pPgmgConfig->ulKeyShift = ulOldKeyShift;
-                WinAlarm(HWND_DESKTOP, WA_ERROR);
-                (pcnbp->pfncbInitPage)(pcnbp, CBI_SET | CBI_ENABLE);
-            }
-        break; }
-
         /*
          * DID_DEFAULT:
          *
@@ -409,8 +636,6 @@ MRESULT pgmiPageMageGeneralItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         case DID_DEFAULT:
             LoadPageMageConfig(pcnbp->pUser);
-            pPgmgConfig->ptlMaxDesktops.x = 3;
-            pPgmgConfig->ptlMaxDesktops.y = 2;
             pPgmgConfig->fStayOnTop = FALSE;
             pPgmgConfig->fFlash = FALSE;
             pPgmgConfig->ulFlashDelay = 2000;
@@ -419,18 +644,19 @@ MRESULT pgmiPageMageGeneralItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             pPgmgConfig->fMirrorWindows = TRUE;
             pPgmgConfig->fShowWindowText = TRUE;
             pPgmgConfig->fClick2Activate = TRUE;
-            pPgmgConfig->fEnableArrowHotkeys = TRUE;
-            pPgmgConfig->ulKeyShift = KC_CTRL | KC_ALT;
+
+            SavePageMageConfig(pPgmgConfig,
+                               PGMGCFG_REPAINT | PGMGCFG_REFORMAT | PGMGCFG_ZAPPO);
+            fSave = FALSE;      // V0.9.9 (2001-03-27) [umoeller]
 
             // call INIT callback to reinitialize page
             (pcnbp->pfncbInitPage)(pcnbp, CBI_SET | CBI_ENABLE);
-
-            ulPgmgChangedFlags = PGMGCFG_REPAINT | PGMGCFG_REFORMAT;
         break;
 
         /*
          * DID_UNDO:
          *
+         *changed V0.9.9 (2001-03-15) [lafaix]: save settings here
          */
 
         case DID_UNDO:
@@ -438,8 +664,6 @@ MRESULT pgmiPageMageGeneralItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             PAGEMAGECONFIG* pBackup = (PAGEMAGECONFIG*)pcnbp->pUser2;
 
             LoadPageMageConfig(pcnbp->pUser);
-            pPgmgConfig->ptlMaxDesktops.x = pBackup->ptlMaxDesktops.x;
-            pPgmgConfig->ptlMaxDesktops.y = pBackup->ptlMaxDesktops.y;
             pPgmgConfig->fShowTitlebar = pBackup->fShowTitlebar;
             pPgmgConfig->fPreserveProportions = pBackup->fPreserveProportions;
             pPgmgConfig->fStayOnTop = pBackup->fStayOnTop;
@@ -448,13 +672,14 @@ MRESULT pgmiPageMageGeneralItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             pPgmgConfig->fMirrorWindows = pBackup->fMirrorWindows;
             pPgmgConfig->fShowWindowText = pBackup->fShowWindowText;
             pPgmgConfig->fClick2Activate = pBackup->fClick2Activate;
-            pPgmgConfig->fEnableArrowHotkeys = pBackup->fEnableArrowHotkeys;
-            pPgmgConfig->ulKeyShift = pBackup->ulKeyShift;
+
+            SavePageMageConfig(pPgmgConfig,
+                               PGMGCFG_REPAINT | PGMGCFG_REFORMAT | PGMGCFG_ZAPPO);
+                                        // fixed V0.9.9 (2001-03-27) [umoeller]
+            fSave = FALSE;
 
             // call INIT callback to reinitialize page
             (pcnbp->pfncbInitPage)(pcnbp, CBI_SET | CBI_ENABLE);
-
-            ulPgmgChangedFlags = PGMGCFG_REPAINT | PGMGCFG_REFORMAT;
         break; }
 
         default:

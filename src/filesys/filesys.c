@@ -1266,7 +1266,6 @@ VOID fsysProgram2InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
 
 /*
  *@@ RESOURCERECORD:
- *      frees resources allocated by fsysQueryResources.
  *
  *@@added V0.9.7 (2000-12-17) [lafaix]
  */
@@ -1568,7 +1567,7 @@ VOID fsysResourcesInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
  *         directly because at this point we have no class
  *         replacement for WPProgram.
  *
-File *      -- For XFldProgramFile, this gets called by
+ *      -- For XFldProgramFile, this gets called by
  *         fsysQueryProgramFileSetup.
  *
  *@@added V0.9.4 (2000-08-02) [umoeller]

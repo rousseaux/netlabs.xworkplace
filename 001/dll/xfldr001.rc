@@ -772,6 +772,12 @@ BEGIN
     ID_XSSI_SPECIAL_PAGEMAGERIGHT       "One screen right"
     ID_XSSI_SPECIAL_PAGEMAGEDOWN        "One screen down"
     ID_XSSI_SPECIAL_PAGEMAGELEFT        "One screen left"
+
+    /* new MB3 mappings labels V0.9.9 (2001-03-27) [umoeller] */
+    ID_XSSI_MB3_AUTOSCROLL              "AutoScroll"
+    ID_XSSI_MB3_DBLCLICK                "Double click"
+    ID_XSSI_MB3_NOCONVERSION            "No conversion"
+    ID_XSSI_MB3_PUSHTOBOTTOM            "Push to bottom"
 END
 
 /* Treesize definitions; added V0.9.0 */

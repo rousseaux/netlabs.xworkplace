@@ -28,6 +28,7 @@
 #define INCL_WINWINDOWMGR
 #define INCL_WINMESSAGEMGR
 #define INCL_WINSWITCHLIST
+#define INCL_WINPOINTERS
 #define INCL_WINSYS
 #include <os2.h>
 
@@ -532,6 +533,7 @@ BOOL pgmmZMoveIt(LONG lXDelta,
  *
  *@@added V0.9.4 (2000-08-03) [umoeller]
  *@@changed V0.9.7 (2000-12-04) [umoeller]: now preventing sticky windows from switching
+ *@@changed V0.9.9 (2001-03-14) [lafaix]: now preventing heratic mouse screen switch
  */
 
 MRESULT EXPENTRY fnwpMoveThread(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -583,6 +585,7 @@ MRESULT EXPENTRY fnwpMoveThread(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                     HWND hwndActive = pgmwGetWindowFromClientPoint(lX, lY);
 
                     if (hwndActive != NULLHANDLE)
+                    {
                         // we must have a msg queue to use WinSetActiveWindow(),
                         // so post this back
                         if (msg == PGOM_CLICK2ACTIVATE)
@@ -597,8 +600,36 @@ MRESULT EXPENTRY fnwpMoveThread(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                                        PGMG_LOWERWINDOW,
                                        MPFROMHWND(hwndActive),
                                        MPVOID);
+                    }
                 }
             break; }
+
+            /*
+             *@@ PGOM_MOUSESWITCH:
+             *      sent by the daemon when a mouse switch is
+             *      requested.
+             *
+             *      If a mouse switch request is pending, we must
+             *      discard incoming requests, so as to prevent
+             *      heratic desktop movement.  Otherwise, we post
+             *      ourself a message to process the request at
+             *      a later time.
+             *
+             *      This message must be send, not posted.
+             *
+             *@@added V0.9.9 (2001-03-14) [lafaix]
+             */
+
+            case PGOM_MOUSESWITCH:
+                if (G_pHookData->fDisableMouseSwitch == FALSE)
+                {
+                    // no mouse switch pending
+                    G_pHookData->fDisableMouseSwitch = TRUE;
+
+                    // delay the switch
+                    WinPostMsg(hwndObject, PGOM_HOOKKEY, mp1, (MPARAM)TRUE);
+                }
+            break;
 
             /*
              *@@ PGOM_HOOKKEY:
@@ -608,6 +639,11 @@ MRESULT EXPENTRY fnwpMoveThread(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
              *
              *      (UCHAR)mp1 has the scan code of the
              *      key which was pressed.
+             *
+             *      (BOOL)mp2 is true if this has been
+             *      posted due to a mouse switch request.
+             *
+             *@@changed V0.9.9 (2001-03-14) [lafaix]: mp2 defined.
              */
 
             case PGOM_HOOKKEY:
@@ -626,7 +662,7 @@ MRESULT EXPENTRY fnwpMoveThread(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                         lDeltaY = G_szlEachDesktopReal.cy;
                         break;
                 }
-                break;
+            break;
 
             /*
              *@@ PGOM_FOCUSCHANGE:
@@ -640,95 +676,99 @@ MRESULT EXPENTRY fnwpMoveThread(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
              */
 
             case PGOM_FOCUSCHANGE:
-            {
-                SWP         swpActive;
-                // get the new active window
-                HWND hwndActive;
-
-                DosSleep(100);
-
-                hwndActive = WinQueryActiveWindow(HWND_DESKTOP);
-
-                // _Pmpf((__FUNCTION__ ": PGOM_FOCUSCHANGE, hwndActive: 0x%lX", hwndActive));
-
-                if (hwndActive)
+                if (!G_pHookData->fDisableMouseSwitch)
                 {
-                    // test if this is a sticky window;
-                    // if so, never switch desktops
-                    // V0.9.7 (2000-12-04) [umoeller]
-                    HSWITCH hsw = WinQuerySwitchHandle(hwndActive, 0);
+                    // we only do this if we are not currently processing
+                    // a mouse switch
+                    // V0.9.9 (2001-03-14) [lafaix]
+                    SWP         swpActive;
+                    // get the new active window
+                    HWND hwndActive;
 
-                    // _Pmpf(("  hSwitch: 0x%lX", hsw));
-                    if (hsw)
+                    DosSleep(100);
+
+                    hwndActive = WinQueryActiveWindow(HWND_DESKTOP);
+
+                    // _Pmpf((__FUNCTION__ ": PGOM_FOCUSCHANGE, hwndActive: 0x%lX", hwndActive));
+
+                    if (hwndActive)
                     {
-                        SWCNTRL swc;
-                        // if (WinQuerySwitchEntry(hsw, &swc))
-                        if (0 == WinQuerySwitchEntry(hsw, &swc))
-                                // fixed V0.9.7 (2001-01-19) [umoeller]...
-                                // for some reason, this returns 0 on success!!
+                        // test if this is a sticky window;
+                        // if so, never switch desktops
+                        // V0.9.7 (2000-12-04) [umoeller]
+                        HSWITCH hsw = WinQuerySwitchHandle(hwndActive, 0);
+
+                        // _Pmpf(("  hSwitch: 0x%lX", hsw));
+                        if (hsw)
                         {
-                            BOOL fSticky = pgmwStickyCheck(swc.szSwtitle);
-                            // _Pmpf(("  switch entry: %s --> sticky: %d",
-                               //      swc.szSwtitle, fSticky));
-                            if (fSticky)
-                                // it's sticky: get outta here
+                            SWCNTRL swc;
+                            // if (WinQuerySwitchEntry(hsw, &swc))
+                            if (0 == WinQuerySwitchEntry(hsw, &swc))
+                                    // fixed V0.9.7 (2001-01-19) [umoeller]...
+                                    // for some reason, this returns 0 on success!!
+                            {
+                                BOOL fSticky = pgmwStickyCheck(swc.szSwtitle);
+                                // _Pmpf(("  switch entry: %s --> sticky: %d",
+                                   //      swc.szSwtitle, fSticky));
+                                if (fSticky)
+                                    // it's sticky: get outta here
+                                    break;
+                            }
+                            else
+                                // no switch entry available: do not switch
+                                // V0.9.7 (2001-01-19) [umoeller]
                                 break;
                         }
-                        else
+
+                        // check if the active window is valid
+                        WinQueryWindowPos(hwndActive, &swpActive);
+
+                        // do not switch to hidden or minimized windows
+                        if (0 == (swpActive.fl & (SWP_HIDE | SWP_MINIMIZE)))
                         {
-                            // _Pmpf(("  switch entry failed, exiting"));
-                            break; // V0.9.7 (2001-01-19) [umoeller]
-                        }
-                    }
-                    else
-                        // no switch entry available: do not switch
-                        // V0.9.7 (2001-01-19) [umoeller]
-                        break;
-
-                    // check if the active window is valid
-                    WinQueryWindowPos(hwndActive, &swpActive);
-
-                    // do not switch to hidden or minimized windows
-                    if (0 == (swpActive.fl & (SWP_HIDE | SWP_MINIMIZE)))
-                    {
-                        // only move if window is not visible
-                        if (!pgmmIsPartlyOnCurrentDesktop(&swpActive))
-                        {
-                            // calculate the absolute coordinate (top left is (0,0))
-                            // of the active window relative to all desktops:
-                            LONG lAbsX = swpActive.x + (swpActive.cx / 2);
-                            LONG lAbsY = swpActive.y + (swpActive.cy / 2);
-                            lAbsX += G_ptlCurrPos.x;
-                            lAbsY = G_ptlCurrPos.y + G_szlEachDesktopReal.cy - lAbsY;
-
-                            // if we intend to move into a valid window
-                            if (    (lAbsX >= 0)
-                                 && (lAbsX <= (pptlMaxDesktops->x
-                                               * G_szlEachDesktopReal.cx))
-                                 && (lAbsY >= 0)
-                                 && (lAbsY <= (pptlMaxDesktops->y
-                                               * G_szlEachDesktopReal.cy))
-                               )
+                            // only move if window is not visible
+                            if (!pgmmIsPartlyOnCurrentDesktop(&swpActive))
                             {
-                                // put abs coord of desktop in lAbs
-                                lAbsX /= G_szlEachDesktopReal.cx;
-                                lAbsY /= G_szlEachDesktopReal.cy;
-                                lAbsX *= G_szlEachDesktopReal.cx;
-                                lAbsY *= G_szlEachDesktopReal.cy;
+                                // calculate the absolute coordinate (top left is (0,0))
+                                // of the active window relative to all desktops:
+                                LONG lAbsX = swpActive.x + (swpActive.cx / 2);
+                                LONG lAbsY = swpActive.y + (swpActive.cy / 2);
+                                lAbsX += G_ptlCurrPos.x;
+                                lAbsY = G_ptlCurrPos.y + G_szlEachDesktopReal.cy - lAbsY;
 
-                                lDeltaX = G_ptlCurrPos.x - lAbsX;
-                                lDeltaY = lAbsY - G_ptlCurrPos.y;
-                            }
-                        }
-                    }
-                }
-            break; }
+                                // if we intend to move into a valid window
+                                if (    (lAbsX >= 0)
+                                     && (lAbsX <= (pptlMaxDesktops->x
+                                                   * G_szlEachDesktopReal.cx))
+                                     && (lAbsY >= 0)
+                                     && (lAbsY <= (pptlMaxDesktops->y
+                                                   * G_szlEachDesktopReal.cy))
+                                   )
+                                {
+                                    // put abs coord of desktop in lAbs
+                                    lAbsX /= G_szlEachDesktopReal.cx;
+                                    lAbsY /= G_szlEachDesktopReal.cy;
+                                    lAbsX *= G_szlEachDesktopReal.cx;
+                                    lAbsY *= G_szlEachDesktopReal.cy;
+
+                                    lDeltaX = G_ptlCurrPos.x - lAbsX;
+                                    lDeltaY = lAbsY - G_ptlCurrPos.y;
+                                }
+                            } // end if (!pgmmIsPartlyOnCurrentDesktop(&swpActive))
+                        } // end if (0 == (swpActive.fl & (SWP_HIDE | SWP_MINIMIZE)))
+                    } // end if (hwndActive)
+                } // end if (!G_pHookData->fDisableMouseSwitch)
+            break;
 
             default:
                 mrc = WinDefWindowProc(hwndObject, msg, mp1, mp2);
         } // end switch (msg)
 
-        if (lDeltaX || lDeltaY)
+        if (    (lDeltaX || lDeltaY)
+             && (    (!G_pHookData->fDisableMouseSwitch)
+                  || ((msg == PGOM_HOOKKEY) && (mp2 == (MPARAM)TRUE))
+                )
+           )
         {
             // we got something to move:
 
@@ -749,6 +789,9 @@ MRESULT EXPENTRY fnwpMoveThread(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                     pgmgcStartFlashTimer();
                 }
             }
+
+            // mouse switching is now possible again
+            G_pHookData->fDisableMouseSwitch = FALSE;
         }
     }
     CATCH(excpt1) {} END_CATCH();

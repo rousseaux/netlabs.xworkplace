@@ -9,8 +9,13 @@
  *      to be running on thread 1 also.
  *
  *      In detail, we have:
+ *
+ *      -- kernel locks and exception log information;
+ *
  *      -- the KERNELGLOBALS interface (krnQueryGlobals);
+ *
  *      -- the thread-1 object window (fnwpThread1Object);
+ *
  *      -- the XWorkplace initialization code (krnInitializeXWorkplace).
  *
  *      In this file, I have assembled code which you might consider
@@ -2563,35 +2568,38 @@ VOID krnReplaceWheelWatcher(FILE *DumpFile)
  *          explicitly by PMSHELL.EXE, while it is processing
  *          the WPS class list from OS2.INI, who knows.
  *
- *      --  Apparently, the other WPS threads are not yet
- *          running -- or if they are, they won't interfere
- *          with anything we're doing here. So we can
- *          suspend the boot process for as long as we want
- *          to.
+ *      --  A number of WPS threads are already running... I
+ *          can count 12 here at the time this function is called.
+ *          But they won't interfere with anything we're doing here,
+ *          so we can suspend the boot process for as long as we
+ *          want to (e.g. for the "panic" dialogs).
  *
  *      So what we're doing here is the following (this is a
  *      bit complex):
  *
  *      a) Initialize XWorkplace's globals: the GLOBALSETTINGS,
- *         the KERNELGLOBALS, attempt to load SOUND.DLL, and such.
+ *         the KERNELGLOBALS, and such.
  *
- *      b) If the "Shift" key is pressed, show the "Panic" dialog
+ *      b) Create the Thread-1 object window (fnwpThread1Object)
+ *         and API object window (fnwpAPIObject).
+ *
+ *      c) If the "Shift" key is pressed, show the "Panic" dialog
  *         (new with V0.9.0). In that case, we pause the WPS
  *         bootup simply by not returning from this function
  *         until the dialog is dismissed.
  *
- *      c) Create the Thread-1 object window (fnwpThread1Object)
- *         and API object window (fnwpAPIObject).
+ *      d) Hack out the WPS folder auto-refresh threads, if enabled,
+ *         and start the Sentinel thread (see krnReplaceWheelWatcher).
  *
- *      d) Call xthrStartThreads to have the additional XWorkplace
+ *      e) Call xthrStartThreads to have the additional XWorkplace
  *         threads started. The Speedy thread will then display the
  *         boot logo, if allowed.
  *
- *      e) Start the XWorkplace daemon (XWPDAEMN.EXE, xwpdaemn.c),
+ *      f) Start the XWorkplace daemon (XWPDAEMN.EXE, xwpdaemn.c),
  *         which register the XWorkplace hook (XWPHOOK.DLL, xwphook.c,
  *         all new with V0.9.0). See xwpdaemon.c for details.
  *
- *      f) Finally, we call arcCheckIfBackupNeeded (archives.c)
+ *      g) Finally, we call arcCheckIfBackupNeeded (archives.c)
  *         to enable WPS archiving, if necessary. The WPS will
  *         then archive the Desktop, after we return from this
  *         function (also new with V0.9.0).

@@ -195,10 +195,16 @@ PGMGDMNOBJS = $(XWP_OUTPUT_ROOT)\exe_mt\pgmg_control.obj $(XWP_OUTPUT_ROOT)\exe_
 DMNOBJS = \
 $(XWP_OUTPUT_ROOT)\exe_mt\xwpdaemn.obj \
 $(PGMGDMNOBJS) \
-$(XWP_OUTPUT_ROOT)\exe_mt\debug.obj $(XWP_OUTPUT_ROOT)\exe_mt\linklist.obj \
-  $(XWP_OUTPUT_ROOT)\exe_mt\except.obj $(XWP_OUTPUT_ROOT)\exe_mt\dosh.obj \
-  $(XWP_OUTPUT_ROOT)\exe_mt\memdebug.obj $(XWP_OUTPUT_ROOT)\exe_mt\stringh.obj \
-  $(XWP_OUTPUT_ROOT)\exe_mt\threads.obj $(XWP_OUTPUT_ROOT)\exe_mt\xstring.obj \
+$(XWP_OUTPUT_ROOT)\exe_mt\debug.obj \
+$(XWP_OUTPUT_ROOT)\exe_mt\gpih.obj \
+$(XWP_OUTPUT_ROOT)\exe_mt\linklist.obj \
+$(XWP_OUTPUT_ROOT)\exe_mt\except.obj \
+$(XWP_OUTPUT_ROOT)\exe_mt\dosh.obj \
+$(XWP_OUTPUT_ROOT)\exe_mt\memdebug.obj \
+$(XWP_OUTPUT_ROOT)\exe_mt\shapewin.obj \
+$(XWP_OUTPUT_ROOT)\exe_mt\stringh.obj \
+$(XWP_OUTPUT_ROOT)\exe_mt\threads.obj \
+$(XWP_OUTPUT_ROOT)\exe_mt\xstring.obj \
 $(XWP_OUTPUT_ROOT)\xwphook.lib
 
 # objects for XDEBUG.DLL (debugging only)

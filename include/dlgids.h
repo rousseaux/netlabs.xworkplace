@@ -593,20 +593,13 @@
 #define ID_SCDI_PGMG1_X_TEXT2           1402
 #define ID_SCDI_PGMG1_Y_SLIDER          1403
 #define ID_SCDI_PGMG1_Y_TEXT2           1404
-#define ID_SCDI_PGMG1_SHOWWINDOWS       1405
-#define ID_SCDI_PGMG1_SHOWWINTITLES     1406
-#define ID_SCDI_PGMG1_CLICK2ACTIVATE    1407
-#define ID_SCDI_PGMG1_TITLEBAR          1408
-#define ID_SCDI_PGMG1_PRESERVEPROPS     1409
-#define ID_SCDI_PGMG1_STAYONTOP         1410
-#define ID_SCDI_PGMG1_FLASHTOTOP        1411
-#define ID_SCDI_PGMG1_FLASH_TXT1        1412
-#define ID_SCDI_PGMG1_FLASH_SPIN        1413
-#define ID_SCDI_PGMG1_FLASH_TXT2        1414
+// 1405 to 1414 moved to ID_SCD_PAGEMAGE_WINDOW
 #define ID_SCDI_PGMG1_ARROWHOTKEYS      1415
 #define ID_SCDI_PGMG1_HOTKEYS_CTRL      1416
 #define ID_SCDI_PGMG1_HOTKEYS_SHIFT     1417
 #define ID_SCDI_PGMG1_HOTKEYS_ALT       1418
+#define ID_SCDI_PGMG1_WRAPAROUND        1419
+#define ID_SCDI_PGMG1_VALUESET          1420
 
 #define ID_SCD_PAGEMAGE_COLORS          1430
 #define ID_SCDI_PGMG2_DTP_INACTIVE      1431
@@ -623,6 +616,19 @@
 
 #define ID_SCD_PAGEMAGE_NEWSTICKY       1460
 #define ID_SCD_PAGEMAGE_COMBO_STICKIES  1461
+
+#define ID_SCD_PAGEMAGE_WINDOW          1470
+#define ID_SCDI_PGMG1_SHOWWINDOWS       1471
+#define ID_SCDI_PGMG1_SHOWWINTITLES     1472
+#define ID_SCDI_PGMG1_CLICK2ACTIVATE    1473
+#define ID_SCDI_PGMG1_TITLEBAR          1474
+#define ID_SCDI_PGMG1_PRESERVEPROPS     1475
+#define ID_SCDI_PGMG1_STAYONTOP         1476
+#define ID_SCDI_PGMG1_FLASHTOTOP        1477
+#define ID_SCDI_PGMG1_FLASH_TXT1        1478
+#define ID_SCDI_PGMG1_FLASH_SPIN        1479
+#define ID_SCDI_PGMG1_FLASH_TXT2        1480
+
 
 /******************************************
  * XFldSystem ("OS/2 Kernel")    >= 1500  *
@@ -994,10 +1000,11 @@
 #define ID_XSDI_MOUSE_RADIO_RIGHT       3437
 #define ID_XSDI_MOUSE_RADIO_BOTTOM      3438
 #define ID_XSDI_MOUSE_INACTIVEOBJ       3439
-#define ID_XSDI_MOUSE_SPECIAL_CHECK     3040
+#define ID_XSDI_MOUSE_SPECIAL_CHECK     3440
 #define ID_XSDI_MOUSE_SPECIAL_DROP      3441
 #define ID_XSDI_MOUSE_OPEN_CHECK        3442
 #define ID_XSDI_MOUSE_OPEN_CNR          3443
+#define ID_XSDI_MOUSE_CORNERSIZE_SLIDER 3444
 
 #define ID_XSD_MOUSEMAPPINGS2           3450
 #define ID_XSDI_MOUSE_CHORDWINLIST      3451
@@ -1012,7 +1019,8 @@
 #define ID_XSDI_MOUSE_MB3AMP_SLIDER     3460
 #define ID_XSDI_MOUSE_MB3AMP_TXT2       3461
 #define ID_XSDI_MOUSE_MB3SCROLLREVERSE  3462
-#define ID_XSDI_MOUSE_MB3CLK2MB1DBLCLK  3463
+//#define ID_XSDI_MOUSE_MB3CLK2MB1DBLCLK  3463
+#define ID_XSDI_MOUSE_MB3CLICK_DROP     3465    // added V0.9.9 (2001-03-14) [lafaix]
 
 /******************************************
  * XCenter (V0.9.7)         >= 3600       *
@@ -1811,6 +1819,11 @@
 #define ID_XSSI_SPECIAL_PAGEMAGERIGHT   6158           // "One screen right"
 #define ID_XSSI_SPECIAL_PAGEMAGEDOWN    6159           // "One screen down"
 #define ID_XSSI_SPECIAL_PAGEMAGELEFT    6160           // "One screen left"
+
+#define ID_XSSI_MB3_AUTOSCROLL          6161           // "AutoScroll"
+#define ID_XSSI_MB3_DBLCLICK            6162           // "Double click"
+#define ID_XSSI_MB3_NOCONVERSION        6163           // "MB3 click"
+#define ID_XSSI_MB3_PUSHTOBOTTOM        6164           // "Push to bottom"
 
 /******************************************
  *          Treesize                      *

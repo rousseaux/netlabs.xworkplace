@@ -103,6 +103,8 @@
  *      this actually adds the "Movement" page into the
  *      "Mouse" notebook to configure the XWorkplace hook.
  *      Gets called by XWPMouse::wpAddMouseCometPage.
+ *
+ *@@changed V0.9.9 (2001-03-27) [umoeller]: moved "Corners" from XWPMouse to XWPScreen
  */
 
 SOM_Scope ULONG  SOMLINK xms_xwpAddMouseMovementPage(XWPMouse *somSelf,
@@ -120,20 +122,7 @@ SOM_Scope ULONG  SOMLINK xms_xwpAddMouseMovementPage(XWPMouse *somSelf,
     // insert "MouseHook" page if the hook has been enabled
     if (hifXWPHookReady())
     {
-        pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-        memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-        pcnbp->somSelf = somSelf;
-        pcnbp->hwndNotebook = hwndDlg;
-        pcnbp->hmod = savehmod;
-        pcnbp->ulDlgID = ID_XSD_MOUSE_CORNERS;
-        pcnbp->usPageStyleFlags = BKA_MINOR;
-        pcnbp->pszName = pNLSStrings->pszMouseHookPage;
-        pcnbp->fEnumerate = TRUE;
-        pcnbp->ulDefaultHelpPanel  = ID_XSH_MOUSE_CORNERS;
-        pcnbp->ulPageID = SP_MOUSE_CORNERS;
-        pcnbp->pfncbInitPage    = hifMouseCornersInitPage;
-        pcnbp->pfncbItemChanged = hifMouseCornersItemChanged;
-        ulrc = ntbInsertPage(pcnbp);
+        // moved "corners" to XWPScreen V0.9.9 (2001-03-27) [umoeller]
 
         pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
         memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
@@ -143,7 +132,7 @@ SOM_Scope ULONG  SOMLINK xms_xwpAddMouseMovementPage(XWPMouse *somSelf,
         pcnbp->ulDlgID = ID_XSD_MOUSE_MOVEMENT;
         pcnbp->usPageStyleFlags = BKA_MAJOR;
         pcnbp->pszName = pNLSStrings->pszMouseHookPage;
-        pcnbp->fEnumerate = TRUE;
+        // pcnbp->fEnumerate = TRUE;
         pcnbp->ulDefaultHelpPanel  = ID_XSH_MOUSE_MOVEMENT;
         pcnbp->ulPageID = SP_MOUSE_MOVEMENT;
         pcnbp->pfncbInitPage    = hifMouseMovementInitPage;

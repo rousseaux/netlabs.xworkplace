@@ -99,25 +99,44 @@
  *      adds the "PageMage" pages to the "Screen" notebook.
  *
  *@@added V0.9.3 (2000-04-09) [umoeller]
+ *@@changed V0.9.9 (2001-03-15) [lafaix]: added a new 'pagemage window' page
+ *@@changed V0.9.9 (2001-03-27) [umoeller]: moved "Corners" from XWPMouse to XWPScreen
  */
 
 SOM_Scope ULONG  SOMLINK xwpscr_xwpAddXWPScreenPages(XWPScreen *somSelf,
                                                      HWND hwndDlg)
 {
+    ULONG ulrc = 0;
+
     /* XWPScreenData *somThis = XWPScreenGetData(somSelf); */
     XWPScreenMethodDebug("XWPScreen","xwpscr_xwpAddXWPScreenPages");
 
-// #ifdef __PAGEMAGE__
     // hook installed?
     if (hifXWPHookReady())
     {
         PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+        PCREATENOTEBOOKPAGE pcnbp;
+        HMODULE         savehmod = cmnQueryNLSModuleHandle(FALSE);
+        PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+
+        // moved this here from "Mouse" V0.9.9 (2001-03-27) [umoeller]
+        pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
+        memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
+        pcnbp->somSelf = somSelf;
+        pcnbp->hwndNotebook = hwndDlg;
+        pcnbp->hmod = savehmod;
+        pcnbp->ulDlgID = ID_XSD_MOUSE_CORNERS;
+        pcnbp->usPageStyleFlags = BKA_MAJOR;
+        pcnbp->pszName = pNLSStrings->pszMouseHookPage;
+        // pcnbp->fEnumerate = TRUE;
+        pcnbp->ulDefaultHelpPanel  = ID_XSH_MOUSE_CORNERS;
+        pcnbp->ulPageID = SP_MOUSE_CORNERS;
+        pcnbp->pfncbInitPage    = hifMouseCornersInitPage;
+        pcnbp->pfncbItemChanged = hifMouseCornersItemChanged;
+        ulrc = ntbInsertPage(pcnbp);
+
         if (pGlobalSettings->fEnablePageMage)
         {
-            PCREATENOTEBOOKPAGE pcnbp;
-            HMODULE         savehmod = cmnQueryNLSModuleHandle(FALSE);
-            PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
-
             // "PageMage" colors
             pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
             memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
@@ -133,7 +152,7 @@ SOM_Scope ULONG  SOMLINK xwpscr_xwpAddXWPScreenPages(XWPScreen *somSelf,
             pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_PAGEMAGE_COLORS;
             // give this page a unique ID, which is
             // passed to the common config.sys callbacks
-            pcnbp->ulPageID = SP_PAGEMAGE2;
+            pcnbp->ulPageID = SP_PAGEMAGE_COLORS;
             ntbInsertPage(pcnbp);
 
             // "PageMage" sticky windows
@@ -151,7 +170,25 @@ SOM_Scope ULONG  SOMLINK xwpscr_xwpAddXWPScreenPages(XWPScreen *somSelf,
             pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_PAGEMAGE_STICKY;
             // give this page a unique ID, which is
             // passed to the common config.sys callbacks
-            pcnbp->ulPageID = SP_PAGEMAGE2;
+            pcnbp->ulPageID = SP_PAGEMAGE_STICKY;
+            ntbInsertPage(pcnbp);
+
+            // "PageMage" window settings V0.9.9 (2001-03-15) [lafaix]
+            pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
+            memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
+            pcnbp->somSelf = somSelf;
+            pcnbp->hwndNotebook = hwndDlg;
+            pcnbp->hmod = savehmod;
+            pcnbp->pfncbInitPage    = pgmiPageMageWindowInitPage;
+            pcnbp->pfncbItemChanged = pgmiPageMageWindowItemChanged;
+            pcnbp->usPageStyleFlags = BKA_MINOR;
+            pcnbp->fEnumerate = TRUE;
+            pcnbp->pszName = "~PageMage";
+            pcnbp->ulDlgID = ID_SCD_PAGEMAGE_WINDOW;
+            pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_PAGEMAGE_WINDOW;
+            // give this page a unique ID, which is
+            // passed to the common config.sys callbacks
+            pcnbp->ulPageID = SP_PAGEMAGE_WINDOW;
             ntbInsertPage(pcnbp);
 
             // "PageMage" general settings
@@ -169,13 +206,12 @@ SOM_Scope ULONG  SOMLINK xwpscr_xwpAddXWPScreenPages(XWPScreen *somSelf,
             pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_PAGEMAGE_GENERAL;
             // give this page a unique ID, which is
             // passed to the common config.sys callbacks
-            pcnbp->ulPageID = SP_PAGEMAGE1;
-            return (ntbInsertPage(pcnbp));
+            pcnbp->ulPageID = SP_PAGEMAGE_MAIN;
+            ulrc = ntbInsertPage(pcnbp);
         }
     }
-// #endif
 
-    return NULLHANDLE;
+    return (ulrc);
 }
 
 /*

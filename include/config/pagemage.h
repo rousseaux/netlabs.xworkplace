@@ -56,6 +56,13 @@
         MRESULT pgmiPageMageColorsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                               USHORT usItemID, USHORT usNotifyCode,
                                               ULONG ulExtra);
+
+        VOID pgmiPageMageWindowInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                        ULONG flFlags);
+
+        MRESULT pgmiPageMageWindowItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+                                              USHORT usItemID, USHORT usNotifyCode,
+                                              ULONG ulExtra);
     #else
         #error "shared\notebook.h needs to be included before including pagemage.h".
     #endif

@@ -2068,190 +2068,64 @@ VOID FrameCommand(HWND hwndFrame,
 {
     HWND hwndCnr = WinWindowFromID(G_hwndMain, FID_CLIENT);
 
-    switch (usCmd)
+    TRY_LOUD(excpt1)
     {
-        case IDMI_RESCAN:
-            StartInsertHandles(hwndCnr);
-        break;
-
-        case IDMI_WRITETOINI:
-            WriteBack();
-        break;
-
-        case IDMI_EXIT:
-            WinPostMsg(hwndFrame,
-                       WM_SYSCOMMAND,
-                       (MPARAM)SC_CLOSE,
-                       0);
-        break;
-
-        case IDMI_SORT_INDEX:
-        case IDMI_SORT_STATUS:
-        case IDMI_SORT_TYPE:
-        case IDMI_SORT_HANDLE:
-        case IDMI_SORT_PARENT:
-        case IDMI_SORT_SHORTNAME:
-        case IDMI_SORT_CHILDREN:
-        case IDMI_SORT_DUPS:
-        case IDMI_SORT_REFCS:
-        case IDMI_SORT_LONGNAME:
-            SetSort(usCmd);
-        break;
-
-        case IDMI_ACTIONS_FILES:
-            thrCreate(&G_tiCheckFiles,
-                      fntCheckFiles,
-                      &G_fCheckFilesRunning,
-                      "CheckFiles",
-                      THRF_WAIT | THRF_PMMSGQUEUE,
-                      0);     // thread param
-            WinStartTimer(WinQueryAnchorBlock(hwndFrame),
-                          G_hwndMain,
-                          TIMERID_THREADRUNNING,
-                          500);
-            UpdateMenuItems(0);
-        break;
-
-        case IDMI_SELECT_INVALID:
+        switch (usCmd)
         {
-            HPOINTER hptrOld = winhSetWaitPointer();
-            cnrhForAllRecords(hwndCnr,
-                              NULL, // preccParent,
-                              fncbSelectInvalid,        // callback
-                              0, 0);
-            cnrhInvalidateAll(hwndCnr);
-            WinSetPointer(HWND_DESKTOP, hptrOld);
-        break; }
+            case IDMI_RESCAN:
+                StartInsertHandles(hwndCnr);
+            break;
 
-        case IDMI_DELETE:
-        {
-            ULONG       cRecs = 0;
-            PLINKLIST   pll = GetSelectedRecords(hwndCnr,
-                                                 precSource,
-                                                 &cRecs);
-            if (pll && cRecs)
+            case IDMI_WRITETOINI:
+                WriteBack();
+            break;
+
+            case IDMI_EXIT:
+                WinPostMsg(hwndFrame,
+                           WM_SYSCOMMAND,
+                           (MPARAM)SC_CLOSE,
+                           0);
+            break;
+
+            case IDMI_SORT_INDEX:
+            case IDMI_SORT_STATUS:
+            case IDMI_SORT_TYPE:
+            case IDMI_SORT_HANDLE:
+            case IDMI_SORT_PARENT:
+            case IDMI_SORT_SHORTNAME:
+            case IDMI_SORT_CHILDREN:
+            case IDMI_SORT_DUPS:
+            case IDMI_SORT_REFCS:
+            case IDMI_SORT_LONGNAME:
+                SetSort(usCmd);
+            break;
+
+            case IDMI_ACTIONS_FILES:
+                thrCreate(&G_tiCheckFiles,
+                          fntCheckFiles,
+                          &G_fCheckFilesRunning,
+                          "CheckFiles",
+                          THRF_WAIT | THRF_PMMSGQUEUE,
+                          0);     // thread param
+                WinStartTimer(WinQueryAnchorBlock(hwndFrame),
+                              G_hwndMain,
+                              TIMERID_THREADRUNNING,
+                              500);
+                UpdateMenuItems(0);
+            break;
+
+            case IDMI_SELECT_INVALID:
             {
-                CHAR szText[500];
-                sprintf(szText, "You have selected %d handle(s) for removal. "
-                                "Are you sure you want to do this?", cRecs);
+                HPOINTER hptrOld = winhSetWaitPointer();
+                cnrhForAllRecords(hwndCnr,
+                                  NULL, // preccParent,
+                                  fncbSelectInvalid,        // callback
+                                  0, 0);
+                cnrhInvalidateAll(hwndCnr);
+                WinSetPointer(HWND_DESKTOP, hptrOld);
+            break; }
 
-                if (WinMessageBox(HWND_DESKTOP,
-                                  G_hwndMain,
-                                  szText,
-                                  "xfix",
-                                  0,
-                                  MB_YESNO | MB_DEFBUTTON2 | MB_MOVEABLE)
-                        == MBID_YES)
-                {
-                    ULONG ulrc = RemoveHandles(hwndCnr, pll);
-
-                    if (ulrc != 0)
-                    {
-                        sprintf(szText, "Error %d occured.", ulrc);
-                        WinMessageBox(HWND_DESKTOP,
-                                      G_hwndMain,
-                                      szText,
-                                      "xfix",
-                                      0,
-                                      MB_OK | MB_MOVEABLE);
-                    }
-                }
-
-                lstFree(pll);
-            }
-
-        break; }
-
-        case IDMI_NUKEFOLDERPOS:
-        {
-            ULONG       cRecs = 0;
-            PLINKLIST   pll = GetSelectedRecords(hwndCnr,
-                                                 precSource,
-                                                 &cRecs);
-            if (pll && cRecs)
-            {
-                PSZ pszFolderPoses = prfhQueryKeysForApp(HINI_USER,
-                                                         "PM_Workplace:FolderPos");
-
-                if (pszFolderPoses)
-                {
-                    PLISTNODE pNode = lstQueryFirstNode(pll);
-                    ULONG cTotalNuked = 0;
-                    while (pNode)
-                    {
-                        PNODERECORD prec = (PNODERECORD)pNode->pItemData;
-
-                        if (prec->fFolderPos)
-                        {
-                            ULONG cNukedThis = 0;
-                            NukeFolderPoses(prec,
-                                            pszFolderPoses,
-                                            &cNukedThis);
-
-                            if (cNukedThis)
-                            {
-                                cTotalNuked += cNukedThis;
-                                prec->fFolderPos = FALSE;
-                                UpdateStatusDescr(prec);
-                            }
-                        }
-
-                        pNode = pNode->pNext;
-                    }
-
-                    free(pszFolderPoses);
-
-                    if (cTotalNuked)
-                        cnrhInvalidateAll(hwndCnr);
-
-                    CHAR sz[200];
-                    sprintf(sz, "%d folder position(s) have been scheduled for deletion.",
-                            cTotalNuked);
-                    winhDebugBox(G_hwndMain,
-                                 "xfix",
-                                 sz);
-                }
-
-                lstFree(pll);
-            }
-        break; }
-
-        /*
-         * IDMI_MOVEABSTRACTS:
-         *      move abstracts to desktop
-         */
-
-        case IDMI_MOVEABSTRACTS:
-        {
-            ULONG       cAbstractsMoved = 0;
-
-            // get handle of desktop
-            if (G_precDesktop == NULL)
-            {
-                // first call:
-                ULONG       hobjDesktop = 0;
-                ULONG       cb = sizeof(hobjDesktop);
-                if (    (PrfQueryProfileData(HINI_USER,
-                                             "PM_Workplace:Location",
-                                             "<WP_DESKTOP>",
-                                             &hobjDesktop,
-                                             &cb))
-                     && (hobjDesktop)
-                   )
-                {
-                    // OK, found desktop:
-                    // get its NODERECORD
-                    G_precDesktop = G_RecordHashTable[hobjDesktop & 0xFFFF];
-
-                    CHAR sz2[100];
-                    sprintf(sz2, "Desktop handle is %lX", hobjDesktop & 0xFFFF);
-                    winhDebugBox(NULLHANDLE,
-                                 "xfix",
-                                 sz2);
-                }
-            }
-
-            if (G_precDesktop)
+            case IDMI_DELETE:
             {
                 ULONG       cRecs = 0;
                 PLINKLIST   pll = GetSelectedRecords(hwndCnr,
@@ -2260,10 +2134,9 @@ VOID FrameCommand(HWND hwndFrame,
                 if (pll && cRecs)
                 {
                     CHAR szText[500];
-                    sprintf(szText, "You have selected %d handles whose abstract objects "
-                                    "should be moved to the deskop.\n"
-                                    "Are you sure you want to do this?",
-                                    cRecs);
+                    sprintf(szText, "You have selected %d handle(s) for removal. "
+                                    "Are you sure you want to do this?", cRecs);
+
                     if (WinMessageBox(HWND_DESKTOP,
                                       G_hwndMain,
                                       szText,
@@ -2272,56 +2145,187 @@ VOID FrameCommand(HWND hwndFrame,
                                       MB_YESNO | MB_DEFBUTTON2 | MB_MOVEABLE)
                             == MBID_YES)
                     {
-                        // user really wants this:
-                        // load existing abstracts for desktop, if any
-                        MoveAbstracts(pll,
-                                      &cAbstractsMoved);
+                        ULONG ulrc = RemoveHandles(hwndCnr, pll);
+
+                        if (ulrc != 0)
+                        {
+                            sprintf(szText, "Error %d occured.", ulrc);
+                            WinMessageBox(HWND_DESKTOP,
+                                          G_hwndMain,
+                                          szText,
+                                          "xfix",
+                                          0,
+                                          MB_OK | MB_MOVEABLE);
+                        }
                     }
 
                     lstFree(pll);
                 }
-            }
 
-            if (cAbstractsMoved)
+            break; }
+
+            case IDMI_NUKEFOLDERPOS:
             {
-                CHAR sz[200];
-                sprintf(sz, "%d abstracts have been moved to the desktop. They will "
-                        "appear after the next WPS startup.",
-                        cAbstractsMoved);
-                winhDebugBox(G_hwndMain, "xfix", sz);
-            }
-            else
-                winhDebugBox(G_hwndMain, "xfix", "An error occured moving the abstracts.");
-        break; }
+                ULONG       cRecs = 0;
+                PLINKLIST   pll = GetSelectedRecords(hwndCnr,
+                                                     precSource,
+                                                     &cRecs);
+                if (pll && cRecs)
+                {
+                    PSZ pszFolderPoses = prfhQueryKeysForApp(HINI_USER,
+                                                             "PM_Workplace:FolderPos");
 
-        case IDMI_HELP_GENERAL:
-        case IDMI_HELP_USINGHELP:
-            if (G_hwndHelp)
+                    if (pszFolderPoses)
+                    {
+                        PLISTNODE pNode = lstQueryFirstNode(pll);
+                        ULONG cTotalNuked = 0;
+                        while (pNode)
+                        {
+                            PNODERECORD prec = (PNODERECORD)pNode->pItemData;
+
+                            if (prec->fFolderPos)
+                            {
+                                ULONG cNukedThis = 0;
+                                NukeFolderPoses(prec,
+                                                pszFolderPoses,
+                                                &cNukedThis);
+
+                                if (cNukedThis)
+                                {
+                                    cTotalNuked += cNukedThis;
+                                    prec->fFolderPos = FALSE;
+                                    UpdateStatusDescr(prec);
+                                }
+                            }
+
+                            pNode = pNode->pNext;
+                        }
+
+                        free(pszFolderPoses);
+
+                        if (cTotalNuked)
+                            cnrhInvalidateAll(hwndCnr);
+
+                        CHAR sz[200];
+                        sprintf(sz, "%d folder position(s) have been scheduled for deletion.",
+                                cTotalNuked);
+                        winhDebugBox(G_hwndMain,
+                                     "xfix",
+                                     sz);
+                    }
+
+                    lstFree(pll);
+                }
+            break; }
+
+            /*
+             * IDMI_MOVEABSTRACTS:
+             *      move abstracts to desktop
+             */
+
+            case IDMI_MOVEABSTRACTS:
             {
-                winhDisplayHelpPanel(G_hwndHelp,
-                                    (usCmd == IDMI_HELP_GENERAL)
-                                        ? ID_XSH_XFIX_INTRO
-                                        : 0);       // "using help"
-            }
-        break;
+                ULONG       cAbstractsMoved = 0;
 
-        case IDMI_HELP_PRODINFO:
-        {
-            CHAR szInfo[500];
+                // get handle of desktop
+                if (G_precDesktop == NULL)
+                {
+                    // first call:
+                    ULONG       hobjDesktop = 0;
+                    ULONG       cb = sizeof(hobjDesktop);
+                    if (    (PrfQueryProfileData(HINI_USER,
+                                                 "PM_Workplace:Location",
+                                                 "<WP_DESKTOP>",
+                                                 &hobjDesktop,
+                                                 &cb))
+                         && (hobjDesktop)
+                       )
+                    {
+                        // OK, found desktop:
+                        // get its NODERECORD
+                        G_precDesktop = G_RecordHashTable[hobjDesktop & 0xFFFF];
 
-            sprintf(szInfo,
-                    "xfix V" BLDLEVEL_VERSION " built " __DATE__ "\n"
-                    "(C) 2000-2001 Ulrich M”ller\n\n"
-                    "XWorkplace File Handles Fixer.");
+                        CHAR sz2[100];
+                        sprintf(sz2, "Desktop handle is %lX", hobjDesktop & 0xFFFF);
+                        winhDebugBox(NULLHANDLE,
+                                     "xfix",
+                                     sz2);
+                    }
+                }
 
-            WinMessageBox(HWND_DESKTOP,
-                          G_hwndMain,
-                          szInfo,
-                          "xfix",
-                          0,
-                          MB_OK | MB_MOVEABLE);
-        break; }
+                if (G_precDesktop)
+                {
+                    ULONG       cRecs = 0;
+                    PLINKLIST   pll = GetSelectedRecords(hwndCnr,
+                                                         precSource,
+                                                         &cRecs);
+                    if (pll && cRecs)
+                    {
+                        CHAR szText[500];
+                        sprintf(szText, "You have selected %d handles whose abstract objects "
+                                        "should be moved to the deskop.\n"
+                                        "Are you sure you want to do this?",
+                                        cRecs);
+                        if (WinMessageBox(HWND_DESKTOP,
+                                          G_hwndMain,
+                                          szText,
+                                          "xfix",
+                                          0,
+                                          MB_YESNO | MB_DEFBUTTON2 | MB_MOVEABLE)
+                                == MBID_YES)
+                        {
+                            // user really wants this:
+                            // load existing abstracts for desktop, if any
+                            MoveAbstracts(pll,
+                                          &cAbstractsMoved);
+                        }
+
+                        lstFree(pll);
+                    }
+                }
+
+                if (cAbstractsMoved)
+                {
+                    CHAR sz[200];
+                    sprintf(sz, "%d abstracts have been moved to the desktop. They will "
+                            "appear after the next WPS startup.",
+                            cAbstractsMoved);
+                    winhDebugBox(G_hwndMain, "xfix", sz);
+                }
+                else
+                    winhDebugBox(G_hwndMain, "xfix", "An error occured moving the abstracts.");
+            break; }
+
+            case IDMI_HELP_GENERAL:
+            case IDMI_HELP_USINGHELP:
+                if (G_hwndHelp)
+                {
+                    winhDisplayHelpPanel(G_hwndHelp,
+                                        (usCmd == IDMI_HELP_GENERAL)
+                                            ? ID_XSH_XFIX_INTRO
+                                            : 0);       // "using help"
+                }
+            break;
+
+            case IDMI_HELP_PRODINFO:
+            {
+                CHAR szInfo[500];
+
+                sprintf(szInfo,
+                        "xfix V" BLDLEVEL_VERSION " built " __DATE__ "\n"
+                        "(C) 2000-2001 Ulrich M”ller\n\n"
+                        "XWorkplace File Handles Fixer.");
+
+                WinMessageBox(HWND_DESKTOP,
+                              G_hwndMain,
+                              szInfo,
+                              "xfix",
+                              0,
+                              MB_OK | MB_MOVEABLE);
+            break; }
+        }
     }
+    CATCH(excpt1) {} END_CATCH();
 }
 
 /*

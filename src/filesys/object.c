@@ -1604,7 +1604,7 @@ BOOL cmnIsValidHotkey(USHORT usFlags,
  *          our structure from later messages too.
  *      4)  Don't forget to free the structure at WM_DESTROY.
  *
- *@@changed 0.85 [umoeller]: fixed object ID error message
+ *@@changed V0.8.5 [umoeller]: fixed object ID error message
  *@@changed V0.9.0 [umoeller]: fixed memory leak (thanks Lars Erdmann)
  *@@changed V0.9.0 [umoeller]: added hotkey support
  *@@changed V0.9.3 (2000-04-19) [umoeller]: added function key support

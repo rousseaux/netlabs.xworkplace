@@ -868,6 +868,7 @@ VOID TrackWithinPager(HWND hwnd,
  *      implementation for WM_CREATE in fnwpPageMageClient.
  *
  *@@added V0.9.7 (2001-01-18) [umoeller]
+ *@@changed V0.9.9 (2001-03-15) [lafaix]: fixed initial desktop position
  */
 
 VOID ClientCreate(HWND hwnd,
@@ -881,9 +882,12 @@ VOID ClientCreate(HWND hwnd,
 
     G_ptlCurrPos.x = (pPageMageConfig->ptlStartDesktop.x - 1)
                       * G_szlEachDesktopReal.cx;
-    G_ptlCurrPos.y = (pptlMaxDesktops->y
+/*     G_ptlCurrPos.y = (pptlMaxDesktops->y
                       - pPageMageConfig->ptlStartDesktop.y
-                     ) * G_szlEachDesktopReal.cy;
+                     ) * G_szlEachDesktopReal.cy; */
+    G_ptlCurrPos.y = (pPageMageConfig->ptlStartDesktop.y - 1)
+                      * G_szlEachDesktopReal.cy;
+        // V0.9.9 (2001-03-15) [lafaix]: desktops pos start at _upper_ left
 
     strcpy(pClientData->szFaceName, "2.System VIO");
 

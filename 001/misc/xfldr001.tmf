@@ -265,11 +265,10 @@ Should we do this now?
 ;
 
 <--XFL0140-->: Copyright (C) 1997-2001 Ulrich M”ller.
+Contributors: Martin Lafaix, Christian Langanke, and Paul Ratcliffe.
 English National Language Support:
 Copyright (C) 1998-2001 Ulrich M”ller.
 
-Contains code (C) 2000-2001 Martin Lafaix.
-Contains code (C) 1999-2000 Christian Langanke.
 Contains code from APM/2 (C) 1997-1998 Roman Stangl (OpenSource); ported to XFolder 1998 by ARAKAWA Atsushi.
 Contains code from ProgramCommander/2 (C) 1993-1999 Roman Stangl (OpenSource).
 Contains code from PageMage (C) 1995-1999 Carlos Ugarte (OpenSource).

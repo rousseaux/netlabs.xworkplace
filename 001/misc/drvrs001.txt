@@ -638,7 +638,11 @@ CATEGORY "Network"
                  0),
 
         DRIVER ( "DEVICE=", "SOCKETS.SYS",
-                 "MPTS sockets driver",
+                 "MPTS sockets driver (16-bit version)",
+                 0),
+
+        DRIVER ( "DEVICE=", "SOCKETSK.SYS",
+                 "MPTS sockets driver (KEE version)",
                  0),
 
         DRIVER ( "DEVICE=", "PROTMAN.OS2",
@@ -646,7 +650,10 @@ CATEGORY "Network"
                  0),
 
         DRIVER ( "DEVICE=", "AFINET.SYS",
-                 "TCP/IP AFINET driver",
+                 "TCP/IP AFINET driver (16-bit version)",
+                 0),
+        DRIVER ( "DEVICE=", "AFINETK.SYS",
+                 "TCP/IP AFINET driver (KEE version)",
                  0),
         DRIVER ( "DEVICE=", "AFOS2.SYS",
                  "TCP/IP AFOS2 driver",

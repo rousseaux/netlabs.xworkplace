@@ -221,6 +221,7 @@ static LONG             G_lHiliteBackground,
 static SIZEF            G_szfCharBox;       // [lafaix]
 static LONG             G_lMaxDescender;    // [lafaix]
 static BOOL             G_bInitNeeded;
+
 /* ******************************************************************
  *
  *   Functions

@@ -359,6 +359,7 @@ HWND GetFrameWindow(HWND hwndTemp)
  *@@changed V0.9.1 (2000-02-13) [umoeller]: fixed disabled scrollbars bug
  *@@changed V0.9.3 (2000-04-30) [umoeller]: added more error checking
  *@@changed V0.9.3 (2000-04-30) [umoeller]: fixed invisible scrollbars bug
+ *@@changed V0.9.9 (2001-03-20) [lafaix]: fixed empty (size=0x0) scrollbar bug
  */
 
 HWND GetScrollBar(HWND hwndOwner,
@@ -390,31 +391,37 @@ HWND GetScrollBar(HWND hwndOwner,
                     // is it a scroll bar window?
                     if (strcmp(szWinClass, "#8") == 0)
                     {
-                        // query style bits of this scroll bar window
-                        ulWinStyle = WinQueryWindowULong(hwndFound, QWL_STYLE);
+                        SWP swp;
 
-                        // is scroll bar enabled and visible?
-                        if ((ulWinStyle & (WS_DISABLED | WS_VISIBLE)) == WS_VISIBLE)
+                        // is it a non-empty scroll bar?
+                        if (WinQueryWindowPos(hwndFound, &swp) && swp.cx && swp.cy)
                         {
-                            // return window handle if it matches fHorizontal
-                            if (fHorizontal)
+                            // query style bits of this scroll bar window
+                            ulWinStyle = WinQueryWindowULong(hwndFound, QWL_STYLE);
+
+                            // is scroll bar enabled and visible?
+                            if ((ulWinStyle & (WS_DISABLED | WS_VISIBLE)) == WS_VISIBLE)
                             {
-                                // query horizonal mode:
-                                if ((ulWinStyle & SBS_VERT) == 0)
-                                    // we must check it this way
-                                    // because SBS_VERT is 1 and SBS_HORZ is 0
+                                // return window handle if it matches fHorizontal
+                                if (fHorizontal)
                                 {
-                                    hwndReturn = hwndFound;
-                                    break; // while
+                                    // query horizonal mode:
+                                    if ((ulWinStyle & SBS_VERT) == 0)
+                                        // we must check it this way
+                                        // because SBS_VERT is 1 and SBS_HORZ is 0
+                                    {
+                                        hwndReturn = hwndFound;
+                                        break; // while
+                                    }
                                 }
+                                else
+                                    if (ulWinStyle & SBS_VERT)
+                                    {
+                                        hwndReturn = hwndFound;
+                                        break; // while
+                                    }
                             }
-                            else
-                                if (ulWinStyle & SBS_VERT)
-                                {
-                                    hwndReturn = hwndFound;
-                                    break; // while
-                                }
-                        }
+                        } // end if (WinQueryWindowPos(hwndFound, &swp) && ...)
                     } // end if (strcmp(szWinClass, "#8") == 0)
                 }
             }
@@ -1095,12 +1102,22 @@ VOID EXPENTRY hookLockupHook(HAB hab,
  *      if any errors occur during processing.
  *
  *@@added V0.9.3 (2000-04-30) [umoeller]
+ *@@changed V0.9.9 (2001-03-18) [lafaix]: pointer support added
  */
 
 VOID StopMB3Scrolling(BOOL fSuccessPostMsgs)
 {
     // set scrolling mode to off
     G_HookData.hwndCurrentlyScrolling = NULLHANDLE;
+
+    // reset pointers
+    WinSendMsg(G_HookData.hwndDaemonObject,
+               XDM_ENDSCROLL,
+               NULL,
+               NULL);
+
+    // re-enable mouse pointer hidding if applicable
+    G_HookData.HookConfig.fAutoHideMouse = G_HookData.fOldAutoHideMouse;
 
     // release capture (set in WM_BUTTON3DOWN)
     WinSetCapture(HWND_DESKTOP, NULLHANDLE);
@@ -1319,6 +1336,8 @@ LONG CalcScrollBarSize(PSCROLLDATA pScrollData,  // in: scroll data structure in
  *@@changed V0.9.2 (2000-02-26) [umoeller]: changed ugly pointer arithmetic
  *@@changed V0.9.2 (2000-03-23) [umoeller]: now recalculating scroll bar size on every WM_MOUSEMOVE
  *@@changed V0.9.3 (2000-04-30) [umoeller]: added tons of error checking
+ *@@changed V0.9.9 (2001-03-19) [lafaix]: now returns TRUE if current pos = initial pos
+ *@@changed V0.9.9 (2001-03-20) [lafaix]: changed ulAmpPercent to lAmpPercent and 1000 to 1000L
  */
 
 BOOL WMMouseMove_MB3ScrollAmplified(PSCROLLDATA pScrollData,  // in: scroll data structure in HOOKDATA,
@@ -1366,7 +1385,7 @@ BOOL WMMouseMove_MB3ScrollAmplified(PSCROLLDATA pScrollData,  // in: scroll data
                 //    since MB3 was initially depressed, relative
                 //    to the window (scroll bar owner) height.
                 //    This will be in the range of -1000 to +1000.
-                lPerMilleMoved = (lDeltaPels * 1000)
+                lPerMilleMoved = (lDeltaPels * 1000L)
                                  / lScrollBarSizePels;
                         // this correlates the y movement to the
                         // remaining window height;
@@ -1378,14 +1397,14 @@ BOOL WMMouseMove_MB3ScrollAmplified(PSCROLLDATA pScrollData,  // in: scroll data
                 if (G_HookData.HookConfig.sAmplification)
                 {
                     // yes:
-                    ULONG ulAmpPercent = 100 + (G_HookData.HookConfig.sAmplification * 10);
+                    LONG lAmpPercent = 100 + (G_HookData.HookConfig.sAmplification * 10);
                         // so we get:
                         //      0       -->  100%
                         //      2       -->  120%
                         //     10       -->  200%
                         //     -2       -->  80%
                         //     -9       -->  10%
-                    lPerMilleMoved = lPerMilleMoved * ulAmpPercent / 100L;
+                    lPerMilleMoved = lPerMilleMoved * lAmpPercent / 100L;
                 }
 
                 if (lPerMilleMoved)
@@ -1398,13 +1417,13 @@ BOOL WMMouseMove_MB3ScrollAmplified(PSCROLLDATA pScrollData,  // in: scroll data
                     SHORT sSliderMovedUnits = (SHORT)(
                                                       lSliderRange
                                                       * lPerMilleMoved
-                                                      / 1000
+                                                      / 1000L
                                                      );
 
                     SHORT   sNewThumbPosUnits = 0;
 
-                    _Pmpf(("  lSliderRange: %d", lSliderRange));
-                    _Pmpf(("  lSliderOfs: %d", lSliderMoved));
+                    // _Pmpf(("  lSliderRange: %d", lSliderRange));
+                    // _Pmpf(("  lSliderOfs: %d", lSliderMoved));
 
                     // 4) Calculate new absolute scroll bar position,
                     //    from on what we stored when MB3 was initially
@@ -1412,7 +1431,7 @@ BOOL WMMouseMove_MB3ScrollAmplified(PSCROLLDATA pScrollData,  // in: scroll data
                     sNewThumbPosUnits = pScrollData->sMB3InitialThumbPosUnits
                                         + sSliderMovedUnits;
 
-                    _Pmpf(("  New sThumbPos: %d", sNewThumbPos));
+                    _Pmpf(("  New sThumbPosUnits: %d", sNewThumbPosUnits));
 
                     // check against scroll bar limits:
                     if (sNewThumbPosUnits < sThumbLoLimitUnits)
@@ -1467,6 +1486,9 @@ BOOL WMMouseMove_MB3ScrollAmplified(PSCROLLDATA pScrollData,  // in: scroll data
                         } // end if (WinSendMsg(pScrollData->hwndScrollBar,
                     } // end if (sNewThumbPosUnits != pScrollData->sCurrentThumbPosUnits)
                 } // end if (lPerMilleMoved)
+                else
+                    // it's OK if the mouse hasn't moved V0.9.9 (2001-03-19) [lafaix]
+                    brc = TRUE;
             } // end if (sThumbHiLimitUnits > sThumbLoLimitUnits)
         } // end if (mrThumbRange)
     } // end if (lScrollBarSizePels)
@@ -1499,6 +1521,7 @@ BOOL WMMouseMove_MB3ScrollAmplified(PSCROLLDATA pScrollData,  // in: scroll data
  *@@added V0.9.2 (2000-02-26) [umoeller]
  *@@changed V0.9.2 (2000-03-23) [umoeller]: now recalculating scroll bar size on every WM_MOUSEMOVE
  *@@changed V0.9.3 (2000-04-30) [umoeller]: added tons of error checking
+ *@@changed V0.9.9 (2001-03-21) [lafaix]: do not move scrollbars if AutoScroll is on
  */
 
 BOOL WMMouseMove_MB3OneScrollbar(HWND hwnd,                  // in: window with WM_MOUSEMOVE
@@ -1547,11 +1570,26 @@ BOOL WMMouseMove_MB3OneScrollbar(HWND hwnd,                  // in: window with 
         }
         // else: error
     } // if (pScrollData->sMB3InitialMousePos == -1)
+    else
+        if (    (G_HookData.bAutoScroll)
+             && (pScrollData->hwndScrollBar)
+           )
+        {
+            /*
+             * subsequent calls, AutoScroll enabled
+             *
+             */
 
-    if (pScrollData->hwndScrollBar)
+            pScrollData->hwndScrollLastOwner = WinQueryWindow(pScrollData->hwndScrollBar,
+                                                              QW_OWNER);
+            if (pScrollData->hwndScrollLastOwner)
+                brc = TRUE;
+        }
+
+    if (pScrollData->hwndScrollBar && (!G_HookData.bAutoScroll))
     {
         /*
-         * subsequent calls
+         * subsequent calls, AutoScroll non active
          *
          */
 
@@ -1650,11 +1688,14 @@ BOOL WMMouseMove_MB3OneScrollbar(HWND hwnd,                  // in: window with 
  *@@changed V0.9.3 (2000-04-30) [umoeller]: switched processing to screen coords to avoid mouse capturing
  *@@changed V0.9.3 (2000-04-30) [umoeller]: added tons of error checking
  *@@changed V0.9.4 (2000-06-26) [umoeller]: changed error beep to debug mode only
+ *@@changed V0.9.9 (2001-03-18) [lafaix]: added pointer change support
  */
 
 BOOL WMMouseMove_MB3Scroll(HWND hwnd)       // in: window with WM_MOUSEMOVE
 {
     BOOL    brc = FALSE;        // no swallow msg
+    BOOL    bFirst = (G_HookData.SDYVert.sMB3InitialScreenMousePos == -1)
+                  && (G_HookData.SDXHorz.sMB3InitialScreenMousePos == -1);
 
     // process vertical scroll bar
     if (WMMouseMove_MB3OneScrollbar(hwnd,
@@ -1679,6 +1720,24 @@ BOOL WMMouseMove_MB3Scroll(HWND hwnd)       // in: window with WM_MOUSEMOVE
         #endif
         // any error found:
         StopMB3Scrolling(FALSE);   // don't post messages
+    }
+    else
+    {
+        if (bFirst)
+            // update the pointer now to indicate scrolling in action
+            // V0.9.9 (2001-03-18) [lafaix]
+            WinSendMsg(G_HookData.hwndDaemonObject,
+                       XDM_BEGINSCROLL,
+                       MPFROM2SHORT(G_HookData.SDXHorz.sMB3InitialScreenMousePos,
+                                    G_HookData.SDYVert.sMB3InitialScreenMousePos),
+                       NULL);
+        else
+            // set adequate pointer
+            WinPostMsg(G_HookData.hwndDaemonObject,
+                       XDM_SETPOINTER,
+                       MPFROM2SHORT(G_ptlMousePosDesktop.x,
+                                    G_ptlMousePosDesktop.y),
+                       0);
     }
 
     return (brc);
@@ -1714,6 +1773,7 @@ BOOL WMMouseMove_MB3Scroll(HWND hwnd)       // in: window with WM_MOUSEMOVE
  *@@changed V0.9.3 (2000-05-22) [umoeller]: fixed combobox problems
  *@@changed V0.9.3 (2000-05-22) [umoeller]: fixed MDI frames problems
  *@@changed V0.9.4 (2000-06-12) [umoeller]: fixed Win-OS/2 menu problems
+ *@@changed V0.9.9 (2001-03-14) [lafaix]: disabling sliding when processing mouse switch
  */
 
 VOID WMMouseMove_SlidingFocus(HWND hwnd,        // in: wnd under mouse, from hookInputHook
@@ -1723,6 +1783,9 @@ VOID WMMouseMove_SlidingFocus(HWND hwnd,        // in: wnd under mouse, from hoo
                                                       // by hookInputHook)
 {
     BOOL    fStopTimers = FALSE;    // setting this to TRUE will stop timers
+
+    if (G_HookData.fDisableMouseSwitch)
+        return;
 
     do      // just a do for breaking, no loop
     {
@@ -2245,6 +2308,8 @@ VOID WMMouseMove_AutoHideMouse(VOID)
  *@@changed V0.9.4 (2000-08-03) [umoeller]: fixed sliding menus without mouse moving
  *@@changed V0.9.5 (2000-08-22) [umoeller]: sliding focus was always on, working half way; fixed
  *@@changed V0.9.5 (2000-09-20) [pr]: fixed auto-hide bug
+ *@@changed V0.9.9 (2001-03-15) [lafaix]: now uses corner sensitivity
+ *@@changed V0.9.9 (2001-03-15) [lafaix]: added AutoScroll support
  */
 
 BOOL WMMouseMove(PQMSG pqmsg,
@@ -2301,8 +2366,9 @@ BOOL WMMouseMove(PQMSG pqmsg,
              */
 
             // are we currently in scrolling mode
-            // (is MB3 currently depressed)?
-            if (    (G_HookData.HookConfig.fMB3Scroll)
+            if (    (    (G_HookData.HookConfig.fMB3Scroll)
+                      || (G_HookData.bAutoScroll)
+                    )
                  && (G_HookData.hwndCurrentlyScrolling)
                )
             {
@@ -2343,6 +2409,7 @@ BOOL WMMouseMove(PQMSG pqmsg,
                     /*
                      * hot corners:
                      *
+                     *changed V0.9.9 (2001-03-15) [lafaix]: now uses corner sensitivity
                      */
 
                     // check if mouse is in one of the screen
@@ -2357,8 +2424,8 @@ BOOL WMMouseMove(PQMSG pqmsg,
                             bHotCorner = 2;
                         // or maybe left screen border:
                         // make sure mouse y is in the middle third of the screen
-                        else if (    (G_ptlMousePosDesktop.y >= G_HookData.lCYScreen / 3)
-                                  && (G_ptlMousePosDesktop.y <= G_HookData.lCYScreen * 2 / 3)
+                        else if (    (G_ptlMousePosDesktop.y >= G_HookData.lCYScreen * G_HookData.HookConfig.ulCornerSensitivity / 100)
+                                  && (G_ptlMousePosDesktop.y <= G_HookData.lCYScreen * (100 - G_HookData.HookConfig.ulCornerSensitivity) / 100)
                                 )
                             bHotCorner = 6; // left border
                     }
@@ -2372,8 +2439,8 @@ BOOL WMMouseMove(PQMSG pqmsg,
                             bHotCorner = 4;
                         // or maybe right screen border:
                         // make sure mouse y is in the middle third of the screen
-                        else if (    (G_ptlMousePosDesktop.y >= G_HookData.lCYScreen / 3)
-                                  && (G_ptlMousePosDesktop.y <= G_HookData.lCYScreen * 2 / 3)
+                        else if (    (G_ptlMousePosDesktop.y >= G_HookData.lCYScreen * G_HookData.HookConfig.ulCornerSensitivity / 100)
+                                  && (G_ptlMousePosDesktop.y <= G_HookData.lCYScreen * (100 - G_HookData.HookConfig.ulCornerSensitivity) / 100)
                                 )
                             bHotCorner = 7; // right border
                     }
@@ -2383,8 +2450,8 @@ BOOL WMMouseMove(PQMSG pqmsg,
                              || (G_ptlMousePosDesktop.y == G_HookData.lCYScreen - 1) // top
                            )
                         {
-                            if (    (G_ptlMousePosDesktop.x >= G_HookData.lCXScreen / 3)
-                                 && (G_ptlMousePosDesktop.x <= G_HookData.lCXScreen * 2 / 3)
+                            if (    (G_ptlMousePosDesktop.x >= G_HookData.lCXScreen * G_HookData.HookConfig.ulCornerSensitivity / 100)
+                                 && (G_ptlMousePosDesktop.x <= G_HookData.lCXScreen * (100 - G_HookData.HookConfig.ulCornerSensitivity) / 100)
                                )
                                 if (G_ptlMousePosDesktop.y == 0)
                                     // bottom border:
@@ -2614,6 +2681,10 @@ VOID WMChord_WinList(VOID)
  *@@changed V0.9.4 (2000-06-11) [umoeller]: added MB3 single-click
  *@@changed V0.9.4 (2000-06-14) [umoeller]: fixed PMMail win-list-as-pointer bug
  *@@changed V0.9.9 (2001-01-29) [umoeller]: auto-hide now respects button clicks too
+ *@@changed V0.9.9 (2001-03-20) [lafaix]: fixed MB3 scroll for EPM clients
+ *@@changed V0.9.9 (2001-03-20) [lafaix]: added many KC_NONE checks
+ *@@changed V0.9.9 (2001-03-20) [lafaix]: added MB3 Autoscroll support
+ *@@changed V0.9.9 (2001-03-21) [lafaix]: added MB3 Push2Bottom support
  */
 
 BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
@@ -2627,6 +2698,8 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
     BOOL        fRestartAutoHide = FALSE;
                             // set to TRUE if auto-hide mouse should be handles
 
+    BOOL        bAutoScroll = FALSE;
+                            // set to TRUE if autoscroll requested
     HWND        hwnd;
     ULONG       msg;
     MPARAM      mp1, mp2;
@@ -2677,23 +2750,33 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
          */
 
         case WM_BUTTON1DOWN:
-            if (    (G_HookData.HookConfig.fSlidingFocus)
-                 && (!G_HookData.HookConfig.fSlidingBring2Top)
+            if (    (G_HookData.bAutoScroll)
+                 && (G_HookData.hwndCurrentlyScrolling)
                )
             {
-                // make sure that the mouse is not currently captured
-                if (WinQueryCapture(HWND_DESKTOP) == NULLHANDLE)
-                    WinSetWindowPos(GetFrameWindow(hwnd),
-                                    HWND_TOP,
-                                    0,
-                                    0,
-                                    0,
-                                    0,
-                                    SWP_NOADJUST | SWP_ZORDER);
-                        // @@todo yoo-hoo, this doesn't really work...
-                        // this activates the frame, which is not really
-                        // what we want in every case... this breaks XCenter too
+                StopMB3Scrolling(TRUE);
+
+                // swallow msg
+                brc = TRUE;
             }
+            else
+                if (    (G_HookData.HookConfig.fSlidingFocus)
+                     && (!G_HookData.HookConfig.fSlidingBring2Top)
+                   )
+                {
+                    // make sure that the mouse is not currently captured
+                    if (WinQueryCapture(HWND_DESKTOP) == NULLHANDLE)
+                        WinSetWindowPos(GetFrameWindow(hwnd),
+                                        HWND_TOP,
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        SWP_NOADJUST | SWP_ZORDER);
+                            // @@todo yoo-hoo, this doesn't really work...
+                            // this activates the frame, which is not really
+                            // what we want in every case... this breaks XCenter too
+                }
 
             // un-hide mouse if auto-hidden
             fRestartAutoHide = TRUE;
@@ -2715,25 +2798,37 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
 
         case WM_BUTTON2DOWN:
         {
-            if (G_HookData.HookConfig.fSysMenuMB2TitleBar)
+            if (    (G_HookData.bAutoScroll)
+                 && (G_HookData.hwndCurrentlyScrolling)
+               )
             {
-                // make sure that the mouse is not currently captured
-                if (WinQueryCapture(HWND_DESKTOP) == NULLHANDLE)
+                StopMB3Scrolling(TRUE);
+
+                // swallow msg
+                brc = TRUE;
+            }
+            else
+                if (    (G_HookData.HookConfig.fSysMenuMB2TitleBar)
+                     && (SHORT2FROMMP(mp2) == KC_NONE)
+                   )
                 {
-                    CHAR szWindowClass[3];
-                    // get class name of window being created
-                    WinQueryClassName(hwnd,
-                                      sizeof(szWindowClass),
-                                      szWindowClass);
-                    // mouse button 2 was pressed over a title bar control
-                    if (strcmp(szWindowClass, "#9") == 0)
+                    // make sure that the mouse is not currently captured
+                    if (WinQueryCapture(HWND_DESKTOP) == NULLHANDLE)
                     {
-                        // copy system menu and display it as context menu
-                        WMButton_SystemMenuContext(hwnd);
-                        brc = TRUE; // swallow message
+                        CHAR szWindowClass[3];
+                        // get class name of window being created
+                        WinQueryClassName(hwnd,
+                                          sizeof(szWindowClass),
+                                          szWindowClass);
+                        // mouse button 2 was pressed over a title bar control
+                        if (strcmp(szWindowClass, "#9") == 0)
+                        {
+                            // copy system menu and display it as context menu
+                            WMButton_SystemMenuContext(hwnd);
+                            brc = TRUE; // swallow message
+                        }
                     }
                 }
-            }
 
             // un-hide mouse if auto-hidden
             fRestartAutoHide = TRUE;
@@ -2761,7 +2856,9 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
 
         case WM_BUTTON3MOTIONSTART: // mouse button 3 was pressed down
             // MB3-scroll enabled?
-            if (G_HookData.HookConfig.fMB3Scroll)
+            if (    (G_HookData.HookConfig.fMB3Scroll)
+                 && (SHORT2FROMMP(mp2) == KC_NONE)
+               )
                 // yes:
                 // make sure that the mouse is not currently captured
                 if (WinQueryCapture(HWND_DESKTOP) == NULLHANDLE)
@@ -2777,12 +2874,35 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
         case WM_BUTTON3DOWN:
         {
             CHAR szClassName[200];
-            if (WinQueryClassName(hwnd, sizeof(szClassName), szClassName))
+
+            if (    (G_HookData.bAutoScroll)
+                 && (G_HookData.hwndCurrentlyScrolling)
+               )
             {
-                // VIO window?
-                if (strcmp(szClassName, "Shield") == 0)
+                StopMB3Scrolling(TRUE);
+
+                // swallow msg
+                brc = TRUE;
+            }
+            else
+            // MB3 scrolling enabled?
+            if (    (G_HookData.HookConfig.fMB3Scroll)
+                 && (SHORT2FROMMP(mp2) == KC_NONE)
+                 && (WinQueryClassName(hwnd, sizeof(szClassName), szClassName))
+               )
+            {
+                // VIO, EPM, or UMAIL EPM client window?
+                if (    (strcmp(szClassName, "Shield") == 0)
+                     || (strcmp(szClassName, "NewEditWndClass") == 0)
+                     || (strcmp(szClassName, "UMAILEPM") == 0)
+                   )
                 {
                     // yes:
+
+                    // if EPM client window, swallow
+                    if (szClassName[0] != 'S')
+                        brc = TRUE;
+
                     // prepare MB3 scrolling for WM_MOUSEMOVE later:
                     BEGIN_MB3_SCROLL:
 
@@ -2797,6 +2917,8 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
                     // will be set to TRUE by WMMouseMove_MB3OneScrollbar
                     G_HookData.SDYVert.fPostSBEndScroll = FALSE;
                     G_HookData.SDXHorz.fPostSBEndScroll = FALSE;
+                    // specify what scrolling is about to happen
+                    G_HookData.bAutoScroll = bAutoScroll;
 
                     // capture messages for window under mouse until
                     // MB3 is released again; this makes sure that scrolling
@@ -2808,6 +2930,20 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
                     // then WM_MOUSEMOVE (and thus the hook) runs in a different
                     // process...
                     WinSetCapture(HWND_DESKTOP, hwnd);
+
+                    // disabling auto-hide mouse pointer
+                    G_HookData.fOldAutoHideMouse = G_HookData.HookConfig.fAutoHideMouse;
+                    G_HookData.HookConfig.fAutoHideMouse = FALSE;
+
+                    // if AutoScroll, don't wait for a WM_MOUSESCROLL
+                    // to update pointers and display, so that the user
+                    // is aware of the mode change
+                    if (bAutoScroll)
+                    {
+                        G_ptlMousePosDesktop.x = pqmsg->ptl.x;
+                        G_ptlMousePosDesktop.y = pqmsg->ptl.y;
+                        WMMouseMove_MB3Scroll(hwnd);
+                    }
                 }
 
                 // swallow msg
@@ -2836,10 +2972,27 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
             {
                 StopMB3Scrolling(TRUE);     // success, post msgs
 
+                // if the mouse has not moved, and if BUTTON3DOWN
+                // was swallowed, then fake a BUTTON3CLICK.
+                if (    (G_HookData.SDXHorz.sMB3InitialScreenMousePos == -1)
+                     && (G_HookData.SDYVert.sMB3InitialScreenMousePos == -1)
+                   )
+                {
+                    CHAR szClassName[200];
+
+                    if (WinQueryClassName(hwnd, sizeof(szClassName), szClassName))
+                    {
+                        if (    (strcmp(szClassName, "NewEditWndClass") == 0)
+                             || (strcmp(szClassName, "UMAILEPM") == 0)
+                           )
+                            WinPostMsg(hwnd, WM_BUTTON3CLICK, mp1, mp2);
+                    }
+                }
+
                 // swallow msg
                 // brc = TRUE;
             }
-
+            else
             // MB3 click conversion enabled?
             if (G_HookData.HookConfig.fMB3Click2MB1DblClk)
             {
@@ -2865,7 +3018,8 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
 
         /*
          * WM_BUTTON3CLICK:
-         *      convert MB3 single-clicks to MB1 double-clicks.
+         *      convert MB3 single-clicks to MB1 double-clicks, AutoScroll,
+         *      or Push2Bottom.
          *
          *      Contributed for V0.9.4 by Lars Erdmann.
          */
@@ -2891,6 +3045,38 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
                 WinPostMsg(hwnd, WM_BUTTON1DBLCLK, mp1, mp2);
                 WinPostMsg(hwnd, WM_OPEN, mp1, mp2);
                 WinPostMsg(hwnd, WM_BUTTON1UP, mp1, mp2);
+            }
+            else
+            // MB3 autoscroll enabled?
+            if (    (G_HookData.HookConfig.fMB3AutoScroll)
+                 && (SHORT2FROMMP(mp2) == KC_NONE)
+               )
+            {
+                // yes:
+                // make sure that the mouse is not currently captured
+                if (WinQueryCapture(HWND_DESKTOP) == NULLHANDLE)
+                {
+                    // OK:
+                    bAutoScroll = TRUE;
+
+                    goto BEGIN_MB3_SCROLL;
+                }
+            }
+            else
+            // MB3 push to bottom enabled?
+            if (    (G_HookData.HookConfig.fMB3Push2Bottom)
+                 && (SHORT2FROMMP(mp2) == KC_NONE)
+               )
+            {
+                // make sure that the mouse is not currently captured
+                if (WinQueryCapture(HWND_DESKTOP) == NULLHANDLE)
+                    WinSetWindowPos(GetFrameWindow(hwnd),
+                                    HWND_BOTTOM,
+                                    0,
+                                    0,
+                                    0,
+                                    0,
+                                    SWP_NOADJUST | SWP_ZORDER);
             }
             // brc = FALSE;   // pass on to next hook in chain (if any)
         break;

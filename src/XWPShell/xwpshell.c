@@ -1591,6 +1591,7 @@ APIRET InitDaemon(VOID)
             if (!thrCreate(&G_tiRing3Daemon,
                            fntRing3Daemon,
                            &G_fRing3DaemonRunning,
+                           "Ring3Daemon",
                            THRF_WAIT,
                            G_hfSec32DD))      // driver file handle
             {

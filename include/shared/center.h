@@ -750,7 +750,8 @@
      *
      *      -- SHORT2FROMMP(mp1): notify code (XN_QUERYWIDGETCOUNT).
      *
-     *      -- mp2: reserved, must be 0.
+     *      -- PULONG mp2: pointer to an ULONG in which the widget
+     *                     must fill in its widget count.
      *
      *      The widgets count must only include first level elements.
      *      That is, if a container contains other containers, the
@@ -761,6 +762,7 @@
      *      for the count.
      *
      *@@added V0.9.9 (2001-02-23) [lafaix]
+     *@@changed V0.9.9 (2001-03-11) [lafaix]: uses a PULONG to return the count.
      */
 
     #define XN_QUERYWIDGETCOUNT         7
@@ -801,7 +803,7 @@
     #define WGT_END                     (-1)
     #define WGT_ERROR                   (-1)
 
-   /*
+    /*
      *@@ XN_INSERTWIDGET:
      *      notification code for WM_CONTROL sent from the XCenter
      *      to a widget when it needs to add a widget at a specified
@@ -817,7 +819,8 @@
      *                          that details the insertion.
      *
      *      The widget must return WGT_ERROR if the insertion failed.
-     *      Otherwise it must return the inserted widget's offset.
+     *      Otherwise it must return the offset of the widget following
+     *      the inserted one.
      *
      *@@added V0.9.9 (2001-02-23) [lafaix]
      */

@@ -124,6 +124,9 @@
  *          here, which might not be a good idea to do in the
  *          PMSHELL.EXE process.
  *
+ *      5.  Mouse helpers.  Sliding focus, pointer hidding and
+ *          MB3 (auto) scrolling use fnwpDaemonObject.
+ *
  *      Both the hook and the daemon are all new with V0.9.0.
  *
  *@@added V0.9.0 [umoeller]
@@ -159,10 +162,12 @@
 #define INCL_WINMENUS
 #define INCL_WINTIMER
 #define INCL_WINMESSAGEMGR
+#define INCL_WINSCROLLBARS
 #define INCL_WININPUT
 #define INCL_WINSHELLDATA
 #define INCL_WINSYS
 #define INCL_WINWORKPLACE
+#define INCL_GPIBITMAPS
 #include <os2.h>
 
 #include <stdio.h>
@@ -174,6 +179,7 @@
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
 #include "helpers\linklist.h"           // linked list helper routines
+#include "helpers\shapewin.h"
 #include "helpers\threads.h"
 
 #include "xwpapi.h"                     // public XWorkplace definitions
@@ -252,10 +258,48 @@ THREADINFO      G_tiMoveThread = {0};
 
 const char *WNDCLASS_DAEMONOBJECT = "XWPDaemonObject";
 
+// MB3 (auto) scroll data
+HPOINTER        G_hptrOld = NULLHANDLE,
+                G_hptrNESW = NULLHANDLE,
+                G_hptrNS = NULLHANDLE,
+                G_hptrEW = NULLHANDLE,
+                G_hptrN = NULLHANDLE,
+                G_hptrNE = NULLHANDLE,
+                G_hptrE = NULLHANDLE,
+                G_hptrSE = NULLHANDLE,
+                G_hptrS = NULLHANDLE,
+                G_hptrSW = NULLHANDLE,
+                G_hptrW = NULLHANDLE,
+                G_hptrNW = NULLHANDLE;
+
+BOOL            G_fScrollOriginLoaded = FALSE;
+
+#define VERT      1
+#define HORZ      2
+#define ALL       3  // VERT | HORZ
+
+#define NORTH     0
+#define NORTHEAST 1
+#define EAST      2
+#define SOUTHEAST 3
+#define SOUTH     4
+#define SOUTHWEST 5
+#define WEST      6
+#define NORTHWEST 7
+#define CENTER    8
+
+SHAPEFRAME      G_sfScrollOrigin = {0};
+POINTL          G_ptlScrollOrigin = {0},
+                G_ptlScrollCurrent = {0};
+LONG            G_lScrollMode = ALL;
+HPOINTER        G_ahptrPointers[9] = {0};
+ULONG           G_ulAutoScrollTick = 0;
+
+
 /* ******************************************************************
- *                                                                  *
- *   Drive monitoring                                               *
- *                                                                  *
+ *
+ *   Drive monitoring
+ *
  ********************************************************************/
 
 int CheckRemoveableDrive(void)
@@ -780,6 +824,78 @@ VOID DeinstallHook(VOID)
  *   Hook message processing                                        *
  *                                                                  *
  ********************************************************************/
+
+/*
+ *@@ ProcessAutoScroll:
+ *      this gets called from fnwpDaemonObject to
+ *      implement the "AutoScroll" feature.
+ *
+ *      This is based on WMMouseMove_MB3ScrollLineWise in xwphook.c.
+ *
+ *@@added V0.9.9 (2001-03-21) [lafaix]
+ */
+
+VOID ProcessAutoScroll(PSCROLLDATA pScrollData,
+                       LONG lDelta,
+                       BOOL fHorizontal)
+{
+    USHORT  usScrollCode;
+    ULONG   ulMsg;
+    ULONG   ulOffset;
+    LONG    lTick;
+
+    if (!fHorizontal)
+    {
+        if (lDelta > 0)
+            usScrollCode = SB_LINEDOWN;
+        else
+            usScrollCode = SB_LINEUP;
+
+        ulMsg = WM_VSCROLL;
+    }
+    else
+    {
+        if (lDelta > 0)
+            usScrollCode = SB_LINERIGHT;
+        else
+            usScrollCode = SB_LINELEFT;
+
+        ulMsg = WM_HSCROLL;
+    }
+
+    ulOffset = max(0, abs(lDelta) - G_pHookData->HookConfig.usMB3ScrollMin);
+    lTick = 1L + 10L - (10L * ulOffset / 50L);
+
+    if (    (ulOffset)
+         && (    (lTick <= 0)
+              || ((G_ulAutoScrollTick % lTick) == 0)
+            )
+       )
+    {
+        LONG   i;
+        // save window ID of scroll bar control
+        USHORT usScrollBarID = WinQueryWindowUShort(pScrollData->hwndScrollBar,
+                                                    QWS_ID);
+
+        for (i = (lTick < 0) ? -lTick : 1; i; i--)
+        {
+            // send up or down scroll message if still autoscrolling
+            if (    (G_pHookData->bAutoScroll)
+                 && (WinSendMsg(pScrollData->hwndScrollLastOwner,
+                           ulMsg,
+                           MPFROMSHORT(usScrollBarID),
+                           MPFROM2SHORT(0, usScrollCode)))
+               )
+                // send end scroll message
+                WinSendMsg(pScrollData->hwndScrollLastOwner,
+                           ulMsg,
+                           MPFROMSHORT(usScrollBarID),
+                           MPFROM2SHORT(0, SB_ENDSCROLL));
+            else
+                break;
+        }
+    }
+}
 
 /*
  *@@ ProcessSlidingFocus:
@@ -1420,14 +1536,14 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                                     || ((ucScanCode == 0x64) && (ptlCurrScreen.x < (pptlMaxDesktops->x - 1)))
                                     || ((ucScanCode == 0x63) && (ptlCurrScreen.x > 0)))
                                 {
+                                    // we must send this message, not post it @@@
+                                    WinSendMsg(G_pHookData->hwndPageMageMoveThread,
+                                               PGOM_MOUSESWITCH,
+                                               (MPARAM)ucScanCode,
+                                               0);
                                     WinSetPointerPos(HWND_DESKTOP,
                                                      G_pHookData->lCXScreen / 2,
                                                      G_pHookData->lCYScreen / 2);
-
-                                    WinPostMsg(G_pHookData->hwndPageMageMoveThread,
-                                               PGOM_HOOKKEY,
-                                               (MPARAM)ucScanCode,
-                                               0);
                                 }
                             }
                             else
@@ -1484,6 +1600,176 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                 WinSetActiveWindow(HWND_DESKTOP,
                                    G_pHookData->hwndWindowList);
             break; }
+
+            /*
+             *@@ XDM_BEGINSCROLL:
+             *      posted from the hook when MB3 scroll is initiated.
+             *
+             *      Parameters:
+             *      -- mp1: unused, always 0.
+             *      -- mp2: unused, always 0.
+             *
+             *@@added V0.9.9 (2001-03-18) [lafaix]
+             */
+
+            case XDM_BEGINSCROLL:
+                G_lScrollMode = (G_pHookData->SDXHorz.hwndScrollBar)
+                              ? (G_pHookData->SDYVert.hwndScrollBar)
+                                    ? ALL
+                                    : HORZ
+                              : VERT;
+
+                switch (G_lScrollMode)
+                {
+                    case ALL:
+                        G_ahptrPointers[NORTH]     = G_hptrN;
+                        G_ahptrPointers[NORTHEAST] = G_hptrNE;
+                        G_ahptrPointers[EAST]      = G_hptrE;
+                        G_ahptrPointers[SOUTHEAST] = G_hptrSE;
+                        G_ahptrPointers[SOUTH]     = G_hptrS;
+                        G_ahptrPointers[SOUTHWEST] = G_hptrSW;
+                        G_ahptrPointers[WEST]      = G_hptrW;
+                        G_ahptrPointers[NORTHWEST] = G_hptrNW;
+                        G_ahptrPointers[CENTER]    = G_hptrNESW;
+                    break;
+                    case HORZ:
+                        G_ahptrPointers[NORTH]     = G_hptrEW;
+                        G_ahptrPointers[NORTHEAST] = G_hptrE;
+                        G_ahptrPointers[EAST]      = G_hptrE;
+                        G_ahptrPointers[SOUTHEAST] = G_hptrE;
+                        G_ahptrPointers[SOUTH]     = G_hptrEW;
+                        G_ahptrPointers[SOUTHWEST] = G_hptrW;
+                        G_ahptrPointers[WEST]      = G_hptrW;
+                        G_ahptrPointers[NORTHWEST] = G_hptrW;
+                        G_ahptrPointers[CENTER]    = G_hptrEW;
+                    break;
+                    case VERT:
+                        G_ahptrPointers[NORTH]     = G_hptrN;
+                        G_ahptrPointers[NORTHEAST] = G_hptrN;
+                        G_ahptrPointers[EAST]      = G_hptrNS;
+                        G_ahptrPointers[SOUTHEAST] = G_hptrS;
+                        G_ahptrPointers[SOUTH]     = G_hptrS;
+                        G_ahptrPointers[SOUTHWEST] = G_hptrS;
+                        G_ahptrPointers[WEST]      = G_hptrNS;
+                        G_ahptrPointers[NORTHWEST] = G_hptrN;
+                        G_ahptrPointers[CENTER]    = G_hptrNS;
+                    break;
+                }
+
+                G_hptrOld = WinQueryPointer(HWND_DESKTOP);
+                WinSetPointer(HWND_DESKTOP, G_ahptrPointers[CENTER]);
+
+                if (shpLoadBitmap(G_habDaemon,
+                                  NULL,          // load from resources
+                                  NULLHANDLE,    // load from exe
+                                  139 + G_lScrollMode,
+                                                 // resource ID
+                                  &G_sfScrollOrigin))
+                {
+                    WinQueryPointerPos(HWND_DESKTOP, &G_ptlScrollOrigin);
+                    G_sfScrollOrigin.ptlLowerLeft.x = G_ptlScrollOrigin.x - 16;
+                    G_sfScrollOrigin.ptlLowerLeft.y = G_ptlScrollOrigin.y - 16;
+                    shpCreateWindows(&G_sfScrollOrigin);
+                    G_fScrollOriginLoaded = TRUE;
+                }
+                else
+                    G_fScrollOriginLoaded = FALSE;
+
+                // if AutoScroll, start timer
+                if (G_pHookData->bAutoScroll)
+                {
+                    G_ulAutoScrollTick = 0;
+                    WinStartTimer(G_habDaemon,
+                                  hwndObject,
+                                  TIMERID_AUTOSCROLL,
+                                  100); // 10 times per second
+                }
+            break;
+
+            /*
+             *@@ XDM_ENDSCROLL:
+             *      posted from the hook when MB3 scroll is ended.
+             *
+             *      Parameters:
+             *      -- mp1: unused, always 0.
+             *      -- mp2: unused, always 0.
+             *
+             *@@added V0.9.9 (2001-03-18) [lafaix]
+             */
+
+            case XDM_ENDSCROLL:
+                if (G_hptrOld)
+                    WinSetPointer(HWND_DESKTOP, G_hptrOld);
+                G_hptrOld = NULLHANDLE;
+
+                if (G_fScrollOriginLoaded)
+                {
+                    shpFreeBitmap(&G_sfScrollOrigin);
+                    WinDestroyWindow(G_sfScrollOrigin.hwndShapeFrame) ;
+                    WinDestroyWindow(G_sfScrollOrigin.hwndShape);
+                    G_fScrollOriginLoaded = FALSE;
+                }
+
+                // if AutoScroll, stop timer
+                if (G_pHookData->bAutoScroll)
+                {
+                    G_pHookData->bAutoScroll = FALSE;
+                    WinStopTimer(G_habDaemon,
+                                 hwndObject,
+                                 (ULONG)TIMERID_AUTOSCROLL);
+                }
+            break;
+
+            /*
+             *@@ XDM_SETPOINTER:
+             *      posted from the hook when MB3 scroll is active and
+             *      the mouse has moved.
+             *
+             *      Parameters:
+             *      -- SHORT1(mp1): current X mouse position on screen
+             *      -- SHORT2(mp1): current Y mouse position on screen
+             *      -- mp2: unused, always 0.
+             *
+             *@@added V0.9.9 (2001-03-18) [lafaix]
+             */
+
+            case XDM_SETPOINTER:
+                if (    (abs(G_ptlScrollOrigin.x-SHORT1FROMMP(mp1)) < 2*(G_pHookData->HookConfig.usMB3ScrollMin))
+                     && (abs(G_ptlScrollOrigin.y-SHORT2FROMMP(mp1)) < 2*(G_pHookData->HookConfig.usMB3ScrollMin)))
+                    // too close to call
+                    WinSetPointer(HWND_DESKTOP, G_ahptrPointers[CENTER]);
+                else
+                if (G_ptlScrollOrigin.x > SHORT1FROMMP(mp1) + 16)
+                {
+                    // in the west part
+                    if (G_ptlScrollOrigin.y > SHORT2FROMMP(mp1) + 16)
+                        WinSetPointer(HWND_DESKTOP, G_ahptrPointers[SOUTHWEST]);
+                    else
+                    if (G_ptlScrollOrigin.y < SHORT2FROMMP(mp1) - 16)
+                        WinSetPointer(HWND_DESKTOP, G_ahptrPointers[NORTHWEST]);
+                    else
+                        WinSetPointer(HWND_DESKTOP, G_ahptrPointers[WEST]);
+                }
+                else
+                if (G_ptlScrollOrigin.x < SHORT1FROMMP(mp1) - 16)
+                {
+                    // in the east part
+                    if (G_ptlScrollOrigin.y > SHORT2FROMMP(mp1) + 16)
+                        WinSetPointer(HWND_DESKTOP, G_ahptrPointers[SOUTHEAST]);
+                    else
+                    if (G_ptlScrollOrigin.y < SHORT2FROMMP(mp1) - 16)
+                        WinSetPointer(HWND_DESKTOP, G_ahptrPointers[NORTHEAST]);
+                    else
+                        WinSetPointer(HWND_DESKTOP, G_ahptrPointers[EAST]);
+                }
+                else
+                if (G_ptlScrollOrigin.y > SHORT2FROMMP(mp1))
+                    // in the south
+                    WinSetPointer(HWND_DESKTOP, G_ahptrPointers[SOUTH]);
+                else
+                    // in the north
+                    WinSetPointer(HWND_DESKTOP, G_ahptrPointers[NORTH]);
+            break;
 
             /*
              * XDM_PGMGWINLISTFULL:
@@ -1568,6 +1854,29 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                         WinShowPointer(HWND_DESKTOP, FALSE);
                         G_pHookData->fMousePointerHidden = TRUE;
                     break;
+
+                    /*
+                     * TIMERID_AUTOSCROLL:
+                     *      started from XDM_BEGINSCROLL and stopped from
+                     *      XDM_ENDSCROLL.
+                     *
+                     */
+
+                    case TIMERID_AUTOSCROLL:
+                        WinQueryPointerPos(HWND_DESKTOP, &G_ptlScrollCurrent);
+                        if (G_lScrollMode & HORZ)
+                            ProcessAutoScroll(&G_pHookData->SDXHorz,
+                                              -(G_ptlScrollOrigin.x - G_ptlScrollCurrent.x),
+                                              TRUE);
+                        if (G_lScrollMode & VERT)
+                            ProcessAutoScroll(&G_pHookData->SDYVert,
+                                              G_ptlScrollOrigin.y - G_ptlScrollCurrent.y,
+                                              FALSE);
+                        G_ulAutoScrollTick++;
+                    break;
+
+                    default:
+                        mrc = WinDefWindowProc(hwndObject, msg, mp1, mp2);
                 }
             break;
 
@@ -1630,6 +1939,7 @@ VOID APIENTRY DaemonExitList(ULONG ulCode)
  *      XDM_HOOKINSTALL to the daemon object window.
  *
  *@@changed V0.9.7 (2001-01-20) [umoeller]: now using higher priority
+ *@@changed V0.9.9 (2001-03-18) [lafaix]: loads pointers
  */
 
 int main(int argc, char *argv[])
@@ -1710,6 +2020,19 @@ int main(int argc, char *argv[])
                             G_hptrDaemon = WinLoadPointer(HWND_DESKTOP,
                                                           NULLHANDLE,
                                                           1);
+
+                            // preload MB3 scroll pointers V0.9.9 (2001-03-18) [lafaix]
+                            G_hptrNESW = WinLoadPointer(HWND_DESKTOP, NULLHANDLE, 124);
+                            G_hptrNS   = WinLoadPointer(HWND_DESKTOP, NULLHANDLE, 125);
+                            G_hptrEW   = WinLoadPointer(HWND_DESKTOP, NULLHANDLE, 121);
+                            G_hptrN    = WinLoadPointer(HWND_DESKTOP, NULLHANDLE, 122);
+                            G_hptrNE   = WinLoadPointer(HWND_DESKTOP, NULLHANDLE, 123);
+                            G_hptrE    = WinLoadPointer(HWND_DESKTOP, NULLHANDLE, 120);
+                            G_hptrSE   = WinLoadPointer(HWND_DESKTOP, NULLHANDLE, 128);
+                            G_hptrS    = WinLoadPointer(HWND_DESKTOP, NULLHANDLE, 127);
+                            G_hptrSW   = WinLoadPointer(HWND_DESKTOP, NULLHANDLE, 129);
+                            G_hptrW    = WinLoadPointer(HWND_DESKTOP, NULLHANDLE, 130);
+                            G_hptrNW   = WinLoadPointer(HWND_DESKTOP, NULLHANDLE, 126);
 
                             // create the object window
                             WinRegisterClass(G_habDaemon,

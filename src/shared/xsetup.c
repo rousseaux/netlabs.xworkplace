@@ -293,7 +293,7 @@ static STANDARDOBJECT
  *      string is inserted into a given list box
  *      (used for "XFolder Internals" settings page).
  *
- *@@changed 0.85 Language string now initialized to ""
+ *@@changed V0.8.5 [umoeller]: language string now initialized to ""
  */
 
 VOID AddResourceDLLToLB(HWND hwndDlg,                   // in: dlg with listbox

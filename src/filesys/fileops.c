@@ -760,20 +760,20 @@ MRESULT EXPENTRY fnwpTitleClashDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
  *      Used by fopsConfirmObjectTitle.
  *
  *@@added V0.9.1 (2000-01-30) [umoeller]
+ *@@changed V0.9.9 (2001-03-27) [umoeller]: rewritten to no longer use wpshContainsFile, which caused find mutex deadlocks
  */
 
 WPFileSystem* fopsFindFSWithSameName(WPFileSystem *somSelf,   // in: FS object to check for
                                      WPFolder *pFolder,       // in: folder to check
-                                     PSZ pszFullFolder,       // in: full path spec of pFolder
+                                     const char *pcszFullFolder,  // in: full path spec of pFolder
                                      BOOL fCheckTitle,
-                                     PSZ pszName2Check)       // out: new real name
+                                     PSZ pszRealNameFound)    // out: new real name
 {
-    CHAR    szTitleOrName[1000];
+    WPFileSystem *pFSReturn = NULL;
+    BOOL    fFolderLocked = FALSE;
 
-    // this is not trivial, since we need to take
-    // in account all the FAT and HPFS file name
-    // conversion.
-    // 1)   get real name or title
+    CHAR    szTitleOrName[CCHMAXPATH],
+            szCompare[CCHMAXPATH];
     if (fCheckTitle)
     {
         strcpy(szTitleOrName, _wpQueryTitle(somSelf));
@@ -786,17 +786,47 @@ WPFileSystem* fopsFindFSWithSameName(WPFileSystem *somSelf,   // in: FS object t
         _wpQueryFilename(somSelf, szTitleOrName, FALSE);
 
     // 2)   if the file is on FAT, make this 8+3
-    doshMakeRealName(pszName2Check,     // target buffer
+    doshMakeRealName(szCompare,         // target buffer
                      szTitleOrName,     // source
                      '!',               // replace-with char
-                     doshIsFileOnFAT(pszFullFolder));
+                     doshIsFileOnFAT(pcszFullFolder));
 
-    #ifdef DEBUG_TITLECLASH
-        _Pmpf(("  Checking for existence of %s", pszName2Check));
-    #endif
+    TRY_LOUD(excpt1)
+    {
+        WPObject    *pobj = 0;
 
-    // 3) does this file exist in pFolder?
-    return (wpshContainsFile(pFolder, pszName2Check));
+        fFolderLocked = !wpshRequestFolderMutexSem(pFolder, 5000);
+        if (fFolderLocked)
+        {
+            // pre-resolve _wpQueryContent for speed V0.9.3 (2000-04-28) [umoeller]
+            somTD_WPFolder_wpQueryContent rslv_wpQueryContent
+                    = SOM_Resolve(pFolder, WPFolder, wpQueryContent);
+
+            for (   pobj = rslv_wpQueryContent(pFolder, NULL, (ULONG)QC_FIRST);
+                    (pobj);
+                    pobj = rslv_wpQueryContent(pFolder, pobj, (ULONG)QC_NEXT)
+                )
+            {
+                if (_somIsA(pobj, _WPFileSystem))
+                {
+                    CHAR    szThisName[CCHMAXPATH];
+                    if (_wpQueryFilename(pobj, szThisName, FALSE))
+                        if (!stricmp(szThisName, szCompare))
+                        {
+                            pFSReturn = pobj;
+                            strcpy(pszRealNameFound, szThisName);
+                            break;
+                        }
+                }
+            }
+        }
+    }
+    CATCH(excpt1) { } END_CATCH();
+
+    if (fFolderLocked)
+        wpshReleaseFolderMutexSem(pFolder);
+
+    return (pFSReturn);
 }
 
 /*
@@ -823,14 +853,14 @@ WPFileSystem* fopsFindFSWithSameName(WPFileSystem *somSelf,   // in: FS object t
  *@@added V0.9.1 (2000-01-30) [umoeller]
  *@@changed V0.9.1 (2000-01-08) [umoeller]: added mutex protection for folder queries
  *@@changed V0.9.3 (2000-04-28) [umoeller]: now pre-resolving wpQueryContent for speed
+ *@@changed V0.9.9 (2001-03-27) [umoeller]: fixed hangs with .hidden filenames
  */
 
-BOOL fopsProposeNewTitle(PSZ pszTitle,          // in: title to modify
+BOOL fopsProposeNewTitle(const char *pcszTitle,          // in: title to modify
                          WPFolder *pFolder,     // in: folder to check for existing titles
                          PSZ pszProposeTitle)   // out: buffer for new title
 {
-    CHAR    szTemp[500],
-            szFileCount[20];
+    CHAR    szFilenameWithoutCount[500];
     PSZ     p = 0,
             p2 = 0;
     BOOL    fFileExists = FALSE,
@@ -844,43 +874,47 @@ BOOL fopsProposeNewTitle(PSZ pszTitle,          // in: title to modify
     // transform that one into a real name and keep
     // increasing "num" until no file with that
     // real name exists (as the WPS does it too)
-    strcpy(szTemp, pszTitle);
+    strcpy(szFilenameWithoutCount, pcszTitle);
     // check if title contains a ':num' already
-    p2 = strchr(szTemp, ':');
+    p2 = strchr(szFilenameWithoutCount, ':');
     if (p2)
     {
         lFileCount = atoi(p2+1);
         if (lFileCount)
         {
             // if we have a valid number following ":", remove it
-            p = strchr(szTemp, '.');
+            p = strchr(p2, '.');
             if (p)
                 strcpy(p2, p);
             else
                 *p2 = '\0';
         }
+        else
+            *p2 = '\0';     // V0.9.9 (2001-03-27) [umoeller]
     }
 
     // insert new number
-    p = strrchr(szTemp, '.');       // last dot == extension
+    p = strrchr(szFilenameWithoutCount + 1, '.');       // last dot == extension
+                // fixed V0.9.9 (2001-03-27) [umoeller]: start with
+                // second char to handle ".unixhidden" files
     lFileCount = 1;
     do
     {
-        WPFileSystem    *pExistingFile2 = 0;
         BOOL            fFolderLocked = FALSE;
-        ULONG           ulNesting = 0;
+        CHAR            szFileCount[20];
 
         fExit = FALSE;
 
         sprintf(szFileCount, ":%d", lFileCount);
+
         if (p)
         {
             // has extension: insert
-            ULONG ulBeforeDot = (p - szTemp);
+            ULONG ulBeforeDot = (p - szFilenameWithoutCount);
             // we don't care about FAT, because
             // we propose titles, not real names
             // (V0.84)
-            strncpy(pszProposeTitle, szTemp, ulBeforeDot);
+            strncpy(pszProposeTitle, szFilenameWithoutCount, ulBeforeDot);
             pszProposeTitle[ulBeforeDot] = '\0';
             strcat(pszProposeTitle, szFileCount);
             strcat(pszProposeTitle, p);
@@ -888,25 +922,21 @@ BOOL fopsProposeNewTitle(PSZ pszTitle,          // in: title to modify
         else
         {
             // has no extension: append
-            strncpy(pszProposeTitle, szTemp, 255);
+            strncpy(pszProposeTitle, szFilenameWithoutCount, 200);
             // we don't care about FAT, because
             // we propose titles, not real names
             // (V0.84)
             strcat(pszProposeTitle, szFileCount);
         }
-        lFileCount++;
-
-        if (lFileCount > 99)
-            // avoid endless loops
-            break;
 
         // now go through the folder content and
         // check whether we already have a file
         // with the proposed title (not real name!)
         // (V0.84)
-        DosEnterMustComplete(&ulNesting);
         TRY_LOUD(excpt1)
         {
+            WPFileSystem    *pExistingFile2 = 0;
+
             fFolderLocked = !wpshRequestFolderMutexSem(pFolder, 5000);
             if (fFolderLocked)
             {
@@ -923,7 +953,7 @@ BOOL fopsProposeNewTitle(PSZ pszTitle,          // in: title to modify
                     fFileExists = (stricmp(_wpQueryTitle(pExistingFile2),
                                            pszProposeTitle) == 0);
                     if (fFileExists)
-                        break;
+                        break; // for wpQueryContent
                 }
             }
             else
@@ -942,7 +972,11 @@ BOOL fopsProposeNewTitle(PSZ pszTitle,          // in: title to modify
         if (fFolderLocked)
             wpshReleaseFolderMutexSem(pFolder);
 
-        DosExitMustComplete(&ulNesting);
+        lFileCount++;
+
+        if (lFileCount > 99)
+            // avoid endless loops
+            break;
 
     } while (   (fFileExists)
               && (!fExit)
@@ -1157,13 +1191,19 @@ ULONG fopsConfirmObjectTitle(WPObject *somSelf,
 
     _Pmpf(("fopsConfirmObjectTitle: menuID is 0x%lX", menuID));
 
+    #ifndef NO_NAMECLASH_DIALOG
+        #define NO_NAMECLASH_DIALOG           0x80
+    #endif
+
     // nameclashs are only a problem for file-system objects,
     // and only if we're not creating shadows
     if (    (_somIsA(somSelf, _WPFileSystem))
-         && (menuID != 0x13C) // "create shadow" code
+    /*      && (menuID != 0x13C) // "create shadow" code
          && (menuID != 0x065) // various "create another" codes; V0.9.4 (2000-07-15) [umoeller]
          && (menuID != 0x066)
          && (menuID < 0x7D0)
+       ) */
+         && (0 == (_wpQueryNameClashOptions(somSelf, menuID) & NO_NAMECLASH_DIALOG))
        )
     {
         CHAR            szFolder[CCHMAXPATH],
@@ -1171,10 +1211,10 @@ ULONG fopsConfirmObjectTitle(WPObject *somSelf,
         WPFileSystem    *pFSExisting = NULL;
 
         // check whether the target folder is valid
-        if (!Folder)
-            return (NAMECLASH_CANCEL);
-
-        if (!_wpQueryFilename(Folder, szFolder, TRUE))
+        if (    (!Folder)
+             || (!_somIsA(Folder, _WPFolder))
+             || (!_wpQueryFilename(Folder, szFolder, TRUE))
+           )
             return (NAMECLASH_CANCEL);
 
         pFSExisting = fopsFindFSWithSameName(somSelf,

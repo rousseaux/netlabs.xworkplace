@@ -1593,6 +1593,7 @@ MRESULT hifKeybdFunctionKeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
  *
  *@@added V0.9.1 (99-12-10) [umoeller]
  *@@changed V0.9.4 (2000-06-12) [umoeller]: added mb3 clicks
+ *@@changed V0.9.9 (2001-03-20) [lafaix]: added MB3 click mappings
  */
 
 VOID hifMouseMappings2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -1600,6 +1601,9 @@ VOID hifMouseMappings2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info str
 {
     if (flFlags & CBI_INIT)
     {
+        PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
+        HWND hwndDrop = WinWindowFromID(pcnbp->hwndDlgPage,
+                                        ID_XSDI_MOUSE_MB3CLICK_DROP);
         if (pcnbp->pUser == 0)
         {
             // first call: create HOOKCONFIG
@@ -1617,6 +1621,12 @@ VOID hifMouseMappings2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info str
                 memcpy(pcnbp->pUser2, pcnbp->pUser, sizeof(HOOKCONFIG));
         }
 
+        // set MB3 mappings combo
+        WinInsertLboxItem(hwndDrop, LIT_END, pNLSStrings->pszMB3AutoScroll);
+        WinInsertLboxItem(hwndDrop, LIT_END, pNLSStrings->pszMB3DblClick);
+        WinInsertLboxItem(hwndDrop, LIT_END, pNLSStrings->pszMB3NoConversion);
+        WinInsertLboxItem(hwndDrop, LIT_END, pNLSStrings->pszMB3PushToBottom);
+
         // set up sliders
         winhSetSliderTicks(WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3PIXELS_SLIDER),
                            (MPARAM)0, 3,
@@ -1629,14 +1639,25 @@ VOID hifMouseMappings2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info str
     if (flFlags & CBI_SET)
     {
         PHOOKCONFIG pdc = (PHOOKCONFIG)pcnbp->pUser;
+        HWND hwndDrop = WinWindowFromID(pcnbp->hwndDlgPage,
+                                        ID_XSDI_MOUSE_MB3CLICK_DROP);
+
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_CHORDWINLIST,
                               pdc->fChordWinList);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_SYSMENUMB2,
                               pdc->fSysMenuMB2TitleBar);
 
-        // mb3 clicks to MB1 dblclicks
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3CLK2MB1DBLCLK,
-                              pdc->fMB3Click2MB1DblClk);
+        // mb3 clicks mappings
+        if (pdc->fMB3AutoScroll)
+            winhSetLboxSelectedItem(hwndDrop, 0, TRUE);
+        else
+        if (pdc->fMB3Click2MB1DblClk)
+            winhSetLboxSelectedItem(hwndDrop, 1, TRUE);
+        else
+        if (pdc->fMB3Push2Bottom)
+            winhSetLboxSelectedItem(hwndDrop, 3, TRUE);
+        else
+            winhSetLboxSelectedItem(hwndDrop, 2, TRUE);
 
         // mb3 scroll
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3SCROLL,
@@ -1701,6 +1722,8 @@ VOID hifMouseMappings2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info str
  *@@added V0.9.1 (99-12-10) [umoeller]
  *@@changed V0.9.4 (2000-06-12) [umoeller]: added mb3 clicks
  *@@changed V0.9.4 (2000-06-12) [umoeller]: fixed "default" and "undo" buttons
+ *@@changed V0.9.9 (2001-03-15) [lafaix]: added MB3 click mappings
+ *@@changed V0.9.9 (2001-03-25) [lafaix]: fixed "default" and "undo" behavior
  */
 
 MRESULT hifMouseMappings2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -1723,15 +1746,22 @@ MRESULT hifMouseMappings2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             pdc->fSysMenuMB2TitleBar = ulExtra;
         break;
 
-        case ID_XSDI_MOUSE_MB3CLK2MB1DBLCLK:
+        case ID_XSDI_MOUSE_MB3CLICK_DROP:
+        {
+            // new mappings selected from drop-down box:
+            HWND hwndDrop = WinWindowFromID(pcnbp->hwndDlgPage, usItemID);
+            LONG lIndex = winhQueryLboxSelectedItem(hwndDrop, LIT_FIRST);
+
             hifLoadHookConfig(pdc);
-            pdc->fMB3Click2MB1DblClk = ulExtra;
-        break;
+            pdc->fMB3AutoScroll = (lIndex == 0);
+            pdc->fMB3Click2MB1DblClk = (lIndex == 1);
+            pdc->fMB3Push2Bottom = (lIndex == 3);
+        break; }
 
         case ID_XSDI_MOUSE_MB3SCROLL:
             hifLoadHookConfig(pdc);
             pdc->fMB3Scroll = ulExtra;
-            (pcnbp->pfncbInitPage)(pcnbp, CBI_ENABLE);
+            pcnbp->pfncbInitPage(pcnbp, CBI_ENABLE);
         break;
 
         case ID_XSDI_MOUSE_MB3PIXELS_SLIDER:
@@ -1752,13 +1782,13 @@ MRESULT hifMouseMappings2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case ID_XSDI_MOUSE_MB3LINEWISE:
             hifLoadHookConfig(pdc);
             pdc->usScrollMode = SM_LINEWISE;
-            (pcnbp->pfncbInitPage)(pcnbp, CBI_ENABLE);
+            pcnbp->pfncbInitPage(pcnbp, CBI_ENABLE);
         break;
 
         case ID_XSDI_MOUSE_MB3AMPLIFIED:
             hifLoadHookConfig(pdc);
             pdc->usScrollMode = SM_AMPLIFIED;
-            (pcnbp->pfncbInitPage)(pcnbp, CBI_ENABLE);
+            pcnbp->pfncbInitPage(pcnbp, CBI_ENABLE);
         break;
 
         case ID_XSDI_MOUSE_MB3AMP_SLIDER:
@@ -1785,6 +1815,7 @@ MRESULT hifMouseMappings2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         /*
          * DID_DEFAULT:
          *
+         *changed V0.9.9 (2001-03-25) [lafaix]: saving settings here
          */
 
         case DID_DEFAULT:
@@ -1797,12 +1828,18 @@ MRESULT hifMouseMappings2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             pdc->usScrollMode = SM_LINEWISE; // 0
             pdc->sAmplification = 0;
             pdc->fMB3ScrollReverse = 0;
-            (pcnbp->pfncbInitPage)(pcnbp, CBI_SET | CBI_ENABLE);
+
+            // saving settings before initializing
+            hifHookConfigChanged(pdc);
+            fSave = FALSE;
+
+            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
         break;
 
         /*
          * DID_UNDO:
          *
+         *changed V0.9.9 (2001-03-25) [lafaix]: saving settings here
          */
 
         case DID_UNDO:
@@ -1818,8 +1855,11 @@ MRESULT hifMouseMappings2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 pdc->usScrollMode = pBackup->usScrollMode;
                 pdc->sAmplification = pBackup->sAmplification;
                 pdc->fMB3ScrollReverse = pBackup->fMB3ScrollReverse;
+
+                hifHookConfigChanged(pdc);
+                fSave = FALSE;
             }
-            (pcnbp->pfncbInitPage)(pcnbp, CBI_SET | CBI_ENABLE);
+            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
         break;
 
         default:
@@ -1832,8 +1872,8 @@ MRESULT hifMouseMappings2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     return (mrc);
 }
 
-ULONG   ulScreenCornerSelectedID = ID_XSDI_MOUSE_RADIO_TOPLEFT;
-ULONG   ulScreenCornerSelectedIndex = 0;
+ULONG   G_ulScreenCornerSelectedID = ID_XSDI_MOUSE_RADIO_TOPLEFT;
+ULONG   G_ulScreenCornerSelectedIndex = 0;
                             // 0 = lower left corner,
                             // 1 = top left corner,
                             // 2 = lower right corner,
@@ -1845,10 +1885,12 @@ ULONG   ulScreenCornerSelectedIndex = 0;
                             // 7 = bottom border
 
 // screen corner object container d'n'd
-HOBJECT hobjBeingDragged = NULLHANDLE;
+HOBJECT G_hobjBeingDragged = NULLHANDLE;
             // NULLHANDLE means dropping is invalid;
             // in between CN_DRAGOVER and CN_DROP, this
             // contains the object handle being dragged
+
+BOOL    G_fShutUpSlider = FALSE;
 
 /*
  *@@ UpdateScreenCornerIndex:
@@ -1861,23 +1903,23 @@ VOID UpdateScreenCornerIndex(USHORT usItemID)
     switch (usItemID)
     {
         case ID_XSDI_MOUSE_RADIO_TOPLEFT:
-            ulScreenCornerSelectedIndex = 1; break;
+            G_ulScreenCornerSelectedIndex = 1; break;
         case ID_XSDI_MOUSE_RADIO_TOPRIGHT:
-            ulScreenCornerSelectedIndex = 3; break;
+            G_ulScreenCornerSelectedIndex = 3; break;
         case ID_XSDI_MOUSE_RADIO_BOTTOMLEFT:
-            ulScreenCornerSelectedIndex = 0; break;
+            G_ulScreenCornerSelectedIndex = 0; break;
         case ID_XSDI_MOUSE_RADIO_BOTTOMRIGHT:
-            ulScreenCornerSelectedIndex = 2; break;
+            G_ulScreenCornerSelectedIndex = 2; break;
 
         // V0.9.4 (2000-06-12) [umoeller]
         case ID_XSDI_MOUSE_RADIO_TOP:
-            ulScreenCornerSelectedIndex = 4; break;
+            G_ulScreenCornerSelectedIndex = 4; break;
         case ID_XSDI_MOUSE_RADIO_LEFT:
-            ulScreenCornerSelectedIndex = 5; break;
+            G_ulScreenCornerSelectedIndex = 5; break;
         case ID_XSDI_MOUSE_RADIO_RIGHT:
-            ulScreenCornerSelectedIndex = 6; break;
+            G_ulScreenCornerSelectedIndex = 6; break;
         case ID_XSDI_MOUSE_RADIO_BOTTOM:
-            ulScreenCornerSelectedIndex = 7; break;
+            G_ulScreenCornerSelectedIndex = 7; break;
     }
 }
 
@@ -2028,6 +2070,7 @@ VOID hifMouseMovementInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
  *@@changed V0.9.4 (2000-06-12) [umoeller]: fixed "default" and "undo" buttons
  *@@changed V0.9.6 (2000-10-27) [umoeller]: added optional NPSWPS-like submenu behavior
  *@@changed V0.9.7 (2000-12-08) [umoeller]: added "ignore XCenter"
+ *@@changed V0.9.9 (2001-03-25) [lafaix]: fixed "default" and "undo" behavior
  */
 
 MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -2050,7 +2093,7 @@ MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case ID_XSDI_MOUSE_SLIDINGFOCUS:
             hifLoadHookConfig(pdc);
             pdc->fSlidingFocus = ulExtra;
-            (pcnbp->pfncbInitPage)(pcnbp, CBI_ENABLE);
+            pcnbp->pfncbInitPage(pcnbp, CBI_ENABLE);
         break;
 
         case ID_XSDI_MOUSE_BRING2TOP:
@@ -2096,7 +2139,7 @@ MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case ID_XSDI_MOUSE_SLIDINGMENU:
             hifLoadHookConfig(pdc);
             pdc->fSlidingMenus = ulExtra;
-            (pcnbp->pfncbInitPage)(pcnbp, CBI_ENABLE);
+            pcnbp->pfncbInitPage(pcnbp, CBI_ENABLE);
         break;
 
         case ID_XSDI_MOUSE_MENUDELAY_SLIDER:
@@ -2112,7 +2155,7 @@ MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             WinSetDlgItemText(pcnbp->hwndDlgPage,
                               ID_XSDI_MOUSE_MENUDELAY_TXT2,
                               szTemp);
-            (pcnbp->pfncbInitPage)(pcnbp, CBI_ENABLE);
+            pcnbp->pfncbInitPage(pcnbp, CBI_ENABLE);
         break; }
 
         case ID_XSDI_MOUSE_CONDCASCADE:
@@ -2128,7 +2171,7 @@ MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case ID_XSDI_MOUSE_AUTOHIDE_CHECK:
             hifLoadHookConfig(pdc);
             pdc->fAutoHideMouse = ulExtra;
-            (pcnbp->pfncbInitPage)(pcnbp, CBI_ENABLE);
+            pcnbp->pfncbInitPage(pcnbp, CBI_ENABLE);
         break;
 
         case ID_XSDI_MOUSE_AUTOHIDE_SLIDER:
@@ -2149,6 +2192,7 @@ MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         /*
          * DID_DEFAULT:
          *
+         *changed V0.9.9 (2001-03-25) [lafaix]: saving settings here
          */
 
         case DID_DEFAULT:
@@ -2167,12 +2211,17 @@ MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             pdc->fAutoHideMouse = 0;
             pdc->ulAutoHideDelay = 0;
 
-            (pcnbp->pfncbInitPage)(pcnbp, CBI_SET | CBI_ENABLE);
+            // saving settings here
+            hifHookConfigChanged(pdc);
+            fSave = FALSE;
+
+            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
         break;
 
         /*
          * DID_UNDO:
          *
+         *@@changed V0.9.9 (2001-03-25) [lafaix]: saving settings here
          */
 
         case DID_UNDO:
@@ -2193,8 +2242,12 @@ MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 pdc->fMenuImmediateHilite = pBackup->fMenuImmediateHilite;
                 pdc->fAutoHideMouse = pBackup->fAutoHideMouse;
                 pdc->ulAutoHideDelay = pBackup->ulAutoHideDelay;
+
+                // saving settings here
+                hifHookConfigChanged(pdc);
+                fSave = FALSE;
             }
-            (pcnbp->pfncbInitPage)(pcnbp, CBI_SET | CBI_ENABLE);
+            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
         break;
 
         default:
@@ -2216,6 +2269,8 @@ MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
  *
  *@@changed V0.9.4 (2000-08-08) [umoeller]: added PageMage to special functions
  *@@changed V0.9.9 (2001-01-25) [lafaix]: added more PageMage special functions
+ *@@changed V0.9.9 (2001-03-15) [lafaix]: added Corner sensitivity setting
+ *@@changed V0.9.9 (2001-03-27) [umoeller]: converted page to use non-auto radio buttons; fixed slider msgs
  */
 
 VOID hifMouseCornersInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -2241,10 +2296,10 @@ VOID hifMouseCornersInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struc
         }
 
         // check top left screen corner
-        ulScreenCornerSelectedID = ID_XSDI_MOUSE_RADIO_TOPLEFT;
-        ulScreenCornerSelectedIndex = 1;        // top left
+        G_ulScreenCornerSelectedID = ID_XSDI_MOUSE_RADIO_TOPLEFT;
+        G_ulScreenCornerSelectedIndex = 1;        // top left
         winhSetDlgItemChecked(pcnbp->hwndDlgPage,
-                              ulScreenCornerSelectedID,
+                              G_ulScreenCornerSelectedID,
                               TRUE);
 
         // fill drop-down box
@@ -2270,6 +2325,12 @@ VOID hifMouseCornersInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struc
         {
             cnrhSetView(CV_NAME | CV_MINI | CA_DRAWICON);
         } END_CNRINFO(WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_OPEN_CNR));
+
+        // set up slider
+        winhSetSliderTicks(WinWindowFromID(pcnbp->hwndDlgPage,
+                                           ID_XSDI_MOUSE_CORNERSIZE_SLIDER),
+                           0, 3,
+                           MPFROM2SHORT(0, 2), 6);
     }
 
     if (flFlags & CBI_SET)
@@ -2277,32 +2338,52 @@ VOID hifMouseCornersInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struc
         PHOOKCONFIG pdc = (PHOOKCONFIG)pcnbp->pUser;
         HWND    hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_OPEN_CNR);
         HWND    hwndDrop = WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_SPECIAL_DROP);
+        ULONG   ulCurrentObj;
 
-        // screen corners objects
+        _Pmpf((__FUNCTION__ ": CBI_SET, sel: %d", G_ulScreenCornerSelectedIndex));
 
-        if (pdc->ahobjHotCornerObjects[ulScreenCornerSelectedIndex] == 0)
+        // corner sensitivity
+        G_fShutUpSlider = TRUE;
+        winhSetSliderArmPosition(WinWindowFromID(pcnbp->hwndDlgPage,
+                                                 ID_XSDI_MOUSE_CORNERSIZE_SLIDER),
+                                 SMA_INCREMENTVALUE,
+                                 // slider uses 5% seconds ticks
+                                 pdc->ulCornerSensitivity * 2 / 10);
+        G_fShutUpSlider = FALSE;
+
+        // screen corners objects:
+        // set all radio buttons (these are no longer "auto" radio buttons V0.9.9 (2001-03-27) [umoeller])
+        ulCurrentObj = (ULONG)pdc->ahobjHotCornerObjects[G_ulScreenCornerSelectedIndex];
+
+        _Pmpf(("  current obj: 0x%lX", ulCurrentObj));
+
+        if (ulCurrentObj == 0)
         {
             // "Inactive" corner:
             winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_INACTIVEOBJ, TRUE);
+            winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_SPECIAL_CHECK, FALSE);
+            winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_OPEN_CHECK, FALSE);
             cnrhRemoveAll(hwndCnr);
             winhSetLboxSelectedItem(hwndDrop, LIT_NONE, TRUE);
         }
-        else if (   (ULONG)(pdc->ahobjHotCornerObjects[ulScreenCornerSelectedIndex])
-                  >= 0xFFFF0000)
+        else if (ulCurrentObj >= 0xFFFF0000)
         {
             // special function for this corner:
+            winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_INACTIVEOBJ, FALSE);
             winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_SPECIAL_CHECK, TRUE);
+            winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_OPEN_CHECK, FALSE);
             cnrhRemoveAll(hwndCnr);
             winhSetLboxSelectedItem(hwndDrop,
-                                    (pdc->ahobjHotCornerObjects[ulScreenCornerSelectedIndex]
+                                    (pdc->ahobjHotCornerObjects[G_ulScreenCornerSelectedIndex]
                                          & 0xFFFF),
                                     TRUE);
         }
         else
         {
             // actual object for this corner:
-            HOBJECT hobj = pdc->ahobjHotCornerObjects[ulScreenCornerSelectedIndex];
-
+            HOBJECT hobj = (HOBJECT)ulCurrentObj;
+            winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_INACTIVEOBJ, FALSE);
+            winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_SPECIAL_CHECK, FALSE);
             winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_OPEN_CHECK, TRUE);
 
             winhSetLboxSelectedItem(hwndDrop,
@@ -2355,6 +2436,9 @@ VOID hifMouseCornersInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struc
  *
  *@@changed V0.9.4 (2000-06-12) [umoeller]: added screen borders
  *@@changed V0.9.4 (2000-06-12) [umoeller]: fixed "default" and "undo" buttons
+ *@@changed V0.9.9 (2001-03-15) [lafaix]: added corner sensitivity settings
+ *@@changed V0.9.9 (2001-03-25) [lafaix]: fixed "default" and "undo" behavior
+ *@@changed V0.9.9 (2001-03-27) [umoeller]: converted page to use non-auto radio buttons; fixed slider msgs
  */
 
 MRESULT hifMouseCornersItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -2365,7 +2449,11 @@ MRESULT hifMouseCornersItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     PHOOKCONFIG pdc = (PHOOKCONFIG)pcnbp->pUser;
     BOOL    fSave = TRUE;
 
-    _Pmpf(("hifMouseCornersItemChanged: usItemID: %d ulExtra: %d", usItemID, ulExtra));
+    if (G_fShutUpSlider)
+        return (0);             // V0.9.9 (2001-03-27) [umoeller]
+
+    _Pmpf((__FUNCTION__ ": usItemID: %d ulExtra: %d", usItemID, ulExtra));
+    _Pmpf(("  selected index: %d", G_ulScreenCornerSelectedIndex));
 
     switch (usItemID)
     {
@@ -2384,28 +2472,39 @@ MRESULT hifMouseCornersItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case ID_XSDI_MOUSE_RADIO_BOTTOM:
             // check if the old current corner's object
             // is 1 (our "pseudo" object)
-            if (pdc->ahobjHotCornerObjects[ulScreenCornerSelectedIndex] == 1)
+            if (pdc->ahobjHotCornerObjects[G_ulScreenCornerSelectedIndex] == 1)
                 // that's an invalid object, so set to 0 (no function)
-                pdc->ahobjHotCornerObjects[ulScreenCornerSelectedIndex] = 0;
+                pdc->ahobjHotCornerObjects[G_ulScreenCornerSelectedIndex] = 0;
+
+            // uncheck old radio button
+            winhSetDlgItemChecked(pcnbp->hwndDlgPage, G_ulScreenCornerSelectedID, FALSE);
 
             // update global and then update controls on page
-            ulScreenCornerSelectedID = usItemID;
-
+            G_ulScreenCornerSelectedID = usItemID;
             UpdateScreenCornerIndex(usItemID);
+            winhSetDlgItemChecked(pcnbp->hwndDlgPage, G_ulScreenCornerSelectedID, TRUE);
 
             /* _Pmpf(("ctrl: %lX, index: %lX",
                    ulScreenCornerSelectedID,
                    ulScreenCornerSelectedIndex)); */
 
-            (pcnbp->pfncbInitPage)(pcnbp, CBI_SET | CBI_ENABLE);
+            _Pmpf(("  new selected index: %d", G_ulScreenCornerSelectedIndex));
+
+            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
             fSave = FALSE;
         break;
+
+        /*
+         * ID_XSDI_MOUSE_INACTIVEOBJ:
+         *
+         */
 
         case ID_XSDI_MOUSE_INACTIVEOBJ:
             // disable hot corner
             hifLoadHookConfig(pdc);
-            pdc->ahobjHotCornerObjects[ulScreenCornerSelectedIndex] = 0;
-            (pcnbp->pfncbInitPage)(pcnbp, CBI_SET | CBI_ENABLE);
+            pdc->ahobjHotCornerObjects[G_ulScreenCornerSelectedIndex] = 0;
+
+            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
         break;
 
         /*
@@ -2415,15 +2514,15 @@ MRESULT hifMouseCornersItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         case ID_XSDI_MOUSE_OPEN_CHECK:
             hifLoadHookConfig(pdc);
-            if (    (pdc->ahobjHotCornerObjects[ulScreenCornerSelectedIndex] == 0)
-                 ||  (pdc->ahobjHotCornerObjects[ulScreenCornerSelectedIndex] >= 0xFFFF0000)
+            if (    (pdc->ahobjHotCornerObjects[G_ulScreenCornerSelectedIndex] == 0)
+                 ||  (pdc->ahobjHotCornerObjects[G_ulScreenCornerSelectedIndex] >= 0xFFFF0000)
                 )
                 // mode changed to object mode: store a pseudo-object
-                pdc->ahobjHotCornerObjects[ulScreenCornerSelectedIndex] = 1;
+                pdc->ahobjHotCornerObjects[G_ulScreenCornerSelectedIndex] = 1;
                     // an object handle of 1 does not exist, however
                     // we need this for the INIT callback to work
 
-            (pcnbp->pfncbInitPage)(pcnbp, CBI_SET | CBI_ENABLE);
+            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
         break;
 
         case ID_XSDI_MOUSE_OPEN_CNR:
@@ -2432,16 +2531,17 @@ MRESULT hifMouseCornersItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             {
                 case CN_DRAGOVER:
                     mrc = wpshQueryDraggedObjectCnr((PCNRDRAGINFO)ulExtra,
-                                                    &hobjBeingDragged);
+                                                    &G_hobjBeingDragged);
                 break; // CN_DRAGOVER
 
                 case CN_DROP:
-                    if (hobjBeingDragged)
+                    if (G_hobjBeingDragged)
                     {
-                        pdc->ahobjHotCornerObjects[ulScreenCornerSelectedIndex]
-                                = hobjBeingDragged;
-                        hobjBeingDragged = NULLHANDLE;
-                        (pcnbp->pfncbInitPage)(pcnbp, CBI_SET | CBI_ENABLE);
+                        pdc->ahobjHotCornerObjects[G_ulScreenCornerSelectedIndex]
+                                = G_hobjBeingDragged;
+                        G_hobjBeingDragged = NULLHANDLE;
+
+                        pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
                     }
                 break;
             }
@@ -2454,8 +2554,9 @@ MRESULT hifMouseCornersItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         case ID_XSDI_MOUSE_SPECIAL_CHECK:
             hifLoadHookConfig(pdc);
-            pdc->ahobjHotCornerObjects[ulScreenCornerSelectedIndex] = 0xFFFF0000;
-            (pcnbp->pfncbInitPage)(pcnbp, CBI_SET | CBI_ENABLE);
+            pdc->ahobjHotCornerObjects[G_ulScreenCornerSelectedIndex] = 0xFFFF0000;
+
+            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
         break;
 
         case ID_XSDI_MOUSE_SPECIAL_DROP:
@@ -2464,29 +2565,53 @@ MRESULT hifMouseCornersItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             HWND hwndDrop = WinWindowFromID(pcnbp->hwndDlgPage, usItemID);
             LONG lIndex = winhQueryLboxSelectedItem(hwndDrop, LIT_FIRST);
             hifLoadHookConfig(pdc);
+
             if (lIndex == LIT_NONE)
                 // disable hot corner
-                pdc->ahobjHotCornerObjects[ulScreenCornerSelectedIndex] = 0;
+                pdc->ahobjHotCornerObjects[G_ulScreenCornerSelectedIndex] = 0;
             else
                 // store special function, which has the hiword as FFFF
-                pdc->ahobjHotCornerObjects[ulScreenCornerSelectedIndex]
+                pdc->ahobjHotCornerObjects[G_ulScreenCornerSelectedIndex]
                     = 0xFFFF0000 | lIndex;
+
+        break; }
+
+        /*
+         * ID_XSDI_MOUSE_CORNERSIZE_SLIDER:
+         *      corner sensitivity
+         */
+
+        case ID_XSDI_MOUSE_CORNERSIZE_SLIDER:
+        {
+            LONG lSliderIndex = winhQuerySliderArmPosition(pcnbp->hwndControl,
+                                                           SMA_INCREMENTVALUE);
+
+            // convert to percents
+            hifLoadHookConfig(pdc);
+            pdc->ulCornerSensitivity = lSliderIndex * 10 / 2;
         break; }
 
         /*
          * DID_DEFAULT:
          *
+         *changed V0.9.9 (2001-03-25) [lafaix]: saving settings here
          */
 
         case DID_DEFAULT:
             hifLoadHookConfig(pdc);
             memset(pdc->ahobjHotCornerObjects, 0, sizeof(pdc->ahobjHotCornerObjects));
-            (pcnbp->pfncbInitPage)(pcnbp, CBI_SET | CBI_ENABLE);
+            pdc->ulCornerSensitivity = 30;
+
+            hifHookConfigChanged(pdc);
+            fSave = FALSE;
+
+            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
         break;
 
         /*
          * DID_UNDO:
          *
+         *changed V0.9.9 (2001-03-25) [lafaix]: saving settings here
          */
 
         case DID_UNDO:
@@ -2498,8 +2623,12 @@ MRESULT hifMouseCornersItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 memcpy(pdc->ahobjHotCornerObjects,
                        pBackup->ahobjHotCornerObjects,
                        sizeof(pdc->ahobjHotCornerObjects));
+                pdc->ulCornerSensitivity = pBackup->ulCornerSensitivity;
+                            // V0.9.9 (2001-03-27) [umoeller]
+                hifHookConfigChanged(pdc);
+                fSave = FALSE;
             }
-            (pcnbp->pfncbInitPage)(pcnbp, CBI_SET | CBI_ENABLE);
+            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
         break;
 
         default:

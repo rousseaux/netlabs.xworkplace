@@ -398,7 +398,7 @@ BOOL SuperFileDlg(HWND hwndOwner,    // in: owner for file dlg
         }
     }
 
-    if (    XwpFileDlg(HWND_DESKTOP,    // parent
+    if (    WinFileDlg(HWND_DESKTOP,    // parent
                        hwndOwner, // owner
                        &fd)
         && (fd.lReturn == DID_OK)

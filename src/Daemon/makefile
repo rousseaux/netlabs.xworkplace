@@ -136,7 +136,7 @@ $(EXE_OUTPUTDIR)\pgmg_winscan.obj: \
         $(HLPINC)\linklist.h $(HLPINC)\shapewin.h \
         $(@B).c $(SHAREDINC)
 
-$(EXE_OUTPUTDIR)\xwpdaemn.res: *.ico $(@B).rc
+$(EXE_OUTPUTDIR)\xwpdaemn.res: *.ico *.bmp $(@B).rc
     $(RC) -r $(@B).rc $(EXE_OUTPUTDIR)\$(@B).res
 # -i $(BASE_OUTPUTDIR)
 

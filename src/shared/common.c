@@ -1710,7 +1710,17 @@ static LOADSTRING G_aStringIDs[] =
         ID_XSSI_SPECIAL_PAGEMAGEDOWN,
                 FIELDOFFSET(NLSSTRINGS, pszSpecialPageMageDown),
         ID_XSSI_SPECIAL_PAGEMAGELEFT,
-                FIELDOFFSET(NLSSTRINGS, pszSpecialPageMageLeft)
+                FIELDOFFSET(NLSSTRINGS, pszSpecialPageMageLeft),
+
+    // new MB3 mappings labels V0.9.9 (2001-03-27) [umoeller]
+        ID_XSSI_MB3_AUTOSCROLL,
+                FIELDOFFSET(NLSSTRINGS, pszMB3AutoScroll),       // "AutoScroll"
+        ID_XSSI_MB3_DBLCLICK,
+                FIELDOFFSET(NLSSTRINGS, pszMB3DblClick),         // "Double click"
+        ID_XSSI_MB3_NOCONVERSION,
+                FIELDOFFSET(NLSSTRINGS, pszMB3NoConversion),     // "No conversion"
+        ID_XSSI_MB3_PUSHTOBOTTOM,
+                FIELDOFFSET(NLSSTRINGS, pszMB3PushToBottom)
     };
 
 /*

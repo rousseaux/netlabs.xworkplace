@@ -46,6 +46,7 @@
     #define TIMERID_SLIDINGMENU         2
     #define TIMERID_MONITORDRIVE        3
     #define TIMERID_AUTOHIDEMOUSE       4
+    #define TIMERID_AUTOSCROLL          5
 
     /* ******************************************************************
      *                                                                  *
@@ -183,9 +184,6 @@
                 // daemon with sliding focus
 
         // MB3 scrolling data; added V0.9.1 (99-12-03)
-        // BOOL        fCurrentlyMB3Scrolling;
-                // this is TRUE only while MB3 is down dragging;
-                // we will scroll the window contents then
         HWND        hwndCurrentlyScrolling;
                 // this is != NULLHANDLE if MB3 has been depressed
                 // over a window with scroll bars and reset to
@@ -197,6 +195,11 @@
         SCROLLDATA  SDXHorz,
                     SDYVert;
 
+        BOOL        bAutoScroll;
+                // this is TRUE if auto scrolling has been requested.
+                // Set by the hook, and used by XDM_BEGINSCROLL
+                // V0.9.9 (2001-03-20) [lafaix]
+
         // auto-hide mouse pointer; added V0.9.1 (99-12-03)
         ULONG       idAutoHideTimer;
                 // if != NULL, auto-hide timer is running
@@ -205,18 +208,19 @@
 
         // PageMage
         BOOL        fDisableSwitching;
-        // HMTX        hmtxPageMage;
-                // PageMage requests this mutex when it's doing tricky
-                // stuff with windows; during that time, the hooks must
-                // not intercept messages. Vice versa, the hook requests
-                // this while processing messages.
-                // The mutex is created by PageMage (the daemon process),
-                // so the hook must open it before requesting it.
+        BOOL        fDisableMouseSwitch;
+                // TRUE if processing a mouse switch request.  Focus
+                // changes are disable during this.
+                /// V0.9.9 (2001-03-14) [lafaix]
 
         // sliding menus
         HWND        hwndMenuUnderMouse;
         SHORT       sMenuItemUnderMouse;
         MPARAM      mpDelayedSlidingMenuMp1;
+
+        // auto-hide mouse pointer state backup; added V0.9.9 (2001-03-21) [lafaix]
+        BOOL        fOldAutoHideMouse;
+
     } HOOKDATA, *PHOOKDATA;
 
     // special key for WM_MOUSEMOVE with delayed sliding menus
@@ -242,12 +246,7 @@
     #define PGOM_CLICK2LOWER        (WM_USER + 322)
     #define PGOM_HOOKKEY            (WM_USER + 323)
     #define PGOM_FOCUSCHANGE        (WM_USER + 324)
-
-    /* #define PGMGQENCODE(msg, parm1, parm2) ((msg << 28) | (parm1 << 14) | (parm2))
-    #define MSGFROMPGMGQ(qmsg) (qmsg >> 28)
-    #define PARM1FROMPGMGQ(qmsg) ((qmsg & 0x0FFFFFFF) >> 14)
-    #define PARM2FROMPGMGQ(qmsg) (qmsg & 0x00003FFF)
-    */
+    #define PGOM_MOUSESWITCH        (WM_USER + 325)
 
     /* ******************************************************************
      *                                                                  *

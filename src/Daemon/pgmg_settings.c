@@ -47,6 +47,7 @@
  *@@ pgmsSetDefaults:
  *
  *@@added V0.9.2 (2000-02-21) [umoeller]
+ *@@changed V0.9.9 (2001-03-15) [lafaix]: startup desktop default is upper left
  */
 
 VOID pgmsSetDefaults(VOID)
@@ -68,7 +69,7 @@ VOID pgmsSetDefaults(VOID)
     pptlMaxDesktops->x = 3;
     pptlMaxDesktops->y = 2;
     pPageMageConfig->ptlStartDesktop.x = 1;
-    pPageMageConfig->ptlStartDesktop.y = 2;
+    pPageMageConfig->ptlStartDesktop.y = 1;         // @@@
     // pPageMageConfig->iEdgeBoundary = 5;
     // pPageMageConfig->ulSleepTime = 100;
     // pPageMageConfig->bRepositionMouse = TRUE;
@@ -113,10 +114,10 @@ VOID pgmsSetDefaults(VOID)
     pPageMageConfig->lcTxtCurrentApp = RGBCOL_BLACK;
 
     // Panning
-    pPageMageConfig->bPanAtTop
-      = pPageMageConfig->bPanAtBottom
-      = pPageMageConfig->bPanAtLeft
-      = pPageMageConfig->bPanAtRight = TRUE;
+    //pPageMageConfig->bPanAtTop
+    //  = pPageMageConfig->bPanAtBottom
+    //  = pPageMageConfig->bPanAtLeft
+    //  = pPageMageConfig->bPanAtRight = TRUE;
     pPageMageConfig->bWrapAround = FALSE;
 
     // Keyboard
@@ -142,6 +143,7 @@ VOID pgmsSetDefaults(VOID)
  *@@added V0.9.3 (2000-04-09) [umoeller]
  *@@changed V0.9.4 (2000-07-10) [umoeller]: added PGMGCFG_STICKIES
  *@@changed V0.9.6 (2000-11-06) [umoeller]: fixed startup desktop to upper left
+ *@@changed V0.9.9 (2001-03-15) [lafaix]: relaxed startup desktop position
  */
 
 BOOL pgmsLoadSettings(ULONG flConfig)
@@ -162,9 +164,11 @@ BOOL pgmsLoadSettings(ULONG flConfig)
     {
         // success:
 
-        // always set start desktop to upper left V0.9.6 (2000-11-06) [umoeller]
-        pPageMageConfig->ptlStartDesktop.x = 1;
-        pPageMageConfig->ptlStartDesktop.y = pptlMaxDesktops->y;
+        // always set start desktop within limits V0.9.9 (2001-03-15) [lafaix]
+        if (pPageMageConfig->ptlStartDesktop.x > pptlMaxDesktops->x)
+            pPageMageConfig->ptlStartDesktop.x = pptlMaxDesktops->x;
+        if (pPageMageConfig->ptlStartDesktop.y > pptlMaxDesktops->y)
+            pPageMageConfig->ptlStartDesktop.y = pptlMaxDesktops->y;
 
         if (    (G_pHookData->hwndPageMageClient)
              && (G_pHookData->hwndPageMageFrame)

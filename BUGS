@@ -47,12 +47,6 @@ This is my private bug list for FP13/14:
    This is still showing with FP15.
 
 
-CHECK ON A CLEAN SYSTEM
------------------------
-
--- "Ignore desktop" with sliding focus broken?
-
-
 NOT-SO-SERIOUS PROBLEMS
 -----------------------
 
@@ -189,7 +183,6 @@ hotkeys:
 
 hook:
     --  sliding menus:
-            -- "conditional cascade sensitivity": always hilite, but just don't select
             -- no submenu delays for menu bars (immediate open)
 
     --  there is a little bug with the settings notebook of the mouse - movement 2.
@@ -199,9 +192,6 @@ hook:
     --  When Sliding focus is On, in seamless WinOS2 programs like MS Excel
         when you right-click and then move your mouse over the context menu
         it immediately disappears, so you actually cannot use it.
-
-    -- Mouse pointer doesn't reappear when clicking buttons if hide mouse
-       pointer is enabled.
 
     -- sliding focus:
        -- topmost window doesn't become active after previous wnd destroy
