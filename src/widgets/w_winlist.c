@@ -1583,6 +1583,7 @@ static VOID DrawAllCtrls(PWINLISTPRIVATE pPrivate,
         HWND    hwndActive = WinQueryActiveWindow(HWND_DESKTOP);
 
         LONG    lNextX = 0;
+        ULONG   ulIndexThis = 0;
 
         PLISTNODE pNode;
         for (pNode = plstQueryFirstNode(&pPrivate->llWinList);
@@ -1590,6 +1591,9 @@ static VOID DrawAllCtrls(PWINLISTPRIVATE pPrivate,
              pNode = pNode->pNext)
         {
             PWINLISTENTRY pCtrlThis = (PWINLISTENTRY)pNode->pItemData;
+            // renumber entries because items might have
+            // been added or removed
+            pCtrlThis->ulIndex = ulIndexThis++;
             DrawOneCtrl(pPrivate,
                         hps,
                         prclSubclient,
@@ -1970,8 +1974,7 @@ static VOID WwgtWindowChange(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
                     while (pNode)
                     {
                         // run thru the list, remove the item
-                        // corresponding to mp1, and renumber
-                        // all at the same time
+                        // corresponding to mp1
                         PLISTNODE pNext = pNode->pNext;
                         pCtrlRedraw = (PWINLISTENTRY)pNode->pItemData;
 
@@ -1980,9 +1983,8 @@ static VOID WwgtWindowChange(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
                             plstRemoveNode(&pPrivate->llWinList,
                                            pNode);           // auto-free
                             fRedrawAll = TRUE;
+                            break;
                         }
-                        else
-                            pCtrlRedraw->ulIndex = ulIndexThis++;
 
                         pNode = pNext;
                     }

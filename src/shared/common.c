@@ -1130,7 +1130,7 @@ static ULONG ReplaceEntities(PXSTRING pstr)
  *@@changed V0.9.0 (99-11-28) [umoeller]: added more meaningful error message
  *@@changed V0.9.2 (2000-02-26) [umoeller]: made temporary buffer larger
  *@@changed V0.9.16 (2001-09-29) [umoeller]: added entities support
- *@@changed V0.9.16 (2002-01-26) [umoeller]: added pcb param
+ *@@changed V0.9.16 (2002-01-26) [umoeller]: added pulLength param
  */
 
 void cmnLoadString(HAB habDesktop,

@@ -287,7 +287,22 @@ static VOID FillRec(PXWININFO pWinInfo)
         return;
 
     pWinInfo->prec->recc.flRecordAttr = CRA_OWNERFREE | CRA_RECORDREADONLY;
+
     pWinInfo->prec->recc.hptrIcon = pWinInfo->hptrFrame;
+
+    pWinInfo->prec->szFlags[0] = '\0';
+    if (pWinInfo->data.swctl.uchVisibility & SWL_VISIBLE)       // 0x04
+        strcat(pWinInfo->prec->szFlags, "vis ");
+    if (pWinInfo->data.swctl.uchVisibility & SWL_INVISIBLE)     // 0x01
+        strcat(pWinInfo->prec->szFlags, "!vis ");
+    if (pWinInfo->data.swctl.uchVisibility & SWL_GRAYED)        // 0x02
+        strcat(pWinInfo->prec->szFlags, "gray ");
+
+    if (pWinInfo->data.swctl.fbJump & SWL_JUMPABLE)             // 0x02
+        strcat(pWinInfo->prec->szFlags, "jmp ");
+    if (pWinInfo->data.swctl.fbJump & SWL_NOTJUMPABLE)          // 0x01
+        strcat(pWinInfo->prec->szFlags, "!jmp ");
+    pWinInfo->prec->pszFlags = pWinInfo->prec->szFlags;
 
     pWinInfo->prec->pszSwtitle = pWinInfo->data.swctl.szSwtitle;
 
@@ -360,6 +375,11 @@ static VOID CreateDebugFrame(VOID)
             xfi[i].ulDataType = CFA_BITMAPORICON;
             xfi[i++].ulOrientation = CFA_LEFT | CFA_TOP;
 
+            xfi[i].ulFieldOffset = FIELDOFFSET(WINLISTRECORD, pszFlags);
+            xfi[i].pszColumnTitle = "fl";
+            xfi[i].ulDataType = CFA_STRING;
+            xfi[i++].ulOrientation = CFA_LEFT | CFA_TOP;
+
             xfi[i].ulFieldOffset = FIELDOFFSET(WINLISTRECORD, pszSwtitle);
             xfi[i].pszColumnTitle = "szSwtitle";
             xfi[i].ulDataType = CFA_STRING;
@@ -384,7 +404,7 @@ static VOID CreateDebugFrame(VOID)
                                     xfi,
                                     i,             // array item count
                                     TRUE,          // draw lines
-                                    1);            // return second column
+                                    2);            // return third column
 
             BEGIN_CNRINFO()
             {
@@ -692,107 +712,105 @@ BOOL pgrGetWinData(PXWINDATA pData)  // in/out: window info
 
     ZERO(pData);
 
-    if (    (WinIsWindow(G_habDaemon, hwnd))
+    if (    (pData->swctl.hwnd = hwnd)
+         && (WinIsWindow(G_habDaemon, hwnd))
          && (WinQueryWindowProcess(hwnd,
                                    &pData->swctl.idProcess,
                                    &pData->tid))
+         && (pData->swctl.idProcess)
+         && (WinQueryClassName(hwnd,
+                               sizeof(pData->szClassName),
+                               pData->szClassName))
+         && (WinQueryWindowPos(hwnd, &pData->swp))
        )
     {
-        pData->swctl.hwnd = hwnd;
-
-        WinQueryClassName(hwnd,
-                          sizeof(pData->szClassName),
-                          pData->szClassName);
-
-        WinQueryWindowPos(hwnd, &pData->swp);
-
         brc = TRUE;     // can be changed again
 
-        if (pData->swctl.idProcess)
+        if (pData->swctl.idProcess == G_pidDaemon)
+            // belongs to XPager:
+            pData->bWindowType = WINDOW_XWPDAEMON;
+        else if (hwnd == G_pHookData->hwndWPSDesktop)
+            // WPS Desktop window:
+            pData->bWindowType = WINDOW_WPSDESKTOP;
+        else
         {
-            if (pData->swctl.idProcess == G_pidDaemon)
-                // belongs to XPager:
-                pData->bWindowType = WINDOW_XWPDAEMON;
-            else if (hwnd == G_pHookData->hwndWPSDesktop)
-                // WPS Desktop window:
-                pData->bWindowType = WINDOW_WPSDESKTOP;
-            else
+            const char *pcszClassName = pData->szClassName;
+            if (
+                    // make sure this is a desktop child;
+                    // we use WinSetMultWindowPos, which requires
+                    // that all windows have the same parent
+                    (!WinIsChild(hwnd, HWND_DESKTOP))
+                    // ignore PM "Icon title" class:
+                 || (!strcmp(pcszClassName, "#32765"))
+                    // ignore Warp 4 "Alt tab" window; this always exists,
+                    // but is hidden most of the time
+                 || (!strcmp(pcszClassName, "AltTabWindow"))
+                    // ignore all menus:
+                 || (!strcmp(pcszClassName, "#4"))
+                    // ignore shaped windows (src\helpers\shapewin.c):
+                 || (!strcmp(pcszClassName, WC_SHAPE_WINDOW))
+                 || (!strcmp(pcszClassName, WC_SHAPE_REGION))
+               )
             {
-                const char *pcszClassName = pData->szClassName;
-                if (
-                        // make sure this is a desktop child;
-                        // we use WinSetMultWindowPos, which requires
-                        // that all windows have the same parent
-                        (!WinIsChild(hwnd, HWND_DESKTOP))
-                        // ignore PM "Icon title" class:
-                     || (!strcmp(pcszClassName, "#32765"))
-                        // ignore Warp 4 "Alt tab" window; this always exists,
-                        // but is hidden most of the time
-                     || (!strcmp(pcszClassName, "AltTabWindow"))
-                        // ignore all menus:
-                     || (!strcmp(pcszClassName, "#4"))
-                        // ignore shaped windows (src\helpers\shapewin.c):
-                     || (!strcmp(pcszClassName, WC_SHAPE_WINDOW))
-                     || (!strcmp(pcszClassName, WC_SHAPE_REGION))
-                   )
-                {
-                    brc = FALSE;
-                }
+                brc = FALSE;
             }
+        }
 
-            if (brc)
+        if (brc)
+        {
+            if (!(pData->hsw = WinQuerySwitchHandle(hwnd, 0)))
             {
-                if (!(pData->hsw = WinQuerySwitchHandle(hwnd, 0)))
+                if (!pData->bWindowType)
+                    pData->bWindowType = WINDOW_NIL;
+            }
+            else
+                // get switch entry in all cases;
+                // otherwise we have an empty switch title
+                // for some windows in the list, which will cause
+                // the new refresh thread to fire "window changed"
+                // every time
+                // V0.9.19 (2002-06-08) [umoeller]
+                WinQuerySwitchEntry(pData->hsw,
+                                    &pData->swctl);
+
+            if (!pData->bWindowType)
+            {
+                // window type not found yet:
+                ULONG ulStyle = WinQueryWindowULong(hwnd, QWL_STYLE);
+
+                if (pgrIsSticky(hwnd, pData->swctl.szSwtitle))
                 {
-                    if (!pData->bWindowType)
-                        pData->bWindowType = WINDOW_NIL;
+                    pData->bWindowType = WINDOW_STICKY;
+                }
+                else if (    // V0.9.15 (2001-09-14) [umoeller]:
+                             // _always_ check for visibility, and
+                             // if the window isn't visible, don't
+                             // mark it as normal
+                             // (this helps VX-REXX apps, which can
+                             // solidly lock XPager with their hidden
+                             // frame in the background, upon which
+                             // WinSetMultWindowPos fails)
+                             (!(ulStyle & WS_VISIBLE))
+                          || (pData->swp.fl & SWP_HIDE)
+                          || (ulStyle & FCF_SCREENALIGN)  // netscape dialog
+                        )
+                {
+                    pData->bWindowType = WINDOW_HIDDEN;
                 }
                 else
-                    // get switch entry in all cases;
-                    // otherwise we have an empty switch title
-                    // for some windows in the list, which will cause
-                    // the new refresh thread to fire "window changed"
-                    // every time
-                    // V0.9.19 (2002-06-08) [umoeller]
-                    WinQuerySwitchEntry(pData->hsw,
-                                        &pData->swctl);
-
-                if (!pData->bWindowType)
                 {
-                    // window type not found yet:
-                    ULONG ulStyle = WinQueryWindowULong(hwnd, QWL_STYLE);
-                    if (pgrIsSticky(hwnd, pData->swctl.szSwtitle))
-                        pData->bWindowType = WINDOW_STICKY;
-                    else if (    // V0.9.15 (2001-09-14) [umoeller]:
-                                 // _always_ check for visibility, and
-                                 // if the window isn't visible, don't
-                                 // mark it as normal
-                                 // (this helps VX-REXX apps, which can
-                                 // solidly lock XPager with their hidden
-                                 // frame in the background, upon which
-                                 // WinSetMultWindowPos fails)
-                                 (!(ulStyle & WS_VISIBLE))
-                              || (pData->swp.fl & SWP_HIDE)
-                              || (ulStyle & FCF_SCREENALIGN)  // netscape dialog
-                            )
-                    {
-                        pData->bWindowType = WINDOW_HIDDEN;
-                    }
+                    // the minimize attribute prevails the "sticky" attribute,
+                    // "sticky" prevails maximize, and maximize prevails normal
+                    // V0.9.18 (2002-02-21) [lafaix]
+                    if (pData->swp.fl & SWP_MINIMIZE)
+                        pData->bWindowType = WINDOW_MINIMIZE;
+                    else if (pData->swp.fl & SWP_MAXIMIZE)
+                        pData->bWindowType = WINDOW_MAXIMIZE;
                     else
-                    {
-                        // the minimize attribute prevails the "sticky" attribute,
-                        // "sticky" prevails maximize, and maximize prevails normal
-                        // V0.9.18 (2002-02-21) [lafaix]
-                        if (pData->swp.fl & SWP_MINIMIZE)
-                            pData->bWindowType = WINDOW_MINIMIZE;
-                        else if (pData->swp.fl & SWP_MAXIMIZE)
-                            pData->bWindowType = WINDOW_MAXIMIZE;
-                        else
-                            pData->bWindowType = WINDOW_NORMAL;
-                    }
+                        pData->bWindowType = WINDOW_NORMAL;
                 }
-            } // if (brc)
-        }
+            }
+        } // if (brc)
     }
 
     return brc;
@@ -941,8 +959,6 @@ VOID pgrFreeWinInfo(HWND hwnd)
     {
         PLISTNODE       pNodeFound = NULL;
         PXWININFO       pWinInfo;
-
-        _PmpfF(("freeing wininfor for %lX", hwnd));
 
         if (    (pWinInfo = pgrFindWinInfo(hwnd,
                                             (PVOID*)&pNodeFound))
@@ -1342,6 +1358,7 @@ PSWBLOCK pgrQueryWinList(ULONG pid)
  *      list.
  *
  *@@added V0.9.19 (2002-05-28) [umoeller]
+ *@@changed V0.9.19 (2002-06-18) [umoeller]: added visible/jumpable checks
  */
 
 VOID CheckWindow(HAB hab,
@@ -1357,11 +1374,7 @@ VOID CheckWindow(HAB hab,
 
             // 1) rule out obvious non-windows
             if (    (pCtrlThis->hwnd)
-                 && WinIsWindow(hab, pCtrlThis->hwnd)
-                 // don't monitor invisible switch list entries here
-                 // or we'll bomb the clients with entries for the
-                 // first PMSHELL.EXE and the like
-                 && (pCtrlThis->uchVisibility & SWL_VISIBLE)
+                 && (WinIsWindow(hab, pCtrlThis->hwnd))
                )
             {
                 PXWININFO pInfo;
@@ -1371,46 +1384,31 @@ VOID CheckWindow(HAB hab,
                                              (PVOID*)&pNode)))
                 {
                     // window is not in list: add it then
-                    /*
-                    #ifdef __DEBUG__
-                        CHAR szClass[30];
-                        WinQueryClassName(pCtrlThis->hwnd, sizeof(szClass), szClass);
-                        _PmpfF(("hwnd 0x%lX is not in list (%s, %s)",
-                               pCtrlThis->hwnd,
-                            pCtrlThis->szSwtitle,
-                            szClass));
-                    #endif
-                    */
-
-                    WinPostMsg(G_pHookData->hwndDaemonObject,
-                               XDM_WINDOWCHANGE,
-                               (MPARAM)pCtrlThis->hwnd,
-                               (MPARAM)WM_CREATE);
+                    if (pCtrlThis->uchVisibility & SWL_VISIBLE)
+                        WinPostMsg(G_pHookData->hwndDaemonObject,
+                                   XDM_WINDOWCHANGE,
+                                   (MPARAM)pCtrlThis->hwnd,
+                                   (MPARAM)WM_CREATE);
                 }
                 else
                 {
                     HWND        hwnd;
-                    HPOINTER    hptrOld,
-                                hptrNew;
+                    HPOINTER    hptrOld;
+                    BOOL        fVisible;
+
                     // OK, this list node is still in the switchlist:
                     // check if all the data is still valid
-                    if (strcmp(pCtrlThis->szSwtitle,
-                               pInfo->data.swctl.szSwtitle))
+                    if (    // Mozilla starts up with a visible, jumpable, minimized
+                            // window that is later changed to !visible and !jumpable,
+                            // so fix this V0.9.19 (2002-06-18) [umoeller]
+                            (pCtrlThis->uchVisibility != pInfo->data.swctl.uchVisibility)
+                         || (pCtrlThis->fbJump != pInfo->data.swctl.fbJump)
+                            // switch title changed?
+                         || (strcmp(pCtrlThis->szSwtitle,
+                                    pInfo->data.swctl.szSwtitle))
+                       )
                     {
-                        // session title changed:
-                        /* #ifdef DEBUG_WINDOWLIST
-                        _PmpfF(("title changed hwnd 0x%lX (old %s, new %s)",
-                            pCtrlThis->hwnd,
-                            pInfo->swctl.szSwtitle,
-                            pCtrlThis->szSwtitle
-                            ));
-                        #endif
-
-                        // this memcpy is not necessary because
-                        // XDM_WINDOWCHANGE ends up in pgrRefresh eventually
-                        memcpy(pInfo->swctl.szSwtitle,
-                               pCtrlThis->szSwtitle,
-                               sizeof(pCtrlThis->szSwtitle)); */
+                        // change: refresh
                         WinPostMsg(G_pHookData->hwndDaemonObject,
                                    XDM_WINDOWCHANGE,
                                    (MPARAM)pCtrlThis->hwnd,
@@ -1419,27 +1417,31 @@ VOID CheckWindow(HAB hab,
 
                     hwnd = pCtrlThis->hwnd;
                     hptrOld = pInfo->hptrFrame;
+                    fVisible = !!(pCtrlThis->uchVisibility & SWL_VISIBLE);
 
                     // WinSendMsg below can block so unlock the list now
                     pgrUnlockWinlist();
                     fLocked = FALSE;
 
-                    // check icon
-                    hptrNew = (HPOINTER)WinSendMsg(hwnd,
-                                                   WM_QUERYICON,
-                                                   0,
-                                                   0);
-                    if (hptrNew != hptrOld)
+                    if (fVisible)
                     {
-                        // icon changed:
-                        #ifdef DEBUG_WINDOWLIST
-                        _PmpfF(("icon changed hwnd 0x%lX", pCtrlThis->hwnd));
-                        #endif
+                        // check icon
+                        HPOINTER hptrNew = (HPOINTER)WinSendMsg(hwnd,
+                                                                WM_QUERYICON,
+                                                                0,
+                                                                0);
+                        if (hptrNew != hptrOld)
+                        {
+                            // icon changed:
+                            #ifdef DEBUG_WINDOWLIST
+                            _PmpfF(("icon changed hwnd 0x%lX", pCtrlThis->hwnd));
+                            #endif
 
-                        WinPostMsg(G_pHookData->hwndDaemonObject,
-                                   XDM_ICONCHANGE,
-                                   (MPARAM)hwnd,
-                                   (MPARAM)hptrNew);
+                            WinPostMsg(G_pHookData->hwndDaemonObject,
+                                       XDM_ICONCHANGE,
+                                       (MPARAM)hwnd,
+                                       (MPARAM)hptrNew);
+                        }
                     }
                 }
             }
@@ -1464,10 +1466,28 @@ VOID CheckWindow(HAB hab,
  *      This scans the system switch list and updates
  *      our private window list in the background,
  *      making sure that everything is always up
- *      to date. This is required to get the icons
- *      right, since sending WM_QUERYICON to a
- *      frame can block with misbehaving apps like
- *      PMMail.
+ *      to date.
+ *
+ *      This is required for several reasons:
+ *
+ *      1)  to get the icons right, since sending
+ *          WM_QUERYICON to a frame can block with
+ *          misbehaving apps like PMMail;
+ *
+ *      2)  to detect changes in the switch entries
+ *          that are not reflected by messages that
+ *          can be intercepted by the hook. For
+ *          example, Mozilla creates a minimized
+ *          window on startup that is initially
+ *          marked visible and switchable (for
+ *          whatever reason) and then marked
+ *          invisible and not switchable again.
+ *          We end up with a dead window in the
+ *          XCenter window list otherwise.
+ *
+ *      This might look very expensive, but it does
+ *      not produce a noticeable CPU load on my
+ *      system.
  *
  *@@added V0.9.19 (2002-05-28) [umoeller]
  */
@@ -1535,7 +1555,6 @@ VOID _Optlink fntWinlistThread(PTHREADINFO pti)
             pgrUnlockWinlist();
             fLocked = FALSE;
         }
-
 
         DosSleep(500);
     }
