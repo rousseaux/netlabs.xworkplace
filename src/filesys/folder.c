@@ -3629,7 +3629,9 @@ void _Optlink fntProcessStartupFolder(PTHREADINFO ptiMyself)
             ppf->henum = _xwpBeginEnumContent(pFolder);
         }
 
-        if (ppf->henum)
+        if (!ppf->henum)
+            arc = 999;
+        else
         {
             // in any case, get first or next object
             ppf->pObject = _xwpEnumNext(pFolder, ppf->henum);
@@ -3783,6 +3785,10 @@ void _Optlink fntProcessStartupFolder(PTHREADINFO ptiMyself)
 
     // done or cancelled:
     _xwpEndEnumContent(pFolder, ppf->henum);
+
+    if (arc == 999)
+        // no objects is not an error, just for breaking out above
+        arc = NO_ERROR;
 
     // tell thrRunSync that we're done
     WinPostMsg(ptiMyself->hwndNotify,
