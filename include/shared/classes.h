@@ -73,6 +73,11 @@
 
     typedef struct _WPSLISTITEM
     {
+        struct _WPSLISTITEM *pParent;
+                            // pointer to parent class definition
+                            // or NULL if this is the root item
+                            // V0.9.15 (2001-09-14) [umoeller]
+
         SOMClass            *pClassObject;
                             // pointer to class object (e.g. _WPFolder)
         SOMClass            *pParentClassObject;

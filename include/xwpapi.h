@@ -28,7 +28,7 @@
      *      and XFLDR.DLL (kernel.c).
      *
      *      This is allocated upon initial WPS startup
-     *      by krnInitializeXWorkplace and then requested
+     *      by initMain and then requested
      *      by the daemon. See xwpdaemn.c for details.
      *
      *      Since the daemon keeps this block requested,
@@ -52,17 +52,17 @@
                 // so if this is != NULLHANDLE, the daemon is running
         HWND        hwndThread1Object;
                 // XFLDR.DLL thread-1 object window (krn_fnwpThread1Object, shared\kernel.c);
-                // this is set by krnInitializeXWorkplace before starting the daemon
+                // this is set by initMain before starting the daemon
                 // and after the WPS re-initializes
         BOOL        fAllHooksInstalled;
                 // TRUE if hook is currently installed;
                 // dynamically changed by the daemon upon XDM_HOOKINSTALL
         ULONG       ulWPSStartupCount;
-                // WPS startup count maintained by krnInitializeXWorkplace:
+                // WPS startup count maintained by initMain:
                 // 1 at first WPS startup, 2 at next, ...
         BOOL        fProcessStartupFolder;
                 // TRUE if startup folder should be processed;
-                // set by krnInitializeXWorkplace and XShutdown (upon WPS restart)
+                // set by initMain and XShutdown (upon WPS restart)
 
         HWND        hwndAPIObject;
                 // XFLDR.DLL API object window, runs on thread-1 also, used

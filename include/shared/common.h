@@ -1591,9 +1591,6 @@
                                      ULONG ulFlags,
                                      BOOL fShowExplanation);
 
-    #define TEBF_REMOVETILDE            0x0001
-    #define TEBF_REMOVEELLIPSE          0x0002
-
     PSZ XWPENTRY cmnTextEntryBox(HWND hwndOwner,
                                  const char *pcszTitle,
                                  const char *pcszDescription,

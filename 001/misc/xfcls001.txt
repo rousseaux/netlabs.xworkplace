@@ -478,3 +478,13 @@ mshred 1 Enhanced shredder by M. Kimes (FM/2), a shredder that deletes almost an
 // Items added with V0.9.13
 AMouse 1 Class that comes with the amouse.sys driver for mice with wheels to enhance the "Mouse" notebook with new settings pages.
 
+// Items added with V0.9.16
+VRCore 1 VX-REXX core class, exact purpose unknown.
+VRApplication 1 VX-REXX application class; every VX-REXX program is an object of that class at runtime.
+VRScreen 1 VX-REXX representation of the PM screen. Used to determine screen properties from VX-REXX.
+VRVisible 1 VX-REXX visible class, exact purpose unknown.
+VRManager 1 VX-REXX manager class, exact purpose unknown.
+VRWindow 1 VX-REXX window class; every VX-REXX window of a VX-REXX program is an object of that class.
+VRPrimitive 1 VX-REXX primitive class, exact purpose unknown.
+
+

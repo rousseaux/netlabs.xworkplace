@@ -53,13 +53,31 @@
 
     ULONG krnQueryLock(VOID);
 
+    /* ******************************************************************
+     *
+     *   Exception handlers (\helpers\except.c)
+     *
+     ********************************************************************/
+
+    #ifdef INCL_DOSPROCESS
+    FILE* _System krnExceptOpenLogFile(VOID);
+
+    VOID _System krnExceptExplainXFolder(FILE *file,
+                                         PTIB ptib);
+
+    VOID APIENTRY krnExceptError(const char *pcszFile,
+                                 ULONG ulLine,
+                                 const char *pcszFunction,
+                                 APIRET arc);
+    #endif
+
     /********************************************************************
      *
      *   KERNELGLOBALS structure
      *
      ********************************************************************/
 
-    // anchor block of WPS thread 1 (queried in krnInitializeXWorkplace)
+    // anchor block of WPS thread 1 (queried in initMain)
     extern HAB          G_habThread1;
 
     #ifdef SOM_WPObject_h
@@ -102,10 +120,10 @@
             // Workplace thread ID (PMSHELL.EXE); should be 1
             TID                 tidWorkplaceThread;
 
-            // WPS startup date and time (krnInitializeXWorkplace)
+            // WPS startup date and time (initMain)
             DATETIME            StartupDateTime;
 
-            // PM error windows queried by krnInitializeXWorkplace
+            // PM error windows queried by initMain
             HWND                hwndHardError,
                                 hwndSysError;
 
@@ -206,7 +224,7 @@
             // by the Worker thread and evaluated during XShutdown
 
             // root of this linked list; this holds plain
-            // WPObject* pointers and is created in krnInitializeXWorkplace
+            // WPObject* pointers and is created in initMain
             // with lstCreate(FALSE)
             // PVOID               pllAwakeObjects;
                     // this has changed with V0.90; this is actually a PLINKLIST,
@@ -286,6 +304,10 @@
      *
      ********************************************************************/
 
+    BOOL krnReplaceRefreshEnabled(VOID);
+
+    VOID krnEnableReplaceRefresh(BOOL fEnable);
+
     VOID krnSetProcessStartupFolder(BOOL fReuse);
 
     BOOL krnNeed2ProcessStartupFolder(VOID);
@@ -360,17 +382,5 @@
     BOOL krnPostThread1ObjectMsg(ULONG msg, MPARAM mp1, MPARAM mp2);
 
     MRESULT krnSendThread1ObjectMsg(ULONG msg, MPARAM mp1, MPARAM mp2);
-
-    /* ******************************************************************
-     *
-     *   XWorkplace initialization
-     *
-     ********************************************************************/
-
-    BOOL krnReplaceRefreshEnabled(VOID);
-
-    VOID krnEnableReplaceRefresh(BOOL fEnable);
-
-    VOID krnInitializeXWorkplace(VOID);
 
 #endif

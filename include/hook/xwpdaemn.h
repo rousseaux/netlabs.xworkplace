@@ -99,8 +99,8 @@
     #ifdef THREADS_HEADER_INCLUDED
         VOID _Optlink fntMoveThread(PTHREADINFO pti);
     #endif
-    BOOL pgmmMoveIt(LONG, LONG, BOOL);
-    BOOL pgmmZMoveIt(LONG, LONG);
+    // BOOL pgmmMoveIt(LONG, LONG, BOOL);
+    // BOOL pgmmZMoveIt(LONG, LONG);
     VOID pgmmRecoverAllWindows(VOID);
 
     // pgmg_settings.c
@@ -131,7 +131,8 @@
 
     BOOL pgmwWindowListRescan(VOID);
 
-    BOOL pgmwStickyCheck(const char *pcszSwitchName);
+    BOOL pgmwStickyCheck(HWND hwnd,
+                         const char *pcszSwitchName);
 
     BOOL pgmwSticky2Check(HWND hwndText);
 
