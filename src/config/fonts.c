@@ -775,14 +775,15 @@ MRESULT fonDragOver(XWPFontFolder *pFontFolder,
     }
 
     // compose 2SHORT return value
-    return (MRFROM2SHORT(usDrop, usDefaultOp));
+    return MRFROM2SHORT(usDrop, usDefaultOp);
 }
 
 /*
  *@@ fonDrop:
- *      implementation for XWPFontFolder::wpDragOver.
+ *      implementation for XWPFontFolder::wpDrop.
  *
  *
+ *@@changed V0.9.19 (2002-06-12) [umoeller]: added error handling
  */
 
 MRESULT fonDrop(XWPFontFolder *pFontFolder,
@@ -796,7 +797,7 @@ MRESULT fonDrop(XWPFontFolder *pFontFolder,
 
     for (ulItemNow = 0;
          ulItemNow < pdrgInfo->cditem;
-         ulItemNow++)
+         ++ulItemNow)
     {
         DRAGITEM    drgItem;
         if (DrgQueryDragitem(pdrgInfo,
@@ -829,8 +830,8 @@ MRESULT fonDrop(XWPFontFolder *pFontFolder,
                        DM_ENDCONVERSATION,
                        (MPARAM)(drgItem.ulItemID),
                        (MPARAM)((fThisValid)
-                         ? DMFL_TARGETSUCCESSFUL
-                         : DMFL_TARGETFAIL));
+                            ? DMFL_TARGETSUCCESSFUL
+                            : DMFL_TARGETFAIL));
 
             if (!fThisValid)
                 fStartInstall = FALSE;
@@ -841,11 +842,19 @@ MRESULT fonDrop(XWPFontFolder *pFontFolder,
     {
         // OK:
         // start "move to trashcan" with the new list
-        fopsStartTaskFromList(XFT_INSTALLFONTS,
-                              NULLHANDLE,       // no anchor block, asynchronously
-                              NULL,             // source folder: not needed
-                              pFontFolder,      // target folder: font folder
-                              pllDroppedObjects);
+        FOPSRET frc;
+        _Pmpf((__FUNCTION__ ": starting XFT_INSTALLFONTS (%d items)", cItems));
+        if (frc = fopsStartTaskFromList(XFT_INSTALLFONTS,
+                                        NULLHANDLE,       // no anchor block, asynchronously
+                                        NULL,             // source folder: not needed
+                                        pFontFolder,      // target folder: font folder
+                                        pllDroppedObjects))
+            // added error msg V0.9.19 (2002-06-12) [umoeller]
+            cmnErrorMsgBox(NULLHANDLE,
+                           frc,
+                           0,
+                           MB_CANCEL,
+                           TRUE);
 
         mrc = (MRESULT)RC_DROP_DROPCOMPLETE;
                 // means: _all_ items have been processed,

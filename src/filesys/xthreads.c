@@ -544,18 +544,22 @@ VOID xthrResetWorkerThreadPriority(VOID)
             ulPrty = PRTYC_REGULAR;
             ulDelta = +31;
 
+#ifndef __NOPARANOIA__
             if (cmnQuerySetting(sfWorkerPriorityBeep))
                 DosBeep(1200, 30);
+#endif
         }
         else
         {
             // default priority:
-
+#ifndef __NOPARANOIA__
             switch (cmnQuerySetting(sulDefaultWorkerThreadPriority))
             {
                 case 0:     // 0: idle +/-0
+#endif
                     ulPrty = PRTYC_IDLETIME;
                     ulDelta = 0;
+#ifndef __NOPARANOIA__
                 break;
 
                 case 2:     // 2: regular +/-0
@@ -568,9 +572,9 @@ VOID xthrResetWorkerThreadPriority(VOID)
                     ulDelta = +31;
                     break;
             }
-
             if (cmnQuerySetting(sfWorkerPriorityBeep))
                 DosBeep(1000, 30);
+#endif
         }
 
         DosSetPriority(PRTYS_THREAD,

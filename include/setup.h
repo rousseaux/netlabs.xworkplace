@@ -344,6 +344,9 @@
         // debug folder icon replacements
             // #define DEBUG_FLDRICONS
 
+        // debug file operations engine
+            #define DEBUG_FOPS
+
         // debug trashcan
             // #define DEBUG_TRASHCAN
 

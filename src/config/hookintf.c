@@ -876,11 +876,13 @@ VOID hifKeybdHotkeysInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                                   HWND_TOP,
                                   ID_XFDI_CNR_CNR,
                                   NULL, NULL);
+#ifndef __NOPARANOIA__
         if (cmnQuerySetting(sfUse8HelvFont))  // V0.9.14
             winhSetControlsFont(pnbp->hwndDlgPage,
                                 ID_XFDI_CNR_CNR,
                                 ID_XFDI_CNR_CNR,
                                 "8.Helv");
+#endif
         WinShowWindow(hwndCnr, TRUE);
 
         // set up cnr details view

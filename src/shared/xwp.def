@@ -46,6 +46,7 @@ EXPORTS
     csysQuerySwapperSize
     cmnGetString
     cmnLoadDlg
+    cmnMessageBox
     cmnQueryActiveDesktopHWND
     cmnQueryDefaultFont
     cmnQueryHelpLibrary

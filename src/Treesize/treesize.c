@@ -180,11 +180,6 @@ VOID CollectDirectory(PDIRINFO pdiThis)
     double        dSizeThisDir = 0,
                   dEASizeThisDir = 0;
 
-    #ifdef DEBUG_TRASHCAN
-        _Pmpf(("Entering CollectDirectory"));
-        _Pmpf(("  for: %s", pdiThis->szFullPath));
-    #endif
-
     // add a "\" to the directory, if we're not in root
     strcpy(szCurrentDir, pdiThis->szFullPath);
     if (szCurrentDir[strlen(szCurrentDir)-1] != '\\')

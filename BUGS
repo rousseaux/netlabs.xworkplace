@@ -48,6 +48,9 @@ FIXED SINCE 0.9.18
 
     --  hatching doesn't disappear for program objects
 
+    --  dragging widgets to folders to create widget
+        files leaks memory.
+
 --  lost icons for FTP-PM, Lotus Approach
 
 
@@ -61,9 +64,6 @@ CURRENT PROBLEMS
     checked) --> wrong datafile class (possibly broken icons
     too)
 
---  XCenter: dragging widgets to folders to create widget
-    files leaks memory.
-
 --  XFldProgramFile: Parameter and Working dir settings
     specified in a settings notebook are presently ignored.
 
@@ -73,8 +73,6 @@ CURRENT PROBLEMS
     is a very confusing menu item as it doesn't "Create Another"
     instance of the same class, but rather an instance of WPProgram
     or XWPProgram.
-
---  dragging font files to install don't work
 
 --  shutdown: waits forever on exceptions to finish
 

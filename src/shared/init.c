@@ -1142,7 +1142,11 @@ VOID initMain(VOID)
     excRegisterHooks(krnExceptOpenLogFile,
                      krnExceptExplainXFolder,
                      krnExceptError,
+#ifndef __NOPARANOIA__
                      !cmnQuerySetting(sfNoExcptBeeps));
+#else
+                     FALSE);
+#endif
 
     if (cmnQuerySetting(sfWriteXWPStartupLog))       // V0.9.14 (2001-08-21) [umoeller]
     {

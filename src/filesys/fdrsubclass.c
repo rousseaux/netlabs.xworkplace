@@ -1440,7 +1440,9 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
                 // with this message, not even for menu bars...
                 mrc = (MRESULT)pfnwpOriginal(hwndFrame, msg, mp1, mp2);
 
-                if (cmnQuerySetting(sfNoFreakyMenus) == FALSE)
+#ifndef __NOPARANOIA__
+                if (!cmnQuerySetting(sfNoFreakyMenus))
+#endif
                     // added V0.9.3 (2000-03-28) [umoeller]
                     InitMenu(psfv,
                              (ULONG)mp1,
@@ -1472,7 +1474,9 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
                 // is subclassing folders (ObjectDesktop?!?)
                 mrc = (MRESULT)pfnwpOriginal(hwndFrame, msg, mp1, mp2);
 
-                if (cmnQuerySetting(sfNoFreakyMenus) == FALSE)
+#ifndef __NOPARANOIA__
+                if (!cmnQuerySetting(sfNoFreakyMenus))
+#endif
                     // added V0.9.3 (2000-03-28) [umoeller]
                     // now handle our stuff; this might modify mrc to
                     // have the menu stay on the screen
@@ -1502,7 +1506,9 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
                             fFolderContentButtonDown)); */
                 #endif
 
-                if (cmnQuerySetting(sfNoFreakyMenus) == FALSE)
+#ifndef __NOPARANOIA__
+                if (!cmnQuerySetting(sfNoFreakyMenus))
+#endif
                 {
                     // added V0.9.3 (2000-03-28) [umoeller]
 

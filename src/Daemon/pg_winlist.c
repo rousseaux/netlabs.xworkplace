@@ -402,7 +402,9 @@ BOOL pgrGetWinInfo(PPAGERWININFO pWinInfo)  // in/out: window info
  *@@ pgrCreateWinInfo:
  *      adds a new window to our window list.
  *
- *      Called upon PGRM_WINDOWCHANGED in fnwpXPagerClient.
+ *      Called upon XDM_WINDOWCHANGE in fnwpDaemonObject
+ *      when either the hook or fntWinlistThread have
+ *      determined that a new window might need to be added.
  *
  *      Returns what pgrGetWinInfo returned.
  *
@@ -449,9 +451,7 @@ BOOL pgrCreateWinInfo(HWND hwnd)
  *@@ pgrBuildWinlist:
  *      (re)initializes the window list.
  *      This must get called exactly once when
- *      XPager is started. XPager starts
- *      to go crazy if this gets called a second
- *      time.
+ *      the window list is initialized.
  *
  *@@added V0.9.2 (2000-02-21) [umoeller]
  *@@changed V0.9.7 (2001-01-21) [umoeller]: rewritten for linked list for wininfos
@@ -504,7 +504,9 @@ VOID pgrBuildWinlist(VOID)
  *      removes a window from our window list which has
  *      been destroyed.
  *
- *      Called upon PGRM_WINDOWCHANGED in fnwpXPagerClient.
+ *      Called upon XDM_WINDOWCHANGE in fnwpDaemonObject
+ *      when either the hook or fntWinlistThread have
+ *      determined that a window has died.
  *
  *@@added V0.9.2 (2000-02-21) [umoeller]
  *@@changed V0.9.7 (2001-01-21) [umoeller]: now using linked list for wininfos
@@ -530,7 +532,7 @@ VOID pgrFreeWinInfo(HWND hwnd)
 }
 
 /*
- *@@ pgrMarkDirty:
+ *@@ pgrRefresh:
  *      attempts to refresh a window in our window
  *      list if it's already present. Will not add
  *      it as a new window though.

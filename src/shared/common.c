@@ -3022,6 +3022,7 @@ static const SETTINGINFO G_aSettingInfos[] =
             SP_FLDRSORT_GLOBAL, -2,        // sort by name
             "lDefSortCrit",
 
+#ifndef __NOPARANOIA__
         // paranoia settings
         sfNoExcptBeeps, FIELDOFFSET(OLDGLOBALSETTINGS, fNoExcptBeeps), 4,
             SP_SETUP_PARANOIA, 0,
@@ -3039,6 +3040,7 @@ static const SETTINGINFO G_aSettingInfos[] =
         sfNoFreakyMenus, FIELDOFFSET(OLDGLOBALSETTINGS, fNoFreakyMenus), 1,
             SP_SETUP_PARANOIA, 0,
             "fNoFreakyMenus",
+#endif
 
         // misc
 #ifndef __NOXSYSTEMSOUNDS__
@@ -6028,6 +6030,7 @@ ULONG cmnMessageBoxExt(HWND hwndOwner,   // in: owner window
  *      helpers, and XWorkplace itself.
  *
  *@@added V0.9.19 (2002-03-28) [umoeller]
+ *@@changed V0.9.19 (2002-06-13) [umoeller]: added ERROR_PROTECTION_VIOLATION
  */
 
 VOID cmnDescribeError(PXSTRING pstr,        // in/out: string buffer (must be init'ed)
@@ -6455,40 +6458,56 @@ VOID cmnDescribeError(PXSTRING pstr,        // in/out: string buffer (must be in
         CHAR    szMsgBuf[1000];
         ULONG   ulLen = 0;
 
-        if (!(arc2 = DosGetMessage(&pszTable, 1,
-                                   szMsgBuf, sizeof(szMsgBuf),
-                                   arc,
-                                   "OSO001.MSG",        // default OS/2 message file
-                                   &ulLen)))
-        {
-            szMsgBuf[ulLen] = 0;
-            xstrcpy(pstr, szMsgBuf, 0);
+        // there are a few messages where OS/2 doesn't provide errors
+        // so check these first
+        // V0.9.19 (2002-06-12) [umoeller]
 
-            if (fShowExplanation)
-            {
-                // get help too
+        switch (arc)
+        {
+            case ERROR_PROTECTION_VIOLATION:
+                cmnGetMessage(NULL, 0,
+                              pstr,
+                              237);
+            break;
+
+            default:
                 if (!(arc2 = DosGetMessage(&pszTable, 1,
                                            szMsgBuf, sizeof(szMsgBuf),
                                            arc,
-                                           "OSO001H.MSG",        // default OS/2 help message file
+                                           "OSO001.MSG",        // default OS/2 message file
                                            &ulLen)))
                 {
                     szMsgBuf[ulLen] = 0;
-                    xstrcatc(pstr, '\n');
-                    xstrcat(pstr, szMsgBuf, 0);
+                    xstrcpy(pstr, szMsgBuf, 0);
+
+                    if (fShowExplanation)
+                    {
+                        // get help too
+                        if (!(arc2 = DosGetMessage(&pszTable, 1,
+                                                   szMsgBuf, sizeof(szMsgBuf),
+                                                   arc,
+                                                   "OSO001H.MSG",        // default OS/2 help message file
+                                                   &ulLen)))
+                        {
+                            szMsgBuf[ulLen] = 0;
+                            xstrcatc(pstr, '\n');
+                            xstrcat(pstr, szMsgBuf, 0);
+                        }
+                    }
                 }
-            }
-        }
-        else
-        {
-            // cannot find msg:
-            CHAR szError3[20];
-            PCSZ apsz = szError3;
-            sprintf(szError3, "%d", arc);
-            cmnGetMessage(&apsz,
-                          1,
-                          pstr,
-                          219);          // "error %d occured"
+                else
+                {
+                    // cannot find msg:
+                    CHAR szError3[20];
+                    PCSZ apsz = szError3;
+                    sprintf(szError3, "%d", arc);
+                    cmnGetMessage(&apsz,
+                                  1,
+                                  pstr,
+                                  219);          // "error %d occured"
+                }
+            break;
+
         }
     }
 
@@ -6527,15 +6546,15 @@ ULONG cmnErrorMsgBox(HWND hwndOwner,        // in: owner window
     {
         PCSZ pcsz = str.psz;
         ulrc = cmnMessageBoxExt(hwndOwner,
-                                   104,
-                                   &pcsz,
-                                   1,
-                                   ulMsg,
-                                   flFlags);
+                                104,
+                                &pcsz,
+                                1,
+                                ulMsg,
+                                flFlags);
     }
     else
         ulrc = cmnMessageBox(hwndOwner,
-                             "XWorkplace",
+                             XWORKPLACE_STRING,
                              str.psz,
                              NULLHANDLE, // no help
                              flFlags);

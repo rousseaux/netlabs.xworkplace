@@ -61,10 +61,11 @@
  *  8)  #pragma hdrstop and then more SOM headers which crash with precompiled headers
  */
 
-#define INCL_DOSERRORS
 #define INCL_DOSSEMAPHORES
 #define INCL_DOSEXCEPTIONS
 #define INCL_DOSPROCESS
+#define INCL_DOSERRORS
+
 #define INCL_WINWINDOWMGR
 #define INCL_WININPUT
 #define INCL_WINTIMER
@@ -88,6 +89,7 @@
 #include "helpers\comctl.h"             // common controls (window procs)
 #include "helpers\cnrh.h"               // container helper routines
 #include "helpers\dialog.h"             // dialog helpers
+#include "helpers\except.h"             // exception handling
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\stringh.h"            // string helpers
 #include "helpers\winh.h"               // PM helper routines
@@ -569,6 +571,8 @@ MRESULT EXPENTRY fops_fnwpGenericProgress(HWND hwndProgress, ULONG msg, MPARAM m
  *@@added V0.9.1 (2000-02-01) [umoeller]
  *@@changed V0.9.4 (2000-08-03) [umoeller]: added NLS
  *@@changed V0.9.19 (2002-04-17) [umoeller]: no longer displaying progress if disabled in WPSystem
+ *@@changed V0.9.19 (2002-06-13) [umoeller]: added excpt handling
+ *@@changed V0.9.19 (2002-06-13) [umoeller]: fixed crash if pSourceFolder was NULL (font install)
  */
 
 static FOPSRET StartWithGenericProgress(HFILETASKLIST hftl,
@@ -578,61 +582,76 @@ static FOPSRET StartWithGenericProgress(HFILETASKLIST hftl,
                                         PGENERICPROGRESSWINDATA ppwd)
 {
     FOPSRET frc = NO_ERROR;
-    PSZ pszTitle = "unknown task";
 
-    memset(ppwd, 0, sizeof(GENERICPROGRESSWINDATA));
-
-    // V0.9.19 (2002-04-17) [umoeller]
-    // check if progress dialog is enabled in WPSystem
-    if (_wpQueryConfirmations(pSourceFolder) & CONFIRM_PROGRESS)
+    TRY_LOUD(excpt1)
     {
-        // load progress dialog
-        ppwd->hwndProgress = cmnLoadDlg(NULLHANDLE, // owner
-                                        fops_fnwpGenericProgress,
-                                        ID_XFD_FILEOPSSTATUS,
-                                        NULL);
+        PSZ pszTitle = "unknown task";
+        WPObject *pobjConf;
 
-        ppwd->hwndProgressBar = WinWindowFromID(ppwd->hwndProgress,
-                                                ID_SDDI_PROGRESSBAR);
-        // store in window words
-        WinSetWindowPtr(ppwd->hwndProgress, QWL_USER, ppwd);
+        // pSourceFolder can be NULL for install fonts, so the below
+        // query confirmations crashed with every font install...
+        // V0.9.19 (2002-06-13) [umoeller]
+        if (!(pobjConf = pSourceFolder))
+            pobjConf = cmnQueryActiveDesktop();
 
-        // determine title for the progress window
-        switch (ulOperation)
+        memset(ppwd, 0, sizeof(GENERICPROGRESSWINDATA));
+
+        // V0.9.19 (2002-04-17) [umoeller]
+        // check if progress dialog is enabled in WPSystem
+        if (_wpQueryConfirmations(pobjConf) & CONFIRM_PROGRESS)
         {
-            case XFT_MOVE2TRASHCAN:
-                pszTitle = cmnGetString(ID_XSSI_FOPS_MOVE2TRASHCAN);
-            break;
+            // load progress dialog
+            ppwd->hwndProgress = cmnLoadDlg(NULLHANDLE, // owner
+                                            fops_fnwpGenericProgress,
+                                            ID_XFD_FILEOPSSTATUS,
+                                            NULL);
 
-            case XFT_RESTOREFROMTRASHCAN:
-                pszTitle = cmnGetString(ID_XSSI_FOPS_RESTOREFROMTRASHCAN);
-            break;
+            ppwd->hwndProgressBar = WinWindowFromID(ppwd->hwndProgress,
+                                                    ID_SDDI_PROGRESSBAR);
+            // store in window words
+            WinSetWindowPtr(ppwd->hwndProgress, QWL_USER, ppwd);
 
-            case XFT_TRUEDELETE:
-                pszTitle = cmnGetString(ID_XSSI_FOPS_TRUEDELETE);
-            break;
+            // determine title for the progress window
+            switch (ulOperation)
+            {
+                case XFT_MOVE2TRASHCAN:
+                    pszTitle = cmnGetString(ID_XSSI_FOPS_MOVE2TRASHCAN);
+                break;
 
-            case XFT_INSTALLFONTS:
-                pszTitle = cmnGetString(ID_XSSI_INSTALLINGFONTS);
-            break;
+                case XFT_RESTOREFROMTRASHCAN:
+                    pszTitle = cmnGetString(ID_XSSI_FOPS_RESTOREFROMTRASHCAN);
+                break;
+
+                case XFT_TRUEDELETE:
+                    pszTitle = cmnGetString(ID_XSSI_FOPS_TRUEDELETE);
+                break;
+
+                case XFT_INSTALLFONTS:
+                    pszTitle = cmnGetString(ID_XSSI_INSTALLINGFONTS);
+                break;
+            }
+
+            // set progress window title
+            WinSetWindowText(ppwd->hwndProgress, pszTitle);
+
+            winhCenterWindow(ppwd->hwndProgress);
+            // get last window position from INI
+            winhRestoreWindowPos(ppwd->hwndProgress,
+                                 HINI_USER,
+                                 INIAPP_XWORKPLACE, INIKEY_FILEOPSPOS,
+                                 // move only, no resize
+                                 SWP_MOVE | SWP_SHOW | SWP_ACTIVATE);
+            // *** go!!!
+            WinShowWindow(ppwd->hwndProgress, TRUE);
         }
 
-        // set progress window title
-        WinSetWindowText(ppwd->hwndProgress, pszTitle);
-
-        winhCenterWindow(ppwd->hwndProgress);
-        // get last window position from INI
-        winhRestoreWindowPos(ppwd->hwndProgress,
-                             HINI_USER,
-                             INIAPP_XWORKPLACE, INIKEY_FILEOPSPOS,
-                             // move only, no resize
-                             SWP_MOVE | SWP_SHOW | SWP_ACTIVATE);
-        // *** go!!!
-        WinShowWindow(ppwd->hwndProgress, TRUE);
+        frc = fopsStartTask(hftl,
+                            hab);
     }
-
-    frc = fopsStartTask(hftl,
-                        hab);
+    CATCH(excpt1)
+    {
+        frc = ERROR_PROTECTION_VIOLATION;       // V0.9.19 (2002-06-12) [umoeller]
+    } END_CATCH();
 
     return (frc);
 }
@@ -712,11 +731,6 @@ FOPSRET fopsStartTaskFromCnr(ULONG ulOperation,       // in: operation; see fops
 
     PGENERICPROGRESSWINDATA ppwd;
 
-    #ifdef DEBUG_TRASHCAN
-        _Pmpf(("fopsStartTaskFromCnr: first obj is %s", _wpQueryTitle(pObject)));
-        _Pmpf(("        ulSelection: %d", ulSelection));
-    #endif
-
     if (pObject = pSourceObject)
     {
         // allocate progress window data structure
@@ -741,8 +755,8 @@ FOPSRET fopsStartTaskFromCnr(ULONG ulOperation,       // in: operation; see fops
                 {
                     FOPSRET     frc2;
                     WPObject    *pAddObject = pObject;
-                    #ifdef DEBUG_TRASHCAN
-                        _Pmpf(("fopsStartTaskFromCnr: got object %s", _wpQueryTitle(pObject)));
+                    #ifdef DEBUG_FOPS
+                        _Pmpf((__FUNCTION__ ": got object %s", _wpQueryTitle(pObject)));
                     #endif
 
                     if (fRelatedObjects)
@@ -835,8 +849,8 @@ FOPSRET fopsStartTaskFromCnr(ULONG ulOperation,       // in: operation; see fops
     else
         frc = FOPSERR_INVALID_OBJECT;
 
-    #ifdef DEBUG_TRASHCAN
-        _Pmpf(("    returning FOPSRET %d", frc));
+    #ifdef DEBUG_FOPS
+        _Pmpf((__FUNCTION__ ": returning FOPSRET %d", frc));
     #endif
 
     return (frc);
@@ -874,8 +888,8 @@ FOPSRET fopsStartTaskFromList(ULONG ulOperation,
     // this is passed to fopsCreateFileTaskList as ulUser
     PGENERICPROGRESSWINDATA ppwd;
 
-    #ifdef DEBUG_TRASHCAN
-        _Pmpf(("fopsStartTaskFromList, op: %d, source: %s, target: %s",
+    #ifdef DEBUG_FOPS
+        _Pmpf((__FUNCTION__ ": op: %d, source: %s, target: %s",
                 ulOperation,
                 (pSourceFolder) ? _wpQueryTitle(pSourceFolder) : "NULL",
                 (pTargetFolder) ? _wpQueryTitle(pTargetFolder) : "NULL"
@@ -905,34 +919,39 @@ FOPSRET fopsStartTaskFromList(ULONG ulOperation,
                 WPObject *pObject = (WPObject*)pNode->pItemData;
                 FOPSRET frc2;
 
-                #ifdef DEBUG_TRASHCAN
-                    _Pmpf(("fopsStartTaskFromList: got object %s", _wpQueryTitle(pObject) ));
+                #ifdef DEBUG_FOPS
+                    _Pmpf((__FUNCTION__ ": got object %s", _wpQueryTitle(pObject) ));
                 #endif
 
                 frc2 = fopsAddObjectToTask(hftl, pObject);
-                #ifdef DEBUG_TRASHCAN
-                    _Pmpf(("        got FOPSRET %d for that", frc2));
+                #ifdef DEBUG_FOPS
+                    _Pmpf(("    fopsAddObjectToTask returned %d for that", frc2));
                 #endif
-                if (frc2 != NO_ERROR)
+                if (frc2)
                 {
                     frc = frc2;
                     break;
                 }
                 pNode = pNode->pNext;
-                cObjects++;
+                ++cObjects;
             }
 
-            if (cObjects == 0)
+            if (!cObjects)
                 // no objects:
                 frc = FOPSERR_NO_OBJECTS_FOUND;
 
             if (!frc)
+            {
                 // *** go!!!
+                _Pmpf((__FUNCTION__ ": calling StartWithGenericProgress with %d objects",
+                            cObjects));
                 frc = StartWithGenericProgress(hftl,
                                                ulOperation,
                                                hab,
                                                pSourceFolder,
                                                ppwd);
+
+            }
             else
                 // cancel or no success: clean up
                 fopsDeleteFileTaskList(hftl);
@@ -945,8 +964,8 @@ FOPSRET fopsStartTaskFromList(ULONG ulOperation,
     else
         frc = ERROR_NOT_ENOUGH_MEMORY;
 
-    #ifdef DEBUG_TRASHCAN
-        _Pmpf(("    returning FOPSRET %d", frc));
+    #ifdef DEBUG_FOPS
+        _Pmpf((__FUNCTION__ ": FOPSRET %d", frc));
     #endif
 
     return (frc);
@@ -1018,9 +1037,9 @@ FOPSRET fopsStartDeleteFromCnr(HAB hab,                 // in: as with fopsStart
         else
         {
             ulConfirmations = _wpQueryConfirmations(pSourceObject);
-            #ifdef DEBUG_TRASHCAN
-                _Pmpf(("fopsStartDeleteFromCnr: first obj is %s", _wpQueryTitle(pSourceObject)));
-                _Pmpf(("ulConfirmations: 0x%lX", ulConfirmations));
+            #ifdef DEBUG_FOPS
+                _Pmpf((__FUNCTION__ ": first obj is %s", _wpQueryTitle(pSourceObject)));
+                _Pmpf(("  ulConfirmations: 0x%lX", ulConfirmations));
             #endif
 
             // specify owner for confirmations in any case...

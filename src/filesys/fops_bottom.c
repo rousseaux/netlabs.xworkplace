@@ -73,10 +73,11 @@
  *  8)  #pragma hdrstop and then more SOM headers which crash with precompiled headers
  */
 
-#define INCL_DOSERRORS
 #define INCL_DOSSEMAPHORES
 #define INCL_DOSEXCEPTIONS
 #define INCL_DOSPROCESS
+#define INCL_DOSERRORS
+
 #define INCL_WINWINDOWMGR
 #define INCL_WININPUT
 #define INCL_WINTIMER
@@ -126,8 +127,6 @@
 
 // other SOM headers
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
-
-#define DEBUG_TRASHCAN
 
 /*
  *@@ FILETASKLIST:
@@ -254,7 +253,7 @@ typedef struct _FILETASKLIST
  *          on the list.
  *
  *      -- XFT_DEINSTALLFONTS: deinstall font objects.
- *          pSourceFolder should point to the XWPFontFolder containing
+ *          pSourceFolder must point to the XWPFontFolder containing
  *          the font objects.
  *          pTargetFolder is ignored.
  *          This expects font _objects_ (instances of XWPFontObject)
@@ -1366,8 +1365,8 @@ VOID fopsFileThreadProcessing(HAB hab,              // in: file thread's anchor 
     BOOL frc = NO_ERROR;
     PFILETASKLIST pftl = (PFILETASKLIST)hftl;
 
-    #ifdef DEBUG_TRASHCAN
-        _Pmpf(("fopsFileThreadProcessing hftl: 0x%lX", hftl));
+    #ifdef DEBUG_FOPS
+        _Pmpf((__FUNCTION__ ": 0x%lX", hftl));
     #endif
 
     TRY_LOUD(excpt2)
@@ -1429,7 +1428,7 @@ VOID fopsFileThreadProcessing(HAB hab,              // in: file thread's anchor 
             fu.ulProgressScalar = 0;
             fu.ulProgressMax = lstCountItems(&pftl->llObjects) * 100;
 
-            #ifdef DEBUG_TRASHCAN
+            #ifdef DEBUG_FOPS
                 _Pmpf(("    %d items on list", fu.ulProgressMax / 100));
             #endif
 
@@ -1444,7 +1443,7 @@ VOID fopsFileThreadProcessing(HAB hab,              // in: file thread's anchor 
                 WPObject        *pObjectFailed = NULL;
                 fu.pSourceObject = (WPObject*)pNode->pItemData;
 
-                #ifdef DEBUG_TRASHCAN
+                #ifdef DEBUG_FOPS
                     _Pmpf(("    checking object 0x%lX", fu.pSourceObject));
                 #endif
 
@@ -1469,7 +1468,7 @@ VOID fopsFileThreadProcessing(HAB hab,              // in: file thread's anchor 
                     }
                 }
 
-                #ifdef DEBUG_TRASHCAN
+                #ifdef DEBUG_FOPS
                     _Pmpf(("    processing %s", _wpQueryTitle(fu.pSourceObject) ));
                 #endif
 
@@ -1484,8 +1483,8 @@ VOID fopsFileThreadProcessing(HAB hab,              // in: file thread's anchor 
 
                     case XFT_MOVE2TRASHCAN:
                     {
-                        #ifdef DEBUG_TRASHCAN
-                            _Pmpf(("  fopsFileThreadProcessing: trashmove %s",
+                        #ifdef DEBUG_FOPS
+                            _Pmpf(("  " __FUNCTION__ ": trashmove %s",
                                         _wpQueryTitle(fu.pSourceObject) ));
                         #endif
 
@@ -1511,8 +1510,8 @@ VOID fopsFileThreadProcessing(HAB hab,              // in: file thread's anchor 
                      */
 
                     case XFT_RESTOREFROMTRASHCAN:
-                        #ifdef DEBUG_TRASHCAN
-                            _Pmpf(("  fopsFileThreadProcessing: restoring %s",
+                        #ifdef DEBUG_FOPS
+                            _Pmpf(("  " __FUNCTION__ ": restoring %s",
                                     _wpQueryTitle(fu.pSourceObject) ));
                         #endif
                         if (!_xwpRestoreFromTrashCan(fu.pSourceObject,       // trash object
@@ -1527,8 +1526,8 @@ VOID fopsFileThreadProcessing(HAB hab,              // in: file thread's anchor 
                      */
 
                     case XFT_TRUEDELETE:
-                        #ifdef DEBUG_TRASHCAN
-                            _Pmpf(("  fopsFileThreadProcessing: destroying %s",
+                        #ifdef DEBUG_FOPS
+                            _Pmpf(("  " __FUNCTION__ ": destroying %s",
                                     _wpQueryTitle(fu.pSourceObject) ));
                         #endif
                         frc = fopsFileThreadTrueDelete(hftl,

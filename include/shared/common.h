@@ -1478,6 +1478,12 @@
                                  PCSZ pcszMessage,
                                  ULONG ulHelpPanel,
                                  ULONG flStyle);
+    typedef ULONG XWPENTRY CMNMESSAGEBOX(HWND hwndOwner,
+                                         PCSZ pcszTitle,
+                                         PCSZ pcszMessage,
+                                         ULONG ulHelpPanel,
+                                         ULONG flStyle);
+    typedef CMNMESSAGEBOX *PCMNMESSAGEBOX;
 
     #ifdef XSTRING_HEADER_INCLUDED
     APIRET XWPENTRY cmnGetMessageExt(PCSZ *pTable,

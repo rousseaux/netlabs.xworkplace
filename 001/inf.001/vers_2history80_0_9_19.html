@@ -65,6 +65,11 @@ if not overridden from the command line (Yuri Dario).
 <P><LI>Startup: Much more detailed startup log which might help debugging WPS
 startup problems. Changed log file name to WPSTART.LOG.
 
+<P><LI>Config folders: The restriction that shadows to program objects
+in the config folders were not treated like program objects (for the special
+program object features) has been lifted. It is no longer necessary to copy
+program objects for that reason.
+
 <P><LI>Folder content menus: folder templates are no longer sorted with the
 other folders.
 
@@ -79,6 +84,9 @@ it really doesn't make sense to have every object confirmed when the trash can
 is emptied later.
 
 <P><LI>&xcenter;: Single click on empty space in tray widget will change trays now.
+
+<P><LI>&xcenter;: Made Diskfree (WarpCenter style) widget sizeable to avoid
+the permanent resizing.
 
 <P><LI>&xcenter;: Rewrote large parts of the window list widget, which no longer
 scans the window list itself, but uses XWPDAEMN.EXE instead. For one, this
@@ -156,6 +164,10 @@ disabled. Fixed.
 
 <P><LI>File operations: Trash can crashed when deleting several objects with the
 same title. Fixed.
+
+<P><LI>Fonts folder: Installing fonts via drag and drop crashed the WPS internally.
+I'm not sure if the bug was in 0.9.18 or if I introduced it later, but it's
+working now anyway.
 
 <P><LI>&xcenter;: Largely rewrote widget creation and drag-n-drop code to handle
 dragging widgets between &xcenter;s, including trays. Apparently this also

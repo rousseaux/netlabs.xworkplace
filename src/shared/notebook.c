@@ -222,11 +222,13 @@ static VOID PageInit(PNOTEBOOKPAGE pnbp,
 
         // set controls font to 8.Helv, if global settings
         // want this (paranoia page, V0.9.0)
+#ifndef __NOPARANOIA__
         if (cmnQuerySetting(sfUse8HelvFont))
             winhSetControlsFont(hwndDlg,
                                 0,
                                 8000,
                                 "8.Helv");
+#endif
 
         // initialize the other fields
         pnbp->preccSource = (PRECORDCORE)-1;

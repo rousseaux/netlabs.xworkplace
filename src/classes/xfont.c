@@ -340,7 +340,7 @@ SOM_Scope MRESULT  SOMLINK fon_wpDragOver(XWPFontFolder *somSelf,
     // XWPFontFolderData *somThis = XWPFontFolderGetData(somSelf);
     XWPFontFolderMethodDebug("XWPFontFolder","fon_wpDragOver");
 
-    return (fonDragOver(somSelf, pdrgInfo));
+    return fonDragOver(somSelf, pdrgInfo);
 }
 
 /*
@@ -359,7 +359,7 @@ SOM_Scope MRESULT  SOMLINK fon_wpDrop(XWPFontFolder *somSelf,
     // XWPFontFolderData *somThis = XWPFontFolderGetData(somSelf);
     XWPFontFolderMethodDebug("XWPFontFolder","fon_wpDrop");
 
-    return (fonDrop(somSelf, pdrgInfo));
+    return fonDrop(somSelf, pdrgInfo);
 }
 
 /*
