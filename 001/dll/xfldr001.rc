@@ -58,7 +58,6 @@
  *      GNU General Public License for more details.
  */
 
-#define INCL_PM
 #include <os2.h>
 
 /* this is new with V0.85; this define is actually the only reason
@@ -253,15 +252,18 @@ END
 
 /* XCenter main button menu V0.9.7 (2000-11-30) [umoeller] */
 /* modified V0.9.9 (2001-03-07) [umoeller] */
+/* modified V0.9.19 (2002-04-02) [umoeller] */
 MENU ID_CRM_XCENTERBUTTON LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     MENUITEM "", ID_CRMI_SEP1, MIS_SEPARATOR
-    MENUITEM "R~un...", ID_CRMI_RUN
-    MENUITEM "", ID_CRMI_SEP2, MIS_SEPARATOR
     MENUITEM "~Lockup now", ID_CRMI_LOCKUPNOW
     MENUITEM "~Suspend...", ID_CRMI_SUSPEND
-    MENUITEM "Lo~g off...", ID_CRMI_LOGOFF
     MENUITEM "~Restart Desktop...", ID_CRMI_RESTARTWPS
+    MENUITEM "", ID_CRMI_SEP2, MIS_SEPARATOR
+    MENUITEM "R~un...", ID_CRMI_RUN
+    MENUITEM "", ID_CRMI_SEP3, MIS_SEPARATOR
+    MENUITEM "Lo~g off...", ID_CRMI_LOGOFF
+    MENUITEM "", ID_CRMI_SEP4, MIS_SEPARATOR
     MENUITEM "Shut ~down...", ID_CRMI_SHUTDOWN
 END
 
@@ -285,8 +287,7 @@ BEGIN
 END
 
 /* here come lots of little strings which XWorkplace uses in all kinds
-   of places. XWorkplace loads all these strings at once when the
-   WPS is being started (see cmnQueryNLSStrings in common.c). */
+   of places. XWorkplace loads these strings on demand one at a time. */
 STRINGTABLE
 BEGIN
     /* miscellaneous menu items */
@@ -842,9 +843,6 @@ BEGIN
     /* new screen borders page title V0.9.9 (2001-04-04) [lafaix] */
     ID_XSSI_SCREENBORDERSPAGE           "Screen borders"
 
-    /* XWPAdmin "Users" page V0.9.11 (2001-04-22) [umoeller]*/
-    ID_XSSI_ADMIN_USER                  "~Users"
-
     /* fixed class titles for folder, disk, datafile V0.9.12 (2001-05-22) [umoeller] */
     ID_XSSI_CLASSTITLE_FOLDER           "Folder"
     ID_XSSI_CLASSTITLE_DISK             "Disk"
@@ -924,6 +922,21 @@ BEGIN
 
     /* the following have been added with V0.9.18 */
     ID_XSSI_SPECIAL_SCREENWRAP          "Screen wrap"
+
+    /* the following have been added with V0.9.19 */
+    ID_XSSI_DOUBLEFILES_FILENAME        "File name"
+    ID_XSSI_DOUBLEFILES_DIR             "Directory"
+    ID_XSSI_DOUBLEFILES_SIZE            "Size"
+    ID_XSSI_DOUBLEFILES_DATE            "Date"
+    ID_XSSI_DOUBLEFILES_TIME            "Time"
+
+    ID_NDSI_STARTNETSCAPE               "Your browser does not seem to be currently running. Start it now?"
+    ID_NDSI_SYNTAX                      "The syntax for the Netscape DDE command line is incorrect. Would you like to view the online help?"
+
+    ID_XSSI_ADMIN_LOCAL_USER            "~Current user"
+    ID_XSSI_ADMIN_ALL_USERS             "All ~users"
+    ID_XSSI_ADMIN_ALL_GROUPS            "All ~groups"
+
 END
 
 /* string IDs for status bar mnemonics (all new with V0.9.14) */
@@ -1037,7 +1050,7 @@ BEGIN
     ID_SDDI_REBOOTEXT                   "Reboot actio~ns..."
     ID_SDDI_ANIMATE_SHUTDOWN            "An~imation before shutdown"
     ID_SDDI_ANIMATE_REBOOT              "An~imation before reboot"
-    ID_SDDI_APMPOWEROFF                 "Attempt APM ~1.2 power-off"
+    ID_SDDI_APMPOWEROFF                 "APM ~1.2 power-off"
     ID_SDDI_DELAY                       "Dela~y"
     ID_SDDI_APMVERSION_TXT              "APM level:"
     ID_SDDI_APMVERSION                  "unknown"
@@ -1182,6 +1195,32 @@ BEGIN
     ID_XCD_CLASSES_REPLACEMENTS         "Class replacements"
     ID_XCD_CLASSES_NEW                  "New classes"
 
+    /* the following are new with V0.9.19 */
+
+    /* new pages in XWPAdmin */
+    ID_AMDI_USER_LOCAL_GROUP            "Current local user"
+    ID_AMDI_USER_USERNAME_TXT           "User name:"
+    ID_AMDI_USER_USERID_TXT             "User ID:"
+    ID_AMDI_USER_GROUPNAME_TXT          "Group name:"
+    ID_AMDI_USER_GROUPID_TXT            "Group ID:"
+
+    /* strings formerly in ID_XSD_FILESPAGE1 */
+    ID_XSDI_FILES_REALNAME_TXT          "Real name:"
+    ID_XSDI_FILES_FILESIZE_TXT          "Size in bytes:"
+    ID_XSDI_FILES_WORKAREA              "~Work area"
+    ID_XSDI_FILES_DATETIME_GROUP        "Date/time"
+    ID_XSDI_FILES_CREATIONDATE_TXT      "Creation:"
+    ID_XSDI_FILES_LASTWRITEDATE_TXT     "Last write:"
+    ID_XSDI_FILES_LASTACCESSDATE_TXT    "Last access:"
+    ID_XSDI_FILES_ATTR_GROUP            "Attributes"
+    ID_XSDI_FILES_ATTR_ARCHIVED         "~Archive"
+    ID_XSDI_FILES_ATTR_READONLY         "~Read only"
+    ID_XSDI_FILES_ATTR_SYSTEM           "S~ystem"
+    ID_XSDI_FILES_ATTR_HIDDEN           "~Hidden"
+    ID_XSDI_FILES_INFO_GROUP            "Information"
+    ID_XSDI_FILES_SUBJECT_TXT           "Sub~ject:"
+    ID_XSDI_FILES_COMMENTS_TXT          "~Comments:"
+    ID_XSDI_FILES_KEYPHRASES_TXT        "Keyw~ords:"
 END
 
 /* Treesize definitions; added V0.9.0 */

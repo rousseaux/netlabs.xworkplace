@@ -59,10 +59,12 @@ those cards do not support 1024x768 with more than 60 Hz, but if you can live wi
 800x600, this appears to be a solution.
 
 <P><LI><B>Why do folder content menus not work with folders on the Launchpad?</B>
-<P>I don't know. They're always empty. I guess the Launchpad fails to call &xwp;'s
-window procedure, but uses its own one instead. I have found no way to figure out from
-where the context menus were opened yet, because the Launchpad uses regular shadows for
-displaying objects.
+<!-- V0.9.19: rewrote this answer -->
+<P>Because the Launchpad is not a folder. &xwp; can only subclass the default folder
+window procedure to receive important system messages when menus are being opened,
+which is when the variable menu items are inserted into context menus. Since the
+Launchpad does not use the folder's default window procedure, &xwp; cannot easily
+subclass it either.
 
 <P><LI><B>I have added something to the config folder, but it doesn't appear in the menus.
 Is this a compatibility conflict?</B>

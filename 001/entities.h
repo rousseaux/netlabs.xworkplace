@@ -15,6 +15,8 @@
 #define xbutton "X-Button"
 #define xshutdown "XShutdown"
 #define pgr "XPager"
+#define contact-user "xworkplace-user@yahoogroups.com"
+#define contact-dev "xworkplace-dev@yahoogroups.com"
 
 #define cfgsys "<CODE>CONFIG.SYS</CODE>"
 

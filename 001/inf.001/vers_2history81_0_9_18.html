@@ -16,6 +16,8 @@
 <UL><LI>Mouse: Paul Ratcliffe added the "Screen wrap" feature a la NPSWPS
 to the special actions for screen borders.
 
+<P><LI>Startup: "Pre-populate desktop" feature. See the "Features" page in XWPSetup.
+
 <P><LI>&pgr;: Holding down the "Shift" key while dragging mini-windows in
 the pager window now drags across virtual screens, keeping the window's position.
 Thanks, Martin Lafaix.
@@ -56,6 +58,10 @@ code was and is active only if extended associations are enabled.)
 <P><LI>Folder sorting / status bars: Hopefully fixed the mysterious scroll bars
 that would pop up in folder icon views (in "as placed" mode) if "always sort"
 was off for a folder.
+
+<P><LI>Folder sorting: "Sort by class" and "type" would never sort if two objects
+had the same class or type. Fixed, now falling back to sort by name for those
+cases.
 
 <P><LI>Turbo folders: Miscellanous fixes for thread synchronization problems which
 could lead to duplicate objects for the same file.

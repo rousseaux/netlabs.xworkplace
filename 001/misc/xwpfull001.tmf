@@ -1,5 +1,5 @@
 ;
-; the following items have been changed with V0.9.16
+; the following items have been changed with V0.9.19
 ;
 
 <--XFL0140-->: XWorkplace &version; (built &date;)
@@ -7,13 +7,17 @@
 English National Language Support: (C) 1998-2002 Ulrich M”ller.
 
 Contains portions (C) 2000-2002 Martin Lafaix, Paul Ratcliffe, and others.
-Contains portions from PageMage (C) 1995-1999 Carlos Ugarte (OpenSource).
+Contains portions from PageMage (C) 1995-1999 Carlos Ugarte.
 Contains portions from the Standard Function Library (C) 1991-99 iMatix corporation.
+Contains portions from expat 1.95.1 (C) 1998-2000 Thai Open Source Software Center Ltd.
 
-Contact xworkplace-user@yahoogroups.com for bug reports and suggestions.
-Contact xworkplace-dev@yahoogroups.com if you are (or want to become) familiar with the &xwp; source code.
+&xwp;'s home on the Internet is http://www.xworkplace.org.
 
-&xwp; is free software under the GNU General Public Licence (GPL), which is contained in the COPYING file in the &xwp; installation directory. The full source code is available from http://xworkplace.netlabs.org in a separate package. You are welcome to redistribute and/or modify &xwp; under the conditions of the GPL.
+Contact &contact-user; for bug reports and suggestions.
+Contact &contact-dev; if you are (or want to become) familiar with the &xwp; source code.
+
+&xwp; is free software under the GNU General Public Licence (GPL), which is contained in the COPYING file in the &xwp; installation directory. The full source code is available from Netlabs CVS. See CVS.TXT in the &xwp; installation directory for details. You are welcome to redistribute and/or modify &xwp; under the conditions of the GPL.
+
 &xwp; comes with absolutely NO WARRANTY.
 
 For details, refer to the "Notices" section of the &xwp; User Guide.

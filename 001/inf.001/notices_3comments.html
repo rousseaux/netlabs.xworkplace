@@ -33,7 +33,8 @@ also be used by anyone else.
 section before contacting the developers; maybe you will already find
 what you're looking for in there.
 
-<P><A HREF="http://xworkplace.netlabs.org"><CODE>http://xworkplace.netlabs.org</CODE></A>
+<!-- V0.9.19: web address changed -->
+<P><A HREF="http://www.xworkplace.org"><CODE>http://www.xworkplace.org</CODE></A>
 is &xwp;'s home page on the World Wide Web. Watch this space for news,
 updates, and public downloads.
 <P>A <B>public bug list</B> is also maintained on that homepage.
@@ -42,15 +43,24 @@ updates, and public downloads.
 <UL><LI>Please describe the situation in which the error occured and whether it is
 reproduceable.
 <BR><LI>Include the <B>&os2; version</B> you are running
-(Warp 3 or 4, including the fixpak level).
+(Warp 3 or 4, MCP/ACP/1/2, eComStation, including the fixpak level).
 <BR><LI>Include a list of <B>other PM or WPS enhancers</B> you are running.
 <BR><LI>Look in the root directory of your boot drive for a file
 named <CODE>XFLDTRAP.LOG</CODE>. This file logs &xwp;'s exceptions which
 might have occured on your system. If it exists, please include it in your message.
+
+<!-- V0.9.19: added this paragraph -->
+<BR><LI>If you are experiencing problems during WPS startup, enable the
+<CODE>XWPSTART.LOG</CODE> file on the "Startup" page in the Desktop's settings
+notebook (assuming that you can still get there).
+This will create a file of the same name in the root directory of the boot drive
+during WPS startup. Please include this file also.
+
 <BR><LI>If you are running into problems with the eXtended Shutdown / Restart Desktop features,
 please switch on the automatic log function on the "Shutdown" page of the Desktop's
 settings notebook. This will create a file named <CODE>XSHUTDWN.LOG</CODE> in the same
 location during shutdown. Please include this file also.
+
 </UL>
 </BODY>
 </HTML>

@@ -7,24 +7,37 @@
 <!-- this page is all new with V0.9.16 -->
 <BODY>
 Netscape DDE (or NetscDDE, for short) allows you to open HTML pages or URLs
-with Netscape or Mozilla.
-Using this program, you can tell a currently running copy of the browser to
+<!-- V0.9.19: modified the following -->
+with your favorite browser. Despite its name, NetscDDE supports the following
+browsers:
+<UL><LI>Netscape 2.02 and 4.61 for OS/2;
+<LI>Mozilla and the IBM Web Browser (see remarks below);
+<LI>the OS/2 port of Opera.
+</UL>
+
+<!-- end V0.9.19 -->
+Using NetscDDE, you can instruct a currently running copy of the browser to
 display a certain page instead of having to run a separate copy for the
 new page.
 
 <P>When starting NetscDDE, you must at least pass the URL to open on the
 command line. This URL can be a local HTML file also.
 
-<P>When started, NetscDDE will look for whether the browser is already running.
-If so, the running copy will be told to open the specified URL in an existing window.
+<P>NetscDDE will then first look for whether the browser is already running.
+If so, the running browser instance will be told to open the specified URL
+in an existing window.
 If not, NetscDDE will prompt you for whether the browser should be started.
 Unless this is overridden with command line arguments, NetscDDE will then attempt
-to start <CODE>NETSCAPE.EXE</CODE> from your path.
+to start
+<!-- V0.9.19: changed this -->
+the default browser that is specified in your URL objects; if none is there, it
+will attempt to start
+<CODE>NETSCAPE.EXE</CODE> from your path.
 
 <P>This will work with all known versions of Netscape on &os2;. To make
 this work with Mozilla too, you must use the <CODE>-S</CODE> parameter
 because Mozilla uses a different DDE server name.
-On &os2;, Mozilla supports DDE with version 0.9.3 and above.
+On &os2;, Mozilla has been supporting DDE since version 0.9.3.
 
 <P>Netscape DDE understands the following command line parameters:
 
@@ -34,8 +47,10 @@ On &os2;, Mozilla supports DDE with version 0.9.3 and above.
 windows (<B>quiet</B> mode).
 
 <DT><CODE>-n</CODE>
-<DD>If this is specified, the URL will be opened in a <B>new browser window.</B>
-Per default, Netscape will use an existing window.
+<!-- V0.9.19: rewrote the following chunk -->
+<DD>Specifies whether to use a <B>new browser window</B> when the browser is already
+running. If this is specified, a new window will be opened.
+Per default, an existing browser window will load the URL.
 
 <DT><CODE>-x</CODE> or <CODE>-X</CODE>
 <DD>These options control NetscDDE's behavior if the DDE connection fails,
@@ -49,7 +64,10 @@ a new copy.
 
 <DT><CODE>-p <I>fullpath</I></CODE>
 <DD>This specifies the <B>executable</B> to be started if the DDE connection fails.
-Use this to override the default of <CODE>NETSCAPE.EXE</CODE> on your path.
+<!-- V0.9.19: rewrote the following chunk -->
+If this is not specified, NetscDDE will look for your default browser settings
+from a WPUrl object. If none are there, <CODE>NETSCAPE.EXE</CODE> on your path
+is used.
 If you want to use Mozilla, you could specify the full path of <CODE>MOZILLA.EXE</CODE>,
 for example. You could also start a batch file.
 
@@ -61,6 +79,9 @@ given on the command line will then be added after <CODE><I>params</I></CODE>.
 <DD>This specifies the <B>startup directory</B> to be used if the DDE connection fails.
 This is useful if the browser executable is not on the <CODE>LIBPATH</CODE> and
 the browser does not find its DLLs otherwise.
+<!-- V0.9.19: added the following chunk -->
+If this is not specified, NetscDDE will look for your default browser settings
+from a WPUrl object. If none are there, no startup directory is used.
 
 <DT><CODE>-S <I>server</I></CODE>
 <DD>This specifies the <B>DDE server name</B> to use. If this is not specified, NetscDDE

@@ -9,6 +9,10 @@
 While, per definition, every WPS object has a title associated with it,
 only file-system objects (that is, files or folders which physically
 reside in a file system) also carry a so-called "real name".
+<!-- V0.9.19 : added this -->
+This is the name of the file that the file-system object represents
+on disk, as visible with the <CODE>DIR</CODE> command on an &os2;
+command line.
 
 <P>In many cases, the real name is identical to the object title
 (as displayed on the "Icon" page); however, file-system names have
@@ -18,7 +22,7 @@ certain limitations.
 be longer than 256 characters, and that the backslash (<CODE>\</CODE>)
 character is forbidden.
 
-<P>By contrast, depending on the object's <A HREF="glossary/gls_fs.html">file-system</A>,
+<P>By contrast, depending on the object's <A HREF="glossary/gls_fs.html">file system</A>,
 the following restrictions apply to the object's <I>real name</I>:
 
 <UL><LI>With the FAT file system, file names are restricted to 8 characters,
@@ -29,15 +33,15 @@ are not allowed in FAT file names:
 
 <P>In addition, the FAT file system is not case-preserving.
 
-<P><LI>With installable file systems (IFS's), such as HPFS or JFS, the
+<P><LI>With installable file systems (IFS's) such as HPFS or JFS, the
 file name can be up to 254 characters in length, and there are no rules
 about file-name extensions. However, the following characters are still
 invalid:
 
 <P><CODE>&lt; &gt; | : " / </CODE>
 
-</UL>Naturally, the backslash character (<CODE>\</CODE>) is always invalid
-because it is used as the path separator in &os2;.
+</UL>Naturally, the backslash character (<CODE>\</CODE>) is invalid
+with every file system because it is used as the path separator in &os2;.
 
 <P>If the title of the file-system object obeys these restrictions, the
 real name is identical to the title.

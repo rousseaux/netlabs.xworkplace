@@ -2,21 +2,14 @@
 ; This is the monster XWorkplace text message file (XFLDR001.TMF).
 ; This is used for messages which might turn out to be longer
 ; than 256 characters and might thus not fit into the STRINGTABLE
-; resources. These are loaded by cmnGetMessage (in common.c) and
-; appear mostly in the new XWorkplace message boxes (cmnMessageBox in
-; common.c also).
+; resources. These are loaded by XWorkplace on the fly and appear
+; mostly in the new XWorkplace message boxes.
 ;
-; Required changes: Look at each line after the message identifier (in
-; angle brackets) and translate only that part. Beware of line breaks,
-; as these messages will normally be formatted by XWorkplace. Inserting
-; line breaks will cause _additional_ line breaks to be displayed.
-;
-; This file used to be XFLDR001.TXT in versions before 0.9.0.
-; This no longer requires MKMSGF.EXE from the toolkit to be
-; compiled. Instead, XWorkplace compiles this file on the fly
-; into the extended attributes of this file. XWorkplace is smart
-; enough to find out whether this file has changed and will
-; automatically recompile it.
+; Required changes for translations: Look at each line after the
+; message identifier (in angle brackets) and translate only that
+; part. Beware of line breaks, as these messages will normally be
+; formatted by XWorkplace. Inserting line breaks will cause
+; _additional_ line breaks to be displayed.
 ;
 ; The format of this file has slightly changed with V0.9.0. We now use
 ; the angle-bracket syntax, as seen below. Whatever is in angle
@@ -29,7 +22,7 @@
 ; variable information. XWorkplace might crash if these placeholders
 ; are not found.
 ;
-;       Copyright (C) 1997-2001 Ulrich M”ller.
+;       Copyright (C) 1997-2002 Ulrich M”ller.
 ;       This file is part of the XWorkplace source package.
 ;       XWorkplace is free software. You can redistribute it and/or modify
 ;       it under the terms of the GNU General Public License as published
@@ -438,6 +431,15 @@ This does not necessarily mean that your desktop is broken, but it appears that 
 2) Disable the "Check desktop on startup" feature so this message will not appear again. This might however lead to a "Cannot find desktop" failure in the future.
 
 Should &xwp; display the "Panic" dialog now? Otherwise we will simply continue startup.
+
+;
+; the following items are new with V0.9.19
+;
+
+<--XFL0232-->: &xwp; was unable to contact the &xwp; daemon, which, among other things, is required for starting programs.
+Do you wish to restart the daemon now?
+
+<--XFL0233-->: &xwp; was unable to find the WPS class "%1". Probably the class is not installed.
 
 ; ---------------------------------------------------------------------------------
 ;

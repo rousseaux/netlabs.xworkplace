@@ -74,7 +74,7 @@ COPYTO = $(XWPRUNNING)\help
 # So whenever NMAKE encounters a .toext file, it
 # executes what we specify here.
 #
-.gif.bmp:
+{img}.gif{img}.bmp:
     -gbmsize $< $@,1.1
 
 # The BMPS macro contains all the .BMP files which need to be
@@ -96,7 +96,8 @@ BMPS = \
     img\xfwps.bmp \
     img\xwpmedia.bmp \
     img\xwpscreen.bmp \
-    img\xwsetup.bmp
+    img\xwsetup.bmp \
+    img\trashcan.bmp
 
 # main target
 all: $(BMPS) $(COPYTO)\xfldr$(LANGUAGE).hlp

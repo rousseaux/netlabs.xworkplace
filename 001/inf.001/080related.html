@@ -33,7 +33,7 @@ However, you should be very careful in changing the various object settings, esp
 the <CITE>OBJECTID</CITE> keywords, because &xwp; might rely on these.
 
 <P><LI><CITE><STRONG>NEWOBJ.CMD</STRONG></CITE>
-was used in previous versions of &xwp;
+was used in old XFolder versions
 (before 0.52)
 to create objects. This is
 <A HREF="menu_2template.html">now done with templates,</A> but this script is still
@@ -56,10 +56,10 @@ default settings (namely for folders).
 <P><LI><CITE><STRONG>NETSCDDE.EXE</STRONG></CITE> (The Netscape DDE Interface):
 see the <A HREF="069netscdde.html">separate chapter</A> in this documentation.
 
-<!-- xxx -->
+<!-- V0.9.19: updated the second line -->
 <P><LI><CITE><STRONG>REPCLASS.EXE</STRONG></CITE>
-is used by the installation script to register the various &xwp; class and replace
-WPFolder with it. It needs the following parameters on the command line:
+was used by old XFolder versions to register the various &xwp; class and replace
+the standard WPS classes with them. It needs the following parameters on the command line:
 <PRE>repclass &lt;oldclass&gt; &lt;replacewithclass&gt; [&lt;dllname&gt;]</PRE>
 <P><CITE>&lt;oldclass&gt;</CITE> is the WPS class that you wish to replace.
 This is case-sensitive.
@@ -89,9 +89,10 @@ of the &xwp; classes, always use the install script. -->
 
 <P><LI><CITE><STRONG>SOUNDxxx.CMD</STRONG></CITE>
 (with xxx being a three-digit language code,
-as described in <A HREF="inst_4nls.html">National Language Support</A>) must be started
-<!-- V0.9.3: link changed -->
-by you to activate the new <A HREF="mm_2sounds.html">system sounds</A>.
+as described in <A HREF="inst_4nls.html">National Language Support</A>)
+<!-- V0.9.19: changed the following -->
+is automatically run by &xwp; when the
+new <A HREF="mm_2sounds.html">system sounds</A> are enabled.
 These little scripts will write a few language-dependent
 strings into the INI files of the &os2;
 Multimedia Subsystem (MMPM/2), which will then be visible in the &os2; "Sound" object.
