@@ -87,10 +87,12 @@
 
     #ifdef SOM_WPFolder_h
 
-        BOOL stbClassAddsNewMnemonics(SOMClass *pClassObject);
+        #ifndef __NOCFGSTATUSBARS__
+            BOOL stbClassAddsNewMnemonics(SOMClass *pClassObject);
 
-        BOOL stbSetClassMnemonics(SOMClass *pClassObject,
-                                  PSZ pszText);
+            BOOL stbSetClassMnemonics(SOMClass *pClassObject,
+                                      PSZ pszText);
+        #endif
 
         PSZ stbQueryClassMnemonics(SOMClass *pClassObject);
 
@@ -117,6 +119,7 @@
                                          USHORT usNotifyCode,
                                          ULONG ulExtra);
 
+#ifndef __NOCFGSTATUSBARS__
         VOID XWPENTRY stbStatusBar2InitPage(PCREATENOTEBOOKPAGE pcnbp,
                                             ULONG flFlags);
 
@@ -124,5 +127,6 @@
                                          ULONG ulItemID,
                                          USHORT usNotifyCode,
                                          ULONG ulExtra);
+#endif
     #endif
 #endif

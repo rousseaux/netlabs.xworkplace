@@ -27,13 +27,13 @@
      *      communication between the XWorkplace daemon
      *      and XFLDR.DLL (kernel.c).
      *
-     *      This is allocated upon initial WPS startup
+     *      This is allocated upon initial Desktop startup
      *      by initMain and then requested
      *      by the daemon. See xwpdaemn.c for details.
      *
      *      Since the daemon keeps this block requested,
      *      it can be re-accessed by XFLDR.DLL upon
-     *      WPS restarts and be used for storing data
+     *      Desktop restarts and be used for storing data
      *      in between WPS session restarts.
      *
      *      The data in this structure is not stored
@@ -58,11 +58,11 @@
                 // TRUE if hook is currently installed;
                 // dynamically changed by the daemon upon XDM_HOOKINSTALL
         ULONG       ulWPSStartupCount;
-                // WPS startup count maintained by initMain:
-                // 1 at first WPS startup, 2 at next, ...
+                // Desktop startup count maintained by initMain:
+                // 1 at first Desktop startup, 2 at next, ...
         BOOL        fProcessStartupFolder;
                 // TRUE if startup folder should be processed;
-                // set by initMain and XShutdown (upon WPS restart)
+                // set by initMain and XShutdown (upon Desktop restart)
 
         HWND        hwndAPIObject;
                 // XFLDR.DLL API object window, runs on thread-1 also, used
@@ -71,6 +71,8 @@
     } XWPGLOBALSHARED, *PXWPGLOBALSHARED;
 
     #define APIM_FILEDLG            (WM_USER + 300)
+
+    #define APIM_NETSCDDEHELP       (WM_USER + 301)
 
     #ifdef INCL_WINSTDFILE
 

@@ -83,8 +83,12 @@
 
     #define OBJLIST_RUNNINGSTORED           0x0001
     #define OBJLIST_CONFIGFOLDER            0x0002
+#ifndef __NOFOLDERCONTENTS__
     #define OBJLIST_FAVORITEFOLDER          0x0004
+#endif
+#ifndef __NOQUICKOPEN__
     #define OBJLIST_QUICKOPENFOLDER         0x0008
+#endif
     #define OBJLIST_HANDLESCACHE            0x0010 // V0.9.9 (2001-04-02) [umoeller]
     #define OBJLIST_DIRTYLIST               0x0020 // V0.9.11 (2001-04-18) [umoeller]
 
@@ -168,11 +172,8 @@
     BOOL objSetup(WPObject *somSelf,
                   PSZ pszSetupString);
 
-    ULONG objQuerySetup(WPObject *somSelf,
-                        PSZ pszSetupString,
-                        ULONG cbSetupString);
-
-    PSZ objGetSetupString(WPObject *pobj);
+    BOOL objQuerySetup(WPObject *somSelf,
+                        PVOID pstrSetup);
 
     #define SCRFL_RECURSE           0x0001
 

@@ -32,9 +32,8 @@
      *
      ********************************************************************/
 
-    ULONG dtpQuerySetup(WPDesktop *somSelf,
-                        PSZ pszSetupString,
-                        ULONG cbSetupString);
+    BOOL dtpQuerySetup(WPDesktop *somSelf,
+                       PVOID pstrSetup);
 
     BOOL dtpSetup(WPDesktop *somSelf,
                   const char *pcszSetupString);

@@ -34,6 +34,41 @@
 
     /*************************************************************
      *
+     *   Feature selections
+     *
+     *************************************************************/
+
+    // This section describes what features can be disabled
+    // selectively. The source code reacts to those #defines.
+
+    #ifdef __XWPLITE__
+        // general features
+        #define __NOICONREPLACEMENTS__
+        #define __ALWAYSRESIZESETTINGSPAGES__
+        #define __ALWAYSREPLACEFILEPAGE__
+
+        // folder features
+        #define __ALWAYSSUBCLASS__
+        #define __NOCFGSTATUSBARS__
+        #define __NOSNAPTOGRID__
+        #define __NOFOLDERCONTENTS__
+        #define __NOMOVEREFRESHNOW__
+        #define __NOQUICKOPEN__
+        #define __NOFDRDEFAULTDOCS__
+        #define __ALWAYSFDRHOTKEYS__
+
+        // modules features
+        #define __NOMODULES__
+
+        // startup/shutdown
+        #define __NOBOOTLOGO__
+        #define __NOBOOTUPSTATUS__      // WPS classes display
+
+        #define __EASYSHUTDOWN__
+    #endif
+
+    /*************************************************************
+     *
      *   Debug info setup
      *
      *************************************************************/
@@ -75,7 +110,7 @@
         // have the PMPRINTF DLLs somewhere on your LIBPATH, or
         // otherwise XFLDR.DLL cannot be loaded, because the imports
         // will fail. That is, XWorkplace classes can neither be registered
-        // nor loaded at WPS startup. This has cost me a lot of thought
+        // nor loaded at Desktop startup. This has cost me a lot of thought
         // once, and you'll get no error message, so be warned.
             #define _PMPRINTF_
 

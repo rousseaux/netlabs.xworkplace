@@ -51,22 +51,21 @@
      *  they were really constant).
      *
      *  These have been moved here with V0.9.7 (2001-01-17) [umoeller]
-     *  and converted to DECLARE_STRING macros with
+     *  and converted to DECLARE_CMN_STRING macros with
      *  V0.9.14 V0.9.14 (2001-07-31) [umoeller].
      */
 
-    // DECLARE_STRING is a handy macro which saves us from
-    // keeping two string lists in both common.h and common.c.
-    // If this include file is included from common.c,
-    // INCLUDE_COMMON_PRIVATE is #define'd, and the actual
+    // DECLARE_CMN_STRING is a handy macro which saves us from
+    // keeping two string lists in both the .h and the .c file.
+    // If this include file is included from the .c file, the
     // string is defined as a global variable. Otherwise
     // it is only declared as "extern" so other files can
     // see it.
 
     #ifdef INCLUDE_COMMON_PRIVATE
-        #define DECLARE_STRING(str, def) const char *str = def
+        #define DECLARE_CMN_STRING(str, def) const char *str = def
     #else
-        #define DECLARE_STRING(str, def) extern const char *str;
+        #define DECLARE_CMN_STRING(str, def) extern const char *str;
     #endif
 
     /********************************************************************
@@ -81,13 +80,13 @@
      */
 
     // INI key used with V0.9.1 and above
-    DECLARE_STRING(INIAPP_XWORKPLACE, "XWorkplace");
+    DECLARE_CMN_STRING(INIAPP_XWORKPLACE, "XWorkplace");
 
     // INI key used by XFolder and XWorkplace 0.9.0;
     // this is checked for if INIAPP_XWORKPLACE is not
     // found and converted
-    // DECLARE_STRING(INIAPP_OLDXFOLDER, "XFolder");
-    DECLARE_STRING(INIAPP_OLDXFOLDER, "XFolder");
+    // DECLARE_CMN_STRING(INIAPP_OLDXFOLDER, "XFolder");
+    DECLARE_CMN_STRING(INIAPP_OLDXFOLDER, "XFolder");
 
     /*
      * XWorkplace keys:
@@ -97,80 +96,93 @@
      *      in a user's OS2.INI file.
      */
 
-    // DECLARE_STRING(INIKEY_DEFAULTTITLE, "DefaultTitle");       removed V0.9.0
-    DECLARE_STRING(INIKEY_GLOBALSETTINGS, "GlobalSettings");
-    // DECLARE_STRING(INIKEY_XFOLDERPATH, "XFolderPath");        removed V0.81 (I think)
-    DECLARE_STRING(INIKEY_ACCELERATORS, "Accelerators");
-    DECLARE_STRING(INIKEY_LANGUAGECODE, "Language");
-    DECLARE_STRING(INIKEY_JUSTINSTALLED, "JustInstalled");
-    // DECLARE_STRING(INIKEY_DONTDOSTARTUP, "DontDoStartup");      removed V0.84 (I think)
-    // DECLARE_STRING(INIKEY_LASTPID, "LastPID");            removed V0.84 (I think)
-    DECLARE_STRING(INIKEY_FAVORITEFOLDERS, "FavoriteFolders");
-    DECLARE_STRING(INIKEY_QUICKOPENFOLDERS, "QuickOpenFolders");
+    // DECLARE_CMN_STRING(INIKEY_DEFAULTTITLE, "DefaultTitle");       removed V0.9.0
+    DECLARE_CMN_STRING(INIKEY_GLOBALSETTINGS, "GlobalSettings");
+    // DECLARE_CMN_STRING(INIKEY_XFOLDERPATH, "XFolderPath");        removed V0.81 (I think)
+    DECLARE_CMN_STRING(INIKEY_ACCELERATORS, "Accelerators");
+    DECLARE_CMN_STRING(INIKEY_LANGUAGECODE, "Language");
+    DECLARE_CMN_STRING(INIKEY_JUSTINSTALLED, "JustInstalled");
+    // DECLARE_CMN_STRING(INIKEY_DONTDOSTARTUP, "DontDoStartup");      removed V0.84 (I think)
+    // DECLARE_CMN_STRING(INIKEY_LASTPID, "LastPID");            removed V0.84 (I think)
+#ifndef __NOFOLDERCONTENTS__
+    DECLARE_CMN_STRING(INIKEY_FAVORITEFOLDERS, "FavoriteFolders");
+#endif
+#ifndef __NOQUICKOPEN__
+    DECLARE_CMN_STRING(INIKEY_QUICKOPENFOLDERS, "QuickOpenFolders");
+#endif
 
-    DECLARE_STRING(INIKEY_WNDPOSSTARTUP, "WndPosStartup");
-    DECLARE_STRING(INIKEY_WNDPOSNAMECLASH, "WndPosNameClash");
-    DECLARE_STRING(INIKEY_NAMECLASHFOCUS, "NameClashLastFocus");
+    DECLARE_CMN_STRING(INIKEY_WNDPOSSTARTUP, "WndPosStartup");
+    DECLARE_CMN_STRING(INIKEY_WNDPOSNAMECLASH, "WndPosNameClash");
+    DECLARE_CMN_STRING(INIKEY_NAMECLASHFOCUS, "NameClashLastFocus");
 
-    DECLARE_STRING(INIKEY_STATUSBARFONT, "SB_Font");
-    DECLARE_STRING(INIKEY_SBTEXTNONESEL, "SB_NoneSelected");
-    DECLARE_STRING(INIKEY_SBTEXT_WPOBJECT, "SB_WPObject");
-    DECLARE_STRING(INIKEY_SBTEXT_WPPROGRAM, "SB_WPProgram");
-    DECLARE_STRING(INIKEY_SBTEXT_WPFILESYSTEM, "SB_WPDataFile");
-    DECLARE_STRING(INIKEY_SBTEXT_WPURL, "SB_WPUrl");
-    DECLARE_STRING(INIKEY_SBTEXT_WPDISK, "SB_WPDisk");
-    DECLARE_STRING(INIKEY_SBTEXT_WPFOLDER, "SB_WPFolder");
-    DECLARE_STRING(INIKEY_SBTEXTMULTISEL, "SB_MultiSelected");
-    DECLARE_STRING(INIKEY_SB_LASTCLASS, "SB_LastClass");
-    DECLARE_STRING(INIKEY_DLGFONT, "DialogFont");
+#ifndef __NOCFGSTATUSBARS__
+    DECLARE_CMN_STRING(INIKEY_STATUSBARFONT, "SB_Font");
+    DECLARE_CMN_STRING(INIKEY_SBTEXTNONESEL, "SB_NoneSelected");
+    DECLARE_CMN_STRING(INIKEY_SBTEXT_WPOBJECT, "SB_WPObject");
+    DECLARE_CMN_STRING(INIKEY_SBTEXT_WPPROGRAM, "SB_WPProgram");
+    DECLARE_CMN_STRING(INIKEY_SBTEXT_WPFILESYSTEM, "SB_WPDataFile");
+    DECLARE_CMN_STRING(INIKEY_SBTEXT_WPURL, "SB_WPUrl");
+    DECLARE_CMN_STRING(INIKEY_SBTEXT_WPDISK, "SB_WPDisk");
+    DECLARE_CMN_STRING(INIKEY_SBTEXT_WPFOLDER, "SB_WPFolder");
+    DECLARE_CMN_STRING(INIKEY_SBTEXTMULTISEL, "SB_MultiSelected");
+    DECLARE_CMN_STRING(INIKEY_SB_LASTCLASS, "SB_LastClass");
+#endif
 
-    DECLARE_STRING(INIKEY_BOOTMGR, "RebootTo");
-    DECLARE_STRING(INIKEY_AUTOCLOSE, "AutoClose");
+    DECLARE_CMN_STRING(INIKEY_DLGFONT, "DialogFont");
 
-    DECLARE_STRING(DEFAULT_LANGUAGECODE, "001");
+    DECLARE_CMN_STRING(INIKEY_BOOTMGR, "RebootTo");
+    DECLARE_CMN_STRING(INIKEY_AUTOCLOSE, "AutoClose");
+
+    DECLARE_CMN_STRING(DEFAULT_LANGUAGECODE, "001");
 
     // window position of "WPS Class list" window (V0.9.0)
-    DECLARE_STRING(INIKEY_WNDPOSCLASSINFO, "WndPosClassInfo");
+    DECLARE_CMN_STRING(INIKEY_WNDPOSCLASSINFO, "WndPosClassInfo");
 
     // last directory used on "Sound" replacement page (V0.9.0)
-    DECLARE_STRING(INIKEY_XWPSOUNDLASTDIR, "XWPSound:LastDir");
+    DECLARE_CMN_STRING(INIKEY_XWPSOUNDLASTDIR, "XWPSound:LastDir");
     // last sound scheme selected (V0.9.0)
-    DECLARE_STRING(INIKEY_XWPSOUNDSCHEME, "XWPSound:Scheme");
+    DECLARE_CMN_STRING(INIKEY_XWPSOUNDSCHEME, "XWPSound:Scheme");
 
     // boot logo .BMP file (V0.9.0)
-    DECLARE_STRING(INIKEY_BOOTLOGOFILE, "BootLogoFile");
+#ifndef __NOBOOTLOGO__
+    DECLARE_CMN_STRING(INIKEY_BOOTLOGOFILE, "BootLogoFile");
+#endif
 
     // last ten selections in "Select some" (V0.9.0)
-    DECLARE_STRING(INIKEY_LAST10SELECTSOME, "SelectSome");
+    DECLARE_CMN_STRING(INIKEY_LAST10SELECTSOME, "SelectSome");
 
     // supported drives in XWPTrashCan (V0.9.1 (99-12-14) [umoeller])
-    DECLARE_STRING(INIKEY_TRASHCANDRIVES, "TrashCan::Drives");
+    DECLARE_CMN_STRING(INIKEY_TRASHCANDRIVES, "TrashCan::Drives");
 
     // window pos of file operations status window V0.9.1 (2000-01-30) [umoeller]
-    DECLARE_STRING(INIKEY_FILEOPSPOS, "WndPosFileOpsStatus");
+    DECLARE_CMN_STRING(INIKEY_FILEOPSPOS, "WndPosFileOpsStatus");
 
     // window pos of "Partitions" view V0.9.2 (2000-02-29) [umoeller]
-    DECLARE_STRING(INIKEY_WNDPOSPARTITIONS, "WndPosPartitions");
+    DECLARE_CMN_STRING(INIKEY_WNDPOSPARTITIONS, "WndPosPartitions");
 
     // window position of XMMVolume control V0.9.6 (2000-11-09) [umoeller]
-    DECLARE_STRING(INIKEY_WNDPOSXMMVOLUME, "WndPosXMMVolume");
+    DECLARE_CMN_STRING(INIKEY_WNDPOSXMMVOLUME, "WndPosXMMVolume");
 
     // window position of XMMCDPlayer V0.9.7 (2000-12-20) [umoeller]
-    DECLARE_STRING(INIKEY_WNDPOSXMMCDPLAY, "WndPosXMMCDPlayer::");
+    DECLARE_CMN_STRING(INIKEY_WNDPOSXMMCDPLAY, "WndPosXMMCDPlayer::");
                     // object handle appended
 
     // font samples (XWPFontObject) V0.9.7 (2001-01-17) [umoeller]
-    DECLARE_STRING(INIKEY_FONTSAMPLEWNDPOS, "WndPosFontSample");
-    DECLARE_STRING(INIKEY_FONTSAMPLESTRING, "FontSampleString");
-    DECLARE_STRING(INIKEY_FONTSAMPLEHINTS, "FontSampleHints");
+    DECLARE_CMN_STRING(INIKEY_FONTSAMPLEWNDPOS, "WndPosFontSample");
+    DECLARE_CMN_STRING(INIKEY_FONTSAMPLESTRING, "FontSampleString");
+    DECLARE_CMN_STRING(INIKEY_FONTSAMPLEHINTS, "FontSampleHints");
 
     // XFldStartup V0.9.9 (2001-03-19) [pr]
-    DECLARE_STRING(INIKEY_XSTARTUPFOLDERS, "XStartupFolders");
-    DECLARE_STRING(INIKEY_XSAVEDSTARTUPFOLDERS, "XSavedStartupFolders");
+    DECLARE_CMN_STRING(INIKEY_XSTARTUPFOLDERS, "XStartupFolders");
+    DECLARE_CMN_STRING(INIKEY_XSAVEDSTARTUPFOLDERS, "XSavedStartupFolders");
 
     // file dialog V0.9.11 (2001-04-18) [umoeller]
-    DECLARE_STRING(INIKEY_WNDPOSFILEDLG, "WndPosFileDlg");
-    DECLARE_STRING(INIKEY_FILEDLGSETTINGS, "FileDlgSettings");
+    DECLARE_CMN_STRING(INIKEY_WNDPOSFILEDLG, "WndPosFileDlg");
+    DECLARE_CMN_STRING(INIKEY_FILEDLGSETTINGS, "FileDlgSettings");
+
+    // WPSArcO application and keys in OS2.INI
+    DECLARE_CMN_STRING(INIKEY_ARCHIVE_SETTINGS, "ArchiveSettings");
+    DECLARE_CMN_STRING(INIKEY_ARCHIVE_LASTBACKUP, "ArchiveLastBackup");
 
     /*
      * file type hierarchies:
@@ -178,10 +190,10 @@
      */
 
     // application for file type hierarchies
-    DECLARE_STRING(INIAPP_XWPFILETYPES, "XWorkplace:FileTypes");   // added V0.9.0
-    DECLARE_STRING(INIAPP_XWPFILEFILTERS, "XWorkplace:FileFilters"); // added V0.9.0
+    DECLARE_CMN_STRING(INIAPP_XWPFILETYPES, "XWorkplace:FileTypes");   // added V0.9.0
+    DECLARE_CMN_STRING(INIAPP_XWPFILEFILTERS, "XWorkplace:FileFilters"); // added V0.9.0
 
-    DECLARE_STRING(INIAPP_REPLACEFOLDERREFRESH, "ReplaceFolderRefresh");
+    DECLARE_CMN_STRING(INIAPP_REPLACEFOLDERREFRESH, "ReplaceFolderRefresh");
                                         // V0.9.9 (2001-01-31) [umoeller]
 
     /*
@@ -190,51 +202,11 @@
      * added V0.9.14 (2001-08-23) [pr]
      */
 
-    DECLARE_STRING(INIAPP_XCENTER, "XWorkplace:XCenter");
-    DECLARE_STRING(INIKEY_RUNHISTORY, "RunHistory");
+    DECLARE_CMN_STRING(INIAPP_XCENTER, "XWorkplace:XCenter");
+    DECLARE_CMN_STRING(INIKEY_RUNHISTORY, "RunHistory");
 
-    /*
-     * some default WPS INI keys:
-     *
-     */
-
-    DECLARE_STRING(WPINIAPP_LOCATION, "PM_Workplace:Location");
-    DECLARE_STRING(WPINIAPP_FOLDERPOS, "PM_Workplace:FolderPos");
-    DECLARE_STRING(WPINIAPP_ASSOCTYPE, "PMWP_ASSOC_TYPE");
-    DECLARE_STRING(WPINIAPP_ASSOCFILTER, "PMWP_ASSOC_FILTER");
-
-    /********************************************************************
-     *
-     *   Standard WPS object IDs
-     *
-     ********************************************************************/
-
-    DECLARE_STRING(WPOBJID_DESKTOP, "<WP_DESKTOP>");
-
-    DECLARE_STRING(WPOBJID_KEYB, "<WP_KEYB>");
-    DECLARE_STRING(WPOBJID_MOUSE, "<WP_MOUSE>");
-    DECLARE_STRING(WPOBJID_CNTRY, "<WP_CNTRY>");
-    DECLARE_STRING(WPOBJID_SOUND, "<WP_SOUND>");
-    DECLARE_STRING(WPOBJID_SYSTEM, "<WP_SYSTEM>"); // V0.9.9
-    DECLARE_STRING(WPOBJID_POWER, "<WP_POWER>");
-    DECLARE_STRING(WPOBJID_WINCFG, "<WP_WINCFG>");
-
-    DECLARE_STRING(WPOBJID_HIRESCLRPAL, "<WP_HIRESCLRPAL>");
-    DECLARE_STRING(WPOBJID_LORESCLRPAL, "<WP_LORESCLRPAL>");
-    DECLARE_STRING(WPOBJID_FNTPAL, "<WP_FNTPAL>");
-    DECLARE_STRING(WPOBJID_SCHPAL96, "<WP_SCHPAL96>");
-
-    DECLARE_STRING(WPOBJID_LAUNCHPAD, "<WP_LAUNCHPAD>");
-    DECLARE_STRING(WPOBJID_WARPCENTER, "<WP_WARPCENTER>");
-
-    DECLARE_STRING(WPOBJID_SPOOL, "<WP_SPOOL>");
-    DECLARE_STRING(WPOBJID_VIEWER, "<WP_VIEWER>");
-    DECLARE_STRING(WPOBJID_SHRED, "<WP_SHRED>");
-    DECLARE_STRING(WPOBJID_CLOCK, "<WP_CLOCK>");
-
-    DECLARE_STRING(WPOBJID_START, "<WP_START>");
-    DECLARE_STRING(WPOBJID_TEMPS, "<WP_TEMPS>");
-    DECLARE_STRING(WPOBJID_DRIVES, "<WP_DRIVES>");
+    // V0.9.16 (2001-10-02) [umoeller]:
+    // moved many strings to include\shared\wphandle.h
 
     /********************************************************************
      *
@@ -245,27 +217,30 @@
     // all of these have been redone with V0.9.2
 
     // folders
-    DECLARE_STRING(XFOLDER_MAINID, "<XWP_MAINFLDR>");
-    DECLARE_STRING(XFOLDER_CONFIGID, "<XWP_CONFIG>");
+    DECLARE_CMN_STRING(XFOLDER_MAINID, "<XWP_MAINFLDR>");
+    DECLARE_CMN_STRING(XFOLDER_CONFIGID, "<XWP_CONFIG>");
 
-    DECLARE_STRING(XFOLDER_STARTUPID, "<XWP_STARTUP>");
-    DECLARE_STRING(XFOLDER_SHUTDOWNID, "<XWP_SHUTDOWN>");
-    DECLARE_STRING(XFOLDER_FONTFOLDERID, "<XWP_FONTFOLDER>");
+    DECLARE_CMN_STRING(XFOLDER_STARTUPID, "<XWP_STARTUP>");
+    DECLARE_CMN_STRING(XFOLDER_SHUTDOWNID, "<XWP_SHUTDOWN>");
+    DECLARE_CMN_STRING(XFOLDER_FONTFOLDERID, "<XWP_FONTFOLDER>");
 
-    DECLARE_STRING(XFOLDER_WPSID, "<XWP_WPS>");
-    DECLARE_STRING(XFOLDER_KERNELID, "<XWP_KERNEL>");
-    DECLARE_STRING(XFOLDER_SCREENID, "<XWP_SCREEN>");
-    DECLARE_STRING(XFOLDER_MEDIAID, "<XWP_MEDIA>");
+    DECLARE_CMN_STRING(XFOLDER_WPSID, "<XWP_WPS>");
+    DECLARE_CMN_STRING(XFOLDER_KERNELID, "<XWP_KERNEL>");
+    DECLARE_CMN_STRING(XFOLDER_SCREENID, "<XWP_SCREEN>");
 
-    DECLARE_STRING(XFOLDER_CLASSLISTID, "<XWP_CLASSLIST>");
-    DECLARE_STRING(XFOLDER_TRASHCANID, "<XWP_TRASHCAN>");
-    DECLARE_STRING(XFOLDER_XCENTERID, "<XWP_XCENTER>");
-    DECLARE_STRING(XFOLDER_STRINGTPLID, "<XWP_STRINGTPL>"); // V0.9.9
+#ifndef __XWPLITE__
+    DECLARE_CMN_STRING(XFOLDER_MEDIAID, "<XWP_MEDIA>");
+    DECLARE_CMN_STRING(XFOLDER_CLASSLISTID, "<XWP_CLASSLIST>");
+#endif
 
-    DECLARE_STRING(XFOLDER_INTROID, "<XWP_INTRO>");
-    DECLARE_STRING(XFOLDER_USERGUIDE, "<XWP_REF>");
+    DECLARE_CMN_STRING(XFOLDER_TRASHCANID, "<XWP_TRASHCAN>");
+    DECLARE_CMN_STRING(XFOLDER_XCENTERID, "<XWP_XCENTER>");
+    DECLARE_CMN_STRING(XFOLDER_STRINGTPLID, "<XWP_STRINGTPL>"); // V0.9.9
 
-    // DECLARE_STRING(XWORKPLACE_ARCHIVE_MARKER, "xwparchv.tmp");
+    DECLARE_CMN_STRING(XFOLDER_INTROID, "<XWP_INTRO>");
+    DECLARE_CMN_STRING(XFOLDER_USERGUIDE, "<XWP_REF>");
+
+    // DECLARE_CMN_STRING(XWORKPLACE_ARCHIVE_MARKER, "xwparchv.tmp");
                 // archive marker file in Desktop directory V0.9.4 (2000-08-03) [umoeller]
                 // removed V0.9.13 (2001-06-14) [umoeller]
 
@@ -275,64 +250,75 @@
      *
      ********************************************************************/
 
-    DECLARE_STRING(G_pcszXFldObject, "XFldObject");
-    DECLARE_STRING(G_pcszXFolder, "XFolder");
-    DECLARE_STRING(G_pcszXFldDisk, "XFldDisk");
-    DECLARE_STRING(G_pcszXFldDesktop, "XFldDesktop");
-    DECLARE_STRING(G_pcszXFldDataFile, "XFldDataFile");
-    DECLARE_STRING(G_pcszXFldProgramFile, "XFldProgramFile");
-    DECLARE_STRING(G_pcszXWPSound, "XWPSound");
-    DECLARE_STRING(G_pcszXWPMouse, "XWPMouse");
-    DECLARE_STRING(G_pcszXWPKeyboard, "XWPKeyboard");
+    DECLARE_CMN_STRING(G_pcszXFldObject, "XFldObject");
+    DECLARE_CMN_STRING(G_pcszXFolder, "XFolder");
+    DECLARE_CMN_STRING(G_pcszXFldDisk, "XFldDisk");
+    DECLARE_CMN_STRING(G_pcszXFldDesktop, "XFldDesktop");
+    DECLARE_CMN_STRING(G_pcszXFldDataFile, "XFldDataFile");
+    DECLARE_CMN_STRING(G_pcszXFldProgramFile, "XFldProgramFile");
+    DECLARE_CMN_STRING(G_pcszXWPSound, "XWPSound");
+    DECLARE_CMN_STRING(G_pcszXWPMouse, "XWPMouse");
+    DECLARE_CMN_STRING(G_pcszXWPKeyboard, "XWPKeyboard");
 
-    DECLARE_STRING(G_pcszXWPSetup, "XWPSetup");
-    DECLARE_STRING(G_pcszXFldSystem, "XFldSystem");
-    DECLARE_STRING(G_pcszXFldWPS, "XFldWPS");
-    DECLARE_STRING(G_pcszXWPScreen, "XWPScreen");
-    DECLARE_STRING(G_pcszXWPMedia, "XWPMedia");
-    DECLARE_STRING(G_pcszXFldStartup, "XFldStartup");
-    DECLARE_STRING(G_pcszXFldShutdown, "XFldShutdown");
-    DECLARE_STRING(G_pcszXWPClassList, "XWPClassList");
-    DECLARE_STRING(G_pcszXWPTrashCan, "XWPTrashCan");
-    DECLARE_STRING(G_pcszXWPTrashObject, "XWPTrashObject");
-    DECLARE_STRING(G_pcszXWPString, "XWPString");
-    DECLARE_STRING(G_pcszXCenter, "XCenter");
-    DECLARE_STRING(G_pcszXWPFontFolder, "XWPFontFolder");
-    DECLARE_STRING(G_pcszXWPFontFile, "XWPFontFile");
-    DECLARE_STRING(G_pcszXWPFontObject, "XWPFontObject");
+    DECLARE_CMN_STRING(G_pcszXWPSetup, "XWPSetup");
+    DECLARE_CMN_STRING(G_pcszXFldSystem, "XFldSystem");
+    DECLARE_CMN_STRING(G_pcszXFldWPS, "XFldWPS");
+    DECLARE_CMN_STRING(G_pcszXWPScreen, "XWPScreen");
+#ifndef __XWPLITE__
+    DECLARE_CMN_STRING(G_pcszXWPMedia, "XWPMedia");
+#endif
+    DECLARE_CMN_STRING(G_pcszXFldStartup, "XFldStartup");
+    DECLARE_CMN_STRING(G_pcszXFldShutdown, "XFldShutdown");
+#ifndef __XWPLITE__
+    DECLARE_CMN_STRING(G_pcszXWPClassList, "XWPClassList");
+#endif
+    DECLARE_CMN_STRING(G_pcszXWPTrashCan, "XWPTrashCan");
+    DECLARE_CMN_STRING(G_pcszXWPTrashObject, "XWPTrashObject");
+    DECLARE_CMN_STRING(G_pcszXWPString, "XWPString");
+
+    DECLARE_CMN_STRING(G_pcszXCenterReal, "XCenter");
+
+    DECLARE_CMN_STRING(G_pcszXWPFontFolder, "XWPFontFolder");
+    DECLARE_CMN_STRING(G_pcszXWPFontFile, "XWPFontFile");
+    DECLARE_CMN_STRING(G_pcszXWPFontObject, "XWPFontObject");
+
+#ifndef __XWPLITE__
+    DECLARE_CMN_STRING(G_pcszXMMCDPlayer, "XMMCDPlayer");
+    DECLARE_CMN_STRING(G_pcszXMMVolume, "XMMVolume");
+#endif
 
     // @@todo
-    DECLARE_STRING(G_pcszXWPProgram, "XWPProgram");
+    DECLARE_CMN_STRING(G_pcszXWPProgram, "XWPProgram");
 
-    DECLARE_STRING(G_pcszWPObject, "WPObject");
-    DECLARE_STRING(G_pcszWPFolder, "WPFolder");
-    DECLARE_STRING(G_pcszWPDisk, "WPDisk");
-    DECLARE_STRING(G_pcszWPDesktop, "WPDesktop");
-    DECLARE_STRING(G_pcszWPDataFile, "WPDataFile");
-    DECLARE_STRING(G_pcszWPProgram, "WPProgram");
-    DECLARE_STRING(G_pcszWPProgramFile, "WPProgramFile");
-    DECLARE_STRING(G_pcszWPKeyboard, "WPKeyboard");
-    DECLARE_STRING(G_pcszWPMouse, "WPMouse");
-    DECLARE_STRING(G_pcszWPCountry, "WPCountry");
-    DECLARE_STRING(G_pcszWPSound, "WPSound");
-    DECLARE_STRING(G_pcszWPSystem, "WPSystem");
-    DECLARE_STRING(G_pcszWPPower, "WPPower");
-    DECLARE_STRING(G_pcszWPWinConfig, "WPWinConfig");
-    DECLARE_STRING(G_pcszWPColorPalette, "WPColorPalette");
-    DECLARE_STRING(G_pcszWPFontPalette, "WPFontPalette");
-    DECLARE_STRING(G_pcszWPSchemePalette, "WPSchemePalette");
+    DECLARE_CMN_STRING(G_pcszWPObject, "WPObject");
+    DECLARE_CMN_STRING(G_pcszWPFolder, "WPFolder");
+    DECLARE_CMN_STRING(G_pcszWPDisk, "WPDisk");
+    DECLARE_CMN_STRING(G_pcszWPDesktop, "WPDesktop");
+    DECLARE_CMN_STRING(G_pcszWPDataFile, "WPDataFile");
+    DECLARE_CMN_STRING(G_pcszWPProgram, "WPProgram");
+    DECLARE_CMN_STRING(G_pcszWPProgramFile, "WPProgramFile");
+    DECLARE_CMN_STRING(G_pcszWPKeyboard, "WPKeyboard");
+    DECLARE_CMN_STRING(G_pcszWPMouse, "WPMouse");
+    DECLARE_CMN_STRING(G_pcszWPCountry, "WPCountry");
+    DECLARE_CMN_STRING(G_pcszWPSound, "WPSound");
+    DECLARE_CMN_STRING(G_pcszWPSystem, "WPSystem");
+    DECLARE_CMN_STRING(G_pcszWPPower, "WPPower");
+    DECLARE_CMN_STRING(G_pcszWPWinConfig, "WPWinConfig");
+    DECLARE_CMN_STRING(G_pcszWPColorPalette, "WPColorPalette");
+    DECLARE_CMN_STRING(G_pcszWPFontPalette, "WPFontPalette");
+    DECLARE_CMN_STRING(G_pcszWPSchemePalette, "WPSchemePalette");
 
-    DECLARE_STRING(G_pcszWPLaunchPad, "WPLaunchPad");
-    DECLARE_STRING(G_pcszSmartCenter, "SmartCenter");
+    DECLARE_CMN_STRING(G_pcszWPLaunchPad, "WPLaunchPad");
+    DECLARE_CMN_STRING(G_pcszSmartCenter, "SmartCenter");
 
-    DECLARE_STRING(G_pcszWPSpool, "WPSpool");
-    DECLARE_STRING(G_pcszWPMinWinViewer, "WPMinWinViewer");
-    DECLARE_STRING(G_pcszWPShredder, "WPShredder");
-    DECLARE_STRING(G_pcszWPClock, "WPClock");
+    DECLARE_CMN_STRING(G_pcszWPSpool, "WPSpool");
+    DECLARE_CMN_STRING(G_pcszWPMinWinViewer, "WPMinWinViewer");
+    DECLARE_CMN_STRING(G_pcszWPShredder, "WPShredder");
+    DECLARE_CMN_STRING(G_pcszWPClock, "WPClock");
 
-    DECLARE_STRING(G_pcszWPStartup, "WPStartup");
-    DECLARE_STRING(G_pcszWPTemplates, "WPTemplates");
-    DECLARE_STRING(G_pcszWPDrives, "WPDrives");
+    DECLARE_CMN_STRING(G_pcszWPStartup, "WPStartup");
+    DECLARE_CMN_STRING(G_pcszWPTemplates, "WPTemplates");
+    DECLARE_CMN_STRING(G_pcszWPDrives, "WPDrives");
 
     /********************************************************************
      *
@@ -341,164 +327,33 @@
      ********************************************************************/
 
     // object window class names (added V0.9.0)
-    DECLARE_STRING(WNDCLASS_WORKEROBJECT, "XWPWorkerObject");
-    DECLARE_STRING(WNDCLASS_QUICKOBJECT, "XWPQuickObject");
-    DECLARE_STRING(WNDCLASS_FILEOBJECT, "XWPFileObject");
+    DECLARE_CMN_STRING(WNDCLASS_WORKEROBJECT, "XWPWorkerObject");
+    DECLARE_CMN_STRING(WNDCLASS_QUICKOBJECT, "XWPQuickObject");
+    DECLARE_CMN_STRING(WNDCLASS_FILEOBJECT, "XWPFileObject");
 
-    DECLARE_STRING(WNDCLASS_THREAD1OBJECT, "XWPThread1Object");
-    DECLARE_STRING(WNDCLASS_SUPPLOBJECT, "XWPSupplFolderObject");
-    DECLARE_STRING(WNDCLASS_APIOBJECT, "XWPAPIObject");
-
-    /********************************************************************
-     *
-     *   Constants
-     *
-     ********************************************************************/
-
-    /*
-     *  All these constants have been made "const char*" pointers
-     *  with V0.9.7 (they used to be #define's before). The actual
-     *  character constants are now on top of common.c.
-     */
-
-    /* extern const char *INIAPP_XWORKPLACE;
-    extern const char *INIAPP_OLDXFOLDER;
-
-    extern const char *INIKEY_GLOBALSETTINGS;
-    extern const char *INIKEY_ACCELERATORS;
-    extern const char *INIKEY_LANGUAGECODE;
-    extern const char *INIKEY_JUSTINSTALLED;
-    extern const char *INIKEY_FAVORITEFOLDERS;
-    extern const char *INIKEY_QUICKOPENFOLDERS;
-
-    extern const char *INIKEY_WNDPOSSTARTUP;
-    extern const char *INIKEY_WNDPOSNAMECLASH;
-    extern const char *INIKEY_NAMECLASHFOCUS;
-
-    extern const char *INIKEY_STATUSBARFONT;
-    extern const char *INIKEY_SBTEXTNONESEL;
-    extern const char *INIKEY_SBTEXT_WPOBJECT;
-    extern const char *INIKEY_SBTEXT_WPPROGRAM;
-    extern const char *INIKEY_SBTEXT_WPFILESYSTEM;
-    extern const char *INIKEY_SBTEXT_WPURL;
-    extern const char *INIKEY_SBTEXT_WPDISK;
-    extern const char *INIKEY_SBTEXT_WPFOLDER;
-    extern const char *INIKEY_SBTEXTMULTISEL;
-    extern const char *INIKEY_SB_LASTCLASS;
-    extern const char *INIKEY_DLGFONT;
-
-    extern const char *INIKEY_BOOTMGR;
-    extern const char *INIKEY_AUTOCLOSE;
-
-    extern const char *DEFAULT_LANGUAGECODE;
-
-    extern const char *INIKEY_WNDPOSCLASSINFO;
-
-    extern const char *INIKEY_XWPSOUNDLASTDIR;
-    extern const char *INIKEY_XWPSOUNDSCHEME;
-
-    extern const char *INIKEY_BOOTLOGOFILE;
-
-    extern const char *INIKEY_LAST10SELECTSOME;
-
-    extern const char *INIKEY_TRASHCANDRIVES;
-
-    extern const char *INIKEY_FILEOPSPOS;
-
-    extern const char *INIKEY_WNDPOSPARTITIONS;
-
-    extern const char *INIKEY_WNDPOSXMMVOLUME;
-
-    extern const char *INIKEY_WNDPOSXMMCDPLAY;
-
-    extern const char *INIKEY_FONTSAMPLEWNDPOS;
-    extern const char *INIKEY_FONTSAMPLESTRING;
-    extern const char *INIKEY_FONTSAMPLEHINTS;
-
-    // added V0.9.9 (2001-03-19) [pr]
-    extern const char *INIKEY_XSTARTUPFOLDERS;
-    extern const char *INIKEY_XSAVEDSTARTUPFOLDERS;
-
-    // added V0.9.11 (2001-04-18) [umoeller]
-    extern const char *INIKEY_WNDPOSFILEDLG;
-    extern const char *INIKEY_FILEDLGSETTINGS;
-
-    extern const char *INIAPP_XWPFILETYPES;   // added V0.9.0
-    extern const char *INIAPP_XWPFILEFILTERS; // added V0.9.0
-
-    extern const char *INIAPP_REPLACEFOLDERREFRESH; // added V0.9.9 (2001-01-31) [umoeller]
-
-    extern const char *WPINIAPP_LOCATION;
-    extern const char *WPINIAPP_FOLDERPOS;
-    extern const char *WPINIAPP_ASSOCTYPE;
-    extern const char *WPINIAPP_ASSOCFILTER; */
+    DECLARE_CMN_STRING(WNDCLASS_THREAD1OBJECT, "XWPThread1Object");
+    DECLARE_CMN_STRING(WNDCLASS_SUPPLOBJECT, "XWPSupplFolderObject");
+    DECLARE_CMN_STRING(WNDCLASS_APIOBJECT, "XWPAPIObject");
 
     /********************************************************************
      *
-     *   Standard WPS object IDs
+     *   Other string constants
      *
      ********************************************************************/
 
-    /* extern const char *WPOBJID_DESKTOP;
-
-    extern const char *WPOBJID_KEYB;
-    extern const char *WPOBJID_MOUSE;
-    extern const char *WPOBJID_CNTRY;
-    extern const char *WPOBJID_SOUND;
-    extern const char *WPOBJID_SYSTEM;
-    extern const char *WPOBJID_POWER;
-    extern const char *WPOBJID_WINCFG;
-
-    extern const char *WPOBJID_HIRESCLRPAL;
-    extern const char *WPOBJID_LORESCLRPAL;
-    extern const char *WPOBJID_FNTPAL;
-    extern const char *WPOBJID_SCHPAL96;
-
-    extern const char *WPOBJID_LAUNCHPAD;
-    extern const char *WPOBJID_WARPCENTER;
-
-    extern const char *WPOBJID_SPOOL;
-    extern const char *WPOBJID_VIEWER;
-    extern const char *WPOBJID_SHRED;
-    extern const char *WPOBJID_CLOCK;
-
-    extern const char *WPOBJID_START;
-    extern const char *WPOBJID_TEMPS;
-    extern const char *WPOBJID_DRIVES; */
-
-    /********************************************************************
-     *
-     *   XWorkplace object IDs
-     *
-     ********************************************************************/
-
-    // all of these have been redone with V0.9.2
-
-    // folders
-    /* extern const char *XFOLDER_MAINID;
-    extern const char *XFOLDER_CONFIGID;
-
-    extern const char *XFOLDER_STARTUPID;
-    extern const char *XFOLDER_SHUTDOWNID;
-    extern const char *XFOLDER_FONTFOLDERID;
-
-    extern const char *XFOLDER_WPSID;
-    extern const char *XFOLDER_KERNELID;
-    extern const char *XFOLDER_SCREENID;
-    extern const char *XFOLDER_MEDIAID;
-
-    extern const char *XFOLDER_CLASSLISTID;
-    extern const char *XFOLDER_TRASHCANID;
-    extern const char *XFOLDER_XCENTERID;
-    extern const char *XFOLDER_STRINGTPLID;
-
-    extern const char *XFOLDER_INTROID;
-    extern const char *XFOLDER_USERGUIDE;
-
-    // extern const char *XWORKPLACE_ARCHIVE_MARKER;
-        // removed V0.9.13 (2001-06-14) [umoeller]
-       */
-
+    #ifndef __XWPLITE__
+        DECLARE_CMN_STRING(ENTITY_XWORKPLACE, "XWorkplace");
+        DECLARE_CMN_STRING(ENTITY_OS2, "OS/2");
+        DECLARE_CMN_STRING(ENTITY_WARPCENTER, "WarpCenter");
+        DECLARE_CMN_STRING(ENTITY_XCENTER, "XCenter");
+        DECLARE_CMN_STRING(ENTITY_XSHUTDOWN, "XShutdown");
+    #else
+        DECLARE_CMN_STRING(ENTITY_XWORKPLACE, "eWorkplace");
+        DECLARE_CMN_STRING(ENTITY_OS2, "eComStation");
+        DECLARE_CMN_STRING(ENTITY_WARPCENTER, "eComCenter");
+        DECLARE_CMN_STRING(ENTITY_XCENTER, "eCenter");
+        DECLARE_CMN_STRING(ENTITY_XSHUTDOWN, "eShutdown");
+    #endif
     /********************************************************************
      *
      *   Thread object windows
@@ -586,7 +441,7 @@
     // new XWorkplace system sounds indices
     // (in addition to those def'd by helpers\syssound.h)
     #define MMSOUND_XFLD_SHUTDOWN   555     // shutdown
-    #define MMSOUND_XFLD_RESTARTWPS 556     // restart WPS
+    #define MMSOUND_XFLD_RESTARTWPS 556     // restart Desktop
     #define MMSOUND_XFLD_CTXTOPEN   558     // context (sub)menu opened
     #define MMSOUND_XFLD_CTXTSELECT 559     // menu item selected
     #define MMSOUND_XFLD_CNRDBLCLK  560     // folder container double-click
@@ -771,6 +626,52 @@
     #define STBF_DEREFSHADOWS_SINGLE        0x01
     #define STBF_DEREFSHADOWS_MULTIPLE      0x02
 
+    /*
+     *@@ XWPFEATURE:
+     *      enumeration for checking if XWorkplace features
+     *      are enabled.
+     *
+     *@@added V0.9.16 (2001-10-11) [umoeller]
+     */
+
+    typedef enum _XWPFEATURE
+    {
+#ifndef __NOICONREPLACEMENTS__
+        IconReplacements,
+#endif
+#ifndef __NOMOVEREFRESHNOW__
+        MoveRefreshNow,
+#endif
+#ifndef __ALWAYSSUBCLASS__
+        NoSubclassing,
+#endif
+#ifndef __NOFOLDERCONTENTS__
+        AddFolderContentItem,
+        FolderContentShowIcons,
+#endif
+#ifndef __NOBOOTLOGO__
+        BootLogo,
+#endif
+#ifndef __ALWAYSREPLACEFILEPAGE__
+        ReplaceFilePage,
+#endif
+#ifndef __NOCFGSTATUSBARS__
+        StatusBars,
+#endif
+#ifndef __NOSNAPTOGRID__
+        Snap2Grid,
+#endif
+#ifndef __ALWAYSFDRHOTKEYS__
+        FolderHotkeys,
+#endif
+#ifndef __ALWAYSRESIZESETTINGSPAGES__
+        ResizeSettingsPages,
+#endif
+        ___dummy
+    } XWPFEATURE;
+
+    BOOL cmnIsFeatureEnabled(XWPFEATURE f);
+
     #pragma pack(4)     // just to make sure;
                         // the following is stored as binary in OS2.INI
 
@@ -823,7 +724,7 @@
 
     typedef struct _GLOBALSETTINGS
     {
-        ULONG       fReplaceIcons,     // V0.9.0, was: ReplIcons,
+        ULONG       __fIconReplacements,
                     MenuCascadeMode,
                     FullPath,
                         // enable "full path in title"
@@ -831,7 +732,7 @@
                         // "full path in title": keep existing title
                     RemoveX,
                     AppdParam,
-                    MoveRefreshNow;
+                    __fMoveRefreshNow;
                         // move "Refresh now" to main context menu
 
         ULONG       MaxPathChars,
@@ -882,7 +783,7 @@
                         // XSD_* shutdown settings
         ULONG       NoWorkerThread,
                         // "Paranoia" page
-                    fNoSubclassing,
+                    __fNoSubclassing,
                         // "Paranoia" page
                     TreeViewAutoScroll,
                         // XFolder
@@ -894,11 +795,11 @@
                         // XFldStartup
 
     /* XFolder 0.70 */
-        ULONG       AddFolderContentItem,
+        ULONG       __fAddFolderContentItem,
                         // general "Folder content" submenu; this does
                         // not affect favorite folders, which are set
                         // for each folder individually
-                    FCShowIcons,
+                    __fFolderContentShowIcons,
                         // show icons in folder content menus (both
                         // "folder content" and favorite folders)
                     fDefaultStatusBarVisibility,
@@ -929,7 +830,7 @@
                         // disabled for now V0.9.12 (2001-05-15) [umoeller]
 
     /* XFolder 0.80  */
-                    ShowBootupStatus,
+                    _fShowBootupStatus,
                     ulRemoved3;
                         // V0.9.0, was: WpsShowClassInfo;
         ULONG       SBForViews,
@@ -937,7 +838,7 @@
                     fReplFileExists,
                         // V0.9.0, was: ReplConfirms;
                         // XFldWPS, replace "File Exists" dialog
-                    BootLogo,
+                    __fBootLogo,
                         // V0.9.0, was: ShowXFolderAnim
                         // XFldDesktop "Startup" page: show boot logo
                     FileAttribs,
@@ -954,7 +855,7 @@
                     fUse8HelvFont,
                         // XWPSetup "Paranoia": use "8.Helv" font for dialogs;
                         // on Warp 3, this is enabled per default
-                    fReplaceFilePage,
+                    __fReplaceFilePage,
                         // XFolder/XFldDataFile: replace three "File" pages
                         // into one
                     fExtAssocs,
@@ -972,17 +873,17 @@
                         // XFldDataFile/XFldWPS: extended associations
                     fMonitorCDRoms,
                     fRestartWPS,
-                        // XWPSetup: enable "Restart WPS"
+                        // XWPSetup: enable "Restart Desktop"
                     fXShutdown,
                         // XWPSetup: enable XShutdown
 
-                    fEnableStatusBars,
+                    __fEnableStatusBars,
                         // XWPSetup: whether to enable the status bars at all;
                         // unlike fDefaultStatusBarVisibility above
-                    fEnableSnap2Grid,
+                    __fEnableSnap2Grid,
                         // XWPSetup: whether to enable "Snap to grid" at all;
                         // unlike fAddSnapToGridDefault above
-                    fEnableFolderHotkeys;
+                    __fEnableFolderHotkeys;
                         // XWPSetup: whether to enable folder hotkeys at all;
                         // unlike fFolderHotkeysDefault above
 
@@ -997,7 +898,7 @@
                     fWorkerPriorityBeep,
                         // XWPSetup "Paranoia": beep on priority change
 
-                    bBootLogoStyle,
+                    _bBootLogoStyle,
                         // XFldDesktop "Startup" page:
                         // boot logo style:
                         //      0 = transparent
@@ -1030,13 +931,13 @@
                         // mouse movement etc.)
 
         BYTE        fReplaceArchiving;
-                        // XWPSetup: enable WPS archiving replacement
+                        // XWPSetup: enable Desktop archiving replacement
 
         BYTE        fAniMouse;
                         // XWPSetup: enable "animated mouse pointers" page in XWPMouse
 
         BYTE        fNumLockStartup;
-                        // XFldDesktop "Startup": set NumLock to ON on WPS startup
+                        // XFldDesktop "Startup": set NumLock to ON on Desktop startup
 
         BYTE        fEnablePageMage;
                         // XWPSetup "PageMage virtual desktops"; this will cause
@@ -1055,14 +956,14 @@
                         // on XWPSetup "Features" page
 
     /* XWorkplace 0.9.4 */
-        BYTE        fFdrDefaultDoc,
+        BYTE        _fFdrDefaultDoc,
                         // folder default documents enabled?
                         // "Workplace Shell" "View" page
-                    fFdrDefaultDocView;
+                    _fFdrDefaultDocView;
                         // "default doc = folder default view"
                         // "Workplace Shell" "View" page
 
-        BYTE        fResizeSettingsPages;
+        BYTE        __fResizeSettingsPages;
                         // XWPSetup: allow resizing of WPS notebook pages?
 
         ULONG       ulStartupInitialDelay;
@@ -1076,7 +977,7 @@
 #else
         BYTE        fDisabled2;
 #endif
-        BYTE        bSaveINIS;
+        BYTE        _bSaveINIS;
                         // XShutdown: save-INIs method:
                         // -- 0: new method (xprf* APIs)
                         // -- 1: old method (Prf* APIs)
@@ -1183,6 +1084,26 @@
         } CONTENTMENULISTITEM, *PCONTENTMENULISTITEM;
     #endif
 
+/*     typedef enum _XWPFEATURE
+    {
+#ifndef __NOICONREPLACEMENTS__
+        IconReplacements,
+#endif
+#ifndef __NOSNAPTOGRID__
+        SnapToGrid,
+#endif
+#ifndef __NOFOLDERCONTENTS__
+        FolderContentsShowIcons,
+#endif
+#ifndef __NOMOVEREFRESHNOW__
+        MoveRefreshNow,
+#endif
+        _____dummyX
+    } XWPFEATURE;
+
+    BOOL cmnIsFeatureEnabled(XWPFEATURE f);
+   */
+
     /* ******************************************************************
      *
      *   Main module handling (XFLDR.DLL)
@@ -1236,7 +1157,9 @@
 
     HMODULE XWPENTRY cmnQueryIconsDLL(VOID);
 
+#ifndef __NOBOOTLOGO__
     PSZ XWPENTRY cmnQueryBootLogoFile(VOID);
+#endif
 
     HMODULE XWPENTRY cmnQueryNLSModuleHandle(BOOL fEnforceReload);
     typedef HMODULE XWPENTRY CMNQUERYNLSMODULEHANDLE(BOOL fEnforceReload);
@@ -1244,7 +1167,7 @@
 
     // PNLSSTRINGS cmnQueryNLSStrings(VOID);        removed V0.9.9 (2001-04-04) [umoeller]
 
-    #ifdef PRFH_HEADER_INCLUDED
+    #ifdef NLS_HEADER_INCLUDED
         PCOUNTRYSETTINGS XWPENTRY cmnQueryCountrySettings(BOOL fReload);
     #endif
 
@@ -1272,6 +1195,18 @@
     PSZ XWPENTRY cmnGetString(ULONG ulStringID);
     typedef PSZ XWPENTRY CMNGETSTRING(ULONG ulStringID);
     typedef CMNGETSTRING *PCMNGETSTRING;
+
+    #ifdef DIALOG_HEADER_INCLUDED
+        #define LOAD_STRING     ((PCSZ)-1)
+
+        extern CONTROLDEF G_UndoButton,
+                          G_DefaultButton,
+                          G_HelpButton,
+                          G_Spacing;
+
+        VOID cmnLoadDialogStrings(PDLGHITEM paDlgItems,
+                                  ULONG cDlgItems);
+    #endif
 
     /********************************************************************
      *
@@ -1560,17 +1495,20 @@
                                  const char *pcszMessage,
                                  ULONG flStyle);
 
+    #ifdef XSTRING_HEADER_INCLUDED
     APIRET XWPENTRY cmnGetMessageExt(PCHAR *pTable,
                                      ULONG ulTable,
-                                     PSZ pszBuf,
-                                     ULONG cbBuf,
-                                     PSZ pszMsgID);
+                                     PXSTRING pstr,
+                                     PCSZ pcszMsgID);
 
     APIRET XWPENTRY cmnGetMessage(PCHAR *pTable,
                                   ULONG ulTable,
-                                  PSZ pszBuf,
-                                  ULONG cbBuf,
+                                  PXSTRING pstr,
                                   ULONG ulMsgNumber);
+    #else
+        #define cmnGetMessage #error xstring.h not included
+        #define cmnGetMessageExt #error xstring.h not included
+    #endif
 
     ULONG XWPENTRY cmnMessageBoxMsg(HWND hwndOwner,
                                     ULONG ulTitle,

@@ -133,7 +133,7 @@
     #define wpshQueryCnrFromFrame(hwndFrame) \
                 WinWindowFromID(hwndFrame, 0x8008)
 
-    ULONG wpshQueryLogicalDriveNumber(WPObject *somSelf);
+    ULONG wpshQueryLogicalDisk(WPObject *somSelf);
 
     /* ******************************************************************
      *
@@ -210,7 +210,7 @@
      *
      *      _wpMakeDormant is undocumented. It destroys only
      *      the SOM object which represents the persistent
-     *      form of a WPS object. This gets called whenever
+     *      form of a Desktop object. This gets called whenever
      *      the WPS puts an object back to sleep (e.g. because
      *      its folder was closed and the "sleepy time" has
      *      elapsed on the object). This is described in the

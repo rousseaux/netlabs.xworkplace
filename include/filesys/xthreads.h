@@ -89,11 +89,16 @@
      *
      ********************************************************************/
 
+#ifndef __NOBOOTUPSTATUS__
     #define QM_BOOTUPSTATUS             (WM_USER+180)
+#endif
+
     // #define QM_PLAYSOUND                (WM_USER+181)
     // #define QM_PLAYSYSTEMSOUND          (WM_USER+182)
 
+#ifndef __NOBOOTLOGO__
     #define QM_DESTROYLOGO              (WM_USER+183)
+#endif
 
     #define QM_TREEVIEWAUTOSCROLL       (WM_USER+184)
 
@@ -104,8 +109,9 @@
      ********************************************************************/
 
     // flags for recreating config folder (FIM_RECREATECONFIGFOLDER)
-    #define RCF_QUERYACTION            0
+    // #define RCF_QUERYACTION            0
             // display message box
+            // removed V0.9.16 (2001-10-11) [umoeller]
     #define RCF_EMPTYCONFIGFOLDERONLY  1
             // create empty config folder
     #define RCF_DEFAULTCONFIGFOLDER    2

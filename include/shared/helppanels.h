@@ -76,8 +76,8 @@
 
     // help panel IDs for various dlg boxes
     #define ID_XFH_BORED            2
-    #define ID_XFH_NOCONFIG         3
-    #define ID_XFH_NOOBJECT         4
+    // #define ID_XFH_NOCONFIG         3        // removed
+    // #define ID_XFH_NOOBJECT         4        // removed V0.9.16 (2001-10-11) [umoeller]
     #define ID_XFH_LIMITREACHED     5
     #define ID_XFH_NOTEXTCLIP       6
     #define ID_XFH_REBOOTEXT        7
@@ -232,6 +232,8 @@
     #define ID_XSH_WIDGET_DISKFREE_WC       133     // V0.9.14 (2001-08-01) [umoeller]
     #define ID_XSH_WIDGET_DISKFREE_COND     134     // V0.9.14 (2001-08-01) [umoeller]
     #define ID_XSH_MOUSE_MOVEMENT2          135     // V0.9.14 (2001-08-02) [lafaix]
+
+    #define ID_XSH_NETSCAPEDDE              136     // V0.9.16 (2001-10-02) [umoeller]
 
 #endif
 

@@ -95,9 +95,8 @@
     BOOL fdrSetup(WPFolder *somSelf,
                   const char *pszSetupString);
 
-    ULONG fdrQuerySetup(WPObject *somSelf,
-                        PSZ pszSetupString,
-                        ULONG cbSetupString);
+    BOOL fdrQuerySetup(WPObject *somSelf,
+                       PVOID pstrSetup);
 
     /* ******************************************************************
      *
@@ -398,6 +397,7 @@
      *
      ********************************************************************/
 
+#ifndef __NOSNAPTOGRID__
         VOID XWPENTRY fdrGridInitPage(PCREATENOTEBOOKPAGE pcnbp,
                                       ULONG flFlags);
 
@@ -405,6 +405,7 @@
                                    ULONG ulItemID,
                                    USHORT usNotifyCode,
                                    ULONG ulExtra);
+#endif
 
     /* ******************************************************************
      *

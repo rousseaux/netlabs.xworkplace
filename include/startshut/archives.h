@@ -28,9 +28,9 @@
     #define ARCHIVES_HEADER_INCLUDED
 
     /********************************************************************
-     *                                                                  *
-     *   "Archives" page replacement in WPDesktop                       *
-     *                                                                  *
+     *
+     *   "Archives" page replacement in WPDesktop
+     *
      ********************************************************************/
 
     #ifdef NOTEBOOK_HEADER_INCLUDED
@@ -44,16 +44,10 @@
     #endif
 
     /********************************************************************
-     *                                                                  *
-     *   WPSArcO settings                                               *
-     *                                                                  *
+     *
+     *   Archiver settings
+     *
      ********************************************************************/
-
-
-    // WPSArcO application and keys in OS2.INI
-    #define WPSARCO_INIAPP              "XWorkplace:WPSArcO"
-    #define WPSARCO_INIKEY_SETTINGS     "Settings"
-    #define WPSACRO_INIKEY_LASTBACKUP   "LastBackup"
 
     /*
      * Archiving settings flags:

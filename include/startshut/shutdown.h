@@ -50,10 +50,10 @@
                     optDebug;
         ULONG       ulRestartWPS;
             // changed V0.9.5 (2000-08-10) [umoeller]:
-            // restart WPS flag, meaning:
+            // restart Desktop flag, meaning:
             // -- 0: no, do shutdown
-            // -- 1: yes, restart WPS
-            // -- 2: yes, restart WPS, but logoff also
+            // -- 1: yes, restart Desktop
+            // -- 2: yes, restart Desktop, but logoff also
             //          (only if XWPSHELL is running)
         BOOL        optWPSCloseWindows,
                     optAutoCloseVIO,

@@ -160,7 +160,7 @@
 #define IDT_IDTXT_LINK_OBJECT_MODULES            "Objektmodule verbinden"
 
 //
-// General/Icon page replacement (see General/Icon page of any WPS object of your OS/2 !)
+// General/Icon page replacement (see General/Icon page of any Desktop object of your OS/2 !)
 //
 
 // In english this page is called:

@@ -202,6 +202,8 @@
 #define ID_XFDI_GENERICDLGTEXT          221
 #define ID_XFDI_GENERICDLGICON          222
 
+#define ID_XFD_EMPTYDLG                 225     // V0.9.16 (2001-09-29) [umoeller]
+
 // "Title clash" dlg
 #define ID_XFD_TITLECLASH               230
 #define ID_XFDI_CLASH_TXT1              231
@@ -222,18 +224,6 @@
 #define ID_XFD_BOOTUPSTATUS             250
 #define ID_XFD_ARCHIVINGSTATUS          251
 #define ID_XFDI_BOOTUPSTATUSTEXT        252
-
-// "Startup panic" dialog, V0.9.0
-#define ID_XFD_STARTUPPANIC             260
-#define ID_XFDI_PANIC_SKIPBOOTLOGO      261
-#define ID_XFDI_PANIC_SKIPXFLDSTARTUP   262
-#define ID_XFDI_PANIC_SKIPQUICKOPEN     263
-#define ID_XFDI_PANIC_NOARCHIVING       264
-#define ID_XFDI_PANIC_DISABLEFEATURES   265
-#define ID_XFDI_PANIC_DISABLEREPLICONS  266
-#define ID_XFDI_PANIC_REMOVEHOTKEYS     267
-#define ID_XFDI_PANIC_DISABLEPAGEMAGE   268
-#define ID_XFDI_PANIC_DISABLEMULTIMEDIA 269
 
 /* Dialog box templates */
 #define ID_XFD_NOCONFIG                 270
@@ -275,27 +265,37 @@
 #define ID_XFD_RUN_BROWSE               359
 #define ID_XFD_RUN_WINOS2_GROUP         360
 
+// "Startup panic" dialog, V0.9.0
+// all IDs raised with V0.9.16 (2001-10-08) [umoeller]
+// #define ID_XFD_STARTUPPANIC             260
+#define ID_XFDI_PANIC_TITLE             400     // V0.9.16 (2001-10-08) [umoeller]
+#ifndef __NOBOOTLOGO__
+#define ID_XFDI_PANIC_SKIPBOOTLOGO      401
+#endif
+#define ID_XFDI_PANIC_SKIPXFLDSTARTUP   402
+#ifndef __NOQUICKOPEN__
+#define ID_XFDI_PANIC_SKIPQUICKOPEN     403
+#endif
+#define ID_XFDI_PANIC_NOARCHIVING       404
+#define ID_XFDI_PANIC_DISABLEFEATURES   405
+#ifndef __NOICONREPLACEMENTS__
+#define ID_XFDI_PANIC_DISABLEREPLICONS  406
+#endif
+#define ID_XFDI_PANIC_REMOVEHOTKEYS     407
+#define ID_XFDI_PANIC_DISABLEPAGEMAGE   408
+#define ID_XFDI_PANIC_DISABLEMULTIMEDIA 409
+#define ID_XFDI_PANIC_CONTINUE          410     // V0.9.16 (2001-10-08) [umoeller]
+#define ID_XFDI_PANIC_CONTINUE_TXT      411     // V0.9.16 (2001-10-08) [umoeller]
+#define ID_XFDI_PANIC_XFIX              412     // V0.9.16 (2001-10-08) [umoeller]
+#define ID_XFDI_PANIC_XFIX_TXT          413     // V0.9.16 (2001-10-08) [umoeller]
+#define ID_XFDI_PANIC_CMD               414     // V0.9.16 (2001-10-08) [umoeller]
+#define ID_XFDI_PANIC_CMD_TXT           415     // V0.9.16 (2001-10-08) [umoeller]
+#define ID_XFDI_PANIC_SHUTDOWN          416     // V0.9.16 (2001-10-08) [umoeller]
+#define ID_XFDI_PANIC_SHUTDOWN_TXT      417     // V0.9.16 (2001-10-08) [umoeller]
+
 /******************************************
  * "Workplace Shell" (XFldWPS)     >= 500 *
  ******************************************/
-
-// "View" page (added V0.9.0)
-#define ID_XSD_FOLDERVIEWS              500
-// #define ID_XSDI_ADDINTERNALS            501  // removed (V0.9.0)
-// #define ID_XSDI_REPLICONS               501  // removed (V0.9.0)
-#define ID_XSDI_FULLPATH                502
-#define ID_XSDI_KEEPTITLE               503
-#define ID_XSDI_MAXPATHCHARS            504
-#define ID_XSDI_MAXPATHCHARS_TX1        505
-#define ID_XSDI_MAXPATHCHARS_TX2        506
-#define ID_XSDI_TREEVIEWAUTOSCROLL      507
-#define ID_XSDI_FDRDEFAULTDOC           508
-#define ID_XSDI_FDRDEFAULTDOCVIEW       509
-#define ID_XSDI_FDRAUTOREFRESH          501     // added V0.9.9 (2001-02-06) [umoeller]
-#define ID_XSDI_FDRVIEW_INHERIT         625     // added V0.9.12 (2001-04-30) [umoeller]
-#define ID_XSDI_FDRVIEW_ICON            626
-#define ID_XSDI_FDRVIEW_TREE            627
-#define ID_XSDI_FDRVIEW_DETAILS         628
 
 // "Remove menu items" page
 #define ID_XSD_SET2REMOVEMENUS          510
@@ -319,15 +319,21 @@
 #define ID_XSDI_LOCKINPLACE_NOSUB       528 // V0.9.7 (2000-12-10) [umoeller]
 
 // new menu items
-#define ID_XSD_SET25ADDMENUS            530
+// #define ID_XSD_SET25ADDMENUS            530      // removed V0.9.16 (2001-09-29) [umoeller]
+#define ID_XSDI_FILEMENUS_GROUP         529     // added V0.9.16 (2001-09-29) [umoeller]
 #define ID_XSDI_FILEATTRIBS             531
 #define ID_XSDI_COPYFILENAME            532
+#ifndef __NOMOVEREFRESHNOW__
 #define ID_XSDI_MOVE4REFRESH            533
+#endif
 #define ID_XSDI_SELECTSOME              534
 #define ID_XSDI_FLDRVIEWS               535
+#ifndef __NOFOLDERCONTENTS__
 #define ID_XSDI_FOLDERCONTENT           536
 #define ID_XSDI_FC_SHOWICONS            537
+#endif
 #define ID_XSDI_EXTENDCLOSEMENU         538 // V0.9.12 (2001-05-22) [umoeller]
+#define ID_XSDI_FOLDERMENUS_GROUP       539 // added V0.9.16 (2001-09-29) [umoeller]
 
 // "XFolder Internals": removed with V0.9.0
 
@@ -343,12 +349,14 @@
 #define ID_XSDI_TPL_POSITION            547
 
 // "snap to grid" page
+#ifndef __NOSNAPTOGRID__
 #define ID_XSD_SET3SNAPTOGRID           550
 #define ID_XSDI_SNAPTOGRID              551     // changed V0.9.12, these were duplicates
 #define ID_XSDI_GRID_X                  552     // changed V0.9.12, these were duplicates
 #define ID_XSDI_GRID_Y                  553     // changed V0.9.12, these were duplicates
 #define ID_XSDI_GRID_CX                 554     // changed V0.9.12, these were duplicates
 #define ID_XSDI_GRID_CY                 555     // changed V0.9.12, these were duplicates
+#endif
 
 // "folder hotkeys" page
 #define ID_XSD_SET4ACCELS               560
@@ -372,6 +380,7 @@
 #define ID_XSDI_SBSTYLE_4MENU           578
 
 // "status bars" page 2
+#ifndef __NOCFGSTATUSBARS__
 #define ID_XSD_SET28STATUSBARS2         580
 #define ID_XSDI_SBTEXTNONESEL           581
 #define ID_XSDI_SBCURCLASS              582
@@ -380,10 +389,10 @@
 #define ID_XSDI_SBTEXTMULTISEL          585
 #define ID_XSDI_DEREFSHADOWS_SINGLE     586     // new V0.9.5 (2000-10-07) [umoeller]
 #define ID_XSDI_DEREFSHADOWS_MULTIPLE   587     // new V0.9.5 (2000-10-07) [umoeller]
-
 #define ID_XSDI_SBKEYSNONESEL           595
 #define ID_XSDI_SBKEYS1SEL              596
 #define ID_XSDI_SBKEYSMULTISEL          597
+#endif
 
 // extended "sort" page
 #define ID_XSD_SETTINGS_FLDRSORT        590
@@ -419,7 +428,28 @@
 #define ID_XSDI_FT_ENTRYFIELD           622
 #define ID_XSDI_FT_TITLE                623
 
-// WARNING: ID'ss 625-630 are used above in ID_XSD_FOLDERVIEWS
+// "View" page (added V0.9.0)
+// all IDs raised V0.9.16 (2001-10-11) [umoeller]
+// #define ID_XSD_FOLDERVIEWS              650  // removed V0.9.16 (2001-10-11) [umoeller]
+// #define ID_XSDI_ADDINTERNALS            501  // removed (V0.9.0)
+// #define ID_XSDI_REPLICONS               501  // removed (V0.9.0)
+#define ID_XSD_FOLDERVIEWGROUP          650
+#define ID_XSDI_FULLPATH                651
+#define ID_XSDI_KEEPTITLE               652
+#define ID_XSDI_MAXPATHCHARS            653
+#define ID_XSDI_MAXPATHCHARS_TX1        654
+#define ID_XSDI_MAXPATHCHARS_TX2        655
+#define ID_XSDI_TREEVIEWAUTOSCROLL      656
+#ifndef __NOFDRDEFAULTDOCS__
+#define ID_XSDI_FDRDEFAULTDOC           657
+#define ID_XSDI_FDRDEFAULTDOCVIEW       658
+#endif
+#define ID_XSDI_FDRAUTOREFRESH          659     // added V0.9.9 (2001-02-06) [umoeller]
+#define ID_XSDI_FDRVIEWDEFAULT_GROUP    660
+#define ID_XSDI_FDRVIEW_INHERIT         661     // added V0.9.12 (2001-04-30) [umoeller]
+#define ID_XSDI_FDRVIEW_ICON            662
+#define ID_XSDI_FDRVIEW_TREE            663
+#define ID_XSDI_FDRVIEW_DETAILS         664
 
 /******************************************
  * Instance settings notebooks     >=700  *
@@ -427,9 +457,13 @@
 
 // XFolder page in folder notebook
 // (also uses some ID's def'd above)
-#define ID_XSD_SETTINGS_FLDR1           710
+// #define ID_XSD_SETTINGS_FLDR1           710      // removed V0.9.16 (2001-09-29) [umoeller]
+#ifndef __NOFOLDERCONTENTS__
 #define ID_XSDI_FAVORITEFOLDER          711
+#endif
+#ifndef __NOQUICKOPEN__
 #define ID_XSDI_QUICKOPEN               712
+#endif
 
 // "Internals" page in all object notebooks
 #define ID_XSD_OBJECTDETAILS            720
@@ -578,7 +612,9 @@
 #define ID_XCD_PARANOIA                 1160
 #define ID_XCDI_VARMENUOFFSET           1161
 #define ID_XCDI_NOFREAKYMENUS           1162
+#ifndef __ALWAYSSUBCLASS__
 #define ID_XCDI_NOSUBCLASSING           1163
+#endif
 #define ID_XCDI_NOWORKERTHREAD          1164
 #define ID_XCDI_USE8HELVFONT            1165
 #define ID_XCDI_NOEXCPTBEEPS            1166
@@ -903,23 +939,31 @@
 #define ID_XSDI_DTP_LOGOFFNETWORKNOW    2107 // V0.9.7 (2000-12-13) [umoeller]
 
 // XFldDesktop "Startup" page  (V0.9.0)
-#define ID_XSD_DTP_STARTUP              2110
+// #define ID_XSD_DTP_STARTUP              2110     // removed V0.9.16 (2001-10-08) [umoeller]
+#ifndef __NOBOOTLOGO__
+#define ID_XSDI_DTP_LOGOGROUP           2108    // added V0.9.16 (2001-10-08) [umoeller]
+#define ID_XSDI_DTP_LOGOSTYLEGROUP      2109    // added V0.9.16 (2001-10-08) [umoeller]
 #define ID_XSDI_DTP_BOOTLOGO            2111
 #define ID_XSDI_DTP_LOGO_TRANSPARENT    2112
 #define ID_XSDI_DTP_LOGO_BLOWUP         2113
 #define ID_XSDI_DTP_LOGOFRAME           2114
 #define ID_XSDI_DTP_LOGOBITMAP          2115
 #define ID_XSDI_DTP_TESTLOGO            2116
+#endif
 #define ID_XSDI_DTP_CREATESTARTUPFLDR   2117
+#ifndef __NOBOOTLOGO__
 #define ID_XSDI_DTP_LOGOFILETXT         2118
 #define ID_XSDI_DTP_LOGOFILE            2119
 #define ID_XSDI_DTP_LOGO_BROWSE         2120
+#endif
+#ifndef __NOBOOTUPSTATUS__
 #define ID_XSDI_DTP_BOOTUPSTATUS        2121
+#endif
 #define ID_XSDI_DTP_NUMLOCKON           2122  // added V0.9.1 (2000-02-09) [umoeller]
 #define ID_XSDI_DTP_WRITEXWPSTARTLOG    2123  // added V0.9.14 (2001-08-21) [umoeller]
 
 // XFldDesktop "Shutdown" page (V0.9.0)
-#define ID_XSD_DTP_SHUTDOWN             2125
+// #define ID_XSD_DTP_SHUTDOWN             2125     // removed V0.9.16 (2001-10-08) [umoeller]
 #define ID_SDDI_REBOOT                  2126
 #define ID_SDDI_ANIMATE_SHUTDOWN        2127
 #define ID_SDDI_ANIMATE_REBOOT          2128
@@ -949,8 +993,13 @@
 #define ID_SDDI_APMSYS                  2149
 #define ID_SDDI_APMSYS_TXT              2150
 
+#ifndef __EASYSHUTDOWN__
 #define ID_SDDI_SAVEINIS_TXT            2151
 #define ID_SDDI_SAVEINIS_LIST           2152
+#endif
+
+#define ID_SDDI_SHUTDOWNGROUP           2153        // V0.9.16 (2001-10-08) [umoeller]
+#define ID_SDDI_SHAREDGROUP             2154
 
 // XFldDesktop "Archives" replacement page (V0.9.0)
 #define ID_XSD_DTP_ARCHIVES             2155
@@ -1257,6 +1306,8 @@
 #define ID_XSM_FILEASSOC_SEL            (WPMENUID_USER+1040)
 #define ID_XSM_FILEASSOC_NOSEL          (WPMENUID_USER+1041)
 #define ID_XSMI_FILEASSOC_DELETE        (WPMENUID_USER+1042)
+#define ID_XSMI_FILEASSOC_SETTINGS      (WPMENUID_USER+1043)
+#define ID_XSMI_FILEASSOC_OPENFDR       (WPMENUID_USER+1044)
 
 // "Objects" menus on XWPSetup "Objects" page
 #define ID_XSM_OBJECTS_SYSTEM           (WPMENUID_USER+1050)
@@ -1831,17 +1882,29 @@
 // cores (helpers/cnrh.c).
 
 #define ID_XCSI_GENERALFEATURES         5999
+#ifndef __NOICONREPLACEMENTS__
 #define ID_XCSI_REPLACEICONS            6000
+#endif
+#ifndef __ALWAYSRESIZESETTINGSPAGES__
 #define ID_XCSI_RESIZESETTINGSPAGES     6001
+#endif
 #define ID_XCSI_ADDOBJECTPAGE           6002
+#ifndef __ALWAYSREPLACEFILEPAGE__
 #define ID_XCSI_REPLACEFILEPAGE         6003
+#endif
 #define ID_XCSI_XSYSTEMSOUNDS           6004
 #define ID_XCSI_FIXCLASSTITLES          6005 // V0.9.12 (2001-05-22) [umoeller]
 
 #define ID_XCSI_FOLDERFEATURES          6010
+#ifndef __NOCFGSTATUSBARS__
 #define ID_XCSI_ENABLESTATUSBARS        6011
+#endif
+#ifndef __NOSNAPTOGRID__
 #define ID_XCSI_ENABLESNAP2GRID         6012
+#endif
+#ifndef __ALWAYSFDRHOTKEYS__
 #define ID_XCSI_ENABLEFOLDERHOTKEYS     6013
+#endif
 #define ID_XCSI_EXTFOLDERSORT           6014
 
 #define ID_XCSI_STARTSHUTFEATURES       6020
@@ -1920,8 +1983,8 @@
 #define ID_XSSI_ARCINICHECKING          6141            // "Checking INI files..."
 #define ID_XSSI_ARCINICHANGED           6142            // "INI files changed %f %%."
 #define ID_XSSI_ARCINILIMIT             6143            // "Limit: %f %%."
-#define ID_XSSI_ARCENABLED              6144            // "WPS archiving enabled."
-#define ID_XSSI_ARCNOTNECC              6145            // "WPS archiving not necessary."
+#define ID_XSSI_ARCENABLED              6144            // "Desktop archiving enabled."
+#define ID_XSSI_ARCNOTNECC              6145            // "Desktop archiving not necessary."
 
 #define ID_XSSI_PGMFILE_MODULE1         6146           // "Imported modules"
 #define ID_XSSI_PGMFILE_MODULE2         6147           // "Exported functions"
@@ -2055,7 +2118,7 @@
  *          NetscapeDDE                   *
  ******************************************/
 
-#define ID_NDD_EXPLAIN                  10100
+// #define ID_NDD_EXPLAIN                  10100        // removed V0.9.16 (2001-10-02) [umoeller]
 #define ID_NDD_QUERYSTART               10101
 #define ID_NDD_CONTACTING               10102
 #define ID_NDD_STARTING                 10103

@@ -80,6 +80,7 @@
      *
      ********************************************************************/
 
+#ifndef __NOMODULES__
         VOID XWPENTRY fsysProgramInitPage(PCREATENOTEBOOKPAGE pcnbp,
                                           ULONG flFlags);
 
@@ -91,17 +92,9 @@
 
         VOID XWPENTRY fsysProgram2InitPage(PCREATENOTEBOOKPAGE pcnbp,
                                            ULONG flFlags);
+#endif
 
     #endif
-
-    #ifdef XSTRING_HEADER_INCLUDED
-    VOID fsysQueryProgramSetup(WPObject *somSelf,
-                               PXSTRING pstrTemp);
-    #endif
-
-    ULONG fsysQueryProgramFileSetup(WPObject *somSelf,
-                                    PSZ pszSetupString,
-                                    ULONG cbSetupString);
 
 #endif
 

@@ -29,6 +29,19 @@
 
     /* ******************************************************************
      *
+     *   Helpers
+     *
+     ********************************************************************/
+
+    BOOL progQuerySetup(WPObject *somSelf,
+                        PVOID pstrSetup);
+
+    #ifdef INCL_WINPROGRAMLIST
+        PPROGDETAILS progQueryDetails(WPObject *pProgObject);
+    #endif
+
+    /* ******************************************************************
+     *
      *   Running programs database
      *
      ********************************************************************/

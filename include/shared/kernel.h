@@ -83,9 +83,13 @@
     #ifdef SOM_WPObject_h
 
         // startup flags for KERNELGLOBALS.ulStartupFlags
+#ifndef __NOBOOTLOGO__
         #define SUF_SKIPBOOTLOGO            0x0001  // skip boot logo
+#endif
         #define SUF_SKIPXFLDSTARTUP         0x0002  // skip XFldStartup processing
+#ifndef __NOQUICKOPEN__
         #define SUF_SKIPQUICKOPEN           0x0004  // skip "quick open" folder processing
+#endif
 
         /*
          *@@ KERNELGLOBALS:
@@ -120,7 +124,7 @@
             // Workplace thread ID (PMSHELL.EXE); should be 1
             TID                 tidWorkplaceThread;
 
-            // WPS startup date and time (initMain)
+            // Desktop startup date and time (initMain)
             DATETIME            StartupDateTime;
 
             // PM error windows queried by initMain
@@ -152,7 +156,7 @@
              */
 
             // class replacements
-            BOOL                fXFldObject,
+            /* BOOL                fXFldObject,
                                 fXFolder,
                                 fXFldDisk,
                                 fXFldDesktop,
@@ -181,6 +185,7 @@
                                 fXWPFontFile,   // V0.9.7 (2001-01-12) [umoeller]
                                 fXWPFontFolder, // V0.9.7 (2001-01-12) [umoeller]
                                 fXWPFontObject; // V0.9.7 (2001-01-12) [umoeller]
+            */
 
             /*
              * XWorkplace daemon
@@ -267,7 +272,7 @@
              */
 
             BOOL                fAutoRefreshReplaced;
-                                    // this is set to TRUE if, on WPS startup,
+                                    // this is set to TRUE if, on Desktop startup,
                                     // the WPS WheelWatcher was successfully
                                     // stopped and the sentinel was started.
                                     // Always use this setting instead of
@@ -297,6 +302,16 @@
         VOID krnUnlockGlobals(VOID);
 
     #endif
+
+    /* ******************************************************************
+     *
+     *   Class maintanance
+     *
+     ********************************************************************/
+
+    BOOL krnClassInitialized(PCSZ pcszClassName);
+
+    BOOL krnIsClassReady(PCSZ pcszClassName);
 
     /* ******************************************************************
      *

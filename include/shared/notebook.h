@@ -149,6 +149,15 @@
                                     // pages
         ULONG       cControlFlags;  // if (pampControlFlags != NULL), specify the
                                     // array item count here
+
+        ULONG       ulCnrOwnerDraw; // CODFL_* flags for container owner draw,
+                                    // if CA_OWNERDRAW is set for a container.
+                                    // If this is != 0, cnrhOwnerDrawRecord is
+                                    // called for painting records with these
+                                    // flags; see cnrhOwnerDrawRecord for valid
+                                    // values.
+                                    // V0.9.16 (2001-09-29) [umoeller]
+
         PVOID       pUser,
                     pUser2;         // user data; since you can access this structure
                 // from the "pcnbp" parameter which is always passed to the notebook
@@ -274,6 +283,12 @@
      ********************************************************************/
 
     ULONG ntbInsertPage(PCREATENOTEBOOKPAGE pcnbp);
+
+    #ifdef DIALOG_HEADER_INCLUDED
+        APIRET ntbFormatPage(HWND hwndDlg,
+                             PDLGHITEM paDlgItems,
+                             ULONG cDlgItems);
+    #endif
 
     PCREATENOTEBOOKPAGE ntbQueryOpenPages(PCREATENOTEBOOKPAGE pcnbp);
 

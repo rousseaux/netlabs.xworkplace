@@ -704,9 +704,8 @@
 
         VOID ctrpInitData(XCenter *somSelf);
 
-        ULONG ctrpQuerySetup(XCenter *somSelf,
-                             PSZ pszSetupString,
-                             ULONG cbSetupString);
+        BOOL ctrpQuerySetup(XCenter *somSelf,
+                             PVOID pstrSetup);
 
         BOOL ctrpSetup(XCenter *somSelf,
                        PSZ pszSetupString);
