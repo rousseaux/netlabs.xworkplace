@@ -2781,11 +2781,9 @@ STATIC MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, M
                     preccThis->pszToken = preccThis->szToken;
 
                     // write method address to recc's string buffer
-                    sprintf(preccThis->szMethodProc, "0x%lX (%c)",
+                    sprintf(preccThis->szMethodProc, "0x%lX (%s)",
                             psm->pMethodProc,
-                            (psm->ulType == 0) ? 'S'        // static
-                                : (psm->ulType == 1) ? 'D'  // dynamic
-                                : '?');
+                            preccThis->pszType); // V1.0.4 (2005-04-08) [pr]
                     // and point PSZ to that buffer
                     preccThis->pszMethodProc = preccThis->szMethodProc;
 
