@@ -256,7 +256,7 @@ IWFRouter 1 (Visual Age C++ 3.0) Eine Klasse fr die IBM Workframe/2.
 
 // Items changed with V0.9.1
 
-UnknownClass 0 Fr diese Klasse sind keine Informationen erh„ltlich. Falls Sie wissen, wozu diese Klasse dient, schicken Sie bitte eine Beschreibung an xworkplace-user@yahoogroups.com, damit eine Klassenbeschreibung hinzugefgt werden kann.
+UnknownClass 0 Fr diese Klasse sind keine Informationen erh„ltlich. Falls Sie wissen, wozu diese Klasse dient, schicken Sie bitte eine Beschreibung an xworkplace-user@netlabs.org, damit eine Klassenbeschreibung hinzugefgt werden kann.
 
 LSPeerUser 1 Undokumentierte LAN Server-Klasse. Sie ist Teil der Netzwerkfunktionalit„t von Warp 4 und scheint mit dem Login ins Netzwerk und dem Ressourcenmanagement zusammenzuh„ngen.
 LSPeerWorkstation 1 Undokumentierte LAN Server-Klasse. Sie ist Teil der Netzwerkfunktionalit„t von Warp 4 und scheint mit dem Login ins Netzwerk und dem Ressourcenmanagement zusammenzuh„ngen.
@@ -511,3 +511,17 @@ FileState 1 (FILESTAT.DLL) Zeigt Statistiken fr Dateien an, die daran bergeben
 ClassTree 1 (CLSSTREE.DLL) ClassTree ist ein Objekt der Applikation Object Factory von Synaptec. ClassTree zeigt alle SOM-Objekte und alle Objekte, die vom Object-Factory-Benutzer anlegt wurden. Es wird in Verbindung mit dem Objekt ClassNotebook (und dem versteckten Objekt SomNotebook) verwendet, um eine grafische Oberfl„che fr das Erstellen neuer SOM-Objekte bereitzustellen.
 ClassNotebook 1 (CLSSNOTE.DLL) Das Objekt ClassNotebook stammt von der Applikation Object Factory von Synaptec. Es wird zur Definition einer neuen SOM-Klasse benutzt.
 SomNote 1 (SOMNOTE.DLL) SomNote ist ein Objekt, das Teil der Anwendung Object Factory von Synaptec ist. Es scheint Hilfe fr SOM-Klassen bereitzustellen, wenn das Objekt ClassTree benutzt wird.
+
+// Items added with V1.0.1
+XWPVCard 1 Diese XWorkplace-Klasse erlaubt die Manipulation von vCard-Informationen in *.vcf-Dateien.
+
+// Items added with V1.0.4
+CWDVDFolder 1 (Audio/Data-CD-Creator) Dies Klasse ist Teil des Paketes von Chris Wohlgemuth und erlaubt das Brennen von Daten-DVDs.
+CWLaunchArea 1 (WPS-Wizard von Chris Wohlgemuth). Kann von anderen Klassen benutzt werden und verarbeitet Ziehen und šbergeben.
+NWPDisk 1 (Norman Virus Control) Ersatzklasse fr WPDisk. Fgt dem Kontextmen von Laufwerksobjekten einen Eintrag "Auf Virus prfen..." hinzu.
+NWPFileSys 1 (Norman Virus Control) Ersatzklasse fr WPFileSystem. Fgt dem Kontextmen von Dateisystemobjekten (Dateien und Ordner) einen Eintrag "Auf Virus prfen..." hinzu.
+NWPDesktop 1 (Norman Virus Control) Ersatzklasse fr WPDesktop fgt dem Kontextmen der Arbeitsoberfl„che ein Untermen "Norman Virus Control" hinzu.
+NVCTaskFile 1 (Norman Virus Control) Klasse fr NVC-Task-Definitionsdateien.
+ODCCFix 1 Fehlerkorrektur fr das Object Desktop Control Center von Rich Walsh.
+RelishBun 1 (Relish von Sundial Systems) Buns sind benutzerdefinierte Ansichten der Daten des Relish PIMs und beeinflussen deren Darstellung.
+WPSSDesktop 1 (Doodle's Screen Saver) Implementiert einen neuen Bildschirmschoner mit Plug-In-Untersttzung und ersetzt die Seite "Sperren" im Einstellungsnotizbuch der Arbeitsoberfl„che.
