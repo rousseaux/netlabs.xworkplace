@@ -158,9 +158,11 @@ call CreateObjectWithShadow;
 /* "Mouse" shadow (added V0.9.2) */
 class = "WPShadow";
 title = Mouse;
-setup = "SHADOWID=<WPSTK_MOUSE>;";
+setup = "SHADOWID=<WP_MOUSE>;";
 id = "<XWP_MOUSEMAINSHADOW>"
 target = "<XWP_MAINFLDR>";
+call CreateObject;
+setup = "SHADOWID=<WPSTK_MOUSE>;";
 call CreateObject;
 
 /* "Keyboard" shadow (added V0.9.2) */

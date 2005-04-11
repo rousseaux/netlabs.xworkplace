@@ -420,6 +420,7 @@ STATIC void _Optlink fntLazyIcons(PTHREADINFO ptiMyself);
  *@@ LockLazyIcons:
  *
  *@@added V0.9.20 (2002-07-25) [umoeller]
+ *@@changed V1.0.4 (2005-04-11) [pr]: More error checking
  */
 
 STATIC BOOL LockLazyIcons(VOID)
@@ -427,24 +428,32 @@ STATIC BOOL LockLazyIcons(VOID)
     if (G_hmtxLazyIcons)
         return !DosRequestMutexSem(G_hmtxLazyIcons, SEM_INDEFINITE_WAIT);
 
-    if (    (!DosCreateMutexSem(NULL,
-                                &G_hmtxLazyIcons,
-                                0,
-                                TRUE))
-         && (!DosCreateEventSem(NULL,
-                                &G_hevLazyIcons,
-                                0,
-                                FALSE))     // "reset" (not posted)
-       )
+    if (!DosCreateMutexSem(NULL,
+                           &G_hmtxLazyIcons,
+                           0,
+                           TRUE))
     {
-        lstInit(&G_llLazyIcons, FALSE);
-        thrCreate(&G_tiLazyIcons,
-                  fntLazyIcons,
-                  NULL,
-                  "LazyIcons",
-                  THRF_PMMSGQUEUE | THRF_WAIT,
-                  0);
-        return TRUE;
+        if (!DosCreateEventSem(NULL,
+                               &G_hevLazyIcons,
+                               0,
+                               FALSE))     // "reset" (not posted)
+        {
+            lstInit(&G_llLazyIcons, FALSE);
+            thrCreate(&G_tiLazyIcons,
+                      fntLazyIcons,
+                      NULL,
+                      "LazyIcons",
+                      THRF_PMMSGQUEUE | THRF_WAIT,
+                      0);
+            return TRUE;
+        }
+        else
+        {
+            DosReleaseMutexSem(G_hmtxLazyIcons);
+            DosCloseMutexSem(G_hmtxLazyIcons);
+            G_hmtxLazyIcons = NULLHANDLE;
+            return FALSE;
+        }
     }
 
     return FALSE;
@@ -533,6 +542,12 @@ STATIC void _Optlink fntLazyIcons(PTHREADINFO ptiMyself)
 
     if (fLocked)
         UnlockLazyIcons();
+
+    // V1.0.4 (2005-04-10) [pr]: Cleanup, otherwise we don't restart when we crash
+    DosCloseEventSem(G_hevLazyIcons);
+    G_hevLazyIcons = NULLHANDLE;
+    DosCloseMutexSem(G_hmtxLazyIcons);
+    G_hmtxLazyIcons = NULLHANDLE;
 
     if (hpsMem)
     {

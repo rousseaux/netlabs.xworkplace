@@ -41,12 +41,12 @@ rc = Destroy("<XWP_SEP1>");
     rc = Destroy("<XWP_SEP42>");
 rc = Destroy("<XWP_CFG4>");
 
-    rc = Destroy("<XWP_ICOSMALL>;");
-    rc = Destroy("<XWP_ICONORM>;");
-    rc = Destroy("<XWP_SHOWALL>;");
-        rc = Destroy("<XWP_DEFICON>;");
-        rc = Destroy("<XWP_DEFTREE>;");
-        rc = Destroy("<XWP_DEFDETLS>;");
+    rc = Destroy("<XWP_ICOSMALL>");
+    rc = Destroy("<XWP_ICONORM>");
+    rc = Destroy("<XWP_SHOWALL>");
+        rc = Destroy("<XWP_DEFICON>");
+        rc = Destroy("<XWP_DEFTREE>");
+        rc = Destroy("<XWP_DEFDETLS>");
     rc = Destroy("<XWP_CFG3_1>");
 rc = Destroy("<XWP_CFG3>");
 
@@ -73,13 +73,8 @@ rc = Destroy("<XWP_CONFIG>");
  *********************************************/
 
 /* the following three added with V0.9.19 */
-/* create "Lockup" setup string object */
 rc = Destroy("<XWP_LOCKUPSTR>");
-
-/* create "Find objects" setup string object */
 rc = Destroy("<XWP_FINDSTR>");
-
-/* create "Shutdown" setup string object */
 rc = Destroy("<XWP_SHUTDOWNSTR>");
 
 /* XShutdown... changed with V0.9.7 */
