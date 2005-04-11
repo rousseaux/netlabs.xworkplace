@@ -1,6 +1,6 @@
 DLGTEMPLATE ID_CRD_DISKFREEWGT_SETTINGS LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
-    DIALOG  "Konfiguration Plattenplatz", ID_CRD_DISKFREEWGT_SETTINGS, 12, 6,
+    DIALOG  "Plattenplatz: Konfiguration", ID_CRD_DISKFREEWGT_SETTINGS, 12, 6,
             100, 64, , FCF_SYSMENU | FCF_TITLEBAR
     BEGIN
         AUTORADIOBUTTON "Mehrfache Anzeige", ID_ICON2, 3, 53, 83, 11,
@@ -18,7 +18,7 @@ END
  
 DLGTEMPLATE ID_CRD_HEALTHWGT_SETTINGS LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
-    DIALOG  "Konfiguration SystemÅberwachung", ID_CRD_HEALTHWGT_SETTINGS, 12, 8,
+    DIALOG  "SystemÅberwachung: Konfiguration", ID_CRD_HEALTHWGT_SETTINGS, 12, 8,
             380, 34, , FCF_SYSMENU | FCF_TITLEBAR
     BEGIN
         LTEXT           "Konfigurationsstring:", ID_ICON2, 9, 21, 89, 8,
@@ -104,7 +104,7 @@ BEGIN
                         -1, 25, 123, 205, 8, NOT WS_GROUP
         AUTOCHECKBOX    "~KANJI-UnterstÅtzung (/K)", ID_OSDI_CDFS_KANJI, 5,
                         111, 225, 10
-        GROUPBOX        "C~achegrî·e (/C:n)", -1, 5, 84, 245, 25,
+        GROUPBOX        "C~ache-Grî·e (/C:n)", -1, 5, 84, 245, 25,
                         DT_MNEMONIC
         SLIDER          ID_OSDI_CDFS_CACHESLIDER, 15, 87, 175, 12,
                         SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP
@@ -139,7 +139,7 @@ BEGIN
             240, 94, FS_ICON | FS_ACCELTABLE, FCF_SYSMENU | FCF_TITLEBAR
     BEGIN
         GROUPBOX        "Cache fÅr HPFS-Laufwerke", -1, 5, 46, 225, 45
-        LTEXT           "Cacheg~rî·e:", -1, 10, 74, 110, 8, DT_MNEMONIC |
+        LTEXT           "Cache-G~rî·e:", -1, 10, 74, 110, 8, DT_MNEMONIC |
                         NOT WS_GROUP
         SLIDER          ID_OSDI_CACHESIZE, 90, 72, 85, 12,
                         SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP | WS_GROUP
@@ -435,7 +435,7 @@ BEGIN
         GROUPBOX        "Cache fÅr FAT-Laufwerke", -1, 5, 45, 225, 72
         AUTOCHECKBOX    "Cach~e aktivieren", ID_OSDI_FSINSTALLED, 10, 96,
                         210, 10
-        LTEXT           "Cache~grî·e:", -1, 10, 85, 110, 8, DT_MNEMONIC |
+        LTEXT           "Cache-~Grî·e:", -1, 10, 85, 110, 8, DT_MNEMONIC |
                         NOT WS_GROUP
         SPINBUTTON      ID_OSDI_CACHESIZE, 155, 85, 50, 12, SPBS_NUMERICONLY |
                         SPBS_MASTER | SPBS_JUSTLEFT | SPBS_JUSTRIGHT |
@@ -1077,7 +1077,7 @@ BEGIN
         LTEXT           "Gesamtgrî·e:", -1, 15, 72, 50, 8
         RTEXT           "0", ID_XSDI_DISK_TOTAL_SECTORS, 150, 72, 50, 8
         RTEXT           "0", ID_XSDI_DISK_TOTAL_BYTES, 75, 72, 70, 8
-        LTEXT           "Benutzt:", -1, 15, 63, 55, 8
+        LTEXT           "Belegt:", -1, 15, 63, 55, 8
         RTEXT           "0", ID_XSDI_DISK_ALLOCATED_SECTORS, 150, 63, 50, 8
         RTEXT           "0", ID_XSDI_DISK_ALLOCATED_BYTES, 75, 63, 70, 8
         LTEXT           "Frei:", -1, 15, 54, 55, 8

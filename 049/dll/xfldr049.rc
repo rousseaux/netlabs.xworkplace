@@ -196,7 +196,7 @@ END
 
 MENU ID_XSM_OBJECTS_XWORKPLACE LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
-    MENUITEM "~Workplace Shell-Konfiguration", 200
+    MENUITEM "~Workplace-Shell-Konfiguration", 200
     MENUITEM "~OS/2-Kernel-Konfiguration", 201
     MENUITEM "W~PS-Klassenliste", 202
     MENUITEM "B~ildschirm", 203
@@ -619,7 +619,7 @@ BEGIN
 
     /* trash can status bar strings */
     ID_XTSI_STB_POPULATING              "Sammeln des Abfalls auf Laufwerk %c:..."
-    ID_XTSI_STB_OBJCOUNT                "%s Papierkorb-Objekt(e), Gesamtabfallgrî·e: %s Bytes"
+    ID_XTSI_STB_OBJCOUNT                "%s Papierkorb-Objekt(e), Gesamtabfallgrî·e: %s Byte"
 
     /* Details view columns on XWPKeyboard "Hotkeys" page */
     ID_XSSI_HOTKEY_TITLE                "Objekttitel"
@@ -737,8 +737,8 @@ BEGIN
     ID_XSSI_ICONPAGE                    "~Symbol"
 
     /* INI save methods V0.9.5 (2000-08-20) [umoeller] */
-    ID_XSSI_XSD_SAVEINIS_NEW            "Neues Verfahren: &xwp;-INI-Routinen verwenden"
-    ID_XSSI_XSD_SAVEINIS_OLD            "Altes Verfahren: &os2;-INI-Routinen verwenden"
+    ID_XSSI_XSD_SAVEINIS_NEW            "Neues Verfahren: &xwp;-INI-Routinen"
+    ID_XSSI_XSD_SAVEINIS_OLD            "Altes Verfahren: &os2;-INI-Routinen"
     ID_XSSI_XSD_SAVEINIS_NONE           "INIs Åberhaupt nicht sichern"
 
     /* logoff V0.9.5 (2000-09-28) [umoeller] */
@@ -747,7 +747,7 @@ BEGIN
 
     /* "bytes" strings for status bars V0.9.6 (2000-11-23) [umoeller] */
     ID_XSSI_BYTE                        " Byte"
-    ID_XSSI_BYTES                       " Bytes"
+    ID_XSSI_BYTES                       " Byte"
 
     /* V0.9.6 (2000-12-14) [lafaix] */
     ID_XSSI_PGMFILE_RESOURCES           "~Ressourcen"
@@ -1102,7 +1102,15 @@ BEGIN
     ID_CRSI_IPWGT_GRAPHCOLORS           "Graphenfarben"
     ID_CRSI_IPWGT_GRAPHINCOLOR          "Eingehend"
     ID_CRSI_IPWGT_GRAPHOUTCOLOR         "Ausgehend"
-    ID_CRSI_IPWGT_BYTESTOTAL            "Bytes insgesamt"
+    ID_CRSI_IPWGT_BYTESTOTAL            "Byte insgesamt"
+
+    /* Sentinel properties page V1.0.4 (2005-03-27) [chennecke] */
+    ID_CRSI_SWGT_PHYS                   "Phys. Speicher"
+    ID_CRSI_SWGT_PHYSFREE               "Frei"
+    ID_CRSI_SWGT_PHYSINUSE              "Belegt"
+    ID_CRSI_SWGT_SWAPFILE               "Swap-Datei"
+    ID_CRSI_SWGT_SWAP                   "Belegt/Grî·e"
+    ID_CRSI_SWGT_SWAPFREE               "Frei"
 
     /* XCenter properties  V0.9.20 (2002-08-08) [umoeller] */
     ID_CRMI_XCSUB_PROPERTIES            "&xcenter;-~Einstellungen"
@@ -1113,13 +1121,13 @@ END
 /* string IDs for status bar mnemonics (all new with V0.9.14) */
 STRINGTABLE
 BEGIN
-    ID_XSSI_SBMNC_1                      "in Bytes"
-    ID_XSSI_SBMNC_2                      "in kBytes"
-    ID_XSSI_SBMNC_3                      "in KBytes"
-    ID_XSSI_SBMNC_4                      "in mBytes"
-    ID_XSSI_SBMNC_5                      "in MBytes"
-    ID_XSSI_SBMNC_6                      "in Bytes/kBytes/mBytes/gBytes"
-    ID_XSSI_SBMNC_7                      "in Bytes/KBytes/MBytes/GBytes"
+    ID_XSSI_SBMNC_1                      "in Byte"
+    ID_XSSI_SBMNC_2                      "in kByte"
+    ID_XSSI_SBMNC_3                      "in KByte"
+    ID_XSSI_SBMNC_4                      "in mByte"
+    ID_XSSI_SBMNC_5                      "in MByte"
+    ID_XSSI_SBMNC_6                      "in Byte/kByte/mByte/gByte"
+    ID_XSSI_SBMNC_7                      "in Byte/KByte/MByte/GByte"
     ID_XSSI_SBMNC_000                    "Anzahl ausgewÑhlter Objekte"
     ID_XSSI_SBMNC_001                    "Gesamtanzahl der Objekte im Ordner"
     ID_XSSI_SBMNC_010                    "Freier Speicherplatz auf Laufwerk"
@@ -1137,11 +1145,11 @@ BEGIN
     ID_XSSI_SBMNC_320                    "Erstellungsdatum des Objekts"
     ID_XSSI_SBMNC_330                    "Erstellungszeit des Objekts"
     ID_XSSI_SBMNC_340                    "Objektattribute"
-    ID_XSSI_SBMNC_350                    "EA-Grî·e in Bytes"
-    ID_XSSI_SBMNC_360                    "EA-Grî·e in kBytes"
-    ID_XSSI_SBMNC_370                    "EA-Grî·e in KBytes"
-    ID_XSSI_SBMNC_380                    "EA-Grî·e in Bytes/kBytes"
-    ID_XSSI_SBMNC_390                    "EA-Grî·e in Bytes/KBytes"
+    ID_XSSI_SBMNC_350                    "EA-Grî·e in Byte"
+    ID_XSSI_SBMNC_360                    "EA-Grî·e in kByte"
+    ID_XSSI_SBMNC_370                    "EA-Grî·e in KByte"
+    ID_XSSI_SBMNC_380                    "EA-Grî·e in Bytes/kByte"
+    ID_XSSI_SBMNC_390                    "EA-Grî·e in Bytes/KByte"
     ID_XSSI_SBMNC_400                    "URL"
     ID_XSSI_SBMNC_500                    "AusfÅhrbare Programmdatei"
     ID_XSSI_SBMNC_510                    "Parameterliste"
@@ -1399,7 +1407,7 @@ BEGIN
 
     /* strings formerly in ID_XSD_FILESPAGE1 */
     ID_XSDI_FILES_REALNAME_TXT          "Echter Name:"
-    ID_XSDI_FILES_FILESIZE_TXT          "Grî·e in Bytes:"
+    ID_XSDI_FILES_FILESIZE_TXT          "Grî·e in Byte:"
     ID_XSDI_FILES_WORKAREA              "Arbeits~ordner"
     ID_XSDI_FILES_DATETIME_GROUP        "Datum/Zeit"
     ID_XSDI_FILES_CREATIONDATE_TXT      "Erstellung:"
@@ -1454,7 +1462,7 @@ BEGIN
     ID_SCDI_PGR1_FOLLOWFOCUS           "A~rbeitsoberflÑche folgt aktivem Fenster"
     ID_SCDI_PGR1_SHOWWINICONS          "Fensters~ymbole zeigen"
     /* daemon-specific strings V1.0.0 (2002-09-15) [lafaix] */
-    ID_SCDI_PGR1_STICKIESTOGGLE        "Schalter fÅr Haftfenster zu Sys~temmenÅs hinzufÅgen"
+    ID_SCDI_PGR1_STICKIESTOGGLE        """Haftfenster"" zu Sys~temmenÅs hinzufÅgen"
 
     /* strings formerly in ID_SCD_PAGER_COLORS */
     ID_SCDI_PGR2_COLORS_GROUP          "&pgr;-Farben"
