@@ -491,6 +491,7 @@ BA2KSchedFold 1 (Back Again/2000) Object Scheduler. Diese spezielle Unterklasse 
 BA2KWCatalog 1 (Back Again/2000) Katalogdatei. Diese Art von Datei enth„lt eine Beschreibung eines existierenden Backups, d.h. welche Dateien gesichert wurden, von woher sie stammen und wohin sie bei der Wiederherstellung zurckkopiert werden.
 CWAudio 1 (CW MM-Paket von Chris Wohlgemuth) Elternklasse fr nahtlose WPS-Integration von Russel O'Connors MMIOProcs.
 CWDataFile 1 (WPS Wizard von Chris Wohlgemuth) Ersetzt die Klasse WPDataFile. Implementiert konfigurierbare Kontextmeneintr„ge fr Datendateien und zeigt die Dateigr”áe im Kontextmen an.
+// updated the following with V1.0.4
 CWDisk 1 (WPS Wizard von Chris Wohlgemuth) Ersetzt die Klasse WPDisk. Implementiert die M”glichkeit, den Meneintrag "Datentr„ger formatieren" aus dem Kontextmen von Laufwerken zu entfernen, sowie eine Balkenanzeige fr den belegten Speicherplatz im Ordner Laufwerksobjekte.
 CWFolder 1 (WPS Wizard von Chris Wohlgemuth) Ersetzt die Klasse WPFolder. Implementiert konfigurierbare Kontextmeneintr„ge fr Ordner.
 CWMediaFolder 1 (CW MM-Paket von Chris Wohlgemuth) Unterklasse von CWProgFolder. Implementiert einen Medienabspieler fr alle von von MMOS2 (und evtl. Erweiterungen) untersttzten Audioformate. Der Ordner wird dabei als Liste der abzuspielenden Dateien verwendet.
