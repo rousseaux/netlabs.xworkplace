@@ -31,6 +31,15 @@ the WPS should not be running while you're writing the handles back.
 <P><LI><B>Exit</B> will terminate the program.
 </UL>
 
+<!-- V1.0.4: added View menu -->
+<LI><B>View</B> menu
+
+<P><B>Object IDs</B> displays a new window with a list of all WPS objects with an object ID.
+For each object, information about ID, handle, and long file name is displayed. The list can
+be sorted by all fields. This is a purely informational window and no actions can
+be applied to the objects.
+
+
 <LI><B>Sort</B> menu
 
 <P>This allows you to sort the handles list according to the values in the various
@@ -51,13 +60,28 @@ item.
 
 <P><LI><B>Select</B> menu
 
-<P><B>Select all invalid</B> will select all handles which have been marked invalid
+<!-- V1.0.4: made this an unordered list -->
+<BR><UL><LI><B>Select all invalid</B> will select all handles which have been marked invalid
 for any reason (i.e. have gray emphasis). You can then right-click on any of the
 selected items and select "Delete" from the &popmenu;.
 
-<P><LI><B>Help</B> menu
+<!-- V1.0.4: added Select by name item -->
+<P><LI><B>Select by name</B> displays a new dialog that allows you to select and deselect several
+handles at once. You can select and deselect all handles, or specify a mask similar to
+those that are used on the OS/2 command line, i.e. the <a href="glossary/gls_wildcards.html">wildcards</a>
+<CODE>?</CODE> and <CODE>*</CODE> can be used to substitute one or several characters.
+The mask <CODE>"*.txt"</CODE> would (de)select all handles with a name ending in <CODE>".txt"</CODE>,
+for instance. The dialog stays opened until you press the <B>"Close"</B> button or the <B>Esc</B> key.
+That way, selections with different masks can be applied successively.
 
-<P>Displays help and the xfix product info with the current version and build date.
+<P>Note that the mask is matched against the <B>short name</B>. Thus, it is not possible to use this dialog
+to easily select all handles of objects that reside in a certain directory.
+</UL>
+
+<LI><B>Help</B> menu
+
+<!-- V1.0.4: changed "info" to "information" -->
+<P>Displays help and the xfix product information with the current version and build date.
 
 </UL>
 
