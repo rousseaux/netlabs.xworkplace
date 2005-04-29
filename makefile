@@ -920,9 +920,9 @@ release: really_all
 !endif
 #    $(COPY) release\install\xwpusers.xml $(XWPRELEASE_MAIN)\install
 !ifndef XWPLITE
-    $(COPY) $(XWP_LANG_CODE)\misc\crobj001.cmd $(XWPRELEASE_NLS)\install\crobj001.cmd
+    $(COPY) $(XWP_LANG_CODE)\misc\crobj$(XWP_LANG_CODE).cmd $(XWPRELEASE_NLS)\install\crobj$(XWP_LANG_CODE).cmd
 !else
-    $(COPY) $(XWP_LANG_CODE)\misc\crobj001_lite.cmd $(XWPRELEASE_NLS)\install\crobj001.cmd
+    $(COPY) $(XWP_LANG_CODE)\misc\crobj$(XWP_LANG_CODE)_lite.cmd $(XWPRELEASE_NLS)\install\crobj$(XWP_LANG_CODE).cmd
 !endif
 !ifdef BUILD_049_TOO
 !ifndef XWPLITE
@@ -932,9 +932,9 @@ release: really_all
 !endif
 !endif
 !ifndef XWPLITE
-    $(COPY) $(XWP_LANG_CODE)\misc\instl001.cmd $(XWPRELEASE_NLS)\install\instl001.cmd
+    $(COPY) $(XWP_LANG_CODE)\misc\instl$(XWP_LANG_CODE).cmd $(XWPRELEASE_NLS)\install\instl$(XWP_LANG_CODE).cmd
 !else
-    $(COPY) $(XWP_LANG_CODE)\misc\instl001_lite.cmd $(XWPRELEASE_NLS)\install\instl001.cmd
+    $(COPY) $(XWP_LANG_CODE)\misc\instl$(XWP_LANG_CODE)_lite.cmd $(XWPRELEASE_NLS)\install\instl$(XWP_LANG_CODE).cmd
 !endif
 !ifdef BUILD_049_TOO
 !ifndef XWPLITE
@@ -944,7 +944,7 @@ release: really_all
 !endif
 !endif
 !ifndef XWPLITE
-    $(COPY) $(XWP_LANG_CODE)\misc\sound001.cmd $(XWPRELEASE_NLS)\install
+    $(COPY) $(XWP_LANG_CODE)\misc\sound$(XWP_LANG_CODE).cmd $(XWPRELEASE_NLS)\install
 !ifdef BUILD_049_TOO
     $(COPY) 049\misc\sound049.cmd $(XWPRELEASE_049)\install
 !endif
