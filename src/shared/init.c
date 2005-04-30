@@ -1450,6 +1450,14 @@ BOOL initMain(VOID)
         // force loading of _all_ the global settings
         cmnLoadGlobalSettings();
 
+        // V1.0.4 (2005-04-30) [pr]: When installing XWP over eWP, extended sorting is
+        // disabled by default and folders' stored sort values can be invalid apparently,
+        // which causes some folders to display no content.
+        // This should default XWP to use extended sorting if eWP has been installed.
+#ifdef __ALWAYSEXTSORT__
+        cmnSetSetting(sfExtendedSorting, TRUE);
+#endif
+
         cmnInitEntities();
 
         // wpclsInitData calls exactly once and then never again,
