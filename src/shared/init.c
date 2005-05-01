@@ -1450,12 +1450,46 @@ BOOL initMain(VOID)
         // force loading of _all_ the global settings
         cmnLoadGlobalSettings();
 
-        // V1.0.4 (2005-04-30) [pr]: When installing XWP over eWP, extended sorting is
-        // disabled by default and folders' stored sort values can be invalid apparently,
-        // which causes some folders to display no content.
-        // This should default XWP to use extended sorting if eWP has been installed.
+        // Set eWP defaults so that XWP picks them up if upgrading from eWP to XWP
+        // V1.0.4 (2005-05-01) [pr]
 #ifdef __ALWAYSEXTSORT__
         cmnSetSetting(sfExtendedSorting, TRUE);
+#endif
+#ifdef __ALWAYSFDRHOTKEYS__
+        cmnSetSetting(sfFolderHotkeys, TRUE);
+#endif
+#ifdef __ALWAYSFIXCLASSTITLES__
+        cmnSetSetting(sfFixClassTitles, TRUE);
+#endif
+#ifdef __ALWAYSHOOK__
+        cmnSetSetting(sfXWPHook, TRUE);
+#endif
+#ifdef __ALWAYSOBJHOTKEYS__
+        // ???
+#endif
+#ifdef __ALWAYSREPLACEARCHIVING__
+        cmnSetSetting(sfReplaceArchiving, TRUE);
+#endif
+#ifdef __ALWAYSREPLACEFILEEXISTS__
+        cmnSetSetting(sfReplaceFileExists, TRUE);
+#endif
+#ifdef __ALWAYSREPLACEFILEPAGE__
+        cmnSetSetting(sfReplaceFilePage, TRUE);
+#endif
+#ifdef __ALWAYSREPLACEHELP__
+        cmnSetSetting(sfHelpReplacements, TRUE);
+#endif
+#ifdef __ALWAYSREPLACEICONPAGE__
+        cmnSetSetting(sfReplaceIconPage, TRUE);
+#endif
+#ifdef __ALWAYSREPLACEPASTE__
+        cmnSetSetting(sfReplacePaste, TRUE);
+#endif
+#ifdef __ALWAYSREPLACEREFRESH__
+        krnEnableReplaceRefresh(TRUE);
+#endif
+#ifdef __ALWAYSTRASHANDTRUEDELETE__
+        cmnSetSetting(sfReplaceDelete, TRUE);
 #endif
 
         cmnInitEntities();

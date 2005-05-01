@@ -190,6 +190,14 @@ BOOL hifEnableHook(BOOL fEnable)
                 krnPostDaemonMsg(XDM_DESKTOPREADY,
                                  (MPARAM)hwndActiveDesktop,
                                  (MPARAM)0);
+                // V1.0.4 (2005-05-01) [pr]: (re-)enable XPager when enabling the hook @@fixes 644
+#ifndef __NOPAGER__
+                if (fEnable && cmnQuerySetting(sfEnableXPager))
+                    WinSendMsg(pXwpGlobalShared->hwndDaemonObject,
+                               XDM_STARTSTOPPAGER,
+                               (MPARAM)TRUE,
+                               0);
+#endif
             }
             // else: hook not installed
         }
