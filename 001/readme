@@ -90,6 +90,18 @@ Last updated November 23, 2002
 
     --  eComStation 1.x
 
+    XWorkplace 1.0.4 and higher provide access to additional information
+    about drivers. The following requirements apply:
+   
+    -- The CFGDAT.INF file from the ConfigTool freeware package must
+       reside in a directory on the path that is specified by the
+       BOOKSHELF environment variable in CONFIG.SYS.
+
+    -- The enhanced help viewer NewView must be installed as either
+       a complete replacement of VIEW.EXE or as a stand-alone tool
+       with the executable residing in PATH and the DLL residing
+       in LIBPATH.
+
 
 3. INSTALLATION
 ===============

@@ -129,6 +129,11 @@ typedef struct _DRIVERPAGEDATA
 
     // popup menu
     HWND        hwndDriverPopupMenu;
+
+    // added V1.0.4 (2005-06-16) [chennecke]: flags for ConfigTool and NewView use
+    BOOL        fConfigToolAvailable;
+    BOOL        fNewViewSeperateTool;
+    BOOL        fNewViewReplacesView;
 } DRIVERPAGEDATA, *PDRIVERPAGEDATA;
 
 /* ******************************************************************
@@ -513,6 +518,11 @@ STATIC PLINKLIST InsertDriverCategories(HWND hwndCnr,
                         // DRVF_CMDREF specified:
                         pSpec->ulFlags |= DRVF_CMDREF;
 
+                    // added V1.0.4 (2005-06-16) [chennecke]
+                    if (strstr(pszDriverSpec, "DRVF_CONFIGTOOL"))
+                        // DRVF_CONFIGTOOL specified:
+                        pSpec->ulFlags |= DRVF_CONFIGTOOL;
+
                     if (strstr(pszDriverSpec, "DRVF_NOPARAMS"))
                         // DRVF_CMDREF specified:
                         pSpec->ulFlags |= DRVF_NOPARAMS;
@@ -593,6 +603,7 @@ STATIC PLINKLIST InsertDriverCategories(HWND hwndCnr,
  *
  *@@added V0.9.1 (2000-02-11) [umoeller]
  *@@changed V0.9.16 (2002-01-09) [umoeller]: added excpt handling, this took down the wps
+ *@@changed V1.0.4 (2005-06-16) [chennecke]: added availability checks for ConfigTool and NewView
  */
 
 STATIC void _Optlink fntDriversThread(PTHREADINFO pti)
@@ -642,6 +653,9 @@ STATIC void _Optlink fntDriversThread(PTHREADINFO pti)
             // now parse DRVRSxxx.TXT in XWorkplace /HELP dir
             CHAR    szDriverSpecsFilename[CCHMAXPATH];
             PSZ     pszDriverSpecsFile = NULL;
+            // added V1.0.4 (2005-06-16) [chennecke]
+            // file search variables for ConfigTool and NewView detection
+            CHAR    szSearchFile[CCHMAXPATH];
 
             cmnQueryXWPBasePath(szDriverSpecsFilename);
             sprintf(szDriverSpecsFilename + strlen(szDriverSpecsFilename),
@@ -668,6 +682,49 @@ STATIC void _Optlink fntDriversThread(PTHREADINFO pti)
                     // containing DRIVERSPEC's...
 
                 free(pszDriverSpecsFile);
+            }
+
+            // added V1.0.4 (2005-06-16) [chennecke]
+            // does CFGDAT.INF exist in BOOKSHELF?
+            pPageData->fConfigToolAvailable = FALSE;
+            if (doshSearchPath("BOOKSHELF",
+                               "cfgdat.inf",
+                               szSearchFile,
+                               sizeof(szSearchFile))
+                != ERROR_FILE_NOT_FOUND)
+                     pPageData->fConfigToolAvailable = TRUE;
+
+            // is NewView installed?
+            pPageData->fNewViewSeperateTool = FALSE;
+            pPageData->fNewViewReplacesView = FALSE;
+            if (doshSearchPath(NULL,
+                               "newview.exe",
+                               szSearchFile,
+                               sizeof(szSearchFile))
+                != ERROR_FILE_NOT_FOUND)
+            {
+               // NewView installed as seperate tool
+               pPageData->fNewViewSeperateTool = TRUE;
+            }
+            else
+            {
+               // get LIBPATH value from CONFIG.SYS
+               CHAR szLibpath[2048];
+
+               if (csysGetParameter(pszConfigSys,
+                                    "LIBPATH=",
+                                    szLibpath,
+                                    sizeof(szLibpath)))
+               {
+                  // is newview.dll in LIBPATH?
+                  if (doshSearchDirs(szLibpath,
+                                     "newview.dll",
+                                     szSearchFile,
+                                     sizeof(szSearchFile))
+                      != ERROR_FILE_NOT_FOUND)
+                           // NewView installed as replacement for view.exe
+                           pPageData->fNewViewReplacesView = TRUE;
+                }
             }
 
             free(pszConfigSys);
@@ -842,6 +899,7 @@ VOID cfgDriversInitPage(PNOTEBOOKPAGE pnbp,
  *@@changed V0.9.3 (2000-04-17) [umoeller]: added error messages display
  *@@changed V0.9.12 (2001-04-28) [umoeller]: fixed vendor display
  *@@changed V0.9.12 (2001-05-03) [umoeller]: removed stupid SYSxxx messages in display
+ *@@changed V1.0.4 (2005-06-16) [chennecke]: added processing for new pop-menu items
  */
 
 MRESULT cfgDriversItemChanged(PNOTEBOOKPAGE pnbp,
@@ -1005,17 +1063,43 @@ MRESULT cfgDriversItemChanged(PNOTEBOOKPAGE pnbp,
                     {
                         PDRIVERPAGEDATA pPageData = (PDRIVERPAGEDATA)pnbp->pUser;
                         BOOL fEnableCmdref = FALSE;
+
+                        // added V1.0.4 (2005-06-16) [chennecke]
+                        BOOL fEnableConfigtool = FALSE;
+                        BOOL fEnableAllHelp = FALSE;
+
                         PDRIVERRECORD precc = (PDRIVERRECORD)pnbp->preccSource;
+
                         if (precc->pDriverSpec)
+                        {
                             if (precc->pDriverSpec->ulFlags & DRVF_CMDREF)
                                 // help available in CMDREF.INF:
                                 fEnableCmdref = TRUE;
+
+                            // added V1.0.4 (2005-06-16) [chennecke]
+                            if (precc->pDriverSpec->ulFlags & DRVF_CONFIGTOOL)
+                                if (pPageData->fConfigToolAvailable)
+                                    // help available in CFGDAT.INF:
+                                    fEnableConfigtool = TRUE;
+
+                            // added V1.0.4 (2005-06-16) [chennecke]
+                            if (pPageData->fNewViewSeperateTool | pPageData->fNewViewReplacesView)
+                                // NewView is somehow available
+                                fEnableAllHelp = TRUE;
+                        }
                         // popup menu on container recc:
                         hPopupMenu = pPageData->hwndDriverPopupMenu;
                         WinEnableMenuItem(hPopupMenu,
                                           ID_XSMI_DRIVERS_CMDREFHELP,
                                           fEnableCmdref);
 
+                        // added V1.0.4 (2005-06-16) [chennecke]
+                        WinEnableMenuItem(hPopupMenu,
+                                          ID_XSMI_DRIVERS_CONFIGTOOLHELP,
+                                          fEnableConfigtool);
+                        WinEnableMenuItem(hPopupMenu,
+                                          ID_XSMI_DRIVERS_ALLHELP,
+                                          fEnableAllHelp);
                     }
                     else
                     {
@@ -1117,6 +1201,61 @@ MRESULT cfgDriversItemChanged(PNOTEBOOKPAGE pnbp,
             pd.progt.fbVisible = SHE_VISIBLE;
             pd.pszExecutable = "view.exe";
             // append short driver name to params (cmdref.inf)
+            strcat(szParams, ((PDRIVERRECORD)pnbp->preccSource)->szDriverNameOnly);
+
+            WinStartApp(NULLHANDLE,         // hwndNotify
+                        &pd,
+                        szParams,
+                        NULL,               // reserved
+                        0);                 // options
+        }
+        break;
+
+        /*
+         * ID_XSMI_DRIVERS_CONFIGTOOLHELP:
+         *      "show ConfigTool help" context menu item
+         *
+         * added V1.0.4 (2005-06-16) [chennecke]
+         */
+
+        case ID_XSMI_DRIVERS_CONFIGTOOLHELP:
+        {
+            CHAR szParams[200] = "cfgdat.inf ";
+            PROGDETAILS pd;
+            memset(&pd, 0, sizeof(PROGDETAILS));
+            pd.Length = sizeof(PROGDETAILS);
+            pd.progt.progc = PROG_PM;
+            pd.progt.fbVisible = SHE_VISIBLE;
+            pd.pszExecutable = "view.exe";
+            // append short driver name to params (cfgdat.inf)
+            strcat(szParams, ((PDRIVERRECORD)pnbp->preccSource)->szDriverNameOnly);
+
+            WinStartApp(NULLHANDLE,         // hwndNotify
+                        &pd,
+                        szParams,
+                        NULL,               // reserved
+                        0);                 // options
+        }
+        break;
+
+        /*
+         * ID_XSMI_DRIVERS_ALLHELP:
+         *      "search in all help files" context menu item
+         *
+         * added V1.0.4 (2005-06-16) [chennecke]
+         */
+
+        case ID_XSMI_DRIVERS_ALLHELP:
+        {
+            PDRIVERPAGEDATA pPageData = (PDRIVERPAGEDATA)pnbp->pUser;
+            CHAR szParams[200] = "/g:";
+            PROGDETAILS pd;
+            memset(&pd, 0, sizeof(PROGDETAILS));
+            pd.Length = sizeof(PROGDETAILS);
+            pd.progt.progc = PROG_PM;
+            pd.progt.fbVisible = SHE_VISIBLE;
+            pd.pszExecutable = pPageData->fNewViewReplacesView ? "view.exe" : "newview.exe";
+            // append short driver name to params (/g:)
             strcat(szParams, ((PDRIVERRECORD)pnbp->preccSource)->szDriverNameOnly);
 
             WinStartApp(NULLHANDLE,         // hwndNotify

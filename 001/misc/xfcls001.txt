@@ -519,8 +519,19 @@ SomNote 1 (SOMNOTE.DLL) SomNote is an object that is part of the Object Factory 
 XWPVCard 1 This XWorkplace class allows manipulation of vCard information in *.vcf files.
 
 // Items added with V1.0.4
+CWCDFolder 1 Part of Chris Wohlgemuth's Multimedia Classes which replaces the current multimedia classes in OS/2. Implements a CD player as folder.
 CWDVDFolder 1 This is part of the CD Creator package by Chris Wohlgemuth and allows creation of data DVDs.
+CWM3UFolder 1 Part of Chris Wohlgemuth's Multimedia Classes which replaces the current multimedia classes in OS/2. Implements a play list.
+CWMMDisk 5 Part of Chris Wohlgemuth's Multimedia Classes which replaces the current multimedia classes in OS/2.
+CWMMDataFile 5 Replacement for the multimedia data file part of Chris Wohlgemuth's Multimedia Classes which replaces the current multimedia classes in OS/2.
 CWLaunchArea 5 Part of Chris Wohlgemuth's WPS Wizard. Can be used by other classes and handles drag and drop.
+MMAudioStream 5 Part of Chris Wohlgemuth's Multimedia Classes which replaces the current multimedia classes in OS/2. Probably to provide streaming audio support.
+MMCDTrack 5 Part of Chris Wohlgemuth's Multimedia Classes which replaces the current multimedia classes in OS/2. Implements CD track object in CD player folder view.
+MMFLAC 5 Part of Chris Wohlgemuth's Multimedia Classes which replaces the current multimedia classes in OS/2. Provides more WPS integration for Russel O'Conner's FLAC I/O proc.
+MMMP3 5 Part of Chris Wohlgemuth's Multimedia Classes which replaces the current multimedia classes in OS/2. Provides more WPS integration for Russel O'Conner's MP3 I/O proc.
+MMOGG 5 Part of Chris Wohlgemuth's Multimedia Classes which replaces the current multimedia classes in OS/2. Provides more WPS integration for Russel O'Conner's Ogg Vorbis I/O proc.
+MMM3U 5 Part of Chris Wohlgemuth's Multimedia Classes which replaces the current multimedia classes in OS/2. Provides WPS integration for MP3 play lists.
+MMPNG 5 Multimedia class to provide support for PNG image files.
 NWPDisk 5 Part of Norman Virus Control. Replacement class for WPDisk. Adds a "Check for viruses..." item to the pop-up menu of drive objects.
 NWPFileSys 5 Part of Norman Virus Control. Replacement class for WPDisk. Adds a "Check for viruses..." item to the pop-up menu of file system objects.
 NWPDesktop 5 Part of Norman Virus Control. Replacement class for WPDesktop. Adds a submenu "Norman Virus Control" to the desktop's pop-up menu.

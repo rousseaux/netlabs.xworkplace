@@ -218,9 +218,12 @@ END
 
 /* Context menus on XFldSystem "Drivers" page;
    new with V0.9.0  */
+/* added menu item for ConfigTool database V1.0.4 (2005-05-07) [chennecke] */
 MENU ID_XSM_DRIVERS_SEL LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     MENUITEM "Show help in OS/2 Command Reference", ID_XSMI_DRIVERS_CMDREFHELP
+    MENUITEM "Show help in ConfigTool database", ID_XSMI_DRIVERS_CONFIGTOOLHELP
+    MENUITEM "Search in all help files", ID_XSMI_DRIVERS_ALLHELP
 END
 
 /* Context menus on XWPKeyboard "Hotkeys" page
@@ -1990,9 +1993,9 @@ BEGIN
     ID_FXDI_FILEMASKSELECT                "xfix: Select By Name"
     ID_FXDI_FILEMASKSELECT_MASK           "File mask:"
     ID_FXDI_FILEMASKSELECT_SELECT         "~Select"
-    ID_FXDI_FILEMASKSELECT_DESELECT       "~Deslect"
+    ID_FXDI_FILEMASKSELECT_DESELECT       "~Deselect"
     ID_FXDI_FILEMASKSELECT_SELECTALL      "Select ~all"
-    ID_FXDI_FILEMASKSELECT_DESELECTALL    "Delect a~ll"
+    ID_FXDI_FILEMASKSELECT_DESELECTALL    "Deselect a~ll"
 
     /* product information message box */
     ID_FXSI_PRODINFO                     "xfix V&version;, built &date;&nl;&copy; 2000-2002 Ulrich M”ller&nl;&nl;&xwp; File Handles Fixer."

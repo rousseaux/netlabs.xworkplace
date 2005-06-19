@@ -2797,6 +2797,10 @@
 #define ID_XSM_DRIVERS_SEL              (WPMENUID_USER+1100)
 #define ID_XSM_DRIVERS_NOSEL            (WPMENUID_USER+1101)
 #define ID_XSMI_DRIVERS_CMDREFHELP      (WPMENUID_USER+1102)
+// added V1.0.4 (2005-06-16) [chennecke]: menu items to invoke
+// ConfigTool help and search in all help files
+#define ID_XSMI_DRIVERS_CONFIGTOOLHELP  (WPMENUID_USER+1103)
+#define ID_XSMI_DRIVERS_ALLHELP         (WPMENUID_USER+1104)
 
 // "Hotkey" menus on XWPKeyboard "Hotkeys" page
 #define ID_XSM_HOTKEYS_SEL              (WPMENUID_USER+1120)

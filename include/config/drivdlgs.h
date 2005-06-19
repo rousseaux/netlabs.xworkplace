@@ -25,6 +25,8 @@
 
 #define DRVF_CMDREF     0x0001      // driver is documented in CMDREF
 #define DRVF_NOPARAMS   0x0002      // driver accepts no parameters
+#define DRVF_CONFIGTOOL 0x0004      // driver is documented in CFGDAT.INF ConfigTool document
+                                    // added V1.0.4 (2005-05-07) [chennecke]
 
 #define DRVF_BASEDEV    0x00010000  // BASEDEV=
 #define DRVF_DEVICE     0x00020000  // DEVICE=

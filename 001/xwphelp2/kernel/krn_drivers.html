@@ -22,12 +22,37 @@ utility does on the command line.
 <P><LI>The <B>"Parameters"</B> field lists the parameters which are set
 for this driver in the &cfgsys; file.
 
+<!-- update the following for the new ConfigTool and global
+     search support with V1.0.4 (2005-06-16) [chennecke] -->
 </UL>The driver items in the tree on the left each have a <B>&popmenu;</B>
-where you can receive additional help on that driver. If the driver is one
-of the default &os2; drivers, you can probably view the corresponding page
-in the <I>&os2; Command Reference</I> (CMDREF.INF).
+where you can receive additional help on that driver:
 
-<P>For most drivers, except for those
+<UL><LI>If the driver is one
+of the default &os2; drivers, you can probably view the corresponding page
+in the <I>&os2; Command Reference</I> (<CODE>CMDREF.INF</CODE>) by selecting
+<B>"Show help in &os2; Command Reference"</B>.
+
+<P><LI>The <I>ConfigTool database</I>, a separately available freeware package,
+also provides information for many drivers. Select <B>"Show help in ConfigTool database"</B>
+to open the corresponding help panel for a driver. The menu item is only
+enabled if the
+ConfigTool INF file <CODE>CFGDAT.INF</CODE> resides in the
+<a href="glossary/gls_path_sys.html">system path</a>
+that is specified by the <CODE>BOOKSHELF</CODE>
+<a href="glossary/gls_env.html">environment variable</a>
+in &cfgsys;.
+
+<P><LI>Some drivers come with their own help file. Often, information is also
+available in help files that are not directly related to a specific driver.
+Selecting <B>"Search in all help files"</B> starts a search for the driver
+name in all help files that reside in the <CODE>BOOKSHELF</CODE> and
+<CODE>HELP</CODE> paths. After the search has been finished, you can
+browse and select the results. The menu item is only enabled if the separately available
+help viewer <I>NewView</I> is installed as either a complete replacement
+for <CODE>VIEW.EXE</CODE> or a stand-alone tool with executable and DLL in
+<CODE>PATH</CODE> and <CODE>LIBPATH</CODE>, respectively.
+
+</UL><!-- end V1.0.4 -->For most drivers, except for those
 which won't accept parameters, you can <B>change the parameters</B> in
 the parameters field.
 

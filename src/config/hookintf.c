@@ -193,7 +193,7 @@ BOOL hifEnableHook(BOOL fEnable)
                 // V1.0.4 (2005-05-01) [pr]: (re-)enable XPager when enabling the hook @@fixes 644
 #ifndef __NOPAGER__
                 if (fEnable && cmnQuerySetting(sfEnableXPager))
-                    WinSendMsg(pXwpGlobalShared->hwndDaemonObject,
+                    WinSendMsg(G_pXwpGlobalShared->hwndDaemonObject,
                                XDM_STARTSTOPPAGER,
                                (MPARAM)TRUE,
                                0);
