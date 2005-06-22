@@ -3511,6 +3511,15 @@ VOID xsdFinishShutdown(PSHUTDOWNDATA pShutdownData) // HAB hab)
                       ID_SDDI_STATUS,
                       cmnGetString(ID_SDSI_FLUSHING)) ; // pszSDFlushing
 
+    // V1.0.4 (2005-06-22) [pr]: Turn off HPFS's Lazy Writer
+    if (!pShutdownData->sdParams.optDebug)
+    {
+        ULONG cbdata, cbparam;
+
+        cbdata = cbparam = 0;
+        DosFSCtl (NULL, 0, &cbdata, NULL, 0, &cbparam, 0x9001, "HPFS", -1, FSCTL_FSDNAME);
+    }
+
     // here comes the settings-dependent part:
     // depending on what we are to do after shutdown,
     // we switch to different routines which handle
