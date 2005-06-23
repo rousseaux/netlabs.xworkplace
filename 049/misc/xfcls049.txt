@@ -517,12 +517,37 @@ SomNote 1 (SOMNOTE.DLL) SomNote ist ein Objekt, das Teil der Anwendung Object Fa
 XWPVCard 1 Diese XWorkplace-Klasse erlaubt die Manipulation von vCard-Informationen in *.vcf-Dateien.
 
 // Items added with V1.0.4
-CWDVDFolder 1 (Audio/Data-CD-Creator) Dies Klasse ist Teil des Paketes von Chris Wohlgemuth und erlaubt das Brennen von Daten-DVDs.
+CWAudioShadow 1 (CWMM-Klassen) Diese Klasse ist Teil des Paketes von Chris Wohlgemuth, das die IBM-Multimediaklassen ersetzt. Implementiert Referenzen fÅr Audiodateien im Medienordner. Werden beim öbergeben von Dateien an den Medienordner erstellt und zeigen in der Detailanzeige Informationen Åber die referenzierten Dateien an.
+CWCDFolder 1 (CWMM-Klassen) Diese Klasse ist Teil des Paketes von Chris Wohlgemuth, das die IBM-Multimediaklassen ersetzt. Implementiert einen CD-Spieler als Ordner.
+CWDVDFolder 1 (Audio/Data-CD-Creator) Diese Klasse ist Teil des Paketes von Chris Wohlgemuth und erlaubt das Brennen von Daten-DVDs.
+CWM3UFolder 1 (CWMM-Klassen) Diese Klasse ist Teil des Paketes von Chris Wohlgemuth, das die IBM-Multimediaklassen ersetzt. Implementiert eine Spielliste.
+CWMMDisk 5 (CWMM-Klassen) Diese Klasse ist Teil des Paketes von Chris Wohlgemuth, das die IBM-Multimediaklassen ersetzt.
+CWMMDataFile 5 (CWMM-Klassen) Diese Klasse ist Teil des Paketes von Chris Wohlgemuth, das die IBM-Multimediaklassen ersetzt. Ersetzt die Datendatei-Klasse.
 CWLaunchArea 1 (WPS-Wizard von Chris Wohlgemuth). Kann von anderen Klassen benutzt werden und verarbeitet Ziehen und öbergeben.
+CWObject 1 (WPS-Wizard) Diese Klasse ist Teil des Paketes von Chris Wohlgemuth. Ersetzt die Klasse WPObject.
+MMAudioStream 5 (CWMM-Klassen) Diese Klasse ist Teil des Paketes von Chris Wohlgemuth, das die IBM-Multimediaklassen ersetzt. Zeigt auf Internet-Audio-Streams. UnterstÅtzt nur IceCast-Server.
+MMCDTrack 5 (CWMM-Klassen) Diese Klasse ist Teil des Paketes von Chris Wohlgemuth, das die IBM-Multimediaklassen ersetzt. Implementiert ein StÅck auf einer CD im CD-Spieler-Ordner.
+MMFLAC 5 (CWMM-Klassen) Diese Klasse ist Teil des Paketes von Chris Wohlgemuth, das die IBM-Multimediaklassen ersetzt. Verbessert die WPS-Integration von Russel O'Conners I/O-Proc fÅr FLAC.
+MMMP3 5 (CWMM-Klassen) Diese Klasse ist Teil des Paketes von Chris Wohlgemuth, das die IBM-Multimediaklassen ersetzt. Verbessert die WPS-Integration von Russel O'Conners I/O-Proc fÅr MP3.
+MMOGG 5 (CWMM-Klassen) Diese Klasse ist Teil des Paketes von Chris Wohlgemuth, das die IBM-Multimediaklassen ersetzt. Verbessert die WPS-Integration von Russel O'Conners I/O-Proc fÅr Ogg Vorbis.
+MMM3U 5 (CWMM-Klassen) Diese Klasse ist Teil des Paketes von Chris Wohlgemuth, das die IBM-Multimediaklassen ersetzt. Implementiert WPS-Integration fÅr MP3-Spiellisten.
+MMPNG 5 Multimedia-Klasse mit UnterstÅtzung fÅr PNG-Bilddateien.
 NWPDisk 1 (Norman Virus Control) Ersatzklasse fÅr WPDisk. FÅgt dem KontextmenÅ von Laufwerksobjekten einen Eintrag "Auf Virus prÅfen..." hinzu.
 NWPFileSys 1 (Norman Virus Control) Ersatzklasse fÅr WPFileSystem. FÅgt dem KontextmenÅ von Dateisystemobjekten (Dateien und Ordner) einen Eintrag "Auf Virus prÅfen..." hinzu.
 NWPDesktop 1 (Norman Virus Control) Ersatzklasse fÅr WPDesktop fÅgt dem KontextmenÅ der ArbeitsoberflÑche ein UntermenÅ "Norman Virus Control" hinzu.
 NVCTaskFile 1 (Norman Virus Control) Klasse fÅr NVC-Task-Definitionsdateien.
 ODCCFix 1 Fehlerkorrektur fÅr das Object Desktop Control Center von Rich Walsh.
 RelishBun 1 (Relish von Sundial Systems) Buns sind benutzerdefinierte Ansichten der Daten des Relish PIMs und beeinflussen deren Darstellung.
+RWS06 1 (Remote Workplace Server) Hierdurch kînnen Einzelanwendungen mit der WPS kommunizieren.
+TextFolder 1 (VisualAge C++) Beispielklasse fÅr einen Ordner, der nur Dateien vom Typ Plain Text enthalten kann.
 WPSSDesktop 1 (Doodle's Screen Saver) Implementiert einen neuen Bildschirmschoner mit Plug-In-UnterstÅtzung und ersetzt die Seite "Sperren" im Einstellungsnotizbuch der ArbeitsoberflÑche.
+WordPerfectObject 1 (WordPerfect 5.x) Ersatz fÅr WPFileSystem von WordPerfect for OS/2. HINWEIS: Nach der Installation von WordPerfect mu· vor einem Systemneustart im Verzeichnis WPCOS2 der Befehl 'PATCHWP x:' ausgefÅhrt werden (wobei x: das Systemlaufwerk ist). Andernfalls funktioniert die WPS-UnterstÅtzung nicht ordnungsgemÑ·.
+WordPerfectFile 1 (WordPerfect 5.x) Ersatz fÅr WPDataFile von WordPerfect for OS/2. HINWEIS: Nach der Installation von WordPerfect mu· vor einem Systemneustart im Verzeichnis WPCOS2 der Befehl 'PATCHWP x:' ausgefÅhrt werden (wobei x: das Systemlaufwerk ist). Andernfalls funktioniert die WPS-UnterstÅtzung nicht ordnungsgemÑ·.
+WordPerfectDocument 1 (WordPerfect 5.x) Klasse zur WPS-Integration von WordPerfect-Dokumenten.
+WordPerfectGraphic 1 (WordPerfect 5.x) Klasse zur WPS-Integration von WordPerfect-Grafiken.
+WPStOfExe 0 (StarOffice 3.0 und 3.1) Klasse fÅr StarOffice-Programmobjekte. Implementiert fÅr diese Dateizuordnungen, welche die des Systems Åbersteuern.
+WPStOfCalc 1 (StarOffice 3.0 und 3.1) Tabellenkalkulationsdatei von StarCalc.
+WPStOfChar 1 (StarOffice 3.0 und 3.1) Diagrammdatei von StarChart.
+WPStOfDraw 1 (StarOffice 3.0 und 3.1) Zeichnungsdatei von StarDraw.
+WPStOfVor 1 (StarOffice 3.0 und 3.1) Schablone.
+WPStOfWri 1 (StarOffice 3.0 und 3.1) Textverarbeitungsdatei von StarWrite. Sind die Versionen 3.1 und 5.1 installiert, erscheinen .SDW-Dateien von StarOffice 5.1 als solche der Version 3.1 und werden standardmÑ·ig damit geîffnet, obwohl es ein anderes Format verwendet.
