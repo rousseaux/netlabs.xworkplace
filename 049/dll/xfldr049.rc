@@ -219,6 +219,8 @@ END
 MENU ID_XSM_DRIVERS_SEL LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     MENUITEM "Hilfe in OS/2-Referenzhandbuch anzeigen", ID_XSMI_DRIVERS_CMDREFHELP
+    MENUITEM "Hilfe in ConfigTool-Datenbank anzeigen", ID_XSMI_DRIVERS_CONFIGTOOLHELP
+    MENUITEM "In allen Hilfedateien suchen", ID_XSMI_DRIVERS_ALLHELP
 END
 
 /* Context menus on XWPKeyboard "Hotkeys" page
@@ -392,7 +394,7 @@ BEGIN
 
     ID_XSSI_KEY_BACKSPACE           "RÅcktaste"
     ID_XSSI_KEY_TAB                 "Tab"
-    ID_XSSI_KEY_BACKTABTAB          "Backtab"
+    ID_XSSI_KEY_BACKTABTAB          "RÅcktab"
     ID_XSSI_KEY_ENTER               "Enter"
     ID_XSSI_KEY_ESC                 "Esc"
     ID_XSSI_KEY_SPACE               "Leertaste"
@@ -412,7 +414,7 @@ BEGIN
 
     ID_XSSI_KEY_WINLEFT             "Win95 links"
     ID_XSSI_KEY_WINRIGHT            "Win95 rechts"
-    ID_XSSI_KEY_WINMENU             "Win95 MenÅ"
+    ID_XSSI_KEY_WINMENU             "Win95-MenÅ"
 
     /* and the corresponding list box items on the
        "Hotkeys" notebook page */
@@ -792,7 +794,7 @@ BEGIN
     ID_XCSI_MOUSEKEYBOARDFEATURES       "Maus- und Tastaturfunktionen"
 /*     ID_XCSI_ANIMOUSE                    "Animierte Mauszeiger" removed V0.9.19 (2002-06-02) [umoeller] */
     ID_XCSI_XWPHOOK                     "&xwp;-Hook aktivieren"
-    ID_XCSI_GLOBALHOTKEYS               "Globale TastatenkÅrzel fÅr Objekte aktivieren"
+    ID_XCSI_GLOBALHOTKEYS               "Globale TastenkÅrzel fÅr Objekte aktivieren"
 /*     ID_XCSI_PAGER                       "&pgr;: Virtuelle ArbeitsoberflÑchen" removed V0.9.19 (2002-05-28) [umoeller] */
 
     ID_XCSI_STARTSHUTFEATURES           "Systemstart/abschlu·-Funktionen"
@@ -867,6 +869,8 @@ BEGIN
 
     ID_XSSI_DEFAULTSHUTDOWN             "&os2;-Standardsystemabschlu·..."
     ID_XSSI_INSTALLINGFONTS             "Installation der Schriften..."
+    ID_XSSI_DEINSTALLINGFONTS           "Deinstallation von Schriften..."
+            // added V1.0.1 (2002-12-15) [umoeller]
 
     ID_XSSI_PARAMETERS                  "Parameter"
     ID_XSSI_CLOSE                       "S~chlie·en"
@@ -950,7 +954,7 @@ BEGIN
     ID_MMSI_LOGICALNAME                 "Logischer Name";
     ID_MMSI_ALIAS                       "Alias";
     ID_MMSI_MCD                         "Medienkontrolltreiber"
-    ID_MMSI_VSD                         "Hersteller-spezifischer Treiber"
+    ID_MMSI_VSD                         "Herstellerspezifischer Treiber"
     ID_MMSI_PDD                         "Physischer GerÑtetreiber"
     ID_MMSI_PARAMS                      "Parameter"
 
@@ -968,7 +972,7 @@ BEGIN
     ID_XSSI_RUN                         "Ausf~Åhren..."
 
     /* the following have been added with V0.9.16 */
-    ID_CRSI_SENTINELTOOLTIP             "Verbrauch an physischem Speicher&nl;Freies RAM: %s KB&nl;Benutztes RAM: %s KB&nl;Auslagerungsgrî·e: %s KB"
+    ID_CRSI_SENTINELTOOLTIP             "Verbrauch an physischem Speicher&nl;RAM frei: %s KB&nl;RAM belegt: %s KB&nl;Auslagerungsgrî·e: %s KB"
             /* expands to:
                               Physical memory usage
                               Free RAM: %s KB
@@ -1148,8 +1152,8 @@ BEGIN
     ID_XSSI_SBMNC_350                    "EA-Grî·e in Byte"
     ID_XSSI_SBMNC_360                    "EA-Grî·e in kByte"
     ID_XSSI_SBMNC_370                    "EA-Grî·e in KByte"
-    ID_XSSI_SBMNC_380                    "EA-Grî·e in Bytes/kByte"
-    ID_XSSI_SBMNC_390                    "EA-Grî·e in Bytes/KByte"
+    ID_XSSI_SBMNC_380                    "EA-Grî·e in Byte/kByte"
+    ID_XSSI_SBMNC_390                    "EA-Grî·e in Byte/KByte"
     ID_XSSI_SBMNC_400                    "URL"
     ID_XSSI_SBMNC_500                    "AusfÅhrbare Programmdatei"
     ID_XSSI_SBMNC_510                    "Parameterliste"
@@ -1632,6 +1636,8 @@ BEGIN
     ID_SCDI_PGR1_HOTKEYS_SHIFT          "Um~sch"
     ID_SCDI_PGR1_HOTKEYS_ALT            "A~lt"
     ID_SCDI_PGR1_WRAPAROUND             "An RÑndern umbrechen"
+    /* added V1.0.4 [pr]
+    ID_SCDI_PGR1_WINDOWS_KEYS           "Windows-Tasten als links & rechts ben~utzen"
     ID_SCDI_PGR2_DISABLED_INFO          "Die Virtuellen ArbeitsoberflÑchen sind zur Zeit deaktiviert. Um auf diese Einstellung zugreifen zu kînnen, mÅssen sie erst auf der ersten &pgr;-Einstellungsseite aktiviert werden."
 
     /* strings formerly in ID_XSD_AUTOCLOSE */
@@ -1648,8 +1654,8 @@ BEGIN
     /* strings formerly in ID_XSD_REBOOTEXT V1.0.2 (2003-12-03) [umoeller] */
     ID_XSD_REBOOTEXT_TITLE              "Aktionen fÅr Systemneustart"
     ID_XSDI_XRB_INTRO                   "Legen Sie hier die Aktionen fÅr den Systemneustart fest."
-    ID_XSDI_XRB_UP                      "~Hoch"
-    ID_XSDI_XRB_DOWN                    "~Runter"
+    ID_XSDI_XRB_UP                      "~Auf"
+    ID_XSDI_XRB_DOWN                    "~Ab"
     ID_XSDI_XRB_ITEMNAME_TXT            "A~ktionsbeschreibung:"
     ID_XSDI_XRB_PARTITIONS              "P~artitionen "
     ID_XSDI_XRB_COMMAND_TXT             "Aktions-Befeh~lszeile:"
@@ -1727,8 +1733,8 @@ BEGIN
     ID_AMDI_USER_USERNAME_TXT           "Benutzername:"
     ID_AMDI_USER_USERID_TXT             "Benutzerkennung:"
     ID_AMDI_USER_FULLNAME_TXT           "Beschreibung:"
-    ID_AMDI_USER_PASS_TXT               "Passwort:"
-    ID_AMDI_USER_CONFIRMPASS_TXT        "PasswordbestÑtigung:"
+    ID_AMDI_USER_PASS_TXT               "Pa·wort:"
+    ID_AMDI_USER_CONFIRMPASS_TXT        "Pa·wortbestÑtigung:"
     ID_AMDI_USER_GROUPS_TXT             "Gruppen:"
     ID_AMDI_USER_LOCALSEC_TXT           "Lokale Sicherheit:"
 
@@ -1823,7 +1829,7 @@ BEGIN
         MENUITEM "~Langer Name", ID_FXMI_SORT_LONGNAME, MIS_TEXT
     END
 
-    SUBMENU "~VorgÑnge", ID_FXM_ACTIONS, MIS_TEXT
+    SUBMENU "A~ktionen", ID_FXM_ACTIONS, MIS_TEXT
     BEGIN
         MENUITEM "Suche ungÅltige ~Dateien", ID_FXMI_ACTIONS_FILES, MIS_TEXT
     END
@@ -1958,9 +1964,9 @@ BEGIN
     ID_FXDI_FILEMASKSELECT               "xfix: Nach Name auswÑhlen"
     ID_FXDI_FILEMASKSELECT_MASK          "Dateimaske:"
     ID_FXDI_FILEMASKSELECT_SELECT        "Au~swÑhlen"
-    ID_FXDI_FILEMASKSELECT_DESELECT      "A~bwÑhlen"
+    ID_FXDI_FILEMASKSELECT_DESELECT      "Zu~rÅcknehmen"
     ID_FXDI_FILEMASKSELECT_SELECTALL     "~Alle auswÑhlen"
-    ID_FXDI_FILEMASKSELECT_DESELECTALL   "A~lles abwÑhlen"
+    ID_FXDI_FILEMASKSELECT_DESELECTALL   "A~lles zurÅcknehmen"
 
     /* product information message box */
     ID_FXSI_PRODINFO                     "xfix V&version;, erstellt am &date;&nl;&copy; 2000-2002 Ulrich Mîller&nl;&nl;&xwp; Datei-Handle-Reparatur."
