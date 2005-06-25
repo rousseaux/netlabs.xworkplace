@@ -352,6 +352,14 @@ CATEGORY "SCSI"
         DRIVER ( "BASEDEV=", "OS2ASPI.DMD",
                  "OS/2 ASPI interface",
                  DRVF_CMDREF | DRVF_CONFIGTOOL),
+        DRIVER ( "DEVICE=", "VASPI.SYS",
+                 "DOS/Windows Advanced SCSI Programming Interface",
+                 DRVF_CMDREF | DVRF_CONFIGTOOL | DRVF_NOPARAMS,
+                 TAG=VASPI),
+        DRIVER ( "DEVICE=", "ASPISTUB.SYS",
+                 "OS/2 ASPI Driver, ASPI Specification Version 2.0. DOS stub",
+                 0,
+                 REQUIRES=VASPI ),
         DRIVER ( "DEVICE=", "ASPIROUT.SYS",
                  "ASPI router",
                  DRVF_CONFIGTOOL),
@@ -672,6 +680,9 @@ CATEGORY "Other peripherals"
                  DRVF_CONFIGTOOL),
         DRIVER ( "DEVICE=", "AMOUSE.SYS",
                  "Enhanced mouse driver (Noller & Breining)",
+                 DRVF_CONFIGTOOL),
+        DRIVER ( "DEVICE=", "PCLOGIC.SYS",
+                 "Logitech Mouse Device Dependent Driver",
                  DRVF_CONFIGTOOL),
  
         DRIVER ( "DEVICE=", "COM.SYS",
@@ -1313,7 +1324,22 @@ CATEGORY "System extensions"
         DRIVER ( "DEVICE=", "VIAAPM.SYS",
                  "VIA KT266A power management",
                  DRVF_CONFIGTOOL,
-                 REQUIRES=APMNHSYS )
+                 REQUIRES=APMNHSYS ),
+
+        DRIVER ( "RUN=", "HYBERSET.EXE",
+                 "Hybernation settings",
+                 0 ),
+
+        DRIVER ( "RUN=", "KBDFIXD.EXE",
+                 "Win95Key v2 and v3 daemon",
+                 DRVF_NOPARAMS),
+
+        DRIVER ( "DEVICE=", "WIPEDD.SYS",
+                 "WipeOut screensaver device driver",
+                 DRVF_CONFIGTOOL),
+        DRIVER ( "RUN=", "WIPEBOOT.EXE",
+                 "WipeOut screensaver daemon",
+                 DRVF_CONFIGTOOL)
     }
  
 CATEGORY "Application specific"
