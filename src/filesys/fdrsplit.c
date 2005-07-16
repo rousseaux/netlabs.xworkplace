@@ -961,7 +961,8 @@ STATIC VOID SplitFillFolder(HWND hwndClient,
     {
         PMINIRECORDCORE prec = (PMINIRECORDCORE)mp1;
 
-        PMPF_SPLITVIEW(("FM_FILLFOLDER %s", prec->pszIcon));
+        // V1.0.4 (2005-07-16) [pr]
+        PMPF_SPLITVIEW(("FM_FILLFOLDER %s", prec ? prec->pszIcon : "NULL"));
 
         DumpFlags((ULONG)mp2);
 
@@ -1005,7 +1006,10 @@ STATIC VOID SplitFillFolder(HWND hwndClient,
             // use the OBJECT, not the folder derived
             // from it, since for disk objects, the
             // disks have the views, not the root folder
-            if (pctl->pobjUseList = OBJECT_FROM_PREC(prec))
+            if (   prec  // V1.0.4 (2005-07-16) [pr]: @@fixes 530
+                &&
+                (pctl->pobjUseList = OBJECT_FROM_PREC(prec))
+               )
             {
                 pctl->uiDisplaying.type = USAGE_OPENVIEW;
                 memset(&pctl->viDisplaying, 0, sizeof(VIEWITEM));
@@ -1050,9 +1054,10 @@ STATIC VOID SplitFillFolder(HWND hwndClient,
         pctl->precPopulating = prec;
 
         // post FM2_POPULATE
-        fdrSplitPopulate(pctl,
-                         prec,
-                         (ULONG)mp2);
+        if (prec)  // V1.0.4 (2005-07-16) [pr]: @@fixes 530
+            fdrSplitPopulate(pctl,
+                             prec,
+                             (ULONG)mp2);
     }
 }
 
