@@ -761,8 +761,6 @@ release: really_all
 !if [@md $(XWPRELEASE) 2> NUL]
 !endif
 !ifndef XWPLITE
-!if [@md $(XWPRELEASE_HEALTH) 2> NUL]
-!endif
 !endif
 !if [@md $(XWPRELEASE_MAIN) 2> NUL]
 !endif
@@ -794,8 +792,6 @@ release: really_all
     $(COPY) BUGS $(XWPRELEASE_NLSDOC)
     $(COPY) FEATURES $(XWPRELEASE_NLSDOC)
     $(COPY) cvs.txt $(XWPRELEASE_MAIN)
-!else
-    $(COPY) K:\projects\_private\readme.txt $(XWPRELEASE_MAIN)
 !endif
 #
 # 2) bin
@@ -966,10 +962,6 @@ release: really_all
 !endif
 !endif
 !ifndef XWPLITE
-!if [@md $(XWPRELEASE_HEALTH)\plugins 2> NUL]
-!endif
-!if [@md $(XWPRELEASE_HEALTH)\plugins\xcenter 2> NUL]
-!endif
 !endif
     $(COPY) $(MODULESDIR)\diskfree.dll $(XWPRELEASE_MAIN)\plugins\xcenter
     $(COPY) $(MODULESDIR)\diskfree.sym $(XWPRELEASE_MAIN)\plugins\xcenter
@@ -979,13 +971,11 @@ release: really_all
     $(COPY) $(MODULESDIR)\winlist.sym $(XWPRELEASE_MAIN)\plugins\xcenter
     $(COPY) $(MODULESDIR)\sentinel.dll $(XWPRELEASE_MAIN)\plugins\xcenter
     $(COPY) $(MODULESDIR)\sentinel.sym $(XWPRELEASE_MAIN)\plugins\xcenter
-!ifndef XWPLITE
     $(COPY) $(MODULESDIR)\ipmon.dll $(XWPRELEASE_MAIN)\plugins\xcenter
     $(COPY) $(MODULESDIR)\ipmon.sym $(XWPRELEASE_MAIN)\plugins\xcenter
+!ifndef XWPLITE
     $(COPY) $(MODULESDIR)\d_cdfs.dll $(XWPRELEASE_MAIN)\plugins\drvdlgs
     $(COPY) $(MODULESDIR)\d_cdfs.sym $(XWPRELEASE_MAIN)\plugins\drvdlgs
-#    $(COPY) $(MODULESDIR)\xwHealth.dll $(XWPRELEASE_HEALTH)\plugins\xcenter
-#    $(COPY) $(MODULESDIR)\xwHealth.sym $(XWPRELEASE_HEALTH)\plugins\xcenter
 !endif
 # 9) toolkit
 !if [@md $(XWPRELEASE_MAIN)\toolkit 2> NUL]
