@@ -604,6 +604,7 @@
      *      See cmnQuerySetting() for details.
      *
      *@@added V0.9.16 (2001-10-11) [umoeller]
+     *@@changed V1.0.4 (2005-08-09) [pr]: Removed a load of conditional compiles to make eWP work
      */
 
     typedef enum _XWPSETTING
@@ -613,9 +614,7 @@
 #ifndef __NOICONREPLACEMENTS__
         sfIconReplacements,
 #endif
-#ifndef __ALWAYSREPLACEHELP__
         sfHelpReplacements,              // added V0.9.20 (2002-07-19) [umoeller]
-#endif
         // sfMoveRefreshNow,        removed V0.9.19 (2002-04-17) [umoeller]
 
 // #ifndef __ALWAYSSUBCLASS__
@@ -642,9 +641,7 @@
             //      0 = transparent
             //      1 = blow-up
 #endif
-#ifndef __ALWAYSREPLACEFILEPAGE__
         sfReplaceFilePage,
-#endif
 #ifndef __NOCFGSTATUSBARS__
         sfStatusBars,
 #endif
@@ -668,9 +665,7 @@
         sulGridCX,
         sulGridCY,
 #endif
-#ifndef __ALWAYSFDRHOTKEYS__
         sfFolderHotkeys,
-#endif
         sfFolderHotkeysDefault,
             // V0.9.0, was: FolderHotkeysDefault
             // default setting for enabling folder hotkeys;
@@ -682,18 +677,10 @@
 //         sfResizeSettingsPages,
 // #endif
 
-#ifndef __ALWAYSREPLACEICONPAGE__
         sfReplaceIconPage,
-#endif
-#ifndef __ALWAYSREPLACEFILEEXISTS__
         sfReplaceFileExists,
-#endif
-#ifndef __ALWAYSFIXCLASSTITLES__
         sfFixClassTitles,
-#endif
-#ifndef __ALWAYSREPLACEARCHIVING__
         sfReplaceArchiving,
-#endif
 #ifndef __NEVERNEWFILEDLG__
         sfNewFileDlg,
 #endif
@@ -708,12 +695,8 @@
             // -- 1: old method (Prf* APIs)
             // -- 2: do not save
 #endif
-#ifndef __ALWAYSEXTSORT__
         sfExtendedSorting,
-#endif
-#ifndef __ALWAYSHOOK__
         sfXWPHook,
-#endif
 #ifndef __NOPAGER__
         sfEnableXPager,
             // XWPSetup "XPager virtual desktops"; this will cause
@@ -737,17 +720,13 @@
         sfReplaceDriveNotReady,
 #endif
 
-#ifndef __ALWAYSREPLACEPASTE__
         sfReplacePaste,             // V0.9.20 (2002-08-08) [umoeller]
-#endif
 
-#ifndef __ALWAYSTRASHANDTRUEDELETE__
         /* sfTrashDelete,
         sfReplaceTrueDelete, */
         // replaced these
         // V0.9.19 (2001-04-13) [umoeller]
         sfReplaceDelete,            // in XWPSetup
-#endif
         sfAlwaysTrueDelete,         // in trash can settings notebook; only
                                     // effective if sfReplaceDelete == TRUE
 #ifndef __NOBOOTUPSTATUS__

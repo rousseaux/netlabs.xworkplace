@@ -3147,9 +3147,11 @@ ULONG cmnLoadOneSetting(PCSETTINGINFO pThis)
             ulDefaultValue = WinQuerySysColor(HWND_DESKTOP, SYSCLR_OUTPUTTEXT, 0);
             break;
 
+#ifndef __NOPARANOIA__
         case sfUse8HelvFont:
             ulDefaultValue = !G_fIsWarp4;
             break;
+#endif
     }
 
     // _Pmpf(("      trying to load %s", pThis->pcszIniKey));
@@ -3183,7 +3185,7 @@ ULONG cmnLoadOneSetting(PCSETTINGINFO pThis)
  *      will be reinitialized here.
  *
  *@@added V0.9.16 (2002-01-05) [umoeller]
- *changed V1.0.4 (2005-03-13) [pr]: Override non-constant settings
+ *@@changed V1.0.4 (2005-03-13) [pr]: Override non-constant settings
  */
 
 VOID cmnLoadGlobalSettings(VOID)
@@ -3242,9 +3244,11 @@ VOID cmnLoadGlobalSettings(VOID)
                     ulDefaultValue = WinQuerySysColor(HWND_DESKTOP, SYSCLR_OUTPUTTEXT, 0);
                     break;
 
+#ifndef __NOPARANOIA__
                 case sfUse8HelvFont:
                     ulDefaultValue = !G_fIsWarp4;
                     break;
+#endif
             }
 
             G_aulSettings[pThis->s] = ulDefaultValue;
