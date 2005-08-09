@@ -315,16 +315,16 @@ SOM_Scope PSZ SOMLINK xtro_xwpQueryRelatedPath(XWPTrashObject *somSelf)
  */
 
 /*
- * SOM_Scope void  SOMLINK xtro_xwpSetExpandedObjectSize(XWPTrashObject *somSelf, 
- *                                                       ULONG ulNewSize, 
+ * SOM_Scope void  SOMLINK xtro_xwpSetExpandedObjectSize(XWPTrashObject *somSelf,
+ *                                                       ULONG ulNewSize,
  *                                                       XWPTrashCan pTrashCan)
  */
 
 /*
  * The prototype for xtro_xwpSetExpandedObjectSize was replaced by the following prototype:
  */
-SOM_Scope void  SOMLINK xtro_xwpSetExpandedObjectSize(XWPTrashObject *somSelf, 
-                                                      ULONG ulNewSize, 
+SOM_Scope void  SOMLINK xtro_xwpSetExpandedObjectSize(XWPTrashObject *somSelf,
+                                                      ULONG ulNewSize,
                                                       XWPTrashCan* pTrashCan)
 {
     XWPTrashObjectData *somThis = XWPTrashObjectGetData(somSelf);

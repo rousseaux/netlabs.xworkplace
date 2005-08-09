@@ -730,6 +730,7 @@ PWPSCLASSESINFO clsWpsClasses2Cnr(HWND hwndCnr, // in: guess what this is
                 }
                 else
                     PMPF_SOMFREAK(("    no parent found"));
+
                 // mark this list item as "not processed" for later
                 // pwpsNew->fProcessed = FALSE; we zeroed above V1.0.1 (2003-02-01) [umoeller]
 

@@ -1435,10 +1435,10 @@
     BOOL XWPENTRY cmnIsValidHotkey(USHORT usFlags,
                                    USHORT usKeyCode);
 
-    BOOL XWPENTRY cmnDescribeKey(PSZ pszBuf,
-                                 USHORT usFlags,
-                                 USHORT usKeyCode,
-                                 ULONG cbBuf);
+    BOOL cmnDescribeKey(PSZ pszBuf,
+                        USHORT usFlags,
+                        USHORT usKeyCode,
+                        ULONG cbBuf);
 
     VOID cmnInsertSeparator(HWND hwndMenu,
                             SHORT sPosition);
