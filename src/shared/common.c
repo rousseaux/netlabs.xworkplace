@@ -2620,11 +2620,10 @@ static const SETTINGINFO G_aSettingInfos[] =
             "fIconReplacements",
 #endif
 
-#ifndef __ALWAYSREPLACEHELP__           // added V0.9.20 (2002-07-19) [umoeller]
+        // added V0.9.20 (2002-07-19) [umoeller]
         sfHelpReplacements, -1, 0,
             SP_SETUP_FEATURES, 0,
             "fHelpReplacements",
-#endif
 
 /* #ifndef __NOMOVEREFRESHNOW__
         sfMoveRefreshNow, FIELDOFFSET(OLDGLOBALSETTINGS, __fMoveRefreshNow), 4,
@@ -2662,11 +2661,9 @@ static const SETTINGINFO G_aSettingInfos[] =
             "ulBootLogoStyle",
 #endif
 
-#ifndef __ALWAYSREPLACEFILEPAGE__
         sfReplaceFilePage, FIELDOFFSET(OLDGLOBALSETTINGS, __fReplaceFilePage), 4,
             SP_SETUP_FEATURES, 0,
             "fReplaceFilePage",
-#endif
 
 #ifndef __NOCFGSTATUSBARS__
         sfStatusBars, FIELDOFFSET(OLDGLOBALSETTINGS, __fEnableStatusBars), 4,
@@ -2700,11 +2697,9 @@ static const SETTINGINFO G_aSettingInfos[] =
             "ulGridCY",
 #endif
 
-#ifndef __ALWAYSFDRHOTKEYS__
         sfFolderHotkeys, FIELDOFFSET(OLDGLOBALSETTINGS, __fEnableFolderHotkeys), 4,
             SP_SETUP_FEATURES, 0,
             "FolderHotkeys",
-#endif
         sfFolderHotkeysDefault, FIELDOFFSET(OLDGLOBALSETTINGS, fFolderHotkeysDefault), 4,
             SP_4ACCELERATORS, 1,
             "FolderHotkeysDefault",
@@ -2718,29 +2713,21 @@ static const SETTINGINFO G_aSettingInfos[] =
 //             "fResizeSettingsPages",
 // #endif
 
-#ifndef __ALWAYSREPLACEICONPAGE__
         sfReplaceIconPage, FIELDOFFSET(OLDGLOBALSETTINGS, __fReplaceIconPage), 4,
             SP_SETUP_FEATURES, 0,
             "fReplaceIconPage",
-#endif
 
-#ifndef __ALWAYSREPLACEFILEEXISTS__
         sfReplaceFileExists, FIELDOFFSET(OLDGLOBALSETTINGS, __fReplFileExists), 4,
             SP_SETUP_FEATURES, 0,
             "fReplaceFileExists",
-#endif
 
-#ifndef __ALWAYSFIXCLASSTITLES__
         sfFixClassTitles, FIELDOFFSET(OLDGLOBALSETTINGS, __fFixClassTitles), 1,
             SP_SETUP_FEATURES, 0,
             "fFixClassTitles",
-#endif
 
-#ifndef __ALWAYSREPLACEARCHIVING__
         sfReplaceArchiving, FIELDOFFSET(OLDGLOBALSETTINGS, __fReplaceArchiving), 1,
             SP_SETUP_FEATURES, 0,
             "fReplaceArchiving",
-#endif
 
 #ifndef __NEVERNEWFILEDLG__
         sfNewFileDlg, FIELDOFFSET(OLDGLOBALSETTINGS, __fNewFileDlg), 1,
@@ -2773,16 +2760,12 @@ static const SETTINGINFO G_aSettingInfos[] =
             "fPrePopulateDesktop",
 #endif
 
-#ifndef __ALWAYSEXTSORT__
         sfExtendedSorting, FIELDOFFSET(OLDGLOBALSETTINGS, __fExtFolderSort), 4,
             SP_SETUP_FEATURES, 0,
             "fExtendedSorting",
-#endif
-#ifndef __ALWAYSHOOK__
         sfXWPHook, FIELDOFFSET(OLDGLOBALSETTINGS, __fEnableXWPHook), 1,
             SP_SETUP_FEATURES, 0,
             "fXWPHook",
-#endif
 #ifndef __NOPAGER__
         sfEnableXPager, FIELDOFFSET(OLDGLOBALSETTINGS, fEnableXPager), 1,
             SP_SETUP_FEATURES, 0,
@@ -2815,19 +2798,15 @@ static const SETTINGINFO G_aSettingInfos[] =
             "fReplaceDriveNotReady",
 #endif
 
-#ifndef __ALWAYSREPLACEPASTE__
         // added this V0.9.20 (2002-08-08) [umoeller]
         sfReplacePaste, -1, 0,
             SP_SETUP_FEATURES, 0,
             "fReplacePaste",
-#endif
 
         // adjusted the following two V0.9.19 (2001-04-13) [umoeller]
-#ifndef __ALWAYSTRASHANDTRUEDELETE__
         sfReplaceDelete, FIELDOFFSET(OLDGLOBALSETTINGS, __fTrashDelete), 1,
             SP_SETUP_FEATURES, 0,
             "fReplaceDelete",
-#endif
         sfAlwaysTrueDelete, -1, 0,
             SP_TRASHCAN_SETTINGS, 0,
             "fAlwaysTrueDelete",
