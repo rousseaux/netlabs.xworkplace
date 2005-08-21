@@ -37,6 +37,7 @@ parse upper linein yn .
 if yn = 'Y' then do
   call deletefiles 'bin\modules\*.inf'
   call deletefiles 'bin\modules\*.hlp'
+  call deletefiles 'bin\modules\*.tmf'
 end
 
 /* IPF source files */
