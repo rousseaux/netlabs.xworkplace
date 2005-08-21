@@ -2321,6 +2321,7 @@ STATIC BOOL _Optlink fncbQuickOpen(WPFolder *pFolder,
  *
  *@@added V0.9.12 (2001-04-29) [umoeller]
  *@@changed V0.9.16 (2002-01-13) [umoeller]: moved this here from xthreads.c
+ *@@changed V1.0.4 (2005-08-21) [pr]: Check return code to allow cancel. @@fixes 460
  */
 
 STATIC void _Optlink fntQuickOpenFolders(PTHREADINFO ptiMyself)
@@ -2351,9 +2352,11 @@ STATIC void _Optlink fntQuickOpenFolders(PTHREADINFO ptiMyself)
                                       (MPARAM)(pqod->cQuicks * 100));
             }
 
-            fdrQuickOpen(pFolder,
-                         fncbQuickOpen,
-                         (ULONG)pqod);
+            // V1.0.4 (2005-08-21) [pr]
+            if (!(fdrQuickOpen(pFolder,
+                               fncbQuickOpen,
+                               (ULONG)pqod)))
+                break;
         }
 
         pqod->ulQuickThis++;
