@@ -13,7 +13,7 @@ Bugfix release off the 1.0 branch and a few simple new features.
 "Bug #" numbers refer to the official XWorkplace bugtracker at
 <a href="http://xtracker.netlabs.org">http://xtracker.netlabs.org</a>.
 
-<P><B>&xwp; 1.0.4 (June 22, 2005)</B>
+<P><B>&xwp; 1.0.4 (August 21, 2005)</B>
 
 <P>
 
@@ -31,6 +31,18 @@ the settings from the currently selected scheme. Fixed by Paul Ratcliffe.
 
 <P><LI>XShutdown now closes Workarea folders first, preventing problems with dependent objects
 being closed first and thus not reopening when the WPS restarts. Bug 273.
+
+<P><LI>Choosing "Split view" as a view for a WPHost object caused a trap. Bug 530.
+Fixed by Paul Ratcliffe.
+
+<P><LI>XShutdown now disables HPFS's Lazy Writer automatically when shutting down the system.
+Bug 404. Fixed by Paul Ratcliffe.
+
+<P><LI>Upgrading from eWP to XWP now preserves eWP's settings rather than using the default
+XWP settings. Bug 644. Fixed by Paul Ratcliffe.
+
+<P><LI>The Cancel button on the System Startup dialog did nothing while processing Quick Open Folders.
+Bug 460. Fixed by Paul Ratcliffe.
 
 </UL>
 <P>
@@ -51,9 +63,6 @@ Added by Christian Hennecke.
 <P><LI>Drivers tab in the OS/2 Kernel object can now show help from the drivers database
 provided with the freeware ConfigTool application.
 Added by Christian Hennecke.
-
-<P><LI>XShutdown now disables HPFS's Lazy Writer automatically when shutting down the system.
-Added by Paul Ratcliffe.
 
 </UL>
 </BODY>
