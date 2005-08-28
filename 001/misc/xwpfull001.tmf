@@ -333,7 +333,7 @@ See the &xwp; User Guide for details.
 ;
 <--FEATURES_6015-->: The "Turbo folders" feature replaces the internal storage of awake objects for all folders on the system. In addition, it replaces the mechanism for associating data files with programs.
 &xwp; implements high-speed algorithms to be able to find objects in folders much faster than the standard WPS.
-With this setting enabled, you will notice that your folders populate much faster. In addition, program associations become much more flexible because they are only based on types any more.
+With this setting enabled, you will notice that your folders populate much faster. In addition, program associations become much more flexible because they are no longer based solely on file types.
 This requires the XWPFileSystem replacement class to be installed. Changing this setting requires a WPS restart.
 See the &xwp; User Guide for details.
 ;
