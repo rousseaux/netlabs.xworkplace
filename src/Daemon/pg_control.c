@@ -1675,6 +1675,7 @@ STATIC VOID PagerActiveChanged(HWND hwnd)
  *@@ PagerHotkey:
  *
  *@@added V0.9.19 (2002-05-07) [umoeller]
+ *@@changed V1.0.4 (2005-08-29) [pr]: Restart flash timer when hotkeys are used
  */
 
 STATIC VOID PagerHotkey(MPARAM mp1)
@@ -1705,6 +1706,7 @@ STATIC VOID PagerHotkey(MPARAM mp1)
                PGRM_MOVEBYDELTA,
                (MPARAM)dx,
                (MPARAM)dy);
+    CheckFlashTimer(); // V1.0.4 (2005-08-29) [pr]
 }
 
 /*
