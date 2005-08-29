@@ -6221,16 +6221,23 @@ HAPP cmnRunCommandLine(HWND hwndOwner,              // in: owner window or NULLH
  *      string is static, so don't attempt to free it.
  *
  *@@added V0.9.0 [umoeller]
+ *@@changed V1.0.4 (2005-08-29) [bvl]: Return 'Combined' fonts on DBCS systems to show DBCS characters properly @@fixes 655
  */
 
 PCSZ cmnQueryDefaultFont(VOID)
 {
 #ifndef __NOPARANOIA__
     if (cmnQuerySetting(sfUse8HelvFont))
-        return "8.Helv";
+        if (nlsDBCS())
+            return "8.Helv Combined";
+        else
+            return "8.Helv";
     else
 #endif
-        return "9.WarpSans";
+        if (nlsDBCS())
+            return "9.WarpSans Combined";
+        else
+            return "9.WarpSans";
 }
 
 /*
