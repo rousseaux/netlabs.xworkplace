@@ -1,4 +1,4 @@
- 
+
 /*
  * drvrs001.txt:
  *      driver specifications for the "Drivers" page in
@@ -66,44 +66,44 @@
  *            getting XWorkplace to compile at all. See
  *            src\config\drivdlgs.c for an introduction.
  */
- 
+
 CATEGORY "General"
     {
         DRIVER ( "BASEDEV=", "RESERVE.SYS",
                  "Resource manager",
                  DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "DEVICE=", "APM.SYS",
                  "Advanced Power Management",
                  DRVF_CMDREF | DRVF_CONFIGTOOL),
         DRIVER ( "RUN=", "APMDAEMN.EXE",
                  "APM daemon",
                  DRVF_CONFIGTOOL | DRVF_NOPARAMS),
- 
+
         DRIVER ( "DEVICE=", "UNICODE.SYS",
                  "Unicode Support for WSeB kernel",
                  DRVF_CONFIGTOOL,
                  TAG=KRNLUNICODE),
- 
+
         DRIVER ( "DEVICE=", "TESTCFG.SYS",
                  "Test-configuration driver for OS/2 installation",
                  DRVF_CONFIGTOOL | DRVF_NOPARAMS),
- 
+
         DRIVER ( "DEVICE=", "EXCPHEAD.SYS",
                  "Avoids trap in DOSCALL1.DLL",
                  DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "BASEDEV=", "I2OXPORT.SYS",
                  "IBM I2O Transport",
                  DRVF_NOPARAMS),
         DRIVER ( "BASEDEV=", "I2OSOSM.ADD",
                  "IBM I2O Storage OSM",
                  DRVF_NOPARAMS),
- 
+
         DRIVER ( "DEVICE=", "DOS.SYS",
                  "Application reboot support",
                  DRVF_CONFIGTOOL | DRVF_NOPARAMS),
- 
+
         DRIVER ( "DEVICE=", "VEMM.SYS",
                  "DOS Expanded Memory support",
                  DRVF_CMDREF | DRVF_CONFIGTOOL),
@@ -119,49 +119,49 @@ CATEGORY "General"
         DRIVER ( "DEVICE=", "VXMS.SYS",
                  "DOS eXtended Memory Specification support",
                  DRVF_CMDREF | DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "DEVICE=", "VW32S.SYS",
                  "Win32s support",
                  DRVF_CONFIGTOOL | DRVF_NOPARAMS),
         DRIVER ( "DEVICE=", "VWIN.SYS",
                  "Win-OS/2 support",
                  DRVF_CONFIGTOOL | DRVF_NOPARAMS),
- 
+
         DRIVER ( "DEVICE=", "ANSI.SYS",
                  "ANSI display and keyboard support",
                  DRVF_CMDREF | DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "RUN=", "SMSTART.EXE",
                  "Systems Management Startup Daemon",
                  DRVF_CMDREF | DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "DEVICE=", "LOG.SYS",
                  "OS/2 System Error Logging Service base driver",
                  DRVF_CMDREF | DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "RUN=", "LOGDAEM.EXE",
                  "OS/2 System Error Logging Service daemon",
                  DRVF_CMDREF | DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "RUN=", "EPW.EXE",
                  "First Failure Support Technology part",
                  DRVF_CONFIGTOOL | DRVF_NOPARAMS),
         DRIVER ( "RUN=", "EPWROUT.EXE",
                  "First Failure Support Technology part",
                  DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "RUN=", "PDUMPSYS.EXE",
                  "Process dump control",
-                 0 ),
- 
+                 0),
+
         DRIVER ( "DEVICE=", "VCOMPAT.SYS",
-                 "DOS compatibility enhancer (Martin Kiewitz)",
+                 "DOS compatibility enhancer",
                  DRVF_CONFIGTOOL | DRVF_NOPARAMS),
         DRIVER ( "DEVICE=", "V2GB.SYS",
                  "Solves DOS/Windows application problems with partitions >2GiB",
                  DRVF_CONFIGTOOL | DRVF_NOPARAMS)
     }
- 
+
 CATEGORY "Storage"
     {
         DRIVER ( "BASEDEV=", "IBM1S506.ADD",
@@ -179,7 +179,7 @@ CATEGORY "Storage"
         DRIVER ( "BASEDEV=", "DANIDASD.DMD",
                  "Replacement general storage device manager for non-LVM systems (Daniela Engert)",
                  DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "BASEDEV=", "OS2LVM.DMD",
                  "Logical Volume Manager",
                  DRVF_CONFIGTOOL,
@@ -195,7 +195,7 @@ CATEGORY "Storage"
                  "LVM file-system extender",
                  DRVF_CMDREF | DRVF_CONFIGTOOL,
                  TAG=EXTENDFS),
- 
+
         DRIVER ( "BASEDEV=", "CHKDSK.SYS",
                  "Large partition support driver for CHKDSK32",
                  DRVF_CONFIGTOOL | DRVF_NOPARAMS),
@@ -205,7 +205,7 @@ CATEGORY "Storage"
         DRIVER ( "BASEDEV=", "DSKSLEEP.FLT",
                  "SCSI Disk Sleep Filter (Vitus Jensen)",
                  DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "BASEDEV=", "IBM1FLPY.ADD",
                  "Standard floppy",
                  DRVF_CMDREF | DRVF_CONFIGTOOL),
@@ -215,7 +215,7 @@ CATEGORY "Storage"
         DRIVER ( "BASEDEV=", "XDFLOPPY.FLT",
                  "1.8MB floppy support filter",
                  DRVF_CMDREF | DRVF_CONFIGTOOL | DRVF_NOPARAMS),
- 
+
         DRIVER ( "DEVICE=", "VFDISK.SYS",
                  "IBM Virtual Floppy Disk driver",
                  DRVF_CONFIGTOOL),
@@ -223,7 +223,7 @@ CATEGORY "Storage"
                  "Virtual (RAM) disk driver",
                  DRVF_CMDREF | DRVF_CONFIGTOOL)
     }
- 
+
 CATEGORY "CD-ROM/CD-RW"
     {
         DRIVER ( "BASEDEV=", "MITFX001.ADD",
@@ -232,7 +232,7 @@ CATEGORY "CD-ROM/CD-RW"
         DRIVER ( "BASEDEV=", "SBCD2.ADD",
                  "Sound Blaster CD-ROM",
                  DRVF_CMDREF | DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "BASEDEV=", "IBMATAPI.FLT",
                  "ATAPI filter",
                  DRVF_CONFIGTOOL),
@@ -245,7 +245,7 @@ CATEGORY "CD-ROM/CD-RW"
         DRIVER ( "BASEDEV=", "DaniATAP.FLT",
                  "Enhanced ATAPI filter (Daniela Engert)",
                  DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "BASEDEV=", "RSJIDECD.FLT",
                  "RSJ CD-ROM filter replacement",
                  DRVF_CONFIGTOOL | DRVF_NOPARAMS),
@@ -255,19 +255,19 @@ CATEGORY "CD-ROM/CD-RW"
         DRIVER ( "DEVICE=", "RSJSCSI.SYS",
                  "RSJ CD-Writer support driver",
                  DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "DEVICE=", "OS2CDROM.DMD",
                  "General CD-ROM manager",
                  DRVF_CMDREF | DRVF_CONFIGTOOL),
         DRIVER ( "DEVICE=", "JJSCDROM.DMD",
                  "Enhanced CD-ROM manager",
                  DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "DEVICE=", "VCDROM.SYS",
                  "DOS CD-ROM support",
                  DRVF_CONFIGTOOL | DRVF_NOPARAMS)
     }
- 
+
 CATEGORY "SCSI"
     {
         DRIVER ( "BASEDEV=", "AHA152X.ADD",
@@ -320,10 +320,10 @@ CATEGORY "SCSI"
                  DRVF_CONFIGTOOL),
         DRIVER ( "BASEDEV=", "SIGSCSI.ADD",
                  "SIIG AP-10SCSIPCI adapter",
-                 0 ),
+                 0),
         DRIVER ( "BASEDEV=", "DMX3194.ADD",
                  "DOMEX Power Port 3194 UW adapter",
-                 0 ),
+                 0),
         DRIVER ( "BASEDEV=", "SYM_HI.ADD",
                  "Symbios/LSI Logic 53C1010 chip adapter",
                  DRVF_CONFIGTOOL),
@@ -345,7 +345,7 @@ CATEGORY "SCSI"
         DRIVER ( "BASEDEV=", "DC29160.ADD",
                  "DawiControl DC-29160 adapter",
                  DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "BASEDEV=", "OS2SCSI.DMD",
                  "OS/2 SCSI manager",
                  DRVF_CMDREF | DRVF_CONFIGTOOL | DRVF_NOPARAMS),
@@ -363,190 +363,195 @@ CATEGORY "SCSI"
         DRIVER ( "DEVICE=", "ASPIROUT.SYS",
                  "ASPI router",
                  DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "DEVICE=", "CDMGRDRV.SYS",
                  "Plextor CD-ROM Manager/2 support driver",
                  DRVF_CONFIGTOOL | DRVF_NOPARAMS),
- 
+
         DRIVER ( "BASEDEV=", "IOMGDRV.FLT",
                  "Filter for Iomega SCSI 100MiB Zip and 1GiB Jaz drives",
                  DRVF_CONFIGTOOL | DRVF_NOPARAMS)
     }
- 
+
 CATEGORY "Installable File Systems"
     {
         DRIVER ( "IFS=", "HPFS.IFS",
-                 "High Performance File System (HPFS)",
+                 "HPFS: High Performance File System",
                  DRVF_CMDREF | DRVF_CONFIGTOOL),
-        DRIVER ( "CALL=", "CACHE.EXE",
+        DRIVER ( "RUN=", "CACHE.EXE",
                  "HPFS cache control program",
                  DRVF_CMDREF | DRVF_CONFIGTOOL),
         DRIVER ( "IFS=", "HPFS386.IFS",
-                 "386 High Performance File System (HPFS386)",
+                 "HPFS386: 386 High Performance File System",
                  DRVF_CONFIGTOOL),
- 
+        DRIVER ( "RUN=", "CACHE386.EXE",
+                 "HPFS386 cache control program",
+                 DRVF_CONFIGTOOL),
+
         DRIVER ( "IFS=", "JFS.IFS",
-                 "Journaling File System (JFS)",
+                 "JFS: Journaling File System",
                  DRVF_CMDREF | DRVF_CONFIGTOOL,
                  REQUIRES=LVM,
                  REQUIRES=KRNLUNICODE),
- 
+
         DRIVER ( "IFS=", "CDFS.IFS",
-                 "CD-ROM file system (CDFS)",
+                 "CDFS: CD-ROM File System",
                  DRVF_CMDREF | DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "IFS=", "UDF.IFS",
-                 "UDF file system (DVD)",
+                 "UDF: Universal Disk File System (for DVD)",
                  DRVF_CONFIGTOOL | DRVF_NOPARAMS),
- 
+
         DRIVER ( "IFS=", "NETWKSTA.200",
-                 "LAN requester file system",
+                 "LAN requester File System",
                  DRVF_CONFIGTOOL,
                  REQUIRES=NETBIOS),
- 
+
         DRIVER ( "IFS=", "RAMFS.IFS",
-                 "RAM disk file system (RAMFS)",
+                 "RAMFS: RAM disk File System",
                  DRVF_CONFIGTOOL,
                  TAG=RAMFS),
         DRIVER ( "IFS=", "RAMFS8.IFS",
-                 "RAM disk file system (RAMFS, 8 MB version)",
+                 "RAMFS: RAM disk File System (8 MB version)",
                  0,
                  TAG=RAMFS8),
         DRIVER ( "IFS=", "RAMFS64.IFS",
-                 "RAM disk file system (RAMFS 64 MB version)",
+                 "RAMFS: RAM disk File System (64 MB version)",
                  DRVF_CONFIGTOOL,
                  TAG=RAMFS64),
         DRIVER ( "CALL=", "RAMDISK.EXE",
                  "Creates RAMFS RAM drive",
                  DRVF_CONFIGTOOL),
 /*               REQUIRES=RAMFS), */
- 
+
         DRIVER ( "IFS=", "VFAT-OS2.IFS",
-                 "Win95 VFAT file system",
+                 "VFAT: Windows 95 File System for long filenames",
                  DRVF_CONFIGTOOL,
                  REQUIRES=MWDD32),
         DRIVER ( "RUN=", "VFAT_LW.EXE",
-                 "Win95 VFAT cache daemon",
+                 "VFAT cache daemon",
                  DRVF_CONFIGTOOL),
         DRIVER ( "BASEDEV=", "EXT2FLT.FLT",
                  "Linux ext2fs partition filter",
                  DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "IFS=", "EXT2-OS2.IFS",
-                 "Linux ext2fs file system",
+                 "EXT2FS: Linux Extended2 File System",
                  DRVF_CONFIGTOOL,
-                 REQUIRES=MWDD32)
+                 REQUIRES=MWDD32),
         DRIVER ( "RUN=", "EXT2_LW.EXE",
                  "Linux ext2fs cache daemon",
                  DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "IFS=", "TVFS.IFS",
-                 "Toronto Virtual File System (TVFS)",
+                 "TVFS: Toronto Virtual File System",
                  DRVF_CONFIGTOOL,
                  TAG=TVFSIFS),
         DRIVER ( "RUN=", "TVCTL.EXE",
                  "TVFS control program",
                  DRVF_CONFIGTOOL,
                  REQUIRES=TVFSIFS),
- 
+
         DRIVER ( "IFS=", "FAT32.IFS",
-                 "FAT32 file system (Henk Kelder)",
+                 "FAT32 File System",
                  DRVF_CONFIGTOOL,
                  TAG=FAT32IFS),
         DRIVER ( "CALL=", "CACHEF32.EXE",
-                 "FAT32 cache daemon (Henk Kelder)",
+                 "FAT32 cache daemon",
                  DRVF_CONFIGTOOL,
                  REQUIRES=FAT32IFS),
         DRIVER ( "BASEDEV=", "PARTFILT.FLT",
                  "Partition type filter",
                  DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "IFS=", "HFS.IFS",
-                 "Macintosh Hierarchical File System (HFS)",
+                 "HFS: Macintosh Hierarchical File System",
                  DRVF_CONFIGTOOL),
         DRIVER ( "BASEDEV=", "HFS.FLT",
                  "HFS support filter",
                  DRVF_CONFIGTOOL),
         DRIVER ( "RUN=", "HFS.EXE",
-                 "Macintosh Hierarchical File System (HFS) daemon",
+                 "HFS: Macintosh Hierarchical File System daemon",
                  DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "IFS=", "NFS200.IFS",
-                 "Network File System (NFS)",
+                 "NFS: Network File System version 2.0",
                  DRVF_CONFIGTOOL),
         DRIVER ( "IFS=", "NFS300.IFS",
-                 "Network File System (NFS)",
+                 "NFS: Network File System version 3.0",
                  DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "IFS=", "CDWFS.IFS",
-                 "RSJ CD-Writer File System",
-                 DRVF_CONFIGTOOL),
+                 "CDWFS: RSJ CD-Writer File System",
+                 DRVF_CONFIGTOOL,
+                 TAG=CDWFSIFS),
         DRIVER ( "RUN=", "CDWFSD.EXE",
-                 "RSJ CD-Writer File System daemon",
-                 DRVF_CONFIGTOOL),
- 
+                 "CDWFS: RSJ CD-Writer File System Daemon",
+                 DRVF_CONFIGTOOL,
+                 REQUIRES=CDWFSIFS),
+
         DRIVER ( "IFS=", "FTP.IFS",
-                 "FTP File System (FTP-IFS) by Vit Timchshin",
+                 "FTP-IFS: FTP File System",
                  DRVF_CONFIGTOOL),
         DRIVER ( "RUN=", "R3COMM.EXE",
-                 "FTP-IFS control program by Vit Timchshin",
-                 0 ),
- 
+                 "FTP-IFS control program",
+                 0),
+
         DRIVER ( "IFS=", "NDFS.IFS",
-                 "Network Drive File System (NDFS) version 2.x by Blueprint Software Works",
+                 "NDFS: Network Drive File System version 2.x",
                  DRVF_CONFIGTOOL,
                  TAG=NDFS),
         DRIVER ( "IFS=", "NDFS32.IFS",
-                 "Network Drive File System (NDFS) version 3.x by Blueprint Software Works",
+                 "NDFS: Network Drive File System version 3.x",
                  0,
                  TAG=NDFS32),
         DRIVER ( "RUN=", "NDCTL.EXE",
-                 "NDFS control program by Blueprint Software Works",
+                 "NDFS control program",
                  DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "IFS=", "STUBFSD.IFS",
-                 "CD-ROM ISO image file system (ISOFS)",
+                 "ISOFS: CD-ROM ISO image File System",
                  DRVF_CONFIGTOOL),
         DRIVER ( "RUN=", "ISOFSDMN.EXE",
-                 "ISOFS file system daemon",
+                 "ISOFS File System daemon",
                  DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "IFS=", "TONIGY.IFS",
-                 "Tonigy Audio CD file system",
+                 "Tonigy Audio CD File System",
                  DRVF_CONFIGTOOL | DRVF_NOPARAMS),
- 
+
         DRIVER ( "IFS=", "SUBSTFSD.IFS",
-                 "SUBST file system",
+                 "SUBST File System",
                  DRVF_NOPARAMS),
         DRIVER ( "RUN=", "SUBSTHST.EXE",
-                 "SUBST file system daemon",
+                 "SUBST File System daemon",
                  DRVF_NOPARAMS),
- 
+
         DRIVER ( "IFS=", "NTFS.IFS",
-                 "Windows NTFS file system",
+                 "NTFS: Windows New Technology File System",
                  DRVF_CONFIGTOOL)
     }
- 
+
 CATEGORY "Video"
     {
         DRIVER ( "DEVICE=", "GRADD.SYS",
                  "GRADD",
                  DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "DEVICE=", "KMGAX64.SYS",
                  "Matrox",
                  DRVF_CONFIGTOOL),
         DRIVER ( "DEVICE=", "VMGAX64.SYS",
                  "Matrox DOS/Windows support",
                  DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "DEVICE=", "SDDHELP.SYS",
                  "SciTech Display Doctor support",
                  DRVF_CONFIGTOOL),
         DRIVER ( "DEVICE=", "VMANWIN.SYS",
                  "DOS virtual GRADD driver",
                  DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "DEVICE=", "VVGA.SYS",
                  "VGA driver for DOS/Windows support",
                  DRVF_CONFIGTOOL | DRVF_NOPARAMS),
@@ -558,11 +563,11 @@ CATEGORY "Video"
                  DRVF_NOPARAMS),
         DRIVER ( "DEVICE=", "VMONO.SYS",
                  "MGA driver for DOS/Windows support",
-                 0 ),
+                 0),
         DRIVER ( "DEVICE=", "V8514A.SYS",
                  "8514 driver for DOS/Windows support",
-                 0 ),
- 
+                 0),
+
         DRIVER ( "DEVICE=", "PMDD.SYS",
                  "OS/2 PM Ring 0 Device driver",
                  DRVF_CMDREF | DRVF_CONFIGTOOL | DRVF_NOPARAMS),
@@ -570,7 +575,7 @@ CATEGORY "Video"
                  "Text-mode pointer support",
                  DRVF_CMDREF | DRVF_CONFIGTOOL | DRVF_NOPARAMS)
     }
- 
+
 CATEGORY "USB"
     {
         DRIVER ( "BASEDEV=", "USBD.SYS",
@@ -588,7 +593,7 @@ CATEGORY "USB"
         DRIVER ( "BASEDEV=", "USBUHCD.SYS",
                  "UHCI USB host controller driver",
                  DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "BASEDEV=", "CWUSBUHC.SYS",
                  "UHCI USB host controller driver, by Chris Wohlgemuth",
                  DRVF_CONFIGTOOL),
@@ -598,18 +603,18 @@ CATEGORY "USB"
         DRIVER ( "BASEDEV=", "CWUSBD.SYS",
                  "USB base driver, by Chris Wohlgemuth",
                  DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "BASEDEV=", "USBKBD.SYS",
                  "USB keyboard driver",
                  DRVF_CONFIGTOOL),
         DRIVER ( "DEVICE=", "USBMOUSE.SYS",
                  "USB mouse",
                  DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "DEVICE=", "USBAUDIO.SYS",
                  "USB Audio",
                  DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "BASEDEV=", "USBMSD.ADD",
                  "USB mass storage driver",
                  DRVF_CONFIGTOOL),
@@ -631,25 +636,25 @@ CATEGORY "USB"
         DRIVER ( "DEVICE=", "USBSER.SYS",
                  "USB serial converter driver",
                  DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "DEVICE=", "USBRESMG.SYS",
                  "USB resource manager driver",
                  DRVF_CONFIGTOOL | DRVF_NOPARAMS),
         DRIVER ( "DEVICE=", "USBECD.SYS",
                  "USB 1.1 expanded control driver",
-                 0 ),
+                 0),
         DRIVER ( "DEVICE=", "USBSCAN.SYS",
                  "USB scanner driver",
                  DRVF_CONFIGTOOL),
         DRIVER ( "DEVICE=", "USBWCM.SYS",
                  "USB Wacom tablet driver",
                  DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "DEVICE=", "GPH2USB.SYS",
                  "USB support driver for gphoto/2",
                  DRVF_CONFIGTOOL)
     }
- 
+
 CATEGORY "Other peripherals"
     {
         DRIVER ( "BASEDEV=", "PRINT01.SYS",
@@ -661,11 +666,11 @@ CATEGORY "Other peripherals"
         DRIVER ( "BASEDEV=", "PAR1284.SYS",
                  "BIDI printer",
                  DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "BASEDEV=", "IBMKBD.SYS",
                  "Standard keyboard",
                  DRVF_CMDREF | DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "DEVICE=", "MOUSE.SYS",
                  "Standard mouse",
                  DRVF_CMDREF | DRVF_CONFIGTOOL),
@@ -684,7 +689,7 @@ CATEGORY "Other peripherals"
         DRIVER ( "DEVICE=", "PCLOGIC.SYS",
                  "Logitech Mouse Device Dependent Driver",
                  DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "DEVICE=", "COM.SYS",
                  "Standard serial (COM) port",
                  DRVF_CMDREF | DRVF_CONFIGTOOL),
@@ -717,7 +722,7 @@ CATEGORY "Other peripherals"
                  DRVF_CONFIGTOOL),
         DRIVER ( "DEVICE=", "UNBHSIO.SYS",
                  "SIO2K support driver",
-                 0 ),
+                 0),
         DRIVER ( "DEVICE=", "CFOS.SYS",
                  "cFos/2 COM port emulator for CAPI 1.1",
                  DRVF_CONFIGTOOL),
@@ -741,34 +746,31 @@ CATEGORY "Other peripherals"
                  DRVF_CONFIGTOOL),
         DRIVER ( "DEVICE=", "ISDNCAPX.SYS",
                  "ELSA CAPI 1.1 1TR6 driver",
-                 0 ),
+                 0),
         DRIVER ( "DEVICE=", "VCAPI20.SYS",
                  "ELSA Virtual DOS CAPI 2.0 driver",
                  DRVF_CONFIGTOOL),
         DRIVER ( "DEVICE=", "VCAPI11.SYS",
                  "ELSA Virtual DOS CAPI 1.1 driver",
-                 0 ),
+                 0),
         DRIVER ( "DEVICE=", "VFD.OS2",
                  "Virtual FOSSIL driver",
-                 0 ),
+                 0),
         DRIVER ( "DEVICE=", "VCAPI.SYS",
                  "Teles Virtual DOS CAPI driver",
                  DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "DEVICE=", "FTDVR.SYS",
                  "BackMaster Floppy Tape Driver",
                  DRVF_CONFIGTOOL),
         DRIVER ( "DEVICE=", "PTDVR.SYS",
                  "BackMaster Parallel Tape Driver",
                  DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "DEVICE=", "FMD.SYS",
                  "PMFax COM driver for non-exclusive access",
                  DRVF_CONFIGTOOL),
-        DRIVER ( "DEVICE=", "FXPRINT.DRV",
-                 "Faxworks driver",
-                 0 ),
- 
+
         DRIVER ( "DEVICE=", "DIDD.OS2",
                  "Eicon Diehl Diva ISDN port driver",
                  DRVF_CONFIGTOOL),
@@ -811,11 +813,11 @@ CATEGORY "Other peripherals"
         DRIVER ( "DEVICE=", "CAPI20.OS2",
                  "Eicon Diehl Diva CAPI 2.0",
                  DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "DEVICE=", "CPASPI.SYS",
                  "Compart Impos/2 ASPI driver for SCSI scanners",
                  DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "DEVICE=", "IRDA_PHY.OS2",
                  " IrDA Stack drivers",
                  DRVF_CONFIGTOOL),
@@ -826,25 +828,25 @@ CATEGORY "Other peripherals"
                  " IrDA com drivers",
                  DRVF_CONFIGTOOL)
     }
- 
+
 CATEGORY "Multimedia"
     {
         DRIVER ( "DEVICE=", "ASP4CORE.SYS",
                  "Turtle Beach Montego (Aureal) Sound card core driver",
-                 0 ),
+                 0),
         DRIVER ( "DEVICE=", "ASP4OS2.SYS",
                  "Turtle Beach Montego (Aureal) Sound card MMPM/2 driver",
-                 0 ),
+                 0),
         DRIVER ( "DEVICE=", "ASP4JOY.SYS",
                  "Turtle Beach Montego (Aureal) Sound card joystick driver",
-                 0 ),
+                 0),
         DRIVER ( "DEVICE=", "ASP4VDD.SYS",
                  "Turtle Beach Montego (Aureal) Sound card DOS virtual driver",
-                 0 ),
+                 0),
         DRIVER ( "RUN=", "ASP4INIT.EXE",
                  "Turtle Beach Montego (Aureal) Sound card initialization tool",
-                 0 ),
- 
+                 0),
+
         DRIVER ( "BASEDEV=", "CWGMSG.SYS",
                  "Cirrus Logic Message Driver",
                  DRVF_CONFIGTOOL | DRVF_NOPARAMS,
@@ -872,12 +874,12 @@ CATEGORY "Multimedia"
                  "DOS Virtual OPL3 driver",
                  DRVF_CONFIGTOOL),
         DRIVER ( "RUN=", "CWCUTIL.EXE",
-                 "CrystalWare(tm) INI file reader", 
+                 "CrystalWare(tm) INI file reader",
                  DRVF_CONFIGTOOL),
         DRIVER ( "RUN=", "CWDAEMON.EXE",
                  "CrystalWare(tm) Win-OS2 support daemon",
                  DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "BASEDEV=", "CWCONFIG.SYS",
                  "Crystal Semiconductor audio device configuration driver",
                  DRVF_CONFIGTOOL),
@@ -887,7 +889,7 @@ CATEGORY "Multimedia"
         DRIVER ( "DEVICE=", "CWVAUDIO.SYS",
                  "Crystal Semiconductor audio virtual device driver",
                  DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "DEVICE=", "SB16D2.SYS",
                  "Soundblaster 16",
                  DRVF_CONFIGTOOL),
@@ -908,7 +910,7 @@ CATEGORY "Multimedia"
                  DRVF_CONFIGTOOL),
         DRIVER ( "DEVICE=", "OPL3VDD.SYS",
                  "Yamaha SAx sound chip virtual driver",
-                 0 ),
+                 0),
         DRIVER ( "DEVICE=", "ES1371.SYS",
                  "Ensoniq ES1371 sound chip driver",
                  DRVF_CONFIGTOOL),
@@ -957,7 +959,7 @@ CATEGORY "Multimedia"
         DRIVER ( "DEVICE=", "UNIAUD16.SYS",
                  "UniAudio 16 bit driver",
                  DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "DEVICE=", "GWDTA.SYS",
                  "Generic WinOS/2 audio driver",
                  DRVF_CONFIGTOOL,
@@ -970,11 +972,11 @@ CATEGORY "Multimedia"
                  "Generic WinOS/2 audio driver daemon",
                  DRVF_CONFIGTOOL,
                  REQUIRES=GWDTA),
- 
+
         DRIVER ( "DEVICE=", "VCSHDD.SYS",
                  "MMPM/2 video recording support driver",
                  DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "DEVICE=", "R0STUB.SYS",
                  "MMPM/2 ring-0 streaming support stub driver",
                  DRVF_CONFIGTOOL),
@@ -984,7 +986,7 @@ CATEGORY "Multimedia"
         DRIVER ( "DEVICE=", "AUDIOVDD.SYS",
                  "MMPM/2 sound sharing driver",
                  DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "BASEDEV=", "TIMER0.SYS",
                  "High-resolution timer",
                  DRVF_CONFIGTOOL),
@@ -999,14 +1001,14 @@ CATEGORY "Multimedia"
                  "DOS MPU401 MIDI support, by Thetaband",
                  DRVF_CONFIGTOOL,
                  REQUIRES=MPU401 ),
- 
+
         DRIVER ( "RUN=", "MIDIDMON.EXE",
                  "OS/2 MIDI daemon",
-                 0 ),
+                 0),
         DRIVER ( "RUN=", "QRYMMCD.EXE",
                  "MMPM/2 query daemon for audio CDs",
                  DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "DEVICE=", "GAMEDD.SYS",
                  "Joystick driver",
                  DRVF_CONFIGTOOL),
@@ -1020,7 +1022,7 @@ CATEGORY "Multimedia"
                  "DOS Gravis Firebird/Thunderbird joystick setup driver",
                  DRVF_CONFIGTOOL)
     }
- 
+
 CATEGORY "Network"
     {
         DRIVER ( "DEVICE=", "SOCKETS.SYS",
@@ -1047,7 +1049,7 @@ CATEGORY "Network"
         DRIVER ( "DEVICE=", "VNETAPI.OS2",
                  "General: DOS virtual network API support",
                  DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "DEVICE=", "AFINET.SYS",
                  "Protocol: TCP/IP stack (16-bit version)",
                  DRVF_CONFIGTOOL),
@@ -1061,7 +1063,7 @@ CATEGORY "Network"
                  "Protocol: TCP/IP stack daemon",
                  DRVF_CONFIGTOOL),
         DRIVER ( "DEVICE=", "VDOSTCP.SYS",
-                 "Protocol: TCP/IP DOS/Windows SYS",
+                 "Protocol: TCP/IP DOS/Windows PDD",
                  DRVF_CONFIGTOOL),
         DRIVER ( "DEVICE=", "VDOSTCP.VDD",
                  "Protocol: TCP/IP DOS/Windows VDD",
@@ -1069,7 +1071,7 @@ CATEGORY "Network"
         DRIVER ( "RUN=", "VDOSCTL.EXE",
                  "Protocol: TCP/IP DOS/Windows stack daemon",
                  DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "DEVICE=", "NETBIOS.OS2",
                  "Protocol: NetBIOS API driver",
                  DRVF_CONFIGTOOL),
@@ -1091,21 +1093,21 @@ CATEGORY "Network"
         DRIVER ( "DEVICE=", "LANVDD.OS2",
                  "Protocol: NetBIOS DOS/Windows VDD",
                  DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "DEVICE=", "TCPBEUI.OS2",
                  "Protocol: NetBIOS-over-TCP/IP",
                  DRVF_CONFIGTOOL),
         DRIVER ( "RUN=", "NBTCP.EXE",
                  "Protocol: NetBIOS-over-TCP/IP socket processing",
                  DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "DEVICE=", "IPX.SYS",
                  "Protocol: IPX protocol driver",
                  DRVF_CONFIGTOOL),
         DRIVER ( "DEVICE=", "VIPX.SYS",
                  "Protocol: IPX DOS/Windows",
                  DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "DEVICE=", "NETBIOS.SYS",
                  "Protocol: NetBIOS driver for Netware client",
                  DRVF_CONFIGTOOL),
@@ -1128,18 +1130,18 @@ CATEGORY "Network"
         DRIVER ( "DEVICE=", "ROUTE.SYS",
                  "Protocol: Router for Netware client",
                  DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "DEVICE=", "SFPROT.SYS",
                  "Protocol: SafeFire Firewall Protocol Driver",
-                 0 ),
+                 0),
         DRIVER ( "DEVICE=", "PPPEMYWI.OS2",
                  "Protocol: PPP over Ethernet driver from ISDNPM 3.x",
                  DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "RUN=", "LSDAEMON.EXE",
                  "LAN Server daemon, also part of File and Print client",
                  DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "DEVICE=", "NULLNDIS.OS2",
                  "Null NDIS driver",
                  DRVF_CONFIGTOOL),
@@ -1150,7 +1152,7 @@ CATEGORY "Network"
 
         DRIVER ( "DEVICE=", "A2500.OS2",
                  "Adapter: ATI AT-2500 Fast Ethernet Adapter",
-                 0 ),
+                 0),
         DRIVER ( "DEVICE=", "ACCND.OS2",
                  "Adapter: Accton EN1207D Series PCI Fast Ethernet Adapter",
                  0),
@@ -1294,7 +1296,7 @@ CATEGORY "Network"
                  0),
         DRIVER ( "DEVICE=", "GENM32.OS2",
                  "Adapter: MyWis General Mac Driver (by Willibald Meyer)",
-                 0 ),
+                 0),
         DRIVER ( "DEVICE=", "I2OLOSM.OS2",
                  "Adapter: IBM I2O LAN Driver",
                  0),
@@ -1578,17 +1580,15 @@ CATEGORY "Network"
         DRIVER ( "DEVICE=", "SWITCH.OS2",
                  "Adapter: InnoTek Virtual Switch MAC",
                  DRVF_CONFIGTOOL | DRVF_NOPARAMS),
- 
+
         DRIVER ( "DEVICE=", "SVSNET.SYS",
                  "SViSta Net Manager",
                  DRVF_NOPARAMS ),
-        DRIVER ( "DEVICE=", "SVISTA.SYS",
-                 "SViSta Manager",
-                 0 ),
+
         DRIVER ( "DEVICE=", "IPSPY.OS2",
                  "IPSpy protocol driver",
-                 0 ),
- 
+                 0),
+
         DRIVER ( "DEVICE=", "IPSEC.SYS",
                  "Firewall/VPN: IPSEC protocol driver",
                  DRVF_CONFIGTOOL),
@@ -1605,8 +1605,8 @@ CATEGORY "Network"
                  "Firewall/VPN: DES encryption driver",
                  DRVF_CONFIGTOOL)
     }
- 
-CATEGORY "System extensions"
+
+CATEGORY "Other drivers"
     {
         DRIVER ( "BASEDEV=", "MWDD32.SYS",
                  "Matthieu Wilm's 32-bit device driver support",
@@ -1617,7 +1617,7 @@ CATEGORY "System extensions"
         DRIVER ( "DEVICE=", "CPPOPA3.SYS",
                  "IBM VisualAge C++ 3.0 debugger driver",
                  DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "DEVICE=", "WATCHCAT.SYS",
                  "WatchCat base driver",
                  DRVF_CONFIGTOOL,
@@ -1638,7 +1638,7 @@ CATEGORY "System extensions"
                  "WatchCat control for C-A-D, intercepts hotkeys",
                  DRVF_CONFIGTOOL | DRVF_NOPARAMS,
                  REQUIRES=WATCHCATSYS ),
- 
+
         DRIVER ( "DEVICE=", "THESEUS2.SYS",
                  "Theseus 2 system analysis driver",
                  DRVF_CONFIGTOOL),
@@ -1648,38 +1648,41 @@ CATEGORY "System extensions"
         DRIVER ( "DEVICE=", "OS20MEMU.SYS",
                  "OS20MEMU system analysis driver",
                  DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "BASEDEV=", "K6.SYS",
                  "AMD K6 processor family support driver",
                  DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "BASEDEV=", "WACKER.SYS",
                  "AMD K6 processor family support driver",
                  DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "DEVICE=", "P6K7MTRR.SYS",
                  "Intel P6/AMD K7 MTTR support driver",
                  DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "DEVICE=", "VPCAPP.SYS",
                  "Virtual PC support driver",
                  DRVF_CONFIGTOOL | DRVF_NOPARAMS),
- 
+        DRIVER ( "DEVICE=", "SVISTA.SYS",
+                 "SViSta Manager",
+                 0),
+
         DRIVER ( "DEVICE=", "KDBNET.SYS",
                  "UDP support for OS/2 debug kernels",
-                 0 ),
- 
+                 0),
+
         DRIVER ( "DEVICE=", "WIN32K.SYS",
                  "Odin kernel support",
                  DRVF_CONFIGTOOL),
- 
+
         DRIVER ( "BASEDEV=", "CADH.SYS",
                  "Control-Alt-Delete Handler driver (Veit Kannegieser)",
                  DRVF_CONFIGTOOL),
         DRIVER ( "RUN=", "CAD_POP.EXE",
                  "Control-Alt-Delete Handler daemon (Veit Kannegieser)",
-                 0 ),
- 
+                 0),
+
         DRIVER ( "BASEDEV=", "NVCHOOK.SYS",
                  "Norman Virus Control support driver",
                  DRVF_CONFIGTOOL | DRVF_NOPARAMS,
@@ -1688,7 +1691,7 @@ CATEGORY "System extensions"
                  "Norman Virus Control support agent",
                  DRVF_CONFIGTOOL,
                  REQUIRES=NVCHOOK ),
- 
+
         DRIVER ( "BASEDEV=", "SSES.SYS",
                  "Security/2 core driver",
                  0,
@@ -1697,31 +1700,31 @@ CATEGORY "System extensions"
                  "Security/2 control daemon",
                  0,
                  REQUIRES=SSESSYS ),
- 
+
         DRIVER ( "RUN=", "CLKBASIC.EXE",
                  "eCS Clock daemon",
                  DRVF_CONFIGTOOL | DRVF_NOPARAMS),
- 
+
         DRIVER ( "BASEDEV=", "SHOWIDT.SYS",
                  "Driver for IRQ Monitor application (Juergen Dittmer, Willibald Meyer)",
                  DRVF_CONFIGTOOL | DRVF_NOPARAMS),
- 
+
         DRIVER ( "RUN=", "VPCKBMON.EXE",
                  "Virtual PC Keyboard Monitor",
                  DRVF_CONFIGTOOL | DRVF_NOPARAMS),
- 
+
         DRIVER ( "DEVICE=", "APM_NH.SYS",
                  "Replacement APM driver",
                  DRVF_CONFIGTOOL,
                  TAG=APMNHSYS ),
         DRIVER ( "DEVICE=", "VIAAPM.SYS",
-                 "VIA KT266A power management",
+                 "VIA KT133/KT266A/KT333 power management",
                  DRVF_CONFIGTOOL,
                  REQUIRES=APMNHSYS ),
 
         DRIVER ( "RUN=", "HYBERSET.EXE",
                  "Hybernation settings",
-                 0 ),
+                 0),
 
         DRIVER ( "RUN=", "KBDFIXD.EXE",
                  "Win95Key v2 and v3 daemon",
@@ -1732,11 +1735,8 @@ CATEGORY "System extensions"
                  DRVF_CONFIGTOOL),
         DRIVER ( "RUN=", "WIPEBOOT.EXE",
                  "WipeOut screensaver daemon",
-                 DRVF_CONFIGTOOL)
-    }
- 
-CATEGORY "Application specific"
-    {
+                 DRVF_CONFIGTOOL),
+
         DRIVER ( "RUN=", "DB2UPM.EXE",
                  "DB/2 User Profile Management",
                  DRVF_CONFIGTOOL)
