@@ -26,11 +26,11 @@ fast memory if possible), but they are not described here.
 file-system cache, &os2; does not have to read it from the
 disk, but can simply take it from the cache in memory, which is a lot faster.
 
-<P>On the other hand side, if an application is writing data to disk, &os2; can
+<P>On one hand, if an application is writing data to disk, &os2; can
 copy this data to the cache first and delay writing it to disk until the disk is
 ready for accepting it, or the system is idle. This is called <B>"lazy writing"</B>
 and can greatly improve your system's performance.
-On the other hand size, this increases the danger of data loss
+On the other hand, this increases the danger of data loss
 in case of power shortages or fatal system crashes, because data in the caches
 gets lost then. You should still have lazy writing enabled if you have a
 reasonably stable &os2; system and rarely get CHKDSK's at bootup.
