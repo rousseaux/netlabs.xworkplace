@@ -513,6 +513,7 @@ BOOL fdrModifySortMenu(WPFolder *somSelf,
  *
  *@@changed V0.9.12 (2001-05-18) [umoeller]: moved this here from fdrmenus.c, mostly rewritten
  *@@changed V0.9.13 (2001-06-19) [umoeller]: dismissing sort menu again, unless shift was pressed
+ *@@changed V1.0.4 (2005-09-19) [pr]: use variables from method calls rather than instance vars. directly
  */
 
 BOOL fdrSortMenuItemSelected(WPFolder *somSelf,
@@ -539,8 +540,8 @@ BOOL fdrSortMenuItemSelected(WPFolder *somSelf,
         // step 1:
         // check if one of the sort criteria was selected
 
-        PMPF_SORT(("lMenuId2 %d, fShiftPressed %d",
-                lMenuId2, fShiftPressed));
+        PMPF_SORT(("lMenuId2 %d, fShiftPressed %d, pbDismiss 0x%lX",
+                lMenuId2, fShiftPressed, pbDismiss));
 
         switch (lMenuId2)
         {
@@ -562,9 +563,9 @@ BOOL fdrSortMenuItemSelected(WPFolder *somSelf,
                                   &lDefaultSort,
                                   &lFoldersFirst,
                                   &lAlwaysSort);
-                fAlwaysSort = (_lAlwaysSort == SET_DEFAULT)
+                fAlwaysSort = (lAlwaysSort == SET_DEFAULT)      // V1.0.4
                                   ? cmnQuerySetting(sfAlwaysSort)
-                                  : _lAlwaysSort;
+                                  : lAlwaysSort;                // V1.0.4
 
                 PMPF_SORT(("ID_XFMI_OFS_ALWAYSSORT, old fAlwaysSort: %d",
                             fAlwaysSort));
@@ -578,8 +579,6 @@ BOOL fdrSortMenuItemSelected(WPFolder *somSelf,
                                        ulMenuId,
                                        !fAlwaysSort);
 
-                PMPF_SORT(("    pbDismiss is 0x%lX", fAlwaysSort));
-
                 if (pbDismiss)
                     // do not dismiss menu
                     *pbDismiss = FALSE;
@@ -592,13 +591,18 @@ BOOL fdrSortMenuItemSelected(WPFolder *somSelf,
             case ID_XFMI_OFS_SORTFOLDERSFIRST:
             {
                 BOOL fFoldersFirst;
+
                 _xwpQueryFldrSort(somSelf,
                                   &lDefaultSort,
                                   &lFoldersFirst,
                                   &lAlwaysSort);
-                fFoldersFirst = (_lFoldersFirst == SET_DEFAULT)
+                fFoldersFirst = (lFoldersFirst == SET_DEFAULT)  // V1.0.4
                                     ? cmnQuerySetting(sfFoldersFirst)
-                                    : _lFoldersFirst;
+                                    : lFoldersFirst;            // V1.0.4
+
+                PMPF_SORT(("ID_XFMI_OFS_SORTFOLDERSFIRST, old fFoldersFirst: %d",
+                            fFoldersFirst));
+
                 _xwpSetFldrSort(somSelf,
                                 lDefaultSort,
                                 !fFoldersFirst,
