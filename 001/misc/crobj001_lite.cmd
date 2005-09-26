@@ -1,7 +1,7 @@
 /*
     Create default eWorkplace configuration folder
     English version (001)
-    (C) 1998-2002 Ulrich M”ller.
+    (C) 1998-2005 Ulrich M”ller.
  */
 
 /* Here come the titles of the objects to be created.

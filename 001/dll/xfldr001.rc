@@ -50,7 +50,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *      Copyright (C) 1997-2005 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -1998,7 +1998,7 @@ BEGIN
     ID_FXDI_FILEMASKSELECT_DESELECTALL    "Deselect a~ll"
 
     /* product information message box */
-    ID_FXSI_PRODINFO                     "xfix V&version;, built &date;&nl;&copy; 2000-2002 Ulrich M”ller&nl;&nl;&xwp; File Handles Fixer."
+    ID_FXSI_PRODINFO                     "xfix V&version;, built &date;&nl;&copy; 2000-2005 Ulrich M”ller&nl;&nl;&xwp; File Handles Fixer."
 
     /* nuke message box strings */
     ID_FXSI_NUKE_ABSTRACTS               "%d abstract object(s)"

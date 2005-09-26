@@ -9,7 +9,7 @@
 # This file will probably not work with other MAKE utilities, such as
 # GNU make or DMAKE.
 #
-# Copyright (C) 1997-2003 Ulrich M”ller.
+# Copyright (C) 1997-2005 Ulrich M”ller.
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, in version 2 as it comes in the COPYING
@@ -20,6 +20,10 @@
 # GNU General Public License for more details.
 # Required changes for translating the NLS DLL: three lines below.
 #
+
+# Say hello to yourself.
+!if [@echo +++++ Entering $(MAKEDIR)]
+!endif
 
 # include setup (compiler options etc.)
 !include ..\..\config.in
@@ -46,10 +50,17 @@ OUTPUTDIR = $(XWP_OUTPUT_ROOT)
 # create output directory
 !if [@md $(OUTPUTDIR) 2> NUL]
 !endif
+!if [@md $(MODULESDIR) 2> NUL]
+!endif
 
 OBJS = $(OUTPUTDIR)\xfldr$(LANGUAGE).obj
 
 XFLDHELP = $(XWPRUNNING)\help
+
+# Define the suffixes for files which NMAKE will work on.
+# .SUFFIXES is a reserved NMAKE keyword ("pseudotarget") for
+# defining file extensions that NMAKE will recognize.
+.SUFFIXES: .txt .c .obj .dll .rc .res .html .ipf .hlp .inf
 
 all: $(XWPRUNNING)\bin\xfldr$(LANGUAGE).dll
     @echo ----- Leaving $(MAKEDIR)

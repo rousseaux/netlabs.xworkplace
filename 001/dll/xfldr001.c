@@ -6,10 +6,8 @@
  *      write a dumb function.
  *
  *      Do not change this file.
- */
-
-/*
- *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *
+ *      Copyright (C) 1997-2005 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify

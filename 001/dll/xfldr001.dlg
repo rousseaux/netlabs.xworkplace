@@ -73,7 +73,7 @@ BEGIN
         LTEXT           "Contacting Netscape...", -1, 5, 1, 160, 9,
                         DT_WORDBREAK
         RTEXT           "Netscape DDE Interface", -1, 25, 18, 110, 8
-        RTEXT           "(C) 1998-2003 Ulrich M”ller", -1, 25, 12, 110, 8
+        RTEXT           "(C) 1998-2005 Ulrich M”ller", -1, 25, 12, 110, 8
     END
 END
 
@@ -86,7 +86,7 @@ BEGIN
         LTEXT           "Starting Netscape...", -1, 5, 1, 160, 9,
                         DT_WORDBREAK
         RTEXT           "Netscape DDE Interface", -1, 25, 18, 110, 8
-        RTEXT           "(C) 1998-2003 Ulrich M”ller", -1, 25, 12, 110, 8
+        RTEXT           "(C) 1998-2005 Ulrich M”ller", -1, 25, 12, 110, 8
     END
 END
 

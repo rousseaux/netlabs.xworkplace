@@ -1,7 +1,7 @@
 /*
     Create eWorkplace installation objects
     English version (001)
-    (C) 1998-2002 Ulrich M”ller.
+    (C) 1998-2005 Ulrich M”ller.
  */
 
 /* change the following language code to your language. */

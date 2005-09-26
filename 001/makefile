@@ -1,5 +1,5 @@
 
-# Copyright (C) 1997-2003 Ulrich M”ller.
+# Copyright (C) 1997-2005 Ulrich M”ller.
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, in version 2 as it comes in the COPYING
@@ -9,6 +9,10 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 # Required changes for translating the NLS DLL: three lines below.
+
+# Say hello to yourself.
+!if [@echo +++++ Entering $(MAKEDIR)]
+!endif
 
 # include setup (compiler options etc.)
 !include ..\config.in

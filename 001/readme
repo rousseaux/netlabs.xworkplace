@@ -1,9 +1,9 @@
 
-XWorkplace 1.0.0 README
+XWorkplace 1.0.4 README
 
 (W) Ulrich M”ller, Feb 7, 2000
 
-Last updated November 23, 2002
+Last updated September 26, 2005
 
 
 0. CONTENTS OF THIS FILE
@@ -21,17 +21,15 @@ Last updated November 23, 2002
 
     6. GETTING STARTED
 
-    7. KNOWN LIMITATIONS
+    7. LICENSE, COPYRIGHT, DISCLAIMER
 
-    8. LICENSE, COPYRIGHT, DISCLAIMER
-
-    9. CONTACT
+    8. CONTACT
 
 
 1. INTRODUCTION
 ===============
 
-    Welcome to XWorkplace V1.0.0.
+    Welcome to XWorkplace V1.0.4.
 
     XWorkplace is a complex set of replacement classes for the
     OS/2 Workplace Shell to enhance the WPS's behavior in many
@@ -48,13 +46,8 @@ Last updated November 23, 2002
     About this release
     ------------------
 
-    This is my first attempt at a "stable" XWorkplace release.
-    Since the code has improved quite a bit over the last few
-    releases, I thought it might finally be time.
-
-    This does not mean that XWorkplace is bug-free. But I am
-    confident that if any problems exist, it should be possible
-    to work around them.
+    This is another release off the 1.0 branch with the bugfixes
+    that have piled up here over the six months.
 
     For details, refer to the "Version Notices" in the
     "XWorkplace User Guide". To extract the documentation
@@ -72,15 +65,13 @@ Last updated November 23, 2002
     is concerned -- to the Merlin Convenience Package 1 (MCP1).
 
     NOTE: As opposed to previous releases, XWorkplace 1.0.0
-    will NO LONGER work on OS/2 Warp 3. I finally broke Warp 3
-    support intentionally because for one I can no longer test
-    on Warp 3 and secondly because I got tired working around
-    the many bugs and limitations of Warp 3's menu support.
-
-    SO DO NOT TRY TO INSTALL THIS ON WARP 3.
+    and higher will NO LONGER work on OS/2 Warp 3. SO DO NOT
+    TRY TO INSTALL THIS ON WARP 3. There have also been reports
+    that XWorkplace has problems on Warp 4 if the latest fixpacks
+    are not installed, but I have not confirmed this.
 
     The following OS/2 versions should be safe, since they are
-    based on the same IBM code:
+    based on roughly the same IBM code:
 
     --  Warp 4 FP 15
 
@@ -88,7 +79,7 @@ Last updated November 23, 2002
 
     --  Merlin/Aurora Convenience Packages
 
-    --  eComStation 1.x
+    --  eComStation 1.x (but see remark for 1.1 below)
 
     XWorkplace 1.0.4 and higher provide access to additional information
     about drivers. The following requirements apply:
@@ -150,7 +141,7 @@ Last updated November 23, 2002
             ?:\ecs\system\ewps\install\deinst.cmd
 
         Restart your desktop (or reboot), and then install
-        XWorkplace to any directoy.
+        XWorkplace to any directory.
 
 
 4. UPGRADING
@@ -189,8 +180,7 @@ Last updated November 23, 2002
     Upgrading from XFolder
     ----------------------
 
-    XWorkplace is the successor to XFolder (the last XFolder
-    version was V0.85).
+    XWorkplace is the successor to XFolder V0.85.
 
     XWorkplace and XFolder cannot coexist, since XWorkplace
     provides all the features of XFolder 0.85 plus many bugfixes
@@ -199,8 +189,8 @@ Last updated November 23, 2002
     As a result, if XFolder is installed, XWorkplace will
     disable your XFolder installation.
 
-    You should install XWorkplace to a directory OTHER than
-    your existing XFolder directory to make sure no file
+    Still, you should install XWorkplace to a directory OTHER
+    than your existing XFolder directory to make sure no file
     conflicts occur. Several people have reported that
     installing to the same directory can hang your WPS.
 
@@ -240,17 +230,10 @@ Last updated November 23, 2002
     button there to get more information.
 
 
-7. KNOWN LIMITATIONS
-====================
-
-    Please check the BUGS and FEATURES files in this package also
-    before reporting bugs or suggesting features. Thank you.
-
-
-8. LICENSE, COPYRIGHT, DISCLAIMER
+7. LICENSE, COPYRIGHT, DISCLAIMER
 =================================
 
-    Copyright (C) 1997-2004 Ulrich M”ller,
+    Copyright (C) 1997-2005 Ulrich M”ller,
                             Martin Lafaix,
                             Paul Ratcliffe,
                             and others.
@@ -268,12 +251,11 @@ Last updated November 23, 2002
     For details, refer to the "Notices" section in XFLDR001.INF.
 
 
-9. CONTACT
+8. CONTACT
 ==========
 
     We have created two mailing lists at netlabs.org for contact.
-    Please use these lists from now on for questions, suggestions,
-    and bug reports.
+    Please use these lists for general discussion about XWorkplace:
 
     For XWorkplace users:
         xworkplace-user@netlabs.org
@@ -283,8 +265,10 @@ Last updated November 23, 2002
 
     For details, see "Notices" --> "Contact" in XFLDR001.INF.
 
-    A bugtracking system is being set up at the time of this writing.
-    Please watch the usual "OS/2 news" announcements for updates on
-    this issue.
+    A bugtracker for XWorkplace is available at
 
+            http://xtracker.netlabs.org
+
+    Please use that beast for reporting bugs instead of posting
+    them to the mailing lists. Thank you.
 
