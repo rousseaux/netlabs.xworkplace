@@ -67,7 +67,7 @@
 # presentation formats
 *.pdf -k 'b'
 *.ps -k 'b'
-
+*.inf -k 'b'
 
 # video and audio files
 *.mov -k 'b'
