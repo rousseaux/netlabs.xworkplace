@@ -1458,6 +1458,7 @@ STATIC MRESULT EXPENTRY fnwpStatusBar(HWND hwndBar, ULONG msg, MPARAM mp1, MPARA
  *      Uses 1000 as the divisor for kB and mB.
  *
  *@@added V0.9.6 (2000-11-12) [pr]
+ *@@changed V1.0.4 (2005-10-08) [pr]: fixed stupid bug in gB display being 1000 times too big
  */
 
 PSZ stbVar1000Double(PSZ pszTarget,
@@ -1482,8 +1483,13 @@ PSZ stbVar1000Double(PSZ pszTarget,
             else
             {
                 space /= 1000;
-                nlsVariableDouble(pszTarget, space,
-                                   space < 10000.0 ? " mB" : " gB", cThousands);
+                if (space < 10000.0)
+                    nlsVariableDouble(pszTarget, space, " mB", cThousands);
+                else
+                {
+                    space /= 1000;
+                    nlsVariableDouble(pszTarget, space, " gB", cThousands);
+                }
             }
         }
 
@@ -1496,6 +1502,7 @@ PSZ stbVar1000Double(PSZ pszTarget,
  *      Uses 1024 as the divisor for KB and MB.
  *
  *@@added V0.9.6 (2000-11-12) [pr]
+ *@@changed V1.0.4 (2005-10-08) [pr]: fixed stupid bug in GB display being 1024 times too big
  */
 
 PSZ stbVar1024Double(PSZ pszTarget,
@@ -1520,8 +1527,13 @@ PSZ stbVar1024Double(PSZ pszTarget,
             else
             {
                 space /= 1024;
-                nlsVariableDouble(pszTarget, space,
-                                   space < 10240.0 ? " MB" : " GB", cThousands);
+                if (space < 10240.0)
+                    nlsVariableDouble(pszTarget, space, " MB", cThousands);
+                else
+                {
+                    space /= 1024;
+                    nlsVariableDouble(pszTarget, space, " GB", cThousands);
+                }
             }
         }
 
