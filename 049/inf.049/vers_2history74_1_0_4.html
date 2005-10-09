@@ -13,7 +13,7 @@ Bugfix release off the 1.0 branch and a few simple new features.
 "Bug #" numbers refer to the official XWorkplace bugtracker at
 <a href="http://xtracker.netlabs.org">http://xtracker.netlabs.org</a>.
 
-<P><B>&xwp; 1.0.4 (August 29, 2005)</B>
+<P><B>&xwp; 1.0.4 (October 9, 2005)</B>
 
 <P>
 
@@ -44,11 +44,21 @@ XWP settings. Bug 644. Fixed by Paul Ratcliffe.
 <P><LI>The Cancel button on the System Startup dialog did nothing while processing Quick Open Folders.
 Bug 460. Fixed by Paul Ratcliffe.
 
+<P><LI>The Cancel button on the XShutdown Folder progress dialog caused a Shutdown to occur
+rather than cancelling the rest of the procedure.
+Bug 402. Fixed by Paul Ratcliffe.
+
 <P><LI>Using the XPager hotkeys to switch desktops didn't restart the "Flash to top" timer
 after the first switch. Fixed by Paul Ratcliffe.
 
 <P><LI>Default font was wrong for DBCS versions of OS/2.
 Bug 655. Fixed by Bart van Leeuwen.
+
+<P><LI>The GB and gB displays in folder status bars were too large by a factor of
+1024 and 1000 respectively. Fixed by Paul Ratcliffe.
+
+<P><LI>Opening the context menu for a Drive object would generate an XWP exception beep,
+which was caused by an incompatibility with MCP FP5. Fixed by Paul Ratcliffe.
 
 </UL>
 <P>
