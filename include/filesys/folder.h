@@ -268,10 +268,24 @@
      *
      *      szSerial NEVER seems to be set either.
      *
+     *      Notes: V1.0.4 (2005-10-09) [pr]
+     *      The bDiskType indicator is set to 255 if the drive is invalid.
+     *      ulSerial and szSerial only seem to get set for Remote (DRVTYPE_LAN) drives.
+     *      bFileSystem only seems to be set for Local drives, otherwise is garbage.
+     *      fUnknown seems to be set to 1 for A: and B: and 0 for all others.
+     *      bUnknown seems to be set to 1 for floppies and CD drives (removables???),
+     *        otherwise is garbage (100+).
+     *      ulFreeKB and ulTotalKB only seem to be set if the Tree View has been opened.
+     *
      *@@added V0.9.16 (2002-01-01) [umoeller]
+     *@@changed V1.0.4 (2005-10-09) [pr]
+     *
+     *      This has changed with MCP/ACP FP5 (or maybe FP4)
+     *      The structure has grown by 4 bytes :-(
+     *
      */
 
-    typedef struct _IBMDRIVEDATA
+    typedef struct _IBMDRIVEDATA1
     {
         BYTE        bFileSystem;    // one of the FSYS_* values (dosh.h)
         BOOL        fNotLocal;      // TRUE if drive is not local
@@ -289,12 +303,40 @@
         ULONG       ulSerial;       // volume serial number
         BYTE        cbVolLabel;     // volume label length
         CHAR        szVolLabel[12]; // volume label
+    } IBMDRIVEDATA1, *PIBMDRIVEDATA1;
+
+    typedef struct _IBMDRIVEDATA2
+    {
+        BYTE        bFileSystem;    // one of the FSYS_* values (dosh.h)
+        BOOL        fNotLocal;      // TRUE if drive is not local
+        BOOL        fFixedDisk;     // FALSE if drive is floppy or CD-ROM
+        BOOL        fZIP;           // TRUE if drive is ZIP or something
+        BOOL        fUnknown;
+        ULONG       ulUnknown;
+        BYTE        bUnknown;
+        BYTE        bDiskType;      // one of the DRVTYPE_* values (dosh.h)
+        WPObject    *pDisk;         // WPDisk object
+        WPFolder    *pRootFolder;   // WPRootFolder or NULL
+        ULONG       ulFreeKB;
+        ULONG       ulTotalKB;
+        BOOL        fCanLongname;
+        BOOL        fCanEAs;
+        ULONG       ulSerial;       // volume serial number
+        BYTE        cbVolLabel;     // volume label length
+        CHAR        szVolLabel[12]; // volume label
+    } IBMDRIVEDATA2, *PIBMDRIVEDATA2;
+
+    typedef union _IBMDRIVEDATA
+    {
+        IBMDRIVEDATA1 ibmDD1;
+        IBMDRIVEDATA2 ibmDD2;
     } IBMDRIVEDATA, *PIBMDRIVEDATA;
 
     #pragma pack()
 
     // global variable to WPS-internal drive data array, set in init.c
     extern PIBMDRIVEDATA    G_paDriveData;
+    extern ULONG            G_ulDriveDataType;
 
     PIBMDRIVEDATA EXPENTRY FsQueryDriveData(PSZ pszDrive);
             // imported from PMWP.DLL

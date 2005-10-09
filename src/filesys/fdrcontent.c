@@ -2020,19 +2020,34 @@ BOOL fdrPopulate(WPFolder *somSelf,
  *@@changed V0.9.16 (2002-01-01) [umoeller]: added checks if a refresh is in order
  *@@changed V0.9.16 (2002-01-01) [umoeller]: renamed from wpshCheckIfPopulated, moved here from wpsh.c
  *@@changed V1.0.0 (2002-09-13) [umoeller]: returning 2 now if we didn't really populate
+ *@@changed V1.0.4 (2005-10-09) [pr]: Cope with IBMDRIVEDATA being variable size
  */
 
 ULONG fdrCheckIfPopulated(WPFolder *somSelf,
                           BOOL fFoldersOnly)
 {
     ULONG       ulrc = FALSE;       // failed (0)
-
     ULONG       ulPopulateFlag = (fFoldersOnly)
                                     ? FOI_POPULATEDWITHFOLDERS
                                     : FOI_POPULATEDWITHALL;
     ULONG       ulFlags = _wpQueryFldrFlags(somSelf);
+    PIBMDRIVEDATA pDriveData = _wpQueryDriveData(somSelf);
+    BOOL        fNotLocal = FALSE;
+    BOOL        fFixedDisk = TRUE;
 
-    PIBMDRIVEDATA pDriveData;
+    if (pDriveData)
+    {
+        if (G_ulDriveDataType == 1)
+        {
+            fNotLocal = pDriveData->ibmDD1.fNotLocal;
+            fFixedDisk = pDriveData->ibmDD1.fFixedDisk;
+        }
+        else if (G_ulDriveDataType == 2)
+        {
+            fNotLocal = pDriveData->ibmDD2.fNotLocal;
+            fFixedDisk = pDriveData->ibmDD2.fFixedDisk;
+        }
+    }
 
     if (    // (re)populate if the POPULATED_* flag is not set
             ((ulFlags & ulPopulateFlag) != ulPopulateFlag)
@@ -2040,10 +2055,8 @@ ULONG fdrCheckIfPopulated(WPFolder *somSelf,
             // or if the folder has the refresh bit set
          || (ulFlags & FOI_ASYNCREFRESHONOPEN)
             // or if we can't get the drive data
-         || (!(pDriveData = _wpQueryDriveData(somSelf)))
-            // or the drive is remote or removable
-         || (pDriveData->fNotLocal)
-         || (!(pDriveData->fFixedDisk))
+         || (fNotLocal)
+         || (!(fFixedDisk))
        )
     {
         // alright, needs populate:

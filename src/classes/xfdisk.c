@@ -215,6 +215,7 @@ SOM_Scope void  SOMLINK xfdisk_wpInitData(XFldDisk *somSelf)
  *      wpFilterPopupMenu for folders too.
  *
  *@@added V1.0.0 (2002-08-31) [umoeller]
+ *changed V1.0.4 (2005-10-09) [pr]: Cope with variable size IBMDRIVEDATA
  */
 
 SOM_Scope BOOL  SOMLINK xfdisk_wpFilterMenu(XFldDisk *somSelf,
@@ -258,34 +259,70 @@ SOM_Scope BOOL  SOMLINK xfdisk_wpFilterMenu(XFldDisk *somSelf,
 #ifndef __NEVERREPLACEDRIVENOTREADY__
     if (fReplaceDNR = cmnQuerySetting(sfReplaceDriveNotReady))
     {
+        XFldDisk *pDisk = NULL;
+
+        if (G_ulDriveDataType == 1)
+            pDisk = G_paDriveData[i].ibmDD1.pDisk;
+        else
+            if (G_ulDriveDataType == 2)
+                pDisk = G_paDriveData[i].ibmDD2.pDisk;
+
         PMPF_DISK(("getting drive data for drive %d", ulLogicalDrive));
-        if (G_paDriveData[i].pDisk != somSelf)
+        if (pDisk != somSelf)
         {
             cmnLog(__FILE__, __LINE__, __FUNCTION__,
                    "Drive data mismatch: somSelf == 0x%lX, drive data pDisk == 0x%lX",
                    somSelf,
-                   G_paDriveData[i].pDisk);
+                   pDisk);
         }
         else
         {
-            PMPF_DISK(("bFileSystem: 0x%lX (%d)",
-                   G_paDriveData[i].bFileSystem,
-                   G_paDriveData[i].bFileSystem));
-            PMPF_DISK(("fNotLocal: %d",
-                   G_paDriveData[i].fNotLocal));
-            PMPF_DISK(("fFixedDisk: %d",
-                   G_paDriveData[i].fFixedDisk));
-            PMPF_DISK(("fZIP: %d",
-                   G_paDriveData[i].fZIP));
-            PMPF_DISK(("bDiskType: %d",
-                   G_paDriveData[i].bDiskType));
-            PMPF_DISK(("ulSerial: 0x%lX",
-                   G_paDriveData[i].ulSerial));
-            PMPF_DISK(("szVolLabel: %s",
-                   G_paDriveData[i].szVolLabel));
+            if (G_ulDriveDataType == 1)
+            {
+                PIBMDRIVEDATA1 pDD1 = &G_paDriveData[i].ibmDD1;
 
-            if (G_paDriveData[i].bDiskType == DRVTYPE_CDROM)
-                fCDROM = TRUE;
+                PMPF_DISK(("bFileSystem: 0x%lX (%d)",
+                       pDD1->bFileSystem,
+                       pDD1->bFileSystem));
+                PMPF_DISK(("fNotLocal: %d",
+                       pDD1->fNotLocal));
+                PMPF_DISK(("fFixedDisk: %d",
+                       pDD1->fFixedDisk));
+                PMPF_DISK(("fZIP: %d",
+                       pDD1->fZIP));
+                PMPF_DISK(("bDiskType: %d",
+                       pDD1->bDiskType));
+                PMPF_DISK(("ulSerial: 0x%lX",
+                       pDD1->ulSerial));
+                PMPF_DISK(("szVolLabel: %s",
+                       pDD1->szVolLabel));
+
+                if (pDD1->bDiskType == DRVTYPE_CDROM)
+                    fCDROM = TRUE;
+            }
+            else if (G_ulDriveDataType == 2)
+            {
+                PIBMDRIVEDATA2 pDD2 = &G_paDriveData[i].ibmDD2;
+
+                PMPF_DISK(("bFileSystem: 0x%lX (%d)",
+                       pDD2->bFileSystem,
+                       pDD2->bFileSystem));
+                PMPF_DISK(("fNotLocal: %d",
+                       pDD2->fNotLocal));
+                PMPF_DISK(("fFixedDisk: %d",
+                       pDD2->fFixedDisk));
+                PMPF_DISK(("fZIP: %d",
+                       pDD2->fZIP));
+                PMPF_DISK(("bDiskType: %d",
+                       pDD2->bDiskType));
+                PMPF_DISK(("ulSerial: 0x%lX",
+                       pDD2->ulSerial));
+                PMPF_DISK(("szVolLabel: %s",
+                       pDD2->szVolLabel));
+
+                if (pDD2->bDiskType == DRVTYPE_CDROM)
+                    fCDROM = TRUE;
+            }
         }
     }
 #endif

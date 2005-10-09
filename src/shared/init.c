@@ -25,7 +25,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *      Copyright (C) 1997-2005 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -160,7 +160,7 @@ BOOL cmnTurboFoldersEnabled(VOID);
 static DATETIME         G_StartupDateTime = {0};
 
 extern PIBMDRIVEDATA    G_paDriveData = NULL;
-extern PIBMDRIVEDATA    vDriveData;         // imported from PMWP.DLL
+extern ULONG            G_ulDriveDataType = 0; // V1.0.4 (2005-10-09) [pr]
 
 static THREADINFO       G_tiSentinel = {0};
 
