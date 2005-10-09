@@ -154,7 +154,7 @@
  */
 
 /*
- *      Copyright (C) 1999-2003 Ulrich M”ller.
+ *      Copyright (C) 1999-2005 Ulrich M”ller.
  *      Copyright (C) 1993-1999 Roman Stangl.
  *
  *      This program is free software; you can redistribute it and/or modify
@@ -3412,11 +3412,8 @@ ULONG _System TerminateExcHandler(PEXCEPTIONREPORTRECORD pReportRec,
                                   PCONTEXTRECORD pContextRec,
                                   PVOID pv)
 {
-    if (pReportRec->fHandlerFlags & EH_EXIT_UNWIND)
-       return XCPT_CONTINUE_SEARCH;
-    if (pReportRec->fHandlerFlags & EH_UNWINDING)
-       return XCPT_CONTINUE_SEARCH;
-    if (pReportRec->fHandlerFlags & EH_NESTED_CALL)
+    // V1.0.4 (2005-10-09) [pr]: Optimized
+    if (pReportRec->fHandlerFlags & (EH_EXIT_UNWIND | EH_UNWINDING | EH_NESTED_CALL))
        return XCPT_CONTINUE_SEARCH;
 
     switch (pReportRec->ExceptionNum)
