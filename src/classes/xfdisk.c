@@ -976,18 +976,26 @@ SOM_Scope ULONG  SOMLINK xfdisk_wpAddDiskDetailsPage(XFldDisk *somSelf,
  *
  *@@changed V0.9.0 [umoeller]: added class object to KERNELGLOBALS
  *@@changed V1.0.2 (2003-02-09) [pr]: moved query drive data to here from initRepairDesktopIfBroken()
+ *changed V1.0.4 (2005-10-18) [pr]: Cope with variable size IBMDRIVEDATA
  */
 
 SOM_Scope void  SOMLINK xfdiskM_wpclsInitData(M_XFldDisk *somSelf)
 {
+    ULONG   ulDriveDataSize;
     // M_XFldDiskData *somThis = M_XFldDiskGetData(somSelf);
     M_XFldDiskMethodDebug("M_XFldDisk","xfdiskM_wpclsInitData");
 
     M_XFldDisk_parent_M_WPDisk_wpclsInitData(somSelf);
 
     G_paDriveData = FsQueryDriveData("A:");
-    initLog("FsQueryDriveData(A) = 0x%lX", G_paDriveData);
+    ulDriveDataSize = (PBYTE) FsQueryDriveData("B:") - (PBYTE) G_paDriveData;
+    if (ulDriveDataSize == sizeof(IBMDRIVEDATA1))
+        G_ulDriveDataType = 1;
+    else
+        if (ulDriveDataSize == sizeof(IBMDRIVEDATA2))
+            G_ulDriveDataType = 2;
 
+    initLog("FsQueryDriveData(A) = 0x%lX", G_paDriveData);
     krnClassInitialized(G_pcszXFldDisk);
 }
 
