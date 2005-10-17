@@ -1011,6 +1011,7 @@ VOID krnCreateObjectWindows(VOID)
  *
  *@@added V0.9.3 (2000-04-24) [umoeller]
  *@@changed V1.0.1 (2002-12-08) [umoeller]: added daemon NLS init here @@fixes bug 64
+ *@@changed V1.0.4 (2005-10-17) [bvl]: Load NLS DLL before loading deamon strings @@fixes 389
  */
 
 STATIC VOID T1M_DaemonReady(VOID)
@@ -1058,6 +1059,8 @@ STATIC VOID T1M_DaemonReady(VOID)
 
         // added this call here V1.0.1 (2002-12-08) [umoeller]
         // (bug 64)
+        // we need to be sure the NLS DLL is loaded V1.0.4 (2005-10-17) [bvl] @@fixes 389
+        cmnQueryNLSModuleHandle(FALSE);
         cmnLoadDaemonNLSStrings();
     }
 }
