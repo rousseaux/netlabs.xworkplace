@@ -262,10 +262,10 @@ SOM_Scope BOOL  SOMLINK xfdisk_wpFilterMenu(XFldDisk *somSelf,
         XFldDisk *pDisk = NULL;
 
         if (G_ulDriveDataType == 1)
-            pDisk = G_paDriveData[i].ibmDD1.pDisk;
+            pDisk = (&G_paDriveData->ibmDD1)[i].pDisk;
         else
             if (G_ulDriveDataType == 2)
-                pDisk = G_paDriveData[i].ibmDD2.pDisk;
+                pDisk = (&G_paDriveData->ibmDD2)[i].pDisk;
 
         PMPF_DISK(("getting drive data for drive %d", ulLogicalDrive));
         if (pDisk != somSelf)
@@ -279,7 +279,7 @@ SOM_Scope BOOL  SOMLINK xfdisk_wpFilterMenu(XFldDisk *somSelf,
         {
             if (G_ulDriveDataType == 1)
             {
-                PIBMDRIVEDATA1 pDD1 = &G_paDriveData[i].ibmDD1;
+                PIBMDRIVEDATA1 pDD1 = &(&G_paDriveData->ibmDD1)[i];
 
                 PMPF_DISK(("bFileSystem: 0x%lX (%d)",
                        pDD1->bFileSystem,
@@ -302,7 +302,7 @@ SOM_Scope BOOL  SOMLINK xfdisk_wpFilterMenu(XFldDisk *somSelf,
             }
             else if (G_ulDriveDataType == 2)
             {
-                PIBMDRIVEDATA2 pDD2 = &G_paDriveData[i].ibmDD2;
+                PIBMDRIVEDATA2 pDD2 = &(&G_paDriveData->ibmDD2)[i];
 
                 PMPF_DISK(("bFileSystem: 0x%lX (%d)",
                        pDD2->bFileSystem,
@@ -994,6 +994,12 @@ SOM_Scope void  SOMLINK xfdiskM_wpclsInitData(M_XFldDisk *somSelf)
     else
         if (ulDriveDataSize == sizeof(IBMDRIVEDATA2))
             G_ulDriveDataType = 2;
+        else
+        {
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                   "Unknown Drive Data size: %lu",
+                   ulDriveDataSize);
+        }
 
     initLog("FsQueryDriveData(A) = 0x%lX", G_paDriveData);
     krnClassInitialized(G_pcszXFldDisk);
