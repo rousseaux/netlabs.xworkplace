@@ -11,7 +11,8 @@
  */
 
 /*
- *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *      Copyright (C) 1997-2005 Stefan Milcke,
+ *                              Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -80,6 +81,8 @@
 
         BOOL        fShowStatus;
         CHAR        cArchivesCount;
+        BOOL        fShowRestore;
+        USHORT      usRestoreTimeOut;
     } ARCHIVINGSETTINGS, *PARCHIVINGSETTINGS;
 
     VOID arcSetDefaultSettings(VOID);
@@ -93,6 +96,12 @@
      *   Archiving Enabling
      *
      ********************************************************************/
+
+    APIRET arcQueryArchiveByte(UCHAR *pByte,
+                               LONG offset);
+
+    APIRET arcSetArchiveByte(UCHAR byte,
+                             LONG offset);
 
     VOID arcForceNoArchiving(VOID);
 

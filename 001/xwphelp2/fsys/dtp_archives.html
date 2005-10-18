@@ -81,6 +81,30 @@ Desktop in the archives directory tree. This defaults to 3, but you may keep up 
 which comes up when you press Alt-F1 during system startup will be partly unreadable,
 because the additional archives information will make the top scroll off the screen.
 This doesn't hurt, it just looks ugly.
+
+<!-- This is new with 1.0.4 -->
+
+<P>When you select <B>Display recovery choices at each system startup</B>, the system
+automatically displays the Recovery Choices screen each time it restarts.
+You do not have to press Alt-F1 during the restart to display the Recovery Choices screen.
+
+<P>You cannot specify a value in the Timeout for Recovery Choices screen field if Display recovery choices at each system startup is deselected.
+
+<P>Use the field <B>Timeout for Recovery Choices screen</B> to specify how long the system is to display the Recovery Choices screen during a restart.
+The value that you specify in the Timeout for Recovery Choices screen field is in seconds.
+
+<P>While the Recovery Choices screen is displayed, you can choose a recovery option.  When the time limit is exceeded,
+the Recovery Choices screen disappears and the system continues the restart using the current system files.
+
+<P>Use the arrows to the right of the timeout value field to change the number of seconds, or type the number of seconds directly into the field.
+
+<P>You can specify a time limit from 0 to 999 seconds.  If you select 0, the system will not restart until you enter a choice on the Recovery Choices screen.
+If you select a timeout value between 1 and 999, the system displays the Recovery Choices screen until the number of seconds you specified has elapsed or
+until you enter your recovery option, whichever comes first. If the time limit elapses before you enter a recovery option, the system restarts using the
+current system files.
+
+<P>If you specify a timeout value and then deselect Display Recovery Choices at each restart, the system saves the time limit you specified.
+
 <BR>
 </BODY>
 </HTML>

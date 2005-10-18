@@ -27,7 +27,7 @@
  */
 
 /*
- *      Copyright (C) 1999-2003 Ulrich M”ller.
+ *      Copyright (C) 1999-2005 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -133,6 +133,9 @@ static CHAR                G_szArcBaseFilename[CCHMAXPATH] = "";
 #define ARCOFS_JUSTRESTORED             0x00000
 #define ARCOFS_ARCHIVINGENABLED         0x000CF
 #define ARCOFS_MAXARCHIVES              0x000D7
+#define ARCOFS_SHOWRESTORE              0x000D9
+#define ARCOFS_RESTORETIMEOUT_LOW       0x000DD
+#define ARCOFS_RESTORETIMEOUT_HIGH      0x000DE
 
 /********************************************************************
  *
@@ -198,7 +201,7 @@ static const CONTROLDEF
     ArcNoSpin =
         {
             WC_SPINBUTTON,
-            NULL,
+            "0",
             WS_VISIBLE | WS_TABSTOP
                 | SPBS_MASTER | SPBS_JUSTLEFT | SPBS_JUSTRIGHT | SPBS_JUSTCENTER,
             ID_XSDI_ARC_ARCHIVES_NO_SPIN,
@@ -206,7 +209,22 @@ static const CONTROLDEF
             { SPIN_WIDTH, SPIN_HEIGHT },     // size
             COMMON_SPACING,
         },
-    ArcNoTxt2 = LOADDEF_TEXT(ID_XSDI_ARC_ARCHIVES_NO_TXT2);
+    ArcNoTxt2 = LOADDEF_TEXT(ID_XSDI_ARC_ARCHIVES_NO_TXT2),
+    ArcRestOptions = LOADDEF_GROUP(ID_XSDI_ARC_RESTORE_GROUP,DEFAULT_TABLE_WIDTH),
+    ArcRestShowAlways = LOADDEF_AUTOCHECKBOX(ID_XSDI_ARC_RESTORE_ALWAYS),
+    ArcRestTimeoutTxt = LOADDEF_TEXT_WORDBREAK(ID_XSDI_ARC_RESTORE_TXT1, SZL_AUTOSIZE),
+    ArcRestTimeoutSpin =
+        {
+            WC_SPINBUTTON,
+            NULL,
+            WS_VISIBLE | WS_TABSTOP
+                | SPBS_MASTER | SPBS_JUSTLEFT | SPBS_JUSTRIGHT | SPBS_JUSTCENTER,
+            ID_XSDI_ARC_RESTORE_SPIN,
+            CTL_COMMON_FONT,
+            { 30, SPIN_HEIGHT },     // size
+            COMMON_SPACING,
+        },
+    ArcRestTimeoutTxt2 = LOADDEF_TEXT(ID_XSDI_ARC_RESTORE_TXT2);
 
 static const DLGHITEM dlgArchives[] =
     {
@@ -242,6 +260,15 @@ static const DLGHITEM dlgArchives[] =
                         CONTROL_DEF(&ArcNoSpin),
                         CONTROL_DEF(&ArcNoTxt2),
                 END_TABLE,
+            START_ROW(0),       // row 3 in the root table
+                START_GROUP_TABLE(&ArcRestOptions),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&ArcRestShowAlways),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&ArcRestTimeoutTxt),
+                        CONTROL_DEF(&ArcRestTimeoutSpin),
+                        CONTROL_DEF(&ArcRestTimeoutTxt2),
+                END_TABLE,
             START_ROW(0),       // notebook buttons (will be moved)
                 CONTROL_DEF(&G_UndoButton),         // common.c
                 CONTROL_DEF(&G_DefaultButton),      // common.c
@@ -260,6 +287,7 @@ static const DLGHITEM dlgArchives[] =
  *@@added V0.9.0 [umoeller]
  *@@changed V0.9.9 (2001-04-07) [pr]: fixed Undo/Default
  *@@changed V0.9.16 (2001-11-22) [umoeller]: now using dlg formatter
+ *@@changed V1.0.4 (2005-10-17) [bvl]: support restore settings @@fixes 471
  */
 
 VOID arcArchivesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
@@ -341,6 +369,13 @@ VOID arcArchivesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
         winhSetDlgItemSpinData(pnbp->hwndDlgPage, ID_XSDI_ARC_ARCHIVES_NO_SPIN,
                                1, 9,        // spin button limits
                                pArcSettings->cArchivesCount);
+
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_ARC_RESTORE_ALWAYS,
+                              pArcSettings->fShowRestore);
+
+        winhSetDlgItemSpinData(pnbp->hwndDlgPage, ID_XSDI_ARC_RESTORE_SPIN,
+                               0, 999,        // spin button limits
+                               pArcSettings->usRestoreTimeOut);
     }
 
     if (flFlags & CBI_ENABLE)
@@ -368,6 +403,13 @@ VOID arcArchivesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
 
         WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_ARC_SHOWSTATUS,
                           fEnabled);
+
+        WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_ARC_RESTORE_SPIN,
+        				  pArcSettings->fShowRestore);
+        WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_ARC_RESTORE_TXT1,
+        				  pArcSettings->fShowRestore);				
+        WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_ARC_RESTORE_TXT2,
+        				  pArcSettings->fShowRestore);				
     }
 }
 
@@ -380,6 +422,7 @@ VOID arcArchivesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
  *
  *@@added V0.9.0 [umoeller]
  *@@changed V0.9.9 (2001-04-07) [pr]: fixed Undo/Default
+ *@@changed V1.0.4 (2005-10-17) [bvl]: support restore settings @@fixes 471
  */
 
 MRESULT arcArchivesItemChanged(PNOTEBOOKPAGE pnbp,
@@ -422,7 +465,7 @@ MRESULT arcArchivesItemChanged(PNOTEBOOKPAGE pnbp,
                                   SPBM_QUERYVALUE,
                                   (MPARAM)szTemp,
                                   MPFROM2SHORT(sizeof(szTemp),
-                                               SPBQ_ALWAYSUPDATE));
+                                  SPBQ_ALWAYSUPDATE));
                 sscanf(szTemp, "%f", &flTemp);
                 pArcSettings->dIniFilesPercent = (double)flTemp;
             }
@@ -453,6 +496,27 @@ MRESULT arcArchivesItemChanged(PNOTEBOOKPAGE pnbp,
             fSave = FALSE;
         break;
 
+        case ID_XSDI_ARC_RESTORE_ALWAYS:
+            pArcSettings->fShowRestore = ulExtra;
+            arcSetArchiveByte(pArcSettings->fShowRestore,
+                              ARCOFS_SHOWRESTORE);
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_ENABLE);
+            fSave = FALSE;
+        break;
+
+        case ID_XSDI_ARC_RESTORE_SPIN:
+            pArcSettings->usRestoreTimeOut = (USHORT)winhAdjustDlgItemSpinData(pnbp->hwndDlgPage,
+                                                                           ulItemID,
+                                                                           0,              // no grid
+                                                                           usNotifyCode);
+
+            arcSetArchiveByte((CHAR)pArcSettings->usRestoreTimeOut,
+                              ARCOFS_RESTORETIMEOUT_LOW);
+            arcSetArchiveByte((CHAR)(pArcSettings->usRestoreTimeOut >> 8),
+                              ARCOFS_RESTORETIMEOUT_HIGH);
+            fSave = FALSE;
+        break;
+
         case DID_UNDO:
         {
             // "Undo" button: get pointer to backed-up archive settings
@@ -466,7 +530,14 @@ MRESULT arcArchivesItemChanged(PNOTEBOOKPAGE pnbp,
             pArcSettings->cArchivesCount = pWASBackup->cArchivesCount;
             arcSetNumArchives(&pArcSettings->cArchivesCount,
                               TRUE);        // set
-
+            pArcSettings->fShowRestore = pWASBackup->fShowRestore;
+            arcSetArchiveByte(pArcSettings->fShowRestore,
+                              ARCOFS_SHOWRESTORE);
+            pArcSettings->usRestoreTimeOut = pWASBackup->usRestoreTimeOut;
+            arcSetArchiveByte((CHAR)pArcSettings->usRestoreTimeOut,
+                              ARCOFS_RESTORETIMEOUT_LOW);
+            arcSetArchiveByte((CHAR)(pArcSettings->usRestoreTimeOut >> 8),
+                              ARCOFS_RESTORETIMEOUT_HIGH);
             // update the display by calling the INIT callback
             pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
         }
@@ -477,6 +548,12 @@ MRESULT arcArchivesItemChanged(PNOTEBOOKPAGE pnbp,
             arcSetDefaultSettings();
             arcSetNumArchives(&pArcSettings->cArchivesCount,
                               TRUE);        // set
+            arcSetArchiveByte(pArcSettings->fShowRestore,
+                              ARCOFS_SHOWRESTORE);
+            arcSetArchiveByte((CHAR)pArcSettings->usRestoreTimeOut,
+                              ARCOFS_RESTORETIMEOUT_LOW);
+            arcSetArchiveByte((CHAR)(pArcSettings->usRestoreTimeOut >> 8),
+                              ARCOFS_RESTORETIMEOUT_HIGH);
             // update the display by calling the INIT callback
             pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
         break;
@@ -514,6 +591,7 @@ MRESULT arcArchivesItemChanged(PNOTEBOOKPAGE pnbp,
  *      structure with default values.
  *
  *@@changed V0.9.9 (2001-04-07) [pr]: fixed Undo/Default
+ *@@changed V1.0.4 (2005-10-17) [bvl]: added extra settings from ARCHBASE.$$$ @@fixes 471
  */
 
 VOID arcSetDefaultSettings(VOID)
@@ -525,6 +603,8 @@ VOID arcSetDefaultSettings(VOID)
     G_ArcSettings.ulEveryDays = 1;
     G_ArcSettings.fShowStatus = TRUE;
     G_ArcSettings.cArchivesCount = 3;
+    G_ArcSettings.fShowRestore = FALSE;
+    G_ArcSettings.usRestoreTimeOut = 0;
 }
 
 /*
@@ -535,6 +615,7 @@ VOID arcSetDefaultSettings(VOID)
  *      first time.
  *
  *@@changed V0.9.9 (2001-04-07) [pr]: fixed Undo/Default
+ *@@changed V1.0.4 (2005-10-17) [bvl]: Read extra settings from ARCHBASE.$$$ @@fixes 471
  */
 
 PARCHIVINGSETTINGS arcQuerySettings(VOID)
@@ -577,6 +658,14 @@ PARCHIVINGSETTINGS arcQuerySettings(VOID)
         sprintf(G_szArcBaseFilename,
                 "%c:\\OS2\\BOOT\\ARCHBASE.$$$",
                 doshQueryBootDrive());
+
+        // Get data from ARCHBASE.$$$
+        arcQueryArchiveByte((CHAR*)&G_ArcSettings.fShowRestore,
+                            ARCOFS_SHOWRESTORE);
+        arcQueryArchiveByte((CHAR*)&G_ArcSettings.usRestoreTimeOut,
+                            ARCOFS_RESTORETIMEOUT_LOW);
+        arcQueryArchiveByte(((CHAR*)&G_ArcSettings.usRestoreTimeOut)+1,
+                            ARCOFS_RESTORETIMEOUT_HIGH);
     }
 
     return &G_ArcSettings;
@@ -978,7 +1067,7 @@ BOOL arcCheckIfBackupNeeded(HWND hwndNotify,        // in: window to notify
 }
 
 /*
- *@@ arcSwitchArchivingOn:
+         *@@ arcSwitchArchivingOn:
  *      depending on fSwitchOn, this switches Desktop archiving on or off
  *      by manipulating the \OS2\BOOT\ARCHBASE.$$$ file.
  *

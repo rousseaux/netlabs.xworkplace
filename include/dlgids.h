@@ -33,7 +33,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *      Copyright (C) 1997-2005 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -1161,6 +1161,11 @@
 #define ID_XSDI_DTP_WRITEXWPSTARTLOG    2123  // added V0.9.14 (2001-08-21) [umoeller]
 
 // XFldDesktop "Archives" replacement page (V0.9.0)
+#define ID_XSDI_ARC_RESTORE_GROUP       2150  // added V1.0.4 (2005-10-17) [bvl]
+#define ID_XSDI_ARC_RESTORE_ALWAYS      2151  // added V1.0.4 (2005-10-17) [bvl]
+#define ID_XSDI_ARC_RESTORE_TXT1        2152  // added V1.0.4 (2005-10-17) [bvl]
+#define ID_XSDI_ARC_RESTORE_TXT2        2153  // added V1.0.4 (2005-10-17) [bvl]
+#define ID_XSDI_ARC_RESTORE_SPIN        2154  // added V1.0.4 (2005-10-17) [bvl]
 // #define ID_XSD_DTP_ARCHIVES             2155     // removed V0.9.16 (2001-11-22) [umoeller]
 #define ID_XSDI_ARC_CRITERIA_GROUP      2155        // V0.9.16 (2001-11-22) [umoeller]
 #define ID_XSDI_ARC_ENABLE              2156
