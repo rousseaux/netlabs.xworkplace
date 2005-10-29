@@ -132,6 +132,8 @@
 // other SOM headers
 #pragma hdrstop
 
+#pragma library("SOMTK")
+
 /* ******************************************************************
  *
  *   Private prototypes
