@@ -113,10 +113,9 @@ DEBUG_OBJS = $(XWP_OUTPUT_ROOT)\xdebug.obj $(XWP_OUTPUT_ROOT)\xdebug_folder.obj
 
 # The LIBS macro contains all the .LIB files, either from the compiler or
 # others, which are needed for this project:
-#   somtk       is the SOM toolkit lib
 #   pmprintf    is for debugging
 # The other OS/2 libraries are used by default.
-LIBS = somtk.lib $(PMPRINTF_LIB)
+LIBS = $(PMPRINTF_LIB)
 
 # some variable strings to pass to sub-nmakes
 SUBMAKE_PASS_STRING = "PROJECT_BASE_DIR=$(PROJECT_BASE_DIR)" "PROJECT_INCLUDE=$(PROJECT_INCLUDE)"

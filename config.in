@@ -71,9 +71,6 @@ TKBASE = e:\Toolkit
 VACBASE = e:\ibmcpp
 !endif
 
-# SOMTK_LIB: the path and filename of the somtk.lib file
-SOMTK_LIB = $(TKBASE)\som\lib\somtk.lib
-
 # DDKBASE: your DDK "base" directory.
 # Not used by the regular makefiles, unless you
 # want to build XWorkplace Security.
