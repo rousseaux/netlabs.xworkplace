@@ -8,7 +8,7 @@
     V0.9.16: replace XFolder with &xwp;
 -->
 <BODY>
-&xwp; allows you to globally add menu items to the &popmenu;s of all
+&xwp; allows you to add menu items globally to the &popmenu;s of all
 <!-- V0.9.19: link added -->
 &link_folders;
 on the system. You have just encountered one of those variable
@@ -18,9 +18,14 @@ menu items.
 instructions about how to change the default setup with the use of the
 special &cfgfdr;.
 
+<IFNDEF __EWORKPLACE__>
 <P>If you still have
 the default menu configuration which was set up during installation,
 the following new menu items are available:
+</IFNDEF>
+<IFDEF __EWORKPLACE__>
+The standard content of the Desktop &popmenu; has the following variable menu items:
+</IFDEF>
 
 <UL>
 <!-- V0.9.20: rewrote command prompts -->

@@ -1,11 +1,17 @@
 <HTML RESID=&ID_XSH_MOUSE_MOVEMENT;>
 <HEAD>
     <TITLE>
+<IFNDEF __EWORKPLACE_>
+        Mouse: Movement Page 1
+</IFNDEF>
+<IFDEF __EWORKPLACE__>
         Mouse: Movement Page
+</IFNDEF>
     </TITLE>
 </HEAD>
 <!-- this page is all new with V0.9.1 -->
 <BODY>
+<IFNDEF __EWORKPLACE__>
 The "Movement" page is inserted by &xwp; into the "Mouse" properties notebook
 to allow for configuration of the mouse features of the
 <!-- V0.9.13: added link -->
@@ -16,6 +22,7 @@ Even more hook settings are on the new second "Mappings" page.
 <!-- V0.9.13: removed this
 For an introduction to the features of the &xwp; PM hook, please
 refer to the &xwp;_User_Guide. -->
+</IFNDEF>
 
 <P>All settings on this page take effect immediately.
 

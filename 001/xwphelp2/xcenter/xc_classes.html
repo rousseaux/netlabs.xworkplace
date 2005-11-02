@@ -23,8 +23,14 @@ widgets can be created from. A widget class is either built into the &xcenter; i
 or loaded from a plug-in
 <!-- V0.9.20: added link -->
 <A HREF="glossary/gls_dll.html">DLL</A>
-from the <CODE>plugins\xcenter</CODE> directory. Such
-a plug-in DLL can contain one or more widget classes.
+from the
+<IFNDEF __EWORKPLACE__>
+<CODE>plugins\xcenter</CODE>
+</IFNDEF>
+<IFDEF __EWORKPLACE__>
+<CODE>ecs\system\ewps\plugins\ecenter</CODE>
+</IFDEF>
+directory. Such a plug-in DLL can contain one or more widget classes.
 
 <P>As opposed to the "Widgets" page, which lists the current widgets of a single &xcenter;,
 the "Classes" page displays the same widget classes for each &xcenter;.
@@ -37,8 +43,14 @@ in the "Add widget" submenu of an open &xcenter;'s &popmenu;.
 <!-- V0.9.20: added link -->
 <A HREF="glossary/gls_dll.html">dynamic link library (DLL)</A>
 which implements
-the widget. This is either one of the DLLs in the <CODE>plugins\xcenter</CODE> directory
-or will show "built-in" if the widget is built into &xwp; itself.
+the widget. This is either one of the DLLs in the
+<IFNDEF __EWORKPLACE__>
+<CODE>plugins\xcenter</CODE>
+</IFNDEF>
+<IFDEF __EWORKPLACE__>
+<CODE>ecs\system\ewps\plugins\ecenter</CODE>
+</IFDEF>
+directory or will show "built-in" if the widget is built into &xwp; itself.
 
 <P><LI>The <B>"Widget class"</B> shows the internal name of the class which is used
 by the &xcenter; to identify the class to which a widget belongs. This name is

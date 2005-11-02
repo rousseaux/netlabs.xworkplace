@@ -20,9 +20,14 @@ be written properly to disk and be destroyed, or you might lose your Desktop.
 <OL><LI>Move the mouse over an empty area of the Desktop.
 <P><LI>Press mouse button 2 to open the Desktop's &popmenu;.
 <P><LI>Select "Shut down" from the menu.
-</OL>Alternatively, press the "Shutdown" button on either the
-<A HREF="xcenter/xc_main.html">&xcenter;</A> or the
-<A HREF="objects/obj_os2warpcenter.html">&warpcenter;</A>.
+</OL>Alternatively, press the "Shutdown" button on
+<IFDEF __EWORKPLACE__>
+the <A HREF="xcenter/xc_main.html">&xcenter;</A>.
+</IFDEF>
+<IFNDEF __EWORKPLACE__>
+either the <A HREF="xcenter/xc_main.html">&xcenter;</A>
+or the <A HREF="objects/obj_os2warpcenter.html">&warpcenter;</A>.
+</IFNDEF>
 
 <P>
 <IFNDEF __NOXSHUTDOWN__>
@@ -42,12 +47,8 @@ after initiating shutdown.
 
 <IFDEF __EWORKPLACE__>
 <B>Note:</B> By default, after initiating shutdown, &os2; will display a confirmation
-message box and then shut down all programs and devices. After shutdown is
-complete, it will give you a message that it is safe to turn off your computer.
-
-<P>Instead, you can elect to use eComStation's extended shutdown functionality,
-which will allow you to automatically power-off or restart your computer,
-if your hardware supports that.
+message box whose content depends on what you have choosen in
+<A HREF="objects/obj_setup_estyler.html">"eStyler"</A>.
 
 <P>To enable this, open the &link_lookfdr; and then
 <A HREF="objects/obj_setup_estyler.html">"eStyler"</A>.
