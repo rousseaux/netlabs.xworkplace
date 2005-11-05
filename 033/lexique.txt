@@ -1,328 +1,318 @@
 Lexique - Fonctionnement dÇtaillÇ dans le fichier "Instructions_traduction"
 
 
+# Remarques : 
+# 
+#  - Merci de prÇsenter les termes dans l'ordre alphabÇtique des termes en
+#    anglais.
+# 
+#  - DÇsolÇ pour les traductions Çvidentes, mieux vaut les laisser.
+# 
+#  - les alternatives sont Ö utiliser Çventuellement en fonction du
+#    contexte ; il est prÇfÇrable de conserver la traduction principale
+#    donnÇe par le lexique
+# 
+# 
+# Derniäre modification : Guillaume Gay - 2005-11-04
 
-Merci de prÇsenter les termes dans l'ordre alphabÇtique des termes en anglais.
 
-DÇsolÇ pour les traductions Çvidentes, vaut mieux les laisser.
+# Termes arràtÇs :
 
+Abort                           Abandonner (autres : interrompre, interruption)
 
+Access date                     date d'accäs
 
-Note : les alternatives sont Ö utiliser Çventuellement en fonction du contexte ; il est prÇfÇrable de conserver la traduction principale donnÇe par le lexique
+Account                         Compte
 
+Action                          Action
 
+Active Window                   Fenàtre active
 
+Additional                      SupplÇmentaire (autre : Additionnel)
 
+Administrator                   Administrateur
 
-Attention : modification de termes arràtÇs : 
+Allocated                       AllouÇ
 
-cancel->annulation (anciennement "annuler" - je modifierai le fichier .rc en consÇquence)
+Always maintain sort order      Tri automatique Ö l'ouverture
 
-Create->CrÇation (anciennement "crÇer" - je modifierai le fichier .rc en consÇquence)
+Amplified mode                  Mode zoom
 
-Delete->Suppression (anciennement "supprimer" - je modifierai le fichier .rc en consÇquence)
+Ampmix                          Table de mixage (autres : Mixage, Mixeur)
 
-Handle->Descripteur (aussi "Identifiant")
+Animation                       Animation
 
-Undo->DÇfaire (anciennement "annuler" - je modifierai le fichier .rc en consÇquence)
+Apply                           Validation
 
+Archive                         Archive
 
+Archiving                       Archivage
 
+Arrange                         Disposition (autre : disposer)
 
+Arrow hotkeys                   Touches flÇchÇes 
 
-Termes arràtÇs :
+Ascender                        Jambage supÇrieur
 
-Abort				Abandonner (autres : interrompre, interruption)
+As placed                       Libre
 
-Access date			date d'accäs
+Application                     Application
 
-Account			Compte
+Arrow hotkeys                   Raccourcis sur les fläches
 
-Action				Action
+auto-destroy                    Effacement automatique
 
-Active Window			Fenàtre active
+Auto-refresh                    RÇgÇnÇration automatique
 
-Additional			SupplÇmentaire (autre : Additionnel)
+Auto-Close                      Fermeture automatique
 
-Administrator			Administrateur
+Autoscroll                      DÇfilement automatique
 
-Allocated			AllouÇ
+Awake                           RÇveiller, Activer, Sortir de veille
 
-Always maintain sort order	Tri automatique Ö l'ouverture
+Association                     Association
 
-Amplified mode			Mode zoom
+Background                      Arriäre-plan
 
-Ampmix			Table de mixage (autres : Mixage, Mixeur)
+Backspace                       Effacement arriäre
 
-Animation			Animation
+Backup                          Sauvegarde
 
-Apply				Validation
+baseline                        ligne de base
 
-Archive				Archive
+Batch rename                    Renommage par lots
 
-Archiving			Archivage
+begins with                     commenáant par, commence par
 
-Arrange			Disposition (autre : disposer)
+bitmap                          bitmap 
 
-Arrow hotkeys			Touches flÇchÇes 
+Blow-up style                   Zoom centrÇ
 
-Ascender			Jambage supÇrieur
+Boot logo                       Logo de dÇmarrage
 
-As placed                    	Libre
+Border                          Bord, Bordure, Cadre
 
-Application			Application
+Browse                          Naviguer (mode web), Parcourir (mode fichier)
 
-Arrow hotkeys			Raccourcis sur les fläches
+browser                         navigateur
 
-auto-destroy			Effacement automatique
+buffer                          tampon
 
-Auto-refresh			RÇgÇnÇration automatique
+Built-in                        Inclus, natif
 
-Auto-Close			Fermeture automatique
+Button                          Bouton
 
-Autoscroll			DÇfilement automatique
+bytes                           octets (abbrÇv : o)
 
-Awake				RÇveiller, Activer, Sortir de veille
+Cancel                          Annulation
 
-Association			Association
+Cascaded menu                   menu en cascade
 
-Background 			Arriäre-plan
+Cascading choice                Option en cascade
 
-Backspace			Effacement arriäre
+CD Player                       Lecteur CD
 
-Backup				Sauvegarde
+Check                           VÇrifier
 
-baseline 			ligne de base
+Check box                       Case Ö cocher
 
-Batch rename			Renommage par lots
+Check mark                      Marque
 
-begins with			commenáant par, commence par
+Choice                          option
 
-bitmap 				bitmap 
+Chord                           Clic simultanÇ
 
-Blow-up style			Zoom centrÇ
+Clash                           Conflit
 
-Boot logo			Logo de dÇmarrage
+Class                           Classe 
 
-Border				Bord, Bordure, Cadre
+Clear                           Effacement
 
-Browse				Naviguer (mode web), Parcourir (mode fichier)
+Click                           Clic
 
-browser 			navigateur
+Clipboard                       Presse-papiers
 
-Built-in				Inclus, natif
+Close                           Fermeture
 
-Button				Bouton
+Closing                         Fermeture (autre : Fermeture en cours)
 
-bytes				octets (abbrÇv : o)
+Codecs                          Codecs 
 
-Cancel				Annulation
+Collecting                      Collecte (autre : collecter)
 
-Cascaded menu		menu en cascade
+Command reference               Manuel de rÇfÇrence
 
-Cascading choice		Option en cascade
+Common settings                 Paramätres communs
 
-CD Player			Lecteur CD
+Component                       Composant
 
-Check				VÇrifier
+Compound                        Composite (autre : ComposÇ)
 
-Check box			Case Ö cocher
+Conditional cascade sensitivity DÇtection des sous-menus conditionnels
 
-Check mark			Marque
+Config Folder                   Dossier de configuration
 
-Choice				option
+Confirm                         Confirmation
 
-Chord				Clic simultanÇ
+contains                        contenant, incluant
 
-Clash				Conflit
+Container                       Conteneur, Contenant
 
-Class 				Classe 
+Context Menu                    Menu contextuel
 
-Clear				Effacement
+Contextual help                 Aide contextuelle
 
-Click				Clic
+Continue                        Continuer
 
-Clipboard			Presse-papiers
+Copy                            Copie
 
-Close				Fermeture
+CPU                             CPU, Processeur
 
-Closing				Fermeture (autre : Fermeture en cours)
+Create                          CrÇation
 
-Codecs				Codecs 
+Criteria                        Critäre
 
-Collecting			Collecte (autre : collecter)
+Cursor                          Curseur
 
-Command reference		Manuel de rÇfÇrence
+Custom                          PersonnalisÇ
 
-Common settings		Paramätres communs
+Cut                             Couper
 
-Component			Composant
+Default                         DÇfaut
 
-Compound			Composite (autre : ComposÇ)
+Delete                          Suppression
 
-Conditional cascade sensitivity	DÇtection des sous-menus conditionnels
+Delete folder                   Dossier suppression
 
-Config Folder			Dossier de configuration
+Deletion                        Effacement (autre : retrait - remarque : alternative Ö "Suppression")
 
-Confirm				Confirmation
+Deregister                      Supprimer l'enregistrement
 
-contains			contenant, incluant
+descender                       Jambage infÇrieur
 
-Container			Conteneur, Contenant
+Descriptive name                Nom descriptif
 
-Context Menu			Menu contextuel
+Deselect all                    DÇsÇlecter tout
 
-Contextual help		Aide contextuelle
+Desktop                         Bureau
 
-Continue			Continuer
+Devices                         MatÇriels, Dispositifs
 
-Copy				Copie
+Dialog                          Dialogue
 
-CPU				CPU, Processeur
+Digital                         NumÇrique
 
-Create				CrÇation
+Direct manipulation             Manipulation directe
 
-Criteria				Critäre
+Directory                       RÇpertoire
 
-Cursor				Curseur
+Disk                            Disque
 
-Custom				PersonnalisÇ
+Diskfree                        Espace libre
 
-Cut				Couper
+Display                         Afficher, Affichage
 
-Default				DÇfaut
+DLL                             DLL
 
-Delete				Suppression
+Document                        Document
 
-Delete folder			Dossier suppression
+Do-not pointer                  Panneau d'interdiction
 
-Deletion			Effacement (autre : retrait - remarque : alternative Ö "Suppression")
+Double-click                    Double-clic (autre : cliquer 2 fois[CUA])
 
-Deregister			Supprimer l'enregistrement
+Drag                            Faire glisser
 
-descender			Jambage infÇrieur
+Drag (dans "cancel drag")       Manipulation (Annulation de la manipulation)
 
-Descriptive name		Nom descriptif
+Drag and drop                   Glisser-dÇposer (autre : amener [CUA])
 
-Deselect all			DÇsÇlecter tout
+Draw                            Dessiner
 
-Desktop			Bureau
+Drive                           UnitÇ (autres : Disque, Lecteur - peuvent àtre utilisÇs comme alternative)
 
-Devices				MatÇriels, Dispositifs
+Driver                          Pilote
 
-Dialog				Dialogue
+Drop                            DÇposer
 
-Digital				NumÇrique
+EA                              EA
 
-Direct manipulation		Manipulation directe
+EA size                         Taille des attributs Çtendus, Taille EA
 
-Directory			RÇpertoire
+Edit                            êdition
 
-Disk				Disque
+Eject                           êjection
 
-Diskfree			Espace libre
+Emphasis                        Mise en Çvidence
 
-Display				Afficher, Affichage
+Emptying [trash can]            Vidage de [la poubelle] (dans un menu "vider la poubelle")
 
-DLL				DLL
+Enable                          Activer
 
-Document			Document
+ends with                       finissant par
 
-Do-not pointer			Panneau d'interdiction
+Energy                          Alimentation
 
-Double-click			Double-clic (autre : cliquer 2 fois[CUA])
+Entry field                     Zone d'entrÇe
 
-Drag				Faire glisser
+Entry Point                     Point d'entrÇe
 
-Drag (dans "cancel drag")	Manipulation (Annuler manipulation)
+Environment                     Environnement
 
-Drag and drop			Glisser-dÇposer (autre : amener [CUA])
-
-Draw				Dessiner
-
-Drive				UnitÇ (autres : Disque, Lecteur - peuvent àtre utilisÇs comme alternative)
-
-Driver				Pilote
-
-Drop				DÇposer
-
-EA				EA
-
-EA size				Taille des attributs Çtendus, Taille EA
-
-Edit				Edition
-
-Eject				Ejection
-
-Emphasis			Mise en Çvidence
-
-Emptying [trash can]		Vidage de [la poubelle] (dans un menu "vider la poubelle")
-
-Enable				Activer
-
-ends with			finissant par
-
-Energy				Alimentation
-
-Entry field			Zone d'entrÇe
-
-Entry Point			Point d'entrÇe
-
-Environment			Environnement
-
-equals				Çgal Ö
+equals                          Çgal Ö
 
 event				ÇvÇnement
 
-Export				Exporter
+Export                          Exporter
 
-Ext.				Ext.
+Ext.                            Ext.
 
-Extended Attributes		Attributs Çtendus
+Extended Attributes             Attributs Çtendus
 
-eXtended shutdown		Arràt avancÇ
+eXtended shutdown               Arràt avancÇ
 
-Failed				Echec de (autre : a ÇchouÇ)
+Failed                          êchec de (autre : a ÇchouÇ)
 
-Features			CaractÇristiques (autre : fonctionnalitÇs)
+Features                        CaractÇristiques (autre : fonctionnalitÇs)
 
-Field				Zone
+Field                           Zone
 
-Field prompt			Indicatif de zone
+Field prompt                    Indicatif de zone
 
-File				Fichier
+File                            Fichier
 
-File attributes			Attributs de fichier
+File attributes                 Attributs de fichier
 
-File Name			Nom de fichier
+File Name                       Nom de fichier
 
-File name extension		Extension de fichier
+File name extension             Extension de fichier
 
-File operations			Manipulation des fichiers ou OpÇration sur les fichiers
+File operations                 Manipulation des fichiers ou OpÇration sur les fichiers
 
-file size				taille de fichier
+file size                       taille de fichier
 
-File types			Associations (dans page de bloc-notes) (autre : Types de fichiers)
+File types                      Associations (dans page de bloc-notes) (autre : Types de fichiers)
 
-files count			Nombre de fichiers
+files count                     Nombre de fichiers
 
-Filter				Filtre
+Filter                          Filtre
 
-Find				Rechercher
+Find                            Rechercher
 
-Fix class			Correction des classes
+Fix class                       Correction des classes
 
-Fix				Correctif, corriger
+Fix                             Correctif, corriger
 
-Fixer 				correctif
+Fixer                           correctif
 
-Flash to top			Premier plan instantanÇ
+Flash to top                    Premier plan instantanÇ
 
-Flag				Drapeau, Marque, Signal
+Flag                            Drapeau, Marque, Signal
 
-Flat buttons			Boutons plats
+Flat buttons                    Boutons plats
 
-Folder				Dossier
+Folder                          Dossier
+
+Folder hotkey                   Raccourcis dossiers
 
 Font				police
 
@@ -372,7 +362,7 @@ Hilight				Mettre en Çvidence, Mise en Çvidence
 
 Hook				Lien
 
-Hotkeys			Raccourcis claviers
+Hotkeys                         Raccourcis claviers
 
 HWND				HWND
 
@@ -438,13 +428,15 @@ Layout 				disposition
 
 Line-wise			En une ligne, Ligne Ö ligne
 
+link                            lien
+
 List button			Bouton de listage	
 
 load				chargement
 
 Loaded				chargÇ
 
-Loading			chargement
+Loading                         chargement
 
 Local security			SÇcuritÇ locale
 
@@ -460,9 +452,9 @@ Manipulation button		Bouton de manipulation
 
 Mappings			DÇfinitions (dans le bloc-notes "Souris")
 
-matches			correspondant Ö ("s" 3e pers du singulier), correspondances ("s" pluriel)
+matches                         correspondant Ö ("s" 3e pers du singulier), correspondances ("s" pluriel)
 
-Maximize button		Bouton d'agrandissement
+Maximize button                 Bouton d'agrandissement
 
 Media Type			Type de mÇdia
 
@@ -470,7 +462,7 @@ Menu				Menu
 
 Menu-bar			Barre de menus
 
-Menu-bar choice		Option de barre de menus
+Menu-bar choice                 Option de barre de menus
 
 Menu button			Bouton de menu
 
@@ -478,7 +470,7 @@ Menu choice			Option de menu
 
 Merge				Fusion, fusionner (pour les filtres du WPS)
 
-Message			Message
+Message                         Message
 
 Method				MÇthode
 
@@ -521,7 +513,7 @@ Non-PM	 sessions		Sessions non-PM
 
 Notebook			Bloc-Notes
 
-NumLock			Verr_Num
+NumLock                         Verr_Num
 
 Object				Objet
 
@@ -535,7 +527,7 @@ On				En fonction (abbrÇv : EF)
 
 Open				Ouvrir
 
-Open as			Ouvrir (Autre : ouvrir et prÇsenter[CUA])
+Open as                         Ouvrir (Autre : ouvrir et prÇsenter[CUA])
 
 Operator			Operateur
 
@@ -543,11 +535,11 @@ Options				Options
 
 Ordinal				Ordinal
 
-Original				Original
+Original                        Original
 
-Orphaned classes		Classes orphelines
+Orphaned classes                Classes orphelines
 
-OS/2 Command reference	Manuel de rÇfÇrence de OS/2
+OS/2 Command reference	        Manuel de rÇfÇrence de OS/2
 
 Outgoing			Sortant
 
@@ -556,6 +548,8 @@ Overlay				Surcouche
 Overridden By			SurghargÇ par
 
 Overriding class		Classe de surcharge
+
+package                         paquetage
 
 Pass				Trasmettre
 
@@ -583,7 +577,7 @@ permissions			autorisations
 
 Permits/rejects			Permet/Interdit
 
-physical memory		MÇmoire physique
+physical memory                 MÇmoire physique
 
 Pickup				Prendre
 
@@ -597,15 +591,17 @@ Pointing device			PÇriphÇrique de pointage
 
 Popup-menu			Menu contextuel (autre : Incrustation [CUA])
 
+Power-off                       êteindre, mettre hors-tension
+
 Pre-populate			PrÇ-gÇnÇration (autres : PrÇparer, PrÇ-Çquipper)
 
-Preview			Aperáu
+Preview                         Aperáu
 
-Previous			PrÇcÇdent
+Previous                        PrÇcÇdent
 
-Print				Impression
+Print                           Impression
 
-Priority				PrioritÇ
+Priority                        PrioritÇ
 
 process				Processus
 
@@ -641,17 +637,17 @@ Refresh				RÇgÇnÇration (autre : actualiser)
 
 Refresh now			RÇgÇnÇration immÇdiate
 
-Register			Ecrire dans le registre (autre : Enregistrer)
+Register			êcrire dans le registre (autre : Enregistrer)
 
-Release			LibÇration (dans Releasing files), version (dans XWP release)
+Release                         LibÇration (dans Releasing files), version (dans XWP release)
 
-Remove			Supprimer, Retirer
+Remove                          Supprimer, Retirer
 
-Removeable			Amovible
+Removeable                      Amovible
 
-Rename			Renommer
+Rename                          Renommer
 
-Replace			Remplacer
+Replace                         Remplacer
 
 Report				Reporter
 
@@ -677,7 +673,7 @@ Resume				Reprendre (autre : rÇ-essayer)
 
 Retry				Reprise
 
-Reverse			Inverse
+Reverse                         Inverse
 
 Root type			Type racine
 
@@ -689,7 +685,7 @@ Sample				Echantillon
 
 Save				Sauvegarde
 
-Save as			Sauvegarde en
+Save as                         Sauvegarde en
 
 Saving				Sauvegarde, enregistrement, sauvegarder, enregistrer, selon le contexte
 
@@ -697,7 +693,7 @@ Scan Code			Code d'analyse
 
 Scatter/gather option		mÇcanisme de ventilation/regroupement
 
-Schemes			Variations
+Schemes                         Variations
 
 Scheduler			Planificateur de tÉches
 
@@ -717,6 +713,8 @@ Selection button		Bouton de sÇlection
 
 Selection cursor		Curseur de sÇlection
 
+Sentinel memory watcher         Sentinelle mÇmoire
+
 Sequencer			SÇquenceur
 
 Settings			Paramätres
@@ -725,7 +723,7 @@ Settings notebook		Bloc-Notes des Paramätres
 
 Setup string			Chaåne de paramätres
 
-Shadow			Double 
+Shadow                          Double 
 
 Short menus			Menus courts
 
@@ -739,7 +737,7 @@ Shut down			Eteindre, Arràter
 
 Shutdown complete		Systäme arràtÇ
 
-Shutdown folder		Dossier de clìture
+Shutdown folder                 Dossier de clìture
 
 Skip				Ignorer
 
@@ -797,11 +795,11 @@ Sticky				persistant
 
 Sticky Criteria			critäres des fenàtres persisitantes
 
-Sticky windows		Fenàtres persistantes
+Sticky windows                  Fenàtres persistantes
 
 Stop				Stop
 
-Storage			Stockage
+Storage                         Stockage
 
 Subclass			Sous-classe
 
@@ -811,13 +809,13 @@ Syslevels			Niveaux systämes
 
 System clock			Horloge systäme
 
-Subtype			Sous-type (rien de pÇjoratif ;) )
+Subtype                         Sous-type (rien de pÇjoratif ;) )
 
 Subject				Sujet
 
-Suspend			Suspendre
+Suspend                         Suspendre
 
-Swap, Swapper		Fichier d'Çchange (fichier de pagination en cas de rÇpÇtition)
+Swap, Swapper                   Fichier d'Çchange (fichier de pagination en cas de rÇpÇtition)
 
 Syslevel			Syslevel, Niveau de rÇvision systäme
 
@@ -833,7 +831,7 @@ Template 			modäle
 
 Text cursor			Curseur texte
 
-Text-to-speech		Synthäse vocale
+Text-to-speech                  Synthäse vocale
 
 Third party			Tiers
 
@@ -858,6 +856,8 @@ Trash object			Objet jetÇ (j'aime bien ces expressions liÇes Ö la poubelle...)
 tray				tiroir
 
 Tree 				Arborescence
+
+Treesize                        Taille d'arborescence (???)
 
 Tree view			Arborescence
 
@@ -887,11 +887,13 @@ Vendor				Fabriquant
 
 Vendor-specific driver		Pilote du fabriquant
 
-Verbose			Mode dÇtaillÇ
+Verbose                         Mode dÇtaillÇ (autre : bavard)
 
 Virtual desktops		Bureaux virtuels
 
 View				Visualisation (autres : Voir, Visualiser, Vue, Afficher)
+
+Warning                         Avertissement
 
 Warpcenter			Warpcenter
 
@@ -899,7 +901,7 @@ Wave audio			Fichier audio Wave (autres : Fichier audio)
 
 Widget				Widget
 
-Window			Fenàtre
+Window                          Fenàtre
 
 Window list			Liste de fenàtres
 
@@ -917,19 +919,19 @@ WPS Class list			Liste des classes du bureau Çlectronique
 
 WPS filters			Filtres du bureau Çlectronique
 
-Wrap at borders		Changement sur la bordure
+Wrap at borders                 Changement sur la bordure
 
-Xbutton			XBouton
+Xbutton                         XBouton
 
-XCenter			XCenter
+XCenter                         XCenter
 
 XFolder				XFolder
 
 XFolder Internals           	CaractÇristiques internes de XWorkplace
 
-XPager 			XPager
+XPager                          XPager
 
-XShutdown			XShutdown
+XShutdown                       XShutdown
 
 XWPSetup			Paramätres de XWP
 
@@ -939,36 +941,25 @@ XWorkplace			XWorkplace
 
 
 
-Termes Ö arràter :
+# Termes Ö arràter :
 
+bug                             bug
 
-buffer				tampon
+drag scrolling                  dÇfilement
 
-bug				bug
+leading characters              Initiales ? Lettre-clefs ?
 
-drag scrolling			dÇfilement
+MB1 click                       clic gauche 
 
-leading characters		Initiales ? Lettre-clefs ?
+MB2 click                       clic droit
 
-link				lien
+MB3 click                       clic central
 
-MB1 click			clic gauche 
+none set                        non dÇfini, aucun
 
-MB2 click			clic droit
+Open as                         Ouvrir comme ? Ouvrir sous ? (dÇjÖ arràtÇ)
 
-MB3 click			clic central
+Shell                           Shell
 
-none set			non dÇfini, aucun
-
-Open as			Ouvrir comme ? Ouvrir sous ? (dÇjÖ arràtÇ)
-
-package			?
-
-Power-off			Eteindre
-
-Sentinel memory watcher	Sentinelle mÇmoire
-
-Shell				Shell
-
-Warning			Attention
+Treesize                        Taille d'arborescence (???)
 
