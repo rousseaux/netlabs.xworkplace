@@ -701,24 +701,6 @@ SOM_Scope ULONG  SOMLINK xfstupM_wpclsQueryIconDataN(M_XFldStartup *somSelf,
     return sizeof(ICONINFO);
 }
 
-/*
- *@@ wpclsCreateDefaultTemplates:
- *      This method is used to create templates for the class.
- *      We prevent this creation by not calling the parent method.
- *
- *@@added V1.0.1 (2002-11-25) [pr]
- */
-
-SOM_Scope BOOL  SOMLINK xfstupM_wpclsCreateDefaultTemplates(M_XFldStartup *somSelf,
-                                                            WPObject* Folder)
-{
-    /* M_XFldStartupData *somThis = M_XFldStartupGetData(somSelf); */
-    M_XFldStartupMethodDebug("M_XFldStartup","xfstupM_wpclsCreateDefaultTemplates");
-
-    return TRUE;
-}
-
-
 /* ******************************************************************
  *
  *   here come the XFldShutdown methods
