@@ -4681,6 +4681,9 @@ SOM_Scope BOOL  SOMLINK xo_wpFilterMenu(XFldObject *somSelf,
     // XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xo_wpFilterMenu");
 
+    PMPF_MENUS(("flags[0]: %08X, flags[1]: %08X, flags[2]: %08X",
+                pFlags->Flags[0], pFlags->Flags[1], pFlags->Flags[2]));
+
     XFldObject_parent_WPObject_wpFilterMenu(somSelf,
                                             pFlags,
                                             hwndCnr,
@@ -4688,6 +4691,9 @@ SOM_Scope BOOL  SOMLINK xo_wpFilterMenu(XFldObject *somSelf,
                                             ulMenuType,
                                             ulView,
                                             ulReserved);
+
+    PMPF_MENUS(("parent flags[0]: %08X, flags[1]: %08X, flags[2]: %08X",
+                pFlags->Flags[0], pFlags->Flags[1], pFlags->Flags[2]));
 
     // if object has been deleted already (ie. is in trashcan),
     // remove delete... not that I can see how we can get a context

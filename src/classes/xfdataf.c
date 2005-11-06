@@ -1789,6 +1789,7 @@ SOM_Scope ULONG  SOMLINK xdf_wpFilterPopupMenu(XFldDataFile *somSelf,
                                                                     hwndCnr,
                                                                     fMultiSelect);
 
+    PMPF_MENUS(("flags %08X, parent flags: %08X, ", ulFlags, ulMenuFilter));
     // now suppress default menu items according to
     // Global Settings;
     // the DefaultMenuItems field in pGlobalSettings is

@@ -395,7 +395,7 @@ SOM_Scope ULONG  SOMLINK xsrvM_wpclsQueryStyle(M_XWPNetServer *somSelf)
     /* M_XWPNetServerData *somThis = M_XWPNetServerGetData(somSelf); */
     M_XWPNetServerMethodDebug("M_XWPNetServer","xsrvM_wpclsQueryStyle");
 
-    return (CLSSTYLE_DONTTEMPLATE
+    return (CLSSTYLE_NEVERTEMPLATE
                 | CLSSTYLE_NEVERCOPY
                 | CLSSTYLE_NEVERMOVE
                 | CLSSTYLE_NEVERLINK

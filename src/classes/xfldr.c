@@ -2706,6 +2706,8 @@ SOM_Scope BOOL  SOMLINK xf_wpFilterMenu(XFolder *somSelf,
     PMPF_MENUS(("entering, ulView is 0x%lX (%s)",
                     ulView,
                     cmnIdentifyView(ulView)));
+    PMPF_MENUS(("flags[0]: %08X, flags[1]: %08X, flags[2]: %08X",
+                pFlags->Flags[0], pFlags->Flags[1], pFlags->Flags[2]));
 
     XFolder_parent_WPFolder_wpFilterMenu(somSelf,
                                          pFlags,
@@ -2715,6 +2717,8 @@ SOM_Scope BOOL  SOMLINK xf_wpFilterMenu(XFolder *somSelf,
                                          ulView,
                                          ulReserved);
 
+    PMPF_MENUS(("parent flags[0]: %08X, flags[1]: %08X, flags[2]: %08X",
+                pFlags->Flags[0], pFlags->Flags[1], pFlags->Flags[2]));
     PMPF_MENUS(("  CTXT_CRANOTHER %d", pFlags->Flags[0] & CTXT_CRANOTHER));
 
     // if object has been deleted already (ie. is in trashcan),
