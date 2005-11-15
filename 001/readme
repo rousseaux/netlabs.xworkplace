@@ -3,7 +3,7 @@ XWorkplace 1.0.4 README
 
 (W) Ulrich M”ller, Feb 7, 2000
 
-Last updated September 26, 2005
+Last updated November 15, 2005
 
 
 0. CONTENTS OF THIS FILE
@@ -79,7 +79,7 @@ Last updated September 26, 2005
 
     --  Merlin/Aurora Convenience Packages
 
-    --  eComStation 1.x (but see remark for 1.1 below)
+    --  eComStation 1.x
 
     XWorkplace 1.0.4 and higher provide access to additional information
     about drivers. The following requirements apply:
@@ -119,16 +119,16 @@ Last updated September 26, 2005
         setting before allowing WarpIN to restart the WPS.
 
 
-    Installing on eComStation 1.1
+    Installing on eComStation 1.x
     -----------------------------
 
-    If you are installing on eComStation 1.1, note that
+    If you are installing on eComStation 1.x, note that
     the "Desktop enhancements" of that version include a
     special version of XWorkplace that will conflict with
     the standalone version. Do one of the following:
 
     *   Install this release of XWorkplace over the version
-        that comes with eCS 1.1 -- that is, when WarpIN
+        that comes with eCS 1.x -- that is, when WarpIN
         asks you about the target directory, enter
         ?:\ecs\system\ewps (on your boot drive).
 
