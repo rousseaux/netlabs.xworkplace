@@ -964,6 +964,7 @@ VOID MwgtDestroy(HWND hwnd)
  *
  *@@added V0.9.7 (2000-12-14) [umoeller]
  *@@changed V0.9.9 (2001-02-01) [umoeller]: added tooltips
+ *@@changed V1.0.5 (2005-11-26) [pr]: Fix Date widget tooltip
  */
 
 BOOL MwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
@@ -1011,14 +1012,15 @@ BOOL MwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
                         case MWGT_DATE:
                         case MWGT_TIME:
                         {
-                             PCOUNTRYSETTINGS2 pCountrySettings
-                                 = (PCOUNTRYSETTINGS2)pWidget->pGlobals->pCountrySettings;
-                             DATETIME dt;
-                             DosGetDateTime(&dt);
-                             pnlsDateTime2(pPrivate->szDateTime,
-                                           NULL,
-                                           &dt,
-                                           pCountrySettings);
+                            PCOUNTRYSETTINGS2 pCountrySettings
+                                = (PCOUNTRYSETTINGS2)pWidget->pGlobals->pCountrySettings;
+                            DATETIME dt;
+                            DosGetDateTime(&dt);
+                            // V1.0.5 (2005-11-26) [pr]: Fix Date widget tooltip
+                            pnlsDateTime2((pPrivate->ulType == MWGT_TIME) ? pPrivate->szDateTime : NULL,
+                                          (pPrivate->ulType == MWGT_DATE) ? pPrivate->szDateTime : NULL,
+                                          &dt,
+                                          pCountrySettings);
 
                             pttt->pszText = pPrivate->szDateTime;
                         }
@@ -1968,6 +1970,7 @@ CHAR FindDriveFromWidgetX(PMONITORPRIVATE pPrivate,
  *@@changed V0.9.18 (2002-03-23) [umoeller]: now supporting double-click on diskfree to open drive
  *@@changed V0.9.19 (2002-04-02) [umoeller]: eCSClock opened settings, fixed
  *@@changed V1.0.2 (2003-03-07) [umoeller]: now posting msg to t1 obj for opening objects @@fixes 398
+ *@@changed V1.0.5 (2005-11-26) [pr]: Open eCSClock first, then System Clock if it fails
  */
 
 VOID MwgtButton1DblClick(HWND hwnd,
@@ -1991,12 +1994,14 @@ VOID MwgtButton1DblClick(HWND hwnd,
         {
             case MWGT_DATE:
             case MWGT_TIME:
-                pcszID = "<WP_CLOCK>";
-                pcszBackupID = "<ECLOCK_CLKSET>";
-                        // changed V0.9.20 (2002-07-19) [umoeller]
+                pcszID = "<ECLOCK_CLKSET>";
+                pcszBackupID = "<WP_CLOCK>";
+                ulView = 0; // OPEN_DEFAULT
+                ulBackupView = 2; // OPEN_SETTINGS
+                        // changed V1.0.5 (2005-11-26) [pr]
             break;
 
-            // case MWGT_SWAPPER:       disabnled V1.0.0 (2002-08-21) [umoeller]
+            // case MWGT_SWAPPER:       disabled V1.0.0 (2002-08-21) [umoeller]
             case MWGT_MEMORY:
                 pcszID = "<XWP_KERNEL>"; // XFOLDER_KERNELID; // "<XWP_KERNEL>";
             break;
