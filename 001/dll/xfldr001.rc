@@ -1364,9 +1364,9 @@ BEGIN
     ID_XSDI_ARC_ARCHIVES_GROUP          "Archives"
     ID_XSDI_ARC_ARCHIVES_NO_TXT1        "Kee~p"
     ID_XSDI_ARC_ARCHIVES_NO_TXT2        "archives"
-    ID_XSDI_ARC_RESTORE_GROUP           "Recovery choices screen"
-    ID_XSDI_ARC_RESTORE_ALWAYS          "Display recovery choices at each system startup"
-    ID_XSDI_ARC_RESTORE_TXT1            "Timeout for Recovery Choices screen&nl; (0 Seconds means no Timeout)"
+    ID_XSDI_ARC_RESTORE_GROUP           "Recovery choices"
+    ID_XSDI_ARC_RESTORE_ALWAYS          "Display at each ~system startup"
+    ID_XSDI_ARC_RESTORE_TXT1            "~Timeout"
     ID_XSDI_ARC_RESTORE_TXT2            "seconds"
 
     /* strings formerly in ID_SDD_CONFIRMWPS */

@@ -212,7 +212,7 @@ static const CONTROLDEF
     ArcNoTxt2 = LOADDEF_TEXT(ID_XSDI_ARC_ARCHIVES_NO_TXT2),
     ArcRestOptions = LOADDEF_GROUP(ID_XSDI_ARC_RESTORE_GROUP,DEFAULT_TABLE_WIDTH),
     ArcRestShowAlways = LOADDEF_AUTOCHECKBOX(ID_XSDI_ARC_RESTORE_ALWAYS),
-    ArcRestTimeoutTxt = LOADDEF_TEXT_WORDBREAK(ID_XSDI_ARC_RESTORE_TXT1, SZL_AUTOSIZE),
+    ArcRestTimeoutTxt = LOADDEF_TEXT(ID_XSDI_ARC_RESTORE_TXT1), // V1.0.5 (2005-11-26) [pr]
     ArcRestTimeoutSpin =
         {
             WC_SPINBUTTON,
@@ -221,7 +221,7 @@ static const CONTROLDEF
                 | SPBS_MASTER | SPBS_JUSTLEFT | SPBS_JUSTRIGHT | SPBS_JUSTCENTER,
             ID_XSDI_ARC_RESTORE_SPIN,
             CTL_COMMON_FONT,
-            { 30, SPIN_HEIGHT },     // size
+            { SPIN_WIDTH, SPIN_HEIGHT },     // size; V1.0.5 (2005-11-26) [pr]
             COMMON_SPACING,
         },
     ArcRestTimeoutTxt2 = LOADDEF_TEXT(ID_XSDI_ARC_RESTORE_TXT2);
