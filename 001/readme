@@ -1,9 +1,9 @@
 
-XWorkplace 1.0.4 README
+XWorkplace 1.0.5 README
 
 (W) Ulrich M”ller, Feb 7, 2000
 
-Last updated November 15, 2005
+Last updated November 26, 2005
 
 
 0. CONTENTS OF THIS FILE
@@ -29,7 +29,7 @@ Last updated November 15, 2005
 1. INTRODUCTION
 ===============
 
-    Welcome to XWorkplace V1.0.4.
+    Welcome to XWorkplace V1.0.5
 
     XWorkplace is a complex set of replacement classes for the
     OS/2 Workplace Shell to enhance the WPS's behavior in many
@@ -47,21 +47,18 @@ Last updated November 15, 2005
     ------------------
 
     This is another release off the 1.0 branch with the bugfixes
-    that have piled up here over the six months.
+    that have piled up here since the last release.
 
     For details, refer to the "Version Notices" in the
     "XWorkplace User Guide". To extract the documentation
     only, see "3. INSTALLATION" below.
-
-    Alternatively, you can probably find a detailed changelog
-    on http://www.xworkplace.org also.
 
 
 2. REQUIREMENTS
 ===============
 
     XWorkplace is developed and tested only under eComStation
-    1.0, which is equivalent -- as far as the OS/2 code base
+    1.x, which is equivalent -- as far as the OS/2 code base
     is concerned -- to the Merlin Convenience Package 1 (MCP1).
 
     NOTE: As opposed to previous releases, XWorkplace 1.0.0
@@ -81,7 +78,7 @@ Last updated November 15, 2005
 
     --  eComStation 1.x
 
-    XWorkplace 1.0.4 and higher provide access to additional information
+    XWorkplace 1.0.5 and higher provide access to additional information
     about drivers. The following requirements apply:
    
     -- The CFGDAT.INF file from the ConfigTool freeware package must
@@ -171,6 +168,13 @@ Last updated November 15, 2005
     Besides, you will probably get a notification message that
     XWPDAEMN.EXE is running and must be killed. Have WarpIN kill
     that program (which is the XWorkplace Daemon).
+    This has the unfortunate side-effect of making all your
+    XWorkplace Startup Folders start if you accept WarpIN's offer
+    to restart the desktop at the end of installation, even if
+    they are set to start on reboots only.
+    If this is a problem, then you should decline the offer to
+    restart the Desktop, and you should reboot manually after
+    installation has completed.
 
     If upgrading doesn't work, have WarpIN remove the installed
     XWorkplace version first, restart the WPS, and install the
