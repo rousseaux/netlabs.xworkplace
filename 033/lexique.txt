@@ -13,7 +13,7 @@ Lexique - Fonctionnement d‚taill‚ dans le fichier "Instructions_traduction"
 #    donn‚e par le lexique
 # 
 # 
-# DerniŠre modification : Guillaume Gay - 2005-11-04
+# DerniŠre modification : Guillaume Gay - 2006-01-30
 
 
 # Termes arrˆt‚s :
@@ -949,11 +949,11 @@ drag scrolling                  d‚filement
 
 leading characters              Initiales ? Lettre-clefs ?
 
-MB1 click                       clic gauche 
+MB1 click                       clic sur le bouton 1 (clic gauche ? => Quid des gauchers ?)
 
-MB2 click                       clic droit
+MB2 click                       clic sur le bouton 2 (clic droit ? => Quid des gauchers ?)
 
-MB3 click                       clic central
+MB3 click                       clic sur le bouton 3 (clic central => Les positions des boutons 1, 2 et 3 sont expliqu‚es dans un des fichiers d'aide)
 
 none set                        non d‚fini, aucun
 
@@ -962,4 +962,32 @@ Open as                         Ouvrir comme ? Ouvrir sous ? (d‚j… arrˆt‚)
 Shell                           Shell
 
 Treesize                        Taille d'arborescence (???)
+
+# Termes fraŒchement ajout‚s, ‚l‚ments de menus … v‚rifier
+
+Adjust settings pages...        Ajuster les pages de paramŠtres....
+
+Enable Snap to grid             Activer l'alignement sur la grille
+
+Enable status bars              Activer les barres d'‚tat
+
+Extended folder sorting         Tri ‚tendu des dossiers
+
+Extended system sounds          Sons systŠmes ‚tendus
+
+Fix class titles                Corriger les titres de classes
+
+fly-over help                   Aide au vol ? 
+
+notices                         Avertissements (une des sections du guide d'utilisation, cit‚e dans xwpfull033.tmf)
+
+Replace default help panels     Remplacer les panneaux d'aide par d‚faut
+
+Replace Icons                   Remplacer les ic“nes
+
+Replace Icon page...            Remplacer la page Ic“ne...
+
+toolinfos                       Infobulles ? Bulles d'aide ? 
+
+user guide                      Guide d'utilisation (Guide d'utilisation de &xwp;)
 
