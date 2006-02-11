@@ -10,13 +10,15 @@
  *      --  Caractäre "~" : il prÇcäde la lettre qui servira de raccourci
  *		clavier et qui sera donc affichÇe en soulignÇ.
  *
- *      --  chaåne "&xxx;" : elle symbolise des chaånes qui seront remplacÇes dynamiquement
- *          par XWorkplace quand la chaåne sera chargÇe. Cela ne fonctionne qu'avec des chaånes
- *          de caractäres et non des menus, sauf prÇcision contraire.
+ *      --  chaåne "&xxx;" : elle symbolise des chaånes qui seront
+ *          remplacÇes dynamiquement par XWorkplace quand la chaåne sera
+ *          chargÇe. Cela ne fonctionne qu'avec des chaånes de caractäres
+ *          et non des menus, sauf prÇcision contraire.
  *
  *          Actuellement, ces chaånes dynamiques sont les suivantes :
  *
- *          --  &xwp;       Chaåne "XWorkplace", ou "eWorkplace" si eWorkplace est en fonctionnement
+ *          --  &xwp;       Chaåne "XWorkplace", ou "eWorkplace" si
+ *                          eWorkplace est en fonctionnement
  *
  *          --  &os2;       "OS/2" ou "eComStation"
  *
@@ -28,44 +30,58 @@
  *
  *          --  &xsd;       "XShutdown" ou "eShutdown"
  *
- *          --  &version;   version de XWorkplace exÇcutÇe (par ex. "0.9.16")
+ *          --  &version;   version de XWorkplace exÇcutÇe
+ *                          (par ex. "0.9.16")
  *
  *          --  &date;      date de compilation (par ex. Jan 12 2002)
  *
  *          --  &nl;        caractäre "retour chariot" (\n, ASCII 10)
  *
- *      Les modäles de boåtes de dialogue (xfldr001.dlg) sont ajoutÇes par instruction #include.
- *      Il est possible de traduire le fihchier manuellement ou d'Çditer le fichier .RES avec l'Çditeur
- *      de dialogues du toolkit.
- *      Les fichiers .RES et .DLG seront alors recrÇes, sans impact sur le fichier .RC.
+ *      Les modäles de boåtes de dialogue (xfldr001.dlg) sont ajoutÇes
+ *      par instruction #include. Il est possible de traduire le fichier
+ *      manuellement ou d'Çditer le fichier .RES avec l'Çditeur de
+ *      dialogues du toolkit. Les fichiers .RES et .DLG seront alors
+ *      recrÇÇs, sans impact sur le fichier .RC. 
  *
- *      L'Çditeur de dialogues possäde un mode "Translate", dans le menu "Options",
- *      qui dÇsactive un certain nombre de menus, et permet de ne changer que les chaånes de caractäres.
- *      Il est ainsi plus pratique de traduire les termes sans risquer d'endommager les boåtes de dialogue.
+ *      L'Çditeur de dialogues possäde un mode "Translate", dans le menu
+ *      "Options", qui dÇsactive un certain nombre de menus, et permet de
+ *      ne changer que les chaånes de caractäres.
+ *      Il est ainsi plus pratique de traduire les termes sans risquer
+ *      d'endommager les boåtes de dialogue. 
  */
 
 /*
  *      Copyright (C) 1997-2003 Ulrich Mîller.
- *      Traduction (C) 2003-2005 êquipe de traduction de XWorkplace - Laurent Catinaud, Aymeric Peyret, RenÇ Louisor-Marchini, Guillaume Gay. 
- *      Ce fichier est la traduction d'un fichier source de XWorkplace, il suit les rägles de distribution et de modification que XWorkplace,
- *      prÇcisÇes ci-apräs.
+ *      Traduction (C) 2003-2005 êquipe de traduction de XWorkplace :
+ *      Laurent Catinaud, Aymeric Peyret, RenÇ Louisor-Marchini,
+ *      Guillaume Gay.
+ *      Ce fichier est la traduction d'un fichier source de XWorkplace,
+ *      il suit les màmes rägles de distribution et de modification que
+ *      XWorkplace, prÇcisÇes ci-apräs.
  *
- *      XWorkplace est un logiciel libre ; vous pouvez le redistribuer et/ou le modifier
- *      suivant les dispositions de la version 2 de la "GNU General Public Licence", publiÇe par la
- *      Free Software Foundation, et prÇsente dans le fichier "COPYING" de la distribution principale de XWorkplace.
- *      En l'absence de traduction officielle de la "GNU General Public Licence" Ö l'adresse http://www.april.org/gnu/gpl_french.html, la seule
- *      version faisant foi est la version Anglaise fournie avec la distribution de XWorkplace
+ *      XWorkplace est un logiciel libre ; vous pouvez le redistribuer
+ *      et/ou le modifier suivant les dispositions de la version 2 de la
+ *      "GNU General Public Licence", publiÇe par la Free Software
+ *      Foundation, et prÇsente dans le fichier "COPYING" de la
+ *      distribution principale de XWorkplace.
+ *      En l'absence de traduction officielle de la "GNU General Public
+ *      Licence" Ö l'adresse http://www.april.org/gnu/gpl_french.html,
+ *      la seule version faisant foi est la version Anglaise fournie
+ *      avec la distribution de XWorkplace
  *
- *      Ce programme est distribuÇ Ö toutes fins utiles, mais SANS AUCUNE GARANTIE,
- *      ni explicite ni implicite, y compris les garanties de commercialisation ou d'adaptation Ö un but particulier.
- *      L'utilisateur assume l'ensemble des risques quant Ö la qualitÇ et aux effets du programme.
- *      Reportez-vous aux clauses de la GNU General public licence pour toute prÇcision complÇmentaire.
+ *      Ce programme est distribuÇ Ö toutes fins utiles, mais SANS
+ *      AUCUNE GARANTIE, ni explicite ni implicite, y compris les
+ *      garanties de commercialisation ou d'adaptation Ö un but
+ *      particulier. L'utilisateur assume l'ensemble des risques quant Ö
+ *      la qualitÇ et aux effets du programme.
+ *      Reportez-vous aux clauses de la GNU General public licence pour
+ *      toute prÇcision complÇmentaire.
  */
 
  /* Notes sur la traduction franáaise
   * Le fichier est dÇcoupÇ en 17 parties d'environ 100 lignes chacune.
-  * N'oubliez pas de renseigner le fichier de suivi de la traduction en fonction
-  * de la partie que vous prenez en charge.
+  * N'oubliez pas de renseigner le fichier de suivi de la traduction en
+  * fonction de la partie que vous prenez en charge. 
  */
 
 /* Autre version :
@@ -880,7 +896,7 @@ BEGIN
 /* the following has been added V0.9.9 (2001-01-31) [umoeller] */
     ID_XCSI_REPLACEREFRESH              "Remplacement de l'actualisation automatique des dossiers"
 /* the following has been added V0.9.16 (2001-12-02) [umoeller] */
-    ID_XCSI_NEWFILEDLG                  "Replacement des boåtes de dialogue des fichiers"
+    ID_XCSI_NEWFILEDLG                  "Remplacement des boåtes de dialogue des fichiers"
 END
 
 /* STILL more miscellaneous strings...
@@ -896,7 +912,7 @@ BEGIN
     /* "tray" => "barre" (ou tiroir ?) [Guillaume Gay 2005-10-31] */
     ID_XSSI_ADDWIDGETTOTRAY             "~Ajouter le widget Ö la barre"
     ID_XSSI_WIDGETCLASS                 "Classe de widget"
-    ID_XSSI_WIDGETSETUP                 "Paramätrage du Widget"
+    ID_XSSI_WIDGETSETUP                 "Configuration du Widget"
 
     ID_XSSI_FONTFOLDER                  "Dossier de police"
     ID_XSSI_FONTFILE                    "Fichier de police"
