@@ -15,13 +15,6 @@ instl001.cmd        create other default install objects (REXX script)
 
 sound001.cmd        add new system sounds to INI files
 
-inst001.msg         install messages (for INSTALL.CMD). This has a .MSG extension,
-                    but is actually a plain-text file. This will be removed as
-                    soon as XWorkplace will be using the WarpIN installer instead
-                    of INSTALL.CMD.
-
-xfldr001.sgs        SmartGuide script for OS/2 Warp 4 ("Welcome")
-
 xfldr001.tmf        text message file (TMF) for various XWorkplace messages. This
                     is new with V0.9.0 and replaces the OS/2 MSG file which was
                     used previously. This is a plain-text file now.

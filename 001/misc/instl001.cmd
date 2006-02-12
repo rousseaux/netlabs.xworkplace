@@ -67,7 +67,6 @@ idir = dir;
 dir = pdir||"bin\";
 
 OnlineReferenceFile = "xfldr"LanguageCode".inf";
-XFolderIntroFile    = "xfldr"LanguageCode".sgs";
 
 HelpLibrary = "HELPLIBRARY="pdir||"\help\xfldr"LanguageCode".hlp;"
 
@@ -78,10 +77,6 @@ setup = "DEFAULTVIEW=ICON;SHOWALLINTREEVIEW=YES;ALWAYSSORT=NO;ICONFILE="pdir||"\
 id = "<XWP_MAINFLDR>"
 target = "<WP_DESKTOP>";
 call CreateObject;
-
-/* "SmartGuide" introduction: removed V0.9.7 (2000-12-10) [umoeller] */
-/* if (SysSearchPath("PATH", "sguide.exe") \= "") then
-    rc = SysCreateObject("WPProgram", XFolderIntro, "<XWP_MAINFLDR>", "EXENAME=sguide.exe;PARAMETERS="XFolderIntroFile";STARTUPDIR="dir";ICONFILE="idir"xfolder.ico;OBJECTID=<XWP_INTRO>;", "U"); */
 
 /* User Guide */
 class = "WPProgram";
