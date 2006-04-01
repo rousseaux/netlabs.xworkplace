@@ -227,6 +227,7 @@ BOOL sndAddtlSoundsInstalled(HAB hab)
  *@@added V0.9.1 (99-12-30) [umoeller]
  *@@changed V0.9.6 (2000-10-16) [umoeller]: added proper HAB param
  *@@changed V0.9.6 (2000-10-16) [umoeller]: forgot to close MMPM.INI, fixed
+ *@@changed V1.0.5 (2006-04-01) [pr]: added title parameter to doshQuickStartSession
  */
 
 BOOL sndInstallAddtlSounds(HAB hab,
@@ -251,6 +252,7 @@ BOOL sndInstallAddtlSounds(HAB hab,
                     cmnQueryLanguageCode());
             if (!doshQuickStartSession("cmd.exe",
                                        szCmdFile,
+                                       szCmdFile + 3,               // title
                                        SSF_TYPE_DEFAULT,            // session type
                                        FALSE,                       // background
                                        SSF_CONTROL_INVISIBLE,       // but auto-close

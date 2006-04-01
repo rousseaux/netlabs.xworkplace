@@ -3746,6 +3746,7 @@ VOID xsdFinishStandardReboot(PSHUTDOWNDATA pShutdownData)
  *
  *@@changed V0.9.3 (2000-05-22) [umoeller]: added reboot animation
  *@@changed V0.9.12 (2001-05-12) [umoeller]: animations frequently didn't show up, fixed
+ *@@changed V1.0.5 (2006-04-01) [pr]: added title parameter to doshQuickStartSession
  */
 
 VOID xsdFinishUserReboot(PSHUTDOWNDATA pShutdownData)
@@ -3786,6 +3787,7 @@ VOID xsdFinishUserReboot(PSHUTDOWNDATA pShutdownData)
     sprintf(szTemp, "/c %s", pShutdownData->sdParams.szRebootCommand);
     if (doshQuickStartSession("cmd.exe",
                               szTemp,
+                              szTemp + 3,            // title
                               SSF_TYPE_DEFAULT,      // session type
                               FALSE,                 // background
                               SSF_CONTROL_INVISIBLE, // but auto-close

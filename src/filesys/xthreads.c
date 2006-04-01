@@ -973,6 +973,7 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
          *
          *@@changed V0.9.16 (2001-10-11) [umoeller]: removed RCF_QUERYACTION
          *@@changed V0.9.16 (2001-10-23) [umoeller]: removed RCF_EMPTYCONFIGFOLDERONLY
+         *@@changed V1.0.5 (2006-04-01) [pr]: added title parameter to doshQuickStartSession
          */
 
         case FIM_RECREATECONFIGFOLDER:
@@ -1007,6 +1008,7 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                     WinShowWindow(hwndCreating, TRUE);
                     doshQuickStartSession("cmd.exe",
                                           szPath2,
+                                          szPath2 + 3,           // title
                                           SSF_TYPE_DEFAULT,      // session type
                                           FALSE,                 // background
                                           SSF_CONTROL_INVISIBLE, // but auto-close
