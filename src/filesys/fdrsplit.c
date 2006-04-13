@@ -1453,7 +1453,8 @@ MRESULT EXPENTRY fnwpSplitController(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
              * WM_CHAR:
              *
              */
-
+#if 0
+            // V1.0.5 (2006-04-13) [pr]: Redundant. Handled in tree/files frame proc.
             case WM_CHAR:
             {
                 USHORT usFlags    = SHORT1FROMMP(mp1);
@@ -1484,7 +1485,7 @@ MRESULT EXPENTRY fnwpSplitController(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
                     mrc = WinDefWindowProc(hwndClient, msg, mp1, mp2);
             }
             break;
-
+#endif
             /*
              * WM_PAINT:
              *      file dialog needs us to paint the background
@@ -1671,6 +1672,7 @@ STATIC VOID RefreshToolbarButtons(PSPLITCONTROLLER pctl,
  *      parent window proc to be called.
  *
  *@@added V1.0.0 (2002-08-26) [umoeller]
+ *@@changed V1.0.5 (2006-04-13) [pr]: Fix status bar update @@fixes 326
  */
 
 STATIC MRESULT TreeFrameControl(HWND hwndFrame,
@@ -1694,14 +1696,14 @@ STATIC MRESULT TreeFrameControl(HWND hwndFrame,
         {
             PNOTIFYRECORDEMPHASIS pnre = (PNOTIFYRECORDEMPHASIS)mp2;
 
-            if (    (pnre->pRecord)
-                 && (pnre->fEmphasisMask & CRA_SELECTED)
-                 && (prec = (PMINIRECORDCORE)pnre->pRecord)
-                 && (prec->flRecordAttr & CRA_SELECTED)
+            // V1.0.5 (2006-04-13) [pr]: Fix status bar update @@fixes 326
+            if (    (pnre->fEmphasisMask & CRA_SELECTED)
                  && (hwndMainControl = WinQueryWindow(hwndFrame, QW_OWNER))
                  && (pctl = WinQueryWindowPtr(hwndMainControl, QWL_USER))
                  // notifications not disabled?
                  && (pctl->fSplitViewReady)
+                 && (prec = (PMINIRECORDCORE)pnre->pRecord)
+                 && (prec->flRecordAttr & CRA_SELECTED)
                )
             {
                 PMPF_SPLITVIEW(("CN_EMPHASIS %s",
@@ -2051,6 +2053,7 @@ STATIC MRESULT EXPENTRY fnwpTreeFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPA
  *      parent window proc to be called.
  *
  *@@added V1.0.0 (2002-08-26) [umoeller]
+ *@@changed V1.0.5 (2006-04-13) [pr]: Fix status bar update @@fixes 326
  */
 
 STATIC MRESULT FilesFrameControl(HWND hwndFrame,
@@ -2075,14 +2078,13 @@ STATIC MRESULT FilesFrameControl(HWND hwndFrame,
             PNOTIFYRECORDEMPHASIS pnre = (PNOTIFYRECORDEMPHASIS)mp2;
             PMINIRECORDCORE prec;
 
-            if (    (pnre->pRecord)
-                 && (pnre->fEmphasisMask & CRA_SELECTED)
-                 && (prec = (PMINIRECORDCORE)pnre->pRecord)
-                 && (prec->flRecordAttr & CRA_SELECTED)
+            // V1.0.5 (2006-04-13) [pr]: Fix status bar update @@fixes 326
+            if (    (pnre->fEmphasisMask & (CRA_SELECTED | CRA_CURSORED))
                  && (hwndMainControl = WinQueryWindow(hwndFrame, QW_OWNER))
                  && (pctl = WinQueryWindowPtr(hwndMainControl, QWL_USER))
-                    // notifications not disabled?
+                 // notifications not disabled?
                  && (pctl->fSplitViewReady)
+                 && (prec = (PMINIRECORDCORE)pnre->pRecord)
                     // and we're not currently populating?
                     // (the cnr automatically selects the first obj
                     // that gets inserted, and we'd rather not have
@@ -2094,13 +2096,16 @@ STATIC MRESULT FilesFrameControl(HWND hwndFrame,
             {
                 PMPF_SPLITVIEW(("CN_EMPHASIS [%s]",
                                          prec->pszIcon));
-
-                SplitSendWMControl(pctl,
-                                   SN_OBJECTSELECTED,
-                                   prec);
+                if (prec->flRecordAttr & CRA_SELECTED)
+                    SplitSendWMControl(pctl,
+                                       SN_OBJECTSELECTED,
+                                       prec);
 
                 if (pctl->xfc.hwndStatusBar)
                 {
+                    PMPF_SPLITVIEW(("CN_EMPHASIS: posting STBM_UPDATESTATUSBAR to hwnd %lX",
+                                pctl->xfc.hwndStatusBar ));
+
                     // have the status bar updated and make
                     // sure the status bar retrieves its info
                     // from the _right_ cnr
@@ -3010,6 +3015,7 @@ STATIC MRESULT SplitFrameMenuSelect(HWND hwndFrame,
  *      implementation of WM_CONTROL in fnwpSplitViewFrame.
  *
  *@@added V1.0.1 (2002-11-30) [umoeller]
+ *@@changed V1.0.5 (2006-04-13) [pr]: Fix status bar update @@fixes 326
  */
 
 STATIC MRESULT SplitFrameControl(HWND hwndFrame,
@@ -3042,6 +3048,12 @@ STATIC MRESULT SplitFrameControl(HWND hwndFrame,
                                 hwndFocus = psvd->ctl.cvTree.hwndCnr;
 
                             WinSetFocus(HWND_DESKTOP, hwndFocus);
+                            // V1.0.5 (2006-04-13) [pr]: Fix status bar update @@fixes 326
+                            if (psvd->ctl.xfc.hwndStatusBar)
+                                WinPostMsg(psvd->ctl.xfc.hwndStatusBar,
+                                           STBM_UPDATESTATUSBAR,
+                                           (MPARAM) hwndFocus,
+                                           MPNULL);
 
                             mrc = (MRESULT)TRUE;
                         }
