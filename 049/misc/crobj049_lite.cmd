@@ -1,7 +1,7 @@
 /*
-    Create default XWorkplace configuration folder
+    Create default eWorkplace configuration folder
     German version (049)
-    (C) 1998-2000 Ulrich Mîller.
+    (C) 1998-2005 Ulrich Mîller.
  */
 
 /* Here come the titles of the objects to be created.
@@ -10,11 +10,11 @@
    Configuration Folder which will then be underlined
    in the respective menu items. */
 
-XWorkplace          = "eCS";
+XWorkplace          = "eCS"
 OS2                 = "eCS"
 
 /* Config Folder title */
-ConfigFolder        = XWorkplace||"-Konfigurationsordner";
+ConfigFolder        = "MenÅkonfigurationsordner";
 /* here come the objects in the config folder */
 CommandLines        = "~Befehlszeilen";
 OS2Win              = "~"||OS2||"-Fenster";

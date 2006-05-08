@@ -158,13 +158,14 @@ id = "<XWP_MOUSEMAINSHADOW>"
 target = "<XWP_MAINFLDR>";
 call CreateObject;
 setup = "SHADOWID=<WPSTK_MOUSE>;";
+id = "<XWP_MOUSEMAINSHADOW>"
 call CreateObject;
 
 /* "Keyboard" shadow (added V0.9.2) */
 class = "WPShadow";
 title = Keyboard;
 setup = "SHADOWID=<WP_KEYB>;";
-id = "<XWP_KEYBMAINSHADOW>"
+id = "<XWP_KEYBMAINSHADOW>";
 target = "<XWP_MAINFLDR>";
 call CreateObject;
 
@@ -203,7 +204,7 @@ call CreateObject;
 
 /* the following three added with V0.9.19
    and redone with V0.9.20 */
-commonXWPString = "DEFAULTOBJECT=<WP_DESKTOP>;CONFIRMINVOCATION=NO;NOSTRINGPAGE=YES;HELPLIBRARY=WPHELP.HLP;HELPPANEL="
+commonXWPString = "DEFAULTOBJECT=<WP_DESKTOP>;CONFIRMINVOCATION=NO;NOSTRINGPAGE=YES;HELPLIBRARY=WPHELP.HLP;HELPPANEL"
 
 /* create "Lockup" setup string object */
 class = "XWPString";

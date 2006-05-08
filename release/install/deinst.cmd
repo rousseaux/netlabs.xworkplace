@@ -98,7 +98,7 @@ rc = Destroy("<XWP_SOUNDMAINSHADOW>");
 rc = Destroy("<XWP_MEDIAMAINSHADOW>");
 rc = Destroy("<XWP_MEDIA>");
 
-/*  "Screen" (added V0.9.2) */
+	/*  "Screen" (added V0.9.2) */
 rc = Destroy("<XWP_SCREENMAINSHADOW>");
 rc = Destroy("<XWP_SCREEN>");
 
@@ -156,6 +156,7 @@ rc = DeRegisterClass("XCenter");
 rc = DeRegisterClass("XWPFontFolder");
 rc = DeRegisterClass("XWPFontFile");
 rc = DeRegisterClass("XWPFontObject");
+rc = DeRegisterClass("XWPString");
 
 rc = UnReplaceClass("WPFileSystem", "XWPFileSystem"); /* V0.9.16 */
 rc = UnReplaceClass("WPProgram", "XWPProgram");       /* V0.9.9 */
@@ -182,7 +183,6 @@ rc = DeRegisterClass("XFldDesktop");
 rc = DeRegisterClass("XFldProgramFile");
 rc = DeRegisterClass("XWPProgramFile");
 rc = DeRegisterClass("XWPSound");
-rc = DeRegisterClass("XWPString");
 rc = DeRegisterClass("XWPMouse");
 rc = DeRegisterClass("XWPKeyboard");
 
