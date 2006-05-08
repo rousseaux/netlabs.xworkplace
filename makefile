@@ -780,9 +780,7 @@ release: really_all
     @echo $(MAKEDIR)\makefile [$@]: Now copying files to $(XWPRELEASE).
 !ifndef XWPLITE
     $(COPY) release\COPYING $(XWPRELEASE_MAIN)
-    $(COPY) release\install.cmd $(XWPRELEASE_MAIN)
     $(COPY) release\file_id.diz $(XWPRELEASE_MAIN)
-    $(COPY) release\install.ico $(XWPRELEASE_MAIN)
     $(COPY) $(XWP_LANG_CODE)\readme $(XWPRELEASE_NLSDOC)
     $(COPY) $(MODULESDIR)\xfldr$(XWP_LANG_CODE).inf $(XWPRELEASE_NLSDOC)
 !ifdef BUILD_049_TOO
