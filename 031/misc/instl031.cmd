@@ -16,7 +16,7 @@ LanguageCode = "031";
    Translate these to your language. */
 
 XWorkplace          = "XWorkplace";
-OS2                 = "eComStation"
+OS2                 = "OS/2"
 
 /* Title of the Desktop folder; choose a faily long title,
    or the installation might fail if that object already
@@ -153,9 +153,12 @@ call CreateObjectWithShadow;
 /* "Mouse" shadow (added V0.9.2) */
 class = "WPShadow";
 title = Mouse;
-setup = "SHADOWID=<WPSTK_MOUSE>;";
+setup = "SHADOWID=<WP_MOUSE>;";
 id = "<XWP_MOUSEMAINSHADOW>"
 target = "<XWP_MAINFLDR>";
+call CreateObject;
+setup = "SHADOWID=<WPSTK_MOUSE>;";
+id = "<XWP_MOUSEMAINSHADOW>"
 call CreateObject;
 
 /* "Keyboard" shadow (added V0.9.2) */

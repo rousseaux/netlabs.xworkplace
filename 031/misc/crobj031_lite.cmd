@@ -1,6 +1,6 @@
 /*
     Create default eWorkplace configuration folder
-    English version (001)
+    Dutch version (031)
     (C) 1998-2002 Ulrich M”ller.
  */
 

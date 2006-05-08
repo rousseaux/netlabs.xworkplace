@@ -1,6 +1,6 @@
 /*
     Create eWorkplace installation objects
-    English version (001)
+    Dutch version (031)
     (C) 1998-2002 Ulrich M”ller.
  */
 
@@ -85,8 +85,6 @@ setup = "DEFAULTVIEW=DETAILS;ALWAYSSORT=YES;DETAILSCLASS=XWPTrashObject;SORTCLAS
 id = "<XWP_TRASHCAN>";
 target = "<WP_DESKTOP>";
 call CreateObject;
-
-commonXWPString = "DEFAULTOBJECT=<WP_DESKTOP>;CONFIRMINVOCATION=NO;NOSTRINGPAGE=YES;HELPLIBRARY=WPHELP.HLP;HELPPANEL="
 
 /* the following three added with V0.9.19
    and redone with V0.9.20 */

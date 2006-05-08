@@ -188,6 +188,9 @@ id = "<XWP_WPSCFGSHADOW>";
 call CreateObject;
 
 title = Mouse;
+setup = "SHADOWID=<WP_MOUSE>;";
+id = "<XWP_WPMOUSECFGSHADOW>";
+call CreateObject;
 setup = "SHADOWID=<WPSTK_MOUSE>;";
 id = "<XWP_WPMOUSECFGSHADOW>";
 call CreateObject;
