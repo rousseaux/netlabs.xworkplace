@@ -2027,6 +2027,7 @@ SOM_Scope BOOL  SOMLINK xdf_wpMenuItemHelpSelected(XFldDataFile *somSelf,
  *          the data file as the parameter, using progOpenProgram.
  *
  *@@added V0.9.6 (2000-10-16) [umoeller]
+ *@@changed V1.0.5 (2006-05-14) [pr]: Call parent if Ext. Assocs. enabled and no. assoc. found @@fixes 14
  */
 
 SOM_Scope HWND  SOMLINK xdf_wpOpen(XFldDataFile *somSelf,
@@ -2036,6 +2037,8 @@ SOM_Scope HWND  SOMLINK xdf_wpOpen(XFldDataFile *somSelf,
 {
     HWND        hwnd = NULLHANDLE;
     BOOL        fCallParent = TRUE;
+    ULONG       ulView2 = ulView;
+    WPObject    *pAssocObject;
     /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
     XFldDataFileMethodDebug("XFldDataFile","xdf_wpOpen");
 
@@ -2074,44 +2077,47 @@ SOM_Scope HWND  SOMLINK xdf_wpOpen(XFldDataFile *somSelf,
                 fCallParent = FALSE;
         }
 
+        // V1.0.5 (2006-05-14) [pr]: Rejigged this to call the parent if no assoc. found
         if (!fCallParent)
         {
             // replacement desired:
-            ULONG       ulView2 = ulView;
-            WPObject    *pAssocObject;
-
-            if (pAssocObject = ftypQueryAssociatedProgram(somSelf,
-                                                          &ulView2,
-                                                          // use "plain text" as default:
-                                                          TRUE))
-                                                             // we've used "plain text" as default
-                                                             // in wpModifyMenu, so we need to do
-                                                             // the same again here
+            pAssocObject = ftypQueryAssociatedProgram(somSelf,
+                                                      &ulView2,
+                                                      // use "plain text" as default:
+                                                      TRUE);
+                                                         // we've used "plain text" as default
+                                                         // in wpModifyMenu, so we need to do
+                                                         // the same again here
                                 // object is locked now
-            {
-                CHAR szFailing[CCHMAXPATH];
-                APIRET arc;
 
-                if (arc = progOpenProgram(pAssocObject,
-                                          somSelf,
-                                          ulView2,
-                                          &hwnd,
-                                          sizeof(szFailing),
-                                          szFailing))
-                {
-                    if (cmnProgramErrorMsgBox(NULLHANDLE,
-                                              pAssocObject,
-                                              szFailing,
-                                              arc)
-                                == MBID_YES)
-                        krnPostThread1ObjectMsg(T1M_OPENOBJECTFROMPTR,
-                                                (MPARAM)pAssocObject,
-                                                (MPARAM)OPEN_SETTINGS);
-                }
-                        // _wpUnlockObject(pAssocObject);
-                        // do not unlock the assoc object...
-                        // this is still needed in the use list!!!
+            if (!pAssocObject)
+                fCallParent = TRUE;
+        }
+
+        if (!fCallParent)
+        {
+            CHAR szFailing[CCHMAXPATH];
+            APIRET arc;
+
+            if (arc = progOpenProgram(pAssocObject,
+                                      somSelf,
+                                      ulView2,
+                                      &hwnd,
+                                      sizeof(szFailing),
+                                      szFailing))
+            {
+                if (cmnProgramErrorMsgBox(NULLHANDLE,
+                                          pAssocObject,
+                                          szFailing,
+                                          arc)
+                            == MBID_YES)
+                    krnPostThread1ObjectMsg(T1M_OPENOBJECTFROMPTR,
+                                            (MPARAM)pAssocObject,
+                                            (MPARAM)OPEN_SETTINGS);
             }
+                    // _wpUnlockObject(pAssocObject);
+                    // do not unlock the assoc object...
+                    // this is still needed in the use list!!!
         }
         else
     #endif

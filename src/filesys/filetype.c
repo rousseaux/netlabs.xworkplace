@@ -1023,6 +1023,7 @@ ULONG ftypForEachAutoType(PCSZ pcszObjectTitle,
  *@@changed V0.9.16 (2002-01-26) [umoeller]: performance tweaking
  *@@changed V0.9.19 (2002-05-23) [umoeller]: fixed wrong default icons for WPUrl
  *@@changed V0.9.20 (2002-07-25) [umoeller]: got rid of linked list
+ *@@changed V1.0.5 (2006-05-14) [pr]: @@fixes 14
  */
 
 WPObject* ftypQueryAssociatedProgram(WPDataFile *somSelf,       // in: data file
@@ -1036,17 +1037,19 @@ WPObject* ftypQueryAssociatedProgram(WPDataFile *somSelf,       // in: data file
                                             // in: use "plain text" as standard if no other type was found?
 {
     WPObject    *pObjReturn = 0;
-
     WPObject    *apObjects[MAX_ASSOCS_PER_OBJECT];
     ULONG       cAssocObjects = 0;
-
     ULONG       ulIndex = 0;
-    if (*pulView == OPEN_RUNNING)
-        *pulView = 0x1000;
-    else if (*pulView == OPEN_DEFAULT)
+
+    // V1.0.5 (2006-05-14) [pr]: @@fixes 14
+    if (*pulView == OPEN_DEFAULT)
         *pulView = _wpQueryDefaultView(somSelf);
                 // returns 0x1000, unless the user has changed
-                // the default association on the "Menu" page
+                // the default association on the "Menu" page.
+                // This can return OPEN_RUNNING, so moved this up now.
+
+    if (*pulView == OPEN_RUNNING)
+        *pulView = 0x1000;
 
     // calc index to search...
     if (    (*pulView >= 0x1000)
@@ -1934,6 +1937,7 @@ STATIC APIRET ExportAddFileTypeAndAllParents(PDOMNODE pRootElement,
  *      Called from ftypExportTypes.
  *
  *@@added V0.9.12 (2001-05-21) [umoeller]
+ *@@changed V1.0.5 (2006-05-14) [pr]: Fix error 42005 if no XWP FileTypes exist
  */
 
 STATIC APIRET ExportAddTypesTree(PDOMNODE pRootElement,
@@ -2010,6 +2014,9 @@ STATIC APIRET ExportAddTypesTree(PDOMNODE pRootElement,
 
             free(pszFileTypeHierarchyList); // was missing V0.9.12 (2001-05-12) [umoeller]
         }
+        else
+            if (arc == PRFERR_KEYSLIST)	// V1.0.5 (2006-05-14) [pr]
+                arc = NO_ERROR;
 
         // step 4: add all remaining file types
         // to root level
