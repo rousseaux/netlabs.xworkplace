@@ -1377,6 +1377,7 @@ STATIC VOID ProcessSlidingFocus(HWND hwndFrameInBetween, // in: != NULLHANDLE if
  *
  *@@added V0.9.14 (2001-08-20) [umoeller]
  *@@changed V0.9.18 (2002-02-12) [pr]: added screen wrap
+ *@@changed V1.0.5 (2006-05-16) [pr]: Fixed broken pager wrap at vertical borders @@fixes 406
  */
 
 STATIC VOID ProcessHotCorner(MPARAM mp1)
@@ -1492,17 +1493,19 @@ STATIC VOID ProcessHotCorner(MPARAM mp1)
             // we had a XPager screen change above:
             // where are we right now ?
             // (0,0) is _upper_ left, not bottom left
+            // No, not in terms of virtual desktops it isn't.... hence bug 406
             ptlCurrScreen.x = G_pHookData->ptlCurrentDesktop.x / G_pHookData->szlEachDesktopFaked.cx;
             ptlCurrScreen.y = G_pHookData->ptlCurrentDesktop.y / G_pHookData->szlEachDesktopFaked.cy;
 
             // if we do move, wrap the pointer too so
             // that we don't move too much
+            // V1.0.5 (2006-05-16) [pr]: Swapped comparisons for 0x61 and 0x66 @@fixes 406
             if (    (G_pHookData->PagerConfig.flPager & PGRFL_WRAPAROUND)
                  || (    (ucScanCode == 0x61)
-                      && (ptlCurrScreen.y > 0)
+                      && (ptlCurrScreen.y < (G_pHookData->PagerConfig.cDesktopsY - 1))
                     )
                  || (    (ucScanCode == 0x66)
-                      && (ptlCurrScreen.y < (G_pHookData->PagerConfig.cDesktopsY - 1))
+                      && (ptlCurrScreen.y > 0)
                     )
                  || (    (ucScanCode == 0x64)
                       && (ptlCurrScreen.x < (G_pHookData->PagerConfig.cDesktopsX - 1))
