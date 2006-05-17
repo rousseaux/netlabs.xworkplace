@@ -2618,6 +2618,7 @@ MRESULT ftypFileTypesItemChanged(PNOTEBOOKPAGE pnbp,
  *      with the wps filters.
  *
  *@@added V0.9.9 (2001-02-06) [umoeller]
+ *@@changed V1.0.5 (2006-05-15) [pr]: Fix WPS filters missing on Import @@fixes 399
  */
 
 STATIC VOID FillListboxWithWPSFilters(HWND hwndDlg)
@@ -2641,9 +2642,13 @@ STATIC VOID FillListboxWithWPSFilters(HWND hwndDlg)
                LM_DELETEALL,
                0, 0);
 
-    if (!(arc = prfhQueryKeysForApp(HINI_USER,
-                                    INIAPP_XWPFILEFILTERS, // "XWorkplace:FileFilters"
-                                    &pszTypesWithFiltersList)))
+    arc = prfhQueryKeysForApp(HINI_USER,
+                              INIAPP_XWPFILEFILTERS, // "XWorkplace:FileFilters"
+                              &pszTypesWithFiltersList);
+    if (arc == PRFERR_KEYSLIST)	 // V1.0.5 (2006-05-15) [pr]
+        arc = NO_ERROR;
+
+    if (!arc)
     {
         if (!(arc = prfhQueryKeysForApp(HINI_USER,
                                         WPINIAPP_ASSOCFILTER, // "PMWP_ASSOC_FILTER"
@@ -2677,7 +2682,8 @@ STATIC VOID FillListboxWithWPSFilters(HWND hwndDlg)
 
                     PSZ pTypeWithFilterThis = pszTypesWithFiltersList;
 
-                    while ((*pTypeWithFilterThis) && (fInsert))
+                    // V1.0.5 (2006-05-15) [pr]
+                    while (pTypeWithFilterThis && (*pTypeWithFilterThis) && (fInsert))
                     {
                         // pFilterThis has the current type now
                         // (e.g. "C Code");
@@ -3408,7 +3414,8 @@ MRESULT ftypDatafileTypesItemChanged(PNOTEBOOKPAGE pnbp,
 
         case DID_UNDO:
         {
-            PINSTANCEFILETYPESPAGE pdftp = (PINSTANCEFILETYPESPAGE)malloc(sizeof(INSTANCEFILETYPESPAGE));
+            // V1.0.5 (2006-05-15) [pr]
+            PINSTANCEFILETYPESPAGE pdftp = (PINSTANCEFILETYPESPAGE) pnbp->pUser;
             if (pdftp)
             {
                 // set type to what was saved on init
@@ -3530,6 +3537,7 @@ VOID ftypAssociationsInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
  *      XWPProgramFile.
  *
  *@@added V0.9.9 (2001-03-07) [umoeller]
+ *@@changed V1.0.5 (2006-05-15) [pr]: Fixed crashes in Undo and Default
  */
 
 MRESULT ftypAssociationsItemChanged(PNOTEBOOKPAGE pnbp,
@@ -3583,7 +3591,8 @@ MRESULT ftypAssociationsItemChanged(PNOTEBOOKPAGE pnbp,
 
         case DID_UNDO:
         {
-            PINSTANCEFILETYPESPAGE pdftp = (PINSTANCEFILETYPESPAGE)malloc(sizeof(INSTANCEFILETYPESPAGE));
+            // V1.0.5 (2006-05-15) [pr]
+            PINSTANCEFILETYPESPAGE pdftp = (PINSTANCEFILETYPESPAGE) pnbp->pUser;
             if (pdftp)
             {
                 // set type to what was saved on init
@@ -3596,7 +3605,9 @@ MRESULT ftypAssociationsItemChanged(PNOTEBOOKPAGE pnbp,
 
         case DID_DEFAULT:
             // kill all explicit types
-            _wpSetAssociationType(pnbp->inbp.somSelf, NULL);
+            // V1.0.5 (2006-05-15) [pr]: This doesn't work either, but at least
+            // it doesn't crash now. @@todo ha, ha
+            _wpSetAssociationType(pnbp->inbp.somSelf, "");
             // call "init" callback to reinitialize the page
             pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
         break;
