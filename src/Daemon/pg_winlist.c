@@ -1718,10 +1718,13 @@ VOID CheckWindow(HAB hab,
  *      system.
  *
  *@@added V0.9.19 (2002-05-28) [umoeller]
+ *@@changed V1.0.5 (2006-05-21) [pr]: WarpCenter always in Window List @@fixes 11
  */
 
 VOID _Optlink fntWinlistThread(PTHREADINFO pti)
 {
+    HWND       hwndObject = WinQueryObjectWindow(HWND_DESKTOP);	// V1.0.5 (2006-05-21) [pr]
+
     while (!pti->fExit)
     {
         ULONG   cItems,
@@ -1764,8 +1767,11 @@ VOID _Optlink fntWinlistThread(PTHREADINFO pti)
                 {
                     PXWININFO pWinInfo = (PXWININFO)pNode->pItemData;
                     if (    G_pHookData         // V1.0.4 (2005-03-03) [pr]: @@fixes 526
-                         && !WinIsWindow(pti->hab,
-                                         pWinInfo->data.swctl.hwnd)
+                         && (   !WinIsWindow(pti->hab,
+                                             pWinInfo->data.swctl.hwnd)
+                             || (WinQueryWindow(pWinInfo->data.swctl.hwnd,	// V1.0.5 (2006-05-21) [pr]
+                                                QW_PARENT) == hwndObject)
+                            )
                        )
                         WinPostMsg(G_pHookData->hwndDaemonObject,
                                    XDM_WINDOWCHANGE,
