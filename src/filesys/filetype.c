@@ -1848,6 +1848,7 @@ STATIC APIRET ExportAddType(PDOMNODE pParentNode,          // in: type's parent 
  *      but works on the DOM tree instead.
  *
  *@@added V0.9.12 (2001-05-21) [umoeller]
+ *@@changed V1.0.5 (2006-05-21) [pr]
  */
 
 STATIC APIRET ExportAddFileTypeAndAllParents(PDOMNODE pRootElement,
@@ -1886,6 +1887,8 @@ STATIC APIRET ExportAddFileTypeAndAllParents(PDOMNODE pRootElement,
         // we arrive here after the all the parents
         // of pszKey have been added;
         // if we have no parent, pParentNode is NULL
+        if (!pParentNode)
+            pParentNode = pRootElement;	// V1.0.5 (2006-05-21) [pr]: @@fixes 702
 
         // now find the file type list item
         // which corresponds to pKey
