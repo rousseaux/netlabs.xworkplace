@@ -9,7 +9,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *      Copyright (C) 1997-2006 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -1656,6 +1656,7 @@ BOOL setLogoMessages(PNOTEBOOKPAGE pnbp,
  *      window data structure for XWPSetup "Features" page.
  *
  *@@added V0.9.9 (2001-04-05) [pr]
+ *@@changed V1.0.5 (2006-05-28) [pr]: removed dummy ___LAST_SETTING
  */
 
 typedef struct _XWPFEATURESDATA
@@ -1708,47 +1709,46 @@ static const XWPSETTING G_FeaturesBackup[] =
 #ifndef __NOTURBOFOLDERS__
         sfTurboFolders,
 #endif
-        sfFdrSplitViews,
+        sfFdrSplitViews
 #ifndef __ALWAYSHOOK__
-        sfXWPHook,
+        ,sfXWPHook
 #endif
 #ifndef __NOPAGER__
-        sfEnableXPager,
+        ,sfEnableXPager
 #endif
 
 #ifndef __ALWAYSREPLACEARCHIVING__
-        sfReplaceArchiving,
+        ,sfReplaceArchiving
 #endif
 #ifndef __NOXSHUTDOWN__
-        sfRestartDesktop,
-        sfXShutdown,
+        ,sfRestartDesktop
+        ,sfXShutdown
 #endif
 
 // #ifndef __NEVEREXTASSOCS__       removed V1.0.1 (2002-12-15) [umoeller]
-//         sfExtAssocs,
+//         ,sfExtAssocs
 // #endif
 #ifdef __REPLHANDLES__
-        sfReplaceHandles,
+        ,sfReplaceHandles
 #endif
 #ifndef __ALWAYSREPLACEFILEEXISTS__
-        sfReplaceFileExists,
+        ,sfReplaceFileExists
 #endif
 #ifndef __NEVERREPLACEDRIVENOTREADY__
-        sfReplaceDriveNotReady,
+        ,sfReplaceDriveNotReady
 #endif
 
 #ifndef __ALWAYSREPLACEPASTE__
-        sfReplacePaste,             // V0.9.20 (2002-08-08) [umoeller]
+        ,sfReplacePaste             // V0.9.20 (2002-08-08) [umoeller]
 #endif
 
 #ifndef __ALWAYSTRASHANDTRUEDELETE__
-        sfReplaceDelete,
+        ,sfReplaceDelete
 #endif
 
 #ifndef __NEVERNEWFILEDLG__
-        sfNewFileDlg,
+        ,sfNewFileDlg
 #endif
-        ___LAST_SETTING             // dummy
     };
 
 static MPARAM G_ampFeaturesPage[] =
@@ -2157,6 +2157,7 @@ VOID setFeaturesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
  *@@changed V0.9.12 (2001-05-12) [umoeller]: removed "Cleanup INIs" for now
  *@@changed V0.9.14 (2001-07-31) [umoeller]: "Classes" dlg mostly rewritten
  *@@changed V1.0.1 (2002-12-14) [umoeller]: removed "resize settings pages" setting @@fixes 285, 286
+ *@@changed V1.0.5 (2006-05-28) [pr]: fixed Undo again
  */
 
 MRESULT setFeaturesItemChanged(PNOTEBOOKPAGE pnbp,
@@ -2461,6 +2462,28 @@ MRESULT setFeaturesItemChanged(PNOTEBOOKPAGE pnbp,
             cmnRestoreSettings(pFeaturesData->pBackup,
                                ARRAYITEMCOUNT(G_FeaturesBackup));
 
+            // V1.0.5 (2006-05-28) [pr]: added these missing items
+#ifndef __ALWAYSHOOK__
+            hifEnableHook(cmnQuerySetting(sfXWPHook));
+#endif
+#ifndef __ALWAYSOBJHOTKEYS__
+            hifEnableObjectHotkeys(pFeaturesData->bObjectHotkeys);
+#endif
+#ifndef __NOPAGER__
+            if (hifEnableXPager(cmnQuerySetting(sfEnableXPager)) == cmnQuerySetting(sfEnableXPager))
+            {
+                // update "Mouse movement" page
+                fUpdateMouseMovementPage = TRUE;
+            }
+#endif
+
+#ifndef __ALWAYSTRASHANDTRUEDELETE__
+            cEnableTrashCan = cmnQuerySetting(sfReplaceDelete);
+#endif
+
+#ifndef __ALWAYSREPLACEREFRESH__
+            krnEnableReplaceRefresh(pFeaturesData->bReplaceRefresh);
+#endif
             // update the display by calling the INIT callback
             ulUpdateFlags = CBI_SET | CBI_ENABLE;
         }
