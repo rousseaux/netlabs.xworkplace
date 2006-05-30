@@ -63,6 +63,8 @@ $(OUTPUTDIR)\gpih.obj \
 $(OUTPUTDIR)\linklist.obj \
 $(OUTPUTDIR)\except.obj \
 $(OUTPUTDIR)\dosh.obj \
+$(OUTPUTDIR)\dosh2.obj \
+$(OUTPUTDIR)\level.obj \
 $(OUTPUTDIR)\procstat.obj \
 $(OUTPUTDIR)\regexp.obj \
 $(OUTPUTDIR)\shapewin.obj \
