@@ -174,12 +174,6 @@ struct ifmib {
 
 typedef char *caddr_t;
 
-int _System sock_init( void );
-int _System sock_errno( void );
-int _System socket( int, int, int );
-int _System soclose( int );
-int _System ioctl(int, int, char *, int);
-
 #define ioc(x,y)       ((x<<8)|y)
 #define SIOSTATIF       ioc('n',48)
 
@@ -300,6 +294,8 @@ PCTRFREESETUPVALUE pctrFreeSetupValue = NULL;
 PCTRPARSECOLORSTRING pctrParseColorString = NULL;
 PCTRSCANSETUPSTRING pctrScanSetupString = NULL;
 
+PDOSHRESOLVEIMPORTS pdoshResolveImports = NULL; // V1.0.5 (2006-05-28) [pr]
+
 PDRV_SPRINTF pdrv_sprintf = NULL;
 
 PGPIHBOX pgpihBox = NULL;
@@ -340,6 +336,7 @@ static const RESOLVEFUNCTION G_aImports[] =
         "ctrFreeSetupValue", (PFN*)&pctrFreeSetupValue,
         "ctrParseColorString", (PFN*)&pctrParseColorString,
         "ctrScanSetupString", (PFN*)&pctrScanSetupString,
+        "doshResolveImports", (PFN*)&pdoshResolveImports, // V1.0.5 (2006-05-28) [pr]
         "drv_sprintf", (PFN*)&pdrv_sprintf,
         "gpihBox", (PFN*)&pgpihBox,
         "gpihCreateBitmap", (PFN*)&pgpihCreateBitmap,
@@ -365,6 +362,33 @@ static const RESOLVEFUNCTION G_aImports[] =
         "xstrClear", (PFN*)&pxstrClear,
         "xstrInit", (PFN*)&pxstrInit,
         "xstrPrintf", (PFN*)&pxstrPrintf
+    };
+
+// V1.0.5 (2006-05-28) [pr]: Add declarations for importing SO32DLL functions manually
+typedef int _System SO32_SOCK_INIT(void);
+typedef SO32_SOCK_INIT *PSO32_SOCK_INIT;
+PSO32_SOCK_INIT pfn_sock_init = NULL;
+
+typedef int _System SO32_SOCKET(int, int, int);
+typedef SO32_SOCKET *PSO32_SOCKET;
+PSO32_SOCKET pfn_socket = NULL;
+
+typedef int _System SO32_SOCLOSE(int);
+typedef SO32_SOCLOSE *PSO32_SOCLOSE;
+PSO32_SOCLOSE pfn_soclose = NULL;
+
+typedef int _System SO32_IOCTL(int, int, char *, int);
+typedef SO32_IOCTL *PSO32_IOCTL;
+PSO32_IOCTL pfn_ioctl = NULL;
+
+static HMODULE G_hmodSO32DLL = NULLHANDLE;
+
+static const RESOLVEFUNCTION G_aImports2[] =
+    {
+        "SOCK_INIT", (PFN*)&pfn_sock_init,
+        "SOCKET", (PFN*)&pfn_socket,
+        "SOCLOSE", (PFN*)&pfn_soclose,
+        "IOCTL", (PFN*)&pfn_ioctl
     };
 
 /* ******************************************************************
@@ -946,16 +970,16 @@ STATIC MRESULT IwgtCreate(HWND hwnd,
     pPrivate->ulMax = 1;        // avoid division by zero
 
     // create socket for while the widget is running
-    pPrivate->sock = socket(PF_INET, SOCK_STREAM, 0);
+    pPrivate->sock = pfn_socket(PF_INET, SOCK_STREAM, 0);
 
     if (pPrivate->sock > 0)
     {
         // socket created OK: get first shot of data
         // so we can do calculations from now on
-        if (!ioctl(pPrivate->sock,
-                   SIOSTATIF,
-                   (caddr_t)&pPrivate->statif,
-                   sizeof(pPrivate->statif)))
+        if (!pfn_ioctl(pPrivate->sock,
+                       SIOSTATIF,
+                       (caddr_t)&pPrivate->statif,
+                       sizeof(pPrivate->statif)))
         {
             // now update "latest" with the data of the
             // selected device
@@ -1022,7 +1046,7 @@ STATIC VOID IwgtDestroy(HWND hwnd)
         if (pPrivate->paSnapshots)
             free(pPrivate->paSnapshots);
 
-        soclose(pPrivate->sock);
+        pfn_soclose(pPrivate->sock);
 
         pxstrClear(&pPrivate->strTooltipText);
         free(pPrivate->pszTooltipFormat);
@@ -1388,10 +1412,10 @@ STATIC VOID GetSnapshot(PWIDGETPRIVATE pPrivate)
 {
     if (pPrivate->sock > 0)
     {
-        if (!ioctl(pPrivate->sock,
-                   SIOSTATIF,
-                   (caddr_t)&pPrivate->statif,
-                   sizeof(pPrivate->statif)))
+        if (!pfn_ioctl(pPrivate->sock,
+                       SIOSTATIF,
+                       (caddr_t)&pPrivate->statif,
+                       sizeof(pPrivate->statif)))
         {
             ULONG       ulMillisecs,
                         ulDivisor,
@@ -1959,6 +1983,7 @@ MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
  *      global data) of XCENTERWIDGETCLASS structures,
  *      which must have as many entries as the return value.
  *
+ *@@changed V1.0.5 (2006-05-28) [pr]: Import SO32DLL functions manually
  */
 
 ULONG EXPENTRY IwgtInitModule(HAB hab,         // XCenter's anchor block
@@ -1989,6 +2014,21 @@ ULONG EXPENTRY IwgtInitModule(HAB hab,         // XCenter's anchor block
             strcat(pszErrorMsg, " failed.");
             fImportsFailed = TRUE;
             break;
+        }
+    }
+
+    // V1.0.5 (2006-05-28) [pr]: Add declarations for importing SO32DLL functions dynamically
+    // If this is done statically, the DLL can't be unloaded, which prevents W_IPMON.DLL
+    // from being unloaded.
+    if (!fImportsFailed)
+    {
+        if (pdoshResolveImports("SO32DLL.DLL",
+                                &G_hmodSO32DLL,
+                                G_aImports2,
+                                sizeof(G_aImports2) / sizeof(G_aImports2[0])))
+        {
+            strcpy(pszErrorMsg, "SO32DLL.DLL imports failed.");
+            fImportsFailed = TRUE;
         }
     }
 
@@ -2025,10 +2065,17 @@ ULONG EXPENTRY IwgtInitModule(HAB hab,         // XCenter's anchor block
  *      gets called even if the "init module" export
  *      returned 0 (meaning an error) and the DLL
  *      gets unloaded right away.
+ *
+ *@@changed V1.0.5 (2006-05-28) [pr]: Free SO32DLL.DLL
  */
 
 VOID EXPENTRY IwgtUnInitModule(VOID)
 {
+    if (G_hmodSO32DLL)
+    {
+        DosFreeModule(G_hmodSO32DLL);
+        G_hmodSO32DLL = NULLHANDLE;
+    }
 }
 
 /*
