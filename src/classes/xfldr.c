@@ -50,7 +50,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *      Copyright (C) 1997-2006 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -1722,19 +1722,17 @@ SOM_Scope void  SOMLINK xf_wpObjectReady(XFolder *somSelf,
     WPObject *pobjLock = NULL;
     // XFolderMethodDebug("XFolder","xf_wpObjectReady");
 
-    #if defined(DEBUG_SOMMETHODS) || defined(DEBUG_AWAKEOBJECTS)
-        _Pmpf(("XFolder::wpObjectReady for %s (class %s), ulCode: %s",
-                _wpQueryTitle(somSelf),
-                _somGetName(_somGetClass(somSelf)),
-                (ulCode == OR_AWAKE) ? "OR_AWAKE"
-                : (ulCode == OR_FROMTEMPLATE) ? "OR_FROMTEMPLATE"
-                : (ulCode == OR_FROMCOPY) ? "OR_FROMCOPY"
-                : (ulCode == OR_NEW) ? "OR_NEW"
-                : (ulCode == OR_SHADOW) ? "OR_SHADOW"
-                : (ulCode == OR_REFERENCE) ? "OR_REFERENCE"
-                : "unknown code"
-             ));
-    #endif
+    PMPF_SOMMETHODS(("XFolder::wpObjectReady for %s (class %s), ulCode: %s",
+                     _wpQueryTitle(somSelf),
+                     _somGetName(_somGetClass(somSelf)),
+                     (ulCode == OR_AWAKE) ? "OR_AWAKE"
+                     : (ulCode == OR_FROMTEMPLATE) ? "OR_FROMTEMPLATE"
+                     : (ulCode == OR_FROMCOPY) ? "OR_FROMCOPY"
+                     : (ulCode == OR_NEW) ? "OR_NEW"
+                     : (ulCode == OR_SHADOW) ? "OR_SHADOW"
+                     : (ulCode == OR_REFERENCE) ? "OR_REFERENCE"
+                     : "unknown code"
+                   ));
 
     // call the WPFolder parent method... HOWEVER, apparently WPFolder
     // doesn't call its parent, that's why the init flags were never

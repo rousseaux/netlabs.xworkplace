@@ -35,7 +35,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *      Copyright (C) 1997-2006 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -4012,6 +4012,7 @@ SOM_Scope BOOL  SOMLINK xo_wpSetIcon(XFldObject *somSelf, HPOINTER hptrNewIcon)
  *      the "handles" setting on the "File types" page.
  *
  *@@added V0.9.20 (2002-08-04) [umoeller]
+ *@@changed V1.0.5 (2006-06-04) [pr]: Disabled - causes many problems with false in-use items
  */
 
 SOM_Scope BOOL  SOMLINK xo_wpAddToObjUseList(XFldObject *somSelf,
@@ -4019,11 +4020,12 @@ SOM_Scope BOOL  SOMLINK xo_wpAddToObjUseList(XFldObject *somSelf,
 {
     BOOL    fLocked = FALSE,
             brc = FALSE;
-#ifndef __NOTURBOFOLDERS__
 
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xo_wpAddToObjUseList");
 
+#if 0
+#ifndef __NOTURBOFOLDERS__
     TRY_LOUD(excpt1)
     {
         PIBMOBJECTDATA pod;
@@ -4034,8 +4036,10 @@ SOM_Scope BOOL  SOMLINK xo_wpAddToObjUseList(XFldObject *somSelf,
              || (!(pod = (PIBMOBJECTDATA)_pvWPObjectData))
            )
 #endif
+#endif
             brc = XFldObject_parent_WPObject_wpAddToObjUseList(somSelf,
                                                                pUseItem);
+#if 0
 #ifndef __NOTURBOFOLDERS__
         else
         {
@@ -4138,6 +4142,7 @@ SOM_Scope BOOL  SOMLINK xo_wpAddToObjUseList(XFldObject *somSelf,
     if (fLocked)
         _wpReleaseObjectMutexSem(somSelf);
 #endif
+#endif
 
     return brc;
 }
@@ -4148,6 +4153,7 @@ SOM_Scope BOOL  SOMLINK xo_wpAddToObjUseList(XFldObject *somSelf,
  *      a USEITEM from the object's list again.
  *
  *@@added V0.9.20 (2002-08-08) [umoeller]
+ *@@changed V1.0.5 (2006-06-04) [pr]: Disabled - causes many problems with false in-use items
  */
 
 SOM_Scope BOOL  SOMLINK xo_wpDeleteFromObjUseList(XFldObject *somSelf,
@@ -4155,11 +4161,12 @@ SOM_Scope BOOL  SOMLINK xo_wpDeleteFromObjUseList(XFldObject *somSelf,
 {
     BOOL    fLocked = FALSE,
             brc = FALSE;
-#ifndef __NOTURBOFOLDERS__
 
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xo_wpDeleteFromObjUseList");
 
+#if 0
+#ifndef __NOTURBOFOLDERS__
     TRY_LOUD(excpt1)
     {
         PIBMOBJECTDATA pod;
@@ -4170,8 +4177,10 @@ SOM_Scope BOOL  SOMLINK xo_wpDeleteFromObjUseList(XFldObject *somSelf,
              || (!(pod = (PIBMOBJECTDATA)_pvWPObjectData))
            )
 #endif
+#endif
             brc = XFldObject_parent_WPObject_wpDeleteFromObjUseList(somSelf,
                                                                     pUseItem);
+#if 0
 #ifndef __NOTURBOFOLDERS__
         else
         {
@@ -4240,6 +4249,7 @@ SOM_Scope BOOL  SOMLINK xo_wpDeleteFromObjUseList(XFldObject *somSelf,
 
     if (fLocked)
         _wpReleaseObjectMutexSem(somSelf);
+#endif
 #endif
 
     return brc;
@@ -5785,10 +5795,8 @@ SOM_Scope void  SOMLINK xoM_wpclsInitData(M_XFldObject *somSelf)
 
     // M_XFldObjectData *somThis = M_XFldObjectGetData(somSelf);
     // M_XFldObjectMethodDebug("M_XFldObject","xoM_wpclsInitData");
-    #ifdef DEBUG_SOMMETHODS
-        _Pmpf((__FUNCTION__ " for class %s",
-                    _somGetName(somSelf) ));
-    #endif
+    PMPF_SOMMETHODS((__FUNCTION__ " for class %s",
+                     _somGetName(somSelf) ));
 
     M_XFldObject_parent_M_WPObject_wpclsInitData(somSelf);
 

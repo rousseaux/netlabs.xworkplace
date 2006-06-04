@@ -468,18 +468,6 @@
 
     #ifndef DONTDEBUGATALL
 
-/* daemon and hook */
-
-        // debug window list (adds debug container to daemon)
-            // #define DEBUG_WINDOWLIST
-            DBGSET_WINDOWLIST,
-                #define PMPF_WINDOWLIST(b) { if (G_aDebugs[DBGSET_WINDOWLIST]) PmpfF(b); }
-    #else
-                #define PMPF_WINDOWLIST(b)
-    #endif
-
-    #ifndef DONTDEBUGATALL
-
 /* misc */
 
         // debug new system sounds
@@ -500,15 +488,35 @@
                 #define PMPF_OBJLISTS(b)
     #endif
 
-    #ifndef DONTDEBUGATALL
+    #ifndef DONTDEBUGATALL	// V1.0.5 (2006-06-04) [pr]: Added SOM debug flag
 
-/* misc */
+/* SOM */
+
+        // debug SOM methods
+            DBGSET_SOMMETHODS,
+                #define PMPF_SOMMETHODS(b) { if (G_aDebugs[DBGSET_SOMMETHODS]) PmpfF(b); }
+    #else
+                #define PMPF_SOMMETHODS(b)
+    #endif
+
+    #ifndef DONTDEBUGATALL
 
         // debug SOM weirdos
             DBGSET_SOMFREAK,
                 #define PMPF_SOMFREAK(b) { if (G_aDebugs[DBGSET_SOMFREAK]) PmpfF(b); }
     #else
                 #define PMPF_SOMFREAK(b)
+    #endif
+
+    #ifndef DONTDEBUGATALL	// V1.0.5 (2006-06-04) [pr]: Added CLASSLIST debug flag
+
+/* Class List */
+
+        // debug Class List
+            DBGSET_CLASSLIST,
+                #define PMPF_CLASSLIST(b) { if (G_aDebugs[DBGSET_CLASSLIST]) PmpfF(b); }
+    #else
+                #define PMPF_CLASSLIST(b)
     #endif
 
     #ifndef DONTDEBUGATALL
@@ -542,11 +550,8 @@
             #undef  SOMMethodDebug
         #endif
 
-        #ifdef DEBUG_SOMMETHODS
-            #define  SOMMethodDebug(c,m) _Pmpf(("%s::%s", c,m))
-        #else
-            #define  SOMMethodDebug(c,m) ;
-        #endif
+        // V1.0.5 (2006-06-04) [pr]
+        #define  SOMMethodDebug(c,m) PMPF_SOMMETHODS(("%s::%s", c,m))
     #endif
 
     #define _min(a,b) ( ((a) > (b)) ? b : a )

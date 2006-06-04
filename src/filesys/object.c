@@ -168,7 +168,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *      Copyright (C) 1997-2006 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -1031,19 +1031,17 @@ VOID objReady(WPObject *somSelf,
     // avoid doing this twice
     if (!(_flObject & OBJFL_INITIALIZED))
     {
-        #if defined(DEBUG_SOMMETHODS) || defined(DEBUG_AWAKEOBJECTS)
-            _Pmpf(("xo_wpObjectReady for %s (class %s), ulCode: %s",
-                    _wpQueryTitle(somSelf),
-                    _somGetName(_somGetClass(somSelf)),
-                    (ulCode == OR_AWAKE) ? "OR_AWAKE"
-                    : (ulCode == OR_FROMTEMPLATE) ? "OR_FROMTEMPLATE"
-                    : (ulCode == OR_FROMCOPY) ? "OR_FROMCOPY"
-                    : (ulCode == OR_NEW) ? "OR_NEW"
-                    : (ulCode == OR_SHADOW) ? "OR_SHADOW"
-                    : (ulCode == OR_REFERENCE) ? "OR_REFERENCE"
-                    : "unknown code"
-                 ));
-         #endif
+        PMPF_SOMMETHODS(("xo_wpObjectReady for %s (class %s), ulCode: %s",
+                         _wpQueryTitle(somSelf),
+                         _somGetName(_somGetClass(somSelf)),
+                         (ulCode == OR_AWAKE) ? "OR_AWAKE"
+                         : (ulCode == OR_FROMTEMPLATE) ? "OR_FROMTEMPLATE"
+                         : (ulCode == OR_FROMCOPY) ? "OR_FROMCOPY"
+                         : (ulCode == OR_NEW) ? "OR_NEW"
+                         : (ulCode == OR_SHADOW) ? "OR_SHADOW"
+                         : (ulCode == OR_REFERENCE) ? "OR_REFERENCE"
+                         : "unknown code"
+                       ));
 
         // set flag
         _flObject |= OBJFL_INITIALIZED;
@@ -1954,11 +1952,9 @@ BOOL objRemoveObjectHotkey(HOBJECT hobj)
             {
                 ULONG cb = (cHotkeys - uliofs - 1) * sizeof(GLOBALHOTKEY);
 
-                #ifdef DEBUG_KEYS
-                    _Pmpf(("  Copying 0x%lX to 0x%lX, %d bytes (%d per item)",
-                            pHotkeyThis + 1, pHotkeyThis,
-                            cb, sizeof(GLOBALHOTKEY)));
-                #endif
+                PMPF_KEYS(("  Copying 0x%lX to 0x%lX, %d bytes (%d per item)",
+                           pHotkeyThis + 1, pHotkeyThis,
+                           cb, sizeof(GLOBALHOTKEY)));
 
                 // not last item:
                 memcpy(pHotkeyThis,

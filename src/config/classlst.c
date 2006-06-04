@@ -21,7 +21,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *      Copyright (C) 1997-2006 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -934,9 +934,9 @@ STATIC MRESULT EXPENTRY fncbReturnWPSClassAttr(HWND hwndCnr,
         {
             // if the class itself is replaced,
             // disable it (cnr owner draw will paint it gray)
-            _Pmpf(("class %s is replaced with %s",
-                   pwps->pszClassName,
-                   pwps->pszReplacedWithClasses));
+            PMPF_CLASSLIST(("class %s is replaced with %s",
+                            pwps->pszClassName,
+                            pwps->pszReplacedWithClasses));
 
             usAttr |= CRA_DISABLED;
         }
@@ -1591,7 +1591,7 @@ STATIC VOID ShowClassContextMenu(HWND hwndDlg,
                                  szDummy,
                                  sizeof(szDummy)))
             {
-                _Pmpf(("flSelected: 0x%lX", flSelected));
+                PMPF_CLASSLIST(("flSelected: 0x%lX", flSelected));
 
                 // bit 0 signifies whether this class may
                 // be deregistered
@@ -1604,7 +1604,7 @@ STATIC VOID ShowClassContextMenu(HWND hwndDlg,
                                 // bit set
                     fAllowCreate = FALSE;
 
-                _Pmpf(("1: fAllowCreate == %d", fAllowCreate));
+                PMPF_CLASSLIST(("1: fAllowCreate == %d", fAllowCreate));
             }
         }
 
@@ -1621,12 +1621,12 @@ STATIC VOID ShowClassContextMenu(HWND hwndDlg,
            )
         {
             fAllowCreate = FALSE;
-            _Pmpf(("2: fAllowCreate == %d", fAllowCreate));
-            _Pmpf(("    pszModName: %s", STRINGORNULL(pscd->preccSource->pwps->pszModName)));
-            _Pmpf(("    pszReplacesClass: %s", STRINGORNULL(pscd->preccSource->pwps->pszReplacesClass)));
-            _Pmpf(("    pClassObject: 0x%lX", pscd->preccSource->pwps->pClassObject));
-            _Pmpf(("    pszReplacesClass: %s", STRINGORNULL(pscd->preccSource->pwps->pszReplacesClass)));
-            _Pmpf(("    fIsWPSClass: %d", fIsWPSClass));
+            PMPF_CLASSLIST(("2: fAllowCreate == %d", fAllowCreate));
+            PMPF_CLASSLIST(("    pszModName: %s", STRINGORNULL(pscd->preccSource->pwps->pszModName)));
+            PMPF_CLASSLIST(("    pszReplacesClass: %s", STRINGORNULL(pscd->preccSource->pwps->pszReplacesClass)));
+            PMPF_CLASSLIST(("    pClassObject: 0x%lX", pscd->preccSource->pwps->pClassObject));
+            PMPF_CLASSLIST(("    pszReplacesClass: %s", STRINGORNULL(pscd->preccSource->pwps->pszReplacesClass)));
+            PMPF_CLASSLIST(("    fIsWPSClass: %d", fIsWPSClass));
         }
 
         // allow replacements only if the
@@ -1653,7 +1653,7 @@ STATIC VOID ShowClassContextMenu(HWND hwndDlg,
 
     } // end if (pscd->preccSource->pwps)
 
-    _Pmpf(("3: fAllowCreate == %d", fAllowCreate));
+    PMPF_CLASSLIST(("3: fAllowCreate == %d", fAllowCreate));
 
     WinEnableMenuItem(hPopupMenu, ID_XLMI_DEREGISTER, fAllowDeregister);
     WinEnableMenuItem(hPopupMenu, ID_XLMI_REPLACE, fAllowReplace);

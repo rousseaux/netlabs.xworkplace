@@ -138,9 +138,7 @@ PCLASSRECORDCORE clsAddClass2Cnr(HWND hwndCnr,                  // in: cnr to in
         = (PCLASSRECORDCORE)cnrhAllocRecords(hwndCnr,
                                              sizeof(CLASSRECORDCORE),
                                              1);
-    #ifdef DEBUG_WPSCLASSES
-        _Pmpf(("  clsAddClass2Cnr %s\n", pszCurrentClass));
-    #endif
+    PMPF_CLASSLIST(("  clsAddClass2Cnr %s\n", pszCurrentClass));
 
     if (preccNew)
     {
@@ -174,9 +172,7 @@ PCLASSRECORDCORE clsAddClass2Cnr(HWND hwndCnr,                  // in: cnr to in
             // pwpsMyself might be NULL for the "Orphans" tree parent item
             usAttrs = CRA_RECORDREADONLY;
 
-        #ifdef DEBUG_WPSCLASSES
-            _Pmpf(("    Inserting %s\n", pszCurrentClass));
-        #endif
+        PMPF_CLASSLIST(("    Inserting %s\n", pszCurrentClass));
 
         // insert the record (helpers/winh.c)
         cnrhInsertRecords(hwndCnr,
@@ -192,9 +188,7 @@ PCLASSRECORDCORE clsAddClass2Cnr(HWND hwndCnr,                  // in: cnr to in
         // select the new record?
         if (usAttrs & (CRA_INUSE | CRA_CURSORED | CRA_PICKED | CRA_SELECTED))
         {
-            #ifdef DEBUG_WPSCLASSES
-                _Pmpf(("    Selecting %s\n", pszCurrentClass));
-            #endif
+            PMPF_CLASSLIST(("    Selecting %s\n", pszCurrentClass));
 
             WinSendMsg(hwndCnr,
                        CM_SETRECORDEMPHASIS,
@@ -252,8 +246,8 @@ VOID clsResolveReplacements(PWPSLISTITEM pwpsCurrent,
     PLISTNODE pNode = 0;
     PWPSLISTITEM pwpsParentToCheck;
 
-    _Pmpf(("Checking replacements for %s",
-            pwpsCurrent->pszClassName));
+    PMPF_CLASSLIST(("Checking replacements for %s",
+                    pwpsCurrent->pszClassName));
 
     // query if any parent class has been replaced by this class;
     // in order to find out about that, we climb up the parent record
@@ -276,9 +270,9 @@ VOID clsResolveReplacements(PWPSLISTITEM pwpsCurrent,
         {
             // yes, pszParentToCheckClass has been replaced by current class:
             // store replacement in our structure
-            _Pmpf(("  %s replaces %s",
-                    pwpsCurrent->pszClassName,
-                    pwpsParentToCheck->pszClassName));
+            PMPF_CLASSLIST(("  %s replaces %s",
+                            pwpsCurrent->pszClassName,
+                            pwpsParentToCheck->pszClassName));
             pwpsCurrent->pszReplacesClass = strdup(pwpsParentToCheck->pszClassName);
             // did we find replacements of the parent already?
             if (pwpsParentToCheck->pszReplacedWithClasses)
@@ -302,9 +296,9 @@ VOID clsResolveReplacements(PWPSLISTITEM pwpsCurrent,
             }
         }
         else
-            _Pmpf(("  %s does not replace %s",
-                    pwpsCurrent->pszClassName,
-                    pwpsParentToCheck->pszClassName));
+            PMPF_CLASSLIST(("  %s does not replace %s",
+                            pwpsCurrent->pszClassName,
+                            pwpsParentToCheck->pszClassName));
 
         // climb up to next parent
         pwpsParentToCheck = pwpsParentToCheck->pParent;
@@ -766,9 +760,9 @@ PWPSCLASSESINFO clsWpsClasses2Cnr(HWND hwndCnr, // in: guess what this is
                     if (!strcmp(pThis->szParentClass,
                                 pThis2->pszClassName))
                     {
-                        _Pmpf(("Parent of %s is %s",
-                                pThis->pszClassName,
-                                pThis2->pszClassName));
+                        PMPF_CLASSLIST(("Parent of %s is %s",
+                                        pThis->pszClassName,
+                                        pThis2->pszClassName));
                         pThis->pParent = pThis2;
                         break;
                     }
@@ -1282,9 +1276,7 @@ PMETHODINFO clsQueryMethodInfo(SOMClass *pClassObject,  // in: class to query me
                     psm->pIntroducedBy = 0;
                 }
 
-                #ifdef DEBUG_WPSCLASSES
-                    _Pmpf(("ulInheritance: %d", lInheritance));
-                #endif
+                PMPF_CLASSLIST(("ulInheritance: %d", lInheritance));
 
                 // store all this method info in list
                 lstAppendItem(&pmi->llMethods,
