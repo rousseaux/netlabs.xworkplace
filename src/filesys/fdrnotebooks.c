@@ -192,7 +192,8 @@ static const XWPSETTING G_ViewBackup[] =
         sfFdrDefaultDocView,
 #endif
         sfFdrAutoRefreshDisabled,
-        sulDefaultFolderView
+        sulDefaultFolderView,
+        sflOwnerDrawIcons	// V1.0.5 (2006-06-09) [pr]
     };
 
 /*
@@ -307,6 +308,7 @@ VOID fdrViewInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
  *@@changed V0.9.12 (2001-04-30) [umoeller]: added default folder views
  *@@changed V0.9.20 (2002-08-04) [umoeller]: added lazyload settings
  *@@changed V1.0.1 (2003-01-31) [umoeller]: added thumbnail setting
+ *@@changed V1.0.5 (2006-06-09) [pr]: fixed Undo
  */
 
 MRESULT fdrViewItemChanged(PNOTEBOOKPAGE pnbp,
@@ -393,7 +395,7 @@ MRESULT fdrViewItemChanged(PNOTEBOOKPAGE pnbp,
 
             // update the display by calling the INIT callback
             pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
-            fUpdate = TRUE;
+            fFolderUpdate = TRUE;
         break;
 
         case DID_DEFAULT:
@@ -403,7 +405,7 @@ MRESULT fdrViewItemChanged(PNOTEBOOKPAGE pnbp,
             cmnSetDefaultSettings(pnbp->inbp.ulPageID);
             // update the display by calling the INIT callback
             pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
-            fUpdate = TRUE;
+            fFolderUpdate = TRUE;
         break;
     }
 
@@ -422,10 +424,13 @@ MRESULT fdrViewItemChanged(PNOTEBOOKPAGE pnbp,
         else
             cmnSetSetting(sflOwnerDrawIcons, flOwnerDraw & ~flOwnerDrawChanged);
 
+        fFolderUpdate = TRUE;
+    }
+
+    if (fFolderUpdate)
         xthrPostWorkerMsg(WOM_REFRESHFOLDERVIEWS,
                           (MPARAM)NULL, // update all, not just children
                           (MPARAM)FDRUPDATE_REPAINT);
-    }
 
     return mrc;
 }
