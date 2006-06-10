@@ -761,7 +761,9 @@ STATIC WPObject* FindObject(POBJBUTTONPRIVATE pPrivate)
         {
             // now, if pObj is a disk object: get root folder
             if (_somIsA(pobj, _WPDisk))
-                pobj = _xwpSafeQueryRootFolder(pobj, FALSE, NULL);
+                pobj = _XFldDisk	// V1.0.5 (2006-06-10) [pr]: fix crash
+                       ? _xwpSafeQueryRootFolder(pobj, FALSE, NULL)
+                       : _wpQueryRootFolder(pobj);
 
             if ((pobj) && (pPrivate->pobjNotify != pobj))
             {

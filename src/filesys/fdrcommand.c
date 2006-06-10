@@ -942,9 +942,9 @@ STATIC BOOL ProgramObjectSelected(WPObject *pFolder,        // in: folder or dis
 
         // dereference disk objects
         if (_somIsA(pFolder, _WPDisk))
-            pFolder = _xwpSafeQueryRootFolder(pFolder,      // disk
-                                              FALSE,
-                                              NULL);
+            pFolder = _XFldDisk    // V1.0.5 (2006-06-10) [pr]: fix crash
+                      ? _xwpSafeQueryRootFolder(pFolder, FALSE, NULL)
+                      : _wpQueryRootFolder(pFolder);
 
         if (pFolder)
             ValidRealName = (_wpQueryFilename(pFolder, szRealName, TRUE) != NULL);

@@ -1098,7 +1098,9 @@ VOID cmnuFillContentSubmenu(SHORT sMenuId, // in: menu ID of selected folder con
 
             // if pFolder is a disk object: get root folder
             if (_somIsA(pFolder, _WPDisk))
-                pFolder = _xwpSafeQueryRootFolder(pFolder, FALSE, NULL);
+                pFolder = _XFldDisk    // V1.0.5 (2006-06-10) [pr]: fix crash
+                          ? _xwpSafeQueryRootFolder(pFolder, FALSE, NULL)
+                          : _wpQueryRootFolder(pFolder);
 
             if (pFolder)
             {

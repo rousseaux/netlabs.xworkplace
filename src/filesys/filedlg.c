@@ -453,7 +453,9 @@ STATIC BOOL UpdateDlgWithFullFile(PFILEDLGDATA pWinData)
             if (_wpQueryLogicalDrive(pDisk) == pWinData->szDrive[0] - 'A' + 1)
             {
                 precDiskSelect = _wpQueryCoreRecord(pDisk);
-                pRootFolder = _xwpSafeQueryRootFolder(pDisk, FALSE, NULL);
+                pRootFolder = _XFldDisk    // V1.0.5 (2006-06-10) [pr]: fix crash
+                              ? _xwpSafeQueryRootFolder(pDisk, FALSE, NULL)
+                              : _wpQueryRootFolder(pDisk);
                 break;
             }
 

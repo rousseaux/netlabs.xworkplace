@@ -1553,9 +1553,9 @@ WPFileSystem* fdrvGetFSFromRecord(PMINIRECORDCORE precc,
        )
     {
         if (_somIsA(pobj, _WPDisk))
-            pobj = _xwpSafeQueryRootFolder(pobj,
-                                           FALSE,   // no change map
-                                           NULL);
+            pobj = _XFldDisk    // V1.0.5 (2006-06-10) [pr]: fix crash
+                   ? _xwpSafeQueryRootFolder(pobj, FALSE, NULL)
+                   : _wpQueryRootFolder(pobj);
 
         if (pobj)
         {
