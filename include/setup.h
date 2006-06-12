@@ -266,6 +266,7 @@
         // nor loaded at Desktop startup. This has cost me a lot of thought
         // once, and you'll get no error message, so be warned.
             #define _PMPRINTF_
+            #define _WPSDEBUG_
 
         typedef enum _DEBUGGINGFLAGS
         {
@@ -540,6 +541,7 @@
         // if that's #define'd, _Pmpf(()) commands will produce output,
         // if not, no code will be produced.
         #include "helpers\pmprintf.h"
+        #include "helpers\wpsdebug.h"
 
         // SOMMethodDebug is the macro defined for all those
         // xxxMethodDebug thingies created by the SOM compiler.
