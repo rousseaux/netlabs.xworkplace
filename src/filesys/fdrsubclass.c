@@ -96,7 +96,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *      Copyright (C) 1997-2006 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -1770,6 +1770,7 @@ STATIC BOOL CnrDrawIcon(HWND hwndCnr,               // in: container HWND (we ca
  *      meaning that we've drawn the item ourselves.
  *
  *@@added V0.9.20 (2002-07-31) [umoeller]
+ *@@changed V1.0.5 (2006-06-12) [pr]: @@fixes 371
  */
 
 STATIC BOOL CnrDrawItem(PSUBCLFOLDERVIEW psfv,      // in: folder view data
@@ -1778,10 +1779,17 @@ STATIC BOOL CnrDrawItem(PSUBCLFOLDERVIEW psfv,      // in: folder view data
     ULONG               flOwnerDraw;
     BOOL                fWeveDrawn = FALSE;
     PCNRDRAWITEMINFO    pcdi;
+    CNRINFO             CnrInfo;
 
     // if none of the owner-draw settings are enabled,
     // get outta here and call the WPS
     if (!(flOwnerDraw = cmnQuerySetting(sflOwnerDrawIcons)))
+        return FALSE;
+
+    // If container in Bitmap mode e.g. Light Table folders, let the WPS handle the owner draw
+    // V1.0.5 (2006-06-12) [pr]: @@fixes 371
+    cnrhQueryCnrInfo(psfv->hwndCnr, &CnrInfo);
+    if (CnrInfo.flWindowAttr & CA_DRAWBITMAP)
         return FALSE;
 
     if (pcdi = (PCNRDRAWITEMINFO)poi->hItem)
