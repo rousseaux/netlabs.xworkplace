@@ -24,7 +24,7 @@
  */
 
 /*
- *      Copyright (C) 2002-2003 Ulrich M”ller.
+ *      Copyright (C) 2002-2006 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -965,7 +965,7 @@ STATIC MRESULT IwgtCreate(HWND hwnd,
     IwgtScanSetup(pWidget->pcszSetupString,
                   &pPrivate->Setup);
 
-    sock_init();
+    pfn_sock_init();
 
     pPrivate->ulMax = 1;        // avoid division by zero
 
@@ -2018,7 +2018,7 @@ ULONG EXPENTRY IwgtInitModule(HAB hab,         // XCenter's anchor block
     }
 
     // V1.0.5 (2006-05-28) [pr]: Add declarations for importing SO32DLL functions dynamically
-    // If this is done statically, the DLL can't be unloaded, which prevents W_IPMON.DLL
+    // If this is done statically, the DLL can't be unloaded, which prevents IPMON.DLL
     // from being unloaded.
     if (!fImportsFailed)
     {
