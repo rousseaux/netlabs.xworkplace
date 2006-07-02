@@ -15,7 +15,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *      Copyright (C) 1997-2006 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -163,14 +163,14 @@ BOOL dtpSetup(WPDesktop *somSelf,
                     // xsd.ulRestartWPS = 0;           // shutdown
                     xsd.ulCloseMode = SHUT_SHUTDOWN;
                     xsd.optReboot = FALSE;
-                    xsd.optAPMPowerOff = FALSE;
+                    xsd.optPowerOff = FALSE;  // V1.0.5 (2006-06-26) [pr]
                 }
                 else if (!strcmp(pszToken, "REBOOT"))
                 {
                     // xsd.ulRestartWPS = 0;           // shutdown
                     xsd.ulCloseMode = SHUT_SHUTDOWN;
                     xsd.optReboot = TRUE;
-                    xsd.optAPMPowerOff = FALSE;
+                    xsd.optPowerOff = FALSE;  // V1.0.5 (2006-06-26) [pr]
                 }
                 else if (!strncmp(pszToken, "USERREBOOT(", 11))
                 {
@@ -190,14 +190,14 @@ BOOL dtpSetup(WPDesktop *somSelf,
                     // xsd.ulRestartWPS = 0;           // shutdown
                     xsd.ulCloseMode = SHUT_SHUTDOWN;
                     xsd.optReboot = TRUE;
-                    xsd.optAPMPowerOff = FALSE;
+                    xsd.optPowerOff = FALSE;  // V1.0.5 (2006-06-26) [pr]
                 }
                 else if (!strcmp(pszToken, "POWEROFF"))
                 {
                     // xsd.ulRestartWPS = 0;           // shutdown
                     xsd.ulCloseMode = SHUT_SHUTDOWN;
                     xsd.optReboot = FALSE;
-                    xsd.optAPMPowerOff = TRUE;
+                    xsd.optPowerOff = TRUE;  // V1.0.5 (2006-06-26) [pr]
                 }
                 else if (!strcmp(pszToken, "RESTARTWPS"))
                 {

@@ -14,7 +14,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *      Copyright (C) 1997-2006 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -378,7 +378,7 @@ BEGIN
 END
 */
 
-#define DLG_WIDTH   (3 * STD_BUTTON_WIDTH + 2 * COMMON_SPACING)
+#define DLG_WIDTH   (3 * STD_BUTTON_WIDTH + 2 * COMMON_SPACING + 10)
 
 static CONTROLDEF
     TrafficLightIcon = CONTROLDEF_ICON(0, ID_SDDI_ICON),

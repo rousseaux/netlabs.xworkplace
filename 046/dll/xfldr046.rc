@@ -50,7 +50,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *      Copyright (C) 1997-2006 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -1189,12 +1189,16 @@ BEGIN
     ID_SDDI_ANIMATE_TXT                 "Animering"
     ID_SDDI_ANIMATE_SHUTDOWN            "~innan avst„ngning"
     ID_SDDI_ANIMATE_REBOOT              "f~”re ombootning"
-    ID_SDDI_APMPOWEROFF                 "St„ng av dator"
+    /* V1.0.5: ID_SDDI_APMPOWEROFF renamed to ID_SDDI_POWEROFF */
+    ID_SDDI_POWEROFF                    "St„ng av dator"
     ID_SDDI_DELAY                       "F”r~dr”j"
     ID_SDDI_APMVERSION_TXT              "APM niv†:"
     ID_SDDI_APMVERSION                  "ok„nd"
-    ID_SDDI_APMSYS_TXT                  "APM.SYS drivrutin:"
-    ID_SDDI_APMSYS                      "ok„nd"
+    /* V1.0.5: Added the next four items */
+    ID_SDDI_ACPIVERSION_TXT             "ACPI niv†:"
+    ID_SDDI_ACPIVERSION                 "ok„nd"
+    ID_SDDI_APMPOWEROFF                 "APM"
+    ID_SDDI_ACPIPOWEROFF                "ACPI"
     ID_SDDI_SAVEINIS_TXT                "Spara INI filer:"
     ID_SDDI_CANDESKTOPALTF4             "Alt+F~4 p† Skrivbordet startar avst„ngning"
 

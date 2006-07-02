@@ -33,7 +33,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2005 Ulrich M”ller.
+ *      Copyright (C) 1997-2006 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -1191,7 +1191,7 @@
 #endif
 #define ID_SDDI_ANIMATE_SHUTDOWN        2201
 #define ID_SDDI_ANIMATE_REBOOT          2202
-#define ID_SDDI_APMPOWEROFF             2203
+#define ID_SDDI_POWEROFF                2203        // V1.0.5 (2006-06-24) [pr]
 #define ID_SDDI_DELAY                   2204
 #ifndef __EASYSHUTDOWN__
 #define ID_SDDI_CONFIRM                 2205
@@ -1216,8 +1216,8 @@
 #define ID_SDDI_AUTOCLOSEDETAILS        2220
 #define ID_SDDI_APMVERSION              2221
 #define ID_SDDI_APMVERSION_TXT          2222
-#define ID_SDDI_APMSYS                  2223
-#define ID_SDDI_APMSYS_TXT              2224
+#define ID_SDDI_ACPIVERSION             2223        // V1.0.5 (2006-06-24) [pr]
+#define ID_SDDI_ACPIVERSION_TXT         2224        // V1.0.5 (2006-06-24) [pr]
 
 #ifndef __EASYSHUTDOWN__
 #define ID_SDDI_SAVEINIS_TXT            2225
@@ -1228,6 +1228,9 @@
 #define ID_SDDI_SHAREDGROUP             2228
 
 #define ID_SDDI_CANDESKTOPALTF4         2229        // V0.9.16 (2002-01-04) [umoeller]
+
+#define ID_SDDI_APMPOWEROFF             2230        // V1.0.5 (2006-06-24) [pr]
+#define ID_SDDI_ACPIPOWEROFF            2231        // V1.0.5 (2006-06-24) [pr]
 
 // "extended reboot" / "auto-close" dlg items
 // all IDs moved down here V1.0.2 (2003-12-03) [umoeller]

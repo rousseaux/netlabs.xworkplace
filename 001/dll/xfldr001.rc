@@ -50,7 +50,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2005 Ulrich M”ller.
+ *      Copyright (C) 1997-2006 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -1265,13 +1265,16 @@ BEGIN
     ID_SDDI_ANIMATE_TXT                 "Animation"
     ID_SDDI_ANIMATE_SHUTDOWN            "~before shutdown"
     ID_SDDI_ANIMATE_REBOOT              "be~fore reboot"
-    /* V1.0.0: ID_SDDI_APMPOWEROFF renamed */
-    ID_SDDI_APMPOWEROFF                 "Power-off computer"
+    /* V1.0.5: ID_SDDI_APMPOWEROFF renamed to ID_SDDI_POWEROFF */
+    ID_SDDI_POWEROFF                    "Power-off computer"
     ID_SDDI_DELAY                       "Dela~y"
     ID_SDDI_APMVERSION_TXT              "APM level:"
     ID_SDDI_APMVERSION                  "unknown"
-    ID_SDDI_APMSYS_TXT                  "APM.SYS driver:"
-    ID_SDDI_APMSYS                      "unknown"
+    /* V1.0.5: Added the next four items */
+    ID_SDDI_ACPIVERSION_TXT             "ACPI level:"
+    ID_SDDI_ACPIVERSION                 "unknown"
+    ID_SDDI_APMPOWEROFF                 "APM"
+    ID_SDDI_ACPIPOWEROFF                "ACPI"
     ID_SDDI_SAVEINIS_TXT                "Save INI files:"
     ID_SDDI_CANDESKTOPALTF4             "Alt+F~4 on Desktop starts shutdown"
 

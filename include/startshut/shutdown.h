@@ -15,7 +15,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *      Copyright (C) 1997-2006 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -69,8 +69,9 @@
                     optAutoCloseVIO,
                     optLog,
                     // optAnimate,          // removed V0.9.12 (2001-05-12) [umoeller]
-                    optAPMPowerOff,
-                    optAPMDelay,
+                    optPowerOff,  // V1.0.5 (2006-06-26) [pr]
+                    optDelay,     // V1.0.5 (2006-06-26) [pr]
+                    optACPIOff,   // V1.0.5 (2006-06-26) [pr]
 #ifndef __NOXSHUTDOWN__
                     optWPSProcessShutdown,
                             // run shutdown folder? (SHUT_RESTARTWPS and SHUT_LOGOFF only;

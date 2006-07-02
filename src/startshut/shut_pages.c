@@ -14,7 +14,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *      Copyright (C) 1997-2006 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -151,23 +151,17 @@ static const CONTROLDEF
     AnimationBeforeShutdownCB = LOADDEF_AUTOCHECKBOX(ID_SDDI_ANIMATE_SHUTDOWN),
     AnimationBeforeRebootCB = LOADDEF_AUTOCHECKBOX(ID_SDDI_ANIMATE_REBOOT),
     PowerOffCB = CONTROLDEF_AUTOCHECKBOX(
-                            LOAD_STRING, // "Attempt APM ~1.2 power-off"
-                            ID_SDDI_APMPOWEROFF,
+                            LOAD_STRING, // "Power-off computer"
+                            ID_SDDI_POWEROFF,
                             COLUMN_WIDTH,
                             -1),
     PowerOffDelayCB = LOADDEF_AUTOCHECKBOX(ID_SDDI_DELAY),
-    APMLevelText1 = CONTROLDEF_TEXT(
-                            LOAD_STRING, // "APM level:"
-                            ID_SDDI_APMVERSION_TXT,
-                            COLUMN_WIDTH / 2,
-                            -1),
+    APMPowerOffRadio = LOADDEF_FIRST_AUTORADIO(ID_SDDI_APMPOWEROFF),
+    ACPIPowerOffRadio = LOADDEF_NEXT_AUTORADIO(ID_SDDI_ACPIPOWEROFF),
+    APMLevelText1 = LOADDEF_TEXT(ID_SDDI_APMVERSION_TXT),
     APMLevelText2 = LOADDEF_TEXT(ID_SDDI_APMVERSION),
-    APMDriverText1 = CONTROLDEF_TEXT(
-                            LOAD_STRING, // "APM.SYS driver:"
-                            ID_SDDI_APMSYS_TXT,
-                            COLUMN_WIDTH / 2,
-                            -1),
-    APMDriverText2 = LOADDEF_TEXT(ID_SDDI_APMSYS),
+    ACPILevelText1 = LOADDEF_TEXT(ID_SDDI_ACPIVERSION_TXT),
+    ACPILevelText2 = LOADDEF_TEXT(ID_SDDI_ACPIVERSION),
 #ifndef __EASYSHUTDOWN__
     SaveINIFilesText = LOADDEF_TEXT(ID_SDDI_SAVEINIS_TXT),
     SaveINIFilesCombo = CONTROLDEF_DROPDOWNLIST(
@@ -240,13 +234,15 @@ static const DLGHITEM dlgShutdown[] =
                                 CONTROL_DEF(&G_Spacing),        // notebook.c
                                 CONTROL_DEF(&PowerOffDelayCB),
                         END_TABLE,
-                        START_TABLE,
-                            START_ROW(0),
+                        START_TABLE_ALIGN,
+                            START_ROW(ROW_VALIGN_CENTER),
+                                CONTROL_DEF(&APMPowerOffRadio),
                                 CONTROL_DEF(&APMLevelText1),
                                 CONTROL_DEF(&APMLevelText2),
-                            START_ROW(0),
-                                CONTROL_DEF(&APMDriverText1),
-                                CONTROL_DEF(&APMDriverText2),
+                            START_ROW(ROW_VALIGN_CENTER),
+                                CONTROL_DEF(&ACPIPowerOffRadio),
+                                CONTROL_DEF(&ACPILevelText1),
+                                CONTROL_DEF(&ACPILevelText2),
                         END_TABLE,
 #ifndef __EASYSHUTDOWN__
                     START_ROW(ROW_VALIGN_CENTER),
@@ -284,6 +280,7 @@ static const XWPSETTING G_ShutdownBackup[] =
  *@@changed V0.9.9 (2001-04-07) [pr]: added missing Undo and Default processing
  *@@changed V0.9.16 (2001-10-08) [umoeller]: now using dialog formatter
  *@@changed V0.9.16 (2002-01-04) [umoeller]: added "alt+f4 on desktop starts shutdown"
+ *@@changed V1.0.5 (2006-06-26) [pr]: added ACPI shutdown support
  */
 
 VOID xsdShutdownInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
@@ -293,14 +290,8 @@ VOID xsdShutdownInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
 
     if (flFlags & CBI_INIT)
     {
-        // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
-        APIRET      arc = NO_ERROR;
         HWND        hwndINICombo = NULLHANDLE;
         ULONG       ul;
-        PEXECUTABLE pExec;
-        CHAR        szAPMVersion[30];
-        CHAR        szAPMSysFile[CCHMAXPATH];
-
         ULONG       aulIniStrings[3] =
             {
                 ID_XSSI_XSD_SAVEINIS_NEW,   // pszXSDSaveInisNew
@@ -321,31 +312,9 @@ VOID xsdShutdownInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                       dlgShutdown,
                       ARRAYITEMCOUNT(dlgShutdown));
 
-        sprintf(szAPMVersion, "APM %s", apmQueryVersion());
-        WinSetDlgItemText(pnbp->hwndDlgPage, ID_SDDI_APMVERSION, szAPMVersion);
-        sprintf(szAPMSysFile,
-                "%c:\\OS2\\BOOT\\APM.SYS",
-                doshQueryBootDrive());
-
-        PMPF_SHUTDOWN(("Opening %s", szAPMSysFile));
-
-        WinSetDlgItemText(pnbp->hwndDlgPage, ID_SDDI_APMSYS,
-                          "Error");
-
-        if (!(arc = exehOpen(szAPMSysFile,
-                                 &pExec)))
-        {
-            if (!(arc = exehQueryBldLevel(pExec)))
-            {
-                if (pExec->pszVersion)
-                    WinSetDlgItemText(pnbp->hwndDlgPage, ID_SDDI_APMSYS,
-                                      pExec->pszVersion);
-
-            }
-
-            exehClose(&pExec);
-        }
-
+        // V1.0.5 (2006-06-26) [pr]
+        WinSetDlgItemText(pnbp->hwndDlgPage, ID_SDDI_APMVERSION, apmQueryVersion());
+        WinSetDlgItemText(pnbp->hwndDlgPage, ID_SDDI_ACPIVERSION, acpiQueryVersion());
 #ifndef __EASYSHUTDOWN__
         hwndINICombo = WinWindowFromID(pnbp->hwndDlgPage, ID_SDDI_SAVEINIS_LIST);
         for (ul = 0;
@@ -361,6 +330,9 @@ VOID xsdShutdownInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
 
     if (flFlags & CBI_SET)
     {
+        BOOL bAPM = apmPowerOffSupported();
+        BOOL bACPI = acpiPowerOffSupported();
+
 #ifndef __EASYSHUTDOWN__
         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SDDI_REBOOT,
                               (fl & XSD_REBOOT) != 0);
@@ -371,13 +343,18 @@ VOID xsdShutdownInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                               (fl & XSD_ANIMATE_SHUTDOWN) != 0);
         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SDDI_ANIMATE_REBOOT,
                               (fl & XSD_ANIMATE_REBOOT) != 0);
-        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SDDI_APMPOWEROFF,
-                              (apmPowerOffSupported())
-                                  ? ((fl & XSD_APMPOWEROFF) != 0)
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SDDI_POWEROFF,  // V1.0.5 (2006-06-26) [pr]
+                              (bAPM || bACPI)
+                                  ? ((fl & XSD_POWEROFF) != 0)
                                   : FALSE
                               );
         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SDDI_DELAY,
-                              (fl & XSD_APM_DELAY) != 0);
+                              (fl & XSD_DELAY) != 0);
+        winhSetDlgItemChecked(pnbp->hwndDlgPage,  // V1.0.5 (2006-06-26) [pr]
+                              (((fl & XSD_ACPIPOWEROFF) != 0) && bACPI)
+                                  ? ID_SDDI_ACPIPOWEROFF
+                                  : ID_SDDI_APMPOWEROFF,
+                              TRUE);
         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SDDI_EMPTYTRASHCAN,
                               (fl & XSD_EMPTY_TRASH) != 0);
 #ifndef __EASYSHUTDOWN__
@@ -415,25 +392,27 @@ VOID xsdShutdownInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                     )
                  // && (cmnQuerySetting(sNoWorkerThread) == 0)
                 );
+        BOOL bAPM = apmPowerOffSupported();
+        BOOL bACPI = acpiPowerOffSupported();
+        BOOL bEnable = fXShutdownEnabled && (bAPM || bACPI);
 
         // WinEnableControl(pnbp->hwndDlgPage, ID_SDDI_ENABLED, fXShutdownValid);
         WinEnableControl(pnbp->hwndDlgPage, ID_SDDI_CANDESKTOPALTF4, fXShutdownEnabled);
 
 #ifndef __EASYSHUTDOWN__
-        WinEnableControl(pnbp->hwndDlgPage, ID_SDDI_REBOOT,  fXShutdownEnabled);
+        WinEnableControl(pnbp->hwndDlgPage, ID_SDDI_REBOOT, fXShutdownEnabled);
 #endif
         WinEnableControl(pnbp->hwndDlgPage, ID_SDDI_REBOOTEXT, fXShutdownEnabled);
 
         WinEnableControl(pnbp->hwndDlgPage, ID_SDDI_ANIMATE_SHUTDOWN, fXShutdownEnabled);
         WinEnableControl(pnbp->hwndDlgPage, ID_SDDI_ANIMATE_REBOOT, fXShutdownEnabled);
 
-        WinEnableControl(pnbp->hwndDlgPage, ID_SDDI_APMPOWEROFF,
-                          ( fXShutdownEnabled && apmPowerOffSupported() ) );
-        WinEnableControl(pnbp->hwndDlgPage, ID_SDDI_DELAY,
-                          (      fXShutdownEnabled
-                              && (apmPowerOffSupported())
-                              && ((fl & XSD_APMPOWEROFF) != 0)
-                          ));
+        // V1.0.5 (2006-06-26) [pr]
+        WinEnableControl(pnbp->hwndDlgPage, ID_SDDI_POWEROFF, bEnable);
+        bEnable = bEnable && ((fl & XSD_POWEROFF) != 0);
+        WinEnableControl(pnbp->hwndDlgPage, ID_SDDI_DELAY, bEnable);
+        WinEnableControl(pnbp->hwndDlgPage, ID_SDDI_APMPOWEROFF, bEnable && bAPM);
+        WinEnableControl(pnbp->hwndDlgPage, ID_SDDI_ACPIPOWEROFF, bEnable && bACPI);
 
         WinEnableControl(pnbp->hwndDlgPage, ID_SDDI_EMPTYTRASHCAN,
                           ( fXShutdownEnabled && (cmnTrashCanReady()) ) );
@@ -479,6 +458,7 @@ VOID xsdShutdownInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
  *@@changed V0.9.3 (2000-05-22) [umoeller]: added animate on reboot
  *@@changed V0.9.4 (2000-08-03) [umoeller]: added "empty trash can"
  *@@changed V0.9.9 (2001-04-07) [pr]: added missing Undo and Default processing
+ *@@changed V1.0.5 (2006-06-26) [pr]: added ACPI shutdown support
  */
 
 MRESULT xsdShutdownItemChanged(PNOTEBOOKPAGE pnbp,
@@ -512,12 +492,23 @@ MRESULT xsdShutdownItemChanged(PNOTEBOOKPAGE pnbp,
             ulFlag = XSD_ANIMATE_REBOOT;
         break;
 
-        case ID_SDDI_APMPOWEROFF:
-            ulFlag = XSD_APMPOWEROFF;
+        case ID_SDDI_POWEROFF:
+            ulFlag = XSD_POWEROFF;
         break;
 
         case ID_SDDI_DELAY:
-            ulFlag = XSD_APM_DELAY;
+            ulFlag = XSD_DELAY;
+        break;
+
+        // V1.0.5 (2006-06-26) [pr]
+        case ID_SDDI_APMPOWEROFF:
+            ulFlag = XSD_ACPIPOWEROFF;
+            ulExtra = FALSE;
+        break;
+
+        case ID_SDDI_ACPIPOWEROFF:
+            ulFlag = XSD_ACPIPOWEROFF;
+            ulExtra = TRUE;
         break;
 
         case ID_SDDI_EMPTYTRASHCAN:

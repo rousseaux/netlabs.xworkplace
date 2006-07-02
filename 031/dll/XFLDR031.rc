@@ -47,7 +47,7 @@
  *      only change strings. This is very helpful to avoid
  *      accidentally ruining the dialogs.
  *
- *      Copyright (C) 1997-2002 Ulrich M”ller.
+ *      Copyright (C) 1997-2006 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -1237,13 +1237,16 @@ BEGIN
     ID_SDDI_ANIMATE_TXT                 "Animatie"
     ID_SDDI_ANIMATE_SHUTDOWN            "~voor afsluiten"
     ID_SDDI_ANIMATE_REBOOT              "vo~or herstart"
-    /* V1.0.0: ID_SDDI_APMPOWEROFF renamed */
-    ID_SDDI_APMPOWEROFF                 "Computer uitschakelen"
+    /* V1.0.5: ID_SDDI_APMPOWEROFF renamed to ID_SDDI_POWEROFF */
+    ID_SDDI_POWEROFF                    "Computer uitschakelen"
     ID_SDDI_DELAY                       "~Vertraging"
     ID_SDDI_APMVERSION_TXT              "APM niveau:"
     ID_SDDI_APMVERSION                  "onbekend"
-    ID_SDDI_APMSYS_TXT                  "APM.SYS stuurprogramma:"
-    ID_SDDI_APMSYS                      "onbekend"
+    /* V1.0.5: Added the next four items */
+    ID_SDDI_ACPIVERSION_TXT             "ACPI niveau:"
+    ID_SDDI_ACPIVERSION                 "onbekend"
+    ID_SDDI_APMPOWEROFF                 "APM"
+    ID_SDDI_ACPIPOWEROFF                "ACPI"
     ID_SDDI_SAVEINIS_TXT                "opslaan INI bestanden:"
     ID_SDDI_CANDESKTOPALTF4             "Alt+F~4 op Werkplek start afsluiten"
 

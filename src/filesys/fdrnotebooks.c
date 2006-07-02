@@ -316,7 +316,7 @@ MRESULT fdrViewItemChanged(PNOTEBOOKPAGE pnbp,
                            ULONG ulExtra)      // for checkboxes: contains new state
 {
     MRESULT mrc = (MRESULT)0;
-    BOOL    fUpdate = FALSE;
+    BOOL    fUpdate = FALSE, fFolderUpdate = FALSE;
     ULONG   flOwnerDrawChanged = 0;
 
     switch (ulItemID)

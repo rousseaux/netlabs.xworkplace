@@ -48,7 +48,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *      Copyright (C) 1997-2006 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -1246,13 +1246,16 @@ BEGIN
     ID_SDDI_ANIMATE_TXT                 "Animation"
     ID_SDDI_ANIMATE_SHUTDOWN            "vor S~ystemabschluá"
     ID_SDDI_ANIMATE_REBOOT              "vor ~Neustart"
-    /* V1.0.0: ID_SDDI_APMPOWEROFF renamed */
-    ID_SDDI_APMPOWEROFF                 "~Rechner ausschalten"
+    /* V1.0.0: ID_SDDI_APMPOWEROFF renamed to ID_SDDI_POWEROFF */
+    ID_SDDI_POWEROFF                    "~Rechner ausschalten"
     ID_SDDI_DELAY                       "Ver~z”gerung"
     ID_SDDI_APMVERSION_TXT              "APM-Version:"
     ID_SDDI_APMVERSION                  "unbekannt"
-    ID_SDDI_APMSYS_TXT                  "APM.SYS-Treiber:"
-    ID_SDDI_APMSYS                      "unbekannt"
+    /* V1.0.5: Added the next four items */
+    ID_SDDI_ACPIVERSION_TXT             "ACPI-Version:"
+    ID_SDDI_ACPIVERSION                 "unbekannt"
+    ID_SDDI_APMPOWEROFF                 "APM"
+    ID_SDDI_ACPIPOWEROFF                "ACPI"
     ID_SDDI_SAVEINIS_TXT                "INI-Dateien sichern:"
     ID_SDDI_CANDESKTOPALTF4             "Alt+F~4 auf Arbeitsoberfl„che startet Systemabschluá"
 

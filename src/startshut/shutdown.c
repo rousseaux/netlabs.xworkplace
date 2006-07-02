@@ -31,7 +31,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *      Copyright (C) 1997-2006 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -131,7 +131,7 @@
 
 #include "media\media.h"                // XWorkplace multimedia support
 
-#include "startshut\apm.h"              // APM power-off for XShutdown
+#include "startshut\apm.h"              // APM/ACPI power-off for XShutdown
 #include "startshut\archives.h"         // archiving declarations
 #include "startshut\shutdown.h"         // XWorkplace eXtended Shutdown
 
@@ -185,6 +185,7 @@ void _Optlink fntUpdateThread(PTHREADINFO pti);
  *         psdp->optWPSReuseStartupFolder also.
  *
  *@@added V0.9.7 (2001-01-25) [umoeller]
+ *@@changed V1.0.5 (2006-06-26) [pr]: added ACPI support
  */
 
 VOID xsdQueryShutdownSettings(PSHUTDOWNPARAMS psdp)
@@ -218,10 +219,12 @@ VOID xsdQueryShutdownSettings(PSHUTDOWNPARAMS psdp)
         psdp->optAnimate = ((flShutdown & XSD_ANIMATE_SHUTDOWN) != 0);
        */
 
-    psdp->optAPMPowerOff = (  ((flShutdown & XSD_APMPOWEROFF) != 0)
-                      && (apmPowerOffSupported())
-                     );
-    psdp->optAPMDelay = ((flShutdown & XSD_APM_DELAY) != 0);
+    psdp->optPowerOff = (  ((flShutdown & XSD_POWEROFF) != 0)  // V1.0.5 (2006-06-26) [pr]
+                         && (apmPowerOffSupported() || acpiPowerOffSupported())
+                        );
+    psdp->optDelay = ((flShutdown & XSD_DELAY) != 0);  // V1.0.5 (2006-06-26) [pr]
+
+    psdp->optACPIOff = ((flShutdown & XSD_ACPIPOWEROFF) != 0);  // V1.0.5 (2006-06-26) [pr]
 
     psdp->optWPSReuseStartupFolder = psdp->optWPSCloseWindows;
 
@@ -321,6 +324,7 @@ STATIC VOID StartShutdownThread(BOOL fStartShutdown,
  *@@changed V0.9.3 (2000-05-22) [umoeller]: added animate on reboot
  *@@changed V0.9.4 (2000-08-03) [umoeller]: added "empty trash can"
  *@@changed V0.9.11 (2001-04-25) [umoeller]: changed pending spool jobs msg to always abort now
+ *@@changed V1.0.5 (2006-06-26) [pr]: added ACPI shutdown support
  */
 
 BOOL xsdInitiateShutdown(VOID)
@@ -366,10 +370,12 @@ BOOL xsdInitiateShutdown(VOID)
             psdp->optAnimate = ((flShutdown & XSD_ANIMATE_SHUTDOWN) != 0);
            */
 
-        psdp->optAPMPowerOff = (  ((flShutdown & XSD_APMPOWEROFF) != 0)
-                          && (apmPowerOffSupported())
-                         );
-        psdp->optAPMDelay = ((flShutdown & XSD_APM_DELAY) != 0);
+        psdp->optPowerOff = (  ((flShutdown & XSD_POWEROFF) != 0)  // V1.0.5 (2006-06-26) [pr]
+                             && (apmPowerOffSupported() || acpiPowerOffSupported())
+                            );
+        psdp->optDelay = ((flShutdown & XSD_DELAY) != 0);
+
+        psdp->optACPIOff = ((flShutdown & XSD_ACPIPOWEROFF) != 0);  // V1.0.5 (2006-06-26) [pr]
 
         #ifdef __DEBUG__
             psdp->optDebug = doshQueryShiftState();
@@ -763,7 +769,7 @@ VOID xsdFinishShutdown(PSHUTDOWNDATA pShutdownData);
 VOID xsdFinishStandardMessage(PSHUTDOWNDATA pShutdownData);
 VOID xsdFinishStandardReboot(PSHUTDOWNDATA pShutdownData);
 VOID xsdFinishUserReboot(PSHUTDOWNDATA pShutdownData);
-VOID xsdFinishAPMPowerOff(PSHUTDOWNDATA pShutdownData);
+VOID xsdFinishPowerOff(PSHUTDOWNDATA pShutdownData);
 
 /* ******************************************************************
  *
@@ -1733,7 +1739,7 @@ BOOL _Optlink fncbSaveImmediate(WPObject *pobjThis,
  *          what the user wants (new with V0.84).
  *          We will then either reboot the machine or run in an endless
  *          loop, if no reboot was desired, or call the functions for an
- *          APM 1.2 power-off in apm.c (V0.82).
+ *          APM 1.2 or ACPI power-off in apm.c (V0.82).
  *
  *          When shutdown was cancelled by pressing the respective button,
  *          the Update thread is killed, all shutdown windows are closed,
@@ -1829,14 +1835,16 @@ STATIC void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
         doshWriteLogEntry(LogFile, "XWorkplace version: %s", XFOLDER_VERSION);
         doshWriteLogEntry(LogFile, "Shutdown thread started, TID: 0x%lX",
                 thrQueryID(ptiMyself));
-        doshWriteLogEntry(LogFile, "Settings: CloseMode %d, Confirm %s, Reboot %s, WPSCloseWnds %s, CloseVIOs %s, WarpCenterFirst %s, APMPowerOff %s",
+        doshWriteLogEntry(LogFile, "Settings: CloseMode %d, Confirm %s, Reboot %s, WPSCloseWnds %s, CloseVIOs %s, WarpCenterFirst %s, PowerOff %s",
                 pShutdownData->sdParams.ulCloseMode,
                 (pShutdownData->sdParams.optConfirm) ? "ON" : "OFF",
                 (pShutdownData->sdParams.optReboot) ? "ON" : "OFF",
                 (pShutdownData->sdParams.optWPSCloseWindows) ? "ON" : "OFF",
                 (pShutdownData->sdParams.optAutoCloseVIO) ? "ON" : "OFF",
                 (pShutdownData->sdParams.optWarpCenterFirst) ? "ON" : "OFF",
-                (pShutdownData->sdParams.optAPMPowerOff) ? "ON" : "OFF");
+                (pShutdownData->sdParams.optPowerOff)  // V1.0.5 (2006-06-26) [pr]
+                    ? ((pShutdownData->sdParams.optACPIOff) ? "ACPI" : "APM")
+                    : "OFF");
     }
 
     // raise our own priority; we will
@@ -3333,7 +3341,7 @@ STATIC MRESULT EXPENTRY fnwpShutdownThread(HWND hwndFrame, ULONG msg, MPARAM mp1
 /*
  *  The following routines are called to finish shutdown
  *  after all windows have been closed and the system is
- *  to be shut down or APM power-off'ed or rebooted or
+ *  to be shut down or APM/ACPI power-off'ed or rebooted or
  *  whatever.
  *
  *  All of these routines run on the Shutdown thread.
@@ -3403,7 +3411,7 @@ BOOL _Optlink xsd_fnSaveINIsProgress(ULONG ulUser,
  *
  *      This evaluates the current shutdown settings and
  *      calls xsdFinishStandardReboot, xsdFinishUserReboot,
- *      xsdFinishAPMPowerOff, or xsdFinishStandardMessage.
+ *      xsdFinishPowerOff, or xsdFinishStandardMessage.
  *
  *      Note that this is only called for "real" shutdown.
  *      For "Restart Desktop", xsdRestartWPS is called instead.
@@ -3555,10 +3563,10 @@ VOID xsdFinishShutdown(PSHUTDOWNDATA pShutdownData) // HAB hab)
         // debug mode: just sleep a while
         DosSleep(2000);
     }
-    else if (pShutdownData->sdParams.optAPMPowerOff)
+    else if (pShutdownData->sdParams.optPowerOff)
     {
-        // no reboot, but APM power off?
-        xsdFinishAPMPowerOff(pShutdownData);
+        // no reboot, but APM/ACPI power off?
+        xsdFinishPowerOff(pShutdownData);
     }
     else
         // normal shutdown: show message
@@ -3813,19 +3821,20 @@ VOID xsdFinishUserReboot(PSHUTDOWNDATA pShutdownData)
 }
 
 /*
- *@@ xsdFinishAPMPowerOff:
+ *@@ xsdFinishPowerOff:
  *      this finishes the shutdown procedure,
  *      using the functions in apm.c.
  *
  *      Runs on the Shutdown thread.
  *
  *@@changed V0.9.12 (2001-05-12) [umoeller]: animations frequently didn't show up, fixed
+ *@@changed V1.0.5 (2006-06-26) [pr]: moved code from apmDoPowerOff()
  */
 
-VOID xsdFinishAPMPowerOff(PSHUTDOWNDATA pShutdownData)
+VOID xsdFinishPowerOff(PSHUTDOWNDATA pShutdownData)
 {
-    CHAR        szAPMError[500];
-    ULONG       ulrcAPM = 0;
+    CHAR        szError[500];
+    ULONG       ulrc = 0;
     ULONG       flShutdown = 0;
     HPS         hpsScreen = WinGetScreenPS(HWND_DESKTOP);
 
@@ -3833,34 +3842,44 @@ VOID xsdFinishAPMPowerOff(PSHUTDOWNDATA pShutdownData)
     flShutdown = cmnQuerySetting(sflXShutdown);
 #endif
 
-    // prepare APM power off
-    ulrcAPM = apmPreparePowerOff(szAPMError);
-    doshWriteLogEntry(pShutdownData->ShutdownLogFile,
-                      "xsdFinishAPMPowerOff: apmPreparePowerOff returned 0x%lX",
-                      ulrcAPM);
+    // prepare power off
+    if (pShutdownData->sdParams.optACPIOff)
+    {
+        ulrc = acpiPreparePowerOff(szError);
+        doshWriteLogEntry(pShutdownData->ShutdownLogFile,
+                          "xsdFinishPowerOff: acpiPreparePowerOff returned 0x%lX",
+                          ulrc);
+    }
+    else
+    {
+        ulrc = apmPreparePowerOff(szError);
+        doshWriteLogEntry(pShutdownData->ShutdownLogFile,
+                          "xsdFinishPowerOff: apmPreparePowerOff returned 0x%lX",
+                          ulrc);
+    }
 
-    if (ulrcAPM & APM_IGNORE)
+    if (ulrc & APM_IGNORE)
     {
         // if this returns APM_IGNORE, we continue
-        // with the regular shutdown w/out APM
+        // with the regular shutdown w/out APM/ACPI
         doshWriteLogEntry(pShutdownData->ShutdownLogFile,
                           "APM_IGNORE, continuing with normal shutdown",
-                          ulrcAPM);
+                          ulrc);
 
         xsdFinishStandardMessage(pShutdownData);
         // this does not return
     }
-    else if (ulrcAPM & APM_CANCEL)
+    else if (ulrc & APM_CANCEL)
     {
         // APM_CANCEL means cancel shutdown
         WinShowPointer(HWND_DESKTOP, TRUE);
         doshWriteLogEntry(pShutdownData->ShutdownLogFile,
-                          "  APM error message: %s",
-                          szAPMError);
+                          "  APM/ACPI error message: %s",
+                          szError);
 
         cmnMessageBox(HWND_DESKTOP,
-                      "APM Error",
-                      szAPMError,
+                      "APM/ACPI Error",
+                      szError,
                       NULLHANDLE, // no help
                       MB_CANCEL | MB_SYSTEMMODAL);
         // restart Desktop
@@ -3870,32 +3889,32 @@ VOID xsdFinishAPMPowerOff(PSHUTDOWNDATA pShutdownData)
     }
     // else: APM_OK means preparing went alright
 
-    /* if (ulrcAPM & APM_DOSSHUTDOWN_0)
+    /* if (ulrc & APM_DOSSHUTDOWN_0)
     {
         // shutdown request by apm.c:
         if (pShutdownData->ShutdownLogFile)
         {
-            doshWriteLogEntry(pShutdownData->ShutdownLogFile, "xsdFinishAPMPowerOff: Calling DosShutdown(0), closing log.");
+            doshWriteLogEntry(pShutdownData->ShutdownLogFile, "xsdFinishPowerOff: Calling DosShutdown(0), closing log.");
             fclose(pShutdownData->ShutdownLogFile);
             pShutdownData->ShutdownLogFile = NULL;
         }
 
         DosShutdown(0);
     } */
-    // if apmPreparePowerOff requested this,
+    // if apmPreparePowerOff/acpiPreparePowerOff requested this,
     // do DosShutdown(1)
-    if (ulrcAPM & APM_DOSSHUTDOWN_1)
+    if (ulrc & APM_DOSSHUTDOWN_1)
     {
         if (pShutdownData->ShutdownLogFile)
         {
-            doshWriteLogEntry(pShutdownData->ShutdownLogFile, "xsdFinishAPMPowerOff: Calling DosShutdown(1), closing log.");
+            doshWriteLogEntry(pShutdownData->ShutdownLogFile, "xsdFinishPowerOff: Calling DosShutdown(1), closing log.");
             doshClose(&pShutdownData->ShutdownLogFile);
             pShutdownData->ShutdownLogFile = NULL;
         }
 
         DosShutdown(1);
     }
-    // or if apmPreparePowerOff requested this,
+    // or if apmPreparePowerOff/acpiPreparePowerOff requested this,
     // do no DosShutdown()
 
     if (pShutdownData->ShutdownLogFile)
@@ -3914,12 +3933,42 @@ VOID xsdFinishAPMPowerOff(PSHUTDOWNDATA pShutdownData)
         // (hpsScreen...)
         WinShowWindow(pShutdownData->SDConsts.hwndShutdownStatus, FALSE);
 
-    // if APM power-off was properly prepared
-    // above, this flag is still TRUE; we
-    // will now call the function which
+    // V1.0.5 (2006-06-26) [pr]
+    if (pShutdownData->sdParams.optDelay)
+    {
+        ULONG   ul;
+
+        // try another pause of 3 seconds; maybe DosShutdown is
+        // still running V0.9.2 (2000-02-29) [umoeller]
+        for (ul = 0;
+             ul < 3;
+             ul++)
+        {
+            DosBeep(4000, 10);
+            DosSleep(1000);
+        }
+        DosBeep(8000, 10);
+    }
+
+    // if power-off was properly prepared above,
+    // we will now call the function which
     // actually turns the power off
-    apmDoPowerOff(pShutdownData->sdParams.optAPMDelay);
-    // we do _not_ return from that function
+    // V1.0.5 (2006-06-26) [pr]
+    if (pShutdownData->sdParams.optACPIOff)
+        acpiDoPowerOff();
+    else
+        apmDoPowerOff();
+
+    // OS/2 _does_ return from the above functions, but in the
+    // background APM/ACPI power-off is now being executed.
+    // So we must now loop forever until power-off has
+    // completed, when the computer will just stop
+    // executing anything.
+    // We must _not_ return to the XFolder shutdown routines,
+    // because XFolder would then enter a critical section,
+    // which would keep power-off from working.
+    while (TRUE)
+        DosSleep(10000);
 }
 
 /* ******************************************************************

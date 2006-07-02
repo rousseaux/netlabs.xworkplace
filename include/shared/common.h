@@ -28,7 +28,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *      Copyright (C) 1997-2006 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -573,8 +573,8 @@
     #define XSD_WPS_CLOSEWINDOWS    0x004000
     #define XSD_LOG                 0x008000
     #define XSD_ANIMATE_SHUTDOWN    0x010000     // renamed V0.9.3 (2000-05-22) [umoeller]
-    #define XSD_APMPOWEROFF         0x020000
-    #define XSD_APM_DELAY           0x040000     // added V0.9.2 (2000-03-04) [umoeller]
+    #define XSD_POWEROFF            0x020000     // renamed V1.0.5 (2006-06-26) [pr]
+    #define XSD_DELAY               0x040000     // renamed V1.0.5 (2006-06-26) [pr]
     #define XSD_ANIMATE_REBOOT      0x080000     // added V0.9.3 (2000-05-22) [umoeller]
     #define XSD_EMPTY_TRASH         0x100000     // added V0.9.4 (2000-08-03) [umoeller]
 #ifndef __EASYSHUTDOWN__
@@ -584,6 +584,7 @@
 #ifndef __EASYSHUTDOWN__
     #define XSD_NOCONFIRM           0x800000     // added V0.9.16 (2002-01-09) [umoeller]
 #endif
+    #define XSD_ACPIPOWEROFF        0x1000000    // added V1.0.5 (2006-06-26) [pr]
 
     // flags for GLOBALSETTINGS.ulConfirmEmpty
     #define TRSHCONF_EMPTYTRASH     0x00000001

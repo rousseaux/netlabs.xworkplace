@@ -51,7 +51,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2003 Ulrich Mîller.
+ *      Copyright (C) 1997-2006 Ulrich Mîller.
  *      Traduction (C) 2003-2005 êquipe de traduction de XWorkplace :
  *      Laurent Catinaud, Aymeric Peyret, RenÇ Louisor-Marchini,
  *      Guillaume Gay.
@@ -1326,13 +1326,16 @@ BEGIN
     ID_SDDI_ANIMATE_TXT                 "Animation"
     ID_SDDI_ANIMATE_SHUTDOWN            "avant l'~arràt"
     ID_SDDI_ANIMATE_REBOOT              "avant le re~dÇmarrage"
-    /* V1.0.0: ID_SDDI_APMPOWEROFF renamed */
-    ID_SDDI_APMPOWEROFF                 "êteindre l'ordinateur"
+    /* V1.0.5: ID_SDDI_APMPOWEROFF renamed to ID_SDDI_POWEROFF */
+    ID_SDDI_POWEROFF                    "êteindre l'ordinateur"
     ID_SDDI_DELAY                       "DÇla~i"
     ID_SDDI_APMVERSION_TXT              "Niveau APM :"
     ID_SDDI_APMVERSION                  "inconnu"
-    ID_SDDI_APMSYS_TXT                  "Pilote APM.SYS :"
-    ID_SDDI_APMSYS                      "inconnu"
+    /* V1.0.5: Added the next four items */
+    ID_SDDI_ACPIVERSION_TXT             "Niveau ACPI :"
+    ID_SDDI_ACPIVERSION                 "inconnu"
+    ID_SDDI_APMPOWEROFF                 "APM"
+    ID_SDDI_ACPIPOWEROFF                "ACPI"
     ID_SDDI_SAVEINIS_TXT                "Sauvegarde des fichiers INI :"
     ID_SDDI_CANDESKTOPALTF4             "Alt+F~4 sur le bureau lance l'arràt"
 

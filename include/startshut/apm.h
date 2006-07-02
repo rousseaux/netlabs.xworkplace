@@ -2,7 +2,7 @@
 /*
  *@@sourcefile apm.h:
  *      header file for apm.c.
- *      apm.c contains the XWorkplace APM interface for
+ *      apm.c contains the XWorkplace APM and ACPI interfaces for
  *      automatically turning the computer off after
  *      shutdown has completed. This file declares
  *      everything necessary for this.
@@ -17,7 +17,9 @@
  *      for filling this in, and to Roman Stangl (rstangl@vnet.ibm.com)
  *      for finding out all the APM stuff.
  *
- *      This file Copyright (C) 1997-2003 Ulrich M”ller, ARAKAWA Atsushi.
+ *      Copyright (C) 1997-2003 Ulrich M”ller, ARAKAWA Atsushi.
+ *      Copyright (C) 2006 Paul Ratcliffe.
+ *
  *      This program is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
  *      the Free Software Foundation, in version 2 as it comes in the COPYING
@@ -44,6 +46,14 @@
 
     ULONG apmPreparePowerOff(PSZ pszError);
 
-    VOID apmDoPowerOff(BOOL fDelay);
+    VOID apmDoPowerOff(VOID);
+
+    PSZ acpiQueryVersion(VOID);
+
+    BOOL acpiPowerOffSupported(VOID);
+
+    ULONG acpiPreparePowerOff(PSZ pszError);
+
+    VOID acpiDoPowerOff(VOID);
 
 #endif
