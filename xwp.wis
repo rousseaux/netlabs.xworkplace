@@ -62,8 +62,6 @@
      BASE
      REQUIRES=1
 
-     REQUIRES="Ulrich M”ller\XWorkplace\Kernel\1\1\0"
-
      WRITEPROFILE="USER\XWorkplace\Language|007"
 
      EXECUTE="CREATEOBJECT|$(1007)\Install\instl007.cmd"
@@ -90,6 +88,8 @@
      BASE
      REQUIRES=1
 
+     WRITEPROFILE="USER\XWorkplace\Language|031"
+
      EXECUTE="CREATEOBJECT|$(1031)\install\instl031.cmd" 
 
      >This package contains the Dutch language files for XWorkplace. This is required for XWorkplace to run.</PCK>
@@ -114,6 +114,8 @@
      BASE
      REQUIRES=1
 
+     WRITEPROFILE="USER\XWorkplace\Language|039"
+
      EXECUTE="CREATEOBJECT|$(1039)\install\instl039.cmd" 
 
      >This package contains the Italian language files for XWorkplace. This is required for XWorkplace to run.</PCK>
@@ -132,10 +134,13 @@
 
 <PCK INDEX=1046
      PACKAGEID="Bj”rn S”derstr”m\XWorkplace\Swedish NLS\1\1\0" 
+     EXTERNAL="xwp-1-0-5_nls-sv.exe"
      TARGET="$(Ulrich M”ller\XWorkplace\Kernel)" 
      TITLE="Swedish National Language Support" 
      BASE
      REQUIRES=1
+
+     WRITEPROFILE="USER\XWorkplace\Language|046"
 
      EXECUTE="CREATEOBJECT|$(1046)\install\instl046.cmd" 
 
@@ -220,7 +225,7 @@ Please read through all of the following before installing.
 Then select "Next" to continue.
 Select "Cancel" to abort installation.</TEXT>
 
-<README FORMAT=FLOW EXTRACTFROMPCK="3">readme</README>
+<README FORMAT=FLOW EXTRACTFROMPCK="2001">readme</README>
 </PAGE>
 
 
