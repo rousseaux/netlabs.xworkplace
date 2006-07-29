@@ -3,12 +3,11 @@ wpistem = 'xwp-1-1-0'
 filetime = '01:10:00'
 wisfile = 'xwp.wis'
 packages.0 = 3
-packages.stub = '-ustub.exe'
 packages.1.id = 1
 packages.1.dir = 'kernel'
-packages.2.id = 2
+packages.2.id = 1001
 packages.2.dir = '001'
-packages.3.id = 3
+packages.3.id = 2001
 packages.3.dir = 'inf001'
 /**/
 call RxFuncAdd 'SysLoadFuncs', 'RexxUtil', 'SysLoadFuncs'
@@ -36,7 +35,7 @@ do i = 1 to packages.0
   wic2 = wic2 packages.i.id '-r -c'reldir'\'packages.i.dir '*'
   call setfiletime reldir'\'packages.i.dir
 end
-wic3 = packages.stub '-s' makedir'\'wisfile
+wic3 = '-u -s' makedir'\'wisfile
 call SysFileDelete reldir'\'wpistem'.exe'
 wic1 wic2 wic3
 call directory makedir
