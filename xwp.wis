@@ -1,4 +1,3 @@
-
 <!-- XWorkplace installation profile for WarpIN -->
 
 <WARPIN VERSION="0.9.14">
@@ -41,7 +40,7 @@
 
      WRITEPROFILE="USER\XWorkplace\Language|001"
 
-     EXECUTE="REGISTERCLASS | $(1001)\install\freshini.cmd USER"
+     EXECUTE="REGISTERCLASS | $(1)\install\freshini.cmd USER"
 
      >This package contains the English language files for XWorkplace. This is required for XWorkplace to run.</PCK>
 
