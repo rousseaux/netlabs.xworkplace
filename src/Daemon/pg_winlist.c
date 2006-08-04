@@ -1587,6 +1587,7 @@ PSWBLOCK pgrQueryWinList(ULONG pid)
  *
  *@@added V0.9.19 (2002-05-28) [umoeller]
  *@@changed V0.9.19 (2002-06-18) [umoeller]: added visible/jumpable checks
+ *@@changed V1.0.6 (2006-08-04) [pr]: null pointer check @@fixes 748
  */
 
 VOID CheckWindow(HAB hab,
@@ -1612,7 +1613,9 @@ VOID CheckWindow(HAB hab,
                                              (PVOID*)&pNode)))
                 {
                     // window is not in list: add it then
-                    if (pCtrlThis->uchVisibility & SWL_VISIBLE)
+                    if (   (pCtrlThis->uchVisibility & SWL_VISIBLE)
+                        && G_pHookData  // V1.0.6 (2006-08-04) [pr]
+                       )
                         WinPostMsg(G_pHookData->hwndDaemonObject,
                                    XDM_WINDOWCHANGE,
                                    (MPARAM)pCtrlThis->hwnd,
@@ -1637,10 +1640,11 @@ VOID CheckWindow(HAB hab,
                        )
                     {
                         // change: refresh
-                        WinPostMsg(G_pHookData->hwndDaemonObject,
-                                   XDM_WINDOWCHANGE,
-                                   (MPARAM)pCtrlThis->hwnd,
-                                   (MPARAM)WM_SETWINDOWPARAMS);
+                        if (G_pHookData)        // V1.0.6 (2006-08-04) [pr]
+                            WinPostMsg(G_pHookData->hwndDaemonObject,
+                                       XDM_WINDOWCHANGE,
+                                       (MPARAM)pCtrlThis->hwnd,
+                                       (MPARAM)WM_SETWINDOWPARAMS);
                     }
 
                     hwnd = pCtrlThis->hwnd;
@@ -1665,10 +1669,11 @@ VOID CheckWindow(HAB hab,
                             _PmpfF(("icon changed hwnd 0x%lX", pCtrlThis->hwnd));
                             #endif
 
-                            WinPostMsg(G_pHookData->hwndDaemonObject,
-                                       XDM_ICONCHANGE,
-                                       (MPARAM)hwnd,
-                                       (MPARAM)hptrNew);
+                            if (G_pHookData)        // V1.0.6 (2006-08-04) [pr]
+                                WinPostMsg(G_pHookData->hwndDaemonObject,
+                                           XDM_ICONCHANGE,
+                                           (MPARAM)hwnd,
+                                           (MPARAM)hptrNew);
                         }
                     }
                 }
