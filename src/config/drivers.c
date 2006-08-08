@@ -16,7 +16,7 @@
  */
 
 /*
- *      Copyright (C) 1999-2003 Ulrich M”ller.
+ *      Copyright (C) 1999-2006 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -166,8 +166,9 @@ typedef struct _DRIVERRECORD
     CHAR        szDriverNameFull[CCHMAXPATH];
             // as in CONFIG.SYS
     CHAR        szParams[500];
-            // for drivers: parameters as in CONFIG.SYS;
-            // for categories: buffer used for category title
+            // parameters as in CONFIG.SYS;
+    CHAR        szHeading[100];  // V1.0.6 (2006-08-08) [pr]: split away from szParams
+            // buffer used for category title
     CHAR        szConfigSysLine[500];
             // full copy of CONFIG.SYS line
 
@@ -197,6 +198,7 @@ typedef struct _DRIVERRECORD
  *@@added V0.9.0 [umoeller]
  *@@changed V0.9.1 (99-12-04) [umoeller]: fixed memory leaks
  *@@changed V0.9.3 (2000-04-10) [umoeller]: added pszVersion to DRIVERSPEC
+ *@@changed V1.0.6 (2006-08-08) [pr]: split parameter buffer from heading buffer
  */
 
 STATIC void InsertDrivers(HWND hwndCnr,              // in: container
@@ -211,15 +213,15 @@ STATIC void InsertDrivers(HWND hwndCnr,              // in: container
     PDRIVERRECORD preccHeading = (PDRIVERRECORD)cnrhAllocRecords(hwndCnr,
                                                                    sizeof(DRIVERRECORD),
                                                                    1);
-    // we'll use the params buffer for the heading title
-    strlcpy(preccHeading->szParams,
+    // V1.0.6 (2006-08-08) [pr]: Use separate buffer now
+    strlcpy(preccHeading->szHeading,
             pszHeading,
             sizeof(preccHeading->szParams));
     cnrhInsertRecords(hwndCnr,
                       (PRECORDCORE)preccRoot, // parent
                       (PRECORDCORE)preccHeading,
                       TRUE,     // invalidate
-                      preccHeading->szParams,
+                      preccHeading->szHeading,
                       CRA_RECORDREADONLY | CRA_COLLAPSED,
                       1);
 
@@ -900,6 +902,8 @@ VOID cfgDriversInitPage(PNOTEBOOKPAGE pnbp,
  *@@changed V0.9.12 (2001-04-28) [umoeller]: fixed vendor display
  *@@changed V0.9.12 (2001-05-03) [umoeller]: removed stupid SYSxxx messages in display
  *@@changed V1.0.4 (2005-06-16) [chennecke]: added processing for new pop-menu items
+ *@@changed V1.0.6 (2006-08-06) [pr]: fixed null pointer dereference @@fixes 762
+ *@@changed V1.0.6 (2006-08-08) [pr]: clear description box @@fixes 288
  */
 
 MRESULT cfgDriversItemChanged(PNOTEBOOKPAGE pnbp,
@@ -1010,7 +1014,7 @@ MRESULT cfgDriversItemChanged(PNOTEBOOKPAGE pnbp,
                     else
                         WinSetDlgItemText(pnbp->hwndDlgPage,
                                           ID_OSDI_DRIVR_STATICDATA,
-                                          "");
+                                          " ");  // V1.0.6 (2006-08-08) [pr]: @@fixes 288
 
                     xstrClear(&strText2MLE);
 
@@ -1034,8 +1038,9 @@ MRESULT cfgDriversItemChanged(PNOTEBOOKPAGE pnbp,
                 case CN_ENTER:
                 {
                     PDRIVERRECORD precc;
-                    if (precc = (PDRIVERRECORD)pnbp->preccLastSelected)
-                        if (precc->pDriverSpec->pfnShowDriverDlg)
+                    if (   (precc = (PDRIVERRECORD)pnbp->preccLastSelected)
+                        && precc->pDriverSpec	// V1.0.6 (2006-08-06) [pr]: @@fixes 762
+                        && precc->pDriverSpec->pfnShowDriverDlg)
                             // simulate "configure" button
                             WinPostMsg(pnbp->hwndDlgPage,
                                        WM_COMMAND,
