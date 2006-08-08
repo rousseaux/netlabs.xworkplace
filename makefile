@@ -1009,6 +1009,53 @@ $(XWPRELEASE_MAIN)\plugins\xcenter\*.dll \
 !endif
 
 #
+# Special target "release_nls": this is not called by "all",
+# but must the set on the NMAKE command line.
+#
+
+release_nls: nls
+!if [@md $(XWPRELEASE) 2> NUL]
+!endif
+!if [@md $(XWPRELEASE_NLS) 2> NUL]
+!endif
+!if [@md $(XWPRELEASE_NLSDOC) 2> NUL]
+!endif
+    @echo $(MAKEDIR)\makefile [$@]: Now copying files to $(XWPRELEASE).
+    $(COPY) $(XWP_LANG_CODE)\* $(XWPRELEASE_NLSDOC)
+!if "$(XWP_LANG_CODE)" != "001"
+    cmd /c del $(XWPRELEASE_NLSDOC)\.cvsignore \
+      $(XWPRELEASE_NLSDOC)\entities.h $(XWPRELEASE_NLSDOC)\entities_lite.h \
+      $(XWPRELEASE_NLSDOC)\makefile \
+      $(XWPRELEASE_NLSDOC)\makewpi$(XWP_LANG_CODE).cmd $(XWPRELEASE_NLSDOC)\nls$(XWP_LANG_CODE).wis \
+      $(XWPRELEASE_NLSDOC)\readme $(XWPRELEASE_NLSDOC)\readme.txt
+!else
+    cmd /c del $(XWPRELEASE_NLSDOC)\.cvsignore \
+      $(XWPRELEASE_NLSDOC)\entities.h $(XWPRELEASE_NLSDOC)\entities_lite.h \
+      $(XWPRELEASE_NLSDOC)\makefile \
+      $(XWPRELEASE_NLSDOC)\makewpi$(XWP_LANG_CODE).cmd $(XWPRELEASE_NLSDOC)\nls$(XWP_LANG_CODE).wis
+!endif
+    $(COPY) $(MODULESDIR)\xfldr$(XWP_LANG_CODE).inf $(XWPRELEASE_NLSDOC)
+    $(COPY) $(MODULESDIR)\xfldr$(XWP_LANG_CODE).dll $(XWPRELEASE_NLS)\bin
+!if [@md $(XWPRELEASE_NLS)\help 2> NUL]
+!endif
+    $(COPY) $(XWPRUNNING)\help\xfldr$(XWP_LANG_CODE).tmf $(XWPRELEASE_NLS)\help
+    $(COPY) $(XWP_LANG_CODE)\misc\drvrs$(XWP_LANG_CODE).txt $(XWPRELEASE_NLS)\help
+    $(COPY) $(XWP_LANG_CODE)\misc\xfcls$(XWP_LANG_CODE).txt $(XWPRELEASE_NLS)\help
+    $(COPY) $(MODULESDIR)\xfldr$(XWP_LANG_CODE).hlp $(XWPRELEASE_NLS)\help
+!if [@md $(XWPRELEASE_NLS)\install 2> NUL]
+!endif
+    $(COPY) $(XWP_LANG_CODE)\misc\crobj$(XWP_LANG_CODE).cmd $(XWPRELEASE_NLS)\install\crobj$(XWP_LANG_CODE).cmd
+    $(COPY) $(XWP_LANG_CODE)\misc\instl$(XWP_LANG_CODE).cmd $(XWPRELEASE_NLS)\install\instl$(XWP_LANG_CODE).cmd
+    $(COPY) $(XWP_LANG_CODE)\misc\sound$(XWP_LANG_CODE).cmd $(XWPRELEASE_NLS)\install
+    @echo $(MAKEDIR)\makefile [$@]: Done copying files.
+!ifdef LXLITEPATH
+    @echo $(MAKEDIR)\makefile [$@]: Now compacting files.
+    $(LXLITEPATH)\lxlite \
+$(XWPRELEASE_NLS)\bin\*.dll
+    @echo $(MAKEDIR)\makefile [$@]: Done compacting files.
+!endif
+
+#
 # Special target "warpin": this is not called by "all",
 # but must be set on the NMAKE command line.
 #
@@ -1016,3 +1063,14 @@ $(XWPRELEASE_MAIN)\plugins\xcenter\*.dll \
 warpin: release
     @echo $(MAKEDIR)\makefile [$@]: Building WPI from $(XWPRELEASE).
     makewpi.cmd $(XWPRELEASE)
+
+#
+# Special target "warpin_nls": this is not called by "all",
+# but must be set on the NMAKE command line.
+#
+
+warpin_nls: release_nls
+    @echo $(MAKEDIR)\makefile [$@]: Building WPI from $(XWPRELEASE).
+    @cd $(XWP_LANG_CODE)
+    makewpi$(XWP_LANG_CODE).cmd $(XWPRELEASE)
+    @cd $(CURRENT_DIR)
