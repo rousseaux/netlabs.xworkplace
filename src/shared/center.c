@@ -275,7 +275,7 @@
  */
 
 /*
- *      Copyright (C) 2000-2003 Ulrich M”ller.
+ *      Copyright (C) 2000-2006 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -1086,6 +1086,7 @@ STATIC VOID DwgtDestroy(HWND hwnd)
  *@@added V0.9.14 (2001-07-31) [lafaix]
  *@@changed V0.9.14 (2001-08-01) [umoeller]: didn't work for tray subwidgets, fixed
  *@@changed V0.9.19 (2002-06-08) [umoeller]: fixed major leaks
+ *@@changed V1.0.6 (2006-08-10) [erdmann]: dragging from XCenter to WPS caused crash @@fixes 806
  */
 
 STATIC BOOL DwgtRender(HWND hwnd,
@@ -1151,11 +1152,21 @@ STATIC BOOL DwgtRender(HWND hwnd,
     // post this even if we crash, or we leak;
     // and use DrgSendTransferMsg instead of WinPostMsg
     // V0.9.19 (2002-06-08) [umoeller]
+    /*
     DrgSendTransferMsg(pdt->hwndClient,
                        DM_RENDERCOMPLETE,
                        (MPARAM)pdt,
                        (MPARAM)((brc) ? DMFL_RENDEROK
                                       : DMFL_RENDERFAIL));
+    */
+    // V1.0.6 (2006-08-10) [erdmann]: dragging from XCenter to WPS caused crash @@fixes 806
+    DrgPostTransferMsg(pdt->hwndClient,
+                       DM_RENDERCOMPLETE,
+                       pdt,
+                       ((brc) ? DMFL_RENDEROK
+                              : DMFL_RENDERFAIL),
+                       0,
+                       TRUE);
 
     // and this was missing, which leaked many KBs per drag
     // V0.9.19 (2002-06-08) [umoeller]
