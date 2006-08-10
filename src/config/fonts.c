@@ -10,7 +10,7 @@
  */
 
 /*
- *      Copyright (C) 2001-2003 Ulrich M”ller.
+ *      Copyright (C) 2001-2006 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -776,6 +776,7 @@ MRESULT fonDragOver(XWPFontFolder *pFontFolder,
  *
  *
  *@@changed V0.9.19 (2002-06-12) [umoeller]: added error handling
+ *@@changed V1.0.6 (2006-08-11) [erdmann]: use correct function call @@fixes 815
  */
 
 MRESULT fonDrop(XWPFontFolder *pFontFolder,
@@ -818,12 +819,13 @@ MRESULT fonDrop(XWPFontFolder *pFontFolder,
 
             // notify source of the success of
             // this operation (target rendering)
-            WinSendMsg(drgItem.hwndItem,        // source
-                       DM_ENDCONVERSATION,
-                       (MPARAM)(drgItem.ulItemID),
-                       (MPARAM)((fThisValid)
-                            ? DMFL_TARGETSUCCESSFUL
-                            : DMFL_TARGETFAIL));
+            // V1.0.6 (2006-08-11) [erdmann]: use correct function call
+            DrgSendTransferMsg(drgItem.hwndItem,        // source
+                               DM_ENDCONVERSATION,
+                               (MPARAM)(drgItem.ulItemID),
+                               (MPARAM)((fThisValid)
+                                 ? DMFL_TARGETSUCCESSFUL
+                                 : DMFL_TARGETFAIL));
 
             if (!fThisValid)
                 fStartInstall = FALSE;
