@@ -1331,6 +1331,7 @@ STATIC MRESULT PagerButtonClick(HWND hwnd,
  *@@ PagerDrag:
  *
  *@@added V0.9.19 (2002-05-07) [umoeller]
+ *@@changed V1.0.6 (2006-08-17) [pr]: Inverted Shift drag function at user request @@fixes 733
  */
 
 STATIC VOID PagerDrag(HWND hwnd, MPARAM mp1)
@@ -1396,18 +1397,19 @@ STATIC VOID PagerDrag(HWND hwnd, MPARAM mp1)
 
             ti.fs = TF_STANDARD | TF_MOVE | TF_SETPOINTERPOS | TF_PARTINBOUNDARY;
 
+            // V1.0.6 (2006-08-17) [pr]: Inverted this function at user request @@fixes 733
             if (WinGetKeyState(HWND_DESKTOP, VK_SHIFT) & 0x8000)
             {
-                // shift pressed: set grid to each desktop
-                ti.cxGrid = cxClient / G_pHookData->PagerConfig.cDesktopsX;
-                ti.cyGrid = cyClient / G_pHookData->PagerConfig.cDesktopsY;
-                ti.fs |= TF_GRID;
+                // shift pressed: allow any position
+                ti.cxGrid = 1;
+                ti.cyGrid = 1;
             }
             else
             {
-                // shift not pressed: allow any position
-                ti.cxGrid = 1;
-                ti.cyGrid = 1;
+                // shift not pressed: set grid to each desktop
+                ti.cxGrid = cxClient / G_pHookData->PagerConfig.cDesktopsX;
+                ti.cyGrid = cyClient / G_pHookData->PagerConfig.cDesktopsY;
+                ti.fs |= TF_GRID;
             }
 
             ti.cxKeyboard = 1;
