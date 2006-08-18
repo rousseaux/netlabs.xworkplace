@@ -1,20 +1,25 @@
 <HTML WIDTH=70% XPOS=right>
 <HEAD>
 <TITLE>
-Directory "MISC"
+<!-- V1.0.6: changed this from 'Directory "MISC"' to "Other files"
+             for consistency -->
+Other files
 </TITLE>
 </HEAD>
 
 <BODY TEXT="#000000" BGCOLOR="#FFFFFF" LINK="#0000AA" VLINK="#777777">
 
 <P>
+<!-- V1.0.6: updated the following, removed parts about old installation method -->
 The <CODE>MISC</CODE> directory contains files used by XWorkplace's installation script
-(INSTALL.CMD) plus the SmartGuide Script used for the XWorkplace
-introduction.
+as well as message files and description files for WPS classes and drivers.
 
 
 <UL>
   <LI>
+<!-- V1.0.6: removed the following since the file is no longer used
+             and has been removed from CVS
+
 <CODE>INSTxxx.MSG</CODE> (with &quot;xxx&quot; being your country code)
 was used for installation messages before the WarpIN installer was used.
 Even though the old <CODE>INSTALL.CMD</CODE> still works for XWorkplace,
@@ -42,9 +47,10 @@ Just one more note: Do not change the keys mentioned in this file
 (&quot;X&quot;, &quot;Y&quot;, &quot;N&quot;), even if your language
 does not use &quot;Y&quot; for saying
 &quot;Yes&quot;. Unfortunately, <CODE>INSTALL.CMD</CODE> relies on these keys. <CODE>:-(</CODE>
+-->
 
 
-<P><LI><CODE>INSTLxxx.CMD</CODE> is a straightforward REXX script which creates the
+<LI><CODE>INSTLxxx.CMD</CODE> is a straightforward REXX script which creates the
 default XWorkplace installation objects (the "XWorkplace" folder plus all the new
 settings objects). Even if you don't know REXX,
 don't worry: you only have to change the strings on top of the file,
@@ -69,11 +75,54 @@ object. Only change the strings at the top of the file to your language.
 <P>This REXX script gets called from the "Features" page in the "XWorkplace Setup"
 object when extended system sounds are enabled.
 
+<!-- V1.0.6: added the following item -->
+<P><LI>
+<CODE>XFLDRxxx.TMF</CODE> is a text message file (TMF) that contains various
+XWorkplace messages. Look at each line after the
+message identifier (in angle brackets) and translate only that
+part. Beware of line breaks, as these messages will normally be
+formatted by XWorkplace. Inserting line breaks will cause
+<B>additional</B> line breaks to be displayed.
+
+<P>Also, make sure to keep all those &quot;%1&quot;, &quot;%c&quot;, &quot;%s&quot;, etc. thingies in
+place, because those placeholders will be replaced at run-time with
+variable information. XWorkplace might crash if these placeholders
+are not found or, even worse, if a &quot;%s&quot; key doesn't get a string but
+a decimal number in sprintf.
+
+<!-- V1.0.6: added the following item -->
+<P><LI><CODE>XWPFULLxxx.TMF</CODE> and <CODE>XWPLITExxx.TMF</CODE> are text message
+files (TMF) as well. These two contain messages that are different for XWorkplace
+and eWorkplace. Depending on which version is to be created, the corresponding
+file is concatenated with <CODE>XFDLRxxx.TMF</CODE> in the build process.
+
+<!-- V1.0.6: added the following item -->
+<P><LI><CODE>DRVRSxxx.TXT</CODE> contains all descriptions for drivers that
+can be displayed on the &quot;Drivers&quot; page of the &quot;OS/2 Kernel&quot;
+object. In addition, it also defines the tree structure that is used to
+group the drivers and possible sources of further information. Be careful to
+translate the category names and driver titles only. More information about
+the syntax is included in the file itself.
+
+<!-- V1.0.6: added the following item -->
+<P><LI><CODE>XFCLSxxx.TXT</CODE> contains all WPS class descriptions that are
+displayed in the upper right part of the &quot;WPS Class List&quot; object's
+window. When translating the file, translate the descriptions to the right
+of the class name and the digit in each line. Do not change the class names or the
+digit to the right. Also, do not enter any line breaks even if that means
+that a line gets very long. More information about
+the syntax is included in the file itself.
+
+<!-- V1.0.6: removed the following item since the file is no longer used and
+             has been removed from CVS
+
 <P><LI>
 <CODE>XFLDRxxx.SGS</CODE> used to be a Warp 4 SmartGuide script to display the
 &quot;Welcome&quot; window after XWorkplace has been installed and the WPS has
 been restarted. This is no longer distributed starting XWorkplace V0.9.7, since
 SmartGuide is no longer supported with OS/2. Do not translate it.
+-->
+
 </UL>
 </BODY>
 </HTML>

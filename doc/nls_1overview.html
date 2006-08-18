@@ -65,11 +65,18 @@ directory in the sources, which are combined to form
 <CODE>help\xfldr001.tmf</CODE> in the binary release.
 <P>See <A HREF="nls_7misc.html">"Other files"</A> for details.
 
-<P><LI>The <B>WPS class descriptions</B> which are displayed on the
-&quot;WPS Classes&quot;
-settings page in the &quot;Workplace Shell&quot; object. This was introduced
+<!-- changed V1.0.6: the "WPS Classes" settings page has been moved to
+                     the "WPS Class List" object -->
+<P><LI>The <B>WPS class descriptions</B> which are displayed in the
+&quot;WPS Class List&quot; object. This was introduced
 with XFolder 0.80 also.
 <P>This file is called <CODE>XFCLSxxx.TXT</CODE>, with &quot;xxx&quot; being your
+three-digit language code. It also resides in the <CODE>001\misc</CODE> directory.
+<P>See <A HREF="nls_7misc.html">"Other files"</A> for details.
+
+<P><LI>The <B>Driver descriptions</B> which are displayed on the &quot;Drivers&quot;
+page of the &quot;OS/2 Kernel&quot; object.
+<P>This file is called <CODE>DRVRSxxx.TXT</CODE>, with &quot;xxx&quot; being your
 three-digit language code. It also resides in the <CODE>001\misc</CODE> directory.
 <P>See <A HREF="nls_7misc.html">"Other files"</A> for details.
 
@@ -78,13 +85,20 @@ The files to be translated are in the <CODE>001\misc</CODE> subdirectory
 and go into <CODE>install\</CODE> in the binary release.
 <P>See <A HREF="nls_7misc.html">"Other files"</A> for details.
 
-</UL><BR><LI><B>Documentation:</B> the XWorkplace User Guide (INF file) and online
+<!-- V1.0.6: added READMEs -->
+</UL><BR><LI><B>Documentation:</B> the READMEs, the XWorkplace User Guide (INF file), and online
 help (HLP file). This is not absolutely necessary and probably the larger
 part of the translation work, since I have written so much text over time.
 
 <P>Here we have:
 
-<BR><UL><LI>The <B>XWorkplace Online Reference (INF)</B> in the XWorkplace main directory.
+<!-- V1.0.6: added READMEs item -->
+<BR><UL><LI>The <B>README</B> files in the XWorkplace main directory.
+<P>These are called <B>readme</B> and <B>readme.nls</B>. While the former contains
+general information about XWorkplace, the latter should deal with the NLS
+package only. They are located in the <CODE>001</CODE> directory.
+
+<P><LI>The <B>XWorkplace Online Reference (INF)</B> in the XWorkplace main directory.
 <P>This file is called <CODE>xfldrXXX.inf</CODE>, with &quot;xxx&quot; being your
 three-digit language code.
 The HTML source files neccessary to translate this file are in the <CODE>001/inf.001</CODE>

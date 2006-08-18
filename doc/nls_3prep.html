@@ -36,22 +36,24 @@ find the strings "ID_XSSI_DLLLANGUAGE" and "ID_XSSI_NLS_AUTHOR". Change those
 two to match your language and name; this is the information that is displayed
 to the user in the "Language" drop-down box in the "XWorkplace Setup" settings
 object.
+
 </OL>
 You should now be ready to <B>recompile the NLS DLL</B> for the first time.
 <P>
-If you have IBM VAC++, you can simply use <CODE>MAKE.CMD</CODE> to have the DLL
-recreated. Open <CODE>MAKE.CMD</CODE> and check somewhere in the middle where
-the script checks for the presence of the <CODE>049</CODE> directory, and change
-the variables to point to your new directory instead.
-Running <CODE>MAKE.CMD</CODE> should then work fine, since all the neccessary
-files are included.
+If you have IBM VAC++, you can simply use <CODE>nmake.exe</CODE> to have the DLL
+recreated. Before doing so, you have to set up the build environment.
+Open the file <CODE>CONFIG.IN</CODE> and adjust it according to
+your system. Change <CODE>XWP_LANG_CODE</CODE> to your country code.
+Now everything should work fine since all the necessary files are included. Execute
+the following command: <CODE>nmake nls</CODE>
+
 <P>
 Otherwise, things get a bit more complicated. Since the
 resource compiler (<CODE>RC.EXE</CODE>) is already included
 with every OS/2 installation, you can try the following:
-<OL><LI>Copy an existing XWorkplace resource DLL (e.g. <CODE>xfldr001.dll</CODE>)
+<OL><LI>Copy an existing XWorkplace resource DLL (e.g., <CODE>xfldr001.dll</CODE>)
 into your new NLS directory;
-rename it so that it contains your language code (e.g. <CODE>xfldr039.dll</CODE>).
+rename it so that it contains your language code (e.g., <CODE>xfldr039.dll</CODE>).
 <P><LI>Open a command line in that directory.
 <P><LI>Type <CODE>rc xfldr039.rc xfldr039.dll</CODE> (replace "039" with your language code),
 which should create a new <CODE>.RES</CODE> file and link it against the existing DLL.
