@@ -34,7 +34,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *      Copyright (C) 1997-2006 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -1118,6 +1118,8 @@ STATIC VOID T1M_DaemonReady(VOID)
  *@@changed V0.9.13 (2001-06-23) [umoeller]: now using winhQuerySwitchList
  *@@changed V0.9.16 (2001-11-22) [umoeller]: now disallowing object open during startup and shutdown
  *@@changed V0.9.19 (2002-04-24) [umoeller]: fixed major screwups during startup and shutdown
+ *@@changed V1.0.5 (2005-11-26) [pr]: changed to use method directly, and modify xwpHotkeyOrBorderAction prototype
+ *@@changed V1.0.6 (2006-08-18) [pr]: put method name resolution back @@fixes 792
  */
 
 STATIC VOID T1M_OpenObjectFromHandle(HWND hwndObject,
@@ -1228,7 +1230,7 @@ STATIC VOID T1M_OpenObjectFromHandle(HWND hwndObject,
 
                 if (pobjStart)
                 {
-                    /* somTD_XFldObject_xwpHotkeyOrBorderAction pfn_xwpHotkeyOrBorderAction;
+                    somTD_XFldObject_xwpHotkeyOrBorderAction pfn_xwpHotkeyOrBorderAction;
 
                     // obtain "xwpHotkeyOrBorderAction" method pointer
                     if (pfn_xwpHotkeyOrBorderAction = (somTD_XFldObject_xwpHotkeyOrBorderAction)somResolveByName(
@@ -1236,20 +1238,16 @@ STATIC VOID T1M_OpenObjectFromHandle(HWND hwndObject,
                                                             "xwpHotkeyOrBorderAction"))
                     {
                         // method resolved:
-                        */
 #ifndef __NOXSYSTEMSOUNDS__
                         if ((ULONG)mp2 == 0)
                             // object hotkey, not screen corner:
                             cmnPlaySystemSound(MMSOUND_XFLD_HOTKEYPRSD);
                                         // V0.9.3 (2000-04-20) [umoeller]
 #endif
-
-                        // we have a method call for this V1.0.2 (2003-03-07) [umoeller]
-                        _xwpHotkeyOrBorderAction(pobjStart,
-                                                 // WinQueryAnchorBlock(hwndObject),
-                                                 OPEN_DEFAULT,      // changed V1.0.2 (2003-03-07) [umoeller]
-                                                 (ULONG)mp2);
-                    // }
+                        pfn_xwpHotkeyOrBorderAction(pobjStart,
+                                                    OPEN_DEFAULT,      // changed V1.0.2 (2003-03-07) [umoeller]
+                                                    (ULONG)mp2);
+                    }
                 }
             }
         }
@@ -1265,6 +1263,7 @@ STATIC VOID T1M_OpenObjectFromHandle(HWND hwndObject,
  *      Required for the #398 bugfix from w_monitors.c.
  *
  *@@added V1.0.2 (2003-03-07) [umoeller]
+ *@@changed V1.0.6 (2006-08-18) [pr]: use method name resolution @@fixes 792
  */
 
 STATIC VOID T1M_OpenObjectFromHandle2(HWND hwndObject,
@@ -1279,9 +1278,19 @@ STATIC VOID T1M_OpenObjectFromHandle2(HWND hwndObject,
                 pobjStart));
 
     if (pobjStart)
-        _xwpHotkeyOrBorderAction(pobjStart,
-                                 ulView,
-                                 -1);
+    {
+        somTD_XFldObject_xwpHotkeyOrBorderAction pfn_xwpHotkeyOrBorderAction;
+
+        // obtain "xwpHotkeyOrBorderAction" method pointer
+        if (pfn_xwpHotkeyOrBorderAction = (somTD_XFldObject_xwpHotkeyOrBorderAction)
+                somResolveByName(pobjStart,
+                                 "xwpHotkeyOrBorderAction"))
+        {
+            pfn_xwpHotkeyOrBorderAction(pobjStart,
+                                        ulView,
+                                        -1);
+        }
+    }
 }
 
 /*
