@@ -21,10 +21,12 @@ The layout of the subdirectories has been changed with XWorkplace V0.9.0 to
 allow for easier addition of new features by people other than me. Also,
 since XWorkplace will be on the Netlabs CVS server, many changes had to be
 made to the makefiles and code layout.
+<!-- V1.0.6: added other languages -->
 <UL><LI>
 The <CODE>001\</CODE> directory tree still contains all the
 <A HREF="040nls.html">National Language Support (NLS)</A>
-for English.
+for English. Likewise, other directories with three-digit names contain NLS
+for other languages.
 
 <P><LI>The <CODE>BIN\</CODE> directory tree contains binary object files which
 are created from the sources (below) by the various makefiles. If that
@@ -36,6 +38,10 @@ it will be created automatically by the makefiles.
 a result, you can always delete the entire <CODE>BIN</CODE>
 directory or any single files in there to enforce a complete or partial recompilation
 by the makefiles.
+
+<!-- V1.0.6: added the following item -->
+<P><LI>The <CODE>DOC\</CODE> directory contains the HTML source files for this
+INF file.
 
 <P><LI>The <CODE>IDL\</CODE> directory contains SOM IDL source files for
 the various XWorkplace classes. The <CODE>.DEF</CODE> files in this
@@ -66,6 +72,21 @@ directory (above). There is no hand-written code in that directory.
 <P><CODE>INCLUDE\SHARED\</CODE> has headers for code which might be used by several
 parts of XWorkplace, developed by several people, and corresponds to
 <CODE>SRC\SHARED</CODE>. I guess you get the idea now.
+
+<!-- V1.0.6: added the following item -->
+<P><LI>The <CODE>LIB\</CODE> directory contains libraries that are required
+for certain features of XWorkplace. Here you will find libraries for the
+32 bit TCP/IP stack and the Odin Win32k driver.
+
+<!-- V1.0.6: added the following item -->
+<P><LI>The <CODE>MAKE\</CODE> directory holds a number of files that are included
+by the makefiles and define some central macros and methods. No user-servicable parts
+inside, though.
+
+<!-- V1.0.6: added the following item -->
+<P><LI>The <CODE>RELEASE\</CODE> directory tree contains many files that are part of
+the XWorkplace distribution but unlikely to change between versions, especially REXX scripts,
+icons, bitmaps, and sound files.
 
 <P><LI>The <CODE>SRC\</CODE> directory tree contains the actual C/CPP source
 files for XWorkplace.
