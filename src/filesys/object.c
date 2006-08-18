@@ -1751,6 +1751,7 @@ BOOL objQueryObjectHotkey(WPObject *somSelf,
  *
  *@@changed V0.9.5 (2000-08-20) [umoeller]: fixed "set first hotkey" bug, which hung the system
  *@@changed V0.9.5 (2000-08-20) [umoeller]: added more error checking
+ *@@changed V1.0.6 (2006-08-18) [pr]: fixed trap in debug mode
  */
 
 BOOL objSetObjectHotkey(WPObject *somSelf,
@@ -1767,10 +1768,6 @@ BOOL objSetObjectHotkey(WPObject *somSelf,
         {
             PGLOBALHOTKEY   pHotkeys;
             ULONG           cHotkeys = 0;
-
-            PMPF_KEYS(("entering, usFlags = 0x%lX, usKeyCode = 0x%lX",
-                        pHotkey->usFlags,
-                        pHotkey->usKeyCode));
 
             if (pHotkeys = hifQueryObjectHotkeys(&cHotkeys))
             {
@@ -1831,8 +1828,11 @@ BOOL objSetObjectHotkey(WPObject *somSelf,
                 else
                 {
                     // "set hotkey" mode:
-
-                    PMPF_KEYS(("  'set hotkey' mode:"));
+                    // V1.0.6 (2006-08-18) [pr]: fixed trap in debug mode by moving code
+                    PMPF_KEYS(("  'set hotkey' mode: usFlags = 0x%lX, usKeyCode = 0x%lX, ucScanCode = 0x%lX",
+                        pHotkey->usFlags,
+                        pHotkey->usKeyCode,
+                        pHotkey->ucScanCode));
 
                     if (pHotkeyThis)
                     {
@@ -1887,6 +1887,11 @@ BOOL objSetObjectHotkey(WPObject *somSelf,
                     GLOBALHOTKEY HotkeyNew = {0};
 
                     PMPF_KEYS(("  Creating single new hotkey"));
+                    // V1.0.6 (2006-08-18) [pr]: added
+                    PMPF_KEYS(("  'set hotkey' mode: usFlags = 0x%lX, usKeyCode = 0x%lX, ucScanCode = 0x%lX",
+                        pHotkey->usFlags,
+                        pHotkey->usKeyCode,
+                        pHotkey->ucScanCode));
 
                     HotkeyNew.usFlags = pHotkey->usFlags;
                     HotkeyNew.ucScanCode = pHotkey->ucScanCode; // V0.9.5 (2000-08-20) [umoeller]
