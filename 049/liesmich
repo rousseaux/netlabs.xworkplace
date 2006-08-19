@@ -1,9 +1,9 @@
 
-XWorkplace 1.0.4 README
+XWorkplace 1.0.5 README
 
 (W) Ulrich M”ller, Feb 7, 2000
 
-Zuletzt aktualisiert am 23. Juni 2005
+Zuletzt aktualisiert am 29. Juli 2006
 
 
 0. INHALT DIESER DATEI
@@ -31,7 +31,7 @@ Zuletzt aktualisiert am 23. Juni 2005
 1. EINFšHRUNG
 =============
 
-    Willkommen bei XWorkplace V1.0.4.
+    Willkommen bei XWorkplace V1.0.5.
 
     XWorkplace ist eine umfangreiches Paket von Ersatzklassen fr
     die OS/2 Workplace Shell, welches das Verhalten der WPS in
@@ -82,7 +82,7 @@ Zuletzt aktualisiert am 23. Juni 2005
 
     --  Merlin/Aurora Convenience Packages
 
-    --  eComStation 1.0 (siehe Hinweis zu 1.1 unten)
+    --  eComStation 1.x
 
     XWorkplace 1.0.4 und h”her bieten Zugriffm”glichkeiten auf
     zus„tzliche Informationen ber Treiber. Dafr gelten folgende
@@ -126,17 +126,17 @@ Zuletzt aktualisiert am 23. Juni 2005
         starten.
 
 
-    Installation unter eComStation 1.1
+    Installation unter eComStation 1.x
     ----------------------------------
 
-    Wenn Sie eine Installation unter eComStation 1.1 durchfhren,
+    Wenn Sie eine Installation unter eComStation 1.x durchfhren,
     beachten Sie, daá die "Erweiterten Arbeitsplatzeigenschaften"
     dieser Version eine spezielle XWorkplace-Version enthalten,
     die mit der normalen in Konflikt geraten wird. Sie k”nnen
     folgendes tun:
 
     *   Installieren Sie diesen XWorkplace-Release ber die
-        mit eCS 1.1 ausgelieferte Version - d.h. wenn WarpIN
+        mit eCS 1.x ausgelieferte Version - d.h. wenn WarpIN
         nach dem Zielverzeichnis fragt, geben Sie
         ?:\ecs\system\ewps (auf dem Systemlaufwerk) an.
 
@@ -186,6 +186,15 @@ Zuletzt aktualisiert am 23. Juni 2005
     XWPDAEMN.EXE liefe und beendet werden msse. Lassen Sie WarpIN
     dieses Programmen beenden (bei dem es sich um den XWorkplace-
     Daemon handelt).
+    Dies hat leider die Nebenwirkung, daá alle XWorkplace-Systemstart-
+    Ordner abgearbeitet werden, sofern Sie WarpIN am Ende der
+    Installation die WPS neu starten lassen - auch wenn sie so
+    konfiguriert sind, daá sie nur bei einem Systemneustart
+    abgearbeitet werden sollen.
+    Falls dies bei Ihnen zu Problemen fhren k”nnte, lehnen Sie den
+    Neustart der WPS am Ende der Installation ab und fhren statt
+    dessen nach Abschluá der Installation von Hand einen
+    Systemneustart durch.
 
     Falls die Aktualisierung nicht funktionieren sollte, lassen Sie
     WarpIN die installierte XWorkplace-Version zuerst entfernen,
@@ -256,7 +265,7 @@ Zuletzt aktualisiert am 23. Juni 2005
 7. LIZENZ, COPYRIGHT, HAFTUNGSAUSSCHLUSS
 ========================================
 
-    Copyright (C) 1997-2005 Ulrich M”ller,
+    Copyright (C) 1997-2006 Ulrich M”ller,
                             Martin Lafaix,
                             Paul Ratcliffe,
                             und andere.
@@ -288,12 +297,12 @@ Zuletzt aktualisiert am 23. Juni 2005
     Fr XWorkplace-Entwickler und Interessierte:
         xworkplace-dev@netlabs.org
 
-    Fr Details siehe "Hinweise" --> "Kontakt" in XFLDR049.INF.
+    Details siehe unter "Hinweise" --> "Kontakt" in XFLDR049.INF.
 
     Eine Fehlerverfolgung fr XWorkplace steht zur Verfgung unter
 
             http://xtracker.netlabs.org
 
-    Benutzen Sie fr Fehlermeldungen bitte dieses Ungeheuer, anstatt sie
-    in an die Mailinglisten zu schicken. Vielen Dank.
+    Benutzen Sie fr Fehlermeldungen bitte dieses Ungeheuer, anstatt
+    sie in an die Mailinglisten zu schicken. Vielen Dank.
 

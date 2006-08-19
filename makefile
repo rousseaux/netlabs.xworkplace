@@ -153,7 +153,7 @@ all:            compile_all link
 
 # "really_all" references "all" and compiles really everything.
 # This must be used for the release version.
-really_all:     compile_really_all tools link nls
+really_all:     compile_really_all tools link nls doc
     @echo ----- Leaving $(MAKEDIR)
     @echo Yo, done!
 
@@ -164,7 +164,7 @@ full: really_all
 dep:
     @echo $(MAKEDIR)\makefile [$@]: Going for src\helpers (DLL version)
     @cd $(HELPERS_BASE_DIR)\src\helpers
-    @nmake -nologo dep "NOINCLUDEDEPEND=1" $(SUBMAKE_PASS_STRING)
+    @$(MAKE) -nologo dep "NOINCLUDEDEPEND=1" $(SUBMAKE_PASS_STRING)
     @cd $(CURRENT_DIR)
     @echo $(MAKEDIR)\makefile [$@]: Going for subdir src (dep)
     @cd src
@@ -183,7 +183,10 @@ running:
     $(COPY) cvs.txt $(XWPRUNNING)
     $(COPY) FEATURES $(XWPRUNNING)
 !ifndef XWPLITE
-    $(COPY) $(XWP_LANG_CODE)\readme $(XWPRUNNING)
+    @cd $(XWP_LANG_CODE)
+    $(MAKE) -nologo running "MAINMAKERUNNING=YES"
+    @cd ..
+#   $(COPY) $(XWP_LANG_CODE)\readme $(XWPRUNNING)
     $(COPY) release\* $(XWPRUNNING)
     $(COPY) release\bin\alwssort.cmd $(XWPRUNNING)\bin
     $(COPY) release\bin\bm-lvm.cmd $(XWPRUNNING)\bin
@@ -261,7 +264,7 @@ running:
 idl:
     @echo $(MAKEDIR)\makefile [$@]: Going for subdir idl
     @cd idl
-    @nmake -nologo all "MAINMAKERUNNING=YES"
+    @$(MAKE) -nologo all "MAINMAKERUNNING=YES"
     @cd ..
 
 helpers:
@@ -271,7 +274,7 @@ helpers:
 # is created in $(XWP_OUTPUT_ROOT) then.
     @echo $(MAKEDIR)\makefile [$@]: Going for src\helpers (DLL version)
     @cd $(HELPERS_BASE_DIR)\src\helpers
-    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING) \
+    @$(MAKE) -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING) \
 "OUTPUTDIR_HELPERS=$(XWP_OUTPUT_ROOT)" "CC_HELPERS=$(CC_HELPERS_DLL)"
 # according to VAC++ user guide, we need to use /ge+ for libs
 # even if the lib will be linked to a DLL
@@ -283,7 +286,7 @@ helpers_exe_mt:
 # in $(XWP_OUTPUT_ROOT)\exe_mt\ instead.
     @echo $(MAKEDIR)\makefile [$@]: Going for src\helpers (EXE MT version)
     @cd $(HELPERS_BASE_DIR)\src\helpers
-    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING) \
+    @$(MAKE) -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING) \
 "OUTPUTDIR_HELPERS=$(XWP_OUTPUT_ROOT)\exe_mt" "CC_HELPERS=$(CC_HELPERS_EXE_MT)"
     @cd $(CURRENT_DIR)
 
@@ -309,26 +312,32 @@ tools:
     $(COPY) $(MODULESDIR)\wpsreset.exe $(XWPRUNNING)\bin
     @cd ..
 
+doc:
+    @echo $(MAKEDIR)\makefile [$@]: Going for subdir doc
+    @cd doc
+    $(MAKE) -nologo "SUBTARGET=all" "MAINMAKERUNNING=YES"
+    @cd ..
+
 xwpsecurity:
     @echo $(MAKEDIR)\makefile [$@]: Going for subdir src\xwpsec_ring0
     @cd src\xwpsec_ring0
-    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
+    @$(MAKE) -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
     @cd ..\..
     @echo $(MAKEDIR)\makefile [$@]: Going for subdir src\XWPShell
     @cd src\XWPShell
-    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
+    @$(MAKE) -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
     @cd ..\..
 
 $(XWP_LANG_CODE):
     @echo $(MAKEDIR)\makefile [$@]: Going for subdir $(XWP_LANG_CODE)
     @cd $(XWP_LANG_CODE)
-    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
+    @$(MAKE) -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
     @cd ..
 
 049:
     @echo $(MAKEDIR)\makefile [$@]: Going for subdir 049
     @cd 049
-    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
+    @$(MAKE) -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
     @cd ..
 
 !ifdef BUILD_049_TOO
@@ -363,15 +372,15 @@ link: $(XWPRUNNING)\bin\xfldr.dll \
 !ifdef XWP_UNLOCK_MODULES
         $(RUN_UNLOCK) $@
 !endif
-        cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\plugins\xcenter
-        cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\plugins\xcenter
+        $(COPY) $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\plugins\xcenter
+        $(COPY) $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\plugins\xcenter
 
 {$(MODULESDIR)}.dll{$(XWPRUNNING)\plugins\drvdlgs}.dll:
 !ifdef XWP_UNLOCK_MODULES
         $(RUN_UNLOCK) $@
 !endif
-        cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\plugins\drvdlgs
-        cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\plugins\drvdlgs
+        $(COPY) $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\plugins\drvdlgs
+        $(COPY) $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\plugins\drvdlgs
 
 # Finally, define rules for linking the target DLLs and EXEs
 # This uses the $OBJS and $HLPOBJS macros defined at the top.
@@ -387,17 +396,17 @@ $(XWPRUNNING)\bin\xfldr.dll: $(MODULESDIR)\$(@B).dll
 !ifdef XWP_UNLOCK_MODULES
         $(RUN_UNLOCK) $@
 !endif
-        cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\bin
-        cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\bin
+        $(COPY) $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\bin
+        $(COPY) $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\bin
 !ifdef DYNAMIC_TRACE
         @echo $(MAKEDIR)\makefile [$@]: Creating TRACE files for $(@B).dll
         maptsf $(@B).map /MAJOR=255 /LOGSTACK=32 /LOGRETURN > $(@B).tsf
         trcust $(@B).tsf /I /L=bin\$(@B).dll /node /M=$(@B).map
         @echo $(MAKEDIR)\makefile [$@]: Done creating TRACE files for $(@B).dll
-        cmd.exe /c copy $(@B).tdf $(XWPRUNNING)\bin
-        cmd.exe /c del $(@B).tdf
-        cmd.exe /c copy TRC00FF.TFF $(DYNAMIC_TRACE):\OS2\SYSTEM\TRACE
-        cmd.exe /c del TRC00FF.TFF
+        $(COPY) $(@B).tdf $(XWPRUNNING)\bin
+        del $(@B).tdf
+        $(COPY) TRC00FF.TFF $(DYNAMIC_TRACE):\OS2\SYSTEM\TRACE
+        del TRC00FF.TFF
 !endif
 
 MODDEFFILE = \
@@ -425,7 +434,7 @@ $(MODULESDIR)\xfldr.dll: $(OBJS) $(HLPOBJS) $(MODDEFFILE) make\objects.in
         @$(CVS_WORK_ROOT_DRIVE)
 !endif
         @cd $(CURRENT_DIR)
-        cmd.exe /c tools\raisebld.cmd include\build.h
+        tools\raisebld.cmd include\build.h
 
 #
 # Linking XWPRES.DLL
@@ -435,7 +444,7 @@ $(XWPRUNNING)\bin\xwpres.dll: $(MODULESDIR)\$(@B).dll
 !ifdef XWP_UNLOCK_MODULES
         $(RUN_UNLOCK) $@
 !endif
-        cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\bin
+        $(COPY) $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\bin
 
 # update DEF file if buildlevel has changed
 src\shared\xwpres.def: include\bldlevel.h makefile
@@ -485,8 +494,8 @@ $(XWPRUNNING)\plugins\xcenter\diskfree.dll: $(MODULESDIR)\$(@B).dll
 !ifdef XWP_UNLOCK_MODULES
         $(RUN_UNLOCK) $@
 !endif
-        cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\plugins\xcenter
-        cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\plugins\xcenter
+        $(COPY) $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\plugins\xcenter
+        $(COPY) $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\plugins\xcenter
 
 # update DEF file if buildlevel has changed
 src\widgets\w_diskfree.def: include\bldlevel.h makefile
@@ -512,8 +521,8 @@ $(XWPRUNNING)\plugins\xcenter\ipmon.dll: $(MODULESDIR)\$(@B).dll
 !ifdef XWP_UNLOCK_MODULES
         $(RUN_UNLOCK) $@
 !endif
-        cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\plugins\xcenter
-        cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\plugins\xcenter
+        $(COPY) $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\plugins\xcenter
+        $(COPY) $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\plugins\xcenter
 
 # update DEF file if buildlevel has changed
 src\widgets\w_ipmon.def: include\bldlevel.h makefile
@@ -539,8 +548,8 @@ $(XWPRUNNING)\plugins\xcenter\monitors.dll: $(MODULESDIR)\$(@B).dll
 !ifdef XWP_UNLOCK_MODULES
         $(RUN_UNLOCK) $@
 !endif
-        cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\plugins\xcenter
-        cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\plugins\xcenter
+        $(COPY) $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\plugins\xcenter
+        $(COPY) $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\plugins\xcenter
 
 # update DEF file if buildlevel has changed
 src\widgets\w_monitors.def: include\bldlevel.h makefile
@@ -566,8 +575,8 @@ $(XWPRUNNING)\plugins\xcenter\sentinel.dll: $(MODULESDIR)\$(@B).dll
 !ifdef XWP_UNLOCK_MODULES
         $(RUN_UNLOCK) $@
 !endif
-        cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\plugins\xcenter
-        cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\plugins\xcenter
+        $(COPY) $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\plugins\xcenter
+        $(COPY) $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\plugins\xcenter
 
 # update DEF file if buildlevel has changed
 src\widgets\w_sentinel.def: include\bldlevel.h makefile
@@ -593,8 +602,8 @@ $(XWPRUNNING)\plugins\xcenter\xwHealth.dll: $(MODULESDIR)\$(@B).dll
 !ifdef XWP_UNLOCK_MODULES
         $(RUN_UNLOCK) $@
 !endif
-        cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\plugins\xcenter
-        cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\plugins\xcenter
+        $(COPY) $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\plugins\xcenter
+        $(COPY) $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\plugins\xcenter
 
 # update DEF file if buildlevel has changed
 src\widgets\xwHealth.def: include\bldlevel.h makefile
@@ -622,8 +631,8 @@ $(XWPRUNNING)\plugins\xcenter\sample.dll: $(MODULESDIR)\$(@B).dll
 !ifdef XWP_UNLOCK_MODULES
         $(RUN_UNLOCK) $@
 !endif
-        cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\plugins\xcenter
-        cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\plugins\xcenter
+        $(COPY) $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\plugins\xcenter
+        $(COPY) $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\plugins\xcenter
 
 # update DEF file if buildlevel has changed
 src\widgets\sample.def: include\bldlevel.h makefile
@@ -674,7 +683,7 @@ $(XWPRUNNING)\bin\xwpfonts.fon: $(MODULESDIR)\$(@B).fon
 !ifdef XWP_UNLOCK_MODULES
         $(RUN_UNLOCK) $@
 !endif
-        cmd.exe /c copy $(MODULESDIR)\$(@B).fon $(XWPRUNNING)\bin
+        $(COPY) $(MODULESDIR)\$(@B).fon $(XWPRUNNING)\bin
 
 # update DEF file if buildlevel has changed
 src\shared\xwpfonts.def: include\bldlevel.h makefile
@@ -685,8 +694,8 @@ $(MODULESDIR)\xwpfonts.fon: $(XWP_OUTPUT_ROOT)\$(@B).res
         $(LINK) /OUT:$(MODULESDIR)\$(@B).dll src\shared\$(@B).def
         @cd $(MODULESDIR)
 # rename manually because otherwise the linker warns
-#        cmd.exe /c del $(@B).fon
-        cmd.exe /c ren $(@B).dll $(@B).fon
+#        del $(@B).fon
+        ren $(@B).dll $(@B).fon
         $(RC) ..\$(@B).res $(@B).fon
         @cd $(CURRENT_DIR)
 
@@ -697,7 +706,7 @@ $(XWPRUNNING)\bin\xdebug.dll: $(MODULESDIR)\$(@B).dll
 !ifdef XWP_UNLOCK_MODULES
         $(RUN_UNLOCK) $@
 !endif
-        cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\bin
+        $(COPY) $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\bin
 
 $(MODULESDIR)\xdebug.dll: src\shared\$(@B).def $(DEBUG_OBJS) $(HLPOBJS) $(XWP_OUTPUT_ROOT)\wpsh.obj
         $(LINK) /OUT:$(MODULESDIR)\$(@B).dll src\shared\$(@B).def $(DEBUG_OBJS) $(HLPOBJS) $(LIBS) $(XWP_OUTPUT_ROOT)\wpsh.obj
@@ -713,17 +722,17 @@ dlgedit:
     @echo $(MAKEDIR)\makefile [$@]: Calling DLGEDIT.EXE
     @cd $(XWP_LANG_CODE)\dll
 # rebuild RES file in bin
-    @nmake -nologo all "MAINMAKERUNNING=YES"
+    @$(MAKE) -nologo all "MAINMAKERUNNING=YES"
 # copy RES file to 001\dll so dlgedit finds it
-    @cmd.exe /c copy $(PROJECT_OUTPUT_DIR)\xfldr$(XWP_LANG_CODE).res
-    @cmd.exe /c copy ..\..\include\dlgids.h
+    @$(COPY) $(PROJECT_OUTPUT_DIR)\xfldr$(XWP_LANG_CODE).res
+    @$(COPY) ..\..\include\dlgids.h
 # invoke DLGEDIT
     dlgedit xfldr$(XWP_LANG_CODE).res
 # move newly created RES file back to \bin
-    @cmd.exe /c copy xfldr$(XWP_LANG_CODE).res ..\bin
-    @cmd.exe /c del xfldr$(XWP_LANG_CODE).res
-    @cmd.exe /c del dlgids.h
-    @nmake -nologo all "MAINMAKERUNNING=YES"
+    @$(COPY) xfldr$(XWP_LANG_CODE).res ..\bin
+    @del xfldr$(XWP_LANG_CODE).res
+    @del dlgids.h
+    @$(MAKE) -nologo all "MAINMAKERUNNING=YES"
     @cd ..\..
 
 dlgedit049:
@@ -731,17 +740,17 @@ dlgedit049:
     @echo $(MAKEDIR)\makefile [$@]: Calling DLGEDIT.EXE
     @cd 049_de\dll
 # rebuild RES file in bin
-    @nmake -nologo all "MAINMAKERUNNING=YES"
+    @$(MAKE) -nologo all "MAINMAKERUNNING=YES"
 # copy RES file to frontend.res so dlgedit finds it
-    @cmd.exe /c copy ..\..\bin\xfldr049.res
-    @cmd.exe /c copy ..\..\include\dlgids.h
+    @$(COPY) ..\..\bin\xfldr049.res
+    @$(COPY) ..\..\include\dlgids.h
 # invoke DLGEDIT
     dlgedit xfldr049.res
 # move newly created RES file back to \bin
-    @cmd.exe /c copy xfldr049.res ..\bin
-    @cmd.exe /c del xfldr049.res
-    @cmd.exe /c del dlgids.h
-    @nmake -nologo all "MAINMAKERUNNING=YES"
+    @$(COPY) xfldr049.res ..\bin
+    @del xfldr049.res
+    @del dlgids.h
+    @$(MAKE) -nologo all "MAINMAKERUNNING=YES"
     @cd ..\..
 
 #
@@ -781,7 +790,10 @@ release: really_all
 !ifndef XWPLITE
     $(COPY) release\COPYING $(XWPRELEASE_MAIN)
     $(COPY) release\file_id.diz $(XWPRELEASE_MAIN)
-    $(COPY) $(XWP_LANG_CODE)\readme $(XWPRELEASE_NLSDOC)
+    @cd $(XWP_LANG_CODE)
+    $(MAKE) -nologo release "MAINMAKERUNNING=YES"
+    @cd ..
+#   $(COPY) $(XWP_LANG_CODE)\readme $(XWPRELEASE_NLSDOC)
     $(COPY) $(MODULESDIR)\xfldr$(XWP_LANG_CODE).inf $(XWPRELEASE_NLSDOC)
 !ifdef BUILD_049_TOO
     $(COPY) $(MODULESDIR)\xfldr049.inf $(XWPRELEASE_049DOC)
@@ -1021,19 +1033,9 @@ release_nls: nls
 !if [@md $(XWPRELEASE_NLSDOC) 2> NUL]
 !endif
     @echo $(MAKEDIR)\makefile [$@]: Now copying files to $(XWPRELEASE).
-    $(COPY) $(XWP_LANG_CODE)\* $(XWPRELEASE_NLSDOC)
-!if "$(XWP_LANG_CODE)" != "001"
-    cmd /c del $(XWPRELEASE_NLSDOC)\.cvsignore \
-      $(XWPRELEASE_NLSDOC)\entities.h $(XWPRELEASE_NLSDOC)\entities_lite.h \
-      $(XWPRELEASE_NLSDOC)\makefile \
-      $(XWPRELEASE_NLSDOC)\makewpi$(XWP_LANG_CODE).cmd $(XWPRELEASE_NLSDOC)\nls$(XWP_LANG_CODE).wis \
-      $(XWPRELEASE_NLSDOC)\readme $(XWPRELEASE_NLSDOC)\readme.txt
-!else
-    cmd /c del $(XWPRELEASE_NLSDOC)\.cvsignore \
-      $(XWPRELEASE_NLSDOC)\entities.h $(XWPRELEASE_NLSDOC)\entities_lite.h \
-      $(XWPRELEASE_NLSDOC)\makefile \
-      $(XWPRELEASE_NLSDOC)\makewpi$(XWP_LANG_CODE).cmd $(XWPRELEASE_NLSDOC)\nls$(XWP_LANG_CODE).wis
-!endif
+    @cd $(XWP_LANG_CODE)
+    $(MAKE) -nologo release_nls "MAINMAKERUNNING=YES"
+    @cd ..
     $(COPY) $(MODULESDIR)\xfldr$(XWP_LANG_CODE).inf $(XWPRELEASE_NLSDOC)
     $(COPY) $(MODULESDIR)\xfldr$(XWP_LANG_CODE).dll $(XWPRELEASE_NLS)\bin
 !if [@md $(XWPRELEASE_NLS)\help 2> NUL]
@@ -1056,21 +1058,21 @@ $(XWPRELEASE_NLS)\bin\*.dll
 !endif
 
 #
-# Special target "warpin": this is not called by "all",
+# Special target "wpi": this is not called by "all",
 # but must be set on the NMAKE command line.
 #
 
-warpin: release
+wpi: release
     @echo $(MAKEDIR)\makefile [$@]: Building WPI from $(XWPRELEASE).
     makewpi.cmd $(XWPRELEASE)
 
 #
-# Special target "warpin_nls": this is not called by "all",
+# Special target "wpi_nls": this is not called by "all",
 # but must be set on the NMAKE command line.
 #
 
-warpin_nls: release_nls
-    @echo $(MAKEDIR)\makefile [$@]: Building WPI from $(XWPRELEASE).
+wpi_nls: release_nls
+    @echo $(MAKEDIR)\makefile [$@]: Building NLS WPI from $(XWPRELEASE).
     @cd $(XWP_LANG_CODE)
     makewpi$(XWP_LANG_CODE).cmd $(XWPRELEASE)
     @cd $(CURRENT_DIR)

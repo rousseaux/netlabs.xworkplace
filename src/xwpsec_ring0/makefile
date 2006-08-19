@@ -5,7 +5,7 @@
 # This file will probably not work with other MAKE utilities, such as
 # GNU make or DMAKE.
 #
-#       Copyright (C) 1998-2003 Ulrich M”ller.
+#       Copyright (C) 1998-2006 Ulrich M”ller.
 #       This file is part of the XWorkplace source package.
 #       XWorkplace is free software; you can redistribute it and/or modify
 #       it under the terms of the GNU General Public License as published
@@ -156,14 +156,14 @@ $(DRIVERNAME).def
     @$(CVS_WORK_ROOT_DRIVE)
 !endif
     @cd $(MYDIR)
-    -copy $@             E:\os2
-    -copy $(@:.sys=.sym) E:\os2
-    -copy $@             F:\os2\boot
-    -copy $(@:.sys=.sym) F:\os2\boot
-    -copy $@             I:\os2\boot
-    -copy $(@:.sys=.sym) I:\os2\boot
+    -$(COPY) $@             E:\os2
+    -$(COPY) $(@:.sys=.sym) E:\os2
+    -$(COPY) $@             F:\os2\boot
+    -$(COPY) $(@:.sys=.sym) F:\os2\boot
+    -$(COPY) $@             I:\os2\boot
+    -$(COPY) $(@:.sys=.sym) I:\os2\boot
 !ifdef PMDFDIR
-    -copy $(@:.sys=.sym) $(PMDFDIR)
+    -$(COPY) $(@:.sys=.sym) $(PMDFDIR)
 !endif
 
 

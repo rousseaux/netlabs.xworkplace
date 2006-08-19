@@ -74,7 +74,7 @@ all:   \
 callmainmake:
     @echo $(MAKEDIR)\makefile [$@]: Recursing to main makefile.
     @cd ..\..
-    @nmake
+    @$(MAKE)
     @echo $(MAKEDIR)\makefile [$@]: Returned from main makefile. Done.
 
 # The "dep" target: run fastdep on the sources.
@@ -106,17 +106,17 @@ dep:
 #
 $(XWPRUNNING)\bin\xwphook.dll: $(MODULESDIR)\$(@B).dll
 # no unlock, this is a hook        unlock $@
-        cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\bin
-        cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\bin
+        $(COPY) $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\bin
+        $(COPY) $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\bin
 !ifdef DYNAMIC_TRACE
         @echo $(MAKEDIR)\makefile [$@]: Creating TRACE files for $(@B).dll
         maptsf $(@B).map /MAJOR=253 /LOGSTACK=32 /LOGRETURN > $(@B).tsf
         trcust $(@B).tsf /I /L=bin\$(@B).dll /node /M=$(@B).map
         @echo $(MAKEDIR)\makefile [$@]: Done creating TRACE files for $(@B).dll
-        cmd.exe /c copy $(@B).tdf $(XWPRUNNING)\bin
-        cmd.exe /c del $(@B).tdf
-        cmd.exe /c copy TRC00FD.TFF $(DYNAMIC_TRACE):\OS2\SYSTEM\TRACE
-        cmd.exe /c del TRC00FD.TFF
+        $(COPY) $(@B).tdf $(XWPRUNNING)\bin
+        del $(@B).tdf
+        $(COPY) TRC00FD.TFF $(DYNAMIC_TRACE):\OS2\SYSTEM\TRACE
+        del TRC00FD.TFF
 !endif
 
 # update DEF file if buildlevel has changed

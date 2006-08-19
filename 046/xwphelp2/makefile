@@ -5,7 +5,7 @@
 # This file will probably not work with other MAKE utilities, such as
 # GNU make or DMAKE.
 #
-# Copyright (C) 1997-2003 Ulrich M”ller.
+# Copyright (C) 1997-2006 Ulrich M”ller.
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, in version 2 as it comes in the COPYING
@@ -181,8 +181,8 @@ IPFFILE = $(OUTPUTDIR)\hlp$(LANGUAGE).ipf
 
 $(COPYTO)\xfldr$(LANGUAGE).hlp: $(OUTPUTDIR)\xfldr$(LANGUAGE).hlp
 # added unlock help V0.9.20 (2002-07-12) [umoeller]
-    cmd.exe /c $(CVS_WORK_ROOT)\$(XWPDIR)\tools\unlockhelp.cmd
-    cmd.exe /c copy $(OUTPUTDIR)\$(@B).hlp $(COPYTO)
+    $(CVS_WORK_ROOT)\$(XWPDIR)\tools\unlockhelp.cmd
+    $(COPY) $(OUTPUTDIR)\$(@B).hlp $(COPYTO)
 
 $(IPFFILE): $(SRCHTML) makefile ..\$(ENTITYDEFS)
     $(HTML2IPF) xfldr$(LANGUAGE).html

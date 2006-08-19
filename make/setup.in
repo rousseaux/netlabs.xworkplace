@@ -213,9 +213,6 @@ PROJECT_INCLUDE = $(PROJECT_BASE_DIR)\include\classes\wps;$(TKBASE)\h;$(TKBASE)\
 # -----------
 
 RUN_FASTDEP = $(HELPERS_BASE_DIR)\fastdep.exe -f -cy -i .;$(PROJECT_INCLUDE) -o $(OUTPUTDIR)
-# $(PROJECT_BASE_DIR)\include\classes\*.ih $(PROJECT_BASE_DIR)\include\classes\*.h $(PROJECT_BASE_DIR)\include\classes\wps\*.h
-# -cy
-# RUN_FASTDEP = $(HELPERS_BASE_DIR)\fastdep.exe -i .;$(PROJECT_INCLUDE) -o $(OUTPUTDIR) *.ih *.h
 
 RUN_BLDLEVEL = cmd.exe /c $(CVS_WORK_ROOT)\$(XWPDIR)\tools\BuildLevel.cmd
 
@@ -243,7 +240,7 @@ XWPNAME = XWorkplace
 RUN_H2I = $(HELPERS_BASE_DIR)\h2i.exe
 !endif
 
-COPY = cmd.exe /c copy
+COPY = copy
 
 
 # INCLUDED FEATURES
@@ -429,7 +426,4 @@ RC      = rc -p -x2 -n -i $(TKBASE)\h -i $(PROJECT_BASE_DIR)\include $(RCDEFS)
 # -p       pack (64K boundaries)
 # -x2      Warp 3 compression
 # -n       no logo
-
-
-
 

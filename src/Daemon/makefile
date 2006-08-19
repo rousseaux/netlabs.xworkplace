@@ -4,7 +4,7 @@
 # See make\readme.txt about an introduction to the make system introduced
 # in the CVS trunk on 2003-01-28.
 #
-#       Copyright (C) 1998-2003 Ulrich M”ller.
+#       Copyright (C) 1998-2006 Ulrich M”ller.
 #       This file is part of the XWorkplace source package.
 #       XWorkplace is free software; you can redistribute it and/or modify
 #       it under the terms of the GNU General Public License as published

@@ -5,7 +5,7 @@
 # This file will probably not work with other MAKE utilities, such as
 # GNU make or DMAKE.
 #
-# Copyright (C) 1997-2003 Ulrich M”ller.
+# Copyright (C) 1997-2006 Ulrich M”ller.
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, in version 2 as it comes in the COPYING
@@ -120,7 +120,7 @@ all: $(BMPS) $(COPYTO)\xfldr$(LANGUAGE).inf
 IPFFILE = $(OUTPUTDIR)\inf$(LANGUAGE).ipf
 
 $(COPYTO)\xfldr$(LANGUAGE).inf: $(OUTPUTDIR)\xfldr$(LANGUAGE).inf
-        cmd.exe /c copy $(OUTPUTDIR)\$(@B).inf $(COPYTO)
+        $(COPY) $(OUTPUTDIR)\$(@B).inf $(COPYTO)
 
 $(IPFFILE): *.html makefile ..\$(ENTITYDEFS)
         $(HTML2IPF) xfldr$(LANGUAGE).html

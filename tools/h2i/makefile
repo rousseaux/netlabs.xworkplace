@@ -59,7 +59,7 @@ SUBMAKE_PASS_STRING = "PROJECT_BASE_DIR=$(PROJECT_BASE_DIR)" "PROJECT_INCLUDE=$(
 
 helpers:
     @cd $(HELPERS_BASE_DIR)\src\helpers
-    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING) \
+    @$(MAKE) -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING) \
 "HELPERS_OUTPUT_DIR=$(XWP_OUTPUT_ROOT)\exe_mt" "CC_HELPERS=$(CC_HELPERS_EXE_MT)"
     @cd $(MAKEDIR)
 
@@ -116,12 +116,12 @@ $(MODULESDIR)\$(APPNAME).exe: $(OBJS) $(@B).def makefile
           cd $(MODULESDIR)
           mapsym /n $(@B).map > NUL
 !ifdef COPYTODIR
-          cmd.exe /c copy $(@B).sym $(COPYTODIR)
-          cmd.exe /c copy $(@B).exe $(COPYTODIR)
+          $(COPY) $(@B).sym $(COPYTODIR)
+          $(COPY) $(@B).exe $(COPYTODIR)
 !endif
 !ifdef COMMONBINDIR
-          cmd.exe /c copy $(@B).sym $(COMMONBINDIR)
-          cmd.exe /c copy $(@B).exe $(COMMONBINDIR)
+          $(COPY) $(@B).sym $(COMMONBINDIR)
+          $(COPY) $(@B).exe $(COMMONBINDIR)
 !endif
 !ifdef CVS_WORK_ROOT_DRIVE
         @$(CVS_WORK_ROOT_DRIVE)

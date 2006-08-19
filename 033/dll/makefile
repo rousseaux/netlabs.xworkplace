@@ -9,7 +9,7 @@
 # Ce fichier ne fonctionne probablement pas avec d'autres applications MAKE telles que
 # GNU make ou DMAKE.
 #
-#       Copyright (C) 1997-2003 Ulrich Mîller.
+#       Copyright (C) 1997-2006 Ulrich Mîller.
 #       Traduction (C) 2003-2005 êquipe de traduction de XWorkplace : 
 #       Laurent Catinaud, Aymeric Peyret, RenÇ Louisor-Marchini,
 #       Guillaume Gay. 
@@ -112,6 +112,6 @@ $(XWPRUNNING)\bin\xfldr$(LANGUAGE).dll: $(MODULESDIR)\xfldr$(LANGUAGE).dll
 !ifdef XWP_UNLOCK_MODULES
          $(RUN_UNLOCK) $(XWPRUNNING)\bin\$(@B).dll
 !endif
-         cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\bin
+         $(COPY) $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\bin
 
 

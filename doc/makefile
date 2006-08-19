@@ -5,7 +5,7 @@
 # This file will probably not work with other MAKE utilities, such as
 # GNU make or DMAKE.
 #
-# Copyright (C) 1997-2002 Ulrich M”ller.
+# Copyright (C) 1997-2006 Ulrich M”ller.
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, in version 2 as it comes in the COPYING
@@ -16,6 +16,13 @@
 # GNU General Public License for more details.
 # Required changes for translating the NLS DLL: three lines below.
 #
+
+# Say hello to yourself.
+!if [@echo +++++ Entering $(MAKEDIR)]
+!endif
+
+!include ..\config.in
+!include ..\make\setup.in
 
 #
 # First define the suffixes for files which NMAKE will work on.
@@ -61,11 +68,10 @@ COPYTO = ..
 #
 
 $(COPYTO)\$(FILESTEM).inf: $(FILESTEM).inf
-        cmd.exe /c copy $(@B).inf $(COPYTO)
-        cmd.exe /c del $(@B).inf
+        $(COPY) $(@B).inf $(COPYTO)
+        del $(@B).inf
 
 $(FILESTEM).inf: *.ipf
 
 $(FILESTEM).ipf: *.html
-
 

@@ -1,5 +1,5 @@
 
-# Copyright (C) 1997-2005 Ulrich M”ller.
+# Copyright (C) 1997-2006 Ulrich M”ller.
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, in version 2 as it comes in the COPYING
@@ -31,19 +31,28 @@ LANGUAGE = 001
 all:
     @echo $(MAKEDIR)\makefile [$@]: Going for subdir $(LANGUAGE)\dll
     @cd dll
-    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
+    @$(MAKE) -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
     @cd ..
     @echo $(MAKEDIR)\makefile [$@]: Going for subdir $(LANGUAGE)\inf.$(LANGUAGE)
     @cd inf.$(LANGUAGE)
-    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
+    @$(MAKE) -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
     @cd ..
     @echo $(MAKEDIR)\makefile [$@]: Going for subdir $(LANGUAGE)\misc
     @cd misc
-    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
+    @$(MAKE) -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
     @cd ..
     @echo $(MAKEDIR)\makefile [$@]: Going for subdir $(LANGUAGE)\xwphelp2
     @cd xwphelp2
-    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
+    @$(MAKE) -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
     @cd ..\..
     @echo ----- Leaving $(MAKEDIR)
+
+running:
+    $(COPY) readme $(XWPRUNNING)
+
+release:
+    $(COPY) readme $(XWPRELEASE_NLSDOC)
+
+release_nls:
+    $(COPY) readme $(XWPRELEASE_NLSDOC)
 
