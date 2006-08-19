@@ -5,7 +5,7 @@
 # This file will probably not work with other MAKE utilities, such as
 # GNU make or DMAKE.
 #
-# Copyright (C) 1997-2003 Ulrich M”ller.
+# Copyright (C) 1997-2002 Ulrich M”ller.
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, in version 2 as it comes in the COPYING
@@ -16,6 +16,14 @@
 # GNU General Public License for more details.
 # Required changes for translating the NLS DLL: three lines below.
 #
+
+#
+# First define the suffixes for files which NMAKE will work on.
+# .SUFFIXES is a reserved NMAKE keyword ("pseudotarget") for
+# defining file extensions that NMAKE will recognize.
+#
+
+.SUFFIXES: .html .ipf .hlp .inf
 
 #
 # Now set up a few environment variables.
