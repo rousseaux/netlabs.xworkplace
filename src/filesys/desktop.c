@@ -927,7 +927,7 @@ VOID dtpStartupInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
         else
             usRadioID = ID_XSDI_DTP_LOGO_BLOWUP;
         winhSetDlgItemChecked(pnbp->hwndDlgPage, usRadioID,
-                              BM_CHECKED);
+                              TRUE);  // V1.0.6 (2006-08-20) [pr]
 
         // set boot logo file entry field
         WinSetDlgItemText(pnbp->hwndDlgPage,
