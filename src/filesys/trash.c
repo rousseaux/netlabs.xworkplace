@@ -1861,6 +1861,7 @@ BOOL trshRestoreFromTrashCan(XWPTrashObject *pTrashObject,
  *              but not DO_NEW.
  *
  *@@added V0.9.1 (2000-02-01) [umoeller]
+ *@@changed V1.0.6 (2006-08-19) [erdmann]: allow discard operations like the Shredder @@fixes 817
  */
 
 MRESULT trshDragOver(XWPTrashCan *somSelf,
@@ -1893,26 +1894,31 @@ MRESULT trshDragOver(XWPTrashCan *somSelf,
                                  ulItemNow))
             {
                 WPObject *pObjDragged = NULL;
-                if (!wpshQueryDraggedObject(&drgItem,
-                                            &pObjDragged))
+
+                // V1.0.6 (2006-08-19) [erdmann]: added DRM_DISCARD processing
+                if (!DrgVerifyRMF(&drgItem, "DRM_DISCARD", NULL))
                 {
-                    // not acceptable:
-                    usDrop = DOR_NEVERDROP; // do not send msg again
-                    // and stop processing
-                    break;
-                }
-                else
-                {
-                    // we got the object:
-                    // check if it's deletable
-                    if (fopsValidateObjOperation(XFT_MOVE2TRASHCAN,
-                                                 NULL, // no callback
-                                                 pObjDragged,
-                                                 NULL)
-                            != NO_ERROR)
+                    if (wpshQueryDraggedObject(&drgItem,
+                                               &pObjDragged))
                     {
-                        // no:
-                        usDrop = DOR_NEVERDROP;
+                        // we got the object:
+                        // check if it's deletable
+                        if (fopsValidateObjOperation(XFT_MOVE2TRASHCAN,
+                                                     NULL, // no callback
+                                                     pObjDragged,
+                                                     NULL)
+                                != NO_ERROR)
+                        {
+                            // no:
+                            usDrop = DOR_NEVERDROP;
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        // not acceptable:
+                        usDrop = DOR_NEVERDROP; // do not send msg again
+                        // and stop processing
                         break;
                     }
                 }
@@ -1957,6 +1963,7 @@ MRESULT trshDragOver(XWPTrashCan *somSelf,
  *@@added V0.9.1 (2000-02-01) [umoeller]
  *@@changed V0.9.7 (2001-01-13) [umoeller]: fixed some weirdos, incl. a possible memory leak
  *@@changed V1.0.6 (2006-08-11) [erdmann]: use correct function call @@fixes 815
+ *@@changed V1.0.6 (2006-08-19) [erdmann]: allow discard operations like the Shredder @@fixes 817
  */
 
 MRESULT trshMoveDropped2TrashCan(XWPTrashCan *somSelf,
@@ -1982,29 +1989,41 @@ MRESULT trshMoveDropped2TrashCan(XWPTrashCan *somSelf,
             BOOL    fThisValid = FALSE;
             WPObject *pobjDropped = NULL;
 
-            if (wpshQueryDraggedObject(&drgItem,
-                                       &pobjDropped))
+            // V1.0.6 (2006-08-19) [erdmann]: added DRM_DISCARD processing
+            if (DrgVerifyRMF(&drgItem, "DRM_DISCARD", NULL))
             {
-                if (fStartTask)
-                {
-                    // no errors so far:
-                    // add item to list
-                    APIRET frc = NO_ERROR;
-                    frc = fopsValidateObjOperation(XFT_MOVE2TRASHCAN,
-                                                   NULL, // no callback
-                                                   pobjDropped,
-                                                   NULL);
+                ULONG ulRet = (ULONG) DrgSendTransferMsg(drgItem.hwndItem,
+                                                         DM_DISCARDOBJECT,
+                                                         MPFROMP(pdrgInfo),
+                                                         MPVOID);
 
-                    if (frc == NO_ERROR)
+                // only accept the operation if the source can handle the discard
+                fThisValid = (ulRet == DRR_SOURCE);
+            }
+            else
+                if (wpshQueryDraggedObject(&drgItem,
+                                           &pobjDropped))
+                {
+                    if (fStartTask)
                     {
-                        lstAppendItem(pllDroppedObjects,
-                                      pobjDropped);
-                        pSourceFolder = _wpQueryFolder(pobjDropped);
-                        fItemsAdded = TRUE;
-                        fThisValid = TRUE;
+                        // no errors so far:
+                        // add item to list
+                        APIRET frc = NO_ERROR;
+                        frc = fopsValidateObjOperation(XFT_MOVE2TRASHCAN,
+                                                       NULL, // no callback
+                                                       pobjDropped,
+                                                       NULL);
+
+                        if (frc == NO_ERROR)
+                        {
+                            lstAppendItem(pllDroppedObjects,
+                                          pobjDropped);
+                            pSourceFolder = _wpQueryFolder(pobjDropped);
+                            fItemsAdded = TRUE;
+                            fThisValid = TRUE;
+                        }
                     }
                 }
-            }
 
             // notify source of the success of
             // this operation (target rendering)
