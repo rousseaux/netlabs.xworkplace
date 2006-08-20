@@ -281,6 +281,7 @@ static const XWPSETTING G_ShutdownBackup[] =
  *@@changed V0.9.16 (2001-10-08) [umoeller]: now using dialog formatter
  *@@changed V0.9.16 (2002-01-04) [umoeller]: added "alt+f4 on desktop starts shutdown"
  *@@changed V1.0.5 (2006-06-26) [pr]: added ACPI shutdown support
+ *@@changed V1.0.6 (2006-08-20) [pr]: update ACPI and power off settings @@fixes 728
  */
 
 VOID xsdShutdownInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
@@ -343,15 +344,37 @@ VOID xsdShutdownInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                               (fl & XSD_ANIMATE_SHUTDOWN) != 0);
         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SDDI_ANIMATE_REBOOT,
                               (fl & XSD_ANIMATE_REBOOT) != 0);
-        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SDDI_POWEROFF,  // V1.0.5 (2006-06-26) [pr]
-                              (bAPM || bACPI)
-                                  ? ((fl & XSD_POWEROFF) != 0)
-                                  : FALSE
-                              );
+        // V1.0.6 (2006-08-20) [pr]: update settings
+        if ((fl & XSD_POWEROFF) && !bAPM && !bACPI)
+        {
+            fl &= ~XSD_POWEROFF;
+            cmnSetSetting(sflXShutdown, fl);
+        }
+
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SDDI_POWEROFF,
+                              (fl & XSD_POWEROFF) != 0);
         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SDDI_DELAY,
                               (fl & XSD_DELAY) != 0);
-        winhSetDlgItemChecked(pnbp->hwndDlgPage,  // V1.0.5 (2006-06-26) [pr]
-                              (((fl & XSD_ACPIPOWEROFF) != 0) && bACPI)
+        // V1.0.6 (2006-08-20) [pr]: update settings @@fixes 728
+        if (fl & XSD_ACPIPOWEROFF)
+        {
+            if (!bACPI)
+            {
+                fl &= ~XSD_ACPIPOWEROFF;
+                cmnSetSetting(sflXShutdown, fl);
+            }
+        }
+        else
+        {
+            if (bACPI && !bAPM)
+            {
+                fl |= XSD_ACPIPOWEROFF;
+                cmnSetSetting(sflXShutdown, fl);
+            }
+        }
+
+        winhSetDlgItemChecked(pnbp->hwndDlgPage,
+                              ((fl & XSD_ACPIPOWEROFF) != 0)
                                   ? ID_SDDI_ACPIPOWEROFF
                                   : ID_SDDI_APMPOWEROFF,
                               TRUE);
