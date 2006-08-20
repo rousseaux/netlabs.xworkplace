@@ -145,7 +145,7 @@ BEGIN
                         DT_VCENTER | NOT WS_GROUP
         AUTOCHECKBOX    "Auto-size (10% of ~memory)", ID_OSDI_CACHESIZE_AUTO,
                         25, 62, 195, 10
-        LTEXT           "Cache item treshold:", -1, 10, 52, 70, 8,
+        LTEXT           "Cache item threshold:", -1, 10, 52, 70, 8,
                         DT_MNEMONIC | NOT WS_GROUP
         SLIDER          ID_OSDI_CACHE_THRESHOLD, 90, 50, 85, 12,
                         SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP | WS_GROUP
