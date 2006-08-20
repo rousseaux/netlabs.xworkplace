@@ -14,7 +14,7 @@
  */
 
 /*
- *      Copyright (C) 2000-2003 Ulrich M”ller.
+ *      Copyright (C) 2000-2006 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -960,6 +960,7 @@ STATIC BOOL ParseWidgetsString(XCenter *somSelf,
  *      helper for CreateDefaultWidgets.
  *
  *@@added V0.9.19 (2002-04-25) [umoeller]
+ *@@changed V1.0.6 (2006-08-20) [pr]: fix default Xcenter creation at install time @@fixes 749
  */
 
 STATIC ULONG AppendObjects(PXSTRING pstr,
@@ -972,7 +973,10 @@ STATIC ULONG AppendObjects(PXSTRING pstr,
          ul < c;
          ++ul)
     {
-        if (cmnQueryObjectFromID(apcsz[ul]))
+        // V1.0.6 (2006-08-20) [pr]: unnecessary check causes install problems with
+        // creating the default XCenter due to the dependent objects not having had
+        // time to be flushed to the INI file.
+        // if (cmnQueryObjectFromID(apcsz[ul]))
         {
             if (cAdded)
                 xstrcatc(pstr, ',');
