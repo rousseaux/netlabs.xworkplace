@@ -1076,3 +1076,6 @@ wpi_nls: release_nls
     @cd $(XWP_LANG_CODE)
     makewpi$(XWP_LANG_CODE).cmd $(XWPRELEASE)
     @cd $(CURRENT_DIR)
+
+clean:
+    cleanup.cmd y

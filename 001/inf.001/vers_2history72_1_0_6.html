@@ -4,28 +4,60 @@
         &xwp; 1.0.6
     </TITLE>
 </HEAD>
-<!-- Note: This file changes almost with every XFolder version.
+<!-- Note: This file changes almost with every XWorkplace version.
      I do not recommend translating it, because I do not keep logs
      about changes to this file.
      Simply use the English original instead. -->
 <BODY>
 Bugfix release off the 1.0 branch.
 "Bug #" numbers refer to the official XWorkplace bugtracker at
-<a href="http://xtracker.netlabs.org">http://xtracker.netlabs.org</a>.
+<a href="http://xtracker.xworkplace.org">http://xtracker.xworkplace.org</a>.
 
-<P><B>&xwp; 1.0.6 (August 4, 2006)</B>
+<P><B>&xwp; 1.0.6 (August 20, 2006)</B>
 
-<P>
+<P>All the bugs below have been fixed by Paul Ratcliffe unless otherwise noted.
 
-Bugfixes:
+<P>Bugfixes:
 
-<UL><LI>Fixed trap in daemon when deselecting the XWP Hook with Xcenter's Window List
-widget active. Fixed by Paul Ratcliffe.
+<UL><LI>Fixed a trap in the daemon when deselecting the XWP Hook with Xcenter's Window List
+widget active. Bug 748.
+
+<P><LI>Fixed a trap when double clicking on a section header in the Device Drivers tree on
+the Drivers tab of the OS/2 Kernel object. Bug 762.
+
+<P><LI>Fixed cosmetic issues with the Driver description and Parameters boxes on the
+Drivers tab of the OS/2 Kernel object. Bug 288.
+
+<P><LI>Fixed traps and other incorrect behaviour relating to dragging and dropping.
+The Trashcan can now accept "discard" objects, like the Shredder.
+Bugs 806, 815 and 817. Fixed by Lars Erdmann.
+
+<P><LI>Fixed a problem relating to launching objects using hotkeys, especially with the
+XCenter. Bug 792.
+
+<P><LI>XPager window dragging to other virtual desktops now snaps to the same location.
+Holding down the Shift key allows windows to be positioned anywhere. This is the reverse
+of the previous behaviour, at user request. Bug 733.
+
+<P><LI>The main icon for the "XWorkplace Installation" folder was updated - this was
+only partially applied in the previous version. Bug 760.
+
+<P><LI>Fixed a bug with the XShutdown configuration dialog wouldn't switch back from ACPI
+to APM shutdown. Bug 728.
+
+<P><LI>Fixed a bug during initial installation of the XCenter where it wasn't adding the
+"Desktop Lock", "Find Utility", and "Shutdown" objects. Bug 749.
+
+<P><LI>The XCenter Tray selection bitmap was made bigger to match the other icons. Bug 729.
+
+<P><LI>Some of the developer documentation was updated. Thanks to Christian Hennecke.
+
+<P><LI>Updated the XWorkplace WarpIN installation scripts to solve some problems with the
+NLS packages. Fixed by Paul Ratcliffe/Christian Hennecke/Chuck McKinnis.
 
 </UL>
-<P>
 
-New Features:
+<P>New Features:
 
 <UL><LI>None.
 
