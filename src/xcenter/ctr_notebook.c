@@ -15,7 +15,7 @@
  */
 
 /*
- *      Copyright (C) 2000-2003 Ulrich M”ller.
+ *      Copyright (C) 2000-2006 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -916,6 +916,7 @@ PFNWP G_pfnwpWidgetsCnr = NULL;
  *      DM_RENDER and DM_DISCARDOBJECT messages.
  *
  *@@added V0.9.14 (2001-07-29) [lafaix]
+ *@@changed V1.0.6 (2006-08-22) [erdmann]: use correct function for DM_RENDERCOMPLETE @@fixes 829
  */
 
 STATIC MRESULT EXPENTRY fnwpWidgetsCnr(HWND hwndCnr,
@@ -944,11 +945,14 @@ STATIC MRESULT EXPENTRY fnwpWidgetsCnr(HWND hwndCnr,
                                           pwr->recc.pszIcon,
                                           pwr->pcszSetupString);
 
-                WinPostMsg(pdt->hwndClient,
-                           DM_RENDERCOMPLETE,
-                           MPFROMP(pdt),
-                           (bSuccess) ? MPFROMSHORT(DMFL_RENDEROK)
-                                      : MPFROMSHORT(DMFL_RENDERFAIL));
+                // V1.0.6 (2006-08-22) [erdmann]: use correct function @@fixes 829
+                DrgPostTransferMsg(pdt->hwndClient,
+                                   DM_RENDERCOMPLETE,
+                                   pdt,
+                                   (bSuccess) ? DMFL_RENDEROK
+                                              : DMFL_RENDERFAIL,
+                                   0,
+                                   TRUE);
 
                 mrc = (MRESULT)TRUE;
             }
