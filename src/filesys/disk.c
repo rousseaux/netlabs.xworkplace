@@ -13,7 +13,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *      Copyright (C) 1997-2006 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -484,5 +484,54 @@ VOID XWPENTRY dskDetailsTimer(PNOTEBOOKPAGE pnbp, ULONG ul)
         }
     }
 
+}
+
+/*
+ *@@ fdrSetup:
+ *      implementation for XFldDisk::wpSetup.
+ *
+ *@@added V1.0.6 (2006-08-22) [pr]: enable all XWP specific setup strings and fix the
+ *                                  broken IBM OPEN= setup strings @@fixes 827
+ */
+
+BOOL dskSetup(WPDisk *somSelf,
+              const char *pszSetupString)
+{
+    BOOL        rc = TRUE;
+    CHAR        szValue[CCHMAXPATH + 1];
+    ULONG       cbValue = sizeof(szValue);
+    WPFolder    *pFolder;
+
+    if (pFolder = _xwpSafeQueryRootFolder(somSelf, FALSE, NULL))
+        rc = fdrSetup(pFolder, pszSetupString);
+
+    cbValue = sizeof(szValue);
+    if (_wpScanSetupString(somSelf,
+                           (PSZ)pszSetupString,
+                           "OPEN",
+                           szValue,
+                           &cbValue))
+    {
+        BOOL fOpen = TRUE;
+        ULONG ulView;
+
+        if (!stricmp(szValue, "ICON"))
+            ulView = OPEN_CONTENTS;
+        else
+            if (!stricmp(szValue, "TREE"))
+                ulView = OPEN_TREE;
+            else
+                if (!stricmp(szValue, "DETAILS"))
+                    ulView = OPEN_DETAILS;
+                else
+                    fOpen = FALSE;
+
+        if (fOpen)
+            krnPostThread1ObjectMsg(T1M_OPENOBJECTFROMPTR,
+                                    (MPARAM)somSelf,
+                                    (MPARAM)ulView);
+    }
+
+    return (rc);
 }
 

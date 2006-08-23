@@ -506,6 +506,7 @@ BOOL objSetup(WPObject *somSelf,
  *@@changed V0.9.18 (2002-03-23) [umoeller]: optimized
  *@@changed V0.9.19 (2002-07-01) [umoeller]: adapted to use IBMOBJECTDATA
  *@@changed V0.9.20 (2002-07-12) [umoeller]: added HELPLIBRARY
+ *@@changed V1.0.6 (2008-08-22) [pr]: added SPLITVIEW decoding to OPEN and DEFAULTVIEW @@fixes 827
  */
 
 BOOL objQuerySetup(WPObject *somSelf,
@@ -580,7 +581,12 @@ BOOL objQuerySetup(WPObject *somSelf,
                 {
                     // any other: that's user defined, add decimal ID
                     CHAR szTemp[30];
-                    sprintf(szTemp, "DEFAULTVIEW=%d;", ulDefaultView);
+                    // V1.0.6 (2008-08-22) [pr]: added SPLITVIEW @@fixes 827
+                    if (ulDefaultView == *G_pulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW)
+                        sprintf(szTemp, "DEFAULTVIEW=SPLITVIEW;");
+                    else
+                        sprintf(szTemp, "DEFAULTVIEW=%d;", ulDefaultView);
+
                     xstrcat(pstrSetup, szTemp, 0);
                 }
                 break;
@@ -689,7 +695,12 @@ BOOL objQuerySetup(WPObject *somSelf,
         default:
         {
             CHAR szTemp[20];
-            sprintf(szTemp, "OPEN=%u;", ulValue);
+            // V1.0.6 (2008-08-22) [pr]: added SPLITVIEW @@fixes 827
+            if (ulValue == *G_pulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW)
+                sprintf(szTemp, "OPEN=SPLITVIEW;");
+            else
+                sprintf(szTemp, "OPEN=%d;", ulValue);
+
             xstrcat(pstrSetup, szTemp, 0);
         }
     }

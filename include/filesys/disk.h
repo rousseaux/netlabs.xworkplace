@@ -12,7 +12,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *      Copyright (C) 1997-2006 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -46,6 +46,17 @@
                                            ULONG ulLogicalDrive);
         typedef DSKQUERYINFO *PDSKQUERYINFO;
 
+    #endif
+
+    /* ******************************************************************
+     *
+     *   Setup strings
+     *
+     ********************************************************************/
+
+    #ifdef SOM_WPFolder_h
+        BOOL dskSetup(WPDisk *somSelf,
+                      PCSZ pszSetupString);    // V1.0.6 (2006-08-22) [pr]: added
     #endif
 
     /* ******************************************************************

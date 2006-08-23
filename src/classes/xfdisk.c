@@ -22,7 +22,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *      Copyright (C) 1997-2006 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -188,6 +188,30 @@ SOM_Scope void  SOMLINK xfdisk_wpInitData(XFldDisk *somSelf)
     XFldDisk_parent_WPDisk_wpInitData(somSelf);
 
     _pMenuRootFolder = (WPObject*)-1;
+}
+
+/*
+ *@@ wpSetup:
+ *      this WPObject instance method is called to allow an
+ *      object to set itself up according to setup strings.
+ *      As opposed to wpSetupOnce, this gets called any time
+ *      a setup string is invoked.
+ *
+ *@@added V1.0.6 (2006-08-22) [pr]: enable all XWP specific setup strings and fix the
+ *                                  broken IBM OPEN= setup strings @@fixes 827
+ */
+
+SOM_Scope BOOL  SOMLINK xfdisk_wpSetup(XFldDisk *somSelf, PSZ pszSetupString)
+{
+    XFldDiskData *somThis = XFldDiskGetData(somSelf);
+    XFldDiskMethodDebug("XFldDisk","xfdisk_wpSetup");
+
+    if (    (XFldDisk_parent_WPDisk_wpSetup(somSelf, pszSetupString))
+         && (dskSetup(somSelf, pszSetupString))
+       )
+        return TRUE;
+
+    return FALSE;
 }
 
 /*

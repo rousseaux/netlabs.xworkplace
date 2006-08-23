@@ -29,7 +29,7 @@
  */
 
 /*
- *      Copyright (C) 2000-2003 Ulrich M”ller.
+ *      Copyright (C) 2000-2006 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -924,6 +924,7 @@ SOM_Scope void  SOMLINK xwstr_wpObjectReady(XWPString *somSelf,
  *      We examine the XWPString setup strings here.
  *
  *@@added V0.9.12 (2001-05-20) [umoeller]
+ *@@changed V1.0.6 (2006-08-22) [pr]: handle DEFAULTOBJECT object IDs properly @@fixes 823
  */
 
 SOM_Scope BOOL  SOMLINK xwstr_wpSetup(XWPString *somSelf, PSZ pszSetupString)
@@ -986,9 +987,17 @@ SOM_Scope BOOL  SOMLINK xwstr_wpSetup(XWPString *somSelf, PSZ pszSetupString)
                     // this is a handle:
                     pobj = _wpclsQueryObject(_WPObject, strtol(&szValue[1], NULL, 16));
                 else
-                    // either object ID, or full path:
-                    pobj = _wpclsQueryObjectFromPath(_WPFileSystem, szValue);
-                    // returns NULL for "NONE"
+                    // V1.0.6 (2006-08-22) [pr]: handle object IDs properly @@fixes 823
+                    if (szValue[0] == '<')
+                    {
+                        // this is an object ID:
+                        HOBJECT hObj = WinQueryObject(szValue);
+                        pobj = _wpclsQueryObject(_WPObject, hObj);
+                    }
+                    else
+                        // full path:
+                        pobj = _wpclsQueryObjectFromPath(_WPFileSystem, szValue);
+                        // returns NULL for "NONE"
 
                 _xwpSetStaticObject(somSelf,
                                     pobj);       // can be NULL

@@ -15,7 +15,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *      Copyright (C) 1997-2006 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -181,23 +181,41 @@ BOOL fdrSetup(WPFolder *somSelf,
     CHAR        szValue[CCHMAXPATH + 1];
     ULONG       cbValue = sizeof(szValue);
 
-    cbValue = sizeof(szValue);
-    if (    (cmnQuerySetting(sfFdrSplitViews))
-         && (_wpScanSetupString(somSelf,
-                                (PSZ)pszSetupString,
-                                "OPEN",
-                                szValue,
-                                &cbValue))
-       )
+    if (cmnQuerySetting(sfFdrSplitViews))
     {
-        if (!stricmp(szValue, "SPLITVIEW"))
-            krnPostThread1ObjectMsg(T1M_OPENOBJECTFROMPTR,
-                                    (MPARAM)somSelf,
-                                    (MPARAM)(   *G_pulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW )
-                                   );
+        cbValue = sizeof(szValue);
+        if (_wpScanSetupString(somSelf,
+                               (PSZ)pszSetupString,
+                               "OPEN",
+                               szValue,
+                               &cbValue))
+        {
+            if (!stricmp(szValue, "SPLITVIEW"))
+                krnPostThread1ObjectMsg(T1M_OPENOBJECTFROMPTR,
+                                        (MPARAM)somSelf,
+                                        (MPARAM)(*G_pulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW)
+                                       );
+        }
+
+        // V1.0.6 (2006-08-22) [pr]: added DEFAULTVIEW=SPLITVIEW @@fixes 827
+        cbValue = sizeof(szValue);
+        if (_wpScanSetupString(somSelf,
+                               (PSZ)pszSetupString,
+                               "DEFAULTVIEW",
+                               szValue,
+                               &cbValue))
+        {
+            if (!stricmp(szValue, "SPLITVIEW"))
+            {
+                rc = _wpSetDefaultView(somSelf,
+                                       *G_pulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW);
+                fChanged = TRUE;
+            }
+        }
     }
 
 #ifndef __NOSNAPTOGRID__
+    cbValue = sizeof(szValue);  // V1.0.6 (2006-08-22) [pr]: was missing
     if (_wpScanSetupString(somSelf,
                            (PSZ)pszSetupString,
                            "SNAPTOGRID",
