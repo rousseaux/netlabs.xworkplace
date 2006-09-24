@@ -47,7 +47,7 @@
  */
 
 /*
- *      Copyright (C) 2000-2003 Ulrich M”ller.
+ *      Copyright (C) 2000-2006 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -118,6 +118,7 @@
 #include "shared\errors.h"              // private XWorkplace error codes
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
+#include "shared\classtest.h"           // some cheap funcs for WPS class checks
 
 #include "config\fonts.h"               // font folder implementation
 
@@ -1454,6 +1455,7 @@ STATIC APIRET FileThreadFontProcessing(HAB hab,
  *@@changed V0.9.7 (2001-01-13) [umoeller]: added hab to prototype (needed for font install)
  *@@changed V0.9.7 (2001-01-13) [umoeller]: added XFT_INSTALLFONTS, XFT_DEINSTALLFONTS
  *@@changed V0.9.19 (2002-05-01) [umoeller]: reversed confirmations for move to trash and empty trash
+ *@@changed V1.0.6 (2006-09-24) [pr]: don't move Printers and Transient objects to Trash Can
  */
 
 VOID fopsFileThreadProcessing(HAB hab,              // in: file thread's anchor block
@@ -1588,9 +1590,20 @@ VOID fopsFileThreadProcessing(HAB hab,              // in: file thread's anchor 
                                                                            &ulIgnoreSubsequent)))
                            )
                         {
-                            if (!_xwpDeleteIntoTrashCan(pftl->pTargetFolder, // default trash can
-                                                        fu.pSourceObject))
-                                frc = FOPSERR_NOT_HANDLED_ABORT;
+                            // V1.0.6 (2006-09-24) [pr]: ignore Printers and Transient objects
+                            if (   ctsIsTransient(fu.pSourceObject)
+                                || ctsIsPrinter(fu.pSourceObject)
+                               )
+                            {
+                                frc = fopsFileThreadTrueDelete(hftl,
+                                                               &fu,
+                                                               &ulIgnoreSubsequent,
+                                                               &pObjectFailed);
+                            }
+                            else
+                                if (!_xwpDeleteIntoTrashCan(pftl->pTargetFolder, // default trash can
+                                                            fu.pSourceObject))
+                                    frc = FOPSERR_NOT_HANDLED_ABORT;
                         }
                     }
                     break;
