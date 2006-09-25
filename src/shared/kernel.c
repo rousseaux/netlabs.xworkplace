@@ -420,6 +420,7 @@ VOID krnUnlockGlobals(VOID)
  *      the list.
  *
  *@@added V0.9.16 (2001-09-29) [umoeller]
+ *@@changed V1.0.6 (2006-09-24) [pr]: fixed minor memory leak
  */
 
 BOOL krnClassInitialized(PCSZ pcszClassName)
@@ -439,6 +440,9 @@ BOOL krnClassInitialized(PCSZ pcszClassName)
                               NULL,
                               pNew,
                               treeCompareStrings);
+            // V1.0.6 (2006-09-24) [pr]
+            if (!brc)
+                FREE(pNew);
         }
 
         krnUnlock();

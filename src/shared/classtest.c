@@ -19,7 +19,7 @@
  */
 
 /*
- *      Copyright (C) 2002-2003 Ulrich M”ller.
+ *      Copyright (C) 2002-2006 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -330,5 +330,40 @@ BOOL ctsDescendedFromSharedDir(SOMClass *pClassObject)
 BOOL ctsIsDisk(WPObject *somSelf)
 {
     return _somIsA(somSelf, _WPDisk);
+}
+
+/*
+ *@@ ctsIsPrinter:
+ *      returns TRUE if somSelf is a Printer (of the WPPrinter class).
+ *
+ *      Do NOT use _WPPrinter anywhere in XWP. This causes a reference
+ *      to WPPRINT.DLL to be linked into XFLDR.DLL.
+ *      Due to more horrendous IBM bugs, WPPRINT.DLL does a significant
+ *      amount of processing in its DLL_InitTerm function which results
+ *      in SOM calling its instance methods.
+ *      Because XWP overrides some of these, code in XFLDR.DLL gets
+ *      called before its own DLL_InitTerm function has been called and
+ *      the C RTL is therefore not initialised.
+ *      This results in crashes in the DLL_InitTerm of WPPRINT.DLL and
+ *      the PMSHELL exception handler can't cope with that. The process
+ *      just hangs.
+ *      Resolving the class object as below prevents this reference to
+ *      WPPRINT.DLL and everything stays working.
+ *      Jeez, how many hours and reboots did it take to work this out?
+ *
+ *@@added V1.0.6 (2006-09-24) [pr]
+ */
+
+BOOL ctsIsPrinter(WPObject *somSelf)
+{
+    somId       WPPrinterId = somIdFromString("WPPrinter");
+    SOMClass    *WPPrinterClass = _somClassFromId(SOMClassMgrObject,
+                                                  WPPrinterId);
+
+    SOMFree(WPPrinterId);
+    if (WPPrinterClass)
+        return _somIsA(somSelf, WPPrinterClass);
+    else
+        return FALSE;
 }
 
