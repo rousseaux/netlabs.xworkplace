@@ -93,7 +93,7 @@ interface XFldDisk : WPDisk
         //# 1)  init/uninit methods
 
         wpInitData: override;
-        wpSetup: override;                      // added V1.0.6 (2006-08-22) [pr]
+        wpSetup: override;                      //# added V1.0.6 (2006-08-22) [pr]
 
         //# 2)  WPObject query/set methods
 
