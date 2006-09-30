@@ -101,6 +101,7 @@
 
 // headers in /helpers
 #include "helpers\cnrh.h"               // container helper routines
+#include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\prfh.h"               // INI file helper routines
@@ -4902,6 +4903,7 @@ SOM_Scope BOOL  SOMLINK xo_wpModifyMenu(XFldObject *somSelf,
  *@@changed V0.9.9 (2001-03-10) [pr]: this screwed up print jobs, now checking for WPTransient
  *@@changed V0.9.16 (2001-12-06) [umoeller]: fixed shredder deleting into trash can
  *@@changed V1.0.0 (2002-09-12) [umoeller]: re-enabled WPMENUID_DELETE to catch some more delete situations
+ *@@changed V1.0.6 (2006-09-30) [pr]: fix Shredder delete @@fixes 413
  */
 
 SOM_Scope BOOL  SOMLINK xo_wpMenuItemSelected(XFldObject *somSelf,
@@ -4916,14 +4918,21 @@ SOM_Scope BOOL  SOMLINK xo_wpMenuItemSelected(XFldObject *somSelf,
 
     switch (ulMenuId)
     {
-
-        // re-enabled WPMENUID_DELETE catch here
-        // V1.0.0 (2002-09-12) [umoeller]
-
         // this is normally never reached because fdrWMCommand
         // intercepts this before wpMenuItemSelected gets called
         // for 99,9% of all cases, but NOT in the case where we
         // have a "delete" command from a folder's system menu
+
+        // re-enabled WPMENUID_DELETE catch here
+        // V1.0.0 (2002-09-12) [umoeller]
+
+        // From my testing, WinDestroyObject doesn't come through here.
+        // Deletes using the Shredder do come through here, so use the
+        // Shift key modifier to do the non-default operation and send
+        // them to the Trash Can if enabled. As elsewhere, Transient and
+        // Printer objects are prevented from going into the TrashCan.
+        // V1.0.6 (2006-09-30) [pr]
+
         case WPMENUID_DELETE:
         {
             if (
@@ -4931,8 +4940,10 @@ SOM_Scope BOOL  SOMLINK xo_wpMenuItemSelected(XFldObject *somSelf,
                     (cmnQuerySetting(sfReplaceDelete))
                  &&
 #endif
-                    (!ctsIsTransient(somSelf))
-                            // V0.9.9 (2001-03-10) [pr]: fix print object delete
+                    (!cmnQuerySetting(sfAlwaysTrueDelete))
+                 && (doshQueryShiftState())
+                 && (!ctsIsTransient(somSelf))
+                 && (!ctsIsPrinter(somSelf))
                )
             {
                 PMPF_FOPS(("WPMENUID_DELETE"));
