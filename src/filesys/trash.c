@@ -1964,6 +1964,7 @@ MRESULT trshDragOver(XWPTrashCan *somSelf,
  *@@changed V0.9.7 (2001-01-13) [umoeller]: fixed some weirdos, incl. a possible memory leak
  *@@changed V1.0.6 (2006-08-11) [erdmann]: use correct function call @@fixes 815
  *@@changed V1.0.6 (2006-08-19) [erdmann]: allow discard operations like the Shredder @@fixes 817
+ *@@changed V1.0.6 (2006-09-30) [erdmann]: cleanup drag structures correctly @@fixes 817
  */
 
 MRESULT trshMoveDropped2TrashCan(XWPTrashCan *somSelf,
@@ -2052,11 +2053,12 @@ MRESULT trshMoveDropped2TrashCan(XWPTrashCan *somSelf,
                               NULL,             // target folder: not needed
                               pllDroppedObjects);
 
+        DrgDeleteDraginfoStrHandles(pdrgInfo); // V1.0.6 (2006-09-30) [erdmann]: @@fixes 817
+        DrgFreeDraginfo(pdrgInfo);
         mrc = (MRESULT)RC_DROP_DROPCOMPLETE;
                 // means: _all_ items have been processed,
                 // and wpDrop should _not_ be called again
                 // by the WPS for the next items, if any
-
     }
 
     // in any case, free the list V0.9.7 (2001-01-13) [umoeller]

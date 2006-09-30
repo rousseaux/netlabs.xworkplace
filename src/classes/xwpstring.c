@@ -1428,6 +1428,7 @@ SOM_Scope MRESULT  SOMLINK xwstr_wpDragOver(XWPString *somSelf,
  *      method again for the next object.
  *
  *@@added V0.9.6 (2000-11-23) [umoeller]
+ *@@changed V1.0.6 (2006-09-30) [erdmann]: cleanup drag structures correctly @@fixes 817
  */
 
 SOM_Scope MRESULT  SOMLINK xwstr_wpDrop(XWPString *somSelf,
@@ -1437,63 +1438,59 @@ SOM_Scope MRESULT  SOMLINK xwstr_wpDrop(XWPString *somSelf,
 {
     MRESULT mrc = MRFROMLONG(RC_DROP_ERROR);
     // XWPStringData *somThis = XWPStringGetData(somSelf);
+    // allocate memory for xwpInvokeString object array
+    WPObject **paObjects = (WPObject**)malloc(pdrgInfo->cditem * sizeof(WPObject*));
     XWPStringMethodDebug("XWPString","xwstr_wpDrop");
 
-    if (DrgAccessDraginfo(pdrgInfo))
+    if (paObjects)
     {
-        // allocate memory for xwpInvokeString object array
-        WPObject **paObjects = (WPObject**)malloc(pdrgInfo->cditem * sizeof(WPObject*));
-        if (paObjects)
-        {
-            ULONG ulItemNow = 0;
-            BOOL fError = FALSE;
+        ULONG ulItemNow = 0;
+        BOOL fError = FALSE;
 
-            for (;
-                 ulItemNow < pdrgInfo->cditem;
-                 ulItemNow++)
+        for (;
+             ulItemNow < pdrgInfo->cditem;
+             ulItemNow++)
+        {
+             DRAGITEM    drgItem;
+            if (!DrgQueryDragitem(pdrgInfo,
+                                  sizeof(drgItem),
+                                  &drgItem,
+                                  ulItemNow))
             {
-                DRAGITEM    drgItem;
-                if (!DrgQueryDragitem(pdrgInfo,
-                                      sizeof(drgItem),
-                                      &drgItem,
-                                      ulItemNow))
+                // error:
+                fError = TRUE;
+                break;
+            }
+            else
+            {
+                // store SOM pointer in array
+                if (wpshQueryDraggedObject(&drgItem,
+                                           &paObjects[ulItemNow])
+                        == 0)
                 {
                     // error:
                     fError = TRUE;
                     break;
                 }
-                else
-                {
-                    // store SOM pointer in array
-                    if (wpshQueryDraggedObject(&drgItem,
-                                               &paObjects[ulItemNow])
-                            == 0)
-                    {
-                        // error:
-                        fError = TRUE;
-                        break;
-                    }
-                }
             }
+        }
 
-            if (!fError)
-            {
-                // success so far:
-                // invoke setup string
-                _xwpInvokeString(somSelf,
-                                 pdrgInfo->cditem,
-                                 paObjects);
+        if (!fError)
+        {
+            // success so far:
+            // invoke setup string
+            _xwpInvokeString(somSelf,
+                             pdrgInfo->cditem,
+                             paObjects);
 
-                mrc = MRFROMLONG(RC_DROP_DROPCOMPLETE);
-            }
+            DrgDeleteDraginfoStrHandles(pdrgInfo); // V1.0.6 (2006-09-30) [erdmann]: @@fixes 817
+            DrgFreeDraginfo(pdrgInfo);
+            mrc = MRFROMLONG(RC_DROP_DROPCOMPLETE);
+        }
 
-            free(paObjects);
+        free(paObjects);
 
-        } // end if (paObjects)
-
-        // clean up
-        DrgFreeDraginfo(pdrgInfo);
-    }
+    } // end if (paObjects)
 
     return mrc;
 }

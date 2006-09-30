@@ -777,6 +777,7 @@ MRESULT fonDragOver(XWPFontFolder *pFontFolder,
  *
  *@@changed V0.9.19 (2002-06-12) [umoeller]: added error handling
  *@@changed V1.0.6 (2006-08-11) [erdmann]: use correct function call @@fixes 815
+ *@@changed V1.0.6 (2006-09-30) [erdmann]: cleanup drag structures correctly @@fixes 817
  */
 
 MRESULT fonDrop(XWPFontFolder *pFontFolder,
@@ -850,6 +851,8 @@ MRESULT fonDrop(XWPFontFolder *pFontFolder,
                            MB_CANCEL,
                            TRUE);
 
+        DrgDeleteDraginfoStrHandles(pdrgInfo); // V1.0.6 (2006-09-30) [erdmann]: @@fixes 817
+        DrgFreeDraginfo(pdrgInfo);
         mrc = (MRESULT)RC_DROP_DROPCOMPLETE;
                 // means: _all_ items have been processed,
                 // and wpDrop should _not_ be called again
