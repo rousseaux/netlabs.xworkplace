@@ -315,7 +315,7 @@ extern const XWPSETUPENTRY    G_XCenterSetupSet[] =
         //     key for wpSaveState/wpRestoreState
                18,
         //     default, ulExtra,            min, max
-               TRUE,    0,                  0,   0,
+               FALSE,   0,                  0,   0,  // V1.0.6 (2006-09-30) [pr]: changed default
 
         // V0.9.19 (2002-04-16) [lafaix]
         // type,  setup string,     offset,

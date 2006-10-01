@@ -112,7 +112,9 @@ static ULONG    G_aulView1SetupOffsets[]
             FIELDOFFSET(XCenterData, ulPosition),
             FIELDOFFSET(XCenterData, ulWindowStyle),
             FIELDOFFSET(XCenterData, ulAutoHide),
-            FIELDOFFSET(XCenterData, lPriorityDelta)   // V0.9.9 (2001-02-28) [pr]: added
+            FIELDOFFSET(XCenterData, lPriorityDelta),   // V0.9.9 (2001-02-28) [pr]: added
+            FIELDOFFSET(XCenterData, fAutoScreenBorder),   // V1.0.6 (2006-09-30) [pr]: added
+            FIELDOFFSET(XCenterData, fHideOnClick)   // V1.0.6 (2006-09-30) [pr]: added
       };
 
 static ULONG    G_aulView2SetupOffsets[]
@@ -350,6 +352,7 @@ VOID ctrpView1InitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
  *@@changed V0.9.14 (2001-08-21) [umoeller]: added "hide on click"
  *@@changed V0.9.19 (2002-04-17) [umoeller]: now automatically making XCenter screen border object
  *@@changed V1.0.1 (2002-11-30) [umoeller]: refresh screen border object only if the func is actually enabled @@fixes 252
+ *@@changed V1.0.6 (2006-09-30) [pr]: adjust screen border settings @@fixes 224
  */
 
 MRESULT ctrpView1ItemChanged(PNOTEBOOKPAGE pnbp,
@@ -449,6 +452,13 @@ MRESULT ctrpView1ItemChanged(PNOTEBOOKPAGE pnbp,
         // V0.9.19 (2002-05-07) [umoeller]
         case ID_CRDI_VIEW_AUTOSCREENBORDER:
             _fAutoScreenBorder = ulExtra;
+            // V1.0.6 (2006-09-30) [pr]: adjust screen border setting @@fixes 224
+            hifSetScreenBorderObjectUnique((_ulPosition == XCENTER_TOP)
+                                             ? SCREENCORNER_TOP
+                                             : SCREENCORNER_BOTTOM,
+                                           _fAutoScreenBorder
+                                             ? _wpQueryHandle(pnbp->inbp.somSelf)
+                                             : NULLHANDLE);
         break;
 
         case ID_CRDI_VIEW_PRTY_SLIDER:
@@ -472,6 +482,13 @@ MRESULT ctrpView1ItemChanged(PNOTEBOOKPAGE pnbp,
                                 G_aulView1SetupOffsets,
                                 ARRAYITEMCOUNT(G_aulView1SetupOffsets),
                                 somThis);
+            // V1.0.6 (2006-09-30) [pr]: adjust screen border setting @@fixes 224
+            hifSetScreenBorderObjectUnique((_ulPosition == XCENTER_TOP)
+                                             ? SCREENCORNER_TOP
+                                             : SCREENCORNER_BOTTOM,
+                                           _fAutoScreenBorder
+                                             ? _wpQueryHandle(pnbp->inbp.somSelf)
+                                             : NULLHANDLE);
             ulCallInitCallback = CBI_SET | CBI_ENABLE;
         break;
 
@@ -482,6 +499,13 @@ MRESULT ctrpView1ItemChanged(PNOTEBOOKPAGE pnbp,
                                   ARRAYITEMCOUNT(G_aulView1SetupOffsets),
                                   somThis,
                                   pBackup);
+            // V1.0.6 (2006-09-30) [pr]: adjust screen border setting @@fixes 224
+            hifSetScreenBorderObjectUnique((_ulPosition == XCENTER_TOP)
+                                             ? SCREENCORNER_TOP
+                                             : SCREENCORNER_BOTTOM,
+                                           _fAutoScreenBorder
+                                             ? _wpQueryHandle(pnbp->inbp.somSelf)
+                                             : NULLHANDLE);
             ulCallInitCallback = CBI_SET | CBI_ENABLE;
         }
         break;
