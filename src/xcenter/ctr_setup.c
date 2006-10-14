@@ -1102,7 +1102,7 @@ BOOL ctrpSetup(XCenter *somSelf,
 
     TRY_LOUD(excpt1)
     {
-        _PmpfF(("string is \"%s\"", pszSetupString));
+        // _PmpfF(("string is \"%s\"", pszSetupString));
 
         // now comes the non-standard stuff:
         if (brc = cmnSetupScanString(somSelf,

@@ -582,8 +582,8 @@ SOM_Scope BOOL  SOMLINK xwstr_xwpInvokeString(XWPString *somSelf,
 
     TRY_LOUD(excpt1)
     {
-        _PmpfF(("_pszSetupString is \"%s\"",
-                    (_pWszSetupString) ? _pWszSetupString : "<NULL>"));
+        // _PmpfF(("_pszSetupString is \"%s\"",
+        //             (_pWszSetupString) ? _pWszSetupString : "<NULL>"));
 
         if (_pWszSetupString)
         {
