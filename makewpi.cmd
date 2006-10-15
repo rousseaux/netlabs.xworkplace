@@ -41,13 +41,13 @@ wic1 wic2 wic3
 call directory makedir
 return
 
-setfiletime: procedure expose filetime
+setfiletime: procedure expose filetime makedir
   parse arg pkgdir
   call SysFileTree pkgdir'\*', 'stem', 'FOS'
   filedate = date('S')
   filedate = left(filedate,4)'-'substr(filedate,5,2)'-'substr(filedate,7,2)
   do i = 1 to stem.0
     call SysSetFileDateTime stem.i, filedate, filetime
-    '@tools\setftime' stem.i
+    '@'makedir'\tools\setftime' stem.i
   end
   return
