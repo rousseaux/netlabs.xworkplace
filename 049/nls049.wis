@@ -1,5 +1,5 @@
 <!-- minimum required version of WarpIN -->
-<WARPIN VERSION="1.0.10">
+<WARPIN VERSION="1.0.12">
 <HEAD>
 
 <!-- adapt and translate this to your language, and use the current version number -->
@@ -48,7 +48,6 @@
      TARGET="$(Ulrich M”ller\XWorkplace\Kernel)"
      TITLE="Deutsche Dokumentation"
 
-     FIXED
      SELECT
 
      >Dieses Paket enth„lt die vollst„ndige deutsche Dokumentation fr XWorkplace. Diese Dokumentation kann separat extrahiert werden, bevor der Rest von XWorkplace installiert wird. Wird nur dieses Paket installiert, werden keinerlei nderungen am System vorgenommen.</PCK>

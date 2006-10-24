@@ -1,6 +1,6 @@
 <!-- XWorkplace installation profile for WarpIN -->
 
-<WARPIN VERSION="0.9.14">
+<WARPIN VERSION="1.0.12">
 
 <HEAD>
 
@@ -32,34 +32,33 @@
 
 <PCK INDEX=1001
      PACKAGEID="Ulrich M”ller\XWorkplace\English NLS\1\1\0"
-     TARGET="$(WARPIN_DEFAULTTOOLSPATH)\WPS\XWorkplace"
      TITLE="English National Language Support"
-     BASE
+     TARGET="$(1)"
      SELECT
      REQUIRES=1
+     FIXED
 
      WRITEPROFILE="USER\XWorkplace\Language|001"
 
-     EXECUTE="REGISTERCLASS | $(1)\install\freshini.cmd USER"
+     EXECUTE="REGISTERCLASS|$(1)\install\freshini.cmd USER"
 
      >This package contains the English language files for XWorkplace. This is required for XWorkplace to run.</PCK>
 
 <PCK INDEX=2001
      PACKAGEID="Ulrich M”ller\XWorkplace\English Documentation\1\1\0"
-     TARGET="$(WARPIN_DEFAULTTOOLSPATH)\WPS\XWorkplace"
      TITLE="English Documentation"
-     BASE
+     TARGET="$(WARPIN_DEFAULTTOOLSPATH)\WPS\XWorkplace"
      SELECT
 
      >This package contains the complete English documentation for XWorkplace. You can extract this documentation separately to be able to read it before installing the rest of XWorkplace. If you only install this package, your system is not altered in any way.</PCK>
 
 <PCK INDEX=1007
      PACKAGEID="Alexander Kragel\XWorkplace\Russian NLS\1\1\0"
-     EXTERNAL="xwp-1-0-5_nls-ru.exe"
+     EXTERNAL="xwp-1-0-6_nls-ru.exe"
      TITLE="Russian National Language Support"
-     TARGET="$(Ulrich M”ller\XWorkplace\Kernel)"
-     BASE
+     TARGET="$(1)"
      REQUIRES=1
+     FIXED
 
      WRITEPROFILE="USER\XWorkplace\Language|007"
 
@@ -69,146 +68,140 @@
 
 <PCK INDEX=2007
      PACKAGEID="Alexander Kragel\XWorkplace\Russian Documentation\1\1\0"
-     EXTERNAL="xwp-1-0-5_nls-ru.exe"
-     TARGET="$(Ulrich M”ller\XWorkplace\Kernel)"
+     EXTERNAL="xwp-1-0-6_nls-ru.exe"
      TITLE="Russian Documentation"
-     BASE
+     TARGET="$(WARPIN_DEFAULTTOOLSPATH)\WPS\XWorkplace"
 
-     CREATEOBJECT="WPShadow|readme.ru|<XWP_MAINFLDR>|SHADOWID=$(2007)\readme.ru;OBJECTID=<XWP_README007MAINSHADOW>" 
-     CREATEOBJECT="WPShadow|readme_nls.ru|<XWP_MAINFLDR>|SHADOWID=$(2007)\readme_nls.ru;OBJECTID=<XWP_READMENLS007MAINSHADOW>" 
+     CREATEOBJECT="WPShadow|readme.ru|<XWP_MAINFLDR>|SHADOWID=$(2007)\readme.ru;OBJECTID=<XWP_README007MAINSHADOW>"
+     CREATEOBJECT="WPShadow|readme_nls.ru|<XWP_MAINFLDR>|SHADOWID=$(2007)\readme_nls.ru;OBJECTID=<XWP_READMENLS007MAINSHADOW>"
 
-     >This package contains the uncomplete Russian documentation for XWorkplace. You can extract this documentation separately to be able to read it before installing the rest of XWorkplace. If you only install this package, your system is not altered in any way.</PCK>
+     >This package contains the complete Russian documentation for XWorkplace. You can extract this documentation separately to be able to read it before installing the rest of XWorkplace. If you only install this package, your system is not altered in any way.</PCK>
 
 <PCK INDEX=1031
-     PACKAGEID="Jacques van Leeuwen\XWorkplace\Dutch NLS\1\1\0" 
-     EXTERNAL="xwp-1-0-5_nls-nl.exe"
-     TITLE="Dutch National Language Support" 
-     TARGET="$(Ulrich M”ller\XWorkplace\Kernel)" 
-     BASE
+     PACKAGEID="Jacques van Leeuwen\XWorkplace\Dutch NLS\1\1\0"
+     EXTERNAL="xwp-1-0-6_nls-nl.exe"
+     TITLE="Dutch National Language Support"
+     TARGET="$(1)"
      REQUIRES=1
+     FIXED
 
      WRITEPROFILE="USER\XWorkplace\Language|031"
 
-     EXECUTE="CREATEOBJECT|$(1031)\install\instl031.cmd" 
+     EXECUTE="CREATEOBJECT|$(1031)\install\instl031.cmd"
 
      >This package contains the Dutch language files for XWorkplace. This is required for XWorkplace to run.</PCK>
 
 <PCK INDEX=2031
-     PACKAGEID="Jacques van Leeuwen\XWorkplace\Dutch Documentation\1\1\0" 
-     EXTERNAL="xwp-1-0-5_nls-nl.exe"
-     TARGET="$(WARPIN_DEFAULTTOOLSPATH)\WPS\XWorkplace"
+     PACKAGEID="Jacques van Leeuwen\XWorkplace\Dutch Documentation\1\1\0"
+     EXTERNAL="xwp-1-0-6_nls-nl.exe"
      TITLE="Dutch Documentation"
-     BASE
+     TARGET="$(WARPIN_DEFAULTTOOLSPATH)\WPS\XWorkplace"
 
-     CREATEOBJECT="WPShadow|readme.nl|<XWP_MAINFLDR>|SHADOWID=$(2031)\readme.nl;OBJECTID=<XWP_README031MAINSHADOW>" 
-     CREATEOBJECT="WPShadow|readme_nls.nl|<XWP_MAINFLDR>|SHADOWID=$(2031)\readme_nls.nl;OBJECTID=<XWP_READMENLS031MAINSHADOW>" 
+     CREATEOBJECT="WPShadow|readme.nl|<XWP_MAINFLDR>|SHADOWID=$(2031)\readme.nl;OBJECTID=<XWP_README031MAINSHADOW>"
+     CREATEOBJECT="WPShadow|readme_nls.nl|<XWP_MAINFLDR>|SHADOWID=$(2031)\readme_nls.nl;OBJECTID=<XWP_READMENLS031MAINSHADOW>"
 
-     >This package contains the complete Italian documentation for XWorkplace. You can extract this documentation separately to be able to read it before installing the rest of XWorkplace. If you only install this package, your system is not altered in any way.</PCK>
+     >This package contains the complete Dutch documentation for XWorkplace. You can extract this documentation separately to be able to read it before installing the rest of XWorkplace. If you only install this package, your system is not altered in any way.</PCK>
 
 <PCK INDEX=1039
-     PACKAGEID="Gabriele Gamba\XWorkplace\Italian NLS\1\1\0" 
-     EXTERNAL="xwp-1-0-5_nls-it.exe"
-     TITLE="Italian National Language Support" 
-     TARGET="$(Ulrich M”ller\XWorkplace\Kernel)" 
-     BASE
+     PACKAGEID="Gabriele Gamba\XWorkplace\Italian NLS\1\1\0"
+     EXTERNAL="xwp-1-0-6_nls-it.exe"
+     TITLE="Italian National Language Support"
+     TARGET="$(1)"
      REQUIRES=1
+     FIXED
 
      WRITEPROFILE="USER\XWorkplace\Language|039"
 
-     EXECUTE="CREATEOBJECT|$(1039)\install\instl039.cmd" 
+     EXECUTE="CREATEOBJECT|$(1039)\install\instl039.cmd"
 
      >This package contains the Italian language files for XWorkplace. This is required for XWorkplace to run.</PCK>
 
 <PCK INDEX=2039
-     PACKAGEID="Gabriele Gamba\XWorkplace\Italian Documentation\1\1\0" 
-     EXTERNAL="xwp-1-0-5_nls-it.exe"
-     TARGET="$(WARPIN_DEFAULTTOOLSPATH)\WPS\XWorkplace"
+     PACKAGEID="Gabriele Gamba\XWorkplace\Italian Documentation\1\1\0"
+     EXTERNAL="xwp-1-0-6_nls-it.exe"
      TITLE="Italian Documentation"
-     BASE
+     TARGET="$(WARPIN_DEFAULTTOOLSPATH)\WPS\XWorkplace"
 
-     CREATEOBJECT="WPShadow|leggimi|<XWP_MAINFLDR>|SHADOWID=$(2039)\readme.it;OBJECTID=<XWP_README039MAINSHADOW>" 
-     CREATEOBJECT="WPShadow|leggimi.nls|<XWP_MAINFLDR>|SHADOWID=$(2039)\readme_nls.it;OBJECTID=<XWP_READMENLS039MAINSHADOW>" 
-
+     CREATEOBJECT="WPShadow|leggimi|<XWP_MAINFLDR>|SHADOWID=$(2039)\leggimi;OBJECTID=<XWP_README039MAINSHADOW>"
+     CREATEOBJECT="WPShadow|leggimi.nls|<XWP_MAINFLDR>|SHADOWID=$(2039)\leggimi.nls;OBJECTID=<XWP_READMENLS039MAINSHADOW>"
+	
      >This package contains the complete Italian documentation for XWorkplace. You can extract this documentation separately to be able to read it before installing the rest of XWorkplace. If you only install this package, your system is not altered in any way.</PCK>
 
 <PCK INDEX=1046
-     PACKAGEID="Bj”rn S”derstr”m\XWorkplace\Swedish NLS\1\1\0" 
-     EXTERNAL="xwp-1-0-5_nls-sv.exe"
-     TARGET="$(Ulrich M”ller\XWorkplace\Kernel)" 
-     TITLE="Swedish National Language Support" 
-     BASE
+     PACKAGEID="Bj”rn S”derstr”m\XWorkplace\Swedish NLS\1\1\0"
+     EXTERNAL="xwp-1-0-6_nls-sv.exe"
+     TITLE="Swedish National Language Support"
+     TARGET="$(1)"
      REQUIRES=1
+     FIXED
 
      WRITEPROFILE="USER\XWorkplace\Language|046"
 
-     EXECUTE="CREATEOBJECT|$(1046)\install\instl046.cmd" 
+     EXECUTE="CREATEOBJECT|$(1046)\install\instl046.cmd"
 
-     >This package contains the Swedish language files for XWorkplace.</PCK>
+     >This package contains the Swedish language files for XWorkplace. This is required for XWorkplace to run.</PCK>
 
 <PCK INDEX=2046
-     PACKAGEID="Bj”rn S”derstr”m\XWorkplace\Swedish Documentation\1\1\0" 
-     EXTERNAL="xwp-1-0-5_nls-sv.exe"
-     TARGET="$(WARPIN_DEFAULTTOOLSPATH)\WPS\XWorkplace"
+     PACKAGEID="Bj”rn S”derstr”m\XWorkplace\Swedish Documentation\1\1\0"
+     EXTERNAL="xwp-1-0-6_nls-sv.exe"
      TITLE="Swedish Documentation"
-     BASE
+     TARGET="$(WARPIN_DEFAULTTOOLSPATH)\WPS\XWorkplace"
 
-     CREATEOBJECT="WPShadow|readme.sv|<XWP_MAINFLDR>|SHADOWID=$(2046)\readme.sv;OBJECTID=<XWP_README046MAINSHADOW>" 
-     CREATEOBJECT="WPShadow|readme_nls.sv|<XWP_MAINFLDR>|SHADOWID=$(2046)\readme_nls.sv;OBJECTID=<XWP_READMESV046MAINSHADOW>" 
+     CREATEOBJECT="WPShadow|readme.sv|<XWP_MAINFLDR>|SHADOWID=$(2046)\readme.sv;OBJECTID=<XWP_README046MAINSHADOW>"
+     CREATEOBJECT="WPShadow|readme_nls.sv|<XWP_MAINFLDR>|SHADOWID=$(2046)\readme_nls.sv;OBJECTID=<XWP_READMESV046MAINSHADOW>"
 
      >This package contains the complete Swedish documentation for XWorkplace. You can extract this documentation separately to be able to read it before installing the rest of XWorkplace. If you only install this package, your system is not altered in any way.</PCK>
 
 <PCK INDEX=1049
      PACKAGEID="Christian Hennecke\XWorkplace\German NLS\1\1\0"
-     EXTERNAL="xwp-1-0-5_nls-de.exe"
-     TARGET="$(WARPIN_DEFAULTTOOLSPATH)\WPS\XWorkplace"
+     EXTERNAL="xwp-1-0-6_nls-de.exe"
      TITLE="German National Language Support"
-     BASE
+     TARGET="$(1)"
      REQUIRES=1
+     FIXED
 
      WRITEPROFILE="USER\XWorkplace\Language|049"
 
-     EXECUTE="$(1049)\install\instl049.cmd" 
+     EXECUTE="CREATEOBJECT|$(1049)\install\instl049.cmd"
 
-     >This package contains the German language files for XWorkplace.</PCK>
+     >This package contains the German language files for XWorkplace. This is required for XWorkplace to run.</PCK>
 
 <PCK INDEX=2049
      PACKAGEID="Christian Hennecke\XWorkplace\German Documentation\1\1\0"
-     EXTERNAL="xwp-1-0-5_nls-de.exe"
-     TARGET="$(WARPIN_DEFAULTTOOLSPATH)\WPS\XWorkplace"
+     EXTERNAL="xwp-1-0-6_nls-de.exe"
      TITLE="German Documentation"
-     BASE
+     TARGET="$(WARPIN_DEFAULTTOOLSPATH)\WPS\XWorkplace"
 
-     CREATEOBJECT="WPShadow|liesmich|<XWP_MAINFLDR>|SHADOWID=$(2049)\liesmich;OBJECTID=<XWP_README049MAINSHADOW>" 
-     CREATEOBJECT="WPShadow|liesmich.nls|<XWP_MAINFLDR>|SHADOWID=$(2049)\liesmich.nls;OBJECTID=<XWP_READMENLS049MAINSHADOW>" 
+     CREATEOBJECT="WPShadow|liesmich|<XWP_MAINFLDR>|SHADOWID=$(2049)\liesmich;OBJECTID=<XWP_README049MAINSHADOW>"
+     CREATEOBJECT="WPShadow|liesmich.nls|<XWP_MAINFLDR>|SHADOWID=$(2049)\liesmich.nls;OBJECTID=<XWP_READMENLS049MAINSHADOW>"
 
      >This package contains the complete German documentation for XWorkplace. You can extract this documentation separately to be able to read it before installing the rest of XWorkplace. If you only install this package, your system is not altered in any way.</PCK>
 
 <PCK INDEX=1932
-     PACKAGEID="JMikami\XWorkplace\Japanese NLS\1\1\0" 
-     EXTERNAL="xwp-1-0-5_nls-jp.exe"
-     TARGET="$(Ulrich M”ller\XWorkplace\Kernel)" 
-
-     TITLE="XWorkplace Japanese National Language Support" 
-     BASE
+     PACKAGEID="JMikami\XWorkplace\Japanese NLS\1\1\0"
+     EXTERNAL="xwp-1-0-6_nls-jp.exe"
+     TITLE="Japanese National Language Support"
+     TARGET="$(1)"
      REQUIRES=1
+     FIXED
 
-     WRITEPROFILE="USER\XWorkplace\Language|932" 
+     WRITEPROFILE="USER\XWorkplace\Language|932"
 
-     EXECUTE="$(1932)\install\instl932.cmd" 
+     EXECUTE="CREATEOBJECT|$(1932)\install\instl932.cmd"
 
-     >This package contains the Japanese language files for XWorkplace.</PCK>
+     >This package contains the Japanese language files for XWorkplace. This is required for XWorkplace to run.</PCK>
 
 <PCK INDEX=2932
-     PACKAGEID="JMikami\XWorkplace\Japanese Documentation\1\1\0" 
-     EXTERNAL="xwp-1-0-5_nls-jp.exe"
-     TARGET="$(WARPIN_DEFAULTTOOLSPATH)\WPS\XWorkplace"
+     PACKAGEID="JMikami\XWorkplace\Japanese Documentation\1\1\0"
+     EXTERNAL="xwp-1-0-6_nls-jp.exe"
      TITLE="Japanese Documentation"
-     BASE
+     TARGET="$(WARPIN_DEFAULTTOOLSPATH)\WPS\XWorkplace"
 
-     CREATEOBJECT="WPShadow|readme.jp|<XWP_MAINFLDR>|SHADOWID=$(2932)\readme.jp;OBJECTID=<XWP_README932MAINSHADOW>" 
-     CREATEOBJECT="WPShadow|readme_nls.jp|<XWP_MAINFLDR>|SHADOWID=$(2932)\readme_nls.jp;OBJECTID=<XWP_READMENLS932MAINSHADOW>" 
+     CREATEOBJECT="WPShadow|readme.jp|<XWP_MAINFLDR>|SHADOWID=$(2932)\readme.jp;OBJECTID=<XWP_README932MAINSHADOW>"
+     CREATEOBJECT="WPShadow|readme_nls.jp|<XWP_MAINFLDR>|SHADOWID=$(2932)\readme_nls.jp;OBJECTID=<XWP_READMENLS932MAINSHADOW>"
 
      >This package contains the complete Japanese documentation for XWorkplace. You can extract this documentation separately to be able to read it before installing the rest of XWorkplace. If you only install this package, your system is not altered in any way.</PCK>
+
 </HEAD>
 
 <!-- Here come the different pages. They are linked by
@@ -226,7 +219,6 @@ Select "Cancel" to abort installation.</TEXT>
 
 <README FORMAT=FLOW EXTRACTFROMPCK="2001">readme</README>
 </PAGE>
-
 
 <!-- The TYPE_README will show a README text in a multi-line entry field. -->
 
@@ -604,15 +596,15 @@ If you wish to unpack files only for now (for example, to be able to read the do
 <PAGE INDEX=5 TYPE=TEXT>
 <NEXTBUTTON TARGET=0>I~nstall</NEXTBUTTON>
 <TEXT>
-
 Press "Install" to finally begin installing XWorkplace.
 
 NOTE: If you get "File locked" message boxes during install, you probably have XWorkplace running already.
 You must then select "Unlock (DosReplaceModule)" for the installation to complete successfully.
 
 If you get this message for the XWorkplace help file, you can unlock it by displaying the Desktop's help panel (select "Help" from the Desktop's context menu).
-
 </TEXT>
 </PAGE>
+
 </BODY>
+
 </WARPIN>

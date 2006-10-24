@@ -1,5 +1,5 @@
 <!-- minimum required version of WarpIN -->
-<WARPIN VERSION="1.0.10">
+<WARPIN VERSION="1.0.12">
 <HEAD>
 
 <!-- adapt and translate this to your language, and use the current version number -->
@@ -48,7 +48,6 @@
      TARGET="$(Ulrich M”ller\XWorkplace\Kernel)"
      TITLE="English Documentation"
 
-     FIXED
      SELECT
 
      >This package contains the complete English documentation for XWorkplace. You can extract this documentation separately to be able to read it before installing the rest of XWorkplace. If you only install this package, your system is not altered in any way.</PCK>
