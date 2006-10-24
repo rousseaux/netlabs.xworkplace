@@ -1243,6 +1243,7 @@ MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
  *@@changed V0.9.3 (2000-04-02) [umoeller]: moved wpRegisterView etc. to cllCreateClassListView
  *@@changed V0.9.6 (2000-10-16) [umoeller]: fixed excessive menu creation
  *@@changed V1.0.1 (2003-01-25) [umoeller]: beautified split view a little
+ *@@changed V1.0.6 (2006-10-16) [pr]: fixed show/maximize from minimize @@fixes 865
  */
 
 STATIC MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -1450,7 +1451,7 @@ STATIC MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM m
             PSWP pswp = (PSWP)mp1;
             if (pswp->fl & SWP_MINIMIZE)
                 WinShowWindow(pClientData->hwndSplitMain, FALSE);
-            else if (pswp->fl & SWP_RESTORE)
+            else if (pswp->fl & (SWP_MAXIMIZE | SWP_RESTORE))  // V1.0.6 (2006-10-16) [pr]: @@fixes 865
                 WinShowWindow(pClientData->hwndSplitMain, TRUE);
         }
         break;

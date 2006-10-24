@@ -9,7 +9,7 @@
  */
 
 /*
- *      Copyright (C) 2001-2003 Ulrich M”ller.
+ *      Copyright (C) 2001-2006 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -1092,6 +1092,8 @@ STATIC VOID SplitFillFolder(HWND hwndClient,
  *          a client exists. So we forward (post) WM_CONTROL
  *          with SN_FRAMECLOSE to the frame when we get it,
  *          and the frame can take action.
+ *
+ *@@changed V1.0.6 (2006-10-16) [pr]: fixed show/maximize from minimize @@fixes 865
  */
 
 MRESULT EXPENTRY fnwpSplitController(HWND hwndClient, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -1157,7 +1159,7 @@ MRESULT EXPENTRY fnwpSplitController(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
                     PSWP pswp = (PSWP)mp1;
                     if (pswp->fl & SWP_MINIMIZE)
                         WinShowWindow(pctl->hwndSplitWindow, FALSE);
-                    else if (pswp->fl & SWP_RESTORE)
+                    else if (pswp->fl & (SWP_MAXIMIZE | SWP_RESTORE))  // V1.0.6 (2006-10-16) [pr]: @@fixes 865
                         WinShowWindow(pctl->hwndSplitWindow, TRUE);
                 }
             break;
