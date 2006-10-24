@@ -1124,10 +1124,10 @@ STATIC VOID T1M_DaemonReady(VOID)
  *@@changed V0.9.19 (2002-04-24) [umoeller]: fixed major screwups during startup and shutdown
  *@@changed V1.0.5 (2005-11-26) [pr]: changed to use method directly, and modify xwpHotkeyOrBorderAction prototype
  *@@changed V1.0.6 (2006-08-18) [pr]: put method name resolution back @@fixes 792
+ *@@changed V1.0.6 (2006-10-24) [pr]: remove redundant parameter
  */
 
-STATIC VOID T1M_OpenObjectFromHandle(HWND hwndObject,
-                                     MPARAM mp1,
+STATIC VOID T1M_OpenObjectFromHandle(MPARAM mp1,
                                      MPARAM mp2)
 {
     TRY_LOUD(excpt1)
@@ -1268,10 +1268,10 @@ STATIC VOID T1M_OpenObjectFromHandle(HWND hwndObject,
  *
  *@@added V1.0.2 (2003-03-07) [umoeller]
  *@@changed V1.0.6 (2006-08-18) [pr]: use method name resolution @@fixes 792
+ *@@changed V1.0.6 (2006-10-24) [pr]: remove redundant parameter
  */
 
-STATIC VOID T1M_OpenObjectFromHandle2(HWND hwndObject,
-                                      HOBJECT hobj,
+STATIC VOID T1M_OpenObjectFromHandle2(HOBJECT hobj,
                                       ULONG ulView)
 {
     WPObject *pobjStart = _wpclsQueryObject(_WPObject,
@@ -1591,7 +1591,7 @@ STATIC MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1
          */
 
         case T1M_OPENOBJECTFROMHANDLE:
-            T1M_OpenObjectFromHandle(hwndObject, mp1, mp2);
+            T1M_OpenObjectFromHandle(mp1, mp2);
         break;
 
         /*
@@ -1607,7 +1607,7 @@ STATIC MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1
          */
 
         case T1M_OPENOBJECTFROMHANDLE2:
-            T1M_OpenObjectFromHandle2(hwndObject, (HOBJECT)mp1, (ULONG)mp2);
+            T1M_OpenObjectFromHandle2((HOBJECT)mp1, (ULONG)mp2);
         break;
 
         /*
@@ -1637,13 +1637,30 @@ STATIC MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1
          *      which is either a HWND or a HAPP.
          *
          *@@added V0.9.9 (2001-02-06) [umoeller]
+         *@@changed V1.0.6 (2006-10-24) [pr]
          */
 
         case T1M_OPENOBJECTFROMPTR:
+        {
+            /* V1.0.6 (2006-10-24) [pr]: replace this with the following @@fixes 319
             mrc = (MPARAM)_wpViewObject((WPObject*)mp1,
                                         NULLHANDLE,     // hwndCnr
                                         (ULONG)mp2,
                                         0);             // param
+            */
+            somTD_XFldObject_xwpHotkeyOrBorderAction pfn_xwpHotkeyOrBorderAction;
+            WPObject *pObject = (WPObject *) mp1;
+
+            // obtain "xwpHotkeyOrBorderAction" method pointer
+            if (pfn_xwpHotkeyOrBorderAction = (somTD_XFldObject_xwpHotkeyOrBorderAction)
+                    somResolveByName(pObject,
+                                     "xwpHotkeyOrBorderAction"))
+            {
+                mrc = (MPARAM)pfn_xwpHotkeyOrBorderAction(pObject,
+                                                          (ULONG) mp2,
+                                                          -1);
+            }
+        }
         break;
 
         /*
@@ -1837,15 +1854,6 @@ STATIC MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1
                     // V0.9.20 (2002-08-04) [umoeller]
                     ntbOpenSettingsPage(XFOLDER_SCREENID,
                                         SP_PAGER_MAIN);
-
-                    /*
-                    // open "Screen" object
-                    HOBJECT hobj;
-                    if (hobj = WinQueryObject((PSZ)XFOLDER_SCREENID))
-                        T1M_OpenObjectFromHandle(hwndObject,
-                                                 (MPARAM)hobj,
-                                                 (MPARAM)0);   // no screen corner
-                    */
                 break;
 
                 case ID_CRMI_HELP:
