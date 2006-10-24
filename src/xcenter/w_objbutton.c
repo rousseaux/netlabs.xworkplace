@@ -19,7 +19,7 @@
  */
 
 /*
- *      Copyright (C) 2000-2003 Ulrich M”ller.
+ *      Copyright (C) 2000-2006 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -1318,6 +1318,8 @@ STATIC VOID OwgtButton1Down(HWND hwnd,
 /*
  * OwgtButton1Up:
  *      implementation for WM_BUTTON1UP.
+ *
+ *@@changed V1.0.6 (2006-10-24) [pr]: redirect object opens to thread 1, again!
  */
 
 STATIC VOID OwgtButton1Up(HWND hwnd)
@@ -1356,13 +1358,14 @@ STATIC VOID OwgtButton1Up(HWND hwnd)
                     // V0.9.16 (2002-01-04) [umoeller]: do this on thread 1
                     // always, or we get very strange system hangs with
                     // some executables
-                    /* krnPostThread1ObjectMsg(T1M_OPENOBJECTFROMPTR,
-                                            (MPARAM)pPrivate->pobjButton,
-                                            (MPARAM)OPEN_DEFAULT); */
-                    _wpViewObject(pPrivate->pobjButton,
-                                  NULLHANDLE,
-                                  OPEN_DEFAULT,
-                                  NULLHANDLE);
+                    // V1.0.6 (2006-10-24) [pr]: re-enabled - it was disabled sometime!
+                    krnPostThread1ObjectMsg(T1M_OPENOBJECTFROMPTR,
+                                           (MPARAM)pPrivate->pobjButton,
+                                           (MPARAM)OPEN_DEFAULT);
+                    /* _wpViewObject(pPrivate->pobjButton,
+                                     NULLHANDLE,
+                                     OPEN_DEFAULT,
+                                     NULLHANDLE); */
                     // unset button sunk state
                     // (no toggle)
                     pPrivate->xbs.fPaintButtonSunk = FALSE;
