@@ -26,7 +26,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *      Copyright (C) 1997-2006 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -3070,6 +3070,7 @@ VOID hifMouseCornersInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
  *@@changed V0.9.9 (2001-03-25) [lafaix]: fixed "default" and "undo" behavior
  *@@changed V0.9.9 (2001-03-27) [umoeller]: converted page to use non-auto radio buttons; fixed slider msgs
  *@@changed V0.9.18 (2002-02-12) [pr]: selecting Special Function no longer forces list to 1st entry
+ *@@changed V1.0.6 (2006-10-22) [pr]: save settings before calling the callback @@fixes 56
  */
 
 MRESULT hifMouseCornersItemChanged(PNOTEBOOKPAGE pnbp,
@@ -3121,8 +3122,9 @@ MRESULT hifMouseCornersItemChanged(PNOTEBOOKPAGE pnbp,
 
             _Pmpf(("  new selected index: %d", G_ulScreenCornerSelectedIndex));
 
-            pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
+            hifHookConfigChanged(pdc);  // V1.0.6 (2006-10-22) [pr]
             fSave = FALSE;
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
         break;
 
         /*
@@ -3135,6 +3137,8 @@ MRESULT hifMouseCornersItemChanged(PNOTEBOOKPAGE pnbp,
             hifLoadHookConfig(pdc);
             pdc->ahobjHotCornerObjects[G_ulScreenCornerSelectedIndex] = 0;
 
+            hifHookConfigChanged(pdc);  // V1.0.6 (2006-10-22) [pr]
+            fSave = FALSE;
             pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
         break;
 
@@ -3153,6 +3157,8 @@ MRESULT hifMouseCornersItemChanged(PNOTEBOOKPAGE pnbp,
                     // an object handle of 1 does not exist, however
                     // we need this for the INIT callback to work
 
+            hifHookConfigChanged(pdc);  // V1.0.6 (2006-10-22) [pr]
+            fSave = FALSE;
             pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
         break;
 
@@ -3163,6 +3169,7 @@ MRESULT hifMouseCornersItemChanged(PNOTEBOOKPAGE pnbp,
                 case CN_DRAGOVER:
                     mrc = wpshQueryDraggedObjectCnr((PCNRDRAGINFO)ulExtra,
                                                     &G_hobjBeingDragged);
+                    fSave = FALSE;  // V1.0.6 (2006-10-22) [pr]
                 break; // CN_DRAGOVER
 
                 case CN_DROP:
@@ -3172,9 +3179,14 @@ MRESULT hifMouseCornersItemChanged(PNOTEBOOKPAGE pnbp,
                                 = G_hobjBeingDragged;
                         G_hobjBeingDragged = NULLHANDLE;
 
+                        hifHookConfigChanged(pdc);  // V1.0.6 (2006-10-22) [pr]
+                        fSave = FALSE;
                         pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
                     }
                 break;
+
+                default:  // V1.0.6 (2006-10-22) [pr]
+                    fSave = FALSE;
             }
         break;
 
@@ -3189,6 +3201,8 @@ MRESULT hifMouseCornersItemChanged(PNOTEBOOKPAGE pnbp,
                         //V0.9.18 (2002-02-12) [pr]
                 pdc->ahobjHotCornerObjects[G_ulScreenCornerSelectedIndex] = SPECIALOBJ_FIRST; // 0xFFFF0000
 
+            hifHookConfigChanged(pdc);  // V1.0.6 (2006-10-22) [pr]
+            fSave = FALSE;
             pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
         break;
 
@@ -3277,5 +3291,4 @@ MRESULT hifMouseCornersItemChanged(PNOTEBOOKPAGE pnbp,
 
     return mrc;
 }
-
 
