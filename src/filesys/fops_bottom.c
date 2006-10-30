@@ -374,6 +374,7 @@ APIRET fopsCreateFileTaskList(HFILETASKLIST *phftl,     // out: new file task li
  *@@changed V0.9.2 (2000-03-04) [umoeller]: added error callback
  *@@changed V0.9.3 (2000-04-25) [umoeller]: reworked error management
  *@@changed V0.9.4 (2000-07-27) [umoeller]: added pulIgnoreSubsequent to ignore further errors
+ *@@changed V1.0.6 (2006-10-30) [pr]: prevent Transient/Printer objects going into Trash
  */
 
 APIRET fopsValidateObjOperation(ULONG ulOperation,        // in: operation
@@ -394,7 +395,10 @@ APIRET fopsValidateObjOperation(ULONG ulOperation,        // in: operation
     switch (ulOperation)
     {
         case XFT_MOVE2TRASHCAN:
-            if (!_wpIsDeleteable(pObject))
+            if (   !_wpIsDeleteable(pObject)
+                || ctsIsTransient(pObject)  // V1.0.6 (2006-10-30) [pr]
+                || ctsIsPrinter(pObject)
+               )
             {
                 // abort right away
                 frc = FOPSERR_MOVE2TRASH_NOT_DELETABLE;
