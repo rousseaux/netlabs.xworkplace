@@ -1763,6 +1763,7 @@ BOOL _Optlink fncbSaveImmediate(WPObject *pobjThis,
  *@@changed V0.9.19 (2002-06-18) [umoeller]: misc optimizations
  *@@changed V0.9.19 (2002-06-18) [umoeller]: no longer recovering windows to current desktop for restart wps
  *@@changed V1.0.2 (2003-12-07) [pr]: retry closing WarpCenter @@fixes 302
+ *@@changed V1.0.6 (2006-10-30) [pr]: re-added Window List position save @@fixes 458
  */
 
 STATIC void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
@@ -2170,24 +2171,13 @@ STATIC void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
             // this doesn't work... apparently we must
             // be in the shell process for WinStoreWindowPos
             // to work correctly
-            /* if (psw = winhQuerySwitchList(hab))
-            {
-                CHAR sz[1000];
-                sprintf(sz,
-                        "Storing window list 0x%lX",
-                        psw->aswentry[0].swctl.hwnd);
-                winhDebugBox(NULLHANDLE,
-                             "Shutdown thread",
-                             sz);
-                // window list frame is always the first entry
-                // in the switch list
-                if (!WinStoreWindowPos("PM_Workplace:WindowListPos",
-                                       "SavePos",
-                                       psw->aswentry[0].swctl.hwnd))
-                    cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                           "WinStoreWindowPos for tasklist failed");
-                free(psw);
-            } */
+            // V1.0.6 (2006-10-31) [pr]: added this helper instead @@fixes 458
+            if (!winhStoreWindowPos(winhQueryTasklistWindow(),
+                                    HINI_USER,
+                                    "PM_Workplace:WindowListPos",
+                                    "SavePos"))
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "winhStoreWindowPos for tasklist failed");
 
             WinSetActiveWindow(HWND_DESKTOP,
                                pShutdownData->SDConsts.hwndShutdownStatus);
