@@ -1637,30 +1637,13 @@ STATIC MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1
          *      which is either a HWND or a HAPP.
          *
          *@@added V0.9.9 (2001-02-06) [umoeller]
-         *@@changed V1.0.6 (2006-10-24) [pr]
          */
 
         case T1M_OPENOBJECTFROMPTR:
-        {
-            /* V1.0.6 (2006-10-24) [pr]: replace this with the following @@fixes 319
             mrc = (MPARAM)_wpViewObject((WPObject*)mp1,
                                         NULLHANDLE,     // hwndCnr
                                         (ULONG)mp2,
                                         0);             // param
-            */
-            somTD_XFldObject_xwpHotkeyOrBorderAction pfn_xwpHotkeyOrBorderAction;
-            WPObject *pObject = (WPObject *) mp1;
-
-            // obtain "xwpHotkeyOrBorderAction" method pointer
-            if (pfn_xwpHotkeyOrBorderAction = (somTD_XFldObject_xwpHotkeyOrBorderAction)
-                    somResolveByName(pObject,
-                                     "xwpHotkeyOrBorderAction"))
-            {
-                mrc = (MPARAM)pfn_xwpHotkeyOrBorderAction(pObject,
-                                                          (ULONG) mp2,
-                                                          -1);
-            }
-        }
         break;
 
         /*
