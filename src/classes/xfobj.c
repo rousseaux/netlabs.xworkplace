@@ -5240,6 +5240,89 @@ SOM_Scope BOOL  SOMLINK xo_wpDisplayHelp(XFldObject *somSelf,
 }
 
 /*
+ *@@ wpSwitchTo:
+ *      We override this method to make it work properly.
+ *      The original IBM code sometimes activates the window
+ *      without raising it to the top of the Z-order. Bizarre!
+ *
+ *@@added V1.0.6 (2006-11-08) [pr]: @@fixes 319
+ */
+
+SOM_Scope BOOL  SOMLINK xo_wpSwitchTo(XFldObject *somSelf, ULONG View)
+{
+    BOOL brc = FALSE;
+    ULONG ulViewType = VIEW_ANY;
+    WPObject *pobjLock = NULL;
+
+    // XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectMethodDebug("XFldObject","xo_wpSwitchTo");
+
+    if (View == OPEN_DEFAULT)
+        View = _wpQueryDefaultView(somSelf);
+
+    switch(View)
+    {
+        case OPEN_CONTENTS:
+            ulViewType = VIEW_CONTENTS;
+            break;
+
+        case OPEN_DETAILS:
+            ulViewType = VIEW_DETAILS;
+            break;
+
+        case OPEN_HELP:
+            ulViewType = VIEW_HELP;
+            break;
+
+        case OPEN_RUNNING:
+            ulViewType = VIEW_RUNNING;
+            break;
+
+        case OPEN_SETTINGS:
+            ulViewType = VIEW_SETTINGS;
+            break;
+
+        case OPEN_TREE:
+            ulViewType = VIEW_TREE;
+    }
+
+    PMPF_KEYS(("Object: 0x%08X, View: %u", somSelf, View));
+    TRY_LOUD(excpt1)
+    {
+        if (pobjLock = (!_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT)) ? somSelf : NULL)
+        {
+            PVIEWITEM pViewItem = NULLHANDLE;
+
+            while (   (!brc)
+                   && (pViewItem = _wpFindViewItem(somSelf, ulViewType, pViewItem))
+                  )
+            {
+                PMPF_KEYS(("view %d, handle 0x%08X", pViewItem->view, pViewItem->handle));
+                if (pViewItem->view == View)
+                    if (WinIsWindow(WinQueryAnchorBlock(HWND_DESKTOP), (HWND) pViewItem->handle))
+                        brc = WinSetActiveWindow(HWND_DESKTOP, (HWND) pViewItem->handle);
+                    else
+                    {
+                        HSWITCH hsw;
+                        SWCNTRL swc;
+                        if (   (hsw = winhHSWITCHfromHAPP((HAPP) pViewItem->handle))
+                            && (!WinQuerySwitchEntry(hsw, &swc))
+                           )
+                            brc = WinSetActiveWindow(HWND_DESKTOP, swc.hwnd);
+                    }
+            }
+        }
+    }
+    CATCH(excpt1) {} END_CATCH();
+
+    if (pobjLock)
+        _wpReleaseObjectMutexSem(pobjLock);
+
+/*    return (XFldObject_parent_WPObject_wpSwitchTo(somSelf, View));*/
+    return brc;
+}
+
+/*
  *@@ wpAddSettingsPages:
  *      this WPObject instance method gets called by the WPS
  *      when the Settings view is opened to have all the
