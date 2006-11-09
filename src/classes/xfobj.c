@@ -5245,7 +5245,7 @@ SOM_Scope BOOL  SOMLINK xo_wpDisplayHelp(XFldObject *somSelf,
  *      The original IBM code sometimes activates the window
  *      without raising it to the top of the Z-order. Bizarre!
  *
- *@@added V1.0.6 (2006-11-08) [pr]: @@fixes 319
+ *@@added V1.0.6 (2006-11-09) [pr]: @@fixes 319
  */
 
 SOM_Scope BOOL  SOMLINK xo_wpSwitchTo(XFldObject *somSelf, ULONG View)
@@ -5253,6 +5253,7 @@ SOM_Scope BOOL  SOMLINK xo_wpSwitchTo(XFldObject *somSelf, ULONG View)
     BOOL brc = FALSE;
     ULONG ulViewType = VIEW_ANY;
     WPObject *pobjLock = NULL;
+    HWND hwnd = NULLHANDLE;
 
     // XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xo_wpSwitchTo");
@@ -5293,14 +5294,14 @@ SOM_Scope BOOL  SOMLINK xo_wpSwitchTo(XFldObject *somSelf, ULONG View)
         {
             PVIEWITEM pViewItem = NULLHANDLE;
 
-            while (   (!brc)
+            while (   (!hwnd)
                    && (pViewItem = _wpFindViewItem(somSelf, ulViewType, pViewItem))
                   )
             {
                 PMPF_KEYS(("view %d, handle 0x%08X", pViewItem->view, pViewItem->handle));
                 if (pViewItem->view == View)
                     if (WinIsWindow(WinQueryAnchorBlock(HWND_DESKTOP), (HWND) pViewItem->handle))
-                        brc = WinSetActiveWindow(HWND_DESKTOP, (HWND) pViewItem->handle);
+                        hwnd = (HWND) pViewItem->handle;
                     else
                     {
                         HSWITCH hsw;
@@ -5308,7 +5309,7 @@ SOM_Scope BOOL  SOMLINK xo_wpSwitchTo(XFldObject *somSelf, ULONG View)
                         if (   (hsw = winhHSWITCHfromHAPP((HAPP) pViewItem->handle))
                             && (!WinQuerySwitchEntry(hsw, &swc))
                            )
-                            brc = WinSetActiveWindow(HWND_DESKTOP, swc.hwnd);
+                            hwnd = swc.hwnd;
                     }
             }
         }
@@ -5318,7 +5319,22 @@ SOM_Scope BOOL  SOMLINK xo_wpSwitchTo(XFldObject *somSelf, ULONG View)
     if (pobjLock)
         _wpReleaseObjectMutexSem(pobjLock);
 
-/*    return (XFldObject_parent_WPObject_wpSwitchTo(somSelf, View));*/
+    if (hwnd)
+    {
+        SWP swp;
+
+        if (!WinIsWindowVisible(hwnd))
+            WinShowWindow(hwnd, TRUE);
+
+        if (   WinQueryWindowPos(hwnd, &swp)
+            && (swp.fl & SWP_MINIMIZE)
+           )
+            WinSetWindowPos(hwnd, NULLHANDLE, 0, 0, 0, 0, SWP_RESTORE);
+
+        brc = WinSetActiveWindow(HWND_DESKTOP, hwnd);
+    }
+
+    /* return (XFldObject_parent_WPObject_wpSwitchTo(somSelf, View));*/
     return brc;
 }
 
