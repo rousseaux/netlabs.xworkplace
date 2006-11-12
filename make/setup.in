@@ -25,7 +25,7 @@ HELPERS_BASE_DIR = $(CVS_WORK_ROOT)\$(XWPHELPERSDIR)
 !endif
 
 !ifdef XWP_DEBUG
-PMPRINTF_LIB = $(HELPERS_BASE_DIR)\src\helpers\pmprintf.lib $(HELPERS_BASE)\src\helpers\wpsdebug.lib
+PMPRINTF_LIB = $(HELPERS_BASE_DIR)\src\helpers\pmprintf.lib $(HELPERS_BASE_DIR)\src\helpers\wpsdebug.lib
 !else
 PMPRINTF_LIB =
 !endif
