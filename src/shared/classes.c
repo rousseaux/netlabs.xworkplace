@@ -22,7 +22,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *      Copyright (C) 1997-2006 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -138,7 +138,7 @@ PCLASSRECORDCORE clsAddClass2Cnr(HWND hwndCnr,                  // in: cnr to in
         = (PCLASSRECORDCORE)cnrhAllocRecords(hwndCnr,
                                              sizeof(CLASSRECORDCORE),
                                              1);
-    PMPF_CLASSLIST(("  clsAddClass2Cnr %s\n", pszCurrentClass));
+    PMPF_CLASSLIST(("  clsAddClass2Cnr %s\n", pwpsMyself->pszClassName));
 
     if (preccNew)
     {
@@ -172,7 +172,7 @@ PCLASSRECORDCORE clsAddClass2Cnr(HWND hwndCnr,                  // in: cnr to in
             // pwpsMyself might be NULL for the "Orphans" tree parent item
             usAttrs = CRA_RECORDREADONLY;
 
-        PMPF_CLASSLIST(("    Inserting %s\n", pszCurrentClass));
+        PMPF_CLASSLIST(("    Inserting %s\n", pwpsMyself->pszClassName));
 
         // insert the record (helpers/winh.c)
         cnrhInsertRecords(hwndCnr,
@@ -188,7 +188,7 @@ PCLASSRECORDCORE clsAddClass2Cnr(HWND hwndCnr,                  // in: cnr to in
         // select the new record?
         if (usAttrs & (CRA_INUSE | CRA_CURSORED | CRA_PICKED | CRA_SELECTED))
         {
-            PMPF_CLASSLIST(("    Selecting %s\n", pszCurrentClass));
+            PMPF_CLASSLIST(("    Selecting %s\n", pwpsMyself->pszClassName));
 
             WinSendMsg(hwndCnr,
                        CM_SETRECORDEMPHASIS,
