@@ -22,7 +22,7 @@
  */
 
 /*
- *      Copyright (C) 2000-2003 Ulrich M”ller.
+ *      Copyright (C) 2000-2006 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -1240,6 +1240,10 @@ SOM_Scope BOOL  SOMLINK xctr_wpRestoreState(XCenter *somSelf,
  *      overridden wpMenuItemSelected, because WM_COMMAND
  *      is intercepted in the XCenter windows directly.
  *
+ *      This last comment is not entirely correct. We do need
+ *      to override wpMenuItemSelected for "Open as, XCenter"
+ *      to work.
+ *
  *@@added V0.9.7 (2000-12-02) [umoeller]
  */
 
@@ -1259,6 +1263,47 @@ SOM_Scope BOOL  SOMLINK xctr_wpModifyPopupMenu(XCenter *somSelf,
         return ctrpModifyPopupMenu(somSelf, hwndMenu);
 
     return FALSE;
+}
+
+/*
+ *@@ wpMenuItemSelected:
+ *      this WPObject method processes menu selections.
+ *      This must be overridden to support new menu
+ *      items which have been added in wpModifyPopupMenu.
+ *
+ *      See XFldObject::wpMenuItemSelected for additional
+ *      remarks.
+ *
+ *      We need to support "open XCenter view".
+ *
+ *@@added V1.0.6 (2006-11-13) [pr]: @@fixes 889
+ */
+
+SOM_Scope BOOL  SOMLINK xctr_wpMenuItemSelected(XCenter *somSelf,
+                                                HWND hwndFrame,
+                                                ULONG ulMenuId)
+{
+    BOOL brc = TRUE;
+
+    // XCenterData *somThis = XCenterGetData(somSelf);
+    XCenterMethodDebug("XCenter","xctr_wpMenuItemSelected");
+
+    if (ulMenuId == *G_pulVarMenuOfs + ID_XFMI_OFS_XWPVIEW)
+    {
+        // "Open" --> "XCenter":
+        // wpViewObject will call wpOpen if a new view is necessary
+        _wpViewObject(somSelf,
+                      NULLHANDLE,   // hwndCnr; "WPS-internal use only", IBM says
+                      ulMenuId,     // ulView; must be the same as menu item
+                      0);           // parameter passed to wpOpen
+    }
+    else
+        // not our menu item (maybe settings): call parent
+        brc = XCenter_parent_WPAbstract_wpMenuItemSelected(somSelf,
+                                                           hwndFrame,
+                                                           ulMenuId);
+
+    return brc;
 }
 
 /*
