@@ -18,9 +18,7 @@ $(OUTPUTDIR)\xfontfile.obj \
 $(OUTPUTDIR)\xfontobj.obj \
 $(OUTPUTDIR)\xfobj.obj \
 $(OUTPUTDIR)\xwppgmf.obj \
-!ifndef XWPLITE
 $(OUTPUTDIR)\xfsys.obj \
-!endif
 $(OUTPUTDIR)\xfwps.obj \
 !ifndef XWPLITE
 $(OUTPUTDIR)\xfstart.obj \
@@ -69,15 +67,11 @@ $(OUTPUTDIR)\wpsh.obj
 
 # code from config\
 XFLDR_OBJS_CONFIG = \
-!ifndef XWPLITE
 $(OUTPUTDIR)\cfgsys.obj \
-!endif
 $(OUTPUTDIR)\classlst.obj \
 $(OUTPUTDIR)\drivexports.obj \
-!ifndef XWPLITE
 $(OUTPUTDIR)\drivdlgs.obj \
 $(OUTPUTDIR)\drivers.obj \
-!endif
 $(OUTPUTDIR)\fonts.obj \
 $(OUTPUTDIR)\hookintf.obj \
 $(OUTPUTDIR)\pager.obj \

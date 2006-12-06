@@ -26,7 +26,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *      Copyright (C) 1997-2006 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -398,7 +398,11 @@ SOM_Scope PSZ  SOMLINK xfsysM_wpclsQueryTitle(M_XFldSystem *somSelf)
     // M_XFldSystemData *somThis = M_XFldSystemGetData(somSelf);
     M_XFldSystemMethodDebug("M_XFldSystem","xfsysM_wpclsQueryTitle");
 
-    return "OS/2 Kernel";       // @@todo localize
+#ifdef __XWPLITE__
+    return "eComStation Kernel";       // @@todo localize
+#else
+    return "OS/2 Kernel";
+#endif
 }
 
 /*

@@ -387,3 +387,10 @@ EXPORTS
    M_XWPImageFileCClassData
    M_XWPImageFileClassData
    M_XWPImageFileNewClass
+
+   XFldSystemCClassData
+   XFldSystemClassData
+   XFldSystemNewClass
+   M_XFldSystemCClassData
+   M_XFldSystemClassData
+   M_XFldSystemNewClass

@@ -123,9 +123,7 @@
 #define ID_SHUTICON1           106
 #define ID_SHUTICON2           107
 
-#ifndef __XWPLITE__
 #define ID_ICONSYS             108
-#endif
 #define ID_ICONWPS             109
 
 #define ID_ICONSDANIM1         110
