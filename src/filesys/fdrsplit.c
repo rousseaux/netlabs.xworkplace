@@ -1675,6 +1675,7 @@ STATIC VOID RefreshToolbarButtons(PSPLITCONTROLLER pctl,
  *
  *@@added V1.0.0 (2002-08-26) [umoeller]
  *@@changed V1.0.5 (2006-04-13) [pr]: Fix status bar update @@fixes 326
+ *@@changed V1.0.6 (2006-12-06) [pr]: added CN_SETFOCUS @@fixes 326
  */
 
 STATIC MRESULT TreeFrameControl(HWND hwndFrame,
@@ -1742,6 +1743,32 @@ STATIC MRESULT TreeFrameControl(HWND hwndFrame,
                 }
             }
         }
+        break;
+
+        /*
+         * CN_SETFOCUS:
+         *      V1.0.6 (2006-12-06) [pr]
+         */
+
+        case CN_SETFOCUS:
+            if (    (hwndMainControl = WinQueryWindow(hwndFrame, QW_OWNER))
+                 && (pctl = WinQueryWindowPtr(hwndMainControl, QWL_USER))
+                 // notifications not disabled?
+                 && (pctl->fSplitViewReady)
+                 && (pctl->xfc.hwndStatusBar)
+               )
+            {
+                PMPF_SPLITVIEW(("CN_SETFOCUS: posting STBM_UPDATESTATUSBAR to hwnd %lX",
+                            pctl->xfc.hwndStatusBar ));
+
+                // have the status bar updated and make
+                // sure the status bar retrieves its info
+                // from the _left_ cnr
+                WinPostMsg(pctl->xfc.hwndStatusBar,
+                           STBM_UPDATESTATUSBAR,
+                           (MPARAM)pctl->cvTree.hwndCnr,
+                           MPNULL);
+            }
         break;
 
         /*
@@ -2056,6 +2083,7 @@ STATIC MRESULT EXPENTRY fnwpTreeFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPA
  *
  *@@added V1.0.0 (2002-08-26) [umoeller]
  *@@changed V1.0.5 (2006-04-13) [pr]: Fix status bar update @@fixes 326
+ *@@changed V1.0.6 (2006-12-06) [pr]: added CN_SETFOCUS and delay timer @@fixes 326
  */
 
 STATIC MRESULT FilesFrameControl(HWND hwndFrame,
@@ -2105,19 +2133,39 @@ STATIC MRESULT FilesFrameControl(HWND hwndFrame,
 
                 if (pctl->xfc.hwndStatusBar)
                 {
-                    PMPF_SPLITVIEW(("CN_EMPHASIS: posting STBM_UPDATESTATUSBAR to hwnd %lX",
-                                pctl->xfc.hwndStatusBar ));
+                    PMPF_SPLITVIEW(("CN_EMPHASIS: starting Timer 1"));
 
-                    // have the status bar updated and make
-                    // sure the status bar retrieves its info
-                    // from the _right_ cnr
-                    WinPostMsg(pctl->xfc.hwndStatusBar,
-                               STBM_UPDATESTATUSBAR,
-                               (MPARAM)pctl->cvFiles.hwndCnr,
-                               MPNULL);
+                    // V1.0.6 (2006-12-06) [pr]
+                    // delay status bar update otherwise we get a flash from the
+                    // CN_SETFOCUS message if the selections in the container are
+                    // changing
+                    WinStartTimer(pctl->habGUI,
+                                  hwndFrame,        // post to files frame
+                                  1,
+                                  50);
                 }
             }
         }
+        break;
+
+        /*
+         * CN_SETFOCUS:
+         *      V1.0.6 (2006-12-06) [pr]
+         */
+
+        case CN_SETFOCUS:
+            if (    (hwndMainControl = WinQueryWindow(hwndFrame, QW_OWNER))
+                 && (pctl = WinQueryWindowPtr(hwndMainControl, QWL_USER))
+                 && (pctl->xfc.hwndStatusBar)
+               )
+            {
+                PMPF_SPLITVIEW(("CN_SETFOCUS: starting Timer 1"));
+
+                WinStartTimer(pctl->habGUI,
+                              hwndFrame,        // post to files frame
+                              1,
+                              50);
+            }
         break;
 
         /*
@@ -2320,6 +2368,7 @@ STATIC VOID FilesFrameCommand(HWND hwndFrame,
  *      couple more for extra features.
  *
  *@@changed V1.0.0 (2002-11-23) [umoeller]: brought back keyboard support
+ *@@changed V1.0.6 (2006-12-06) [pr]: added timer 1 delay @@fixes 326
  */
 
 STATIC MRESULT EXPENTRY fnwpFilesFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -2350,6 +2399,37 @@ STATIC MRESULT EXPENTRY fnwpFilesFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MP
                                   mp1,
                                   mp2,
                                   &fCallDefault);
+            break;
+
+            // V1.0.6 (2006-12-06) [pr]
+            case WM_TIMER:
+                if (    ((ULONG)mp1 == 1)
+                     && (hwndMainControl = WinQueryWindow(hwndFrame, QW_OWNER))
+                     && (pctl = WinQueryWindowPtr(hwndMainControl, QWL_USER))
+                   )
+                {
+                    PMPF_SPLITVIEW(("WM_TIMER 1: posting STBM_UPDATESTATUSBAR to hwnd %lX",
+                                pctl->xfc.hwndStatusBar ));
+
+                    WinStopTimer(pctl->habGUI,
+                                 hwndFrame,
+                                 1);
+
+                    if (   // notifications not disabled?
+                           (pctl->fSplitViewReady)
+                        && (pctl->precFilesShowing)
+                        && (pctl->xfc.hwndStatusBar)
+                       )
+                    {
+                        // have the status bar updated and make
+                        // sure the status bar retrieves its info
+                        // from the _right_ cnr
+                        WinPostMsg(pctl->xfc.hwndStatusBar,
+                                   STBM_UPDATESTATUSBAR,
+                                   (MPARAM)pctl->cvFiles.hwndCnr,
+                                   MPNULL);
+                    }
+                }
             break;
 
             case WM_SYSCOMMAND:
