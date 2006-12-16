@@ -1,9 +1,9 @@
 
-XWorkplace 1.0.6 README
+XWorkplace 1.1.0 README
 
 (W) Ulrich M”ller, Feb 7, 2000
 
-Last updated December 8, 2006
+Last updated December 16, 2006
 
 
 0. CONTENTS OF THIS FILE
@@ -29,7 +29,7 @@ Last updated December 8, 2006
 1. INTRODUCTION
 ===============
 
-    Welcome to XWorkplace V1.0.6
+    Welcome to XWorkplace V1.1.0
 
     XWorkplace is a complex set of replacement classes for the
     OS/2 Workplace Shell to enhance the WPS's behavior in many
@@ -46,8 +46,8 @@ Last updated December 8, 2006
     About this release
     ------------------
 
-    This is another release off the 1.0 branch with the bugfixes
-    that have piled up here since the last release.
+    This is the first release off the 1.1 trunk with the bugfixes
+    that have piled up here since the last 1.0 branch release.
 
     For details, refer to the "Version Notices" in the
     "XWorkplace User Guide". To extract the documentation
@@ -78,7 +78,7 @@ Last updated December 8, 2006
 
     --  eComStation 1.x
 
-    XWorkplace 1.0.6 and higher provide access to additional information
+    XWorkplace 1.1.0 and higher provide access to additional information
     about drivers. The following requirements apply:
    
     -- The CFGDAT.INF file from the ConfigTool freeware package must
