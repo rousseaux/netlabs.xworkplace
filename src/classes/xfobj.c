@@ -5246,6 +5246,7 @@ SOM_Scope BOOL  SOMLINK xo_wpDisplayHelp(XFldObject *somSelf,
  *      without raising it to the top of the Z-order. Bizarre!
  *
  *@@added V1.0.6 (2006-11-09) [pr]: @@fixes 319
+ *@@changed V1.0.7  (2006-12-22) [pr]: use switch handles on programs @@fixes 902
  */
 
 SOM_Scope BOOL  SOMLINK xo_wpSwitchTo(XFldObject *somSelf, ULONG View)
@@ -5254,6 +5255,7 @@ SOM_Scope BOOL  SOMLINK xo_wpSwitchTo(XFldObject *somSelf, ULONG View)
     ULONG ulViewType = VIEW_ANY;
     WPObject *pobjLock = NULL;
     HWND hwnd = NULLHANDLE;
+    HSWITCH hsw = NULLHANDLE;
 
     // XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xo_wpSwitchTo");
@@ -5300,17 +5302,15 @@ SOM_Scope BOOL  SOMLINK xo_wpSwitchTo(XFldObject *somSelf, ULONG View)
             {
                 PMPF_KEYS(("view %d, handle 0x%08X", pViewItem->view, pViewItem->handle));
                 if (pViewItem->view == View)
-                    if (WinIsWindow(WinQueryAnchorBlock(HWND_DESKTOP), (HWND) pViewItem->handle))
-                        hwnd = (HWND) pViewItem->handle;
+                {
+                    // V1.0.7  (2006-12-22) [pr]
+                    if (View == OPEN_RUNNING)
+                        hsw = winhHSWITCHfromHAPP((HAPP) pViewItem->handle);
                     else
-                    {
-                        HSWITCH hsw;
-                        SWCNTRL swc;
-                        if (   (hsw = winhHSWITCHfromHAPP((HAPP) pViewItem->handle))
-                            && (!WinQuerySwitchEntry(hsw, &swc))
-                           )
-                            hwnd = swc.hwnd;
-                    }
+                        hwnd = (HWND) pViewItem->handle;
+
+                    break;
+                }
             }
         }
     }
@@ -5319,23 +5319,29 @@ SOM_Scope BOOL  SOMLINK xo_wpSwitchTo(XFldObject *somSelf, ULONG View)
     if (pobjLock)
         _wpReleaseObjectMutexSem(pobjLock);
 
-    if (hwnd)
+    // V1.0.7  (2006-12-22) [pr]
+    if (View == OPEN_RUNNING)
     {
-        SWP swp;
-
-        if (!WinIsWindowVisible(hwnd))
-            WinShowWindow(hwnd, TRUE);
-
-        if (   WinQueryWindowPos(hwnd, &swp)
-            && (swp.fl & SWP_MINIMIZE)
-           )
-            WinSetWindowPos(hwnd, NULLHANDLE, 0, 0, 0, 0, SWP_RESTORE);
-
-        brc = WinSetActiveWindow(HWND_DESKTOP, hwnd);
+        if (hsw)
+            brc = !WinSwitchToProgram(hsw);
     }
+    else
+        if (hwnd)
+        {
+            SWP swp;
 
-    /* return (XFldObject_parent_WPObject_wpSwitchTo(somSelf, View));*/
-    return brc;
+            if (!WinIsWindowVisible(hwnd))
+                WinShowWindow(hwnd, TRUE);
+
+            if (   WinQueryWindowPos(hwnd, &swp)
+                && (swp.fl & SWP_MINIMIZE)
+               )
+                WinSetWindowPos(hwnd, NULLHANDLE, 0, 0, 0, 0, SWP_RESTORE);
+
+            brc = WinSetActiveWindow(HWND_DESKTOP, hwnd);
+        }
+
+    return (brc ? brc : XFldObject_parent_WPObject_wpSwitchTo(somSelf, View));
 }
 
 /*
