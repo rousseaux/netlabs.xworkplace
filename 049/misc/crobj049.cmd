@@ -1,7 +1,7 @@
 /*
     Create default XWorkplace configuration folder
     German version (049)
-    (C) 1998-2001 Ulrich M”ller.
+    (C) 1998-2007 Ulrich M”ller.
  */
 
 /*
@@ -223,7 +223,7 @@ id = "<XWP_REFCFGSHADOW>";
 call CreateObject;
 
 class = "WPProgram";
-title = "---";
+title = "--- ";
 setup = "";
 id = "<XWP_SEP42>";
 call CreateObject;

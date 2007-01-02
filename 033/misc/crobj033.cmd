@@ -1,7 +1,7 @@
 /*
     CrÇation du dossier de configuration XWorkplace par dÇfaut
     version franáaise (033)
-    (C) 1998-2000 Ulrich Mîller.
+    (C) 1998-2007 Ulrich Mîller.
     Traduction (C) 2003-2005 êquipe de traduction franáaise de XWorkplace - Laurent Catinaud, Aymeric Peyret, RenÇ Louisor-Marchini, Guillaume Gay.
 */
 
@@ -224,7 +224,7 @@ id = "<XWP_REFCFGSHADOW>";
 call CreateObject;
 
 class = "WPProgram";
-title = "---";
+title = "--- ";
 setup = "";
 id = "<XWP_SEP42>";
 call CreateObject;
