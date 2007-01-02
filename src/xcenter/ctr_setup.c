@@ -14,7 +14,7 @@
  */
 
 /*
- *      Copyright (C) 2000-2006 Ulrich M”ller.
+ *      Copyright (C) 2000-2007 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -1088,17 +1088,19 @@ STATIC BOOL CreateDefaultWidgets(XCenter *somSelf)
  *@@added V0.9.7 (2001-01-25) [umoeller]
  *@@changed V0.9.16 (2001-10-15) [umoeller]: fixed widget clearing which caused a log entry for empty XCenter
  *@@changed V0.9.19 (2002-04-25) [umoeller]: added exception handling; rewrote WIDGETS= setup string to handle trays
+ *@@changed V1.0.7 (2006-12-31) [pr]: added ADDWIDGETS and DELETEWIDGETS setup strings @@fixes 906
  */
 
 BOOL ctrpSetup(XCenter *somSelf,
                PSZ pszSetupString)
 {
     XCenterData *somThis = XCenterGetData(somSelf);
-    ULONG   cSuccess = 0;
+    ULONG   cSuccess = 0, cb;
+    BOOL    brc;
+    PSZ     pszWidgets;
 
     // scan the standard stuff from the table...
     // this saves us a lot of work.
-    BOOL    brc;
 
     TRY_LOUD(excpt1)
     {
@@ -1113,10 +1115,9 @@ BOOL ctrpSetup(XCenter *somSelf,
                                      &cSuccess))
         {
             CHAR    szValue[100];
-            ULONG   cb = sizeof(szValue);
 
             _Pmpf(("   cmnSetupScanString returned TRUE"));
-
+            cb = sizeof(szValue);
             if (_wpScanSetupString(somSelf,
                                    pszSetupString,
                                    "POSITION",
@@ -1135,8 +1136,6 @@ BOOL ctrpSetup(XCenter *somSelf,
         if (brc)
         {
             // WIDGETS can be very long, so query size first
-            ULONG   cb = 0;
-
             _Pmpf(("   brc still TRUE; scanning WIDGETS string"));
 
             if (_wpScanSetupString(somSelf,
@@ -1145,38 +1144,34 @@ BOOL ctrpSetup(XCenter *somSelf,
                                    NULL,
                                    &cb))
             {
-                PSZ pszWidgets;
-
                 _Pmpf(("got WIDGETS string, %d bytes, nuking existing widgets",
-                        cb));
+                       cb));
 
-                if (    (brc)
-                     && (cb)
+                if (    cb
                      && (pszWidgets = malloc(cb))
                    )
                 {
-                    // first of all, remove all existing widgets,
-                    // we have a replacement here
-                    WIDGETPOSITION pos;
-                    pos.ulTrayWidgetIndex = -1;
-                    pos.ulTrayIndex = -1;
-                    pos.ulWidgetIndex = 0;      // leftmost widget
-                    while (ctrpQueryWidgetsCount(somSelf))       // V0.9.16 (2001-10-15) [umoeller]
-                        if (_xwpDeleteWidget(somSelf,
-                                             &pos))
-                        {
-                            // error:
-                            brc = FALSE;
-                            break;
-                        }
+                    if (_wpScanSetupString(somSelf,
+                                           pszSetupString,
+                                           "WIDGETS",
+                                           pszWidgets,
+                                           &cb))
+                    {
+                        // first of all, remove all existing widgets,
+                        // we have a replacement here
+                        WIDGETPOSITION pos;
+                        pos.ulTrayWidgetIndex = -1;
+                        pos.ulTrayIndex = -1;
+                        pos.ulWidgetIndex = 0;      // leftmost widget
+                        while (ctrpQueryWidgetsCount(somSelf))       // V0.9.16 (2001-10-15) [umoeller]
+                            if (_xwpDeleteWidget(somSelf,
+                                                 &pos))
+                            {
+                                // error:
+                                brc = FALSE;
+                                break;
+                            }
 
-                    if (    (brc)
-                         && (_wpScanSetupString(somSelf,
-                                                pszSetupString,
-                                                "WIDGETS",
-                                                pszWidgets,
-                                                &cb))
-                       )
                         // allow "CLEAR" to just nuke the widgets
                         // V0.9.19 (2002-04-25) [umoeller]
                         if (!stricmp(pszWidgets, "CLEAR"))
@@ -1191,9 +1186,82 @@ BOOL ctrpSetup(XCenter *somSelf,
                                                      pszWidgets,
                                                      -1,
                                                      -1);
+                    }
 
                     free(pszWidgets);
                 } // end if (    (pszWidgets)...
+            }
+        }
+
+        // V1.0.7 (2006-12-31) [pr]
+        if (brc)
+        {
+            _Pmpf(("   brc still TRUE; scanning ADDWIDGETS string"));
+            if (_wpScanSetupString(somSelf,
+                                   pszSetupString,
+                                   "ADDWIDGETS",
+                                   NULL,
+                                   &cb))
+            {
+                _Pmpf(("got ADDWIDGETS string, %d bytes", cb));
+                if (    cb
+                     && (pszWidgets = malloc(cb))
+                   )
+                {
+                    if (_wpScanSetupString(somSelf,
+                                           pszSetupString,
+                                           "ADDWIDGETS",
+                                           pszWidgets,
+                                           &cb))
+                        brc = ParseWidgetsString(somSelf, pszWidgets, -1, -1);
+
+                    free(pszWidgets);
+                }
+            }
+        }
+
+        if (brc)
+        {
+            _Pmpf(("   brc still TRUE; scanning DELETEWIDGETS string"));
+            if (_wpScanSetupString(somSelf,
+                                   pszSetupString,
+                                   "DELETEWIDGETS",
+                                   NULL,
+                                   &cb))
+            {
+                _Pmpf(("got DELETEWIDGETS string, %d bytes", cb));
+                if (    cb
+                     && (pszWidgets = malloc(cb))
+                   )
+                {
+                    if (_wpScanSetupString(somSelf,
+                                           pszSetupString,
+                                           "DELETEWIDGETS",
+                                           pszWidgets,
+                                           &cb))
+                    {
+                        PCSZ    pThis = pszWidgets,
+                                pStartOfWidget = pszWidgets;
+
+                        for (; brc; pThis++)
+                            if ((*pThis == '\0') || (*pThis == ','))
+                            {
+                                // OK, widget terminator:
+                                // then we had no setup string
+                                PSZ pszWidgetClass = strhSubstr(pStartOfWidget,
+                                                                pThis);     // up to comma
+
+                                brc = !_xwpDeleteWidgetClass(somSelf, pszWidgetClass);
+                                FREE(pszWidgetClass);
+                                if (*pThis)
+                                    pStartOfWidget = pThis + 1;
+                                else
+                                    break;
+                            }
+                    }
+
+                    free(pszWidgets);
+                }
             }
         }
     }

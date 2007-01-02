@@ -109,6 +109,8 @@ interface XCenter : WPAbstract
 
     HWND xwpHotkeyOrBorderAction(in ULONG hab, in ULONG ulCorner);
 
+    ULONG xwpDeleteWidgetClass(in PSZ pszWidgetClass);  //# V1.0.7 (2006-12-18) [pr]
+
 #ifdef __SOMIDL__
     implementation
     {
@@ -123,7 +125,8 @@ interface XCenter : WPAbstract
             xwpMoveWidget,
             xwpSetPriority,
             //# xwpQuerySetup2,
-            xwpHotkeyOrBorderAction;
+            xwpHotkeyOrBorderAction,
+            xwpDeleteWidgetClass;
 
         /*
          * Class Modifiers:

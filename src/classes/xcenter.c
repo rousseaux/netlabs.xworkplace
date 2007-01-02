@@ -22,7 +22,7 @@
  */
 
 /*
- *      Copyright (C) 2000-2006 Ulrich M”ller.
+ *      Copyright (C) 2000-2007 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -1063,6 +1063,114 @@ SOM_Scope HWND  SOMLINK xctr_xwpHotkeyOrBorderAction(XCenter *somSelf,
                          NULLHANDLE,
                          ulView, // OPEN_DEFAULT,
                          0);
+}
+
+/*
+ *@@ xwpDeleteWidgetClass:
+ *      this deletes all widgets of a named class.
+ *
+ *      Parameters:
+ *
+ *      --  pszWidgetClass is the class of the widget to delete.
+ *
+ *@@added V1.0.7 (2006-12-31) [pr]
+ */
+
+SOM_Scope ULONG  SOMLINK xctr_xwpDeleteWidgetClass(XCenter *somSelf, 
+                                                   PSZ pszWidgetClass)
+{
+    APIRET arc = NO_ERROR;
+    BOOL   fLocked = FALSE, fFound;
+
+    XCenterData *somThis = XCenterGetData(somSelf);
+    XCenterMethodDebug("XCenter","xctr_xwpDeleteWidgetClass");
+
+    TRY_LOUD(excpt1)
+    {
+        do
+        {
+            fFound = FALSE;
+            if (fLocked = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT))
+            {
+                PLINKLIST   pllWidgets = ctrpQuerySettingsList(somSelf);
+                PLISTNODE   pNode = lstQueryFirstNode(pllWidgets);
+                ULONG       ulIndex = 0;
+
+                while (pNode && !fFound)
+                {
+                    PPRIVATEWIDGETSETTING pSetting = (PPRIVATEWIDGETSETTING)pNode->pItemData;
+                    WIDGETPOSITION Pos;
+
+                    Pos.ulTrayWidgetIndex = -1;
+                    Pos.ulTrayIndex = -1;
+                    Pos.ulWidgetIndex = ulIndex;
+                    if (!stricmp(pSetting->Public.pszWidgetClass, pszWidgetClass))
+                    {
+                        // widget of the correct class found:
+                        fFound = TRUE;
+                        _wpReleaseObjectMutexSem(somSelf);
+                        fLocked = FALSE;
+                        arc = _xwpDeleteWidget(somSelf, &Pos);
+                        break;
+                    }
+
+                    if (pSetting->pllTraySettings)
+                    {
+                        PLISTNODE pTrayNode = lstQueryFirstNode(pSetting->pllTraySettings);
+
+                        Pos.ulTrayWidgetIndex = ulIndex;
+                        Pos.ulTrayIndex = 0;
+                        while (pTrayNode && !fFound)
+                        {
+                            PTRAYSETTING pTray = (PTRAYSETTING)pTrayNode->pItemData;
+                            PLISTNODE pSubwidgetNode = lstQueryFirstNode(&pTray->llSubwidgetSettings);
+
+                            Pos.ulWidgetIndex = 0;
+                            while (pSubwidgetNode)
+                            {
+                                PPRIVATEWIDGETSETTING pSubwidget = (PPRIVATEWIDGETSETTING)pSubwidgetNode->pItemData;
+
+                                if (!stricmp(pSubwidget->Public.pszWidgetClass, pszWidgetClass))
+                                {
+                                    // subwidget of the correct class found:
+                                    fFound = TRUE;
+                                    _wpReleaseObjectMutexSem(somSelf);
+                                    fLocked = FALSE;
+                                    arc = _xwpDeleteWidget(somSelf, &Pos);
+                                    break;
+                                }
+
+                                (Pos.ulWidgetIndex)++;
+                                pSubwidgetNode = pSubwidgetNode->pNext;
+                            }
+
+                            pTrayNode = pTrayNode->pNext;
+                            (Pos.ulTrayIndex)++;
+                        }
+                    }
+
+                    pNode = pNode->pNext;
+                    ulIndex++;
+                }
+
+                if (fLocked)
+                {
+                    _wpReleaseObjectMutexSem(somSelf);
+                    fLocked = FALSE;
+                }
+            }
+        }
+        while (fFound && !arc);
+    }
+    CATCH(excpt1)
+    {
+        arc = ERROR_PROTECTION_VIOLATION;
+    } END_CATCH();
+
+    if (fLocked)
+        _wpReleaseObjectMutexSem(somSelf);
+
+    return arc;
 }
 
 /*

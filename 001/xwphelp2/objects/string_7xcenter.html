@@ -86,10 +86,12 @@ The default is <CODE>YES</CODE>.
 The default is <CODE>NO</CODE>.
 
 <!-- V0.9.19: rewrote the WIDGETS definition -->
-<DT><P><CITE><B>WIDGETS</B>=<I>widget</I>[,<I>widget</I>]...</CITE>
+<!-- V1.0.7: added CLEAR and RESET -->
+<DT><P><CITE><B>WIDGETS</B>=<I>widget</I>[,<I>widget</I>]...<BR><B>WIDGETS</B>={CLEAR|RESET}</CITE>
 <DD>A complete, comma-separated list of the
 <A HREF="xcenter/xc_main_widgets.html">widgets</A>
-that have been added to the &xcenter;.
+forming the &xcenter;. Applying this setup string causes all existing widgets
+to be deleted.
 Each <CODE><I>widget</I></CODE> string must have the following format:
 <BR><CODE><I>classname</I>(<I>setup</I>)</CODE>
 <BR>where <CODE>classname</CODE> is the name of the widget class (as displayed
@@ -104,6 +106,26 @@ contain characters that are forbidden in WPS setup strings.
 <A HREF="xcenter/xc_tray.html">tray widget</A>, the setup string must have the
 following format: <CODE>Tray(<I>setup</I>){<I>trayname</I>[<I>widgetlist</I>]...}</CODE>
 (Note that the brackets are literal here.)
+
+<!-- V1.0.7: added CLEAR and RESET -->
+<P>If CLEAR is specified instead of a widget list, all existing widgets are deleted
+from the XCenter without creating any new ones.
+<BR>If RESET is specified, the XCenter is cleared of all existing widgets and the
+default widgets are created.
+
+<!-- V1.0.7: added -->
+<DT><P><CITE><B>ADDWIDGETS</B>=<I>widget</I>[,<I>widget</I>]...</CITE>
+<DD>A comma-separated list of the
+<A HREF="xcenter/xc_main_widgets.html">widgets</A>
+to add to the existing widgets on the &xcenter;.
+The format of the setup string is the same as for <CITE><B>WIDGETS</B></CITE>.
+
+<!-- V1.0.7: added -->
+<DT><P><CITE><B>DELETEWIDGETS</B>=<I>classname</I>[,<I>classname</I>]...</CITE>
+<DD>A comma-separated list of the widget classnames to remove
+from the &xcenter;.
+All widgets with the specified classnames are deleted.
+<BR>The <CODE>classname</CODE> is as described for <CITE><B>WIDGETS</B></CITE>.
 
 <DT><P><CITE><B>WIDGETSPACING</B>=<I>value</I></CITE>
 <DD>Corresponds to the "Widget spacing" setting on an XCenter's "Style" page.
