@@ -1,6 +1,6 @@
 <!-- XWorkplace installation profile for WarpIN -->
 
-<WARPIN VERSION="1.0.12">
+<WARPIN VERSION="1.0.12" OS="OS2_4x">
 
 <HEAD>
 
@@ -54,7 +54,7 @@
 
 <PCK INDEX=1007
      PACKAGEID="Alexander Kragel\XWorkplace\Russian NLS\1\1\0"
-     EXTERNAL="xwp-1-0-6_nls-ru.exe"
+     EXTERNAL="xwp-1-1-0_nls-ru.exe"
      TITLE="Russian National Language Support"
      TARGET="$(1)"
      REQUIRES=1
@@ -68,7 +68,7 @@
 
 <PCK INDEX=2007
      PACKAGEID="Alexander Kragel\XWorkplace\Russian Documentation\1\1\0"
-     EXTERNAL="xwp-1-0-6_nls-ru.exe"
+     EXTERNAL="xwp-1-1-0_nls-ru.exe"
      TITLE="Russian Documentation"
      TARGET="$(WARPIN_DEFAULTTOOLSPATH)\WPS\XWorkplace"
 
@@ -79,7 +79,7 @@
 
 <PCK INDEX=1031
      PACKAGEID="Jacques van Leeuwen\XWorkplace\Dutch NLS\1\1\0"
-     EXTERNAL="xwp-1-0-6_nls-nl.exe"
+     EXTERNAL="xwp-1-1-0_nls-nl.exe"
      TITLE="Dutch National Language Support"
      TARGET="$(1)"
      REQUIRES=1
@@ -93,7 +93,7 @@
 
 <PCK INDEX=2031
      PACKAGEID="Jacques van Leeuwen\XWorkplace\Dutch Documentation\1\1\0"
-     EXTERNAL="xwp-1-0-6_nls-nl.exe"
+     EXTERNAL="xwp-1-1-0_nls-nl.exe"
      TITLE="Dutch Documentation"
      TARGET="$(WARPIN_DEFAULTTOOLSPATH)\WPS\XWorkplace"
 
@@ -104,7 +104,7 @@
 
 <PCK INDEX=1039
      PACKAGEID="Gabriele Gamba\XWorkplace\Italian NLS\1\1\0"
-     EXTERNAL="xwp-1-0-6_nls-it.exe"
+     EXTERNAL="xwp-1-1-0_nls-it.exe"
      TITLE="Italian National Language Support"
      TARGET="$(1)"
      REQUIRES=1
@@ -118,7 +118,7 @@
 
 <PCK INDEX=2039
      PACKAGEID="Gabriele Gamba\XWorkplace\Italian Documentation\1\1\0"
-     EXTERNAL="xwp-1-0-6_nls-it.exe"
+     EXTERNAL="xwp-1-1-0_nls-it.exe"
      TITLE="Italian Documentation"
      TARGET="$(WARPIN_DEFAULTTOOLSPATH)\WPS\XWorkplace"
 
@@ -129,7 +129,7 @@
 
 <PCK INDEX=1046
      PACKAGEID="Bj”rn S”derstr”m\XWorkplace\Swedish NLS\1\1\0"
-     EXTERNAL="xwp-1-0-6_nls-sv.exe"
+     EXTERNAL="xwp-1-1-0_nls-sv.exe"
      TITLE="Swedish National Language Support"
      TARGET="$(1)"
      REQUIRES=1
@@ -143,7 +143,7 @@
 
 <PCK INDEX=2046
      PACKAGEID="Bj”rn S”derstr”m\XWorkplace\Swedish Documentation\1\1\0"
-     EXTERNAL="xwp-1-0-6_nls-sv.exe"
+     EXTERNAL="xwp-1-1-0_nls-sv.exe"
      TITLE="Swedish Documentation"
      TARGET="$(WARPIN_DEFAULTTOOLSPATH)\WPS\XWorkplace"
 
@@ -154,7 +154,7 @@
 
 <PCK INDEX=1049
      PACKAGEID="Christian Hennecke\XWorkplace\German NLS\1\1\0"
-     EXTERNAL="xwp-1-0-6_nls-de.exe"
+     EXTERNAL="xwp-1-1-0_nls-de.exe"
      TITLE="German National Language Support"
      TARGET="$(1)"
      REQUIRES=1
@@ -168,7 +168,7 @@
 
 <PCK INDEX=2049
      PACKAGEID="Christian Hennecke\XWorkplace\German Documentation\1\1\0"
-     EXTERNAL="xwp-1-0-6_nls-de.exe"
+     EXTERNAL="xwp-1-1-0_nls-de.exe"
      TITLE="German Documentation"
      TARGET="$(WARPIN_DEFAULTTOOLSPATH)\WPS\XWorkplace"
 
@@ -179,7 +179,7 @@
 
 <PCK INDEX=1932
      PACKAGEID="JMikami\XWorkplace\Japanese NLS\1\1\0"
-     EXTERNAL="xwp-1-0-6_nls-jp.exe"
+     EXTERNAL="xwp-1-1-0_nls-jp.exe"
      TITLE="Japanese National Language Support"
      TARGET="$(1)"
      REQUIRES=1
@@ -193,7 +193,7 @@
 
 <PCK INDEX=2932
      PACKAGEID="JMikami\XWorkplace\Japanese Documentation\1\1\0"
-     EXTERNAL="xwp-1-0-6_nls-jp.exe"
+     EXTERNAL="xwp-1-1-0_nls-jp.exe"
      TITLE="Japanese Documentation"
      TARGET="$(WARPIN_DEFAULTTOOLSPATH)\WPS\XWorkplace"
 

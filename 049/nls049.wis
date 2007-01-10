@@ -1,5 +1,5 @@
 <!-- minimum required version of WarpIN -->
-<WARPIN VERSION="1.0.12">
+<WARPIN VERSION="1.0.12" OS="OS2_4x">
 <HEAD>
 
 <!-- adapt and translate this to your language, and use the current version number -->
