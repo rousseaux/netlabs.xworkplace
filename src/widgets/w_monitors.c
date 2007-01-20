@@ -29,7 +29,7 @@
  */
 
 /*
- *      Copyright (C) 2000-2003 Ulrich M”ller.
+ *      Copyright (C) 2000-2007 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -481,6 +481,12 @@ typedef struct _MONITORPRIVATE
                                             // 2 = do a full repaint
 
     BOOL            fContextMenuHacked;
+
+    // V1.0.8 (2007-01-14) [pr]
+    BOOL            fTooltipShowing;    // TRUE only while tooltip is currently
+                                        // showing over this widget
+
+    CHAR            szTooltipText[50];  // current tooltip text
 
 } MONITORPRIVATE, *PMONITORPRIVATE;
 
@@ -965,6 +971,7 @@ VOID MwgtDestroy(HWND hwnd)
  *@@added V0.9.7 (2000-12-14) [umoeller]
  *@@changed V0.9.9 (2001-02-01) [umoeller]: added tooltips
  *@@changed V1.0.5 (2005-11-26) [pr]: Fix Date widget tooltip
+ *@@changed V1.0.8 (2007-01-14) [pr]: Make Date/Time tooltips dynamic @@fixes 917
  */
 
 BOOL MwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
@@ -1050,6 +1057,10 @@ BOOL MwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
 
                     pttt->ulFormat = TTFMT_PSZ;
                 }
+                else if (usNotifyCode == TTN_SHOW)  // V1.0.8 (2007-01-14) [pr]
+                    pPrivate->fTooltipShowing = TRUE;
+                else if (usNotifyCode == TTN_POP)
+                    pPrivate->fTooltipShowing = FALSE;
             break;
         } // end switch (usID)
     } // end if (pPrivate)
@@ -1396,6 +1407,7 @@ VOID RefreshDiskfreeBitmap(HWND hwnd,
  *
  *@@changed V0.9.12 (2001-05-26) [umoeller]: added "power" support
  *@@changed V0.9.16 (2002-01-13) [umoeller]: no longer allowing the widget to shrink, just expand
+ *@@changed V1.0.8 (2007-01-14) [pr]: Make Date/Time tooltips dynamic @@fixes 917
  */
 
 VOID MwgtPaint2(HWND hwnd,
@@ -1456,8 +1468,8 @@ VOID MwgtPaint2(HWND hwnd,
             DATETIME    DateTime;
 
             DosGetDateTime(&DateTime);
-            pnlsDateTime2((pPrivate->ulType == MWGT_DATE) ? szPaint : NULL,
-                          (pPrivate->ulType == MWGT_TIME) ? szPaint : NULL,
+            pnlsDateTime2((pPrivate->ulType == MWGT_DATE) ? szPaint : pPrivate->szTooltipText,  // V1.0.8 (2007-01-14) [pr]
+                          (pPrivate->ulType == MWGT_TIME) ? szPaint : pPrivate->szTooltipText,
                           &DateTime,
                           pCountrySettings);
         }
@@ -1583,6 +1595,16 @@ VOID MwgtPaint2(HWND hwnd,
                         DT_ERASERECT | DT_CENTER | DT_VCENTER);
         }
     }
+
+    // V1.0.8 (2007-01-14) [pr]
+    if (pPrivate->fTooltipShowing)
+        // tooltip currently showing:
+        // refresh its display
+        WinSendMsg(pPrivate->pWidget->pGlobals->hwndTooltip,
+                   TTM_UPDATETIPTEXT,
+                   (MPARAM)pPrivate->szTooltipText,
+                   0);
+
 }
 
 /*
