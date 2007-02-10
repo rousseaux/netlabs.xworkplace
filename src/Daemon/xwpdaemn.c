@@ -154,7 +154,7 @@
  */
 
 /*
- *      Copyright (C) 1999-2005 Ulrich M”ller.
+ *      Copyright (C) 1999-2007 Ulrich M”ller.
  *      Copyright (C) 1993-1999 Roman Stangl.
  *
  *      This program is free software; you can redistribute it and/or modify
@@ -1133,6 +1133,7 @@ STATIC VOID ProcessAutoScroll(PSCROLLDATA pScrollData,
  *@@changed V0.9.7 (2000-12-08) [umoeller]: added "ignore XCenter"
  *@@changed V0.9.16 (2002-01-05) [umoeller]: now disabling sliding focus while "move ptr to button" is in progress
  *@@changed V0.9.19 (2002-05-07) [umoeller]: now always ignoring pager
+ *@@changed V1.0.8 (2007-02-10) [yuri]: added Open Office non-frame window exception
  */
 
 STATIC VOID ProcessSlidingFocus(HWND hwndFrameInBetween, // in: != NULLHANDLE if hook has detected another frame
@@ -1177,8 +1178,9 @@ STATIC VOID ProcessSlidingFocus(HWND hwndFrameInBetween, // in: != NULLHANDLE if
     {
         CHAR szClass[100];
         WinQueryClassName(hwndClient, sizeof(szClass), szClass);
-        if (!strcmp(szClass, WC_XCENTER_CLIENT))
-            // target is XCenter:
+        if (   (!strcmp(szClass, WC_XCENTER_CLIENT))  // target is XCenter
+            || (!strcmp(szClass, "SALSUBFRAME")) // V1.0.8 target is Open Office non-frame window
+           )
             return;
     }
 
