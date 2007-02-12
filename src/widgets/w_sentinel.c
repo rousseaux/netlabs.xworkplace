@@ -10,7 +10,7 @@
  */
 
 /*
- *      Copyright (C) 2001-2003 Ulrich M”ller.
+ *      Copyright (C) 2001-2007 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -848,6 +848,7 @@ VOID EXPENTRY TwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
 /*
  *@@ CalcTextSpacing:
  *
+ *@@changed V1.0.8 (2006-01-22) [chennecke]: increased display area for 4-digit RAM sizes
  */
 
 VOID CalcTextSpacing(HWND hwnd, PWIDGETPRIVATE pPrivate)
@@ -859,8 +860,8 @@ VOID CalcTextSpacing(HWND hwnd, PWIDGETPRIVATE pPrivate)
         FONTMETRICS fm;
         POINTL aptl[TXTBOX_COUNT];
         GpiQueryTextBox(hps,
-                        3,
-                        "999",      // test string
+                        4,
+                        "9999",      // test string
                         TXTBOX_COUNT,
                         aptl);
 
