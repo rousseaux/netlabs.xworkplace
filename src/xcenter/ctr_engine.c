@@ -21,7 +21,7 @@
  */
 
 /*
- *      Copyright (C) 2000-2003 Ulrich M”ller.
+ *      Copyright (C) 2000-2007 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -4588,6 +4588,7 @@ STATIC VOID ClientPaint(HWND hwnd)
  *      being dropped on the XCenter client.
  *
  *@@added V0.9.9 (2001-03-07) [umoeller]
+ *@@changed V1.0.8 (2007-03-06) [pr]: Fix presparams and painting when b/g changed
  */
 
 STATIC VOID ClientPresParamChanged(HWND hwnd,
@@ -4606,7 +4607,7 @@ STATIC VOID ClientPresParamChanged(HWND hwnd,
                 = winhQueryPresColor(hwnd,
                                      PP_BACKGROUNDCOLOR,
                                      FALSE,
-                                     SYSCLR_DIALOGBACKGROUND);
+                                     SYSCLR_WINDOW);  // V1.0.8 (2007-03-06) [pr]
         break;
 
         case PP_FONTNAMESIZE:
@@ -4621,7 +4622,10 @@ STATIC VOID ClientPresParamChanged(HWND hwnd,
     }
 
     if (fSave)
+    {
         _wpSaveDeferred(pXCenterData->somSelf);
+        WinInvalidateRect(hwnd, NULL, FALSE);  // V1.0.8 (2007-03-06) [pr]
+    }
 }
 
 /*
