@@ -168,7 +168,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2006 Ulrich M”ller.
+ *      Copyright (C) 1997-2007 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -227,6 +227,7 @@
 #include <stdio.h>
 #include <setjmp.h>             // needed for except.h
 #include <assert.h>             // needed for except.h
+#include <io.h>
 
 // generic headers
 #include "setup.h"                      // code generation and debugging options
@@ -506,7 +507,7 @@ BOOL objSetup(WPObject *somSelf,
  *@@changed V0.9.18 (2002-03-23) [umoeller]: optimized
  *@@changed V0.9.19 (2002-07-01) [umoeller]: adapted to use IBMOBJECTDATA
  *@@changed V0.9.20 (2002-07-12) [umoeller]: added HELPLIBRARY
- *@@changed V1.0.6 (2008-08-22) [pr]: added SPLITVIEW decoding to OPEN and DEFAULTVIEW @@fixes 827
+ *@@changed V1.0.6 (2006-08-22) [pr]: added SPLITVIEW decoding to OPEN and DEFAULTVIEW @@fixes 827
  */
 
 BOOL objQuerySetup(WPObject *somSelf,
@@ -581,7 +582,7 @@ BOOL objQuerySetup(WPObject *somSelf,
                 {
                     // any other: that's user defined, add decimal ID
                     CHAR szTemp[30];
-                    // V1.0.6 (2008-08-22) [pr]: added SPLITVIEW @@fixes 827
+                    // V1.0.6 (2006-08-22) [pr]: added SPLITVIEW @@fixes 827
                     if (ulDefaultView == *G_pulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW)
                         sprintf(szTemp, "DEFAULTVIEW=SPLITVIEW;");
                     else
@@ -695,7 +696,7 @@ BOOL objQuerySetup(WPObject *somSelf,
         default:
         {
             CHAR szTemp[20];
-            // V1.0.6 (2008-08-22) [pr]: added SPLITVIEW @@fixes 827
+            // V1.0.6 (2006-08-22) [pr]: added SPLITVIEW @@fixes 827
             if (ulValue == *G_pulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW)
                 sprintf(szTemp, "OPEN=SPLITVIEW;");
             else
@@ -821,6 +822,7 @@ BOOL objQuerySetup(WPObject *somSelf,
  *
  *@@added V0.9.9 (2001-04-06) [umoeller]
  *@@changed V0.9.18 (2002-02-24) [pr]: was freeing setup string twice
+ *@@changed V1.0.8 (2007-02-15) [pr]: exclude Server/SharedDir classes, tweak formatting
  */
 
 STATIC ULONG WriteOutObjectSetup(FILE *RexxFile,
@@ -877,31 +879,18 @@ STATIC ULONG WriteOutObjectSetup(FILE *RexxFile,
             fprintf(RexxFile, "/* ");
 
         // write out object
-        if (ulSetupStringLen)
-            // we got setup:
-            fprintf(RexxFile,
-                    "rc = SysCreateObject(\"%s\", %c%s%c, \"%s\", \"%s\");",
-                    pszTrueClassName,
-                    cQuote,
-                    strTitle.psz,
-                    cQuote,
-                    szFolderName,
-                    pszSetupString);
-        else
-            // no setup string:
-            fprintf(RexxFile,
-                    "rc = SysCreateObject(\"%s\", %c%s%c, \"%s\");",
-                    pszTrueClassName,
-                    cQuote,
-                    strTitle.psz,
-                    cQuote,
-                    szFolderName);
-
-        if (fIsDisk)
-            fprintf(RexxFile, " */ \n");
-        else
-            fprintf(RexxFile, "\n");
-
+        // V1.0.8 (2007-02-15) [pr]
+        fprintf(RexxFile,
+                "rc = SysCreateObject(\"%s\", %c%s%c, \"%s\");",
+                pszTrueClassName,
+                cQuote,
+                strTitle.psz,
+                cQuote,
+                szFolderName);
+        fprintf(RexxFile,
+                ulSetupStringLen ? ",\n \"%s\");" : ");",
+                pszSetupString);
+        fprintf(RexxFile, fIsDisk ? " */\n" : "\n");
         ulrc++;
 
         _xwpFreeSetupBuffer(pobj, pszSetupString);
@@ -922,6 +911,8 @@ STATIC ULONG WriteOutObjectSetup(FILE *RexxFile,
                      && strcmp(pszTrueClassName, "WPHwManager")
                      && strcmp(pszTrueClassName, "WPTemplates")
                      && strcmp(pszTrueClassName, "WPNetgrp")
+                     && strcmp(pszTrueClassName, "WPServer")  // V1.0.8 (2007-02-15) [pr]
+                     && strcmp(pszTrueClassName, "WPSharedDir")
                    )
                 {
                     if (fdrCheckIfPopulated(pobj, FALSE))
@@ -975,6 +966,7 @@ STATIC ULONG WriteOutObjectSetup(FILE *RexxFile,
  *      This returns an OS/2 error code.
  *
  *@@added V0.9.9 (2001-04-04) [umoeller]
+ *@@changed V1.0.8 (2007-02-15) [pr]: updated script header info.
  */
 
 APIRET objCreateObjectScript(WPObject *pObject,          // in: object to start with
@@ -989,12 +981,20 @@ APIRET objCreateObjectScript(WPObject *pObject,          // in: object to start 
     else
     {
         FILE *RexxFile = fopen(pcszRexxFile,
-                               "w");            // replace @@@
+                               "a");  // V1.0.8 (2007-02-15) [pr]
 
         if (!RexxFile)
             arc = ERROR_CANNOT_MAKE;
         else
         {
+            // V1.0.8 (2007-02-15) [pr]
+            if (_filelength(fileno(RexxFile)) == 0)
+            {
+                fprintf(RexxFile, "/**/\n");
+                fprintf(RexxFile, "call RxFuncAdd 'SysLoadFuncs', 'REXXUTIL', 'SysLoadFuncs'\n");
+                fprintf(RexxFile, "call SysLoadFuncs\n");
+            }
+
             WriteOutObjectSetup(RexxFile,
                                 pObject,
                                 0,
