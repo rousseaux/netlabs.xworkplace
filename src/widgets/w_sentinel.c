@@ -848,7 +848,7 @@ VOID EXPENTRY TwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
 /*
  *@@ CalcTextSpacing:
  *
- *@@changed V1.0.8 (2006-01-22) [chennecke]: increased display area for 4-digit RAM sizes
+ *@@changed V1.0.8 (2007-01-22) [chennecke]: increased display area for 4-digit RAM sizes
  */
 
 VOID CalcTextSpacing(HWND hwnd, PWIDGETPRIVATE pPrivate)
