@@ -12,7 +12,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *      Copyright (C) 1997-2007 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -210,9 +210,11 @@
 
     BOOL objIsAnAbstract(WPObject *somSelf);
 
-    BOOL objIsADataFile(WPObject *somSelf);
+    BOOL objIsAFilesystem(WPObject *somSelf);  // V1.0.8 (2007-03-06) [pr]
 
     BOOL objIsAFolder(WPObject *somSelf);
+
+    BOOL objIsADataFile(WPObject *somSelf);
 
     BOOL objIsObjectInitialized(WPObject *somSelf);
 

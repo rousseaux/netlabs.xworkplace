@@ -405,6 +405,19 @@ BOOL objIsAnAbstract(WPObject *somSelf)
 }
 
 /*
+ *@@ objIsAFilesystem:
+ *      returns TRUE if somSelf is a filesystem object.
+ *
+ *@@added V1.0.8 (2007-03-06) [pr]
+ */
+
+BOOL objIsAFilesystem(WPObject *somSelf)
+{
+    XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    return (0 != (_flObject & OBJFL_WPFILESYSTEM));
+}
+
+/*
  *@@ objIsAFolder:
  *      returns TRUE if somSelf is a folder.
  *
@@ -508,6 +521,7 @@ BOOL objSetup(WPObject *somSelf,
  *@@changed V0.9.19 (2002-07-01) [umoeller]: adapted to use IBMOBJECTDATA
  *@@changed V0.9.20 (2002-07-12) [umoeller]: added HELPLIBRARY
  *@@changed V1.0.6 (2006-08-22) [pr]: added SPLITVIEW decoding to OPEN and DEFAULTVIEW @@fixes 827
+ *@@changed V1.0.8 (2007-03-06) [pr]: ignore OPEN=UNKNOWN (-1); fix SHADOWID @@fixes 51
  */
 
 BOOL objQuerySetup(WPObject *somSelf,
@@ -671,6 +685,7 @@ BOOL objQuerySetup(WPObject *somSelf,
         break;
 
         case OPEN_DEFAULT:      // ignore
+        case OPEN_UNKNOWN:      // ignore V1.0.8 (2007-03-06) [pr]
         break;
 
         case OPEN_DETAILS:
@@ -788,7 +803,24 @@ BOOL objQuerySetup(WPObject *somSelf,
         && (pObj = _wpQueryShadowedObject(somSelf, FALSE))
        )
     {
-        if (   (pszValue = _wpQueryObjectID(pObj))
+        CHAR szFilename[CCHMAXPATH+1];
+
+        pszValue = _wpQueryObjectID(pObj);
+        // V1.0.8 (2007-03-06) [pr]: allow for filesystem object with no object ID @@fixes 51
+        if (   (   (!pszValue)
+                || ((ulValue = strlen(pszValue)) == 0)
+               )
+            && objIsAFilesystem(pObj)
+           )
+        {
+            ULONG cb = sizeof(szFilename);
+
+            szFilename[0] = '\0';
+            pszValue = szFilename;
+            _wpQueryRealName(pObj, szFilename, &cb, TRUE);
+        }
+
+        if (   (pszValue)
             && (ulValue = strlen(pszValue))
            )
         {
@@ -881,16 +913,22 @@ STATIC ULONG WriteOutObjectSetup(FILE *RexxFile,
         // write out object
         // V1.0.8 (2007-02-15) [pr]
         fprintf(RexxFile,
-                "rc = SysCreateObject(\"%s\", %c%s%c, \"%s\");",
+                "rc = SysCreateObject(\"%s\", %c%s%c, \"%s\"",
                 pszTrueClassName,
                 cQuote,
                 strTitle.psz,
                 cQuote,
                 szFolderName);
-        fprintf(RexxFile,
-                ulSetupStringLen ? ",\n \"%s\");" : ");",
-                pszSetupString);
-        fprintf(RexxFile, fIsDisk ? " */\n" : "\n");
+        if (ulSetupStringLen)
+        {
+            fprintf(RexxFile, ",,\n");
+            for (ul = 0; ul < ulRecursion + 1; ul++)
+                fprintf(RexxFile, "  ");
+
+            fprintf(RexxFile, "\"%s\"", pszSetupString);
+        }
+
+        fprintf(RexxFile, fIsDisk ? "); */\n" : ");\n");
         ulrc++;
 
         _xwpFreeSetupBuffer(pobj, pszSetupString);
