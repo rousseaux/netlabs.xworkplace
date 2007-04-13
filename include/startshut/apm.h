@@ -18,7 +18,7 @@
  *      for finding out all the APM stuff.
  *
  *      Copyright (C) 1997-2003 Ulrich M”ller, ARAKAWA Atsushi.
- *      Copyright (C) 2006 Paul Ratcliffe.
+ *      Copyright (C) 2006-2007 Paul Ratcliffe.
  *
  *      This program is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -37,7 +37,7 @@
     #define APM_OK                  0x01
     #define APM_IGNORE              0x02
     #define APM_CANCEL              0x04
-    // #define APM_DOSSHUTDOWN_0       0x08 removed V0.9.2 (2000-02-29) [umoeller]
+    #define APM_DOSSHUTDOWN_0       0x08
     #define APM_DOSSHUTDOWN_1       0x10
 
     PSZ apmQueryVersion(VOID);

@@ -15,7 +15,7 @@
 /*
  *      Copyright (C) 1998 ARAKAWA Atsushi.
  *      Copyright (C) 1997-2003 Ulrich M”ller.
- *      Copyright (C) 2006 Paul Ratcliffe.
+ *      Copyright (C) 2006-2007 Paul Ratcliffe.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -349,6 +349,7 @@ BOOL acpiPowerOffSupported(VOID)
  *      evaluated if you return APM_CANCEL.
  *
  *@@added V1.0.5 (2006-06-26) [pr]
+ *@@changed V1.0.8 (2007-04-13) [pr]: use APM_DOSSHUTDOWN_0 @@fixes 726
  */
 
 ULONG acpiPreparePowerOff(PSZ pszError)      // in: error message
@@ -361,7 +362,7 @@ ULONG acpiPreparePowerOff(PSZ pszError)      // in: error message
         return APM_CANCEL;
     }
 
-    return APM_OK | APM_DOSSHUTDOWN_1;
+    return APM_OK | APM_DOSSHUTDOWN_0;
 }
 
 /*

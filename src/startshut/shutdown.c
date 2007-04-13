@@ -31,7 +31,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2006 Ulrich M”ller.
+ *      Copyright (C) 1997-2007 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -3819,6 +3819,7 @@ VOID xsdFinishUserReboot(PSHUTDOWNDATA pShutdownData)
  *
  *@@changed V0.9.12 (2001-05-12) [umoeller]: animations frequently didn't show up, fixed
  *@@changed V1.0.5 (2006-06-26) [pr]: moved code from apmDoPowerOff()
+ *@@changed V1.0.8 (2007-04-13) [pr]: reinstated APM_DOSSHUTDOWN_0 @@fixes 726
  */
 
 VOID xsdFinishPowerOff(PSHUTDOWNDATA pShutdownData)
@@ -3879,7 +3880,7 @@ VOID xsdFinishPowerOff(PSHUTDOWNDATA pShutdownData)
     }
     // else: APM_OK means preparing went alright
 
-    /* if (ulrc & APM_DOSSHUTDOWN_0)
+    if (ulrc & APM_DOSSHUTDOWN_0)
     {
         // shutdown request by apm.c:
         if (pShutdownData->ShutdownLogFile)
@@ -3890,7 +3891,7 @@ VOID xsdFinishPowerOff(PSHUTDOWNDATA pShutdownData)
         }
 
         DosShutdown(0);
-    } */
+    }
     // if apmPreparePowerOff/acpiPreparePowerOff requested this,
     // do DosShutdown(1)
     if (ulrc & APM_DOSSHUTDOWN_1)
