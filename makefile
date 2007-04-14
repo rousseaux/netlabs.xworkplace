@@ -982,7 +982,7 @@ $(XWPRELEASE_NLS)\bin\*.dll
 
 wpi: release
     @echo $(MAKEDIR)\makefile [$@]: Building WPI from $(XWPRELEASE).
-    makewpi.cmd $(XWPRELEASE)
+    makewpi.cmd $(XWPRELEASE) $(XWP_LANG_CODE)
 
 #
 # Special target "wpi_nls": this is not called by "all",

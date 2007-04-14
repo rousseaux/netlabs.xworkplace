@@ -2,21 +2,24 @@
 wpistem = 'xwp-1-1-0'
 filetime = '01:10:00'
 wisfile = 'xwp.wis'
-packages.0 = 3
-packages.1.id = 1
-packages.1.dir = 'kernel'
-packages.2.id = 1001
-packages.2.dir = '001'
-packages.3.id = 2001
-packages.3.dir = 'inf001'
 /**/
 call RxFuncAdd 'SysLoadFuncs', 'RexxUtil', 'SysLoadFuncs'
 call SysLoadFuncs
-parse arg reldir
+parse arg reldir countrycode .
 if reldir = '' then do
-  say 'Usage: makewpi <release directory>'
+  say 'Usage: makewpi <release directory> [<country code>]'
   return
 end
+if datatype(countrycode) \= 'NUM' | countrycode < 0 | countrycode > 999 then
+  countrycode = 1
+
+packages.0 = 3
+packages.1.id = countrycode
+packages.1.dir = 'kernel'
+packages.2.id = 1000 + countrycode
+packages.2.dir = right(countrycode, 3, '0')
+packages.3.id = 2000 + countrycode
+packages.3.dir = 'inf'right(countrycode, 3, '0')
 makedir = directory()
 reldir = directory(reldir)
 if reldir = '' then do
