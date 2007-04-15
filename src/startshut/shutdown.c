@@ -325,6 +325,7 @@ STATIC VOID StartShutdownThread(BOOL fStartShutdown,
  *@@changed V0.9.4 (2000-08-03) [umoeller]: added "empty trash can"
  *@@changed V0.9.11 (2001-04-25) [umoeller]: changed pending spool jobs msg to always abort now
  *@@changed V1.0.5 (2006-06-26) [pr]: added ACPI shutdown support
+ *@@changed V1.0.8 (2007-04-15) [pr]: removed print job test @@fixes 920
  */
 
 BOOL xsdInitiateShutdown(VOID)
@@ -394,6 +395,7 @@ BOOL xsdInitiateShutdown(VOID)
                 fStartShutdown = FALSE;
         }
 
+        /* V1.0.8 (2007-04-15) [pr]: seems an unnecessary restriction @@fixes 920
         if (fStartShutdown)
         {
             // check for pending spool jobs
@@ -420,6 +422,7 @@ BOOL xsdInitiateShutdown(VOID)
                 fStartShutdown = FALSE;
             }
         }
+        */
     }
 
     StartShutdownThread(fStartShutdown,
