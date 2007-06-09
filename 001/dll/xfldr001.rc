@@ -50,7 +50,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2006 Ulrich M”ller.
+ *      Copyright (C) 1997-2007 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -1388,8 +1388,9 @@ BEGIN
     ID_SDDI_CONFIRM_TITLE                "&xwp;: Extended Shutdown"
     ID_SDDI_CONFIRM_TEXT                "Please select how the system shall be shut down."
     ID_SDDI_REBOOTOPT_GROUP             "Reboot options"
-    ID_SDDI_SHUTDOWNONLY                "Shut down ~only"
-    ID_SDDI_STANDARDREBOOT              "St~andard reboot"
+    /* Tweaked accelerator keys V1.0.8 */
+    ID_SDDI_SHUTDOWNONLY                "~Shut down only"
+    ID_SDDI_STANDARDREBOOT              "Standard ~reboot"
     ID_SDDI_REBOOTTO                    "Reboot ~to..."
 
     /* the following two are new with V0.9.17 (2002-02-05) [umoeller] */
