@@ -24,7 +24,7 @@
  */
 
 /*
- *      Copyright (C) 2002-2006 Ulrich M”ller.
+ *      Copyright (C) 2002-2007 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -315,6 +315,7 @@ PWINHFREE pwinhFree = NULL;
 PWINHINSERTMENUITEM pwinhInsertMenuItem = NULL;
 PWINHINSERTSUBMENU pwinhInsertSubmenu = NULL;
 PWINHQUERYPRESCOLOR pwinhQueryPresColor = NULL;
+PWINHSETPRESCOLOR pwinhSetPresColor = NULL; // V1.0.8 (2007-08-05) [pr]
 PWINHQUERYWINDOWFONT pwinhQueryWindowFont = NULL;
 PWINHSETWINDOWFONT pwinhSetWindowFont = NULL;
 
@@ -352,6 +353,7 @@ static const RESOLVEFUNCTION G_aImports[] =
         "winhInsertMenuItem", (PFN*)&pwinhInsertMenuItem,
         "winhInsertSubmenu", (PFN*)&pwinhInsertSubmenu,
         "winhQueryPresColor", (PFN*)&pwinhQueryPresColor,
+        "winhSetPresColor", (PFN*)&pwinhSetPresColor, // V1.0.8 (2007-08-05) [pr]
         "winhQueryWindowFont", (PFN*)&pwinhQueryWindowFont,
         "winhSetWindowFont", (PFN*)&pwinhSetWindowFont,
 
@@ -746,7 +748,7 @@ STATIC LONG GetColor(HWND hwndDlg,
                                SYSCLR_DIALOGBACKGROUND);
 }
 
-#define COLOR_WIDTH     50
+#define COLOR_WIDTH     60
 #define COLOR_HEIGHT    16
 
 static CONTROLDEF
@@ -817,6 +819,7 @@ static const DLGHITEM
  *
  *@@added V0.9.19 (2002-06-02) [umoeller]
  *@@changed V0.9.20 (2002-07-06) [umoeller]: fixed wrong title
+ *@@changed V1.0.8 (2007-08-05) [pr]: now setting Presparams @@fixes 994
  */
 
 VOID EXPENTRY IwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
@@ -890,9 +893,17 @@ VOID EXPENTRY IwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
 
             Setup.lcolBackground = GetColor(hwndDlg,
                                             1000 + INDEX_BACKGROUND);
+            // V1.0.8 (2007-08-05) [pr]
+            pwinhSetPresColor(pData->pView->hwndWidget,
+                              PP_BACKGROUNDCOLOR,
+                              Setup.lcolBackground);
 
             Setup.lcolForeground = GetColor(hwndDlg,
                                             1000 + INDEX_FOREGROUND);
+            // V1.0.8 (2007-08-05) [pr]
+            pwinhSetPresColor(pData->pView->hwndWidget,
+                              PP_FOREGROUNDCOLOR,
+                              Setup.lcolForeground);
 
             IwgtSaveSetup(&strSetup,
                           &Setup);
@@ -920,6 +931,8 @@ VOID EXPENTRY IwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
 /*
  *@@ IwgtCreate:
  *      implementation for WM_CREATE.
+ *
+ *@@changed V1.0.8 (2007-08-05) [pr]: now setting Presparams @@fixes 994
  */
 
 STATIC MRESULT IwgtCreate(HWND hwnd,
@@ -1003,6 +1016,13 @@ STATIC MRESULT IwgtCreate(HWND hwnd,
     // spaces we use)
     pwinhSetWindowFont(hwnd,
                        pPrivate->Setup.pszFont);
+    // V1.0.8 (2007-08-05) [pr]
+    pwinhSetPresColor(hwnd,
+                      PP_BACKGROUNDCOLOR,
+                      pPrivate->Setup.lcolBackground);
+    pwinhSetPresColor(hwnd,
+                      PP_FOREGROUNDCOLOR,
+                      pPrivate->Setup.lcolForeground);
 
     // enable context menu help
     pWidget->pcszHelpLibrary = pcmnQueryHelpLibrary();
@@ -1013,7 +1033,6 @@ STATIC MRESULT IwgtCreate(HWND hwnd,
                                          hwnd,
                                          1,
                                          1000);
-
 
     pPrivate->fCreating = FALSE;
 
@@ -1058,6 +1077,8 @@ STATIC VOID IwgtDestroy(HWND hwnd)
 /*
  *@@ IwgtControl:
  *      implementation for WM_CONTROL.
+ *
+ *@@changed V1.0.8 (2007-08-05) [pr]: now setting Presparams on XN_SETUPCHANGED @@fixes 994
  */
 
 STATIC BOOL IwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
@@ -1107,6 +1128,18 @@ STATIC BOOL IwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
                         IwgtFreeSetup(&pPrivate->Setup);
                         IwgtScanSetup(pcszNewSetupString,
                                       &pPrivate->Setup);
+                        // V1.0.8 (2007-08-05) [pr]
+                        pwinhSetWindowFont(pWidget->hwndWidget,
+                                           (pPrivate->Setup.pszFont)
+                                            ? pPrivate->Setup.pszFont
+                                            // default font: use the same as in the rest of XWorkplace:
+                                            : pcmnQueryDefaultFont());
+                        pwinhSetPresColor(pWidget->hwndWidget,
+                                          PP_BACKGROUNDCOLOR,
+                                          pPrivate->Setup.lcolBackground);
+                        pwinhSetPresColor(pWidget->hwndWidget,
+                                          PP_FOREGROUNDCOLOR,
+                                          pPrivate->Setup.lcolForeground);
 
                         WinInvalidateRect(pWidget->hwndWidget, NULL, FALSE);
                     }
@@ -1633,6 +1666,7 @@ STATIC VOID IwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *@@ IwgtPresParamChanged:
  *      implementation for WM_PRESPARAMCHANGED.
  *
+ *@@changed V1.0.8 (2007-08-05) [pr]: rewrote this mess @@fixes 994
  */
 
 STATIC VOID IwgtPresParamChanged(HWND hwnd,
@@ -1646,11 +1680,10 @@ STATIC VOID IwgtPresParamChanged(HWND hwnd,
        )
     {
         BOOL fInvalidate = TRUE;
-        switch (ulAttrChanged)
+
+        switch (ulAttrChanged)  // V1.0.8 (2007-08-05) [pr]
         {
             case 0:     // layout palette thing dropped
-            case PP_BACKGROUNDCOLOR:
-            case PP_FOREGROUNDCOLOR:
                 pPrivate->Setup.lcolBackground
                     = pwinhQueryPresColor(hwnd,
                                           PP_BACKGROUNDCOLOR,
@@ -1660,12 +1693,28 @@ STATIC VOID IwgtPresParamChanged(HWND hwnd,
                     = pwinhQueryPresColor(hwnd,
                                           PP_FOREGROUNDCOLOR,
                                           FALSE,
-                                          SYSCLR_WINDOWSTATICTEXT);
+                                          SYSCLR_WINDOWTEXT);
+            break;
+
+            case PP_BACKGROUNDCOLOR:
+                pPrivate->Setup.lcolBackground
+                    = pwinhQueryPresColor(hwnd,
+                                          PP_BACKGROUNDCOLOR,
+                                          FALSE,
+                                          SYSCLR_DIALOGBACKGROUND);
+            break;
+
+            case PP_FOREGROUNDCOLOR:
+                pPrivate->Setup.lcolForeground
+                    = pwinhQueryPresColor(hwnd,
+                                          PP_FOREGROUNDCOLOR,
+                                          FALSE,
+                                          SYSCLR_WINDOWTEXT);
             break;
 
             case PP_FONTNAMESIZE:
             {
-                PSZ pszFont = 0;
+                PSZ pszFont;
                 if (pPrivate->Setup.pszFont)
                 {
                     free(pPrivate->Setup.pszFont);
@@ -1696,20 +1745,13 @@ STATIC VOID IwgtPresParamChanged(HWND hwnd,
 
         if (fInvalidate)
         {
-            XSTRING strSetup;
+            // force recreation of bitmap
+            pPrivate->fUpdateGraph = TRUE;
             WinInvalidateRect(hwnd, NULL, FALSE);
 
-            IwgtSaveSetup(&strSetup,
-                          &pPrivate->Setup);
-            if (strSetup.ulLength)
-                // changed V0.9.13 (2001-06-21) [umoeller]:
-                // post it to parent instead of fixed XCenter client
-                // to make this trayable
-                WinSendMsg(WinQueryWindow(hwnd, QW_PARENT), // pPrivate->pWidget->pGlobals->hwndClient,
-                           XCM_SAVESETUP,
-                           (MPARAM)hwnd,
-                           (MPARAM)strSetup.psz);
-            pxstrClear(&strSetup);
+            // V1.0.8 (2007-08-05) [pr]
+            if (!pPrivate->fCreating)
+                IwgtSaveSetupAndSend(hwnd, &pPrivate->Setup);
         }
     } // end if (pPrivate)
 }

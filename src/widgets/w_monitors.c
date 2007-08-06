@@ -566,7 +566,6 @@ VOID MwgtScanSetup(PCSZ pcszSetupString,
     }
     else
         pSetup->lcolForeground = WinQuerySysColor(HWND_DESKTOP,
-                                                  // SYSCLR_WINDOWSTATICTEXT,
                                                   SYSCLR_WINDOWTEXT,        // changed V1.0.2 (2003-02-03) [umoeller]
                                                   0);
 
@@ -1865,6 +1864,7 @@ VOID MwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *      implementation for WM_PRESPARAMCHANGED.
  *
  *@@changed V0.9.13 (2001-06-21) [umoeller]: changed XCM_SAVESETUP call for tray support
+ *@@changed V1.0.8 (2007-08-05) [pr]: rewrote this mess @@fixes 994
  */
 
 VOID MwgtPresParamChanged(HWND hwnd,
@@ -1878,11 +1878,10 @@ VOID MwgtPresParamChanged(HWND hwnd,
        )
     {
         BOOL fInvalidate = TRUE;
-        switch (ulAttrChanged)
+
+        switch (ulAttrChanged)  // V1.0.8 (2007-08-05) [pr]
         {
             case 0:     // layout palette thing dropped
-            case PP_BACKGROUNDCOLOR:
-            case PP_FOREGROUNDCOLOR:
                 pPrivate->Setup.lcolBackground
                     = pwinhQueryPresColor(hwnd,
                                           PP_BACKGROUNDCOLOR,
@@ -1892,7 +1891,23 @@ VOID MwgtPresParamChanged(HWND hwnd,
                     = pwinhQueryPresColor(hwnd,
                                           PP_FOREGROUNDCOLOR,
                                           FALSE,
-                                          SYSCLR_WINDOWSTATICTEXT);
+                                          SYSCLR_WINDOWTEXT);
+            break;
+
+            case PP_BACKGROUNDCOLOR:
+                pPrivate->Setup.lcolBackground
+                    = pwinhQueryPresColor(hwnd,
+                                          PP_BACKGROUNDCOLOR,
+                                          FALSE,
+                                          SYSCLR_DIALOGBACKGROUND);
+            break;
+
+            case PP_FOREGROUNDCOLOR:
+                pPrivate->Setup.lcolForeground
+                    = pwinhQueryPresColor(hwnd,
+                                          PP_FOREGROUNDCOLOR,
+                                          FALSE,
+                                          SYSCLR_WINDOWTEXT);
             break;
 
             case PP_FONTNAMESIZE:

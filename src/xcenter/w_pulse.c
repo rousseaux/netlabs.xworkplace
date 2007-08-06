@@ -22,7 +22,7 @@
  */
 
 /*
- *      Copyright (C) 2000-2003 Ulrich M”ller.
+ *      Copyright (C) 2000-2007 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -154,6 +154,7 @@ typedef struct _PULSESETUP
  *
  *@@changed V0.9.16 (2002-01-05) [umoeller]: added new fields for SMP support
  *@@changed V1.0.2 (2003-08-09) [bvl]: changed szTooltipText to pszTooltipText so that at create the size will be calculated @@fixes 490
+ *@@changed V1.0.8 (2007-08-05) [pr]: added fCreating @@fixes 994
  */
 
 typedef struct _WIDGETPRIVATE
@@ -165,6 +166,8 @@ typedef struct _WIDGETPRIVATE
 
     PULSESETUP      Setup;
             // widget settings that correspond to a setup string
+
+    BOOL            fCreating;          // added V1.0.8 (2007-08-05) [pr]
 
     PXBITMAP        pBitmap;        // bitmap for pulse graph; this contains only
                                     // the "client" (without the 3D frame)
@@ -535,7 +538,7 @@ STATIC LONG GetColor(HWND hwndDlg,
                               SYSCLR_DIALOGBACKGROUND);
 }
 
-#define COLOR_WIDTH     50
+#define COLOR_WIDTH     60
 #define COLOR_HEIGHT    16
 
 static CONTROLDEF
@@ -617,6 +620,7 @@ static PDLGHITEM    padlgPulsePerProcessor = NULL;  /* kso: Array of processor c
  *
  *@@added V0.9.16 (2002-01-05) [umoeller]
  *@@changed V0.9.18 (2002-03-03) [kso]: misc fixes
+ *@@changed V1.0.8 (2007-08-05) [pr]: now setting Presparams @@fixes 994
  */
 
 VOID EXPENTRY PwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
@@ -754,9 +758,17 @@ VOID EXPENTRY PwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
 
                 Setup.lcolBackground = GetColor(hwndDlg,
                                                 1000 + INDEX_BACKGROUND);
+                // V1.0.8 (2007-08-05) [pr]
+                winhSetPresColor(pData->pView->hwndWidget,
+                                 PP_BACKGROUNDCOLOR,
+                                 Setup.lcolBackground);
 
                 Setup.lcolText = GetColor(hwndDlg,
                                           1000 + INDEX_TEXT);
+                // V1.0.8 (2007-08-05) [pr]
+                winhSetPresColor(pData->pView->hwndWidget,
+                                 PP_FOREGROUNDCOLOR,
+                                 Setup.lcolText);
 
                 PwgtSaveSetup(&strSetup,
                               &Setup,
@@ -992,6 +1004,7 @@ STATIC VOID _Optlink fntCollect(PTHREADINFO ptiMyself)
  *
  *@@changed V0.9.12 (2001-05-20) [umoeller]: now using second thread
  *@@changed V1.0.2 (2003-08-10) [bvl]: Calculating the size of the tooltip based on the string resource size @@fixes 490
+ *@@changed V1.0.8 (2007-08-05) [pr]: now setting Presparams @@fixes 994
  */
 
 STATIC MRESULT PwgtCreate(HWND hwnd, MPARAM mp1)
@@ -1004,6 +1017,8 @@ STATIC MRESULT PwgtCreate(HWND hwnd, MPARAM mp1)
     // link the two together
     pWidget->pUser = pPrivate;
     pPrivate->pWidget = pWidget;
+
+    pPrivate->fCreating = TRUE;  // V1.0.8 (2007-08-05) [pr]
 
     // get CPU count for array rceation [bvl]
     pPrivate->arc = GetProcessorCount(&pPrivate->cProcessors);
@@ -1019,6 +1034,13 @@ STATIC MRESULT PwgtCreate(HWND hwnd, MPARAM mp1)
                        ? pPrivate->Setup.pszFont
                        // default font: use the same as in the rest of XWorkplace:
                        : cmnQueryDefaultFont());
+    // V1.0.8 (2007-08-05) [pr]
+    winhSetPresColor(hwnd,
+                     PP_BACKGROUNDCOLOR,
+                     pPrivate->Setup.lcolBackground);
+    winhSetPresColor(hwnd,
+                     PP_FOREGROUNDCOLOR,
+                     pPrivate->Setup.lcolText);
 
     // enable context menu help
     pWidget->pcszHelpLibrary = cmnQueryHelpLibrary();
@@ -1059,6 +1081,7 @@ STATIC MRESULT PwgtCreate(HWND hwnd, MPARAM mp1)
 
     pPrivate->pszTooltipText = malloc(strlen(cmnGetString(ID_CRSI_PWGT_TOOLTIP1)) + (pPrivate->cProcessors * strlen(cmnGetString(ID_CRSI_PWGT_TOOLTIP2))) + 20 );
 
+    pPrivate->fCreating = FALSE;  // V1.0.8 (2007-08-05) [pr]
     return mrc;
 }
 
@@ -1068,6 +1091,7 @@ STATIC MRESULT PwgtCreate(HWND hwnd, MPARAM mp1)
  *
  *@@added V0.9.7 (2000-12-14) [umoeller]
  *@@changed V0.9.13 (2001-06-21) [umoeller]: added tooltip
+ *@@changed V1.0.8 (2007-08-05) [pr]: now setting Presparams on XN_SETUPCHANGED @@fixes 994
  */
 
 STATIC BOOL PwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
@@ -1120,6 +1144,19 @@ STATIC BOOL PwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
                         PwgtScanSetup(pcszNewSetupString,
                                       &pPrivate->Setup,
                                       pPrivate->cProcessors);
+
+                        // V1.0.8 (2007-08-05) [pr]
+                        winhSetWindowFont(pWidget->hwndWidget,
+                                          (pPrivate->Setup.pszFont)
+                                           ? pPrivate->Setup.pszFont
+                                           // default font: use the same as in the rest of XWorkplace:
+                                           : cmnQueryDefaultFont());
+                        winhSetPresColor(pWidget->hwndWidget,
+                                         PP_BACKGROUNDCOLOR,
+                                         pPrivate->Setup.lcolBackground);
+                        winhSetPresColor(pWidget->hwndWidget,
+                                         PP_FOREGROUNDCOLOR,
+                                         pPrivate->Setup.lcolText);
 
                         WinInvalidateRect(pWidget->hwndWidget, NULL, FALSE);
                     }
@@ -1339,7 +1376,7 @@ STATIC VOID PwgtUpdateGraph(HWND hwnd,
  *      The specified HPS is switched to RGB mode before
  *      painting.
  *
- *      If DosPerfSysCall succeeds, this diplays the pulse.
+ *      If DosPerfSysCall succeeds, this displays the pulse.
  *      Otherwise an error msg is displayed.
  *
  *@@changed V0.9.9 (2001-03-14) [umoeller]: added interrupts graph
@@ -1768,6 +1805,7 @@ STATIC VOID PwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *      implementation for WM_PRESPARAMCHANGED.
  *
  *@@changed V0.9.13 (2001-06-21) [umoeller]: changed XCM_SAVESETUP call for tray support
+ *@@changed V1.0.8 (2007-08-05) [pr]: rewrote this mess @@fixes 994
  */
 
 STATIC VOID PwgtPresParamChanged(HWND hwnd,
@@ -1781,33 +1819,41 @@ STATIC VOID PwgtPresParamChanged(HWND hwnd,
        )
     {
         BOOL fInvalidate = TRUE;
-        switch (ulAttrChanged)
+
+        switch (ulAttrChanged)  // V1.0.8 (2007-08-05) [pr]
         {
             case 0:     // layout palette thing dropped
-            case PP_BACKGROUNDCOLOR:
-            case PP_FOREGROUNDCOLOR:
                 pPrivate->Setup.lcolBackground
                     = winhQueryPresColor(hwnd,
                                          PP_BACKGROUNDCOLOR,
                                          FALSE,
                                          SYSCLR_DIALOGBACKGROUND);
-                if (pPrivate->Setup.palcolGraph)
-                {
-                    PLONG pl = &pPrivate->Setup.palcolGraph[0];
-                    // allow the user to change cpu 0's color
-                    // via drag'n'drop
-                    *pl = winhQueryPresColor(hwnd,
-                                             PP_FOREGROUNDCOLOR,
-                                             FALSE,
-                                             -1);
-                    if (*pl == -1)
-                        *pl = QueryDefaultColor(0);
-                }
+                pPrivate->Setup.lcolText
+                    = winhQueryPresColor(hwnd,
+                                         PP_FOREGROUNDCOLOR,
+                                         FALSE,
+                                         SYSCLR_WINDOWTEXT);
+            break;
+
+            case PP_BACKGROUNDCOLOR:
+                pPrivate->Setup.lcolBackground
+                    = winhQueryPresColor(hwnd,
+                                         PP_BACKGROUNDCOLOR,
+                                         FALSE,
+                                         SYSCLR_DIALOGBACKGROUND);
+            break;
+
+            case PP_FOREGROUNDCOLOR:
+                pPrivate->Setup.lcolText
+                    = winhQueryPresColor(hwnd,
+                                         PP_FOREGROUNDCOLOR,
+                                         FALSE,
+                                         SYSCLR_WINDOWTEXT);
             break;
 
             case PP_FONTNAMESIZE:
             {
-                PSZ pszFont = 0;
+                PSZ pszFont;
                 if (pPrivate->Setup.pszFont)
                 {
                     free(pPrivate->Setup.pszFont);
@@ -1820,6 +1866,16 @@ STATIC VOID PwgtPresParamChanged(HWND hwnd,
                     pPrivate->Setup.pszFont = strdup(pszFont);
                     winhFree(pszFont);
                 }
+
+                // V1.0.8 (2007-08-05) [pr]
+                // do not do this during WM_CREATE
+                if (!pPrivate->fCreating)
+                {
+                    WinPostMsg(pWidget->pGlobals->hwndClient,
+                               XCM_REFORMAT,
+                               (MPARAM)XFMF_GETWIDGETSIZES,
+                               0);
+                }
             }
             break;
 
@@ -1829,23 +1885,29 @@ STATIC VOID PwgtPresParamChanged(HWND hwnd,
 
         if (fInvalidate)
         {
-            XSTRING strSetup;
+            // V1.0.8 (2007-08-05) [pr]
             // force recreation of bitmap
             pPrivate->fUpdateGraph = TRUE;
             WinInvalidateRect(hwnd, NULL, FALSE);
 
-            PwgtSaveSetup(&strSetup,
-                          &pPrivate->Setup,
-                          pPrivate->cProcessors);
-            if (strSetup.ulLength)
-                // changed V0.9.13 (2001-06-21) [umoeller]:
-                // post it to parent instead of fixed XCenter client
-                // to make this trayable
-                WinSendMsg(WinQueryWindow(hwnd, QW_PARENT), // pPrivate->pWidget->pGlobals->hwndClient,
-                           XCM_SAVESETUP,
-                           (MPARAM)hwnd,
-                           (MPARAM)strSetup.psz);
-            xstrClear(&strSetup);
+            if (!pPrivate->fCreating)
+            {
+                XSTRING strSetup;
+
+                PwgtSaveSetup(&strSetup,
+                              &pPrivate->Setup,
+                              pPrivate->cProcessors);
+                if (strSetup.ulLength)
+                    // changed V0.9.13 (2001-06-21) [umoeller]:
+                    // post it to parent instead of fixed XCenter client
+                    // to make this trayable
+                    WinSendMsg(WinQueryWindow(hwnd, QW_PARENT), // pPrivate->pWidget->pGlobals->hwndClient,
+                               XCM_SAVESETUP,
+                               (MPARAM)hwnd,
+                               (MPARAM)strSetup.psz);
+
+                xstrClear(&strSetup);
+            }
         }
     } // end if (pWidget && pPrivate)
 }

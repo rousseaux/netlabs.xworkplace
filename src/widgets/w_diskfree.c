@@ -270,7 +270,6 @@ typedef struct _DISKFREEPRIVATE
     DISKFREESETUP Setup;
             // widget settings that correspond to a setup string
 
-
     HPOINTER hptrHand;
     HPOINTER hptrDrive;
     HPOINTER hptrDrives[3];
@@ -394,7 +393,6 @@ void WgtScanSetup(PCSZ pcszSetupString,
     }
     else
         pSetup->lcolForeground = WinQuerySysColor(HWND_DESKTOP,
-                                                  // SYSCLR_WINDOWSTATICTEXT,
                                                   SYSCLR_WINDOWTEXT,        // changed V1.0.2 (2003-02-03) [umoeller]
                                                   0);
 
@@ -1077,6 +1075,7 @@ void WgtPaint(HWND hwnd,
  *      these colors and fonts in our setup string data.
  *
  *@@changed V0.9.13 (2001-06-21) [umoeller]: changed XCM_SAVESETUP call for tray support
+ *@@changed V1.0.8 (2007-08-05) [pr]: rewrote this mess @@fixes 994
  */
 
 void WgtPresParamChanged(HWND hwnd,
@@ -1087,11 +1086,10 @@ void WgtPresParamChanged(HWND hwnd,
     if (pPrivate = (PDISKFREEPRIVATE)pWidget->pUser)
     {
         BOOL fInvalidate = TRUE;
-        switch (ulAttrChanged)
+
+        switch (ulAttrChanged)  // V1.0.8 (2007-08-05) [pr]
         {
             case 0:     // layout palette thing dropped
-            case PP_BACKGROUNDCOLOR:    // background color (no ctrl pressed)
-            case PP_FOREGROUNDCOLOR:    // foreground color (ctrl pressed)
                 // update our setup data; the presparam has already
                 // been changed, so we can just query it
                 pPrivate->Setup.lcolBackground
@@ -1103,20 +1101,35 @@ void WgtPresParamChanged(HWND hwnd,
                     = pwinhQueryPresColor(hwnd,
                                           PP_FOREGROUNDCOLOR,
                                           FALSE,
-                                          SYSCLR_WINDOWSTATICTEXT);
+                                          SYSCLR_WINDOWTEXT);
+            break;
+
+            case PP_BACKGROUNDCOLOR:    // background color (no ctrl pressed)
+                pPrivate->Setup.lcolBackground
+                    = pwinhQueryPresColor(hwnd,
+                                          PP_BACKGROUNDCOLOR,
+                                          FALSE,
+                                          SYSCLR_DIALOGBACKGROUND);
+            break;
+
+            case PP_FOREGROUNDCOLOR:    // foreground color (ctrl pressed)
+                pPrivate->Setup.lcolForeground
+                    = pwinhQueryPresColor(hwnd,
+                                          PP_FOREGROUNDCOLOR,
+                                          FALSE,
+                                          SYSCLR_WINDOWTEXT);
             break;
 
             case PP_FONTNAMESIZE:       // font dropped:
             {
-                PSZ pszFont = 0;
+                PSZ pszFont;
                 if (pPrivate->Setup.pszFont)
                 {
                     free(pPrivate->Setup.pszFont);
                     pPrivate->Setup.pszFont = NULL;
                 }
 
-                pszFont = pwinhQueryWindowFont(hwnd);
-                if (pszFont)
+                if (pszFont = pwinhQueryWindowFont(hwnd))
                 {
                     // we must use local malloc() for the font;
                     // the winh* code uses a different C runtime
@@ -1151,6 +1164,7 @@ void WgtPresParamChanged(HWND hwnd,
                            XCM_SAVESETUP,
                            (MPARAM)hwnd,
                            (MPARAM)strSetup.psz);
+
             pxstrClear(&strSetup);
         }
     } // end if (pPrivate)

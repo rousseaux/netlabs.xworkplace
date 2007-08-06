@@ -34,7 +34,7 @@
  */
 
 /*
- *      Copyright (C) 2000-2003 Ulrich M”ller.
+ *      Copyright (C) 2000-2007 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -510,7 +510,6 @@ STATIC VOID WwgtScanSetup(PCSZ pcszSetupString,
     }
     else
         pSetup->lcolForeground = WinQuerySysColor(HWND_DESKTOP,
-                                                  // SYSCLR_WINDOWSTATICTEXT,
                                                   SYSCLR_WINDOWTEXT,        // changed V1.0.2 (2003-02-03) [umoeller]
                                                   0);
 
@@ -2722,6 +2721,7 @@ STATIC VOID WwgtCommand(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *      implementation for WM_PRESPARAMCHANGED.
  *
  *@@changed V0.9.13 (2001-06-21) [umoeller]: changed XCM_SAVESETUP call for tray support
+ *@@changed V1.0.8 (2007-08-05) [pr]: rewrote this mess @@fixes 994
  */
 
 STATIC VOID WwgtPresParamChanged(HWND hwnd, ULONG ulAttrChanged)
@@ -2733,11 +2733,10 @@ STATIC VOID WwgtPresParamChanged(HWND hwnd, ULONG ulAttrChanged)
        )
     {
         BOOL fInvalidate = TRUE;
-        switch (ulAttrChanged)
+
+        switch (ulAttrChanged)  // V1.0.8 (2007-08-05) [pr]
         {
             case 0:     // layout palette thing dropped
-            case PP_BACKGROUNDCOLOR:
-            case PP_FOREGROUNDCOLOR:
                 pPrivate->Setup.lcolBackground
                     = pwinhQueryPresColor(hwnd,
                                           PP_BACKGROUNDCOLOR,
@@ -2747,12 +2746,28 @@ STATIC VOID WwgtPresParamChanged(HWND hwnd, ULONG ulAttrChanged)
                     = pwinhQueryPresColor(hwnd,
                                           PP_FOREGROUNDCOLOR,
                                           FALSE,
-                                          SYSCLR_WINDOWSTATICTEXT);
+                                          SYSCLR_WINDOWTEXT);
+            break;
+
+            case PP_BACKGROUNDCOLOR:
+                pPrivate->Setup.lcolBackground
+                    = pwinhQueryPresColor(hwnd,
+                                          PP_BACKGROUNDCOLOR,
+                                          FALSE,
+                                          SYSCLR_DIALOGBACKGROUND);
+            break;
+
+            case PP_FOREGROUNDCOLOR:
+                pPrivate->Setup.lcolForeground
+                    = pwinhQueryPresColor(hwnd,
+                                          PP_FOREGROUNDCOLOR,
+                                          FALSE,
+                                          SYSCLR_WINDOWTEXT);
             break;
 
             case PP_FONTNAMESIZE:
             {
-                PSZ pszFont = 0;
+                PSZ pszFont;
                 if (pPrivate->Setup.pszFont)
                 {
                     free(pPrivate->Setup.pszFont);

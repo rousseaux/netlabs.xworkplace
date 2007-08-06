@@ -53,7 +53,7 @@
  */
 
 /*
- *      Copyright (C) 2000-2003 Ulrich M”ller.
+ *      Copyright (C) 2000-2007 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -357,7 +357,7 @@ VOID WgtScanSetup(PCSZ pcszSetupString,
         pctrFreeSetupValue(p);
     }
     else
-        pSetup->lcolForeground = WinQuerySysColor(HWND_DESKTOP, SYSCLR_WINDOWSTATICTEXT, 0);
+        pSetup->lcolForeground = WinQuerySysColor(HWND_DESKTOP, SYSCLR_WINDOWTEXT, 0); // V1.0.8 (2007-08-05) [pr]
 
     // font:
     // we set the font presparam, which automatically
@@ -615,6 +615,7 @@ VOID WgtPaint(HWND hwnd,
  *      these colors and fonts in our setup string data.
  *
  *@@changed V0.9.13 (2001-06-21) [umoeller]: changed XCM_SAVESETUP call for tray support
+ *@@changed V1.0.8 (2007-08-05) [pr]: rewrote this mess @@fixes 994
  */
 
 VOID WgtPresParamChanged(HWND hwnd,
@@ -625,11 +626,10 @@ VOID WgtPresParamChanged(HWND hwnd,
     if (pPrivate)
     {
         BOOL fInvalidate = TRUE;
-        switch (ulAttrChanged)
+
+        switch (ulAttrChanged)  // V1.0.8 (2007-08-05) [pr]
         {
             case 0:     // layout palette thing dropped
-            case PP_BACKGROUNDCOLOR:    // background color (no ctrl pressed)
-            case PP_FOREGROUNDCOLOR:    // foreground color (ctrl pressed)
                 // update our setup data; the presparam has already
                 // been changed, so we can just query it
                 pPrivate->Setup.lcolBackground
@@ -641,7 +641,23 @@ VOID WgtPresParamChanged(HWND hwnd,
                     = pwinhQueryPresColor(hwnd,
                                           PP_FOREGROUNDCOLOR,
                                           FALSE,
-                                          SYSCLR_WINDOWSTATICTEXT);
+                                          SYSCLR_WINDOWTEXT);
+            break;
+
+            case PP_BACKGROUNDCOLOR:    // background color (no ctrl pressed)
+                pPrivate->Setup.lcolBackground
+                    = pwinhQueryPresColor(hwnd,
+                                          PP_BACKGROUNDCOLOR,
+                                          FALSE,
+                                          SYSCLR_DIALOGBACKGROUND);
+            break;
+
+            case PP_FOREGROUNDCOLOR:    // foreground color (ctrl pressed)
+                pPrivate->Setup.lcolForeground
+                    = pwinhQueryPresColor(hwnd,
+                                          PP_FOREGROUNDCOLOR,
+                                          FALSE,
+                                          SYSCLR_WINDOWTEXT);
             break;
 
             case PP_FONTNAMESIZE:       // font dropped:

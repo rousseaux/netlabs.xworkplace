@@ -11,7 +11,7 @@
 
 /*
  *      Copyright (C) 2001 Stefan Milcke.
- *      Copyright (C) 2000-2003 Ulrich M”ller.
+ *      Copyright (C) 2000-2007 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -385,7 +385,7 @@ VOID MwgtScanSetup(PCSZ pcszSetupString,
         pctrFreeSetupValue(p);
     }
     else
-        pSetup->lcolForeground = WinQuerySysColor(HWND_DESKTOP, SYSCLR_WINDOWSTATICTEXT, 0);
+        pSetup->lcolForeground = WinQuerySysColor(HWND_DESKTOP, SYSCLR_WINDOWTEXT, 0); // V1.0.8 (2007-08-05) [pr]
 
     // font:
     // we set the font presparam, which automatically
@@ -918,6 +918,7 @@ VOID MwgtPaint(HWND hwnd, PHEALTHPRIVATE pPrivate, HPS hps, BOOL fDrawFrame)
  *      implementation for WM_PRESPARAMCHANGED.
  *
  *@@changed V0.9.13 (2001-06-21) [umoeller]: changed XCM_SAVESETUP call for tray support
+ *@@changed V1.0.8 (2007-08-05) [pr]: rewrote this mess @@fixes 994
  */
 
 VOID MwgtPresParamChanged(HWND hwnd,
@@ -930,12 +931,9 @@ VOID MwgtPresParamChanged(HWND hwnd,
     {
         BOOL fInvalidate = TRUE;
 
-        switch (ulAttrChanged)
+        switch (ulAttrChanged)  // V1.0.8 (2007-08-05) [pr]
         {
             case 0:         // layout palette thing dropped
-
-            case PP_BACKGROUNDCOLOR:
-            case PP_FOREGROUNDCOLOR:
                 pPrivate->Setup.lcolBackground
                     = pwinhQueryPresColor(hwnd,
                                           PP_BACKGROUNDCOLOR,
@@ -945,19 +943,36 @@ VOID MwgtPresParamChanged(HWND hwnd,
                     = pwinhQueryPresColor(hwnd,
                                           PP_FOREGROUNDCOLOR,
                                           FALSE,
-                                          SYSCLR_WINDOWSTATICTEXT);
+                                          SYSCLR_WINDOWTEXT);
                 break;
+
+            case PP_BACKGROUNDCOLOR:
+                pPrivate->Setup.lcolBackground
+                    = pwinhQueryPresColor(hwnd,
+                                          PP_BACKGROUNDCOLOR,
+                                          FALSE,
+                                          SYSCLR_DIALOGBACKGROUND);
+                break;
+
+            case PP_FOREGROUNDCOLOR:
+                pPrivate->Setup.lcolForeground
+                    = pwinhQueryPresColor(hwnd,
+                                          PP_FOREGROUNDCOLOR,
+                                          FALSE,
+                                          SYSCLR_WINDOWTEXT);
+                break;
+
             case PP_FONTNAMESIZE:
                 {
-                    PSZ pszFont = 0;
+                    PSZ pszFont;
 
                     if (pPrivate->Setup.pszFont)
                     {
                         free(pPrivate->Setup.pszFont);
                         pPrivate->Setup.pszFont = NULL;
                     }
-                    pszFont = pwinhQueryWindowFont(hwnd);
-                    if (pszFont)
+
+                    if (pszFont = pwinhQueryWindowFont(hwnd))
                     {
                         // we must use local malloc() for the font
                         pPrivate->Setup.pszFont = strdup(pszFont);
@@ -965,9 +980,11 @@ VOID MwgtPresParamChanged(HWND hwnd,
                     }
                     break;
                 }
+
             default:
                 fInvalidate = FALSE;
         }
+
         if (fInvalidate)
         {
             XSTRING strSetup;
@@ -982,6 +999,7 @@ VOID MwgtPresParamChanged(HWND hwnd,
                            XCM_SAVESETUP,
                            (MPARAM) hwnd,
                            (MPARAM) strSetup.psz);
+
             pxstrClear(&strSetup);
         }
     }                           // end if (pPrivate)
