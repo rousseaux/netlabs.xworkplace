@@ -15,7 +15,7 @@
  *      a Desktop restart, because we can only stop that thread
  *      if it has not done any processing yet.
  *
- *      Instead, with XWP, the following three (!) threads are
+ *      Instead, with XWP, the following four (!) threads are
  *      responsible for processing folder auto-refresh:
  *
  *      1)  The "Sentinel" thread (refr_fntSentinel). This is
@@ -45,7 +45,12 @@
  *          each other out or need not be processed at all.
  *          This is what the WPS "Ager" thread normally does.
  *
- *      Note that all these three threads are started on WPS
+ *      4)  The "Notification server thread" is responsible for
+ *          accepting clients' named pipe connections.
+ *          The notification data itself is sent out by the
+ *          Sentinel thread.
+ *
+ *      Note that all these threads are started on WPS
  *      startup if folder auto-refresh has been replaced in
  *      XWPSetup. By contrast, the "Folder auto-refresh" setting
  *      in "Workplace shell" (which is in the global settings) is only
@@ -53,6 +58,8 @@
  *      does not stop the threads from running... it will only
  *      disable posting messages from the Sentinel to the
  *      "find folder" thread, thus effectively disabling refresh.
+ *      Disabling this also prevents the named pipe notification
+ *      service.
  *
  *      This file is ALL new with V0.9.9 (2001-01-29) [umoeller]
  *
@@ -64,7 +71,7 @@
  */
 
 /*
- *      Copyright (C) 2001-2003 Ulrich M”ller.
+ *      Copyright (C) 2001-2007 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -97,6 +104,7 @@
 #define INCL_DOSRESOURCES
 #define INCL_DOSMISC
 #define INCL_DOSERRORS
+#define INCL_DOSNMPIPES
 
 #define INCL_WINWINDOWMGR
 #define INCL_WINMESSAGEMGR
@@ -145,16 +153,32 @@ static HEV             G_hevFindFolderReady = NULLHANDLE;
 static THREADINFO      G_tiPumpThread = {0};
 static HEV             G_hevNotificationPump = NULLHANDLE;
 
+// notification server thread  V1.0.8 (2007-08-10) [pr]
+static THREADINFO      G_tiNotifyServerThread = {0};
+static HMTX            G_hmtxNotifyClients = NULLHANDLE;
+
 // global list of all notifications (auto-free)
 static LINKLIST        G_llAllNotifications;
 
+// global list of notification handles for notify server  V1.0.8 (2007-08-10) [pr]
+static LINKLIST        G_llNotifyHandles;
+
 static BOOL            G_fExitAllRefreshThreads = FALSE;
             // this is set to TRUE as an emergency exit if
-            // one of the refresh threads crashed. All three
+            // one of the refresh threads crashed. All four
             // threads will then terminate.
 
-// delay after which notifications are pumped into the folders
-#define PUMP_AGER_MILLISECONDS      4000
+// delay after which notifications are pumped into the folders  V1.0.8 (2007-08-10) [pr]: was 4000
+#define PUMP_AGER_MILLISECONDS      1000
+
+// max. number of clients allowed for notification server  V1.0.8 (2007-08-10) [pr]
+#define MAX_NOTIFY_CLIENTS      0xFF
+
+// max. number of entries in notification buffer  V1.0.8 (2007-08-10) [pr]
+#define MAX_NOTIFY_BUFFER       100
+
+// Notification server pipe name  V1.0.8 (2007-08-10) [pr]
+#define PIPE_CHANGENOTIFY       "\\PIPE\\XNOTIFY"
 
 /* ******************************************************************
  *
@@ -1256,9 +1280,125 @@ STATIC VOID _Optlink fntFindFolder(PTHREADINFO ptiMyself)
 
 /* ******************************************************************
  *
+ *   Notification server thread
+ *
+ ********************************************************************/
+
+/*
+ *@@ fntNotifyServerThread:
+ *      This thread provides a named pipe server
+ *      service to any clients interested in picking
+ *      up the sentinel's notification messages.
+ *
+ *@@added V1.0.8 (2007-08-10) [pr]: @@fixes 1002
+ */
+
+STATIC VOID _Optlink fntNotifyServerThread(PTHREADINFO ptiMyself)
+{
+    DosSetPriority(PRTYS_THREAD, PRTYC_REGULAR, PRTYD_MINIMUM, 0);
+    while (!G_fExitAllRefreshThreads)
+    {
+        BOOL    fLocked = FALSE;
+        HPIPE   hPipeHandle;
+        APIRET  rc;
+
+        TRY_LOUD(excpt1)
+        {
+            // create pipe (outbound)
+            rc = DosCreateNPipe(PIPE_CHANGENOTIFY, &hPipeHandle,
+                                NP_NOWRITEBEHIND | NP_NOINHERIT | NP_ACCESS_OUTBOUND,
+                                NP_WAIT | NP_TYPE_MESSAGE | 
+                                NP_READMODE_MESSAGE | MAX_NOTIFY_CLIENTS,
+                                MAX_NOTIFY_BUFFER * (sizeof(CNINFO) + _MAX_PATH + 2),
+                                MAX_NOTIFY_BUFFER * (sizeof(CNINFO) + _MAX_PATH + 2),
+                                0); 
+            if (rc == NO_ERROR)		// wait for client connection
+                rc = DosConnectNPipe(hPipeHandle);
+
+            if (rc == NO_ERROR)
+                // make it non-blocking, so DosWrite will not block if client
+                // has not emptied the pipe.
+                rc = DosSetNPHState(hPipeHandle, NP_NOWAIT);
+
+            if (rc == NO_ERROR)
+            {
+                // add to list of registered pipes
+                fLocked = !DosRequestMutexSem(G_hmtxNotifyClients, SEM_INDEFINITE_WAIT);
+                lstAppendItem(&G_llNotifyHandles, (void *)hPipeHandle);
+            }
+        }
+        CATCH(excpt1)
+        {
+            // if we crashed, stop all refresh threads. This
+            // can become very annoying otherwise.
+            G_fExitAllRefreshThreads = TRUE;
+            WinPostMsg(G_hwndFindFolder, WM_QUIT, 0, 0);
+        } END_CATCH();
+
+        if (fLocked)
+            DosReleaseMutexSem(G_hmtxNotifyClients);
+
+        if (rc != NO_ERROR && !G_fExitAllRefreshThreads)
+            DosSleep(1000);
+    }
+
+    DosCloseMutexSem(G_hmtxNotifyClients);
+    G_hmtxNotifyClients = NULLHANDLE;
+}
+
+/* ******************************************************************
+ *
  *   Sentinel thread
  *
  ********************************************************************/
+
+/*
+ *@@ NotifyClients:
+ *      called from refr_fntSentinel for each notification to be posted to the
+ *      named pipe clients.
+ *      Goes through the list of connected clients sending them the notifications
+ *      and removes from the list any clients that have disconnected.
+ *
+ *@@added V1.0.8 (2007-08-11) [pr]: @@fixes 1002
+ */
+
+STATIC VOID NotifyClients(PCNINFO pCNInfo)
+{
+    BOOL    fLocked = FALSE;
+    PLISTNODE pNode;
+
+    TRY_LOUD(excpt1)
+    {
+        fLocked = !DosRequestMutexSem(G_hmtxNotifyClients, SEM_INDEFINITE_WAIT);
+        pNode = lstQueryFirstNode(&G_llNotifyHandles);
+        while (pNode)
+        {
+            PLISTNODE pNext = pNode->pNext;
+            HPIPE hPipeHandle = (HPIPE)pNode->pItemData;
+            ULONG cbSize, cbActual;
+            APIRET rc;
+
+            pCNInfo->oNextEntryOffset = 0;  // Beware of side effects!
+            cbSize = sizeof(CNINFO) + pCNInfo->cbName;
+            rc = DosWrite(hPipeHandle, pCNInfo, cbSize, &cbActual);
+            if ((rc != NO_ERROR) || (cbSize != cbActual))
+            {
+                // Disconnect client in case of error
+                DosDisConnectNPipe(hPipeHandle);
+                DosClose(hPipeHandle);
+                lstRemoveNode(&G_llNotifyHandles, pNode);
+            }
+
+            pNode = pNext;
+        }
+    }
+    CATCH(excpt1)
+    {
+    } END_CATCH();
+
+    if (fLocked)
+        DosReleaseMutexSem(G_hmtxNotifyClients);
+}
 
 /*
  *@@ PostXWPNotify:
@@ -1311,8 +1451,8 @@ STATIC VOID PostXWPNotify(PCNINFO pCNInfo)
  *      This replaces the WPS's "WheelWatcher" thread
  *      and processes the DosFindNotify* functions.
  *
- *      On startup, this creates the "find folder"
- *      and "pump" threads in turn.
+ *      On startup, this creates the "find folder",
+ *      "pump"  and "notification server" threads in turn.
  *
  *      This thread does NOT have a PM message queue.
  *
@@ -1322,7 +1462,7 @@ STATIC VOID PostXWPNotify(PCNINFO pCNInfo)
  *      two threads (fntFindFolder, fntPumpThread)
  *      in turn.
  *
- *      These three threads get created even if folder
+ *      These four threads get created even if folder
  *      auto-refresh has been disabled on the "View" page
  *      in "Workplace shell". That setting will only disable
  *      posting messages from the Sentinel to the "find folder"
@@ -1334,6 +1474,7 @@ STATIC VOID PostXWPNotify(PCNINFO pCNInfo)
  *@@changed V0.9.12 (2001-05-20) [umoeller]: fixed stupid pointer error which caused a trap D on DosResetChangeNotify
  *@@changed V0.9.16 (2002-01-09) [umoeller]: added RCNF_DEVICE_ATTACHED, RCNF_DEVICE_DETACHED support
  *@@changed V0.9.20 (2002-07-25) [umoeller]: raised priority
+ *@@changed V1.0.8 (2007-08-10) [pr]: added Notification server @@fixes 1002
  */
 
 VOID _Optlink refr_fntSentinel(PTHREADINFO ptiMyself)
@@ -1351,6 +1492,9 @@ VOID _Optlink refr_fntSentinel(PTHREADINFO ptiMyself)
 
     lstInit(&G_llAllNotifications,
             TRUE);          // auto-free
+
+    lstInit(&G_llNotifyHandles,  // V1.0.8 (2007-08-10) [pr]
+            FALSE);
 
     // create a second thread with a PM object window
     // which can process our notifications asynchronously
@@ -1376,13 +1520,22 @@ VOID _Optlink refr_fntSentinel(PTHREADINFO ptiMyself)
               THRF_PMMSGQUEUE,
               0);
 
+    // create Notification server thread  V1.0.8 (2007-08-10) [pr]
+    doshCreateMutexSem(NULL, &G_hmtxNotifyClients, 0, FALSE);
+    thrCreate(&G_tiNotifyServerThread,
+              fntNotifyServerThread,
+              NULL,
+              "NotifyServer",
+              0,
+              0);
+
     TRY_LOUD(excpt1)
     {
         PCKERNELGLOBALS      pKernelGlobals = krnQueryGlobals();
 
         // allocate a block of memory... we can't use malloc,
         // or the Dos*Notify APIs will trap
-        ULONG       cb = 2 * (sizeof(CNINFO) + CCHMAXPATH);
+        ULONG       cb = MAX_NOTIFY_BUFFER * (sizeof(CNINFO) + CCHMAXPATH);
                                 // we can't use more, this will hang the system
         PCNINFO     pBuffer = NULL;
         APIRET      arc = DosAllocMem((PVOID*)&pBuffer,
@@ -1424,8 +1577,10 @@ VOID _Optlink refr_fntSentinel(PTHREADINFO ptiMyself)
                         if (    (G_hwndFindFolder)
                              && (pKernelGlobals->fDesktopPopulated)
                              && (arc == NO_ERROR)
+                             && (!cmnQuerySetting(sfFdrAutoRefreshDisabled))  // V1.0.8 (2007-08-11) [pr]
                            )
                         {
+                            PCNINFO pcniThis, pcniNext;
                             // we got a notification:
                             // we won't bother with the details
                             // since we better get out of the processing
@@ -1433,11 +1588,17 @@ VOID _Optlink refr_fntSentinel(PTHREADINFO ptiMyself)
                             // Instead, we create a copy of this notification
                             // and have the "find folder" thread do the
                             // work of finding the folder etc.
-                            PCNINFO pcniThis = pBuffer;
-                            while (    (pcniThis)
-                                    && (!cmnQuerySetting(sfFdrAutoRefreshDisabled))
-                                  )
+                            // V1.0.8 (2007-08-11) [pr]
+                            for (pcniThis = pBuffer; pcniThis; pcniThis = pcniNext)
                             {
+                                // get next entry in the buffer
+                                if (pcniThis->oNextEntryOffset)
+                                    pcniNext = (PCNINFO)(   (PBYTE)pcniThis
+                                                          + pcniThis->oNextEntryOffset
+                                                        );
+                                else
+                                    pcniNext = NULL;  // no next entry:
+
                                 if (pcniThis->cbName)
                                     // filter out the items which the
                                     // "find folder" thrad doesn't understand
@@ -1462,18 +1623,9 @@ VOID _Optlink refr_fntSentinel(PTHREADINFO ptiMyself)
                                         case RCNF_DEVICE_ATTACHED:
                                         case RCNF_DEVICE_DETACHED:
                                             PostXWPNotify(pcniThis);
+                                            NotifyClients(pcniThis);  // V1.0.8 (2007-08-11) [pr]
                                         break;
-
                                     }
-
-                                // go for next entry in the buffer
-                                if (pcniThis->oNextEntryOffset)
-                                    pcniThis = (PCNINFO)(   (PBYTE)pcniThis
-                                                          + pcniThis->oNextEntryOffset
-                                                        );
-                                else
-                                    // no next entry:
-                                    break;
                             }
                         }
                         // else: DosResetChangeNotify returned an error...
@@ -1534,5 +1686,4 @@ VOID _Optlink refr_fntSentinel(PTHREADINFO ptiMyself)
         DosCloseChangeNotify(hdir);
     }
 }
-
 
