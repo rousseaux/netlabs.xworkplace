@@ -19,7 +19,7 @@
  */
 
 /*
- *      Copyright (C) 2000-2006 Ulrich M”ller.
+ *      Copyright (C) 2000-2007 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -1320,6 +1320,7 @@ STATIC VOID OwgtButton1Down(HWND hwnd,
  *      implementation for WM_BUTTON1UP.
  *
  *@@changed V1.0.6 (2006-10-24) [pr]: redirect object opens to thread 1, again!
+ *@@changed V1.0.8 (2007-08-13) [pr]: ignore button up without button down @@fixes 993
  */
 
 STATIC VOID OwgtButton1Up(HWND hwnd)
@@ -1338,7 +1339,8 @@ STATIC VOID OwgtButton1Up(HWND hwnd)
             pPrivate->xbs.fMouseCaptured = FALSE;
         }
 
-        if (WinIsWindowEnabled(hwnd))
+        if (   WinIsWindowEnabled(hwnd)
+            && pPrivate->fMB1Pressed)  // V1.0.8 (2007-08-13) [pr]
         {
             pPrivate->xbs.fMB1Pressed = FALSE;
 
