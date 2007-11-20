@@ -1340,7 +1340,7 @@ STATIC VOID OwgtButton1Up(HWND hwnd)
         }
 
         if (   WinIsWindowEnabled(hwnd)
-            && pPrivate->fMB1Pressed)  // V1.0.8 (2007-08-13) [pr]
+            && pPrivate->xbs.fMB1Pressed)  // V1.0.8 (2007-08-13) [pr]
         {
             pPrivate->xbs.fMB1Pressed = FALSE;
 

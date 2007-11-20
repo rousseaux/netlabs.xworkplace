@@ -3889,7 +3889,7 @@ VOID xsdFinishPowerOff(PSHUTDOWNDATA pShutdownData)
         if (pShutdownData->ShutdownLogFile)
         {
             doshWriteLogEntry(pShutdownData->ShutdownLogFile, "xsdFinishPowerOff: Calling DosShutdown(0), closing log.");
-            fclose(pShutdownData->ShutdownLogFile);
+            doshClose(&pShutdownData->ShutdownLogFile);
             pShutdownData->ShutdownLogFile = NULL;
         }
 
