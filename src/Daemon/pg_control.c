@@ -54,7 +54,7 @@
  */
 
 /*
- *      Copyright (C) 2000-2003 Ulrich M”ller.
+ *      Copyright (C) 2000-2007 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -1718,6 +1718,7 @@ STATIC VOID PagerHotkey(MPARAM mp1)
  *
  *@@added V0.9.19 (2002-05-07) [umoeller]
  *@@changed V0.9.20 (2002-07-03) [umoeller]: reduced activate delay from 200 to 50 ms
+ *@@changed V1.0.8 (2007-11-20) [pr]: keep window on screen while mouse over it
  */
 
 STATIC MRESULT EXPENTRY fnwpPager(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -1998,6 +1999,24 @@ STATIC MRESULT EXPENTRY fnwpPager(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 
             case WM_BEGINDRAG:
                 PagerDrag(hwnd, mp1);
+            break;
+
+            // V1.0.8 (2007-11-20) [pr]
+#ifndef WM_MOUSEENTER
+    #define WM_MOUSEENTER   0x041E
+    #define WM_MOUSELEAVE   0x041F
+#endif
+
+            case WM_MOUSEENTER:
+                // stop timer so that it is only triggered when leaving the window
+                if (G_pHookData->PagerConfig.flPager & PGRFL_FLASHTOTOP)
+                    WinStopTimer(G_habDaemon,
+                                 hwnd,
+                                 TIMERID_PGR_FLASH);
+            break;
+
+            case WM_MOUSELEAVE:
+                CheckFlashTimer();
             break;
 
             default:
