@@ -84,6 +84,8 @@ MAPDIR=$(MODULESDIR)
 #!endif
 
 # create output directory
+!if [@md $(PROJECT_BASE_DIR)\bin 2> NUL]
+!endif
 !if [@md $(PROJECT_OUTPUT_DIR) 2> NUL]
 !endif
 !if [@md $(MODULESDIR) 2> NUL]
