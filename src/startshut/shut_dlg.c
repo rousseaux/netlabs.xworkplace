@@ -14,7 +14,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2006 Ulrich M”ller.
+ *      Copyright (C) 1997-2008 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -391,7 +391,9 @@ static CONTROLDEF
                             SZL_AUTOSIZE),
     ShutdownOnlyRadio = LOADDEF_FIRST_AUTORADIO(ID_SDDI_SHUTDOWNONLY),
     StandardRebootRadio = LOADDEF_NEXT_AUTORADIO(ID_SDDI_STANDARDREBOOT),
+#ifndef __EASYSHUTDOWN__
     RebootToRadio = LOADDEF_NEXT_AUTORADIO(ID_SDDI_REBOOTTO),
+#endif
     BootMgrListbox = CONTROLDEF_LISTBOX(
                             ID_SDDI_BOOTMGR,
                             100,
@@ -433,8 +435,10 @@ static const DLGHITEM dlgConfirmShutdown[] =
                                 CONTROL_DEF(&ShutdownOnlyRadio),
                             START_ROW(0),
                                 CONTROL_DEF(&StandardRebootRadio),
+                       #ifndef __EASYSHUTDOWN__
                             START_ROW(0),
                                 CONTROL_DEF(&RebootToRadio),
+                       #endif
                         END_TABLE,
                     START_ROW(0),
                         CONTROL_DEF(&EmptyTrashCB),
