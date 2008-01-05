@@ -19,7 +19,7 @@
  */
 
 /*
- *      Copyright (C) 2002-2006 Ulrich M”ller.
+ *      Copyright (C) 2002-2008 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -365,5 +365,25 @@ BOOL ctsIsPrinter(WPObject *somSelf)
         return _somIsA(somSelf, WPPrinterClass);
     else
         return FALSE;
+}
+
+/*
+ *@@ ctsIsTrashable:
+ *      returns FALSE if somSelf is a Transient, a Printer, a Network folder
+ *      or a Server otherwise returns TRUE.
+ *
+ *@@added V1.0.8 (2008-01-05) [pr]
+ */
+
+BOOL ctsIsTrashable(WPObject *somSelf)
+{
+    if (   ctsIsTransient(somSelf)
+        || ctsIsPrinter(somSelf)
+        || ctsIsNetgrp(somSelf)
+        || ctsIsServer(somSelf)
+       )
+        return FALSE;
+    else
+        return TRUE;
 }
 

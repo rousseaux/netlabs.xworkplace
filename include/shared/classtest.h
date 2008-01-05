@@ -8,7 +8,7 @@
  */
 
 /*
- *      Copyright (C) 2002-2006 Ulrich M”ller.
+ *      Copyright (C) 2002-2008 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -58,6 +58,8 @@
     BOOL ctsIsDisk(WPObject *somSelf);
 
     BOOL ctsIsPrinter(WPObject *somSelf);
+
+    BOOL ctsIsTrashable(WPObject *somSelf);
 
 #endif
 

@@ -35,7 +35,7 @@
  */
 
 /*
- *      Copyright (C) 2000-2006 Ulrich M”ller.
+ *      Copyright (C) 2000-2008 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -1060,6 +1060,7 @@ APIRET fopsStartTaskFromList(ULONG ulOperation,
  *@@changed V0.9.9 (2001-02-18) [pr]: fix trap when pSourceObject is NULL
  *@@changed V0.9.19 (2002-04-24) [umoeller]: added help to some confirmations
  *@@changed V1.0.6 (2006-10-14) [pr]: always use true delete for single Printer/Transient objects
+ *@@changed V1.0.8 (2008-01-05) [pr]: true delete untrashable objects @@fixes 1035
  */
 
 APIRET fopsStartDeleteFromCnr(HAB hab,                 // in: as with fopsStartTask
@@ -1098,7 +1099,7 @@ APIRET fopsStartDeleteFromCnr(HAB hab,                 // in: as with fopsStartT
 
             // V1.0.6 (2006-10-14) [pr]
             if (   (ulSelection != SEL_MULTISEL)
-                && (ctsIsPrinter(pSourceObject) || ctsIsTransient(pSourceObject))
+                && (!ctsIsTrashable(pSourceObject))  // V1.0.8 (2008-01-05) [pr]
                )
                 fTrueDelete = TRUE;
 

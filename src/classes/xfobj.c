@@ -35,7 +35,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2006 Ulrich M”ller.
+ *      Copyright (C) 1997-2008 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -4904,6 +4904,7 @@ SOM_Scope BOOL  SOMLINK xo_wpModifyMenu(XFldObject *somSelf,
  *@@changed V0.9.16 (2001-12-06) [umoeller]: fixed shredder deleting into trash can
  *@@changed V1.0.0 (2002-09-12) [umoeller]: re-enabled WPMENUID_DELETE to catch some more delete situations
  *@@changed V1.0.6 (2006-09-30) [pr]: fix Shredder delete @@fixes 413
+ *@@changed V1.0.8 (2008-01-05) [pr]: prevent untrashable objects going to trash @@fixes 1035
  */
 
 SOM_Scope BOOL  SOMLINK xo_wpMenuItemSelected(XFldObject *somSelf,
@@ -4942,8 +4943,7 @@ SOM_Scope BOOL  SOMLINK xo_wpMenuItemSelected(XFldObject *somSelf,
 #endif
                     (!cmnQuerySetting(sfAlwaysTrueDelete))
                  && (doshQueryShiftState())
-                 && (!ctsIsTransient(somSelf))
-                 && (!ctsIsPrinter(somSelf))
+                 && (ctsIsTrashable(somSelf))  // V1.0.8 (2008-01-05) [pr]
                )
             {
                 PMPF_FOPS(("WPMENUID_DELETE"));

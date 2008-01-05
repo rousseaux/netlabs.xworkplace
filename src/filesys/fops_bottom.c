@@ -47,7 +47,7 @@
  */
 
 /*
- *      Copyright (C) 2000-2006 Ulrich M”ller.
+ *      Copyright (C) 2000-2008 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -375,6 +375,7 @@ APIRET fopsCreateFileTaskList(HFILETASKLIST *phftl,     // out: new file task li
  *@@changed V0.9.3 (2000-04-25) [umoeller]: reworked error management
  *@@changed V0.9.4 (2000-07-27) [umoeller]: added pulIgnoreSubsequent to ignore further errors
  *@@changed V1.0.6 (2006-10-30) [pr]: prevent Transient/Printer objects going into Trash
+ *@@changed V1.0.8 (2008-01-05) [pr]: prevent other untrashable objects going into Trash @@fixes 1035
  */
 
 APIRET fopsValidateObjOperation(ULONG ulOperation,        // in: operation
@@ -396,8 +397,7 @@ APIRET fopsValidateObjOperation(ULONG ulOperation,        // in: operation
     {
         case XFT_MOVE2TRASHCAN:
             if (   !_wpIsDeleteable(pObject)
-                || ctsIsTransient(pObject)  // V1.0.6 (2006-10-30) [pr]
-                || ctsIsPrinter(pObject)
+                || !ctsIsTrashable(pObject)  // V1.0.8 (2008-01-05) [pr]
                )
             {
                 // abort right away
@@ -1460,6 +1460,7 @@ STATIC APIRET FileThreadFontProcessing(HAB hab,
  *@@changed V0.9.7 (2001-01-13) [umoeller]: added XFT_INSTALLFONTS, XFT_DEINSTALLFONTS
  *@@changed V0.9.19 (2002-05-01) [umoeller]: reversed confirmations for move to trash and empty trash
  *@@changed V1.0.6 (2006-09-24) [pr]: don't move Printers and Transient objects to Trash Can
+ *@@changed V1.0.8 (2008-05-01) [pr]: don't move WPNetGrp and WPServer objects to Trash Can @@fixes 1035
  */
 
 VOID fopsFileThreadProcessing(HAB hab,              // in: file thread's anchor block
@@ -1543,8 +1544,7 @@ VOID fopsFileThreadProcessing(HAB hab,              // in: file thread's anchor 
             while (fu.pSourceObject = _Enum(pftl->pllObjects, NULL))
             {
                 // WPObject    *pObjectThis = (WPObject*)pNode->pItemData;
-                WPObject        *pObjectFailed = NULL;
-                // fu.pSourceObject = (WPObject*)pNode->pItemData;
+                WPObject       *pObjectFailed = NULL;
 
                 // per default, take object off the list; this
                 // is set to FALSE if the object gets deleted
@@ -1570,7 +1570,6 @@ VOID fopsFileThreadProcessing(HAB hab,              // in: file thread's anchor 
                         break;
 
                 PMPF_FOPS(("    processing %s", _wpQueryTitle(fu.pSourceObject) ));
-
                 // now, for each object, perform
                 // the desired operation
                 switch (pftl->ulOperation)
@@ -1594,10 +1593,8 @@ VOID fopsFileThreadProcessing(HAB hab,              // in: file thread's anchor 
                                                                            &ulIgnoreSubsequent)))
                            )
                         {
-                            // V1.0.6 (2006-09-24) [pr]: ignore Printers and Transient objects
-                            if (   ctsIsTransient(fu.pSourceObject)
-                                || ctsIsPrinter(fu.pSourceObject)
-                               )
+                            // V1.0.8 (2008-01-05) [pr]
+                            if (!ctsIsTrashable(fu.pSourceObject))
                             {
                                 frc = fopsFileThreadTrueDelete(hftl,
                                                                &fu,
@@ -1712,20 +1709,6 @@ VOID fopsFileThreadProcessing(HAB hab,              // in: file thread's anchor 
                                           NULL,
                                           MB_CANCEL,
                                           TRUE); // in: as in cmnDescribeError
-                        /*
-                        CHAR szMsg[3000];
-                        PSZ pszTitle = "?";
-                        if (wpshCheckObject(fu.pSourceObject))
-                            pszTitle = _wpQueryTitle(fu.pSourceObject);
-                        sprintf(szMsg,
-                                "Error %d with object %s",
-                                frc,
-                                pszTitle);
-                        WinMessageBox(HWND_DESKTOP, NULLHANDLE,
-                                      szMsg,
-                                      "XWorkplace File thread",
-                                      0, MB_OK | MB_ICONEXCLAMATION | MB_MOVEABLE);
-                        */
                     }
                 #endif
 
