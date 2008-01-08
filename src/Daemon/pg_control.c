@@ -54,7 +54,7 @@
  */
 
 /*
- *      Copyright (C) 2000-2007 Ulrich M”ller.
+ *      Copyright (C) 2000-2008 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -84,6 +84,7 @@
 #define INCL_WINSWITCHLIST
 #define INCL_WINPOINTERS
 #define INCL_WINSTDCNR
+#define INCL_WINRECTANGLES
 
 #define INCL_GPICONTROL
 #define INCL_GPIPRIMITIVES
@@ -160,6 +161,7 @@ HMTX                G_hmtxSuppressNotify = NULLHANDLE;    // V0.9.14 (2001-08-25
 THREADINFO          G_tiMoveThread = {0};
 
 BOOL                G_fActiveChangedPending = FALSE;      // V0.9.19 (2002-06-14) [lafaix]
+BOOL                G_fDraggingCtrlWin = FALSE;  // V1.0.8 (2008-01-08) [pr]
 
 extern HAB          G_habDaemon;        // xwpdaemn.c
 
@@ -277,11 +279,27 @@ LONG pgrCalcClientCY(LONG cx)
  *      flashing is enabled.
  *
  *@@added V0.9.19 (2002-05-07) [umoeller]
+ *@@changed V1.0.8 (2008-01-08) [pr]: keep pager window visible if mouse over it @@fixes 1038
  */
 
 STATIC VOID CheckFlashTimer(VOID)
 {
-    if (G_pHookData->PagerConfig.flPager & PGRFL_FLASHTOTOP)
+    BOOL   fMouseInWin = FALSE;
+    POINTL ptlMouse;
+
+    WinQueryPointerPos (HWND_DESKTOP, &ptlMouse);
+    if (WinMapWindowPoints (HWND_DESKTOP, G_pHookData->hwndPagerFrame, &ptlMouse, 1))
+    {
+        RECTL rect;
+
+        WinQueryWindowRect (G_pHookData->hwndPagerFrame, &rect);
+        fMouseInWin = WinPtInRect (WinQueryAnchorBlock(HWND_DESKTOP), &rect, &ptlMouse);
+    }
+
+    if (   !fMouseInWin
+        && !G_fDraggingCtrlWin
+        && (G_pHookData->PagerConfig.flPager & PGRFL_FLASHTOTOP)
+       )
         WinStartTimer(G_habDaemon,
                       G_pHookData->hwndPagerClient,
                       TIMERID_PGR_FLASH,
@@ -1718,7 +1736,7 @@ STATIC VOID PagerHotkey(MPARAM mp1)
  *
  *@@added V0.9.19 (2002-05-07) [umoeller]
  *@@changed V0.9.20 (2002-07-03) [umoeller]: reduced activate delay from 200 to 50 ms
- *@@changed V1.0.8 (2007-11-20) [pr]: keep window on screen while mouse over it
+ *@@changed V1.0.8 (2008-01-08) [pr]: keep pager window visible if mouse over it @@fixes 1038
  */
 
 STATIC MRESULT EXPENTRY fnwpPager(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -1997,11 +2015,17 @@ STATIC MRESULT EXPENTRY fnwpPager(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
              *      move the windows within the pager.
              */
 
+            // V1.0.8 (2008-01-08) [pr]
             case WM_BEGINDRAG:
+                G_fDraggingCtrlWin = TRUE;
                 PagerDrag(hwnd, mp1);
             break;
 
-            // V1.0.8 (2007-11-20) [pr]
+            case WM_ENDDRAG:
+                G_fDraggingCtrlWin = FALSE;
+                CheckFlashTimer();
+            break;
+
 #ifndef WM_MOUSEENTER
     #define WM_MOUSEENTER   0x041E
     #define WM_MOUSELEAVE   0x041F
