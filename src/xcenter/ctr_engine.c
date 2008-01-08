@@ -21,7 +21,7 @@
  */
 
 /*
- *      Copyright (C) 2000-2007 Ulrich M”ller.
+ *      Copyright (C) 2000-2008 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -5027,6 +5027,7 @@ STATIC BOOL ClientSaveSetup(HWND hwndClient,
  *@@changed V0.9.9 (2001-03-07) [umoeller]: fixed crashes on destroy
  *@@changed V0.9.14 (2001-07-14) [lafaix]: fixed MB2 click on border/resizing bar
  *@@changed V0.9.14 (2001-08-21) [umoeller]: added "hide on click" support
+ *@@changed V1.0.8 (2008-01-08) [pr]: fix flash with "hide on click" when opening @@fixes 499
  */
 
 STATIC MRESULT EXPENTRY fnwpXCenterMainClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -5256,8 +5257,8 @@ STATIC MRESULT EXPENTRY fnwpXCenterMainClient(HWND hwnd, ULONG msg, MPARAM mp1, 
                 switch ((ULONG)mp1)
                 {
                     // ignore button 2 and 3
+                    // case WM_BUTTON1UP:  V1.0.8 (2008-01-08) [pr]: @@fixes 499
                     case WM_BUTTON1DOWN:
-                    case WM_BUTTON1UP:
                     case WM_BUTTON1DBLCLK:
                         StartAutohideNow((PXCENTERWINDATA)WinQueryWindowPtr(hwnd,
                                                                             QWL_USER));
