@@ -1165,7 +1165,7 @@ BEGIN
                         DT_VCENTER | DT_MNEMONIC
         AUTOCHECKBOX    "~Animation", ID_XSDI_MOUSE_AUTOMOVE_ANIMATE, 22, 36,
                         50, 8
-        AUTOCHECKBOX    "~Center over button-less dialogs",
+        AUTOCHECKBOX    "~Center over buttonless dialogs",
                         ID_XSDI_MOUSE_AUTOMOVE_CENTER, 22, 28, 145, 8
         PUSHBUTTON      "~Undo", DID_UNDO, 4, 4, 70, 12, WS_GROUP
         PUSHBUTTON      "~Default", DID_DEFAULT, 78, 4, 70, 12
