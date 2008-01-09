@@ -19,7 +19,7 @@
  */
 
 /*
- *      Copyright (C) 2000-2007 Ulrich M”ller.
+ *      Copyright (C) 2000-2008 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -1321,6 +1321,7 @@ STATIC VOID OwgtButton1Down(HWND hwnd,
  *
  *@@changed V1.0.6 (2006-10-24) [pr]: redirect object opens to thread 1, again!
  *@@changed V1.0.8 (2007-08-13) [pr]: ignore button up without button down @@fixes 993
+ *@@changed V1.0.8 (2008-01-09) [pr]: don't open Templates @@fixes 43
  */
 
 STATIC VOID OwgtButton1Up(HWND hwnd)
@@ -1361,9 +1362,12 @@ STATIC VOID OwgtButton1Up(HWND hwnd)
                     // always, or we get very strange system hangs with
                     // some executables
                     // V1.0.6 (2006-10-24) [pr]: re-enabled - it was disabled sometime!
-                    krnPostThread1ObjectMsg(T1M_OPENOBJECTFROMPTR,
-                                           (MPARAM)pPrivate->pobjButton,
-                                           (MPARAM)OPEN_DEFAULT);
+                    // V1.0.8 (2008-01-09) [pr]
+                    if (!(_wpQueryStyle(pPrivate->pobjButton) & OBJSTYLE_TEMPLATE))
+                        krnPostThread1ObjectMsg(T1M_OPENOBJECTFROMPTR,
+                                               (MPARAM)pPrivate->pobjButton,
+                                               (MPARAM)OPEN_DEFAULT);
+
                     /* _wpViewObject(pPrivate->pobjButton,
                                      NULLHANDLE,
                                      OPEN_DEFAULT,
