@@ -478,7 +478,8 @@ BEGIN
        XShutdown might crash. These are needed for inserting
        variable data (sprintf). */
     ID_SDSI_SHUTDOWN                "Shut~down"
-    ID_SDSI_RESTARTWPS              "~Restart Desktop..."
+/* modified V1.0.8 */
+    ID_SDSI_RESTARTWPS              "R~estart Desktop..."
     ID_SDSI_RESTARTINGWPS           "Restarting Desktop..."
     ID_SDSI_SAVINGDESKTOP           "Saving %d Desktop objects..."
     ID_SDSI_SAVINGPROFILES          "Saving INI files..."
