@@ -3,7 +3,7 @@ XWorkplace 1.1.0 README
 
 (W) Ulrich M”ller, Feb 7, 2000
 
-Last updated January 10, 2007
+Last updated January 22, 2008
 
 
 0. CONTENTS OF THIS FILE
@@ -78,9 +78,9 @@ Last updated January 10, 2007
 
     --  eComStation 1.x
 
-    XWorkplace 1.1.0 and higher provide access to additional information
+    XWorkplace 1.0.4 and higher provide access to additional information
     about drivers. The following requirements apply:
-   
+
     -- The CFGDAT.INF file from the ConfigTool freeware package must
        reside in a directory on the path that is specified by the
        BOOKSHELF environment variable in CONFIG.SYS.
@@ -237,7 +237,7 @@ Last updated January 10, 2007
 7. LICENSE, COPYRIGHT, DISCLAIMER
 =================================
 
-    Copyright (C) 1997-2007 Ulrich M”ller,
+    Copyright (C) 1997-2008 Ulrich M”ller,
                             Martin Lafaix,
                             Paul Ratcliffe,
                             and others.
