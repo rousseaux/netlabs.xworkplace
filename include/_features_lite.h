@@ -25,7 +25,7 @@
 #define __ALWAYSREPLACEICONPAGE__               1
 #define __NOFILEPAGE2__                         1
 #define __ALWAYSFIXCLASSTITLES__                1
-#define __NOXSYSTEMSOUNDS__                     1
+// #define __NOXSYSTEMSOUNDS__                     1
 
 // folder features
 #define __ALWAYSSUBCLASS__                      1
