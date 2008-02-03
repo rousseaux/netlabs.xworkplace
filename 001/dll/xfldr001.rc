@@ -1,4 +1,4 @@
- 
+
 /*
  * xfldr001.rc:
  *      this is the main resource file for the English NLS DLL.
@@ -1378,7 +1378,7 @@ BEGIN
     /* V1.0.0: ID of next item changed */
     ID_SDDI_CONFIRMWPS_TEXT             "Are you sure you wish to restart the Desktop?"
     ID_SDDI_WPS_CLOSEWINDOWS            "~Close all sessions"
-    ID_SDDI_WPS_STARTUPFOLDER           "~Process all XWorkplace Startup folders"
+    ID_SDDI_WPS_STARTUPFOLDER           "~Process all &xwp; Startup folders"
         /* next one is new with V0.9.19 */
     ID_SDDI_ARCHIVEONCE                 "~Archive Desktop once after restart"
     ID_SDDI_MESSAGEAGAIN                "~Show this message next time"
@@ -1965,10 +1965,10 @@ BEGIN
     ID_FXSI_TYPE_NODE                    "NODE"
 
     /* column names in main and object ID containers */
-    ID_FXSI_NUMBER                       "i" 
+    ID_FXSI_NUMBER                       "i"
     ID_FXSI_TYPE                         "Type"
     ID_FXSI_NODEOFS                      "Node ofs"
-    ID_FXSI_HANDLE                       "Handle" 
+    ID_FXSI_HANDLE                       "Handle"
     ID_FXSI_PARENT                       "Parent"
     ID_FXSI_SHORTNAME                    "Short name"
     ID_FXSI_CHILDREN                     "Children"

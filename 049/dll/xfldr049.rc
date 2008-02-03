@@ -1352,7 +1352,7 @@ BEGIN
     /* V1.0.0: ID of next item changed */
     ID_SDDI_CONFIRMWPS_TEXT             "Soll die WPS wirklich neu gestartet werden?"
     ID_SDDI_WPS_CLOSEWINDOWS            "~Alle Sitzungen schlieáen"
-    ID_SDDI_WPS_STARTUPFOLDER           "Alle XWorkplace-S~ystemstartordner abarbeiten"
+    ID_SDDI_WPS_STARTUPFOLDER           "Alle &xwp;-S~ystemstartordner abarbeiten"
         /* next one is new with V0.9.19 */
     ID_SDDI_ARCHIVEONCE                 "A~rbeitsoberfl„che einmal archivieren"
     ID_SDDI_MESSAGEAGAIN                "Die~se Nachricht beim n„chsten Mal anzeigen"

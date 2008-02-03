@@ -1294,7 +1294,7 @@ BEGIN
     ID_SDDI_CONFIRMWPS_TITLE            "&xwp;: Starta om Skrivbordet"
     ID_SDDI_CONFIRM_TEXT                "Žr du s„ker p† att du vill starta om Skrivbordet?"
     ID_SDDI_WPS_CLOSEWINDOWS            "~St„ng alla sessioner"
-    ID_SDDI_WPS_STARTUPFOLDER           "~Processa alla XWorkplace Startupmappar"
+    ID_SDDI_WPS_STARTUPFOLDER           "~Processa alla &xwp; Startupmappar"
     /* next one is new with V0.9.19 */
     ID_SDDI_ARCHIVEONCE                 "~Arkivera Skrivbordet en g†ng efter omstarten"
     ID_SDDI_MESSAGEAGAIN                "~Visa det h„r meddelandet n„sta g†ng"
