@@ -33,7 +33,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2006 Ulrich M”ller.
+ *      Copyright (C) 1997-2008 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -924,6 +924,7 @@
 #define ID_OSDI_HIMEM_VALIMIT_TXT2      1514
 #define ID_OSDI_HIMEM_DLLBASINGOFF      1515
 #define ID_OSDI_HIMEM_JAVAHIMEM         1516
+#define ID_OSDI_HIMEM_EARLYMEMINIT      1517  // V1.0.8 (2008-03-04) [chennecke]
 
 // FAT page; this is also used by the driver dialogs
 #define ID_OSD_SETTINGS_FAT             1521

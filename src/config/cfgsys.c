@@ -25,7 +25,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *      Copyright (C) 1997-2008 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -604,6 +604,7 @@ STATIC MRESULT EXPENTRY fnwpDoubleFilesDlg(HWND hwndDlg,
  *@@changed V1.0.1 (2002-12-08) [pr]: removed CLASSPATH again @@fixes 272
  *@@changed V1.0.1 (2002-12-11) [pr]: POPUPLOG drive was wrong @@fixes 37
  *@@changed V1.0.2 (2003-03-03) [pr]: POPUPLOG drive was still wrong @@fixes 37
+ *@@changed V1.0.8 (2008-03-04) [chennecke]: added support for EARLYMEMINIT
  */
 
 VOID cfgConfigInitPage(PNOTEBOOKPAGE pnbp,
@@ -781,6 +782,16 @@ VOID cfgConfigInitPage(PNOTEBOOKPAGE pnbp,
                                               ID_OSDI_HIMEM_JAVAHIMEM,
                                               fSet);
 
+                        // added V1.0.8 (2008-03-04) [chennecke]
+                        fSet = FALSE;
+                        if (    (p = csysGetParameter(pszConfigSys, "EARLYMEMINIT=", NULL, 0))
+                             && (!memicmp(p, "ON", 2))
+                           )
+                            fSet = TRUE;
+                        winhSetDlgItemChecked(hwndDlgPage,
+                                              ID_OSDI_HIMEM_EARLYMEMINIT,
+                                              fSet);
+
                         if (p = csysGetParameter(pszConfigSys,
                                                  "VIRTUALADDRESSLIMIT=",
                                                  0,
@@ -806,7 +817,8 @@ VOID cfgConfigInitPage(PNOTEBOOKPAGE pnbp,
                                         ID_OSDI_HIMEM_VALIMIT_SLIDER,
                                         ID_OSDI_HIMEM_VALIMIT_TXT2,
                                         ID_OSDI_HIMEM_DLLBASINGOFF,
-                                        ID_OSDI_HIMEM_JAVAHIMEM
+                                        ID_OSDI_HIMEM_JAVAHIMEM,
+                                        ID_OSDI_HIMEM_EARLYMEMINIT     // added V1.0.8 (2008-03-04) [chennecke]
                                     };
                         for (s = 0;
                              s < ARRAYITEMCOUNT(as);
@@ -1303,6 +1315,7 @@ VOID cfgConfigInitPage(PNOTEBOOKPAGE pnbp,
  *@@changed V0.9.0 [umoeller]: added "System paths" page handling
  *@@changed V0.9.0 [umoeller]: adjusted function prototype
  *@@changed V0.9.9 (2001-02-28) [pr]: added "edit path"
+ *@@changed V1.0.8 (2008-03-04) [chennecke]: added support for EARLYMEMINIT
  */
 
 MRESULT cfgConfigItemChanged(PNOTEBOOKPAGE pnbp,
@@ -1754,6 +1767,16 @@ MRESULT cfgConfigItemChanged(PNOTEBOOKPAGE pnbp,
                                     // remove that line
                                     csysDeleteLine(pszConfigSys, "SET JAVA_HIGH_MEMORY=");
 
+                                // added V1.0.8 (2008-03-04) [chennecke]
+                                if (winhIsDlgItemChecked(hwndDlgPage, ID_OSDI_HIMEM_EARLYMEMINIT))
+                                    csysSetParameter(&pszConfigSys,
+                                                     "EARLYMEMINIT=",
+                                                     "ON",
+                                                     TRUE); // convert to upper case if necessary
+                                else
+                                    // remove that line
+                                    csysDeleteLine(pszConfigSys, "EARLYMEMINIT=");
+
                                 if (l = winhQuerySliderArmPosition(WinWindowFromID(hwndDlgPage,
                                                                                    ID_OSDI_HIMEM_VALIMIT_SLIDER),
                                                                    SMA_INCREMENTVALUE))
@@ -2132,6 +2155,7 @@ MRESULT cfgConfigItemChanged(PNOTEBOOKPAGE pnbp,
                         // Warp 4.5 (WSeB kernel) running:
                         winhSetDlgItemChecked(hwndDlgPage, ID_OSDI_HIMEM_DLLBASINGOFF, TRUE);
                         winhSetDlgItemChecked(hwndDlgPage, ID_OSDI_HIMEM_JAVAHIMEM, TRUE);
+                        winhSetDlgItemChecked(hwndDlgPage, ID_OSDI_HIMEM_EARLYMEMINIT, TRUE); // added V1.0.8 (2008-03-04) [chennecke]
                         winhSetSliderArmPosition(WinWindowFromID(hwndDlgPage,
                                                                  ID_OSDI_HIMEM_VALIMIT_SLIDER),
                                                  SMA_INCREMENTVALUE,
@@ -2268,6 +2292,11 @@ MRESULT cfgConfigItemChanged(PNOTEBOOKPAGE pnbp,
 
                     winhSetDlgItemChecked(hwndDlgPage,
                                           ID_OSDI_HIMEM_JAVAHIMEM,
+                                          FALSE);
+
+                    // added V1.0.8 (2008-03-04) [chennecke]
+                    winhSetDlgItemChecked(hwndDlgPage,
+                                          ID_OSDI_HIMEM_EARLYMEMINIT,
                                           FALSE);
 
                     winhSetSliderArmPosition(WinWindowFromID(hwndDlgPage,

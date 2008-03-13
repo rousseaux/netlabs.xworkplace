@@ -31,7 +31,8 @@ that can concurrently run on a system.
 <P>See <A HREF="glossary/gls_mem_himem.html">&os2; Virtual Address Space</A> for more
 information on this topic.
 
-<P><LI>If "Disable DLL basing" is enabled, &os2; will ignore each
+<!-- V1.0.8: added bold -->
+<P><LI>If <B>"Disable DLL basing"</B> is enabled, &os2; will ignore each
 <!-- V0.9.20: added link -->
 <A HREF="glossary/gls_dll.html">DLL's</A>
 base address (preferred load address) when the DLL is loaded. This
@@ -42,7 +43,8 @@ corresponds to the <CODE>DLLBASING=OFF</CODE> statement in
 shared arena and thus reduce the likelihood of running out of
 shared memory, but performance for loading DLLs may suffer.
 
-<P><LI>If <B>High memory for Java</B> is enabled, the &os2; Java
+<!-- V1.0.8: added quotes -->
+<P><LI>If <B>"High memory for Java"</B> is enabled, the &os2; Java
 Virtual Machine is instructed to attempt to place its heap into
 &os2;'s high memory (above the 512 MB line). This will
 only work if you have set the virtual address limit above to
@@ -54,6 +56,26 @@ statement in &cfgsys;.
 <P>As with all high memory, this will prevent 16-bit code from
 accessing that memory. Most notably, this requires that you have
 TCP/IP 4.1 or higher installed.
+
+<!-- V1.0.8: new option -->
+<P><LI>If <B>"Early memory initialization"</B> is enabled, &os2; will
+make the full amount of memory available to drivers earlier
+in the boot process. This corresponds to the <CODE>EARLYMEMINIT</CODE>
+statement in &cfgsys;.
+
+<P>By default, there are only 16 MB of memory available during the
+first phases of the boot process. This is regardless of the
+actual amount of physical memory installed in the machine! The full
+amount is only made available after all drivers have been loaded, shortly
+before the shell is started. In scenarios where a large number of drivers
+or very large drivers have to be loaded, the system might run short of
+available memory. As a result, drivers requiring more memory cannot be
+loaded anymore. Enabling the above option solves this problem.
+
+<P><B>WARNING:</B> Do <B>not</B> enable this option if you use
+the HPFS386 file system or older ISA hardware that directly accesses
+memory e.g. ISA SCSI controllers. Doing so is likely to cause
+data corruption.
 
 </UL>
 </BODY>
