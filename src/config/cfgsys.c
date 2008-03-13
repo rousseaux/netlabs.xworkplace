@@ -535,10 +535,6 @@ STATIC MRESULT EXPENTRY fnwpDoubleFilesDlg(HWND hwndDlg,
          */
 
         case WM_COMMAND:
-            /* switch (SHORT1FROMMP(mp1))  // source id
-            {
-                case DID_OK: */
-
             // V0.9.9 (2001-03-07) [umoeller]:
             // nope, paul... we must always destroy the window. If we let this
             // slip thru to the default window proc, pressing "esc" in the
@@ -577,6 +573,24 @@ STATIC MRESULT EXPENTRY fnwpDoubleFilesDlg(HWND hwndDlg,
     }
 
     return mrc;
+}
+
+/*
+ *@@ cfgIsStringOn
+ *
+ *@@added V1.0.8 (2008-03-13) [pr]
+ */
+
+STATIC BOOL cfgIsStringOn(PSZ p)
+{
+    if (   !stricmp(p, "TRUE")
+        || !stricmp(p, "YES")
+        || !stricmp(p, "ON")
+        || !strcmp(p, "1")
+       )
+        return(TRUE);
+    else
+        return(FALSE);
 }
 
 /*
@@ -684,6 +698,7 @@ VOID cfgConfigInitPage(PNOTEBOOKPAGE pnbp,
                          "XWorkplace was unable to open the CONFIG.SYS file.");
         else
         {
+            CHAR    szParameter[300] = "";
             // OK, file read successfully:
             switch (pnbp->inbp.ulPageID)
             {
@@ -713,8 +728,9 @@ VOID cfgConfigInitPage(PNOTEBOOKPAGE pnbp,
                                            1, 10,
                                            ul);
 
-                    if (p = csysGetParameter(pszConfigSys, "PRIORITY_DISK_IO=", NULL, 0))
-                        bl = (strncmp(p, "YES", 3) == 0);
+                    // V1.0.8 (2008-03-13) [pr]
+                    if (csysGetParameter(pszConfigSys, "PRIORITY_DISK_IO=", szParameter, sizeof(szParameter)))
+                        bl = cfgIsStringOn(szParameter);
 
                     winhSetDlgItemChecked(hwndDlgPage,
                                           ID_OSDI_PRIORITYDISKIO,
@@ -765,8 +781,9 @@ VOID cfgConfigInitPage(PNOTEBOOKPAGE pnbp,
                         BOOL fSet = FALSE;
                         // Warp 4.5 (WSeB kernel) running:
 
-                        if (    (p = csysGetParameter(pszConfigSys, "DLLBASING=", NULL, 0))
-                             && (!memicmp(p, "OFF", 3))
+                        // V1.0.8 (2008-03-13) [pr]
+                        if (    csysGetParameter(pszConfigSys, "DLLBASING=", szParameter, sizeof(szParameter))
+                             && !cfgIsStringOn(szParameter)
                            )
                             fSet = TRUE;
                         winhSetDlgItemChecked(hwndDlgPage,
@@ -774,8 +791,9 @@ VOID cfgConfigInitPage(PNOTEBOOKPAGE pnbp,
                                               fSet);
 
                         fSet = FALSE;
-                        if (    (p = csysGetParameter(pszConfigSys, "SET JAVA_HIGH_MEMORY=", NULL, 0))
-                             && (*p == '1')
+                        // V1.0.8 (2008-03-13) [pr]
+                        if (    csysGetParameter(pszConfigSys, "SET JAVA_HIGH_MEMORY=", szParameter, sizeof(szParameter))
+                             && cfgIsStringOn(szParameter)
                            )
                             fSet = TRUE;
                         winhSetDlgItemChecked(hwndDlgPage,
@@ -784,8 +802,8 @@ VOID cfgConfigInitPage(PNOTEBOOKPAGE pnbp,
 
                         // added V1.0.8 (2008-03-04) [chennecke]
                         fSet = FALSE;
-                        if (    (p = csysGetParameter(pszConfigSys, "EARLYMEMINIT=", NULL, 0))
-                             && (!memicmp(p, "ON", 2))
+                        if (    csysGetParameter(pszConfigSys, "EARLYMEMINIT=", szParameter, sizeof(szParameter))
+                             && cfgIsStringOn(szParameter)
                            )
                             fSet = TRUE;
                         winhSetDlgItemChecked(hwndDlgPage,
@@ -931,8 +949,7 @@ VOID cfgConfigInitPage(PNOTEBOOKPAGE pnbp,
 
                 case SP_FAT:
                 {
-                    CHAR    szParameter[300] = "",
-                            szAutoCheck[200] = "";
+                    CHAR    szAutoCheck[200] = "";
                     ULONG   ulCacheSize = 512,
                             ulThreshold = 4;
                     PSZ     p2 = 0;
@@ -997,7 +1014,6 @@ VOID cfgConfigInitPage(PNOTEBOOKPAGE pnbp,
 
                 case SP_WPS:
                 {
-                    CHAR    szParameter[300] = "";
                     PSZ p = csysGetParameter(pszConfigSys, "SET AUTOSTART=",
                                              szParameter, sizeof(szParameter));
                     BOOL fAutoRefreshFolders = TRUE;
@@ -1045,21 +1061,23 @@ VOID cfgConfigInitPage(PNOTEBOOKPAGE pnbp,
 
                 case SP_ERRORS:
                 {
-                    CHAR    szParameter[300] = "", c;
+                    CHAR c;
                     BOOL fAutoFail = FALSE,
                          fReIPL = FALSE;
                     LONG lIndex = 0;           // default for "0" param
-                    PSZ p = csysGetParameter(pszConfigSys, "AUTOFAIL=",
-                            szParameter, sizeof(szParameter));
-                    if (p)
-                        if (strhistr(szParameter, "YES"))
+                    PSZ p;
+
+                    // V1.0.8 (2008-03-13) [pr]
+                    if (csysGetParameter(pszConfigSys, "AUTOFAIL=",
+                            szParameter, sizeof(szParameter)))
+                        if (cfgIsStringOn(szParameter))
                             fAutoFail = TRUE;
                     winhSetDlgItemChecked(hwndDlgPage, ID_OSDI_AUTOFAIL, fAutoFail);
 
-                    p = csysGetParameter(pszConfigSys, "REIPL=",
-                            szParameter, sizeof(szParameter));
-                    if (p)
-                        if (strhistr(szParameter, "ON"))
+                    // V1.0.8 (2008-03-13) [pr]
+                    if (csysGetParameter(pszConfigSys, "REIPL=",
+                            szParameter, sizeof(szParameter)))
+                        if (cfgIsStringOn(szParameter))
                             fReIPL = TRUE;
                     winhSetDlgItemChecked(hwndDlgPage, ID_OSDI_REIPL, fReIPL);
 
@@ -1771,7 +1789,7 @@ MRESULT cfgConfigItemChanged(PNOTEBOOKPAGE pnbp,
                                 if (winhIsDlgItemChecked(hwndDlgPage, ID_OSDI_HIMEM_EARLYMEMINIT))
                                     csysSetParameter(&pszConfigSys,
                                                      "EARLYMEMINIT=",
-                                                     "ON",
+                                                     "TRUE",
                                                      TRUE); // convert to upper case if necessary
                                 else
                                     // remove that line
