@@ -17,12 +17,16 @@
 #                           target.
 #
 #                       --  "all" (default): build XFLDR.DLL, XWPHOOK.DLL,
-#                           XWPDAEMN.EXE, plus the default plugin DLLs.
+#                           XWPDAEMN.EXE, plus the default plugin DLLs and
+#                           copy to XWorkplace install directory
+#                           specified by XWPRUNNING.
 #
-#                       --  "really_all": "all" plus external EXEs
+#                       --  "really_all": build "all" plus external EXEs
 #                           (Treesize, Netscape DDE, et al) plus NLS
 #                           specified by the XWP_LANG_CODE variable,
-#                           which defaults to "001" (setup.in).
+#                           which defaults to "001" (setup.in) and
+#       	            copy to XWorkplace install directory
+#                           specified by XWPRUNNING.
 #
 #                       The following subtargets exist (which get called
 #                       by the "all" or "really_all" targets):
@@ -30,9 +34,10 @@
 #                       --  nls: compile $(XWP_LANG_CODE)\ directory
 #                       --  tools: compile TOOLS\ directory
 #                       --  idl: update SOM headers (include\classes\*)
-#                       --  cpl_main: compile *.c files for DLLs, no link
+#                       --  compile_all: compile main *.c files for DLLs, no link
+#                       --  compile_really_all: compile all *.c files for DLLs, no link
 #                       --  link: link bin\*.obj to DLLs and copy to XWorkplace
-#                                 install directory
+#                                 install directory specified by XWPRUNNING
 #
 #                       Use "nmake -a [<targets>] to _re_build the targets,
 #                       even if they are up to date.
@@ -43,8 +48,8 @@
 #
 #                       --  dlgedit: invoke dialog editor on NLS DLL
 #                       --  release: create/update release tree in directory
-#                           specified by XWPRELEASE; this invokes "really_all"
-#                           in turn.
+#                           specified by XWPRELEASE.  Invokes "really_all"
+#                           before files are copied.
 #
 #       Environment:    You MUST set a number of environment variables before
 #                       compiling. See PROGREF.INF.
@@ -732,11 +737,9 @@ dlgedit:
 
 release: really_all
 # 1) main dir
-# This doesn't work
-#!ifndef XWPRELEASE
-#!error XWPRELEASE must be set before calling "make release". Terminating.
-#!endif
-# nuke old directories
+!ifndef XWPRELEASE
+!error XWPRELEASE must be set before calling "make release". Terminating.
+!endif
 # create directories
 !if [@md $(XWPRELEASE) 2> NUL]
 !endif
@@ -752,15 +755,15 @@ release: really_all
 !endif
 !if [@md $(XWPRELEASE_MAP) 2> NUL]
 !endif
-    @echo $(MAKEDIR)\makefile [$@]: Now copying files to $(XWPRELEASE).
-!ifndef XWPLITE
-    $(COPY) release\COPYING $(XWPRELEASE_MAIN)
-    $(COPY) release\file_id.diz $(XWPRELEASE_MAIN)
+    @echo $(MAKEDIR)\makefile [$@]: Now copying files to $(XWPRELEASE)\$(BLD_TYP).
     @cd $(XWP_LANG_CODE)
     $(MAKE) -nologo release "MAINMAKERUNNING=YES"
     @cd ..
-#   $(COPY) $(XWP_LANG_CODE)\readme $(XWPRELEASE_NLSDOC)
     $(COPY) $(MODULESDIR)\xfldr$(XWP_LANG_CODE).inf $(XWPRELEASE_NLSDOC)
+!ifndef XWPLITE
+    $(COPY) release\COPYING $(XWPRELEASE_MAIN)
+    $(COPY) release\file_id.diz $(XWPRELEASE_MAIN)
+#   $(COPY) $(XWP_LANG_CODE)\readme $(XWPRELEASE_NLSDOC)
     $(COPY) BUGS $(XWPRELEASE_NLSDOC)
     $(COPY) FEATURES $(XWPRELEASE_NLSDOC)
     $(COPY) cvs.txt $(XWPRELEASE_MAIN)
@@ -981,8 +984,8 @@ $(XWPRELEASE_NLS)\bin\*.dll
 #
 
 wpi: release
-    @echo $(MAKEDIR)\makefile [$@]: Building WPI from $(XWPRELEASE).
-    makewpi.cmd $(XWPRELEASE) $(XWP_LANG_CODE)
+    @echo $(MAKEDIR)\makefile [$@]: Building WPI from $(XWPRELEASE)\$(BLD_TYP).
+    makewpi.cmd $(XWPRELEASE)\$(BLD_TYP) $(XWP_LANG_CODE)
 
 #
 # Special target "wpi_nls": this is not called by "all",
