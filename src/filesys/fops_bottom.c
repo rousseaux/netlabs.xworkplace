@@ -1460,7 +1460,7 @@ STATIC APIRET FileThreadFontProcessing(HAB hab,
  *@@changed V0.9.7 (2001-01-13) [umoeller]: added XFT_INSTALLFONTS, XFT_DEINSTALLFONTS
  *@@changed V0.9.19 (2002-05-01) [umoeller]: reversed confirmations for move to trash and empty trash
  *@@changed V1.0.6 (2006-09-24) [pr]: don't move Printers and Transient objects to Trash Can
- *@@changed V1.0.8 (2008-05-01) [pr]: don't move WPNetGrp and WPServer objects to Trash Can @@fixes 1035
+ *@@changed V1.0.8 (2008-01-05) [pr]: don't move WPNetGrp and WPServer objects to Trash Can @@fixes 1035
  */
 
 VOID fopsFileThreadProcessing(HAB hab,              // in: file thread's anchor block
