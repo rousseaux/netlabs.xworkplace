@@ -925,6 +925,8 @@
 #define ID_OSDI_HIMEM_DLLBASINGOFF      1515
 #define ID_OSDI_HIMEM_JAVAHIMEM         1516
 #define ID_OSDI_HIMEM_EARLYMEMINIT      1517  // V1.0.8 (2008-03-04) [chennecke]
+#define ID_OSDI_CURRENTPROCESSES        1518  // V1.0.8 (2008-03-16) [chennecke]
+#define ID_OSDI_MAXPROCESSES            1519  // V1.0.8 (2008-03-16) [chennecke]
 
 // FAT page; this is also used by the driver dialogs
 #define ID_OSD_SETTINGS_FAT             1521
@@ -961,6 +963,7 @@
 #define ID_OSDI_RESTART_FOLDERS         1558
 #define ID_OSDI_RESTART_REBOOT          1559
 #define ID_OSDI_AUTOREFRESHFOLDERS      1560
+#define ID_OSDI_SHELLHANDLESINC         1561  // V1.0.8 (2008-03-21) [chennecke]
 
 // "System paths" page (V0.9.0)
 #define ID_OSD_SETTINGS_SYSPATHS        1570

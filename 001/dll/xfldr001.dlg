@@ -462,7 +462,15 @@ BEGIN
     DIALOG  "", ID_OSD_SETTINGS_KERNEL1, 0, 0, 275, 180, NOT FS_DLGBORDER |
             WS_VISIBLE
     BEGIN
-        GROUPBOX        "Scheduler", -1, 5, 24, 225, 58
+        GROUPBOX        "Scheduler", -1, 5, 24, 225, 82
+        LTEXT           "Current process count:", -1, 10, 87, 150, 8
+        RTEXT           "wait...", ID_OSDI_CURRENTPROCESSES, 155, 87, 50, 8,
+                        NOT WS_GROUP
+        LTEXT           "Maximum process count:", -1, 10, 75, 140, 8, NOT
+                        WS_GROUP
+        SPINBUTTON      ID_OSDI_MAXPROCESSES, 155, 75, 50, 12,
+                        SPBS_NUMERICONLY | SPBS_MASTER | SPBS_JUSTRIGHT |
+                        SPBS_FASTSPIN
         LTEXT           "Current thread count:", -1, 10, 63, 150, 8
         RTEXT           "wait...", ID_OSDI_CURRENTTHREADS, 155, 63, 50, 8,
                         NOT WS_GROUP
@@ -471,7 +479,7 @@ BEGIN
         SPINBUTTON      ID_OSDI_MAXTHREADS, 155, 51, 50, 12,
                         SPBS_NUMERICONLY | SPBS_MASTER | SPBS_JUSTRIGHT |
                         SPBS_FASTSPIN
-        LTEXT           "Allow priority boost every", -1, 10, 39, 140, 8,
+        LTEXT           "Allow priority boost every:", -1, 10, 39, 140, 8,
                         NOT WS_GROUP
         SPINBUTTON      ID_OSDI_MAXWAIT, 155, 39, 50, 12, SPBS_NUMERICONLY |
                         SPBS_MASTER | SPBS_JUSTRIGHT | SPBS_FASTSPIN
@@ -577,27 +585,32 @@ BEGIN
     DIALOG  "", ID_OSD_SETTINGS_WPS, 0, 0, 275, 180, NOT FS_DLGBORDER |
             WS_VISIBLE
     BEGIN
-        GROUPBOX        "Autostart", -1, 5, 93, 225, 57
-        AUTOCHECKBOX    "Programs", ID_OSDI_AUTO_PROGRAMS, 10, 132, 210, 10
-        AUTOCHECKBOX    "Tasklist", ID_OSDI_AUTO_TASKLIST, 10, 123, 210, 10
+        GROUPBOX        "Autostart", -1, 5, 105, 225, 57
+        AUTOCHECKBOX    "Programs", ID_OSDI_AUTO_PROGRAMS, 10, 144, 210, 10
+        AUTOCHECKBOX    "Tasklist", ID_OSDI_AUTO_TASKLIST, 10, 135, 210, 10
         AUTOCHECKBOX    "Network connections", ID_OSDI_AUTO_CONNECTIONS, 10,
-                        114, 210, 10
-        AUTOCHECKBOX    "Launchpad", ID_OSDI_AUTO_LAUNCHPAD, 10, 105, 210,
+                        126, 210, 10
+        AUTOCHECKBOX    "Launchpad", ID_OSDI_AUTO_LAUNCHPAD, 10, 117, 210,
                         10
-        AUTOCHECKBOX    "WarpCenter", ID_OSDI_AUTO_WARPCENTER, 10, 96, 210,
+        AUTOCHECKBOX    "WarpCenter", ID_OSDI_AUTO_WARPCENTER, 10, 108, 210,
                         10
-        GROUPBOX        "Restart after system startup...", -1, 5, 36, 225,
+        GROUPBOX        "Restart after system startup...", -1, 5, 48, 225,
                         51
-        AUTORADIOBUTTON "All", ID_OSDI_RESTART_YES, 10, 69, 215, 10,
+        AUTORADIOBUTTON "All", ID_OSDI_RESTART_YES, 10, 81, 215, 10,
                         WS_TABSTOP
-        AUTORADIOBUTTON "Nothing", ID_OSDI_RESTART_NO, 10, 60, 215, 10,
+        AUTORADIOBUTTON "Nothing", ID_OSDI_RESTART_NO, 10, 72, 215, 10,
                         WS_TABSTOP
         AUTORADIOBUTTON "Startup folders only", ID_OSDI_RESTART_FOLDERS, 10,
-                        51, 215, 10, WS_TABSTOP
-        AUTOCHECKBOX    "After reboot only", ID_OSDI_RESTART_REBOOT, 10, 39,
+                        63, 215, 10, WS_TABSTOP
+        AUTOCHECKBOX    "After reboot only", ID_OSDI_RESTART_REBOOT, 10, 51,
                         215, 10
         AUTOCHECKBOX    "Automatically refresh folders",
-                        ID_OSDI_AUTOREFRESHFOLDERS, 5, 21, 140, 10, WS_GROUP
+                        ID_OSDI_AUTOREFRESHFOLDERS, 5, 33, 140, 10, WS_GROUP
+        LTEXT           "Additional file handles:", -1, 5, 21, 140, 8, NOT
+                        WS_GROUP
+        SPINBUTTON      ID_OSDI_SHELLHANDLESINC, 155, 21, 50, 12,
+                        SPBS_NUMERICONLY | SPBS_MASTER | SPBS_JUSTRIGHT |
+                        SPBS_FASTSPIN
         PUSHBUTTON      "~Apply", DID_APPLY, 5, 6, 55, 12, WS_GROUP |
                         WS_DISABLED
         PUSHBUTTON      "~Optimize", DID_OPTIMIZE, 65, 6, 55, 12

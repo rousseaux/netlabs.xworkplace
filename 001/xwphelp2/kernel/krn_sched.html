@@ -36,7 +36,29 @@ page.
 <!-- V0.9.7: added this line; made the following an unordered list -->
 <P>The following fields are available:
 
-<UL><LI>The <B>"Current thread count"</B> display shows you the total number of currently
+<!-- V1.0.8: added PROCESSES -->
+<UL><LI>The <B>"Current process count"</B> display shows the total number of currently
+running processes on your system. This display is continually updated: if you start a
+new program, you will see that the process count increases.
+
+<P><LI>The <B>"Maximum process count"</B> setting represents the <CITE>PROCESSES</CITE>
+setting in &cfgsys;. Here you can determine how many processes &os2; will be able to
+handle altogether. The maximum value depends on the amount of memory in your system.
+You can reduce the scheduler's overhead and memory consumption by reducing this number.
+This may also help to avoid shared memory problems.
+
+<P>Please note however that your system might crash without further warning if you
+set this number too low! As a rule of thumb, use the "Current process count" displayed
+above and add 50% to that number.
+
+<P>For the optimization feature to achieve the best results, first create your
+typical working environment. Start all applications that you usually work with
+concurrently, then press "Optimize."
+
+<P>This setting is available on OS/2 Warp 4 with Fixpak 13 and later.
+<!-- end V1.0.8 -->
+
+<P><LI>The <B>"Current thread count"</B> display shows the total number of currently
 running threads on your system. This display is continually updated: if you start a
 new program you'll see that the thread count will increase.
 
@@ -59,6 +81,11 @@ system at bootup and most additional processes only use one or two threads each.
 <!-- V0.9.7: added this line -->
 <P>See the <A HREF="cmdref.inf#threads">documentation</A> in the
 <I>&os2; Command Reference</I> for details.
+
+<!-- V1.0.8: added this paragraph -->
+<P>For the optimization feature to achieve the best results, first create your
+typical working environment. Start all applications that you usually work with
+concurrently, then press "Optimize."
 
 <P><LI>The <B>"Allow priority boost"</B> setting represents the <CITE>MAXWAIT</CITE>
 setting in &cfgsys;. This setting determines how many seconds a

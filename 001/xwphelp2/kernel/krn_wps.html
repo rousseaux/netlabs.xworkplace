@@ -69,6 +69,19 @@ which is enabled by default. In this case open folders are only refreshed if you
 perform this manually, because the auto-refresh sometimes costs a lot of time.
 This setting corresponds to
 <CITE>SET AUTOREFRESHFOLDERS=xxx</CITE> (with xxx = YES or NO).
+
+<!-- V1.0.8: added new option -->
+<P>The option <B>"Additional file handles"</B> allows you to increase the number
+of files that can be open at a time for the WPS. The value is also inherited by
+other processes. This setting corresponds to
+<CITE>SET SHELLHANDLESINC=xxx</CITE> with xxx being a number between zero and 255.
+
+<P>In some situations, the WPS might run out of file handles and thus cannot open any
+additional files. The problem can also occur with applications that do not request
+the required amount of file handles but rely on a suitable default to be set. This
+problem can be worked around by specifying a large enough number in the above option.
+
+<P>The option is only effective on OS/2 Warp 4 Fixpak 6 and later.
 <BR>
 </BODY>
 </HTML>

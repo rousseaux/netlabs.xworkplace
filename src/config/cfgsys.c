@@ -619,6 +619,8 @@ STATIC BOOL cfgIsStringOn(PSZ p)
  *@@changed V1.0.1 (2002-12-11) [pr]: POPUPLOG drive was wrong @@fixes 37
  *@@changed V1.0.2 (2003-03-03) [pr]: POPUPLOG drive was still wrong @@fixes 37
  *@@changed V1.0.8 (2008-03-04) [chennecke]: added support for EARLYMEMINIT
+ *@@changed V1.0.8 (2008-03-16) [chennecke]: added support for PROCESSES
+ *@@changed V1.0.8 (2008-03-21) [chennecke]: added support for SHELLHANDLESINC @@fixes 1067
  */
 
 VOID cfgConfigInitPage(PNOTEBOOKPAGE pnbp,
@@ -712,6 +714,25 @@ VOID cfgConfigInitPage(PNOTEBOOKPAGE pnbp,
                     PSZ     p = 0;
                     ULONG   ul = 0;
                     BOOL    bl = TRUE;
+
+                    // added V1.0.8 (2008-03-16) [chennecke]
+                    if (G_fIsWarp4 > 1)
+                    {
+                        // Warp 4.5 (WSeB kernel) running
+                        if (p = csysGetParameter(pszConfigSys, "PROCESSES=", NULL, 0))
+                            sscanf(p, "%u", &ul);
+                        else // default
+                            DosQuerySysInfo(QSV_MAXPROCESSES,
+                                            QSV_MAXPROCESSES,
+                                            &ul,
+                                            sizeof(ul));
+                        winhSetDlgItemSpinData(hwndDlgPage, ID_OSDI_MAXPROCESSES,
+                                               20, 2048,
+                                               ul);
+                    }
+                    else // not Warp 4.5
+                        WinEnableControl(hwndDlgPage, ID_OSDI_MAXPROCESSES, FALSE);
+
                     if (p = csysGetParameter(pszConfigSys, "THREADS=", NULL, 0))
                         sscanf(p, "%d", &ul);
                     else // default
@@ -1014,9 +1035,13 @@ VOID cfgConfigInitPage(PNOTEBOOKPAGE pnbp,
 
                 case SP_WPS:
                 {
-                    PSZ p = csysGetParameter(pszConfigSys, "SET AUTOSTART=",
-                                             szParameter, sizeof(szParameter));
+                    // added declaration V1.0.8 (chennecke) [2008-03-21]
+                    PSZ     p = 0;
+                    ULONG   ul = 0;
                     BOOL fAutoRefreshFolders = TRUE;
+
+                    p = csysGetParameter(pszConfigSys, "SET AUTOSTART=",
+                            szParameter, sizeof(szParameter));
                     if (p)
                     {
                         winhSetDlgItemChecked(hwndDlgPage, ID_OSDI_AUTO_PROGRAMS,
@@ -1051,6 +1076,25 @@ VOID cfgConfigInitPage(PNOTEBOOKPAGE pnbp,
                             fAutoRefreshFolders = FALSE;
                     winhSetDlgItemChecked(hwndDlgPage, ID_OSDI_AUTOREFRESHFOLDERS,
                                 fAutoRefreshFolders);
+
+                    // added V1.0.8 (2008-03-16) [chennecke]
+                    if (doshIsFixpak(FALSE, 6))  // Warp 4 FP6 or later
+                    {
+                        if (p = csysGetParameter(pszConfigSys, "SET SHELLHANDLESINC=", NULL, 0))
+                            sscanf(p, "%u", &ul);
+                        else // default
+                            ul = 0;  // results in the default
+                        winhSetDlgItemSpinData(hwndDlgPage, ID_OSDI_SHELLHANDLESINC,
+                                               0, 255,
+                                               ul);
+                    }
+                    else
+                    {
+                        winhSetDlgItemSpinData(hwndDlgPage, ID_OSDI_SHELLHANDLESINC,
+                                               0, 255,
+                                               0);
+                        WinEnableControl(hwndDlgPage, ID_OSDI_SHELLHANDLESINC, FALSE);
+                    }
                 }
                 break;
 
@@ -1334,6 +1378,8 @@ VOID cfgConfigInitPage(PNOTEBOOKPAGE pnbp,
  *@@changed V0.9.0 [umoeller]: adjusted function prototype
  *@@changed V0.9.9 (2001-02-28) [pr]: added "edit path"
  *@@changed V1.0.8 (2008-03-04) [chennecke]: added support for EARLYMEMINIT
+ *@@changed V1.0.8 (2008-03-16) [chennecke]: added support for PROCESSES
+ *@@changed V1.0.8 (2008-03-21) [chennecke]: added support for SHELLHANDLESINC @@fixes 1067
  */
 
 MRESULT cfgConfigItemChanged(PNOTEBOOKPAGE pnbp,
@@ -1348,6 +1394,12 @@ MRESULT cfgConfigItemChanged(PNOTEBOOKPAGE pnbp,
 
     switch (ulItemID)
     {
+        // added V1.0.8 (2008-03-16) [chennecke]
+        case ID_OSDI_MAXPROCESSES:
+        case ID_OSDI_SHELLHANDLESINC:            // added V1.0.8 (2008-03-21) [chennecke]
+            // "Scheduler" and "WPS" page; 1 steps
+            lGrid = 1;
+            goto adjustspin;
 
         case ID_OSDI_MAXTHREADS:
             // "Scheduler" page; 64 steps
@@ -1717,6 +1769,16 @@ MRESULT cfgConfigItemChanged(PNOTEBOOKPAGE pnbp,
                          */
 
                         case SP_SCHEDULER:
+                            // added V1.0.8 (2008-03-16) [chennecke]
+                            WinSendDlgItemMsg(hwndDlgPage, ID_OSDI_MAXPROCESSES,
+                                              SPBM_QUERYVALUE,
+                                              (MPARAM)&ul,
+                                              MPFROM2SHORT(0,
+                                                           SPBQ_UPDATEIFVALID));
+                            sprintf(szTemp, "%u", ul);
+                            csysSetParameter(&pszConfigSys, "PROCESSES=", szTemp,
+                                             TRUE); // convert to upper case if necessary
+
                             WinSendDlgItemMsg(hwndDlgPage, ID_OSDI_MAXTHREADS,
                                               SPBM_QUERYVALUE,
                                               (MPARAM)&ul,
@@ -2012,6 +2074,22 @@ MRESULT cfgConfigItemChanged(PNOTEBOOKPAGE pnbp,
                                                      "SET AUTOREFRESHFOLDERS=",
                                                      "no",
                                                      TRUE); // convert to upper case if necessary
+
+                            // added V1.0.8 (2008-03-21) [chennecke]
+                            WinSendDlgItemMsg(hwndDlgPage, ID_OSDI_SHELLHANDLESINC,
+                                              SPBM_QUERYVALUE,
+                                              (MPARAM)&ul,
+                                              MPFROM2SHORT(0,
+                                                           SPBQ_UPDATEIFVALID));
+                            sprintf(szTemp, "%u", ul);
+
+                            if (szTemp > 0)
+                            {
+                                csysSetParameter(&pszConfigSys, "SET SHELLHANDLESINC=", szTemp,
+                                                 TRUE); // convert to upper case if necessary
+                            }
+                            else
+                                csysDeleteLine(pszConfigSys, "SET SHELLHANDLESINC=");
                         }
                         break;
 
@@ -2130,6 +2208,15 @@ MRESULT cfgConfigItemChanged(PNOTEBOOKPAGE pnbp,
                     PQPROCSTAT16 pps;
                     if (!prc16GetInfo(&pps))
                     {
+                        // added V1.0.8 (2008-03-16) [chennecke]
+                        // PROCESSES=
+                        winhSetDlgItemSpinData(hwndDlgPage, ID_OSDI_MAXPROCESSES,
+                                               20, 2048,
+                                               // get current process count, add 50% for safety,
+                                               (prc16ForEachProcess(NULL, 0, 0, NULL)  // whole system
+                                                     * 3) / 2
+                                              );
+
                         // THREADS=
                         winhSetDlgItemSpinData(hwndDlgPage, ID_OSDI_MAXTHREADS,
                                                128, 4096,
@@ -2263,6 +2350,11 @@ MRESULT cfgConfigItemChanged(PNOTEBOOKPAGE pnbp,
                     winhSetDlgItemChecked(hwndDlgPage, ID_OSDI_RESTART_FOLDERS, TRUE);
                     winhSetDlgItemChecked(hwndDlgPage, ID_OSDI_RESTART_REBOOT, FALSE);
                     winhSetDlgItemChecked(hwndDlgPage, ID_OSDI_AUTOREFRESHFOLDERS, FALSE);
+                    // added V1.0.8 (2008-03-16) [chennecke]
+                    winhSetDlgItemSpinData(hwndDlgPage, ID_OSDI_SHELLHANDLESINC,
+                                           0,
+                                           255,
+                                           90);
                 break;
 
                 case SP_ERRORS:
@@ -2284,6 +2376,9 @@ MRESULT cfgConfigItemChanged(PNOTEBOOKPAGE pnbp,
             switch (pnbp->inbp.ulPageID)
             {
                 case SP_SCHEDULER:
+                    // added V1.0.8 (2008-03-16) [chennecke]
+                    winhSetDlgItemSpinData(hwndDlgPage, ID_OSDI_MAXPROCESSES,
+                                           20, 2048, 256);
                     winhSetDlgItemSpinData(hwndDlgPage, ID_OSDI_MAXTHREADS,
                                            128, 4096,
                                            (G_fIsWarp4)
@@ -2380,6 +2475,11 @@ MRESULT cfgConfigItemChanged(PNOTEBOOKPAGE pnbp,
                     winhSetDlgItemChecked(hwndDlgPage, ID_OSDI_RESTART_REBOOT, FALSE);
                     winhSetDlgItemChecked(hwndDlgPage, ID_OSDI_AUTOREFRESHFOLDERS,
                                     !!G_fIsWarp4);
+                    // added V1.0.8 (2008-03-16) [chennecke]
+                    winhSetDlgItemSpinData(hwndDlgPage, ID_OSDI_SHELLHANDLESINC,
+                                           0,
+                                           255,
+                                           0);
                 break;
 
                 case SP_ERRORS:
@@ -2425,9 +2525,11 @@ VOID cfgConfigTimer(PNOTEBOOKPAGE pnbp,
             PQPROCSTAT16 pps;
             if (!prc16GetInfo(&pps))
             {
+                sprintf(szTemp, "%u", prc16ForEachProcess(NULL, 0, 0, NULL));
+                WinSetDlgItemText(pnbp->hwndDlgPage, ID_OSDI_CURRENTPROCESSES, szTemp);
                 sprintf(szTemp, "%d", prc16QueryThreadCount(pps, 0));
-                prc16FreeInfo(pps);
                 WinSetDlgItemText(pnbp->hwndDlgPage, ID_OSDI_CURRENTTHREADS, szTemp);
+                prc16FreeInfo(pps);
             }
         }
         break;
