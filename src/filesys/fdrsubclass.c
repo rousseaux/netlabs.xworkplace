@@ -96,7 +96,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2006 Ulrich M”ller.
+ *      Copyright (C) 1997-2007 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -1205,6 +1205,7 @@ BOOL fdrMenuSelect(PSUBCLFOLDERVIEW psfv,   // in: frame information
  *      Also gets called externally from the split view frame.
  *
  *@@added V1.0.0 (2002-08-28) [umoeller]
+ *@@changed V1.0.8 (2007-08-26) [pr]: prevent trap on null SOM pointer
  */
 
 BOOL fdrWMCommand(PSUBCLFOLDERVIEW psfv,
@@ -1213,8 +1214,10 @@ BOOL fdrWMCommand(PSUBCLFOLDERVIEW psfv,
     BOOL    brc = FALSE;
 
     // resolve method by name
-    somTD_XFolder_xwpProcessViewCommand pxwpProcessViewCommand
-        = (somTD_XFolder_xwpProcessViewCommand)somResolveByName(
+    somTD_XFolder_xwpProcessViewCommand pxwpProcessViewCommand = NULL;
+
+    if (psfv->somSelf)  // V1.0.8 (2007-08-26) [pr]
+        pxwpProcessViewCommand = (somTD_XFolder_xwpProcessViewCommand)somResolveByName(
                               psfv->somSelf,
                               "xwpProcessViewCommand");
 
