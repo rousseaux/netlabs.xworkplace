@@ -7,7 +7,7 @@
  */
 
 /*
- *      Copyright (C) 2000-2003 Ulrich M”ller.
+ *      Copyright (C) 2000-2008 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -227,23 +227,15 @@ BOOL MoveCurrentDesktop(HAB hab,
                  && (pahwndNoMoveWithOwner  = (HWND*)malloc(cbNoMoveWithOwner))
                )
             {
-                PLISTNODE    pNode;
-
-                // memset(paswpNew, 0, cbSwpNew);
-                        // not necessary V1.0.3 (2004-03-11) [umoeller]
+                PLISTNODE    pNode, pNext;
 
                 // now go thru all windows on the main list and copy them
                 // to the move list, if necessary
-                pNode = lstQueryFirstNode(&G_llWinInfos);
-                while (pNode)
+                for (pNode = lstQueryFirstNode(&G_llWinInfos); pNode; pNode = pNext)
                 {
-                    PLISTNODE pNext = pNode->pNext; // V0.9.15 (2001-09-14) [umoeller]
-
                     PXWININFO pEntryThis = (PXWININFO)pNode->pItemData;
 
-                    // if (!WinIsWindow(hab, pEntryThis->data.swctl.hwnd))
-                            // we can do the WinQueryWindowPos already here; no need for
-                            // an extra WinIsWindow V1.0.3 (2004-03-11) [umoeller]
+                    pNext = pNode->pNext;
                     if (    (!WinQueryWindowPos(pEntryThis->data.swctl.hwnd,
                                                 &pEntryThis->data.swp))
                             // check if it's still a desktop child (fixes #524)
@@ -258,9 +250,6 @@ BOOL MoveCurrentDesktop(HAB hab,
                     else
                     {
                         BOOL fRefreshThis = FALSE;
-
-                        // WinQueryWindowPos(pEntryThis->data.swctl.hwnd, &pEntryThis->data.swp);
-                                // moved up V1.0.3 (2004-03-11) [umoeller]
 
                         // fix outdated minimize/maximize/hide flags
                         if (    (pEntryThis->data.bWindowType == WINDOW_MINIMIZE)
@@ -294,7 +283,6 @@ BOOL MoveCurrentDesktop(HAB hab,
                                 // window no longer valid:
                                 // remove from the list NOW
                                 // V0.9.15 (2001-09-14) [umoeller]
-                                // lstRemoveNode(&G_llWinInfos, pNode);
                                 WinPostMsg(G_pHookData->hwndDaemonObject,
                                            XDM_WINDOWCHANGE,
                                            (MPARAM)pEntryThis->data.swctl.hwnd,
@@ -365,8 +353,6 @@ BOOL MoveCurrentDesktop(HAB hab,
 
                         } // end if (    (pEntryThis->bWindowType == WINDOW_MAXIMIZE)...
                     }
-
-                    pNode = pNext;      // V0.9.15 (2001-09-14) [umoeller]
                 } // end while (pNode)
             } // end if (paswpNew = (PSWP)malloc(cbSwpNew))) etc.
 

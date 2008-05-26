@@ -154,7 +154,7 @@
  */
 
 /*
- *      Copyright (C) 1999-2007 Ulrich M”ller.
+ *      Copyright (C) 1999-2008 Ulrich M”ller.
  *      Copyright (C) 1993-1999 Roman Stangl.
  *
  *      This program is free software; you can redistribute it and/or modify
@@ -2309,6 +2309,7 @@ STATIC VOID ProcessNotifies(ULONG ulMsgOffset,
  *
  *@@added V0.9.19 (2002-05-28) [umoeller]
  *@@changed V0.9.19 (2002-06-18) [umoeller]: fixed missing WM_WINDOWPOSCHANGED
+ *@@changed V1.0.8 (2008-05-26) [pr]: fixed re-parenting problem @@fixes 1065
  */
 
 STATIC VOID ProcessWindowChange(MPARAM mp1, MPARAM mp2)
@@ -2328,7 +2329,8 @@ STATIC VOID ProcessWindowChange(MPARAM mp1, MPARAM mp2)
 
         case WM_SETWINDOWPARAMS:
         case WM_WINDOWPOSCHANGED:       // V0.9.19 (2002-06-18) [umoeller]
-            fPost = pgrRefresh((HWND)mp1);
+            if (!(fPost = pgrRefresh((HWND)mp1)))
+                fPost = pgrCreateWinInfo((HWND)mp1);  // V1.0.8 (2008-05-26)
         break;
     }
 

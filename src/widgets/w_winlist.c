@@ -34,7 +34,7 @@
  */
 
 /*
- *      Copyright (C) 2000-2007 Ulrich M”ller.
+ *      Copyright (C) 2000-2008 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -2086,20 +2086,24 @@ STATIC VOID WwgtWindowChange(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
         {
             switch ((ULONG)mp2)
             {
-#pragma info(none)      // we fall through here
                 case WM_CREATE: // (HWND)mp1 was created.
                     #ifdef DEBUG_WINDOWLIST
                         _PmpfF(("WLM_WINDOWCHANGE %lX, WM_CREATE", mp1));
                     #endif
+                    hwndRefresh = (HWND)mp1;
+                break;
+
                 case WM_SETWINDOWPARAMS:
                     #ifdef DEBUG_WINDOWLIST
                         _PmpfF(("WLM_WINDOWCHANGE %lX, WM_SETWINDOWPARAMS", mp1));
                     #endif
+                    hwndRefresh = (HWND)mp1;
+                break;
+
                 case WM_WINDOWPOSCHANGED:
                     #ifdef DEBUG_WINDOWLIST
                         _PmpfF(("WLM_WINDOWCHANGE %lX, WM_WINDOWPOSCHANGED", mp1));
                     #endif
-#pragma info(restore)
                     hwndRefresh = (HWND)mp1;
                 break;
 
