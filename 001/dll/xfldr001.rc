@@ -50,7 +50,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2007 Ulrich M”ller.
+ *      Copyright (C) 1997-2008 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -1126,7 +1126,7 @@ BEGIN
     ID_CRSI_IPWGT_GRAPHCOLORS           "Graph colors"
     ID_CRSI_IPWGT_GRAPHINCOLOR          "Incoming"
     ID_CRSI_IPWGT_GRAPHOUTCOLOR         "Outgoing"
-    ID_CRSI_IPWGT_BYTESTOTAL            "bytes total"
+    ID_CRSI_IPWGT_TOTAL                 "total"  // V 1.0.8 (2008-05-28)
 
     /* Sentinel properties page V1.0.4 (2005-03-27) [chennecke] */
     ID_CRSI_SWGT_PHYS                   "Physical Memory"

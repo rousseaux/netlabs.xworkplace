@@ -2445,7 +2445,7 @@
 #define ID_CRSI_IPWGT_GRAPHCOLORS       6290
 #define ID_CRSI_IPWGT_GRAPHINCOLOR      6291
 #define ID_CRSI_IPWGT_GRAPHOUTCOLOR     6292
-#define ID_CRSI_IPWGT_BYTESTOTAL        6293
+#define ID_CRSI_IPWGT_TOTAL             6293        // V 1.0.8 (2008-05-28)
 
 #define ID_CRSI_SENTINELTOOLTIP2        6294        // V1.0.0 (2002-08-21) [umoeller]
 #define ID_CRSI_MEMORYTOOLTIP           6295        // V1.0.0 (2002-08-21) [umoeller]

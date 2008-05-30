@@ -50,7 +50,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2006 Ulrich M”ller.
+ *      Copyright (C) 1997-2008 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -1066,7 +1066,7 @@ BEGIN
     ID_CRSI_IPWGT_GRAPHCOLORS           "Graf f„rger"
     ID_CRSI_IPWGT_GRAPHINCOLOR          "Inkommande"
     ID_CRSI_IPWGT_GRAPHOUTCOLOR         "Utg†ende"
-    ID_CRSI_IPWGT_BYTESTOTAL            "bytes totalt"
+    ID_CRSI_IPWGT_TOTAL                 "totalt"  // V 1.0.8 (2008-05-28)
 
     /* XCenter properties V0.9.20 (2002-080-10) [umoeller] */
     ID_CRMI_XCSUB_PROPERTIES            "&xcenter; ~egenskaper"

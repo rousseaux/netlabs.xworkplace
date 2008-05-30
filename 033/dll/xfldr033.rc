@@ -41,17 +41,17 @@
  *      par instruction #include. Il est possible de traduire le fichier
  *      manuellement ou d'Çditer le fichier .RES avec l'Çditeur de
  *      dialogues du toolkit. Les fichiers .RES et .DLG seront alors
- *      recrÇÇs, sans impact sur le fichier .RC. 
+ *      recrÇÇs, sans impact sur le fichier .RC.
  *
  *      L'Çditeur de dialogues possäde un mode "Translate", dans le menu
  *      "Options", qui dÇsactive un certain nombre de menus, et permet de
  *      ne changer que les chaånes de caractäres.
  *      Il est ainsi plus pratique de traduire les termes sans risquer
- *      d'endommager les boåtes de dialogue. 
+ *      d'endommager les boåtes de dialogue.
  */
 
 /*
- *      Copyright (C) 1997-2006 Ulrich Mîller.
+ *      Copyright (C) 1997-2008 Ulrich Mîller.
  *      Traduction (C) 2003-2005 êquipe de traduction de XWorkplace :
  *      Laurent Catinaud, Aymeric Peyret, RenÇ Louisor-Marchini,
  *      Guillaume Gay.
@@ -81,7 +81,7 @@
  /* Notes sur la traduction franáaise
   * Le fichier est dÇcoupÇ en 17 parties d'environ 100 lignes chacune.
   * N'oubliez pas de renseigner le fichier de suivi de la traduction en
-  * fonction de la partie que vous prenez en charge. 
+  * fonction de la partie que vous prenez en charge.
  */
 
 /* Autre version :
@@ -1193,7 +1193,7 @@ BEGIN
     ID_CRSI_IPWGT_GRAPHCOLORS           "Couleurs du Graphique"
     ID_CRSI_IPWGT_GRAPHINCOLOR          "Entrant"
     ID_CRSI_IPWGT_GRAPHOUTCOLOR         "Sortant"
-    ID_CRSI_IPWGT_BYTESTOTAL            "total octets"
+    ID_CRSI_IPWGT_TOTAL                 "total"  // V 1.0.8 (2008-05-28)
 
     /* XCenter properties  V0.9.20 (2002-08-08) [umoeller] */
     ID_CRMI_XCSUB_PROPERTIES            "&xcenter; ~paramätres"

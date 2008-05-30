@@ -47,7 +47,7 @@
  *      only change strings. This is very helpful to avoid
  *      accidentally ruining the dialogs.
  *
- *      Copyright (C) 1997-2006 Ulrich M”ller.
+ *      Copyright (C) 1997-2008 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -1108,7 +1108,7 @@ BEGIN
     ID_CRSI_IPWGT_GRAPHCOLORS           "Grafiek kleuren"
     ID_CRSI_IPWGT_GRAPHINCOLOR          "binnenkomend"
     ID_CRSI_IPWGT_GRAPHOUTCOLOR         "uitgaand"
-    ID_CRSI_IPWGT_BYTESTOTAL            "bytes totaal"
+    ID_CRSI_IPWGT_TOTAL                 "totaal"  // V 1.0.8 (2008-05-28)
 
     /* XCenter properties  V0.9.20 (2002-08-08) [umoeller] */
     ID_CRMI_XCSUB_PROPERTIES            "&xcenter; ~instellingen"

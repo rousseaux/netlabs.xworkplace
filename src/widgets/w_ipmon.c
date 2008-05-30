@@ -448,6 +448,20 @@ typedef struct _SNAPSHOT
 } SNAPSHOT, *PSNAPSHOT;
 
 /*
+ *@@ ifIO:
+ *
+ *@@added V1.0.8 (2008-05-29) [pr]
+ */
+
+typedef struct _ifIO
+{
+    ULONG       ulInLo,
+                ulInHi,
+                ulOutLo,
+                ulOutHi;
+} ifIO, *PifIO;
+
+/*
  *@@ WIDGETPRIVATE:
  *      more window data for the various monitor widgets.
  *
@@ -470,6 +484,7 @@ typedef struct _WIDGETPRIVATE
 
     struct ifmib    statif;         // the sick structure filled by
                                     // ioctl(SIOSTATIF)
+    ifIO            IOcount[IFMIB_ENTRIES]; // 64 bit I/O counters V1.0.8 (2008-05-29) [pr]
 
     // Getting the socket throughput works by periodically running
     // ioctl(SIOSTATIF), which gives us the total no. of bytes
@@ -933,6 +948,7 @@ VOID EXPENTRY IwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
  *      implementation for WM_CREATE.
  *
  *@@changed V1.0.8 (2007-08-05) [pr]: now setting Presparams @@fixes 994
+ *@@changed V1.0.8 (2008-05-29) [pr]: make traffic byte count into KB @@fixes 536
  */
 
 STATIC MRESULT IwgtCreate(HWND hwnd,
@@ -952,26 +968,14 @@ STATIC MRESULT IwgtCreate(HWND hwnd,
     pxstrInit(&pPrivate->strTooltipText, 0);
 
     // compose tooltip format string... something like
-    // "%s\nin: %lu%c%lu KB/s (%s bytes total)\nout: %lu%c%lu KB/s (%s bytes total)"
-    strcpy(szTemp,
-           "%s\n");
-    strcat(szTemp,
-           pcmnGetString(ID_CRSI_IPWGT_GRAPHINCOLOR));      // "Incoming"
-    strcat(szTemp,
-           ": %lu%c%lu KB/s (%s ");
-    strcat(szTemp,
-           pcmnGetString(ID_CRSI_IPWGT_BYTESTOTAL));        // "bytes total"
-    strcat(szTemp,
-           ")\n");
-    strcat(szTemp,
-           pcmnGetString(ID_CRSI_IPWGT_GRAPHOUTCOLOR));      // "Outgoing"
-    strcat(szTemp,
-           ": %lu%c%lu KB/s (%s ");
-    strcat(szTemp,
-           pcmnGetString(ID_CRSI_IPWGT_BYTESTOTAL));        // "bytes total"
-    strcat(szTemp,
-           ")");
-
+    // "%s\nin: %lu%c%lu KB/s (%s KB total)\nout: %lu%c%lu KB/s (%s KB total)"
+    // V1.0.8 (2008-05-29)
+    sprintf(szTemp, "%%s\n%s: %%lu%%c%%lu KB/s (%%s KB %s)\n"
+                         "%s: %%lu%%c%%lu KB/s (%%s KB %s)",
+           pcmnGetString(ID_CRSI_IPWGT_GRAPHINCOLOR),       // "Incoming"
+           pcmnGetString(ID_CRSI_IPWGT_TOTAL),              // "total"
+           pcmnGetString(ID_CRSI_IPWGT_GRAPHOUTCOLOR),      // "Outgoing"
+           pcmnGetString(ID_CRSI_IPWGT_TOTAL));             // "total"
     pPrivate->pszTooltipFormat = strdup(szTemp);
 
     // initialize binary setup structure from setup string
@@ -997,6 +1001,14 @@ STATIC MRESULT IwgtCreate(HWND hwnd,
             // now update "latest" with the data of the
             // selected device
             ULONG i;
+
+            // V1.0.8 (2008-05-29)
+            for (i = 0; i < IFMIB_ENTRIES; i++)
+            {
+                pPrivate->IOcount[i].ulInLo = pPrivate->statif.iftable[i].ifInOctets;
+                pPrivate->IOcount[i].ulOutLo = pPrivate->statif.iftable[i].ifOutOctets;
+            }
+
             if (pPrivate->Setup.ulDevIndex >= IFMIB_ENTRIES)
                 pPrivate->Setup.ulDevIndex = 0;
 
@@ -1183,6 +1195,8 @@ STATIC BOOL IwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *      Preconditions:
  *      --  pPrivate->hbmGraph must be selected into
  *          pPrivate->hpsMem.
+ *
+ *@@changed V1.0.8 (2008-05-29) [pr]: make traffic byte count into KB @@fixes 536
  */
 
 STATIC VOID IwgtUpdateGraph(HWND hwnd,
@@ -1270,7 +1284,7 @@ STATIC VOID IwgtUpdateGraph(HWND hwnd,
             pxstrPrintf(&pPrivate->strTooltipText,
                         pPrivate->pszTooltipFormat,
                                 // NLS format string from WM_CREATE:
-                                // "%s\nin: %lu%c%lu KB/s (%s bytes total)\nout: %lu%c%lu KB/s (%s bytes total)"
+                                // "%s\nin: %lu%c%lu KB/s (%s KB total)\nout: %lu%c%lu KB/s (%s KB total)"
                         // interface name:
                         pPrivate->statif.iftable[ulDevice].ifDescr,
                         // in kb/s:
@@ -1279,7 +1293,9 @@ STATIC VOID IwgtUpdateGraph(HWND hwnd,
                         ulIn % 10,
                         // in total:
                         pnlsThousandsULong(szTemp1,
-                                           pPrivate->statif.iftable[ulDevice].ifInOctets,
+                                           // V1.0.8 (2008-05-29)
+                                           (pPrivate->IOcount[ulDevice].ulInLo >> 10) +
+                                           (pPrivate->IOcount[ulDevice].ulInHi << 22),
                                            pCountrySettings->cThousands),
                         // out kb/s:
                         ulOut / 10,
@@ -1287,7 +1303,9 @@ STATIC VOID IwgtUpdateGraph(HWND hwnd,
                         ulOut % 10,
                         // out total:
                         pnlsThousandsULong(szTemp2,
-                                           pPrivate->statif.iftable[ulDevice].ifOutOctets,
+                                           // V1.0.8 (2008-05-29)
+                                           (pPrivate->IOcount[ulDevice].ulOutLo >> 10) +
+                                           (pPrivate->IOcount[ulDevice].ulOutHi << 22),
                                            pCountrySettings->cThousands));
         }
     }
@@ -1439,6 +1457,9 @@ STATIC VOID IwgtPaint(HWND hwnd)
  *@@ GetSnapshot:
  *      updates the newest entry in the snapshots
  *      array with the current IP values.
+ *
+ *@@changed V1.0.8 (2008-05-29) [pr]: make traffic byte count into KB @@fixes 536
+ *@@changed V1.0.8 (2008-05-29) [pr]: auto scale maximum reading @@fixes 921
  */
 
 STATIC VOID GetSnapshot(PWIDGETPRIVATE pPrivate)
@@ -1454,8 +1475,24 @@ STATIC VOID GetSnapshot(PWIDGETPRIVATE pPrivate)
                         ulDivisor,
                         ulIndex,
                         ulIn,
-                        ulOut;
+                        ulOut,
+                        i;
             PSNAPSHOT   pLatest = &pPrivate->paSnapshots[pPrivate->cSnapshots - 1];
+
+            // V1.0.8 (2008-05-29)
+            for (i = 0; i < IFMIB_ENTRIES; i++)
+            {
+                ulIn = pPrivate->statif.iftable[i].ifInOctets;
+                ulOut = pPrivate->statif.iftable[i].ifOutOctets;
+                if (ulIn < pPrivate->IOcount[i].ulInLo)
+                    pPrivate->IOcount[i].ulInHi++;
+
+                pPrivate->IOcount[i].ulInLo = ulIn;
+                if (ulOut < pPrivate->IOcount[i].ulOutLo)
+                    pPrivate->IOcount[i].ulOutHi++;
+
+                pPrivate->IOcount[i].ulOutLo = ulOut;
+            }
 
             DosQuerySysInfo(QSV_MS_COUNT,
                             QSV_MS_COUNT,
@@ -1503,9 +1540,6 @@ STATIC VOID GetSnapshot(PWIDGETPRIVATE pPrivate)
                                   ) * 1000
                                   / ulDivisor;
 
-            if (pLatest->ulIn > pPrivate->ulMax)
-                pPrivate->ulMax = pLatest->ulIn;
-
             pPrivate->ulPrevTotalIn = ulIn;
 
             // 2) output bytes
@@ -1521,10 +1555,17 @@ STATIC VOID GetSnapshot(PWIDGETPRIVATE pPrivate)
                                    ) * 1000
                                    / ulDivisor;
 
-            if (pLatest->ulOut > pPrivate->ulMax)
-                pPrivate->ulMax = pLatest->ulOut;
-
             pPrivate->ulPrevTotalOut = ulOut;
+            // V1.0.8 (2008-05-29)
+            pPrivate->ulMax = 1;
+            for (i = 0; i < pPrivate->cSnapshots; i++)
+            {
+                if (pPrivate->paSnapshots[i].ulIn > pPrivate->ulMax)
+                    pPrivate->ulMax = pPrivate->paSnapshots[i].ulIn;
+
+                if (pPrivate->paSnapshots[i].ulOut > pPrivate->ulMax)
+                    pPrivate->ulMax = pPrivate->paSnapshots[i].ulOut;
+            }
         }
     }
 }
@@ -2143,5 +2184,4 @@ VOID EXPENTRY IwgtQueryVersion(PULONG pulMajor,
     *pulMinor = XFOLDER_MINOR;
     *pulRevision = XFOLDER_REVISION;
 }
-
 
