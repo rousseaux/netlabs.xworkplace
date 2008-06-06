@@ -19,7 +19,7 @@
  */
 
 /*
- *      Copyright (C) 2000-2003 Ulrich M”ller.
+ *      Copyright (C) 2000-2008 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -81,6 +81,7 @@
 
 // SOM headers which don't crash with prec. header files
 #include "xwpfsys.ih"
+#include "xtrash.ih"
 
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
@@ -674,6 +675,63 @@ SOM_Scope BOOL  SOMLINK xfs_wpRefreshFSInfo(XWPFileSystem *somSelf,
                                                              ulView,
                                                              pReserved,
                                                              ulUnknown);
+}
+
+/*
+ *@@ wpMoveObject:
+ *      this instance method gets called by the WPS on an
+ *      object if it is to be moved.
+ *
+ *      We disallow simple moves into a trash can folder
+ *      and redirect them to the appropriate trash can
+ *      method.
+ *
+ *@@added V1.0.8 (2008-06-05) [pr]: @@fixes 1068
+ */
+
+SOM_Scope BOOL  SOMLINK xfs_wpMoveObject(XWPFileSystem *somSelf,
+                                         WPFolder* Folder)
+{
+    BOOL	brc;
+
+    // XWPFileSystemData *somThis = XWPFileSystemGetData(somSelf);
+    XWPFileSystemMethodDebug("XWPFileSystem","xfs_wpMoveObject");
+
+    if (_XWPTrashCan && _somIsA(Folder, _XWPTrashCan))
+        brc = _xwpDeleteIntoTrashCan(Folder, somSelf);
+    else
+        brc = XWPFileSystem_parent_WPFileSystem_wpMoveObject(somSelf,
+                                                             Folder);
+
+    return brc;
+}
+
+/*
+ *@@ wpCopyObject:
+ *      this instance method gets called by the WPS on an
+ *      object if it is to be copied.
+ *
+ *      We disallow simple copies into a trash can folder.
+ *
+ *@@added V1.0.8 (2008-06-05) [pr]: @@fixes 1068
+ */
+
+SOM_Scope WPObject*  SOMLINK xfs_wpCopyObject(XWPFileSystem *somSelf,
+                                              WPFolder* Folder,
+                                              BOOL fLock)
+{
+    // XWPFileSystemData *somThis = XWPFileSystemGetData(somSelf);
+    XWPFileSystemMethodDebug("XWPFileSystem","xfs_wpCopyObject");
+
+    if (_XWPTrashCan && _somIsA(Folder, _XWPTrashCan))
+    {
+        _wpSetError(somSelf, WPERR_INVALID_FOLDER);
+        return NULL;
+    }
+    else
+        return XWPFileSystem_parent_WPFileSystem_wpCopyObject(somSelf,
+                                                              Folder,
+                                                              fLock);
 }
 
 /* ******************************************************************
