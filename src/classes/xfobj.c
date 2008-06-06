@@ -4606,7 +4606,7 @@ SOM_Scope ULONG  SOMLINK xo_wpRequestObjectMutexSem(XFldObject *somSelf,
                                                     ULONG ulTimeout)
 {
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xo_wpRequestObjectMutexSem");
+    // XFldObjectMethodDebug("XFldObject","xo_wpRequestObjectMutexSem");
 
 #ifdef USE_FASTMUTEX
     return semRequest((PFASTMTX)&_mtxObject);
@@ -4627,7 +4627,7 @@ SOM_Scope ULONG  SOMLINK xo_wpRequestObjectMutexSem(XFldObject *somSelf,
 SOM_Scope BOOL  SOMLINK xo_wpAssertObjectMutexSem(XFldObject *somSelf)
 {
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xo_wpAssertObjectMutexSem");
+    // XFldObjectMethodDebug("XFldObject","xo_wpAssertObjectMutexSem");
 
 #ifdef USE_FASTMUTEX
     return semAssert((PFASTMTX)&_mtxObject);
@@ -4645,7 +4645,7 @@ SOM_Scope BOOL  SOMLINK xo_wpAssertObjectMutexSem(XFldObject *somSelf)
 SOM_Scope ULONG  SOMLINK xo_wpReleaseObjectMutexSem(XFldObject *somSelf)
 {
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xo_wpReleaseObjectMutexSem");
+    // XFldObjectMethodDebug("XFldObject","xo_wpReleaseObjectMutexSem");
 
 #ifdef USE_FASTMUTEX
     return semRelease((PFASTMTX)&_mtxObject);
@@ -4905,6 +4905,8 @@ SOM_Scope BOOL  SOMLINK xo_wpModifyMenu(XFldObject *somSelf,
  *@@changed V1.0.0 (2002-09-12) [umoeller]: re-enabled WPMENUID_DELETE to catch some more delete situations
  *@@changed V1.0.6 (2006-09-30) [pr]: fix Shredder delete @@fixes 413
  *@@changed V1.0.8 (2008-01-05) [pr]: prevent untrashable objects going to trash @@fixes 1035
+ *@@changed V1.0.8 (2008-06-05) [pr]: Shredder delete no longer has shift option - eCS bug 2036
+ *@@changed V1.0.8 (2008-06-05) [pr]: Above also fixes MENUITEMSELECTED=109 bug @@fixes 1071
  */
 
 SOM_Scope BOOL  SOMLINK xo_wpMenuItemSelected(XFldObject *somSelf,
@@ -4933,6 +4935,8 @@ SOM_Scope BOOL  SOMLINK xo_wpMenuItemSelected(XFldObject *somSelf,
         // them to the Trash Can if enabled. As elsewhere, Transient and
         // Printer objects are prevented from going into the TrashCan.
         // V1.0.6 (2006-09-30) [pr]
+        // Nah, don't do this any more - it has undesirable effects
+        // V1.0.8 (2008-06-05) [pr]
 
         case WPMENUID_DELETE:
         {
@@ -4942,7 +4946,7 @@ SOM_Scope BOOL  SOMLINK xo_wpMenuItemSelected(XFldObject *somSelf,
                  &&
 #endif
                     (!cmnQuerySetting(sfAlwaysTrueDelete))
-                 && (doshQueryShiftState())
+                 && !hwndFrame  // V1.0.8 (2008-06-05) [pr]: hwndFrame not null if GUI i.e. Shredder
                  && (ctsIsTrashable(somSelf))  // V1.0.8 (2008-01-05) [pr]
                )
             {
