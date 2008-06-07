@@ -177,28 +177,28 @@
 
      >This package contains the complete German documentation for XWorkplace. You can extract this documentation separately to be able to read it before installing the rest of XWorkplace. If you only install this package, your system is not altered in any way.</PCK>
 
-<PCK INDEX=1932
-     PACKAGEID="JMikami\XWorkplace\Japanese NLS\1\1\0"
-     EXTERNAL="xwp-1-1-0_nls-jp.exe"
+<PCK INDEX=1081
+     PACKAGEID="Ulrich M”ller\XWorkplace\Japanese NLS\1\1\0"
+     EXTERNAL="xwp-1-1-0_nls-ja.exe"
      TITLE="Japanese National Language Support"
      TARGET="$(1)"
      REQUIRES=1
      FIXED
 
-     WRITEPROFILE="USER\XWorkplace\Language|932"
+     WRITEPROFILE="USER\XWorkplace\Language|081"
 
-     EXECUTE="CREATEOBJECT|$(1932)\install\instl932.cmd"
+     EXECUTE="CREATEOBJECT|$(1081)\install\instl081.cmd"
 
      >This package contains the Japanese language files for XWorkplace. This is required for XWorkplace to run.</PCK>
 
-<PCK INDEX=2932
-     PACKAGEID="JMikami\XWorkplace\Japanese Documentation\1\1\0"
+<PCK INDEX=2081
+     PACKAGEID="Ulrich M”ller\XWorkplace\Japanese Documentation\1\1\0"
      EXTERNAL="xwp-1-1-0_nls-jp.exe"
      TITLE="Japanese Documentation"
      TARGET="$(WARPIN_DEFAULTTOOLSPATH)\WPS\XWorkplace"
 
-     CREATEOBJECT="WPShadow|readme.jp|<XWP_MAINFLDR>|SHADOWID=$(2932)\readme.jp;OBJECTID=<XWP_README932MAINSHADOW>"
-     CREATEOBJECT="WPShadow|readme_nls.jp|<XWP_MAINFLDR>|SHADOWID=$(2932)\readme_nls.jp;OBJECTID=<XWP_READMENLS932MAINSHADOW>"
+     CREATEOBJECT="WPShadow|readme.jp|<XWP_MAINFLDR>|SHADOWID=$(2081)\readme.jp;OBJECTID=<XWP_README081MAINSHADOW>"
+     CREATEOBJECT="WPShadow|readme_nls.jp|<XWP_MAINFLDR>|SHADOWID=$(2081)\readme_nls.jp;OBJECTID=<XWP_READMENLS081MAINSHADOW>"
 
      >This package contains the complete Japanese documentation for XWorkplace. You can extract this documentation separately to be able to read it before installing the rest of XWorkplace. If you only install this package, your system is not altered in any way.</PCK>
 
