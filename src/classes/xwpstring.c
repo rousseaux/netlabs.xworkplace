@@ -29,7 +29,7 @@
  */
 
 /*
- *      Copyright (C) 2000-2006 Ulrich M”ller.
+ *      Copyright (C) 2000-2007 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -241,6 +241,7 @@ STATIC void _Optlink xwstrfntSetupThread(PTHREADINFO pti)
  *      instance settings.
  *
  *@@added V0.9.3 (2000-04-27) [umoeller]
+ *@@changed V1.0.8 (2007-09-11) [pr]: fixed Undo/Default
  */
 
 STATIC VOID xwstrStringInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
@@ -257,10 +258,13 @@ STATIC VOID xwstrStringInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
         memset(pBackup, 0, sizeof(*somThis));
         if (_pWszSetupString)
             pBackup->pWszSetupString = strdup(_pWszSetupString);
+
         pBackup->hobjStatic = _hobjStatic;
         pBackup->fConfirm = _fConfirm;
+        // V1.0.8
+        pBackup->fNoStringPage = _fNoStringPage;
 
-        // store in noteboot struct
+        // store in notebook struct
         pnbp->pUser = pBackup;
 
         // enable word wrap
@@ -341,6 +345,7 @@ STATIC VOID xwstrStringInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
  *      Reacts to changes of any of the dialog controls.
  *
  *@@added V0.9.3 (2000-04-27) [umoeller]
+ *@@changed V1.0.8 (2007-09-11) [pr]: fixed Undo/Default
  */
 
 STATIC MRESULT xwstrStringItemChanged(PNOTEBOOKPAGE pnbp,
@@ -392,6 +397,33 @@ STATIC MRESULT xwstrStringItemChanged(PNOTEBOOKPAGE pnbp,
 
         case ID_XSD_XWPSTRING_CONFIRM:
             _fConfirm = ulExtra;
+        break;
+
+        // V1.0.8
+        case DID_UNDO:
+            if (pnbp->pUser)
+            {
+                XWPStringData *pBackup = (pnbp->pUser);
+                // "Undo" button: restore backed up instance data
+                wpshStore(pnbp->inbp.somSelf, &_pWszSetupString,
+                          pBackup->pWszSetupString, NULL);
+                _hobjStatic = pBackup->hobjStatic;
+                _fConfirm = pBackup->fConfirm;
+                _fNoStringPage = pBackup->fNoStringPage;
+                // have the page updated by calling the callback above
+                xwstrStringInitPage(pnbp, CBI_SHOW | CBI_ENABLE);
+            }
+        break;
+
+        case DID_DEFAULT:
+            // "Default" button:
+            wpshStore(pnbp->inbp.somSelf, &_pWszSetupString, NULL, NULL);
+            _hobjStatic = NULLHANDLE;
+            cmnSetupInitData(G_XWPStringSetupSet,
+                             ARRAYITEMCOUNT(G_XWPStringSetupSet),
+                             somThis);
+            // have the page updated by calling the callback above
+            xwstrStringInitPage(pnbp, CBI_SHOW | CBI_ENABLE);
         break;
 
         default:
@@ -790,11 +822,6 @@ SOM_Scope BOOL  SOMLINK xwstr_xwpQuerySetup2(XWPString *somSelf,
         // no member object:
         xstrcat(pstrSetup, "NONE;", 0);
 
-    // CONFIRMINVOCATION
-    // xstrcat(pstrSetup, "CONFIRMINVOCATION=", 0);
-    // xstrcat(pstrSetup, (_fConfirm) ? "YES;" : "NO;", 0);
-            // in setup set now V0.9.20 (2002-07-12) [umoeller]
-
     // V0.9.20 (2002-07-12) [umoeller]
     cmnSetupBuildString(G_XWPStringSetupSet,
                         ARRAYITEMCOUNT(G_XWPStringSetupSet),
@@ -825,7 +852,6 @@ SOM_Scope void  SOMLINK xwstr_wpInitData(XWPString *somSelf)
 
     _pWszSetupString = NULL;
     _hobjStatic = NULLHANDLE;
-    // _fConfirm = TRUE;        // in setup set now V0.9.20 (2002-07-12) [umoeller]
     _pvtiSetupThread = NULL;
 
     _tidRunning = 0;
@@ -1002,21 +1028,6 @@ SOM_Scope BOOL  SOMLINK xwstr_wpSetup(XWPString *somSelf, PSZ pszSetupString)
                 _xwpSetStaticObject(somSelf,
                                     pobj);       // can be NULL
             }
-
-            // CONFIRMINVOCATION
-            /* in setup set now
-            cbValue = sizeof(szValue);
-            if (_wpScanSetupString(somSelf, pszSetupString,
-                                   "CONFIRMINVOCATION", szValue, &cbValue))
-            {
-                if (!strcmp(szValue, "YES"))
-                    _fConfirm = TRUE;
-                else if (!strcmp(szValue, "NO"))
-                    _fConfirm = FALSE;
-                else
-                    brc = FALSE;
-            }
-            */
 
             brc = cmnSetupScanString(somSelf,
                                      G_XWPStringSetupSet,

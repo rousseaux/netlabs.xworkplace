@@ -13,7 +13,7 @@ Bugfix release off the 1.0 branch.
 "Bug #" numbers refer to the official XWorkplace bugtracker at
 <a href="http://xtracker.xworkplace.org">http://xtracker.xworkplace.org</a>.
 
-<P><B>&xwp; 1.0.8 (August 13, 2007)</B>
+<P><B>&xwp; 1.0.8 (June 7, 2008)</B>
 
 <P>All the bugs below have been fixed by Paul Ratcliffe unless otherwise noted.
 
@@ -49,6 +49,41 @@ colours when also using drag/drop from the colour palettes. Bug 994.
 <P><LI>Fixed problem with XCenter catching mouse button up messages when restoring
 maximized windows which caused Object button widgets underneath to be opened. Bug 993.
 
+<P><LI>Fixed problem with Server and Network folder objects being deleted using the
+Trash Can. Bug 1035.
+
+<P><LI>On the XCenter, clicking an Object button which is a Template now does nothing
+instead of opening the object. Bug 43.
+
+<P><LI>Fixed a problem with the XCenter hiding immediately when opening it with a
+double mouse click if it was set to "Auto-hide" and "Hide immediately on mouse-click".
+Bug 499.
+
+<P><LI>Fixed a problem with the XPager control window hiding itself while the mouse was
+still over it if it was set to "Flash to top". Bug 1038.
+
+<P><LI>The OS/2 Kernel object now supports TRUE,YES,ON,1 parameters in CONFIG.SYS for
+the appropriate settings.
+
+<P><LI>Fixed a problem on DBCS systems where XWP reported an invalid path for &lt;WP_DESKTOP&gt;
+at startup. Bug 1070.
+
+<P><LI>Fixed a bug with sticky windows when the window was re-parented. Bug 1065.
+
+<P><LI>The IP Monitor widget now has a dynamic full scale reading based on recent history
+rather than a maximum ever full scale reading. Bug 921.
+
+<P><LI>The IP Monitor widget now reports traffic in 1K multiples rather than bytes thereby
+extending its range to 4TB instead of 4GB. Bug 536.
+
+<P><LI>Fixed a bug with WinMoveObject and WinCopyObject when deleting filesystem objects
+into the Trash Can. Bug 1068.
+
+<P><LI>Fixed a bug caused by the fix for bug 413 relating to use of a setup string
+containing "MENUITEMSELECTED=109" to delete objects to the Trash Can. Bug 1071.
+
+<P><LI>Fixed broken Default/Undo controls in Setup String objects.
+
 </UL>
 
 <P>New Features:
@@ -56,6 +91,12 @@ maximized windows which caused Object button widgets underneath to be opened. Bu
 <UL><LI>Added a file change notification named pipe server which allows co-operating
 client applications to receive notification of files/directories being added/deleted.
 Bug 1002. Added by Yuri Dario and Paul Ratcliffe.
+
+<P><LI>The OS/2 Kernel object now supports the EARLYMEMINIT CONFIG.SYS setting.
+Bug 1059. Added by Christian Hennecke.
+
+<P><LI>The OS/2 Kernel object now supports the PROCESSES and SET SHELLHANDLESINC
+CONFIG.SYS settings. Bug 1067. Added by Christian Hennecke.
 
 </UL>
 </BODY>
