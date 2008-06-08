@@ -755,7 +755,7 @@ release: really_all
 !endif
 !if [@md $(XWPRELEASE_MAP) 2> NUL]
 !endif
-    @echo $(MAKEDIR)\makefile [$@]: Now copying files to $(XWPRELEASE)\$(BLD_TYP).
+    @echo $(MAKEDIR)\makefile [$@]: Now copying files to $(XWPRELEASE)\$(BLD_TYP)
     @cd $(XWP_LANG_CODE)
     $(MAKE) -nologo release "MAINMAKERUNNING=YES"
     @cd ..
@@ -953,7 +953,7 @@ release_nls: nls
 !endif
 !if [@md $(XWPRELEASE_NLSDOC) 2> NUL]
 !endif
-    @echo $(MAKEDIR)\makefile [$@]: Now copying files to $(XWPRELEASE).
+    @echo $(MAKEDIR)\makefile [$@]: Now copying files to $(XWPRELEASE)
     @cd $(XWP_LANG_CODE)
     $(MAKE) -nologo release_nls "MAINMAKERUNNING=YES"
     @cd ..
@@ -984,7 +984,7 @@ $(XWPRELEASE_NLS)\bin\*.dll
 #
 
 wpi: release
-    @echo $(MAKEDIR)\makefile [$@]: Building WPI from $(XWPRELEASE)\$(BLD_TYP).
+    @echo $(MAKEDIR)\makefile [$@]: Building WPI from $(XWPRELEASE)\$(BLD_TYP)
     makewpi.cmd $(XWPRELEASE)\$(BLD_TYP) $(XWP_LANG_CODE)
 
 #
@@ -993,9 +993,9 @@ wpi: release
 #
 
 wpi_nls: release_nls
-    @echo $(MAKEDIR)\makefile [$@]: Building NLS WPI from $(XWPRELEASE).
+    @echo $(MAKEDIR)\makefile [$@]: Building NLS WPI from $(XWPRELEASE)\$(BLD_TYP)
     @cd $(XWP_LANG_CODE)
-    makewpi$(XWP_LANG_CODE).cmd $(XWPRELEASE)
+    makewpi$(XWP_LANG_CODE).cmd $(XWPRELEASE)\$(BLD_TYP)
     @cd $(CURRENT_DIR)
 
 clean:
