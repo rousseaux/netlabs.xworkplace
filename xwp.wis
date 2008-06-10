@@ -193,7 +193,7 @@
 
 <PCK INDEX=2081
      PACKAGEID="Ulrich M”ller\XWorkplace\Japanese Documentation\1\1\0"
-     EXTERNAL="xwp-1-1-0_nls-jp.exe"
+     EXTERNAL="xwp-1-1-0_nls-ja.exe"
      TITLE="Japanese Documentation"
      TARGET="$(WARPIN_DEFAULTTOOLSPATH)\WPS\XWorkplace"
 
