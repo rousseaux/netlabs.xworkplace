@@ -1125,7 +1125,7 @@ BEGIN
     ID_CRSI_IPWGT_GRAPHCOLORS           "グラフの色"
     ID_CRSI_IPWGT_GRAPHINCOLOR          "受信"
     ID_CRSI_IPWGT_GRAPHOUTCOLOR         "送信"
-    ID_CRSI_IPWGT_BYTESTOTAL            "バイト (合計)"
+    ID_CRSI_IPWGT_TOTAL                 "合計"
 
     /* Sentinel properties page V1.0.4 (2005-03-27) [chennecke] */
     ID_CRSI_SWGT_PHYS                   "物理メモリー"

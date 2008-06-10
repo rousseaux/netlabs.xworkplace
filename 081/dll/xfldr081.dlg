@@ -463,6 +463,14 @@ BEGIN
             WS_VISIBLE
     BEGIN
         GROUPBOX        "スケジューラー", -1, 5, 24, 225, 58
+        LTEXT           "Current process count:", -1, 10, 87, 150, 8                /*** XLATE ***/
+        RTEXT           "wait...", ID_OSDI_CURRENTPROCESSES, 155, 87, 50, 8,        /*** XLATE ***/
+                        NOT WS_GROUP
+        LTEXT           "Maximum process count:", -1, 10, 75, 140, 8, NOT           /*** XLATE ***/
+                        WS_GROUP
+        SPINBUTTON      ID_OSDI_MAXPROCESSES, 155, 75, 50, 12,
+                        SPBS_NUMERICONLY | SPBS_MASTER | SPBS_JUSTRIGHT |
+                        SPBS_FASTSPIN
         LTEXT           "現在のスレッド数:", -1, 10, 63, 150, 8
         RTEXT           "確認中.", ID_OSDI_CURRENTTHREADS, 155, 63, 50, 8,
                         NOT WS_GROUP
@@ -595,7 +603,12 @@ BEGIN
         AUTOCHECKBOX    "再起動後のみ", ID_OSDI_RESTART_REBOOT, 10, 39,
                         215, 10
         AUTOCHECKBOX    "自動的にフォルダーを最新表示",
-                        ID_OSDI_AUTOREFRESHFOLDERS, 5, 21, 140, 10, WS_GROUP
+                        ID_OSDI_AUTOREFRESHFOLDERS, 5, 33, 140, 10, WS_GROUP
+        LTEXT           "Additional file handles:", -1, 5, 21, 140, 8, NOT              /*** XLATE ***/
+                        WS_GROUP
+        SPINBUTTON      ID_OSDI_SHELLHANDLESINC, 155, 21, 50, 12,
+                        SPBS_NUMERICONLY | SPBS_MASTER | SPBS_JUSTRIGHT |
+                        SPBS_FASTSPIN
         PUSHBUTTON      "適用(~A)", DID_APPLY, 5, 6, 55, 12, WS_GROUP |
                         WS_DISABLED
         PUSHBUTTON      "最適化(~O)", DID_OPTIMIZE, 65, 6, 55, 12
