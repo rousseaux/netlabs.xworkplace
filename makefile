@@ -935,9 +935,6 @@ $(XWPRELEASE_MAIN)\bin\*.exe \
 $(XWPRELEASE_NLS)\bin\*.dll
     $(LXLITEPATH)\lxlite \
 $(XWPRELEASE_MAIN)\plugins\xcenter\*.dll \
-!ifndef XWPLITE
-#$(XWPRELEASE_HEALTH)\plugins\xcenter\*.dll
-!endif
 !endif
 !endif
 

@@ -124,7 +124,6 @@ XWP_LANG_CODE = 001
 # produce subdirectories
 
 XWPRELEASE_MAIN = $(XWPRELEASE)\$(BLD_TYP)\kernel
-XWPRELEASE_HEALTH = $(XWPRELEASE)\$(BLD_TYP)\health
 XWPRELEASE_NLS = $(XWPRELEASE)\$(BLD_TYP)\$(XWP_LANG_CODE)
 XWPRELEASE_NLSDOC = $(XWPRELEASE)\$(BLD_TYP)\inf$(XWP_LANG_CODE)
 XWPRELEASE_MAP = $(XWPRELEASE)\$(BLD_TYP)\map
@@ -387,7 +386,7 @@ CC_HELPERS_DLL    = $(CC_DLL_MT)
 #
 # No need to change this. Change the variables above instead.
 
-LIBDIRS = $(TKBASE)\lib\ $(TKBASE)\som\lib\ $(VACBASE)\lib\ 
+LIBDIRS = $(TKBASE)\lib\ $(TKBASE)\som\lib\ $(VACBASE)\lib\
 
 LINK_BASE = ilink /nologo /noe /map:$(MAPDIR)\$(@B).map /linenumbers $(LIBDIRS)
 
