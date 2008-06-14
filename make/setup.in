@@ -386,7 +386,7 @@ CC_HELPERS_DLL    = $(CC_DLL_MT)
 #
 # No need to change this. Change the variables above instead.
 
-LIBDIRS = $(TKBASE)\lib\ $(TKBASE)\som\lib\ $(VACBASE)\lib\
+LIBDIRS = $(TKBASE)\lib\ $(TKBASE)\som\lib\ $(VACBASE)\lib\ 
 
 LINK_BASE = ilink /nologo /noe /map:$(MAPDIR)\$(@B).map /linenumbers $(LIBDIRS)
 
