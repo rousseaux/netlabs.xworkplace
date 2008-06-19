@@ -25,7 +25,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2005 Ulrich M”ller.
+ *      Copyright (C) 1997-2008 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -2416,6 +2416,7 @@ STATIC void _Optlink fntQuickOpenFolders(PTHREADINFO ptiMyself)
  *@@changed V0.9.14 (2001-07-28) [umoeller]: added exception handling
  *@@changed V0.9.16 (2002-01-13) [umoeller]: moved this here from xthreads.c
  *@@changed V0.9.19 (2002-04-02) [umoeller]: added startup logging
+ *@@changed V1.0.9 (2008-06-18) [pr]: ignore template folders @@fixes 1096
  */
 
 STATIC void _Optlink fntStartupThread(PTHREADINFO ptiMyself)
@@ -2493,8 +2494,10 @@ STATIC void _Optlink fntStartupThread(PTHREADINFO ptiMyself)
                 // skip folders which should only be started on bootup
                 // except if we have specified that we want to start
                 // them again when restarting the WPS
-                if (    (_xwpQueryXStartupType(pFolder) != XSTARTUP_REBOOTSONLY)
-                     || (krnNeed2ProcessStartupFolder())
+                if (   (   (_xwpQueryXStartupType(pFolder) != XSTARTUP_REBOOTSONLY)
+                        || (krnNeed2ProcessStartupFolder())
+                       )
+                    && !(_wpQueryStyle(pFolder) & OBJSTYLE_TEMPLATE)  // V1.0.9 (2008-06-18)
                    )
                 {
                     ULONG ulTiming = 0;
