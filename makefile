@@ -826,7 +826,7 @@ release: really_all
 # 4) help
 !if [@md $(XWPRELEASE_NLS)\help 2> NUL]
 !endif
-    $(COPY) $(XWPRUNNING)\help\xfldr$(XWP_LANG_CODE).tmf $(XWPRELEASE_NLS)\help
+    $(COPY) $(MODULESDIR)\xfldr$(XWP_LANG_CODE).tmf $(XWPRELEASE_NLS)\help
     $(COPY) $(XWP_LANG_CODE)\misc\drvrs$(XWP_LANG_CODE).txt $(XWPRELEASE_NLS)\help
 !ifndef XWPLITE
     $(COPY) $(XWP_LANG_CODE)\misc\xfcls$(XWP_LANG_CODE).txt $(XWPRELEASE_NLS)\help
@@ -958,7 +958,7 @@ release_nls: nls
     $(COPY) $(MODULESDIR)\xfldr$(XWP_LANG_CODE).dll $(XWPRELEASE_NLS)\bin
 !if [@md $(XWPRELEASE_NLS)\help 2> NUL]
 !endif
-    $(COPY) $(XWPRUNNING)\help\xfldr$(XWP_LANG_CODE).tmf $(XWPRELEASE_NLS)\help
+    $(COPY) $(MODULESDIR)\xfldr$(XWP_LANG_CODE).tmf $(XWPRELEASE_NLS)\help
     $(COPY) $(XWP_LANG_CODE)\misc\drvrs$(XWP_LANG_CODE).txt $(XWPRELEASE_NLS)\help
     $(COPY) $(XWP_LANG_CODE)\misc\xfcls$(XWP_LANG_CODE).txt $(XWPRELEASE_NLS)\help
     $(COPY) $(MODULESDIR)\xfldr$(XWP_LANG_CODE).hlp $(XWPRELEASE_NLS)\help
