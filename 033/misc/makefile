@@ -1,15 +1,15 @@
 #
 # makefile:
-#       makefile pour le r‚pertoire 033\misc. 
+#       makefile pour le r‚pertoire 033\misc.
 #       · utiliser avec IBM NMAKE, fourni avec les comilateurs IBM,
-#       le Developer's Toolkit, et le DDK. 
+#       le Developer's Toolkit, et le DDK.
 #
-#       Tous les makefiles ont ‚t‚ restructur‚s avec la cersion 0.9.0. 
+#       Tous les makefiles ont ‚t‚ restructur‚s avec la cersion 0.9.0.
 #
 #       Appel‚ depuis :    033
 #
-#       Ceci copie les fichier du r‚pertoire en cours dans les 
-#       sous-r‚pertoires XWPRUNNING si n‚cessaire. 
+#       Ceci copie les fichier du r‚pertoire en cours dans les
+#       sous-r‚pertoires XWPRUNNING si n‚cessaire.
 #
 # Traduction fran‡aise : Guillaume Gay 2005-11-03
 
@@ -22,7 +22,7 @@
 !include ..\..\make\setup.in
 
 # Ceci est le code linguistique … modifier pour la langue que la DLL de
-# XWorkplace devra supporter. Modifiez-le et XWorplace prendra en charge 
+# XWorkplace devra supporter. Modifiez-le et XWorplace prendra en charge
 # votre langue.
 # Le code DOIT ˆtre saisi en 3 chiffres.
 LANGUAGE = 033
@@ -31,9 +31,9 @@ LANGUAGE = 033
 # NE PAS MODIFIER CE QUI SUIT ! (sauf eventuellement les commentaires...)
 #
 
-# D‚finit les suffixes des fichiers sur lesquels NMAKE va travailler. 
+# D‚finit les suffixes des fichiers sur lesquels NMAKE va travailler.
 # .SUFFIXES est un mot-cl‚ r‚serv‚ par NMAKE ("pseudo-cible") pour la
-# d‚finition des extensions de fichier que NMAKE devra reconnaŒtre. 
+# d‚finition des extensions de fichier que NMAKE devra reconnaŒtre.
 .SUFFIXES: .tmf
 
 FILES_TO_COPY = \
@@ -68,10 +68,10 @@ $(XWPRUNNING)\help\xfldr$(LANGUAGE).tmf: $(MODULESDIR)\$(@B).tmf
 # composition d'un fichier tmf file dans modulesdir … l'aide de d‚iff‚rents fichiers tmf sources
 !ifdef XWPLITE
 $(MODULESDIR)\xfldr$(LANGUAGE).tmf: xfldr$(LANGUAGE).tmf xwplite$(LANGUAGE).tmf
-    $(COPY) $(@B).tmf+xwplite$(LANGUAGE).tmf $@
+    $(COPY) /b $(@B).tmf+xwplite$(LANGUAGE).tmf $@
 !else
 $(MODULESDIR)\xfldr$(LANGUAGE).tmf: xfldr$(LANGUAGE).tmf xwpfull$(LANGUAGE).tmf
-    $(COPY) $(@B).tmf+xwpfull$(LANGUAGE).tmf $@
+    $(COPY) /b $(@B).tmf+xwpfull$(LANGUAGE).tmf $@
 !endif
 
 $(XWPRUNNING)\install\sound$(LANGUAGE).cmd: $(@B).cmd
