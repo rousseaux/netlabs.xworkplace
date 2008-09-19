@@ -411,9 +411,9 @@ src\shared\xwp_lite.def
 src\shared\xwp.def
 !endif
 
-# update DEF file if buildlevel has changed
-src\shared\xwp.def: include\bldlevel.h makefile
-        $(RUN_BLDLEVEL) $@ include\bldlevel.h "$(XWPNAME) main module"
+# update DEF file
+!if [@$(RUN_BLDLEVEL) src\shared\xwp.def include\bldlevel.h "$(XWPNAME) main module"]
+!endif
 
 $(MODULESDIR)\xfldr.dll: $(OBJS) $(HLPOBJS) $(MODDEFFILE) make\objects.in
         @echo $(MAKEDIR)\makefile [$@]: Linking $@
@@ -441,9 +441,9 @@ $(XWPRUNNING)\bin\xwpres.dll: $(MODULESDIR)\$(@B).dll
 !endif
         $(COPY) $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\bin
 
-# update DEF file if buildlevel has changed
-src\shared\xwpres.def: include\bldlevel.h makefile
-        $(RUN_BLDLEVEL) $@ include\bldlevel.h "$(XWPNAME) resources module"
+# update DEF file
+!if [@$(RUN_BLDLEVEL) src\shared\xwpres.def include\bldlevel.h "$(XWPNAME) resources module"]
+!endif
 
 $(MODULESDIR)\xwpres.dll: src\shared\xwpres.def $(OUTPUTDIR)\xwpres.res $(OUTPUTDIR)\dummyfont.obj
         @echo $(MAKEDIR)\makefile [$@]: Linking $@
@@ -465,9 +465,9 @@ $(MODULESDIR)\xwpres.dll: src\shared\xwpres.def $(OUTPUTDIR)\xwpres.res $(OUTPUT
 # Linking WINLIST.DLL
 #
 
-# update DEF file if buildlevel has changed
-src\widgets\w_winlist.def: include\bldlevel.h makefile
-        $(RUN_BLDLEVEL) $@ include\bldlevel.h "$(XWPNAME) window-list plugin DLL"
+# update DEF file
+!if [@$(RUN_BLDLEVEL) src\widgets\w_winlist.def include\bldlevel.h "$(XWPNAME) window-list plugin DLL"]
+!endif
 
 $(MODULESDIR)\winlist.dll: $(WINLISTOBJS) src\widgets\w_$(@B).def
         @echo $(MAKEDIR)\makefile [$@]: Linking $@
@@ -492,9 +492,9 @@ $(XWPRUNNING)\plugins\xcenter\diskfree.dll: $(MODULESDIR)\$(@B).dll
         $(COPY) $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\plugins\xcenter
         $(COPY) $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\plugins\xcenter
 
-# update DEF file if buildlevel has changed
-src\widgets\w_diskfree.def: include\bldlevel.h makefile
-        $(RUN_BLDLEVEL) $@ include\bldlevel.h "$(XWPNAME) diskfree plugin DLL"
+# update DEF file
+!if [@$(RUN_BLDLEVEL) src\widgets\w_diskfree.def include\bldlevel.h "$(XWPNAME) diskfree plugin DLL"]
+!endif
 
 $(MODULESDIR)\diskfree.dll: $(DISKFREEOBJS) src\widgets\w_diskfree.def
         @echo $(MAKEDIR)\makefile [$@]: Linking $@
@@ -519,9 +519,9 @@ $(XWPRUNNING)\plugins\xcenter\ipmon.dll: $(MODULESDIR)\$(@B).dll
         $(COPY) $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\plugins\xcenter
         $(COPY) $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\plugins\xcenter
 
-# update DEF file if buildlevel has changed
-src\widgets\w_ipmon.def: include\bldlevel.h makefile
-        $(RUN_BLDLEVEL) $@ include\bldlevel.h "$(XWPNAME) IP monitor plugin DLL"
+# update DEF file
+!if [@$(RUN_BLDLEVEL) src\widgets\w_ipmon.def include\bldlevel.h "$(XWPNAME) IP monitor plugin DLL"]
+!endif
 
 $(MODULESDIR)\ipmon.dll: $(IPMONOBJS) src\widgets\w_$(@B).def
         @echo $(MAKEDIR)\makefile [$@]: Linking $@
@@ -546,9 +546,9 @@ $(XWPRUNNING)\plugins\xcenter\monitors.dll: $(MODULESDIR)\$(@B).dll
         $(COPY) $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\plugins\xcenter
         $(COPY) $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\plugins\xcenter
 
-# update DEF file if buildlevel has changed
-src\widgets\w_monitors.def: include\bldlevel.h makefile
-        $(RUN_BLDLEVEL) $@ include\bldlevel.h "$(XWPNAME) monitors plugin DLL"
+# update DEF file
+!if [@$(RUN_BLDLEVEL) src\widgets\w_monitors.def include\bldlevel.h "$(XWPNAME) monitors plugin DLL"]
+!endif
 
 $(MODULESDIR)\monitors.dll: $(MONITOROBJS) src\widgets\w_$(@B).def
         @echo $(MAKEDIR)\makefile [$@]: Linking $@
@@ -573,9 +573,9 @@ $(XWPRUNNING)\plugins\xcenter\sentinel.dll: $(MODULESDIR)\$(@B).dll
         $(COPY) $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\plugins\xcenter
         $(COPY) $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\plugins\xcenter
 
-# update DEF file if buildlevel has changed
-src\widgets\w_sentinel.def: include\bldlevel.h makefile
-        $(RUN_BLDLEVEL) $@ include\bldlevel.h "$(XWPNAME) memory sentinel plugin DLL"
+# update DEF file
+!if [@$(RUN_BLDLEVEL) src\widgets\w_sentinel.def include\bldlevel.h "$(XWPNAME) memory sentinel plugin DLL"]
+!endif
 
 $(MODULESDIR)\sentinel.dll: $(SENTINELOBJS) src\widgets\w_$(@B).def
         @echo $(MAKEDIR)\makefile [$@]: Linking $@
@@ -600,9 +600,9 @@ $(XWPRUNNING)\plugins\xcenter\xwHealth.dll: $(MODULESDIR)\$(@B).dll
         $(COPY) $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\plugins\xcenter
         $(COPY) $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\plugins\xcenter
 
-# update DEF file if buildlevel has changed
-src\widgets\xwHealth.def: include\bldlevel.h makefile
-        $(RUN_BLDLEVEL) $@ include\bldlevel.h "$(XWPNAME) xwHealth plugin DLL"
+# update DEF file
+!if [@$(RUN_BLDLEVEL) src\widgets\xwHealth.def include\bldlevel.h "$(XWPNAME) xwHealth plugin DLL"]
+!endif
 
 $(MODULESDIR)\xwHealth.dll: $(HEALTHOBJS) src\widgets\$(@B).def
         @echo $(MAKEDIR)\makefile [$@]: Linking $@
@@ -629,9 +629,9 @@ $(XWPRUNNING)\plugins\xcenter\sample.dll: $(MODULESDIR)\$(@B).dll
         $(COPY) $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\plugins\xcenter
         $(COPY) $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\plugins\xcenter
 
-# update DEF file if buildlevel has changed
-src\widgets\sample.def: include\bldlevel.h makefile
-        $(RUN_BLDLEVEL) $@ include\bldlevel.h "$(XWPNAME) sample plugin DLL"
+# update DEF file
+!if [@$(RUN_BLDLEVEL) src\widgets\sample.def include\bldlevel.h "$(XWPNAME) sample plugin DLL"]
+!endif
 
 $(MODULESDIR)\sample.dll: $(SAMPLEOBJS) src\widgets\$(@B).def
         @echo $(MAKEDIR)\makefile [$@]: Linking $@
@@ -654,9 +654,9 @@ $(SAMPLEOBJS)
 # Linking D_CDFS.DLL
 #
 
-# update DEF file if buildlevel has changed
-src\widgets\d_cdfs.def: include\bldlevel.h makefile
-        $(RUN_BLDLEVEL) $@ include\bldlevel.h "$(XWPNAME) CDFS.IFS driver plugin DLL"
+# update DEF file
+!if [@$(RUN_BLDLEVEL) src\widgets\d_cdfs.def include\bldlevel.h "$(XWPNAME) CDFS.IFS driver plugin DLL"]
+!endif
 
 $(MODULESDIR)\d_cdfs.dll: $(D_CDFSOBJS) src\widgets\$(@B).def
         @echo $(MAKEDIR)\makefile [$@]: Linking $@
@@ -680,9 +680,9 @@ $(XWPRUNNING)\bin\xwpfonts.fon: $(MODULESDIR)\$(@B).fon
 !endif
         $(COPY) $(MODULESDIR)\$(@B).fon $(XWPRUNNING)\bin
 
-# update DEF file if buildlevel has changed
-src\shared\xwpfonts.def: include\bldlevel.h makefile
-        $(RUN_BLDLEVEL) $@ include\bldlevel.h "$(XWPNAME) bitmap fonts"
+# update DEF file
+!if [@$(RUN_BLDLEVEL) src\shared\xwpfonts.def include\bldlevel.h "$(XWPNAME) bitmap fonts"]
+!endif
 
 $(MODULESDIR)\xwpfonts.fon: $(XWP_OUTPUT_ROOT)\$(@B).res
         @echo $(MAKEDIR)\makefile [$@]: Linking $(MODULESDIR)\$(@B).fon

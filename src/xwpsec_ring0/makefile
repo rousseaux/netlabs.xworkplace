@@ -5,7 +5,7 @@
 # This file will probably not work with other MAKE utilities, such as
 # GNU make or DMAKE.
 #
-#       Copyright (C) 1998-2006 Ulrich M”ller.
+#       Copyright (C) 1998-2008 Ulrich M”ller.
 #       This file is part of the XWorkplace source package.
 #       XWorkplace is free software; you can redistribute it and/or modify
 #       it under the terms of the GNU General Public License as published
@@ -99,6 +99,10 @@ COBJS = \
     $(OUTPUTDIR)\util_string.obj \
     $(OUTPUTDIR)\tree.obj
 
+# update DEF file
+!if [@$(RUN_BLDLEVEL) $(DRIVERNAME).def ..\..\include\bldlevel.h "$(XWPNAME) Security device driver"]
+!endif
+
 # TARGETS
 # -------
 
@@ -122,10 +126,6 @@ dep:
     $(AS) $(ASFLAGS) $(ADEFINES) $(AINCLUDES) $< -Fo:$@ -Fl:$(@:.obj=.lst)
 
 # linking
-
-$(DRIVERNAME).def: ..\..\include\bldlevel.h makefile
-    $(RUN_BLDLEVEL) $(DRIVERNAME).def ..\..\include\bldlevel.h "$(XWPNAME) Security device driver"
-
 $(MODULESDIR)\$(DRIVERNAME).sys: \
 $(AOBJS) \
 $(COBJS) \

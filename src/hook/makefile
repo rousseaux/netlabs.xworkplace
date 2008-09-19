@@ -43,6 +43,10 @@ OUTPUTDIR = $(BASE_OUTPUTDIR)\exe_mt
 !if [@md $(OUTPUTDIR) 2> NUL]
 !endif
 
+# update DEF file
+!if [@$(RUN_BLDLEVEL) xwphook.def ..\..\include\bldlevel.h "$(XWPNAME) PM hook module"]
+!endif
+
 # The OBJS macro contains all the .OBJ files which need to be
 # created from the files in this directory.
 # These will be put into BIN\.
@@ -118,10 +122,6 @@ $(XWPRUNNING)\bin\xwphook.dll: $(MODULESDIR)\$(@B).dll
         $(COPY) TRC00FD.TFF $(DYNAMIC_TRACE):\OS2\SYSTEM\TRACE
         del TRC00FD.TFF
 !endif
-
-# update DEF file if buildlevel has changed
-xwphook.def: $(PROJECT_BASE_DIR)\include\bldlevel.h makefile
-        $(RUN_BLDLEVEL) $@ $(PROJECT_BASE_DIR)\include\bldlevel.h "$(XWPNAME) PM hook module"
 
 $(MODULESDIR)\xwphook.dll: $(@B).def $(OBJS)
         @echo $(MAKEDIR)\makefile [$@]: Linking $@
