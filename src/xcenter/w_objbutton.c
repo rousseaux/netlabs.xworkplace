@@ -117,18 +117,6 @@
 
 /* ******************************************************************
  *
- *   Global variables
- *
- ********************************************************************/
-
-#ifndef __XWPLITE__
-static PCSZ G_pcszXButton =     "X-Button";
-#else
-static PCSZ G_pcszXButton =     "eButton";
-#endif
-
-/* ******************************************************************
- *
  *   Private widget instance data
  *
  ********************************************************************/
@@ -643,7 +631,7 @@ VOID EXPENTRY OwgtShowXButtonSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
                                   pData->hwndOwner,
                                   FCF_FIXED_DLG,
                                   fnwpSettingsDlg,
-                                  G_pcszXButton,
+                                  ENTITY_XBUTTON,
                                   dlgXButtonSettings,
                                   ARRAYITEMCOUNT(dlgXButtonSettings),
                                   NULL,
@@ -960,7 +948,7 @@ STATIC BOOL OwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
                 {
                     PTOOLTIPTEXT pttt = (PTOOLTIPTEXT)mp2;
                     if (pPrivate->ulType == BTF_XBUTTON)
-                        pttt->pszText = (PSZ)G_pcszXButton;
+                        pttt->pszText = (PSZ)ENTITY_XBUTTON;
                     else
                     {
                         if (!pPrivate->pobjButton)
