@@ -27,7 +27,7 @@
  */
 
 /*
- *      Copyright (C) 1999-2005 Ulrich M”ller.
+ *      Copyright (C) 1999-2008 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -771,7 +771,7 @@ APIRET arcQueryArchiveByte(UCHAR *pByte,        // out: read byte
 
     if (arc)
         cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "Got error %d");
+               "Got error %d", arc);
 
     return arc;
 }
