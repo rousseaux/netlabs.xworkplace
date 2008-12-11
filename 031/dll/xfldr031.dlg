@@ -1,11 +1,6 @@
-#ifndef OS2_INCLUDED
-   #include <os2.h>
-#endif
-DLGINCLUDE 1 "..\..\dlgids.h"
-
 DLGTEMPLATE ID_CRD_DISKFREEWGT_SETTINGS LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
-    DIALOG  "Vrije stationsruimte Instellingen", ID_CRD_DISKFREEWGT_SETTINGS, 12, 6, 100, 64, ,
+    DIALOG  "Stations vrije installatie", ID_CRD_DISKFREEWGT_SETTINGS, 12, 6, 100, 64, ,
             FCF_SYSMENU | FCF_TITLEBAR
     BEGIN
         AUTORADIOBUTTON "Meervoudige weergave", ID_ICON2, 3, 53, 45, 11, WS_GROUP |
@@ -22,10 +17,10 @@ END
 
 DLGTEMPLATE ID_CRD_HEALTHWGT_SETTINGS LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
-    DIALOG  "Health Monitor Instellingen", ID_CRD_HEALTHWGT_SETTINGS, 12, 8, 380,
+    DIALOG  "Conditie monitor instellingen", ID_CRD_HEALTHWGT_SETTINGS, 12, 8, 380,
             34, , FCF_SYSMENU | FCF_TITLEBAR
     BEGIN
-        LTEXT           "Instellingen Reeks:", ID_ICON2, 9, 21, 55, 8, DT_MNEMONIC
+        LTEXT           "Instellingen reeks:", ID_ICON2, 9, 21, 55, 8, DT_MNEMONIC
         ENTRYFIELD      "", ID_CRDI_SETUP_STRING, 71, 21, 301, 8, ES_MARGIN |
                         WS_GROUP
         DEFPUSHBUTTON   "OK", DID_OK, 8, 6, 60, 12
@@ -36,14 +31,14 @@ END
 
 DLGTEMPLATE ID_CRD_WINLISTWGT_SETTINGS LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
-    DIALOG  "Venster Lijst Filters", ID_CRD_WINLISTWGT_SETTINGS, 12, 8, 260,
+    DIALOG  "Vensterlijst filters", ID_CRD_WINLISTWGT_SETTINGS, 12, 8, 260,
             160, , FCF_SYSMENU | FCF_TITLEBAR
     BEGIN
         GROUPBOX        "Huidige ~filters", -1, 8, 82, 240, 74, DT_MNEMONIC
         LISTBOX         ID_CRDI_FILTERS_CURRENTLB, 14, 88, 164, 58,
                         LS_NOADJUSTPOS | LS_HORZSCROLL
-        PUSHBUTTON      "Ve~rwijder", ID_CRDI_FILTERS_REMOVE, 186, 112, 56, 12
-        GROUPBOX        "~Nieuw filter", -1, 8, 20, 240, 60, DT_MNEMONIC
+        PUSHBUTTON      "Ve~rwijderen", ID_CRDI_FILTERS_REMOVE, 186, 112, 56, 12
+        GROUPBOX        "~Nieuwe ingang", -1, 8, 20, 240, 60, DT_MNEMONIC
         COMBOBOX        "", ID_CRDI_FILTERS_NEWCOMBO, 14, 24, 166, 48,
                         LS_HORZSCROLL
         PUSHBUTTON      "~Toevoegen", ID_CRDI_FILTERS_ADD, 188, 44, 56, 12
@@ -77,8 +72,8 @@ BEGIN
     BEGIN
         LTEXT           "Contact zoeken met Netscape...", -1, 5, 1, 160, 9,
                         DT_WORDBREAK
-        RTEXT           "Netscape DDE Interface", -1, 25, 18, 110, 8
-        RTEXT           "(C) 1998-2002 Ulrich M”ller", -1, 25, 12, 110, 8
+        RTEXT           "Netscape DDE interface", -1, 25, 18, 110, 8
+        RTEXT           "(C) 1998-2006 Ulrich M”ller", -1, 25, 12, 110, 8
     END
 END
 
@@ -88,10 +83,10 @@ BEGIN
             WS_VISIBLE
             PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
     BEGIN
-        LTEXT           "Opstarten van Netscape...", -1, 5, 1, 160, 9,
+        LTEXT           "Netscape opstarten...", -1, 5, 1, 160, 9,
                         DT_WORDBREAK
-        RTEXT           "Netscape DDE Interface", -1, 25, 18, 110, 8
-        RTEXT           "(C) 1998-2002 Ulrich M”ller", -1, 25, 12, 110, 8
+        RTEXT           "Netscape DDE interface", -1, 25, 18, 110, 8
+        RTEXT           "(C) 1998-2005 Ulrich M”ller", -1, 25, 12, 110, 8
     END
 END
 
@@ -113,7 +108,7 @@ BEGIN
                         CTLDATA 12, 0, 33, 0, 1, 0
         CTEXT           "tbr", ID_OSDI_CDFS_CACHETXT, 195, 90, 45, 8, NOT
                         WS_GROUP
-        GROUPBOX        "~Bestand sectoren per lees actie (/M:n)", -1, 5, 57,
+        GROUPBOX        "~Bestandsectoren per leesactie (/M:n)", -1, 5, 57,
                         245, 25, DT_MNEMONIC
         SLIDER          ID_OSDI_CDFS_SECTORSSLIDER, 15, 60, 175, 12,
                         SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP
@@ -160,7 +155,7 @@ BEGIN
         LTEXT           "Au~tomatisch controleren:", -1, 5, 29, 50, 8, DT_MNEMONIC | NOT
                         WS_GROUP
         ENTRYFIELD      "", ID_OSDI_AUTOCHECK, 67, 29, 101, 8, ES_MARGIN
-        PUSHBUTTON      "Voorstel", ID_OSDI_AUTOCHECK_PROPOSE, 175, 27, 55,
+        PUSHBUTTON      "~Voorstel", ID_OSDI_AUTOCHECK_PROPOSE, 175, 27, 55,
                         12
         DEFPUSHBUTTON   "~OK", DID_OK, 5, 6, 55, 12, WS_GROUP
         PUSHBUTTON      "~Annuleren", DID_CANCEL, 65, 6, 55, 12
@@ -194,11 +189,11 @@ BEGIN
     DIALOG  "OS/2 Kernel: IBM1S506.ADD instellingen", ID_OSD_DRIVER_IBM1S506,
             -75, -46, 405, 226, , FCF_SYSMENU | FCF_TITLEBAR
     BEGIN
-        GROUPBOX        "Stuurprogramma ~initialisatie (opstart)", -1, 5, 204, 185,
+        GROUPBOX        "Stuurprogramma ~initialisatie (bij opstarten)", -1, 5, 204, 185,
                         18, DT_MNEMONIC
         AUTORADIOBUTTON "~Stil", ID_OSDI_S506_INITQUIET, 10, 206, 35, 10,
                         WS_TABSTOP
-        AUTORADIOBUTTON "~Breedsprakig (/V)", ID_OSDI_S506_INITVERBOSE, 50, 206,
+        AUTORADIOBUTTON "~Uitgebreid (/V)", ID_OSDI_S506_INITVERBOSE, 50, 206,
                         65, 10, WS_TABSTOP
         AUTORADIOBUTTON "~Wachten (/W)", ID_OSDI_S506_INITWAIT, 125, 206, 50,
                         10, WS_TABSTOP
@@ -279,7 +274,7 @@ BEGIN
         CONTROL         "Stel meervoudige ondersteuning in (/[!]SMS)", ID_OSDI_S506_U_SMS,
                         200, 166, 135, 10, WC_BUTTON, BS_AUTO3STATE |
                         WS_TABSTOP | WS_VISIBLE
-        AUTOCHECKBOX    "Fout herstel tijd (/T, in seconden):",
+        AUTOCHECKBOX    "Fout hersteltijd (/T, in seconden):",
                         ID_OSDI_S506_U_RECOVERY_CHECK, 200, 158, 165, 10
         SLIDER          ID_OSDI_S506_U_RECOVERY_SLIDER, 220, 148, 130, 10,
                         SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP | WS_GROUP
@@ -342,7 +337,7 @@ END
 
 DLGTEMPLATE ID_OSD_FILELIST LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
-    DIALOG  "Systeempaden: Bestandslijst", ID_OSD_FILELIST, 10, 6, 258, 174, NOT
+    DIALOG  "Systeempaden: bestandslijst", ID_OSD_FILELIST, 10, 6, 258, 174, NOT
             FS_DLGBORDER | FS_SIZEBORDER, FCF_SYSMENU | FCF_TITLEBAR
     BEGIN
         LTEXT           "Bestandslijst voor pad:", ID_OSDI_FILELISTSYSPATH1, 5,
@@ -356,7 +351,7 @@ END
 
 DLGTEMPLATE ID_OSD_NEWSYSPATH LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
-    DIALOG  "Nieuw Systeempad", ID_OSD_NEWSYSPATH, 15, 66, 200, 45,
+    DIALOG  "Nieuw systeempad", ID_OSD_NEWSYSPATH, 15, 66, 200, 45,
             WS_VISIBLE, FCF_SYSMENU | FCF_TITLEBAR
     BEGIN
         LTEXT           "Voer nieuw systeempad hier in:", -1, 5, 30, 135,
@@ -468,10 +463,18 @@ BEGIN
             WS_VISIBLE
     BEGIN
         GROUPBOX        "Planner", -1, 5, 24, 225, 58
-        LTEXT           "Huidig thread aantal:", -1, 10, 63, 150, 8
+        LTEXT           "Huidig aantal processen:", -1, 10, 87, 150, 8
+        RTEXT           "wait...", ID_OSDI_CURRENTPROCESSES, 155, 87, 50, 8,
+                        NOT WS_GROUP
+        LTEXT           "Maximum aantal processen:", -1, 10, 75, 140, 8, NOT
+                        WS_GROUP
+        SPINBUTTON      ID_OSDI_MAXPROCESSES, 155, 75, 50, 12,
+                        SPBS_NUMERICONLY | SPBS_MASTER | SPBS_JUSTRIGHT |
+                        SPBS_FASTSPIN
+        LTEXT           "Huidig aantal threads:", -1, 10, 63, 150, 8
         RTEXT           "wacht...", ID_OSDI_CURRENTTHREADS, 155, 63, 50, 8,
                         NOT WS_GROUP
-        LTEXT           "Maximaal thread aantal:", -1, 10, 51, 140, 8, NOT
+        LTEXT           "Maximaal aantal threads:", -1, 10, 51, 140, 8, NOT
                         WS_GROUP
         SPINBUTTON      ID_OSDI_MAXTHREADS, 155, 51, 50, 12,
                         SPBS_NUMERICONLY | SPBS_MASTER | SPBS_JUSTRIGHT |
@@ -496,14 +499,14 @@ BEGIN
     DIALOG  "", ID_OSD_SETTINGS_KERNEL2, 0, 0, 275, 180, NOT FS_DLGBORDER |
             WS_VISIBLE
     BEGIN
-        GROUPBOX        "Swap bestand (SWAPPER.DAT)", -1, 6, 74, 225, 66
+        GROUPBOX        "Swapbestand (SWAPPER.DAT)", -1, 6, 74, 225, 66
         LTEXT           "Huidige grootte: ", -1, 12, 124, 145, 8
-        RTEXT           "Wacht...", ID_OSDI_CURRENTSWAPSIZE, 154, 124, 50,
+        RTEXT           "Wacht op...", ID_OSDI_CURRENTSWAPSIZE, 154, 124, 50,
                         8, NOT WS_GROUP
         LTEXT           "MB", -1, 210, 124, 15, 8, NOT WS_GROUP
-        LTEXT           "Hoofdgeheugengrootte:", -1, 12, 116, 145, 8, NOT
+        LTEXT           "Hoofdgeheugen grootte:", -1, 12, 116, 145, 8, NOT
                         WS_GROUP
-        RTEXT           "Wacht...", ID_OSDI_PHYSICALMEMORY, 154, 116, 50,
+        RTEXT           "Wacht op...", ID_OSDI_PHYSICALMEMORY, 154, 116, 50,
                         8, NOT WS_GROUP
         LTEXT           "MB", -1, 210, 116, 15, 8, NOT WS_GROUP
         LTEXT           "~Minimale grootte:", -1, 12, 104, 75, 8, DT_MNEMONIC |
@@ -534,6 +537,8 @@ BEGIN
                         10, 38, 212, 8
         AUTOCHECKBOX    "Hoog geheugen voor ~Java", ID_OSDI_HIMEM_JAVAHIMEM, 10,
                         28, 212, 8
+        AUTOCHECKBOX    "~Vroege geheugen initialisatie",
+                        ID_OSDI_HIMEM_EARLYMEMINIT, 10, 28, 212, 8
         PUSHBUTTON      "~Toepassen", DID_APPLY, 5, 6, 55, 12, WS_GROUP |
                         WS_DISABLED
         PUSHBUTTON      "~Optimaliseren", DID_OPTIMIZE, 65, 6, 55, 12
@@ -580,27 +585,32 @@ BEGIN
     DIALOG  "", ID_OSD_SETTINGS_WPS, 0, 0, 275, 180, NOT FS_DLGBORDER |
             WS_VISIBLE
     BEGIN
-        GROUPBOX        "Automatisch starten", -1, 5, 93, 225, 57
-        AUTOCHECKBOX    "Programma's", ID_OSDI_AUTO_PROGRAMS, 10, 132, 210, 10
-        AUTOCHECKBOX    "Taakoverzicht", ID_OSDI_AUTO_TASKLIST, 10, 123, 210, 10
+        GROUPBOX        "Automatisch starten", -1, 5, 105, 225, 57
+        AUTOCHECKBOX    "Programma's", ID_OSDI_AUTO_PROGRAMS, 10, 144, 210, 10
+        AUTOCHECKBOX    "Taakoverzicht", ID_OSDI_AUTO_TASKLIST, 10, 135, 210, 10
         AUTOCHECKBOX    "Netwerkverbindingen", ID_OSDI_AUTO_CONNECTIONS, 10,
                         114, 210, 10
-        AUTOCHECKBOX    "Hoofdvenster", ID_OSDI_AUTO_LAUNCHPAD, 10, 105, 210,
+        AUTOCHECKBOX    "Hoofdvenster", ID_OSDI_AUTO_LAUNCHPAD, 10, 117, 210,
                         10
-        AUTOCHECKBOX    "WarpCenter", ID_OSDI_AUTO_WARPCENTER, 10, 96, 210,
+        AUTOCHECKBOX    "WarpCenter", ID_OSDI_AUTO_WARPCENTER, 10, 108, 210,
                         10
-        GROUPBOX        "Opstarten na systeem start...", -1, 5, 36, 225,
+        GROUPBOX        "Opnieuw starten na systeem start...", -1, 5, 48, 225,
                         51
-        AUTORADIOBUTTON "Alles", ID_OSDI_RESTART_YES, 10, 69, 215, 10,
+        AUTORADIOBUTTON "Alles", ID_OSDI_RESTART_YES, 10, 81, 215, 10,
                         WS_TABSTOP
-        AUTORADIOBUTTON "Niets", ID_OSDI_RESTART_NO, 10, 60, 215, 10,
+        AUTORADIOBUTTON "Niets", ID_OSDI_RESTART_NO, 10, 72, 215, 10,
                         WS_TABSTOP
         AUTORADIOBUTTON "Alleen opstartmappen", ID_OSDI_RESTART_FOLDERS, 10,
-                        51, 215, 10, WS_TABSTOP
-        AUTOCHECKBOX    "Alleen na herstart", ID_OSDI_RESTART_REBOOT, 10, 39,
+                        63, 215, 10, WS_TABSTOP
+        AUTOCHECKBOX    "Alleen na opnieuw starten", ID_OSDI_RESTART_REBOOT, 10, 51,
                         215, 10
         AUTOCHECKBOX    "Automatisch mappen verversen",
-                        ID_OSDI_AUTOREFRESHFOLDERS, 5, 21, 140, 10, WS_GROUP
+                        ID_OSDI_AUTOREFRESHFOLDERS, 5, 33, 140, 10, WS_GROUP
+        LTEXT           "Extra bestand ingangen:", -1, 5, 21, 140, 8, NOT
+                        WS_Group
+        SPINBUTTON      ID_OSDI_SHELLHANDLESINC, 155, 21, 59 12,
+                        SPBS_NUMERICONLY | SPBS_MASTER | SPBS_JUSTRIGHT |
+                        SPBS_FASTSPIN
         PUSHBUTTON      "~Toepassen", DID_APPLY, 5, 6, 55, 12, WS_GROUP |
                         WS_DISABLED
         PUSHBUTTON      "~Optimaliseren", DID_OPTIMIZE, 65, 6, 55, 12
@@ -650,7 +660,7 @@ END
 
 DLGTEMPLATE ID_SDD_MAIN LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
-    DIALOG  "XShutdown Status", ID_SDD_MAIN, 15, 15, 365, 156, FS_ICON |
+    DIALOG  "XShutdown status", ID_SDD_MAIN, 15, 15, 365, 156, FS_ICON |
             FS_ACCELTABLE | FS_NOBYTEALIGN | FS_NOMOVEWITHOWNER | NOT
             FS_DLGBORDER | FS_SIZEBORDER, FCF_SYSMENU | FCF_TITLEBAR |
             FCF_MINBUTTON | FCF_MAXBUTTON
@@ -727,7 +737,7 @@ BEGIN
                         58, 112, 12
         PUSHBUTTON      "~XWorkplace objecten ", ID_XCD_OBJECTS_XWORKPLACE,
                         34, 44, 112, 12
-        PUSHBUTTON      "Maak Configuratie Map Opnieuw...",
+        PUSHBUTTON      "Maak Configuratie map opnieuw...",
                         ID_XCD_OBJECTS_CONFIGFOLDER, 16, 30, 146, 12
         PUSHBUTTON      "~Help", DID_HELP, 145, 6, 65, 12, BS_HELP
     END
@@ -770,9 +780,9 @@ BEGIN
                         32, 80, 6, DT_VCENTER
         RTEXT           "onbekend", ID_XCDI_INFO_NLS_RELEASE, 104, 32, 70, 6,
                         DT_VCENTER
-        LTEXT           "Vertaler:", ID_XCDI_INFO_NLS_AUTHOR_TXT, 24, 24,
+        LTEXT           "Vertaling:", ID_XCDI_INFO_NLS_AUTHOR_TXT, 24, 24,
                         80, 6, DT_VCENTER
-        RTEXT           "onbekend", ID_XCDI_INFO_NLS_AUTHOR, 104, 24, 70, 6,
+        RTEXT           "Nederlandse eComStation Test- en Vertaalgroep", ID_XCDI_INFO_NLS_AUTHOR, 70, 24, 112, 6,
                         DT_VCENTER
         PUSHBUTTON      "~Help", DID_HELP, 140, 6, 60, 12, BS_HELP
     END
@@ -847,7 +857,7 @@ END
 
 DLGTEMPLATE ID_XFD_LIMITREACHED LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
-    DIALOG  "XWorkplace: Te Veel Objecten", ID_XFD_LIMITREACHED, 25, 18, 260,
+    DIALOG  "XWorkplace: Teveel objecten", ID_XFD_LIMITREACHED, 25, 18, 260,
             74, FS_SCREENALIGN | WS_VISIBLE, FCF_SYSMENU | FCF_TITLEBAR
     BEGIN
         DEFPUSHBUTTON   "~OK", DID_OK, 10, 6, 70, 12
@@ -864,7 +874,7 @@ END
 
 DLGTEMPLATE ID_XFD_STARTUPSTATUS LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
-    DIALOG  "Systeem Opstarten", ID_XFD_STARTUPSTATUS, 10, 6, 200, 32, ,
+    DIALOG  "Systeem opstarten", ID_XFD_STARTUPSTATUS, 10, 6, 200, 32, ,
             FCF_SYSMENU | FCF_TITLEBAR
     BEGIN
         LTEXT           "Initialiseren, even geduld a.u.b....", ID_SDDI_STATUS, 5,
@@ -911,7 +921,7 @@ END
 
 DLGTEMPLATE ID_XLD_REGISTERCLASS LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
-    DIALOG  "Registreer Nieuwe Class", ID_XLD_REGISTERCLASS, 12, 28, 218, 62,
+    DIALOG  "Registreer nieuwe Class", ID_XLD_REGISTERCLASS, 12, 28, 218, 62,
             WS_VISIBLE, FCF_SYSMENU | FCF_TITLEBAR
     BEGIN
         LTEXT           "DLL:", -1, 5, 43, 20, 8
@@ -996,8 +1006,8 @@ BEGIN
             WS_VISIBLE
     BEGIN
         PUSHBUTTON      "~Help", DID_HELP, 140, 6, 70, 12, BS_HELP
-        GROUPBOX        "Stationdetails", -1, 10, 99, 200, 48
-        LTEXT           "Station~label:", -1, 15, 126, 70, 8, DT_MNEMONIC
+        GROUPBOX        "Stationsdetails", -1, 10, 99, 200, 48
+        LTEXT           "Stations~label:", -1, 15, 126, 70, 8, DT_MNEMONIC
         ENTRYFIELD      "", ID_XSDI_DISK_LABEL, 112, 128, 91, 8, ES_MARGIN
         LTEXT           "Bestandssysteem:", -1, 15, 114, 85, 8
         LTEXT           "onbekend", ID_XSDI_DISK_FILESYSTEM, 110, 114, 85, 8
@@ -1041,7 +1051,7 @@ END
 
 DLGTEMPLATE ID_XSD_IMPORTWPS LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
-    DIALOG  "Importeer WPS Filters", ID_XSD_IMPORTWPS, 12, 6, 242, 172,
+    DIALOG  "Importeer WPS filters", ID_XSD_IMPORTWPS, 12, 6, 242, 172,
             WS_VISIBLE, FCF_SYSMENU | FCF_TITLEBAR
     BEGIN
         LTEXT           "Samenvoegen met:", -1, 6, 160, 65, 8
@@ -1068,20 +1078,20 @@ END
 
 DLGTEMPLATE ID_XSD_KEYB_EDITFUNCTIONKEY LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
-    DIALOG  "Bewerk Functie Toets Definitie", ID_XSD_KEYB_EDITFUNCTIONKEY, 12,
+    DIALOG  "Bewerk functietoets definitie", ID_XSD_KEYB_EDITFUNCTIONKEY, 12,
             50, 244, 76, , FCF_SYSMENU | FCF_TITLEBAR
     BEGIN
         LTEXT           "Toets ~beschrijving:", -1, 6, 58, 74, 12, DT_VCENTER |
                         DT_MNEMONIC
         ENTRYFIELD      "", ID_XSDI_FUNCK_DESCRIPTION_EF, 96, 60, 140, 8,
                         ES_MARGIN
-        LTEXT           "Hardware ~scan code (klik in het invoer veld en druk"
+        LTEXT           "Hardware ~scan code (klik in het invoerveld en druk "
                         "de functie toets in):", -1, 6, 46, 232, 10,
                         DT_VCENTER | DT_MNEMONIC
         ENTRYFIELD      "", ID_XSDI_FUNCK_SCANCODE_EF, 96, 36, 140, 8,
                         ES_CENTER | ES_MARGIN
                         PRESPARAMS PP_BACKGROUNDCOLOR, 0x00FF8080L
-        LTEXT           "Nadat u op ""OK"" heeft gedrukt, is de functie toets"
+        LTEXT           "Nadat u op ""OK"" heeft gedrukt, wordt de functietoets "
                         "geregistreerd.", -1, 6, 20, 232, 10, DT_VCENTER
         DEFPUSHBUTTON   "~OK", DID_OK, 8, 6, 70, 12
         PUSHBUTTON      "~Annuleren", DID_CANCEL, 86, 6, 70, 12
@@ -1155,9 +1165,9 @@ BEGIN
                         DT_VCENTER | DT_MNEMONIC
         AUTOCHECKBOX    "Niet verbergen wanneer een ~menu geopend is",
                         ID_XSDI_MOUSE_AUTOHIDE_CHECKMNU, 22, 88, 164, 10
-        AUTOCHECKBOX    "Niet verbergen wanneer boven een ~knop",
+        AUTOCHECKBOX    "Niet verbergen boven een druk~knop",
                         ID_XSDI_MOUSE_AUTOHIDE_CHECKBTN, 22, 80, 164, 10
-        GROUPBOX        "Automatisch verplaatsen naar dialoog knop", -1, 6,
+        GROUPBOX        "Automatisch verplaatsen naar dialoogknop", -1, 6,
                         20, 194, 56
         AUTOCHECKBOX    "I~nschakelen", ID_XSDI_MOUSE_AUTOMOVE_CHECK, 12, 60, 46,
                         8
@@ -1180,7 +1190,7 @@ END
 
 DLGTEMPLATE ID_XSD_NEWFILETYPE LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
-    DIALOG  "Nieuw Bestandstype", ID_XSD_NEWFILETYPE, 15, 66, 145, 45, WS_VISIBLE,
+    DIALOG  "Nieuw bestandstype", ID_XSD_NEWFILETYPE, 15, 66, 145, 45, WS_VISIBLE,
             FCF_SYSMENU | FCF_TITLEBAR
     BEGIN
         LTEXT           "Voer de naam van het nieuwe type in:",
@@ -1197,7 +1207,7 @@ END
 
 DLGTEMPLATE ID_XSD_NEWFILTER LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
-    DIALOG  "Nieuw Filter", ID_XSD_NEWFILTER, 15, 66, 145, 45, WS_VISIBLE,
+    DIALOG  "Nieuw filter", ID_XSD_NEWFILTER, 15, 66, 145, 45, WS_VISIBLE,
             FCF_SYSMENU | FCF_TITLEBAR
     BEGIN
         LTEXT           "Voer de naam van het nieuwe filter in:", -1, 5, 30, 135,
@@ -1214,10 +1224,10 @@ END
 
 DLGTEMPLATE ID_XSD_NEWSOUNDSCHEME LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
-    DIALOG  "Nieuw Geluidsprofiel", ID_XSD_NEWSOUNDSCHEME, 15, 66, 145, 45,
+    DIALOG  "Nieuw geluidsprofiel", ID_XSD_NEWSOUNDSCHEME, 15, 66, 145, 45,
             WS_VISIBLE, FCF_SYSMENU | FCF_TITLEBAR
     BEGIN
-        LTEXT           "Voer de naam van het nieuwe geluidsprofiel in:", -1, 5, 30, 135,
+        LTEXT           "Voer de naam van het nieuwe profiel in:", -1, 5, 30, 135,
                         11
                         PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
         CONTROL         "", ID_XSDI_FT_ENTRYFIELD, 5, 0, 135, 33,
@@ -1236,7 +1246,7 @@ BEGIN
             WS_VISIBLE
     BEGIN
         PUSHBUTTON      "~Help", DID_HELP, 140, 3, 70, 12, BS_HELP
-        GROUPBOX        "Programma bestand", ID_XSDI_PROG_MAINGROUP, 10, 111, 200,
+        GROUPBOX        "Programmabestand", ID_XSDI_PROG_MAINGROUP, 10, 111, 200,
                         33
         LTEXT           "Pad en bestandsnaam:", ID_XSDI_PROG_FILENAME_TXT, 15,
                         126, 180, 8, DT_MNEMONIC | NOT WS_GROUP
@@ -1259,52 +1269,6 @@ BEGIN
     END
 END
 
-DLGTEMPLATE ID_XSD_REBOOTEXT LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "XShutdown: Herstart Acties", ID_XSD_REBOOTEXT, 55, 33, 240, 174, ,
-            FCF_SYSMENU | FCF_TITLEBAR
-    BEGIN
-        ICON            ID_SDICON, ID_SDDI_ICON, 10, 153, 20, 16, WS_GROUP
-        LTEXT           "Voer uw aangepaste herstart acties hier in.", -1, 45,
-                        149, 185, 17, DT_WORDBREAK
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        LISTBOX         ID_XSDI_XRB_LISTBOX, 10, 75, 145, 62, LS_NOADJUSTPOS |
-                        LS_HORZSCROLL
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        PUSHBUTTON      "~Nieuw", ID_XSDI_XRB_NEW, 175, 126, 55, 12,
-                        BS_NOPOINTERFOCUS
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        PUSHBUTTON      "Verwij~der", ID_XSDI_XRB_DELETE, 175, 111, 55, 12,
-                        BS_NOPOINTERFOCUS
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        PUSHBUTTON      "~Omhoog", ID_XSDI_XRB_UP, 175, 90, 55, 12,
-                        BS_NOPOINTERFOCUS
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        PUSHBUTTON      "O~mlaag", ID_XSDI_XRB_DOWN, 175, 75, 55, 12,
-                        BS_NOPOINTERFOCUS
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        LTEXT           "Actie beschrij~ving:", -1, 10, 63, 160, 8,
-                        DT_MNEMONIC
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        ENTRYFIELD      "", ID_XSDI_XRB_ITEMNAME, 12, 53, 141, 8, ES_MARGIN
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        PUSHBUTTON      "P~artities ", ID_XSDI_XRB_PARTITIONS, 160, 51, 70,
-                        12
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        LTEXT           "Actie opdracht ~regel:", -1, 10, 42, 145, 8,
-                        DT_MNEMONIC | NOT WS_GROUP
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        ENTRYFIELD      "", ID_XSDI_XRB_COMMAND, 12, 32, 216, 8, ES_MARGIN
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        DEFPUSHBUTTON   "~OK", DID_OK, 10, 6, 60, 12
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        PUSHBUTTON      "~Annuleren", DID_CANCEL, 80, 6, 60, 12
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        PUSHBUTTON      "~Help", -1, 170, 6, 60, 12, BS_HELP
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-    END
-END
-
 DLGTEMPLATE ID_XSD_SET28STATUSBARS2 LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     DIALOG  "", ID_XSD_SET28STATUSBARS2, 0, 0, 224, 180, NOT FS_DLGBORDER |
@@ -1316,7 +1280,7 @@ BEGIN
                         ES_MARGIN | WS_GROUP
         PUSHBUTTON      "~Toetsen ", ID_XSDI_SBKEYSNONESEL, 172, 112, 30, 12,
                         BS_NOPOINTERFOCUS
-        GROUPBOX        "Enkel ~object geselecteerd", -1, 6, 58, 202, 48,
+        GROUPBOX        "Een ~object geselecteerd", -1, 6, 58, 202, 48,
                         DT_MNEMONIC | NOT WS_GROUP
         ENTRYFIELD      "", ID_XSDI_SBTEXT1SEL, 22, 74, 146, 8, ES_MARGIN
         PUSHBUTTON      "To~etsen ", ID_XSDI_SBKEYS1SEL, 172, 72, 30, 12,
@@ -1327,7 +1291,7 @@ BEGIN
                         DT_VCENTER | NOT WS_GROUP
         PUSHBUTTON      "Sele~cteer class...", ID_XSDI_SBSELECTCLASS, 110, 86,
                         90, 12
-        AUTOCHECKBOX    "~Referentie van reflectie verwijderen", ID_XSDI_DEREFSHADOWS_SINGLE,
+        AUTOCHECKBOX    "~Referentie van reflectie niet tonen", ID_XSDI_DEREFSHADOWS_SINGLE,
                         20, 60, 180, 10
         GROUPBOX        "Meerde~re objecten geselecteerd", -1, 6, 22, 202, 34,
                         DT_MNEMONIC | NOT WS_GROUP
@@ -1335,7 +1299,7 @@ BEGIN
                         ES_MARGIN
         PUSHBUTTON      "Toe~tsen ", ID_XSDI_SBKEYSMULTISEL, 172, 36, 30, 12,
                         BS_NOPOINTERFOCUS
-        AUTOCHECKBOX    "Referentie van reflecties verwijderen",
+        AUTOCHECKBOX    "Referenties van reflecties niet tonen",
                         ID_XSDI_DEREFSHADOWS_MULTIPLE, 20, 24, 180, 10
         PUSHBUTTON      "~Beginwaarde", DID_UNDO, 5, 6, 65, 12
         PUSHBUTTON      "Stan~daard", DID_DEFAULT, 75, 6, 65, 12
@@ -1384,37 +1348,7 @@ BEGIN
         PUSHBUTTON      "~Help", DID_HELP, 125, 6, 55, 12, BS_HELP
     END
 END
-/*
-DLGTEMPLATE ID_XSD_SET4ACCELS LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "", ID_XSD_SET4ACCELS, 0, 0, 224, 180, NOT FS_DLGBORDER |
-            WS_VISIBLE
-    BEGIN
-        GROUPBOX        "Map sneltoetsen", -1, 5, 25, 175, 135, DT_MNEMONIC |
-                        NOT WS_GROUP
-        AUTOCHECKBOX    "Activ~eren", ID_XSDI_ACCELERATORS, 10, 144, 118, 8
-        AUTOCHECKBOX    "Toon ~sneltoetsen in menu's", ID_XSDI_SHOWINMENUS, 10,
-                        136, 118, 8
-        LTEXT           "Instelbare ~menu onderdelen", -1, 10, 124, 140, 8,
-                        DT_MNEMONIC | NOT WS_GROUP
-        LISTBOX         ID_XSDI_LISTBOX, 10, 46, 165, 78, LS_OWNERDRAW |
-                        LS_NOADJUSTPOS | LS_HORZSCROLL
-        LTEXT           "Snelt~oets:", ID_XSDI_DESCRIPTION_TX1, 10, 30, 26, 12,
-                        DT_VCENTER | DT_MNEMONIC | NOT WS_GROUP |
-                        WS_DISABLED
-        ENTRYFIELD      "", ID_XSDI_DESCRIPTION, 42, 32, 66, 8, ES_MARGIN |
-                        WS_DISABLED
-        PUSHBUTTON      "~Stel in", ID_XSDI_SETACCEL, 114, 30, 30, 12,
-                        WS_DISABLED
-        PUSHBUTTON      "~Legen", ID_XSDI_CLEARACCEL, 146, 30, 30, 12,
-                        WS_DISABLED
-        PUSHBUTTON      "~Beginwaarde", DID_UNDO, 5, 6, 55, 12
-        PUSHBUTTON      "Stan~daard", DID_DEFAULT, 65, 6, 55, 12
-        PUSHBUTTON      "~Help", DID_HELP, 125, 6, 55, 12, BS_HELP |
-                        BS_NOPOINTERFOCUS
-    END
-END
-  */
+
 DLGTEMPLATE ID_XSD_SETTINGS_FLDRSORT LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     DIALOG  "", ID_XSD_SETTINGS_FLDRSORT, 0, 0, 224, 180, NOT FS_DLGBORDER |
@@ -1439,7 +1373,7 @@ BEGIN
     DIALOG  "", ID_XSD_STARTUPFOLDER, 0, 0, 224, 180, NOT FS_DLGBORDER |
             WS_VISIBLE
     BEGIN
-        GROUPBOX        "XWorkplace Opstarten map", -1, 5, 24, 196, 102
+        GROUPBOX        "XWorkplace opstart map", -1, 5, 24, 196, 102
         LTEXT           "~Opstart vertraging:", ID_SDDI_STARTUP_INITDELAY_TXT1,
                         10, 102, 54, 14, DT_VCENTER | DT_MNEMONIC
         SLIDER          ID_SDDI_STARTUP_INITDELAY_SLID, 64, 102, 96, 14,
@@ -1511,14 +1445,14 @@ BEGIN
     DIALOG  "", ID_XSD_XWPSTRING_PAGE, 0, 0, 232, 180, NOT FS_DLGBORDER |
             WS_VISIBLE
     BEGIN
-        LTEXT           "Installati~e reeks:", -1, 8, 128, 108, 8, DT_MNEMONIC
+        LTEXT           "Instelling~enreeks:", -1, 8, 128, 108, 8, DT_MNEMONIC
         CONTROL         "", ID_XSD_XWPSTRING_STRING_MLE, 8, 86, 176, 40,
                         WC_MLE, MLS_WORDWRAP | MLS_VSCROLL | MLS_IGNORETAB |
                         WS_TABSTOP | WS_VISIBLE
         AUTOCHECKBOX    "Bevestig uitvoeri~ng", ID_XSD_XWPSTRING_CONFIRM, 8,
                         72, 176, 10, WS_GROUP
-        LTEXT           "Sleep hier een object op om de installatiereeks uit te voeren:"
-                        , -1, 8, 52, 108, 16, DT_WORDBREAK
+        LTEXT           "Sleep hier een object op om het met de instellingenreeks"
+                        " op te slaan:", -1, 8, 52, 108, 16, DT_WORDBREAK
         CONTAINER       ID_XSD_XWPSTRING_OBJ_CNR, 10, 26, 68, 22,
                         CCS_SINGLESEL
         CONTROL         "", -1, 8, 24, 72, 26, WC_STATIC, SS_FGNDFRAME |
@@ -1617,7 +1551,7 @@ BEGIN
                         PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
         LTEXT           "", ID_XLDI_BYTESPERINSTANCE, 69, 68, 140, 8, NOT WS_GROUP
                         PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        CONTROL         "Verzamelen van classes, even geduld a.u.b....", ID_XLDI_TEXT2,
+        CONTROL         "Classes verzamelen, even geduld a.u.b....", ID_XLDI_TEXT2,
                         5, 3, 205, 57, WC_MLE, MLS_READONLY | MLS_WORDWRAP |
                         MLS_VSCROLL | WS_TABSTOP | WS_VISIBLE
                         PRESPARAMS PP_BACKGROUNDCOLOR, 0x00FFFFFFL
