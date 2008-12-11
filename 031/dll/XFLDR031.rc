@@ -1,6 +1,7 @@
+
 /*
- * xfldr001.rc:
- *      this is the main resource file for the English NLS DLL.
+ * xfldr031.rc:
+ *      this is the main resource file for the Dutch NLS DLL.
  *
  *      Translate all the strings in this file.
  *
@@ -46,8 +47,11 @@
  *      menu which disables a lot of menu items to allow you to
  *      only change strings. This is very helpful to avoid
  *      accidentally ruining the dialogs.
- *
+ */
+
+/*
  *      Copyright (C) 1997-2008 Ulrich M”ller.
+ *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -59,7 +63,8 @@
  *      GNU General Public License for more details.
  */
 
-#include <os2.h>
+#include "pmwin.h"
+#include "pmstddlg.h"
 
 /* this is new with V0.85; this define is actually the only reason
    why wpobject.h was needed. Since that file is only in the Toolkit,
@@ -127,7 +132,7 @@ END
 
 MENU ID_XSM_FILETYPES_NOSEL LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
-    MENUITEM "~Maak hoofd type...", ID_XSMI_FILETYPES_NEW
+    MENUITEM "~Maak root type...", ID_XSMI_FILETYPES_NEW
     MENUITEM "", 1, MIS_SEPARATOR
     MENUITEM "~Neerzetten", ID_XSMI_FILETYPES_DROP
     MENUITEM "~Slepen Annuleren", ID_XSMI_FILETYPES_CANCELDRAG
@@ -206,16 +211,19 @@ BEGIN
     MENUITEM """~Lettertype"" map", 213
     MENUITEM "", 1, MIS_SEPARATOR
     MENUITEM "~Prullenbak", 220
-    MENUITEM "Instellingenreeks", 221
+    MENUITEM "Instellingen Reeks", 221
     MENUITEM "", 1, MIS_SEPARATOR
     MENUITEM "~XCenter", 230
 END
 
 /* Context menus on XFldSystem "Drivers" page;
    new with V0.9.0  */
+/* added menu item for ConfigTool database V1.0.4 (2005-05-07) [chennecke] */
 MENU ID_XSM_DRIVERS_SEL LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
-    MENUITEM "Toon hulp in OS/2 Opdracht Handleiding", ID_XSMI_DRIVERS_CMDREFHELP
+    MENUITEM "Toon help in OS/2 Opdracht Handleiding", ID_XSMI_DRIVERS_CMDREFHELP
+    MENUITEM "Toon help in ConfigTool database", ID_XSMI_DRIVERS_CONFIGTOOLHELP
+    MENUITEM "Zoek in alle helpbestanden", ID_XSMI_DRIVERS_ALLHELP
 END
 
 /* Context menus on XWPKeyboard "Hotkeys" page
@@ -243,21 +251,23 @@ BEGIN
 END
 
 /*  "Sticky windows" context menus on XWPScreen "XPager Sticky" page
-    new with V0.9.4 (2000-07-10) [umoeller]*/
+    new with V0.9.4 (2000-07-10) [umoeller]
+    meni ids changed V1.0.1 (2003-01-05) (umoeller)
+*/
 
-MENU ID_XSM_STICKY_NOSEL LOADONCALL MOVEABLE DISCARDABLE
+MENU ID_XFM_CNRITEM_NOSEL LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
-    MENUITEM "~Toevoegen...", ID_XSMI_STICKY_NEW
+    MENUITEM "~Toevoegen...", ID_XFMI_CNRITEM_NEW
     MENUITEM SEPARATOR
-    MENUITEM "Alles ve~rwijderen", ID_XSMI_STICKY_DELETEALL
+    MENUITEM "Alles ve~rwijderen", ID_XFMI_CNRITEM_DELETEALL
 END
 
 /* changed V0.9.19 (2002-04-17) [umoeller] */
-MENU ID_XSM_STICKY_SEL LOADONCALL MOVEABLE DISCARDABLE
+MENU ID_XFM_CNRITEM_SEL LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
-    MENUITEM "B~ewerken...", ID_XSMI_STICKY_EDIT
+    MENUITEM "B~ewerken...", ID_XFMI_CNRITEM_EDIT
     MENUITEM SEPARATOR
-    MENUITEM "Ve~rwijder", ID_XSMI_STICKY_DELETE
+    MENUITEM "Ve~rwijder", ID_XFMI_CNRITEM_DELETE
 END
 
 /* XCenter main button menu V0.9.7 (2000-11-30) [umoeller] */
@@ -346,7 +356,7 @@ BEGIN
 
     /* author of National Language Support (new with V0.9.0);
        displayed on the "XWorkplace Configuration" notebook page */
-    ID_XSSI_NLS_AUTHOR              "Bart van Leeuwen"
+    ID_XSSI_NLS_AUTHOR              "Nederlandse eComStation Test- en Vertaal Groep"
 
     /* XFOLDER_VERSION is in dlgids.h; this is checked by the
        XWorkplace NLS DLL loader so that no DLLs are loaded which
@@ -394,23 +404,23 @@ BEGIN
     ID_XSSI_KEY_BACKTABTAB          "Backtab"
     ID_XSSI_KEY_ENTER               "Enter"
     ID_XSSI_KEY_ESC                 "Esc"
-    ID_XSSI_KEY_SPACE               "Space"
+    ID_XSSI_KEY_SPACE               "Spatiebalk"
     ID_XSSI_KEY_PAGEUP              "Page up"
     ID_XSSI_KEY_PAGEDOWN            "Page down"
     ID_XSSI_KEY_END                 "End"
     ID_XSSI_KEY_HOME                "Home"
-    ID_XSSI_KEY_LEFT                "Left"
-    ID_XSSI_KEY_UP                  "Up"
-    ID_XSSI_KEY_RIGHT               "Right"
-    ID_XSSI_KEY_DOWN                "Down"
+    ID_XSSI_KEY_LEFT                "Links"
+    ID_XSSI_KEY_UP                  "Omhoog"
+    ID_XSSI_KEY_RIGHT               "Rechts"
+    ID_XSSI_KEY_DOWN                "Omlaag"
     ID_XSSI_KEY_PRINTSCRN           "Printscrn"
     ID_XSSI_KEY_INSERT              "Insert"
     ID_XSSI_KEY_DELETE              "Delete"
     ID_XSSI_KEY_SCRLLOCK            "ScrlLock"
     ID_XSSI_KEY_NUMLOCK             "NumLock"
 
-    ID_XSSI_KEY_WINLEFT             "Win95 left"
-    ID_XSSI_KEY_WINRIGHT            "Win95 right"
+    ID_XSSI_KEY_WINLEFT             "Win95 liinks"
+    ID_XSSI_KEY_WINRIGHT            "Win95 rechts"
     ID_XSSI_KEY_WINMENU             "Win95 menu"
 
     /* and the corresponding list box items on the
@@ -433,7 +443,7 @@ BEGIN
     ID_XSSI_LB_SORTBYREALNAME       "Sorteren op orginele naam"
     ID_XSSI_LB_SORTBYWRITEDATE      "Sorteren op schrijfdatum"
     ID_XSSI_LB_SORTBYACCESSDATE     "Sorteren op toegangsdatum"
-    ID_XSSI_LB_SORTBYCREATIONDATE   "Sorteren op aanmaakdatum"
+    ID_XSSI_LB_SORTBYCREATIONDATE   "Sorteren op maak datum"
 /* V0.9.19: removed Warp 4 only strings from all these */
     ID_XSSI_LB_SWITCHTOICONVIEW     "Schakel naar pictogrammen weergave"
     ID_XSSI_LB_SWITCHTODETAILSVIEW  "Schakel naar details weergave"
@@ -468,6 +478,7 @@ BEGIN
        XShutdown might crash. These are needed for inserting
        variable data (sprintf). */
     ID_SDSI_SHUTDOWN                "Afslui~ten"
+/* modified V1.0.8 */
     ID_SDSI_RESTARTWPS              "He~rstart Werkplek..."
     ID_SDSI_RESTARTINGWPS           "Werkplek wordt herstart..."
     ID_SDSI_SAVINGDESKTOP           "Opslaan van %d Werkplek objecten..."
@@ -490,13 +501,20 @@ BEGIN
 /*    ID_XSSI_5INTERNALS              "XFolder Internals"   removed V0.9.20 (2002-07-25) [umoeller] */
 /*    ID_XSSI_FILEOPS                 "File ~operations"    removed V0.9.20 (2002-07-25) [umoeller] */
 /*    ID_XSSI_INTERNALS               "~Object"             removed V0.9.20 (2002-07-25) [umoeller] */
+    ID_XSSI_TOOLBARS                "~Gereedschapsbalken"
     ID_XSSI_SORT                    "~Sorteren"
     /* the following are new with V0.9.0 */
     ID_XSSI_XWPSTATUS               "~&xwp; status"
-    ID_XSSI_FEATURES                "~Instellingen"
+    ID_XSSI_FEATURES                "~Kenmerken"
     ID_XSSI_PARANOIA                "~Paniek"
     ID_XSSI_OBJECTS                 "~Objecten"
     ID_XSSI_FILEPAGE                "~Bestand"
+
+    /* the following three added V1.0.1 (2003-01-10) [umoeller] */
+    ID_XSSI_FILEPAGE_GENERAL        "Algemeen"
+    ID_XSSI_FILEPAGE_EAS            "Uitgebreide kenmerken"
+    ID_XSSI_FILEPAGE_PERMISSIONS    "Machtigingen"
+
     ID_XSSI_DETAILSPAGE             "~Details"
     ID_XSSI_XSHUTDOWNPAGE           "~&xsd;"
     ID_XSSI_STARTUPPAGE             "~Opstarten"
@@ -521,7 +539,7 @@ BEGIN
     ID_XSSI_SV_SIZE                 "Grootte"
     ID_XSSI_SV_WRITEDATE            "Laatste schrijfdatum"
     ID_XSSI_SV_ACCESSDATE           "Laatste toegangsdatum"
-    ID_XSSI_SV_CREATIONDATE         "Aanmaakdatum"
+    ID_XSSI_SV_CREATIONDATE         "Maak datum"
     ID_XSSI_SV_EXT                  "Bestandsnaam extentie"
     ID_XSSI_SV_FOLDERSFIRST         "Mappen eerst"
 
@@ -543,8 +561,8 @@ BEGIN
     ID_XSSI_DLG_IGNORE                  "~Ignore" */
 
     /* "WPS Classes" notebook page */
-    ID_XSSI_SB_CLASSMNEMONICS           "Status balk informatie van deze class:"
-    ID_XSSI_SB_CLASSNOTSUPPORTED        "Deze class introduceert geen nieuwe status balk informatie."
+    ID_XSSI_SB_CLASSMNEMONICS           "Statusbalk informatie van deze class:"
+    ID_XSSI_SB_CLASSNOTSUPPORTED        "Deze class introduceert geen nieuwe statusbalk informatie."
     ID_XSSI_WPSCLASSES                  "WPS classes"
     ID_XSSI_WPSCLASSLOADED              "Class geladen."
     ID_XSSI_WPSCLASSLOADINGFAILED       "Class laden mislukt."
@@ -578,9 +596,9 @@ BEGIN
     ID_XFSI_NOGRID                      "~Als geplaatst"
 
     /* the following added with V0.9.0 */
-    ID_XFSI_WARP4MENUBAR                "~Menu balk"
+    ID_XFSI_WARP4MENUBAR                "~Menubalk"
 
-    ID_XFSI_SHOWSTATUSBAR               "~Status balk"
+    ID_XFSI_SHOWSTATUSBAR               "~Statusbalk"
 
     /* the following are all new with V0.9.0 */
 
@@ -621,7 +639,7 @@ BEGIN
     ID_XTSI_STB_OBJCOUNT                "%s afval object(en), totaal afval grootte: %s bytes"
 
     /* Details view columns on XWPKeyboard "Hotkeys" page */
-    ID_XSSI_HOTKEY_TITLE                "Object titel"
+    ID_XSSI_HOTKEY_TITLE                "Object naam"
     ID_XSSI_HOTKEY_FOLDER               "Map"
     ID_XSSI_HOTKEY_HANDLE               "Object ingang"
     ID_XSSI_HOTKEY_HOTKEY               "Sneltoets"
@@ -702,8 +720,8 @@ BEGIN
 
     ID_XSSI_PAGETITLE_PAGER             "~Pager"
 
-    ID_XSSI_XWPSTRING_PAGE              "Installatie reek~s"
-    ID_XSSI_XWPSTRING_OPENMENU          "Voer installatie reeks u~it"
+    ID_XSSI_XWPSTRING_PAGE              "Instellingen reek~s"
+    ID_XSSI_XWPSTRING_OPENMENU          "Voer instellingen reeks u~it"
 
     ID_XSSI_COLMN_SYSL_COMPONENT        "Onderdeel"
     ID_XSSI_COLMN_SYSL_FILE             "SYSLEVEL bestand"
@@ -742,6 +760,8 @@ BEGIN
 
     /* logoff V0.9.5 (2000-09-28) [umoeller] */
     ID_XSSI_XSD_LOGOFF                  "A~fmelden..."
+    ID_XSSI_XSD_CONFIRMLOGOFFTITLE      "&xwp;: Afmelden"
+            /* ID_XSSI_XSD_CONFIRMLOGOFFTITLE added V1.0.1 (2003-01-05) [umoeller] */
     ID_XSSI_XSD_CONFIRMLOGOFFMSG        "Weet u zeker dat u zich af wilt melden?"
 
     /* "bytes" strings for status bars V0.9.6 (2000-11-23) [umoeller] */
@@ -760,41 +780,43 @@ END
     (added V0.9.0) */
 STRINGTABLE
 BEGIN
-    ID_XCSI_GENERALFEATURES             "Algemeen"
+    ID_XCSI_GENERALFEATURES             "Algemene mogelijkheden"
 #ifndef __NOICONREPLACEMENTS__
     ID_XCSI_REPLACEICONS                "Vervang Pictogrammen"
 #endif
     /* the following item added with V0.9.20 (2002-07-19) [umoeller] */
-    ID_XCSI_REPLACEHELP                 "Vervang standaard help schermen"
+    ID_XCSI_REPLACEHELP                 "Vervang standaard helpschermen"
 
     /* the following item added with V0.9.4 (2000-08-08) [umoeller] */
     // ID_XCSI_RESIZESETTINGSPAGES         "Adjust settings pages on notebook resize"
                 // removed V1.0.1 (2002-12-15) [umoeller]
 
     /* the following item's ID and string changed with V0.9.16 (2001-10-15) [umoeller] */
-    ID_XCSI_REPLACEICONPAGE             """Pictogram"" pagina's vervangen"
+    ID_XCSI_REPLACEICONPAGE             """Pictogram"" pagina's inalle instellingen notitieblokken vervangen"
     ID_XCSI_REPLACEFILEPAGE             """Bestand"" en ""Details"" pagina's vervangen"
     ID_XCSI_XSYSTEMSOUNDS               "Uitgebreide systeemgeluiden"
     /* the following item added with V0.9.12 (2001-05-22) [umoeller] */
-    ID_XCSI_FIXCLASSTITLES              "Herstel class titels"
+    ID_XCSI_FIXCLASSTITLES              "Herstel class namen"
 
-    ID_XCSI_FOLDERFEATURES              "Mappen"
+    ID_XCSI_FOLDERFEATURES              "Kenmerken van Mappen"
     ID_XCSI_ENABLESTATUSBARS            "Gebruik statusbalken"
     ID_XCSI_ENABLESNAP2GRID             "Gebruik ""Op raster uitlijnen"""
-    ID_XCSI_ENABLEFOLDERHOTKEYS         "Gebruik sneltoetsen"
-    ID_XCSI_EXTFOLDERSORT               "Uitgebreide sortering"
+    ID_XCSI_ENABLEFOLDERHOTKEYS         "Gebruik map sneltoetsen"
+    ID_XCSI_EXTFOLDERSORT               "Uitgebreide map sortering"
     /* the following item added with V0.9.16 (2001-10-25) [umoeller] */
     ID_XCSI_TURBOFOLDERS                "Turbo mappen"
     /* the following item added with V1.0.0 (2002-09-09) [umoeller] */
     ID_XCSI_FDRSPLITVIEWS               "Gedeelde weergave"
+    /* the following item added with V1.0.1 (2002-11-30) [umoeller] */
+    ID_XCSI_ENABLETOOLBARS              "Enable folder tool bars"
 
-    ID_XCSI_MOUSEKEYBOARDFEATURES       "Muis en toetsenbord"
+    ID_XCSI_MOUSEKEYBOARDFEATURES       "Muis en toetsenbord kenmerken"
 /*     ID_XCSI_ANIMOUSE                    "Animated Mouse Pointers" removed V0.9.19 (2002-06-02) [umoeller] */
     ID_XCSI_XWPHOOK                     "Gebruik &xwp; Hook"
     ID_XCSI_GLOBALHOTKEYS               "Gebruik algemene object sneltoetsen"
 /*     ID_XCSI_PAGER                       "&pgr;: virtual desktops" removed V0.9.19 (2002-05-28) [umoeller] */
 
-    ID_XCSI_STARTSHUTFEATURES           "Opstarten/afsluiten"
+    ID_XCSI_STARTSHUTFEATURES           "Opstarten/Afsluiten kenmerken"
     ID_XCSI_ARCHIVING                   "Vervang Werkplek reservekopie"
     ID_XCSI_RESTARTWPS                  "Gebruik ""Herstart Werkplek"""
     ID_XCSI_XSHUTDOWN                   "Gebruik uitgebreid afsluiten"
@@ -808,22 +830,22 @@ BEGIN
             // removed V1.0.1 (2002-12-15) [umoeller]
 
 /* this item added V0.9.20 (2002-08-08) [umoeller] */
-    ID_XCSI_REPLACEPASTE                """Plakken"" dialoogvenster vervangen"
+    ID_XCSI_REPLACEPASTE                "Vervang ""Plakken"" dialoog"
 
 /*     this item removed with V0.9.16
     ID_XCSI_CLEANUPINIS                 "Clean up WPS INI entries" */
 /* the following item added with V0.9.5 (2000-08-14) [umoeller] */
-    ID_XCSI_REPLHANDLES                 "WPS ingangen beheer vervangen"
-    ID_XCSI_REPLFILEEXISTS              """Bestand bestaat"" dialoogvenster vervangen"
-    ID_XCSI_REPLDRIVENOTREADY           """Station niet gereed"" dialoogvenster vervangen"
+    ID_XCSI_REPLHANDLES                 "Vervang WPS ingangen beheer"
+    ID_XCSI_REPLFILEEXISTS              "Vervang ""Bestand bestaat"" dialoog"
+    ID_XCSI_REPLDRIVENOTREADY           "Vervang ""Station niet gereed"" dialoog"
 /* the following has changed V0.9.19 (2002-04-14) [umoeller] */
-    ID_XCSI_REPLACEDELETE               "Verwijderen door prullenbak vervangen"
+    ID_XCSI_REPLACEDELETE               "Vervang ""Wissen"" door de ""Prullenbak"""
 /* the following has been removed V0.9.19 (2002-04-14) [umoeller] */
 /*    ID_XCSI_REPLACEDELETE               "Replace true delete" */
 /* the following has been added V0.9.9 (2001-01-31) [umoeller] */
-    ID_XCSI_REPLACEREFRESH              "Map automatisch vernieuwen vervangen"
+    ID_XCSI_REPLACEREFRESH              "Vervang Map automatisch vernieuwen"
 /* the following has been added V0.9.16 (2001-12-02) [umoeller] */
-    ID_XCSI_NEWFILEDLG                  "Bestandsdialoog vervangen"
+    ID_XCSI_NEWFILEDLG                  "Vervang bestandsdialoog"
 END
 
 /* STILL more miscellaneous strings...
@@ -832,7 +854,7 @@ STRINGTABLE
 BEGIN
     ID_XSSI_STYLEPAGE                   "~Style"
     ID_XSSI_CLASSESPAGE                 "~Classes"
-    ID_XSSI_WIDGETSPAGE                 "~Widgets"
+    ID_XSSI_WIDGETSPAGE                 "Wi~dgets"
     /* this one renamed V0.9.20 (2002-08-10) [umoeller] */
     ID_XSSI_ADDWIDGET                   "~Maak nieuwe widget"
     /* this one added V0.9.20 (2002-08-10) [umoeller] */
@@ -872,7 +894,7 @@ BEGIN
     ID_XSSI_PARAMETERS                  "Parameter"
     ID_XSSI_CLOSE                       "~Sluiten"
 
-    ID_XSSI_DROPPED1                    "... %d objects neergezet,"
+    ID_XSSI_DROPPED1                    "... %d objecten neergezet,"
     ID_XSSI_DROPPED2                    "open map om ze te tonen"
 
     ID_XSSI_THREADSTHREAD               "Thread"
@@ -933,13 +955,13 @@ BEGIN
 
     /* extended "close" menu V0.9.12 (2001-05-22) [umoeller] */
     ID_XSSI_CLOSETHISVIEW               "Deze ~weergave"
-    ID_XSSI_CLOSEALLTHISFDR             "Alle weergaven van deze ~map"
-    ID_XSSI_CLOSEALLSUBFDRS             "Alle weergaven van deze map en ~submappen"
+    ID_XSSI_CLOSEALLTHISFDR             "Iedere weergave van deze ~map"
+    ID_XSSI_CLOSEALLSUBFDRS             "Iedere weergave van deze map en ~submappen"
 
     /* miscellaneous new strings V0.9.12 (2001-05-22) [umoeller] */
     ID_XSSI_INVALID_OBJECT              "Ongeldig object"
     ID_XSSI_XSHUTDOWN                   "~&xsd;"
-    ID_XSSI_XC_CLASSTITLE               "Class titel"
+    ID_XSSI_XC_CLASSTITLE               "Class naam"
     ID_XSSI_XC_VERSION                  "Versie"
     ID_XSSI_XC_OBJBUTTONWIDGET          "Object knop widget"
 
@@ -999,7 +1021,7 @@ BEGIN
             /* warning: the above two are strings for sprintf, so you _must_
                get the % flags exactly correct, or the pulse will crash */
 
-    ID_XSSI_WPSFDRVIEWPAGE              "Map ~weergaven"
+    ID_XSSI_WPSFDRVIEWPAGE              "Map ~weergave"
 
     ID_XFSI_FDLG_DRIVES                 "~Stations:"
     ID_XFSI_FDLG_FILESLIST              "Bestands~lijst:"
@@ -1023,10 +1045,6 @@ BEGIN
 
     ID_NDSI_STARTNETSCAPE               "Uw browser is op het moment niet gestart. Nu starten ?"
     ID_NDSI_SYNTAX                      "De schrijfwijze van het Netscape DDE commando is niet juist. Wilt u online help bekijken ?"
-
-    ID_XSSI_ADMIN_LOCAL_USER            "~Huidige gebruiker"
-    ID_XSSI_ADMIN_ALL_USERS             "Alle gebr~uikers"
-    ID_XSSI_ADMIN_ALL_GROUPS            "Alle ~groepen"
 
     ID_CRSI_OWGT_BITMAPFILE             "OS/2 bitmap bestand"
 
@@ -1073,7 +1091,7 @@ BEGIN
     ID_XSSI_OBJDET_NOSETTINGS           "geen instellingen"
     ID_XSSI_OBJDET_NOTVISIBLE           "niet zichtbaar"
     ID_XSSI_OBJDET_TEMPLATE             "model"
-    ID_XSSI_OBJDET_LOCKEDINPLACE        "vaste plaats"
+    ID_XSSI_OBJDET_LOCKEDINPLACE        "op plaats vastgezet"
 
     ID_XSSI_OBJDET_PROGRAMDATA          "Programmagegevens"
     ID_XSSI_OBJDET_PROGRAMTYPE          "Programmatype"
@@ -1082,7 +1100,7 @@ BEGIN
     ID_XSSI_OBJDET_FOLDERFLAGS          "Map vlaggen"
     ID_XSSI_OBJDET_FOLDERVIEWFLAGS      "Map weergave vlaggen"
     ID_XSSI_OBJDET_OBJUSAGE             "Object gebruik"
-    ID_XSSI_OBJDET_OPENVIEWS            "Weergaven op dit moment open"
+    ID_XSSI_OBJDET_OPENVIEWS            "Ieder op dit moment open Weergave"
     ID_XSSI_OBJDET_ALLOCMEM             "Gealloceerd geheugen"
     ID_XSSI_OBJDET_AWAKESHADOWS         "geopende reflecties van dit object"
     ID_XSSI_OBJDET_FOLDERWINDOWS        "Map vensters met dit object"
@@ -1110,6 +1128,14 @@ BEGIN
     ID_CRSI_IPWGT_GRAPHOUTCOLOR         "uitgaand"
     ID_CRSI_IPWGT_TOTAL                 "totaal"  // V 1.0.8 (2008-05-28)
 
+    /* Sentinel properties page V1.0.4 (2005-03-27) [chennecke] */
+    ID_CRSI_SWGT_PHYS                   "Werkelijk Geheugen"
+    ID_CRSI_SWGT_PHYSFREE               "Vrij"
+    ID_CRSI_SWGT_PHYSINUSE              "In gebruik"
+    ID_CRSI_SWGT_SWAPFILE               "Wisselbestand"
+    ID_CRSI_SWGT_SWAP                   "In gebruik/Grootte"
+    ID_CRSI_SWGT_SWAPFREE               "Vrij"
+
     /* XCenter properties  V0.9.20 (2002-08-08) [umoeller] */
     ID_CRMI_XCSUB_PROPERTIES            "&xcenter; ~instellingen"
     ID_CRMI_XCSUB_CLOSE                 "Sluit &xcenter;"
@@ -1132,16 +1158,16 @@ BEGIN
     ID_XSSI_SBMNC_020                    "Totale grootte van station"
     ID_XSSI_SBMNC_030                    "Grootte van geselecteerde objecten"
     ID_XSSI_SBMNC_040                    "Totale grootte van mapinhoud"
-    ID_XSSI_SBMNC_100                    "Object titel"
-    ID_XSSI_SBMNC_110                    "WPS class standaard titel"
+    ID_XSSI_SBMNC_100                    "Object naam"
+    ID_XSSI_SBMNC_110                    "WPS class standaard naam"
     ID_XSSI_SBMNC_120                    "WPS class naam"
     ID_XSSI_SBMNC_200                    "Bestandssysteemtype (HPFS, FAT, CDFS, ...)"
     ID_XSSI_SBMNC_210                    "Stationslabel"
     ID_XSSI_SBMNC_220                    "Totale ruimte op station"
-    ID_XSSI_SBMNC_300                    "Echte naam van Object"
+    ID_XSSI_SBMNC_300                    "Echte naam van object"
     ID_XSSI_SBMNC_310                    "Objecttype (.TYPE EA)"
-    ID_XSSI_SBMNC_320                    "Object aanmaakdatum"
-    ID_XSSI_SBMNC_330                    "Object aanmaaktijd"
+    ID_XSSI_SBMNC_320                    "Maak datum object"
+    ID_XSSI_SBMNC_330                    "Maak tijd object"
     ID_XSSI_SBMNC_340                    "Object kenmerken"
     ID_XSSI_SBMNC_350                    "EA grootte in bytes"
     ID_XSSI_SBMNC_360                    "EA grootte in kByte"
@@ -1156,7 +1182,7 @@ END
 
 /* ******************************************************************
  *
- *   Strings formerly in xfldr001.dlg
+ *   Strings formerly in xfldr031.dlg
  *
  ********************************************************************/
 
@@ -1203,6 +1229,9 @@ BEGIN
     DID_OPEN                            "~Openen"
     DID_SAVE                            "~Opslaan"
 
+    /* added V1.0.4 (2005-02-24) [chennecke]: for Xfix */
+    DID_ENTER                           "~Enter"
+
     /* strings formerly in ID_XSD_SET25ADDMENUS
         all removed V0.9.19 */
 
@@ -1210,8 +1239,8 @@ BEGIN
     ID_XSSI_GENERALVIEWPAGE             "Algemene weergave instellingen"
     ID_XSDI_FAVORITEFOLDER              "~Favoriete map"
     ID_XSDI_QUICKOPEN                   "~Snel openen bij Werkplek start"
-    ID_XSDI_FULLPATH                    "Volledig pad in map~titel tonen"
-    ID_XSDI_KEEPTITLE                   "~Behoud originele titel"
+    ID_XSDI_FULLPATH                    "Volledig pad in map~naam tonen"
+    ID_XSDI_KEEPTITLE                   "~Behoud originele naam"
     ID_XSDI_SNAPTOGRID                  "Voeg ""Uitlijnen o~p raster"" toe"
     ID_XSDI_ACCELERATORS                "Reageer op map snelt~oetsen"
     ID_XSDI_ENABLESTATUSBAR             "~Statusbalk tonen"
@@ -1296,7 +1325,7 @@ BEGIN
         /* already in ID_XSDI_FAVORITEFOLDER */
     ID_XSDI_MAXPATHCHARS_TX1            "~Beperk pad tot"
     ID_XSDI_MAXPATHCHARS_TX2            "tekens"
-    ID_XSDI_TREEVIEWAUTOSCROLL          "Auto-scroll boo~mstructuur weergaven"
+    ID_XSDI_TREEVIEWAUTOSCROLL          "Auto-scroll boo~mstructuur weergave"
     ID_XSDI_FDRDEFAULTDOC               "Schak~el standaard documenten in mappen in"
     ID_XSDI_FDRDEFAULTDOCVIEW           "Standaard document = standaard map weergave"
     ID_XSDI_FDRAUTOREFRESH              "Schakel folder ~automatisch vernieuwen in"
@@ -1308,17 +1337,19 @@ BEGIN
     /* the following two added V0.9.20 (2002-07-31) [umoeller] */
     ID_XSDI_FDRVIEW_LAZYICONS           "~Vertraagd laden van gegevensbestand pictogrammen"
     ID_XSDI_FDRVIEW_SHADOWOVERLAY       "Markeer reflectie pictogra~mmen"
+    /* the following two added V1.0.1 (2003-01-31) [umoeller] */
+    ID_XSDI_FDRVIEW_THUMBNAILS          "~Kleine plaatjes voorbeeld"
 
     /* string formerly in ID_CRD_SETTINGS_VIEW2 */
     ID_CRDI_VIEW2_3DBORDER_GROUP        "~3D randbreedte"
-    ID_CRDI_VIEW2_ALL3DBORDERS          "Teken ~alle overzicht 3D randen"
+    ID_CRDI_VIEW2_ALL3DBORDERS          "~Teken alle randen in 3D"
     ID_CRDI_VIEW2_BDRSPACE_GROUP        "~Randen scheiding"
-    ID_CRDI_VIEW2_WGTSPACE_GROUP        "~Widget scheiding"
-    ID_CRDI_VIEW2_SIZINGBARS            "Teken afme~ting balken"
+    ID_CRDI_VIEW2_WGTSPACE_GROUP        "Wid~get scheiding"
+    ID_CRDI_VIEW2_SIZINGBARS            "Teken aa~npassingsschuiven"
     ID_CRDI_VIEW2_SPACINGLINES          "Teken s~cheidingslijnen"
     ID_CRDI_VIEW2_DEFSTYLES_GROUP       "Standaard widget stijlen"
     ID_CRDI_VIEW2_FLATBUTTONS           "~Platte knoppen"
-    ID_CRDI_VIEW2_SUNKBORDERS           "Ra~nd om statische elementen"
+    ID_CRDI_VIEW2_SUNKBORDERS           "Teken ran~d om statische elementen"
     ID_CRDI_VIEW2_HATCHINUSE            "Markeer ~open objecten"
 
     /* strings formerly in ID_XFD_ARCHIVINGSTATUS */
@@ -1331,12 +1362,16 @@ BEGIN
     ID_XSDI_ARC_NEXT                    "tijdens volge~nde Werkplek start"
     ID_XSDI_ARC_INI                     "na wijziging van ~INI bestanden voor"
     ID_XSDI_ARC_INI_SPINTXT1            "%"
-    ID_XSDI_ARC_DAYS                    "e~lke"
+    ID_XSDI_ARC_DAYS                    "~ieder"
     ID_XSDI_ARC_DAYS_SPINTXT1           "dagen"
     ID_XSDI_ARC_SHOWSTATUS              "Reservek~opie statusvenster tonen tijdens Werkplek start"
     ID_XSDI_ARC_ARCHIVES_GROUP          "Reservekopie‰n"
     ID_XSDI_ARC_ARCHIVES_NO_TXT1        "Behou~d"
     ID_XSDI_ARC_ARCHIVES_NO_TXT2        "reservekopie‰n"
+    ID_XSDI_ARC_RESTORE_GROUP           "Scherm Herstelopties Afbeelden"
+    ID_XSDI_ARC_RESTORE_ALWAYS          "Altijd afbeelden bij opstarten"
+    ID_XSDI_ARC_RESTORE_TXT1            "Time-Out voor scherm Herstelopties&nl; (0 Seconden betekent geen Time-Out)"
+    ID_XSDI_ARC_RESTORE_TXT2            "seconden"
 
     /* strings formerly in ID_SDD_CONFIRMWPS */
     ID_SDDI_CONFIRMWPS_TITLE            "&xwp;: Herstart Werkplek"
@@ -1347,11 +1382,14 @@ BEGIN
         /* next one is new with V0.9.19 */
     ID_SDDI_ARCHIVEONCE                 "M~aak eenmalig een reservekopie van de Werkplek na herstart"
     ID_SDDI_MESSAGEAGAIN                "~Toon dit bericht de volgende keer"
+        /* next one is new with V1.0.1 (2003-01-29) [umoeller] */
+    ID_SDDI_WPS_RUNSHUTDOWNFDR          "Af~sluitmap uitvoeren voor opnieuw starten"
 
     /* strings formerly in ID_SDD_CONFIRM V1.0.0 */
     ID_SDDI_CONFIRM_TITLE                "&xwp;: Uitgebreid Afsluiten"
     ID_SDDI_CONFIRM_TEXT                "Selecteer hoe het systeem afgesloten moet worden."
     ID_SDDI_REBOOTOPT_GROUP             "Herstart opties"
+    /* weaked accelerator keys V1.0.8*/
     ID_SDDI_SHUTDOWNONLY                "Alleen a~fsluiten"
     ID_SDDI_STANDARDREBOOT              "St~andaard herstart"
     ID_SDDI_REBOOTTO                    "Herstar~t naar..."
@@ -1376,7 +1414,7 @@ BEGIN
     /* new "Object details" dialog */
     ID_XSDI_DETAILS_DIALOG              "Object Details"
     ID_XSDI_DETAILS_GROUP               "~Details"
-    ID_XSDI_DETAILS_SETUPSTR_GROUP      "In~stallatie reeks"
+    ID_XSDI_DETAILS_SETUPSTR_GROUP      "In~stellingen reeks"
 
     /* new "Mouse movement 1" page */
     ID_XSDI_MOUSE_SLIDINGFOCUS_GRP      "Glijdende focus"
@@ -1404,13 +1442,6 @@ BEGIN
     ID_XCD_CLASSES_NEW                  "Nieuwe classes"
 
     /* the following are new with V0.9.19 */
-
-    /* new pages in XWPAdmin */
-    ID_AMDI_USER_LOCAL_GROUP            "Huidige lokale gebruiker"
-    ID_AMDI_USER_USERNAME_TXT           "Gebruikersnaam:"
-    ID_AMDI_USER_USERID_TXT             "Gebruikers ID:"
-    ID_AMDI_USER_GROUPNAME_TXT          "Groepnaam:"
-    ID_AMDI_USER_GROUPID_TXT            "Groep ID:"
 
     /* strings formerly in ID_XSD_FILESPAGE1 */
     ID_XSDI_FILES_REALNAME_TXT          "Echte naam:"
@@ -1462,7 +1493,7 @@ BEGIN
     ID_SCDI_PGR1_FLASH_TXT1            "Vertraging:"
     ID_SCDI_PGR1_FLASH_TXT2            "s"
     ID_SCDI_PGR1_SHOWWINDOWS           "~Mini-vensters"
-    ID_SCDI_PGR1_SHOWWINTITLES         "Toon venster~titels"
+    ID_SCDI_PGR1_SHOWWINTITLES         "Toon venster~namen"
     ID_SCDI_PGR1_CLICK2ACTIVATE        "~Mini-venster muisakties"
     ID_SCDI_PGR1_SHOWSECONDARY         "Toon ~onderliggende vensters"
     ID_SCDI_PGR1_SHOWSTICKY            "Toon kle~vende vensters"
@@ -1473,37 +1504,37 @@ BEGIN
 
     /* strings formerly in ID_SCD_PAGER_COLORS */
     ID_SCDI_PGR2_COLORS_GROUP          "&pgr; kleuren"
-    ID_SCDI_PGR2_COLORS_INFO           "Zet een kleur neer uit het kleuren palet op de rechthoeken hieronder. Om het lettertype voor de &pgr; venster titels te wijzigen, zet een lettertype neer op het &pgr; venster."
+    ID_SCDI_PGR2_COLORS_INFO           "Zet een kleur neer uit het kleuren palet op de rechthoeken hieronder. Om het lettertype voor de &pgr; vensternamen te wijzigen, zet een lettertype neer op het &pgr; venster."
     ID_SCDI_PGR2_COLORS_INACTIVE_1     "Inactief 1"
     ID_SCDI_PGR2_COLORS_INACTIVE_2     "Inactief 2"
     ID_SCDI_PGR2_COLORS_ACTIVE         "Actief"
     ID_SCDI_PGR2_COLORS_BORDERS        "Randen"
     ID_SCDI_PGR2_COLORS_BACKGROUND     "Achtergrond"
     ID_SCDI_PGR2_COLORS_MINIWINDOW     "Mini-Venster:"
-    ID_SCDI_PGR2_COLORS_TITLE          "Titel:"
+    ID_SCDI_PGR2_COLORS_TITLE          "Naam:"
 
     /* strings formerly in ID_XCD_PARANOIA */
     ID_XCDI_PARANOIA_GROUP              "Schakel XWorkplace Instellingen Uit"
-    ID_XCDI_PARANOIA_INTRO              "Hier kunt u globaal bepaalde XWorkplace instellingen uitschakelen in geval van problemen. Klik ""Help"" om meer te weten te komen over de verschillende instellingen."
+    ID_XCDI_PARANOIA_INTRO              "Hier kunt u globaal bepaalde XWorkplace instellingen uitschakelen in geval van problemen. Klik op ""Help"" om meer te weten te komen over de verschillende instellingen."
     ID_XCDI_VARMENUOFFSET_TXT           "XWorkplace menu item ~ID offset:"
     // ID_XCDI_NOSUBCLASSING               "Disable all folder ~subclassing"
     //      removed V1.0.0 (2002-09-12) [umoeller]
     // ID_XCDI_NOFREAKYMENUS               "Disable undocumented menu functions"
     //      removed V1.0.0 (2002-08-26) [umoeller]
     ID_XCDI_USE8HELVFONT                "Gebruik ~8.Helv font"
-    ID_XCDI_NOEXCPTBEEPS                "Schakel uit~zonderingspiepjes uit"
+    ID_XCDI_NOEXCPTBEEPS                "Schakel uit~zonderingsgeluiden uit"
     ID_XCDI_WORKERPRTY_GROUP            "Worker thread"
     ID_XCDI_WORKERPRTY_TEXT1            "Standaar~d worker thread prioriteit:"
-    ID_XCDI_WORKERPRTY_BEEP             "~Piepen bij prioriteit verandering"
+    ID_XCDI_WORKERPRTY_BEEP             "~Geluid bij prioriteitswijziging"
 
     /* strings formerly in ID_XSD_SET26CONFIGMENUS */
     ID_XSDI_MENUS_CONFIGFDR_GROUP       "Configuratie map menu's"
     ID_XSDI_CASCADE                     "~Optionele vervolgmenu's"
-    ID_XSDI_REMOVEX                     "~Onderdruk ""~"" (tilde) in venstertitels"
+    ID_XSDI_REMOVEX                     "~Onderdruk ""~"" (tilde) in vensternamen"
     ID_XSDI_APPDPARAM                   "Wijzig param~eter lijst"
     ID_XSDI_TPL_GROUP                   "Na toevoegen van een model..."
     ID_XSDI_TPL_DONOTHING               "~Niets doen"
-    ID_XSDI_TPL_EDITTITLE               "~Titel Bewerken"
+    ID_XSDI_TPL_EDITTITLE               "~Naam bewerken"
     ID_XSDI_TPL_OPENSETTINGS            "Instellingen ~openen"
     ID_XSDI_TPL_POSITION                "C~re‰er object op muispositie"
 
@@ -1512,6 +1543,8 @@ BEGIN
     ID_XSDI_SBFORICONVIEWS              "P~ictogram weergave"
     ID_XSDI_SBFORTREEVIEWS              "Booms~tructuur weergave"
     ID_XSDI_SBFORDETAILSVIEWS           "Det~ails weergave"
+    /* the following added V1.0.1 (2002-11-30) [umoeller] */
+    ID_XSDI_SBFORSPLITVIEWS             "O~nderbroken weergaves"
     ID_XSDI_STYLE_GROUP                 "Stijl"
     ID_XSDI_SBSTYLE_3RAISED             "Ver~hoogde balk"
     ID_XSDI_SBSTYLE_3SUNKEN             "Ver~zonken balk"
@@ -1559,7 +1592,7 @@ BEGIN
 
     ID_XSDI_MENU_EDIT_CAT_FOLDERS       "Mappen"
     ID_XSDI_MENU_EDIT_CAT_DESKTOP       "Werkplek"
-    ID_XSDI_MENU_EDIT_CAT_DISKS         "Stations"
+    ID_XSDI_MENU_EDIT_CAT_DISKS         "stations"
     ID_XSDI_MENU_EDIT_CAT_FILES         "Bestanden"
     ID_XSDI_MENU_EDIT_CAT_OBJECTS       "Alle andere objecten"
 
@@ -1578,7 +1611,7 @@ BEGIN
     ID_XSDI_MENU_MOVE                   "~Verplaatsen..."
     ID_XSDI_MENU_COPY                   "~Kopi‰ren..."
     ID_XSDI_MENU_PASTE                  "Plakken..."
-    ID_XSDI_MENU_CREATESHADOW           "Maak reflecties..."
+    ID_XSDI_MENU_CREATESHADOW           "Reflectie maken..."
     ID_XSDI_MENU_DELETE                 "~Verwijder..."
     ID_XSDI_MENU_PICKUP                 "Op~pakken"
     ID_XSDI_MENU_FIND                   "~Zoeken..."
@@ -1617,7 +1650,7 @@ BEGIN
     ID_SCDI_STICKY_ENDSWITH             "Eindigt op"
     ID_SCDI_STICKY_EQUALS               "Is gelijk aan"
     ID_SCDI_STICKY_MATCHES              "Is vergelijkbaar met"
-    ID_SCDI_STICKY_TITLEATTRIBUTE       "Titel"
+    ID_SCDI_STICKY_TITLEATTRIBUTE       "Naam"
     ID_SCDI_STICKY_CRITERIA             "Criteria"
     ID_SCDI_STICKY_ATTRIBUTE            "Kenmerk"
     ID_SCDI_STICKY_OPERATOR             "Operator"
@@ -1638,23 +1671,34 @@ BEGIN
     ID_SCDI_PGR1_HOTKEYS_SHIFT          "~Shift"
     ID_SCDI_PGR1_HOTKEYS_ALT            "A~lt"
     ID_SCDI_PGR1_WRAPAROUND             "Schakel op randen"
-    ID_SCDI_PGR2_DISABLED_INFO          "Virtuele werkplekken zijn op dit moment uitgeschakkeld. Schakel ze op de eerste &pgr; instellingen pagina in om deze instellingen te gebruiken."
+    /* V1.0.4 */
+    ID_SCDI_PGR1_WINDOWS_KEYS           "~Gebruik windows-toetsen voor links & rechts"
+    ID_SCDI_PGR2_DISABLED_INFO          "Virtuele werkplekken zijn op dit moment uitgeschakeld. Schakel ze op de eerste &pgr; instellingen pagina in om deze instellingen beschikbaar te stellen."
 
     /* strings formerly in ID_XSD_AUTOCLOSE */
     ID_XSD_AUTOCLOSE                    "Automatisch sluiten niet PM-Sessies"
     ID_XSDI_ACL_INTRO                   "Voer de sessie die automatisch gesloten moet worden hier in."
     ID_XSDI_XRB_NEW                     "~Nieuw"
     ID_XSDI_XRB_DELETE                  "Verwij~der"
-    ID_XSDI_ACL_SESSIONTITLE            "Sessie~titel (eerste tekens):"
+    ID_XSDI_ACL_SESSIONTITLE            "Sessie~naam (eerste tekens):"
     ID_XSDI_ACL_DOWHATGROUP             "~Wat doen ?"
     ID_XSDI_ACL_SKIP                    "Negeer sess~ie (niet sluiten)"
     ID_XSDI_ACL_WMCLOSE                 "Sl~uit PM venster"
     ID_XSDI_ACL_KILLSESSION             "~Vernietig sessie (DosKillProcess)"
 
+    /* strings formerly in ID_XSD_REBOOTEXT V1.0.2 (2003-12-03) [umoeller] */
+    ID_XSD_REBOOTEXT_TITLE              "Opstart acties"
+    ID_XSDI_XRB_INTRO                   "Voer hier uw eigen opstart acties in."
+    ID_XSDI_XRB_UP                      "~Omhoog"
+    ID_XSDI_XRB_DOWN                    "O~mlaag"
+    ID_XSDI_XRB_ITEMNAME_TXT            "Actie beschri~jvng:"
+    ID_XSDI_XRB_PARTITIONS              "P~artities "
+    ID_XSDI_XRB_COMMAND_TXT             "Actie opdracht~regel:"
+
     /* strings formerly in ID_XSD_MOUSEMAPPINGS2 */
     ID_XSDI_MOUSE_MAPPINGS2GROUP        "Additionele toewijzingen"
     ID_XSDI_MOUSE_CHORDWINLIST          "Toestaan om taako~verzicht overal te tonen"
-    ID_XSDI_MOUSE_SYSMENUMB2            "~Systeemmenu bij titel-balk MT2 klik"
+    ID_XSDI_MOUSE_SYSMENUMB2            "~Systeemmenu naambalk bij MT2 klik"
     ID_XSDI_MOUSE_MB3CLICK_TXT          "MT3 ~klik actie"
     ID_XSDI_MOUSE_MB3SCROLL             "~MT3 slepend schuiven"
     ID_XSDI_MOUSE_MB3PIXELS_TXT1        "Minim~um aantal beeldpunten:"
@@ -1670,7 +1714,7 @@ BEGIN
     ID_XSDI_FT_CREATEDATAFILEHANDLE     "~Geef gegevensbestand object ingang mee in omgevingsvariabele"
 
     /* strings formerly in ID_XFD_TITLECLASH V0.9.20 (2002-08-08) [umoeller] */
-    ID_XFD_TITLECLASH                   "Titel Conflict"
+    ID_XFD_TITLECLASH                   "Naam conflict"
     ID_XFDI_CLASH_TXT1                  "Een object met de naam ""%1"" bestaat reeds in de map ""%2""."
     ID_XFDI_CLASH_OLDOBJECT             "Bestaand object:"
     ID_XFDI_CLASH_NEWOBJECT             "Nieuw object:"
@@ -1681,7 +1725,7 @@ BEGIN
     /* new replacement "Paste" dialog V0.9.20 (2002-08-08) [umoeller] */
     ID_XFDI_PASTE_TITLE                 "Plak klembord naar ""%1"""
     ID_XFDI_PASTE_PREVIEW_TXT           "Voorbeeld:"
-    ID_XFDI_PASTE_OBJTITLE_TXT          "Object ~titel:"
+    ID_XFDI_PASTE_OBJTITLE_TXT          "Object ~naam:"
     ID_XFDI_PASTE_FORMAT_TXT            "~Formaat:"
     ID_XFDI_PASTE_CLASS_TXT             "Object c~lass:"
 
@@ -1695,8 +1739,8 @@ BEGIN
     ID_XFSI_FDR_SPLITVIEW               "~Gedeelde Weergave"
 
     /* startup and shutdown folder were missing so far V1.0.0 (2002-08-31) [umoeller] */
-    ID_XFSI_XWPSTARTUPFDR               "&xwp; Opstarten Map"
-    ID_XFSI_XWPSHUTDOWNFDR              "&xwp; Afsluiten Map"
+    ID_XFSI_XWPSTARTUPFDR               "&xwp; Opstart Map"
+    ID_XFSI_XWPSHUTDOWNFDR              "&xwp; Afsluit Map"
 
     /* hotkey definition dialog V1.0.0 (2002-09-10) [lafaix] */
     ID_XSDI_HOTKEY_ADDTITLE             "Voeg sneltoets definitie toe"
@@ -1708,6 +1752,40 @@ BEGIN
 
     /* daemon-specific strings V1.0.0 (2002-09-15) [lafaix] */
     ID_DMSI_STICKYTOGGLE                "Klever~ig"
+
+    /* tool bars page 1 V1.0.1 (2002-12-08) [umoeller] */
+    ID_XSDI_ENABLETOOLBAR               "~Toon map gereedschapsbalken"
+    ID_XSDI_TBSTYLE_TEXT                "Toon te~kst op toetsen"
+    ID_XSDI_TBSTYLE_MINI                "Kleine p~ictogrammen"
+    ID_XSDI_TBSTYLE_FLAT                "~Platte toetsen"
+    ID_XSDI_TBSTYLE_HILITE              "A~ccentueer op muis over"
+    ID_XSDI_TBSTYLE_TOOLTIPS            "T~oon gereedschap tips"
+
+    /* pages for administrator object
+        all new with V1.0.1 (2003-01-05) [umoeller]
+        some moved from above */
+    ID_AMDI_USER_LOCAL_GROUP            "U bent ingelogd als..."
+    ID_AMDI_USER_USERNAME_TXT           "Gebruikersnaam:"
+    ID_AMDI_USER_USERID_TXT             "gebruikers Id:"
+    ID_AMDI_USER_FULLNAME_TXT           "Beschrijvende naam:"
+    ID_AMDI_USER_PASS_TXT               "Wachtwoord:"
+    ID_AMDI_USER_CONFIRMPASS_TXT        "Bevestig wachtwoord:"
+    ID_AMDI_USER_GROUPS_TXT             "Groupen:"
+    ID_AMDI_USER_LOCALSEC_TXT           "Lokale beveiliging:"
+    ID_AMDI_USER_CONTEXTS_TXT           "Beveiligings conteksten:"
+    ID_AMDI_USER_ALLOCBYTES_TXT         "Toegewezen bytes:"
+    ID_AMDI_USER_BUFALLOCS_TXT          "toegewezen buffers:"
+    ID_AMDI_USER_EVENTS_TXT             "Kernel gebeurtenissen:"
+    ID_AMDI_USER_AUTHORIZATIONS_TXT     "Toestaan/teruggeven:"
+
+    ID_AMSI_LOCAL_USER                  "~Mijn account"
+    ID_AMSI_ALL_USERS                   "Alle ~gebruikers"
+    ID_AMSI_ALL_GROUPS                  "Alle g~roepen"
+
+    ID_AMSI_PROCESSES                   "~Processen"    /* added V1.0.2 (2003-11-13) [umoeller] */
+
+    /* new file 3 (permissions) page */
+    ID_AMDI_F3_PERMISSIONS_TXT          "Uw toestemmingen:"
 END
 
 /* Treesize definitions; added V0.9.0 */
@@ -1738,9 +1816,259 @@ BEGIN
     MENUITEM "~Sluiten", 1000
 END
 
+  /* Treesize container strings; added V1.0.4 (2005-02-07) [chennecke] */
+
+STRINGTABLE
+BEGIN
+    ID_TSSI_LARGESTFILES      "%d grootste bestanden"
+    ID_TSSI_BYTES             "bytes"
+    ID_TSSI_KBYTES            "Kbytes"
+    ID_TSSI_MBYTES            "Mbytes"
+    ID_TSSI_WORKING           "%s: bezig..."
+    ID_TSSI_FILES             "bestanden"
+END
+
 /* Netscape DDE definitions; added V0.9.1 (99-12-19) [umoeller] */
 POINTER ID_ND_ICON LOADONCALL MOVEABLE DISCARDABLE netscdde.ico
 
+/* Xfix definitions; added V1.0.4 (2005-02-24) [chennecke] */
+
+POINTER ID_FX_ICON LOADONCALL MOVEABLE DISCARDABLE xfix.ico
+
+  /* main menu */
+
+MENU ID_FXM_MAIN LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    SUBMENU "~xfix", ID_FXM_XFIX, MIS_TEXT
+    BEGIN
+        MENUITEM "Buffer opnieuw ontleden", ID_FXMI_RESCAN, MIS_TEXT
+        MENUITEM "", -1, MIS_SEPARATOR
+        MENUITEM "Terug schrijven naar OS2SYS.INI...", ID_FXMI_WRITETOINI, MIS_TEXT
+        MENUITEM "", -1, MIS_SEPARATOR
+        MENUITEM "xfix Af~sluiten\tAlt+F4",      ID_FXMI_EXIT, MIS_TEXT
+    END
+
+    SUBMENU "~Weergave", ID_FXM_VIEW, MIS_TEXT
+    BEGIN
+        MENUITEM "Object ~IDs...", ID_FXMI_VIEW_OBJIDS, MIS_TEXT
+        /* MENUITEM "~Abstract objects...", ID_FXMI_VIEW_ABSTRACTS, MIS_TEXT */
+    END
+
+    SUBMENU "Sor~teer:", ID_FXM_SORT, MIS_TEXT
+    BEGIN
+        MENUITEM "~Index", ID_FXMI_SORT_INDEX, MIS_TEXT
+        MENUITEM "~Status", ID_FXMI_SORT_STATUS, MIS_TEXT
+        MENUITEM "~Type", ID_FXMI_SORT_TYPE, MIS_TEXT
+        MENUITEM "~Handle", ID_FXMI_SORT_HANDLE, MIS_TEXT
+        MENUITEM "~Ouder", ID_FXMI_SORT_PARENT, MIS_TEXT
+        MENUITEM "K~orte naam", ID_FXMI_SORT_SHORTNAME, MIS_TEXT
+        MENUITEM "~Kinderen", ID_FXMI_SORT_CHILDREN, MIS_TEXT
+        MENUITEM "~Duplicaten", ID_FXMI_SORT_DUPS, MIS_TEXT
+        MENUITEM "~Referenties", ID_FXMI_SORT_REFCS, MIS_TEXT
+        MENUITEM "~Lange naam", ID_FXMI_SORT_LONGNAME, MIS_TEXT
+    END
+
+    SUBMENU "~Acties", ID_FXM_ACTIONS, MIS_TEXT
+    BEGIN
+        MENUITEM "Zoek ongeldige ~bestanden", ID_FXMI_ACTIONS_FILES, MIS_TEXT
+    END
+
+    SUBMENU "~Selecteer", ID_FXM_SELECT, MIS_TEXT
+    BEGIN
+        MENUITEM "Selecteer alle ongeldige", ID_FXMI_SELECT_INVALID, MIS_TEXT
+        MENUITEM "Selecteer op naam...", ID_FXMI_SELECT_BYNAME, MIS_TEXT
+    END
+
+    SUBMENU "~Help", ID_FXM_HELP, MIS_TEXT
+    BEGIN
+        MENUITEM "~Algemene help", ID_FXMI_HELP_GENERAL, MIS_TEXT
+        MENUITEM "~Help gebruiken help", ID_FXMI_HELP_USINGHELP, MIS_TEXT
+        MENUITEM "", -1, MIS_SEPARATOR
+        MENUITEM "~Product informatie", ID_FXMI_HELP_PRODINFO, MIS_TEXT
+    END
+END
+
+  /* menu for object IDs frame */
+
+MENU ID_FXM_OBJIDS LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    SUBMENU "~xfix", ID_FXM_XFIX, MIS_TEXT
+    BEGIN
+        MENUITEM "~Sluit dit venster\tAlt+F4",      ID_FXMI_CLOSETHIS, MIS_TEXT
+        MENUITEM "~xfix afsluiten",      ID_FXMI_EXIT, MIS_TEXT
+    END
+
+    SUBMENU "Sor~teren", ID_FXM_SORT, MIS_TEXT
+    BEGIN
+        MENUITEM "~Index", ID_FXMI_SORT_INDEX, MIS_TEXT
+        MENUITEM "~Status", ID_FXMI_SORT_STATUS, MIS_TEXT
+        MENUITEM "~ID", ID_FXMI_SORT_ID, MIS_TEXT
+        MENUITEM "~Handle", ID_FXMI_SORT_HANDLE, MIS_TEXT
+        MENUITEM "~Lange naam", ID_FXMI_SORT_LONGNAME, MIS_TEXT
+    END
+
+    SUBMENU "~Help", ID_FXM_HELP, MIS_TEXT
+    BEGIN
+        MENUITEM "~Algemene help", ID_FXMI_HELP_GENERAL, MIS_TEXT
+        MENUITEM "~Help gebruiken", ID_FXMI_HELP_USINGHELP, MIS_TEXT
+        MENUITEM "", -1, MIS_SEPARATOR
+        MENUITEM "~Product informatie", ID_FXMI_HELP_PRODINFO, MIS_TEXT
+    END
+END
+
+  /* context menus */
+
+MENU ID_FXM_RECORDSELMULTI LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    MENUITEM "Verwijder ~bestandsposities", ID_FXMI_NUKEFOLDERPOS
+    MENUITEM "Verwijder object ~IDs", ID_FXMI_NUKEOBJID
+    MENUITEM "", -1, MIS_SEPARATOR
+    MENUITEM "~Wis handle...", ID_FXMI_DELETE
+END
+
+MENU ID_FXM_RECORDSELSINGLE LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    MENUITEM "~Verplaats abstracts naar werkplek", ID_FXMI_MOVEABSTRACTS
+    MENUITEM "Verwijder ~bestandsposities", ID_FXMI_NUKEFOLDERPOS
+    MENUITEM "Verwijder object ~IDs", ID_FXMI_NUKEOBJID
+/*
+    MENUITEM "", -1, MIS_SEPARATOR
+    MENUITEM "~Cut", ID_FXMI_CUT
+    MENUITEM "~Paste...", ID_FXMI_PASTE
+*/
+    MENUITEM "", -1, MIS_SEPARATOR
+    MENUITEM "~Verwijderen...", ID_FXMI_DELETE
+END
+
+  /* strings used in the container, error messages, dialogs */
+
+STRINGTABLE
+BEGIN
+    ID_FXDI_MAIN                         "xfix: Handles lijst"
+
+   /* node status column */
+    ID_FXSI_NODESTAT_DUPLICATEDRIV       "DRIV kopi‰ren"
+    ID_FXSI_NODESTAT_ISDUPLICATE         "Kopi‰ren"
+    ID_FXSI_NODESTAT_INVALIDDRIVE        "Ongeldig station"
+    ID_FXSI_NODESTAT_INVALIDPARENT       "Alleenstaand record"
+    ID_FXSI_NODESTAT_FILENOTFOUND        "Bestand niet gevonden"
+    ID_FXSI_NODESTAT_PARENTNOTFOLDER     "Ouder is geen map"
+    ID_FXSI_NODESTAT_FOLDERPOSNOTFOLDER  "Mappositie voor niet-mappen"
+    ID_FXSI_NODESTAT_ABSTRACTSNOTFOLDER  "Abstracts in niet-mappen"
+
+   /* references column */
+    ID_FXSI_REFERENCES_ABSTRACTS         "%d ABS"
+    ID_FXSI_REFERENCES_FOLDERPOS         "FPOS"
+
+    /* type column */
+    ID_FXSI_TYPE_DRIVE                   "DRIV"
+    ID_FXSI_TYPE_NODE                    "NODE"
+
+    /* column names in main and object ID containers */
+    ID_FXSI_NUMBER                       "i"
+    ID_FXSI_TYPE                         "Type"
+    ID_FXSI_NODEOFS                      "Node ofs"
+    ID_FXSI_HANDLE                       "Handle"
+    ID_FXSI_PARENT                       "Ouder"
+    ID_FXSI_SHORTNAME                    "Korte naam"
+    ID_FXSI_CHILDREN                     "Kinderen"
+    ID_FXSI_DUPLICATES                   "Dupl."
+    ID_FXSI_REFERENCES                   "Refrs."
+    ID_FXSI_LONGNAME                     "Lange naam"
+
+    /* object ID window */
+    ID_FXDI_OBJIDS                       "xfix: Object ID's"
+
+    /* column name in container, object ID window */
+    ID_FXSI_STATUS                       "Status"
+    ID_FXSI_ID                           "ID"
+    ID_FXSI_LONGNAME_ABSTRACTVALID       "Abstract in 0x%04lX (%s)"
+    ID_FXSI_LONGNAME_ABSTRACTINVALID     "Abstract in 0x%04lX"
+
+    /* status bar */
+    ID_FXSI_STATBAR_LOADEDINSERTED       "%s ID's geladen, %s ID's ingevoerd."
+    ID_FXSI_STATBAR_HANDLESSELECTED      "%s uit %s handles verwijderd"
+    ID_FXSI_STATBAR_DONE                 "Klaar, %s bytes (%s handles)"
+    ID_FXSI_STATBAR_SECONDS              ", %d seconden"
+    ID_FXSI_STATBAR_DUPWARNING           " -- WAARSCHUWING: er bestaan %d gekopie‰rde handles!"
+    ID_FXSI_STATBAR_IDSLOADED            "%s ID's geladen."
+    ID_FXSI_STATBAR_RESOLVINGPERCENT     "Kruisverwijzingen aan het omzetten, %03d%% gereed..."
+    ID_FXSI_STATBAR_PARSINGPERCENT       "Handles sectie aan het ontleden, %03d%% gereed..."
+    ID_FXSI_STATBAR_CHECKINGPERCENT      "Bestanden aan het controleren, %03d%% gereed..."
+    ID_FXSI_STATBAR_RESOLVING            "Kruisverwijzingen aan het omzetten..."
+    ID_FXSI_STATBAR_DONECHECKING         "Gereed met het controleren van de bestanden."
+    ID_FXSI_STATBAR_PARSINGHANDLES       "Handles aan het ontleden..."
+
+    /* select by file mask dialog */
+    ID_FXDI_FILEMASKSELECT                "xfix: Selecteer op Naam"
+    ID_FXDI_FILEMASKSELECT_MASK           "Bestandsmasker:"
+    ID_FXDI_FILEMASKSELECT_SELECT         "~Selecteren"
+    ID_FXDI_FILEMASKSELECT_DESELECT       "~De-selecteren"
+    ID_FXDI_FILEMASKSELECT_SELECTALL      "~Alles selecteren"
+    ID_FXDI_FILEMASKSELECT_DESELECTALL    "A~lles de-selecteren"
+
+    /* product information message box */
+    ID_FXSI_PRODINFO                     "xfix V&version;, gebouwd op: &date;&nl;&copy; 2000-2002 Ulrich M”ller&nl;&nl;&xwp; File Handles Fixer."
+
+    /* nuke message box strings */
+    ID_FXSI_NUKE_ABSTRACTS               "%d abstract object(en)"
+    ID_FXSI_NUKE_AND                     " en "
+    ID_FXSI_NUKE_FOLDERPOS               "%d mappositie(s)"
+    ID_FXSI_NUKE_OBJECTIDS               "%d object ID('s)"
+    ID_FXSI_NUKE_SCHEDULED               " zijn opgegeven om te worden verwijderd. "
+    ID_FXSI_NUKE_HANDLEPROBLEM           "Hmmm. CNRINFO raporteert %d handles over, maar er zijn er %d geteld."
+    ID_FXSI_NUKE_HANDLESLEFT             "%d handles zijn er over."
+
+    /* write back to INI confirmation message box */
+    ID_FXSI_WRITEBACK_INTRO              "Dit zal alle wijzigingen die u heeft gemaakt terug schrijven naar de OS2.INI en OS2SYS.INI bestanden.&nl;&nl;Houd aub het volgende in de gaten:&nl;&nl;"
+    ID_FXSI_WRITEBACK_FIRSTFIRST         "1. U moet xfix gestart hebben vanuit de &xwp; 'Paniek' dialoog die getoond wordt als u de 'Shift' toets ingedrukt houdt als de WPS aan het opstarten is. "
+    ID_FXSI_WRITEBACK_FIRSTSECOND        "Als u xfix draait terwijl de WPS actief is en uw handles aan het terug schrijven bent, worden uw wijzigingen spoedig weer overschreven door de WPS.&nl;&nl; "
+    ID_FXSI_WRITEBACK_SECOND             "2. Wees er op bedacht dat wanneer u handles heeft verwijderd die essentieel zijn voor de werking van de Workplace Shell, zoals de Werkplek zelf, de Werkplek mogelijk niet langer zal opstarten.&nl;&nl;"
+    ID_FXSI_WRITEBACK_THIRD              "3. Zorg er daarom voor dat u van de WPS een geldige backup heeft, zoals die bijvoorbeeld wordt gemaakt door het WPS reservekopie mechanisme dat kan worden ingeschakeld op de 'Reservekopie' pagina in het Instellingen Notitieblok van de Werkplek.&nl;&nl;"
+    ID_FXSI_WRITEBACK_CONFIRM            "Dus, weet u zeker dat u dit wilt doen?"
+
+    ID_FXSI_WRITEBACKABORTED             "Er zijn geen wijzigingen in uw systeem aangebracht. Sluit gewoon het hoofdvenster om xfix te verlaten."
+    ID_FXSI_WRITEBACKSUCCESS_BLOCKS      "Er zijn %d BLOCKs naar beide handles secties geschreven. "
+    ID_FXSI_WRITEBACKSUCCESS_OBJMOVED    "Er zijn %d objecten verplaatst naar de Werkplek. "
+    ID_FXSI_WRITEBACKSUCCESS_KEYSDELETED "Er zijn %d sleutels uit de OS2.INI verwijderd. "
+    ID_FXSI_WRITEBACKSUCCESS_EXIT        "Sluit gewoon het hoofdvenster om xfix te be‰indigen."
+
+    /* remove handles message box */
+    ID_FXSI_REMOVEHANDLES                "U heeft %d handle(s) voor verwijderen geselecteerd. Weet u zeker dat u dit wilt doen?"
+
+    /* nuke folder pos message box */
+    ID_FXSI_NUKEFOLDERPOS                "Er zijn %d mappositie(s) voor verwijderen geselecteerd."
+
+    /* delete object IDs message box */
+    ID_FXSI_DELETEHANDLES                "Er zijn %d object ID(s) voor verwijderen geselecteerd."
+
+    /* move abstracts message box */
+    ID_FXSI_MOVEABSTRACTS_DESKTOPID      "Werkplek handle is %lX"
+    ID_FXSI_MOVEABSTRACTS_CONFIRM        "U heeft %d handles geselecteerd waarvan de abstract objecten moeten worden verplaatst naar de werkplek.&nl;Weet u zeker dat u dit wilt doen?"
+
+    /* move abstracts successful */
+    ID_FXSI_MOVEABSTRACTSSUCCESS         "%d abstracts zijn er verplaatst naar de Werkplek. Zij komen te voorschijn na de eerst volgende herstart van de Werkplek."
+
+    /* error messages */
+    ID_FXSI_ERROR_INVALIDHANDLE          "Ongeldige handle"
+    ID_FXSI_ERROR_INVALIDPARENTHANDLE    "Ongeldige ouder handle"
+    ID_FXSI_ERROR_DEFAULT                "wphComposePath geeft %d terug"
+    ID_FXSI_ERROR_ABSFOLDERHANDLELOST    "De map handle van Abstract is er niet"
+    ID_FXSI_ERROR_INVALIDFOLDERHANDLE    "Ongeldige map handle"
+    ID_FXSI_ERROR_CANTGETACTIVEHANDLES   "Kan de actieve handles niet uit de OS2SYS.INI ophalen."
+    ID_FXSI_ERROR_ERROROCCURED           "Fout %d heeft zich voorgedaan."
+    ID_FXSI_ERROR_MOVEABSTRACTS          "Er treedt een fout op bij het verplaatsen van de abstracts."
+    ID_FXSI_ERROR_PARSEHANDLES           "Er treedt een fout op bij het ontleden van de handles sectie."
+    ID_FXSI_ERROR_PROFILENOTEXIST        "Fout: Het opgegeven %s profiel ""%s"" bestaat niet."
+    ID_FXSI_ERROR_PROFILEZEROBYTES       "Fout: Het opgegeven %s profiel ""%s"" heeft 0 bytes."
+    ID_FXSI_ERROR_CANTOPENPROFILE        "Fout: Kan %s profiel niet openen ""%s"" (WinGetLastError geeft 0x%lX terug)."
+    ID_FXSI_ERROR_USER                   "Gebruiker"
+    ID_FXSI_ERROR_SYSTEM                 "Systeem"
+    ID_FXSI_ERROR_INVALIDPARMC           "Fout: Ongeldige parameter ""-%c""."
+    ID_FXSI_ERROR_INVALIDPARMS           "Fout: Ongeldige parameter ""%s""."
+    ID_FXSI_ERROR_NOTAVAILABLE           "niet beschikbaar"
+    ID_FXSI_ERROR_FATALLOADHANDLES       "Fatale fout %d opgetreden bij het laden van de handles uit de INI bestanden. Beschrijving: %s"
+    ID_FXSI_ERROR_BUILDHANDLESCACHE      "Waarschuwing: Fout %d bij het bouwen van de handles cache. Beschrijving: %s"
+END
+
 rcinclude "xfldr031.dlg"
-
-
