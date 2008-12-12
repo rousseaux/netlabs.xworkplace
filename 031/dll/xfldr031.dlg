@@ -607,7 +607,7 @@ BEGIN
         AUTOCHECKBOX    "Automatisch mappen verversen",
                         ID_OSDI_AUTOREFRESHFOLDERS, 5, 33, 140, 10, WS_GROUP
         LTEXT           "Extra bestand ingangen:", -1, 5, 21, 140, 8, NOT
-                        WS_Group
+                        WS_GROUP
         SPINBUTTON      ID_OSDI_SHELLHANDLESINC, 155, 21, 59 12,
                         SPBS_NUMERICONLY | SPBS_MASTER | SPBS_JUSTRIGHT |
                         SPBS_FASTSPIN
