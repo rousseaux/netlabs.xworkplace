@@ -31,7 +31,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2007 Ulrich M”ller.
+ *      Copyright (C) 1997-2008 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -3823,6 +3823,7 @@ VOID xsdFinishUserReboot(PSHUTDOWNDATA pShutdownData)
  *@@changed V0.9.12 (2001-05-12) [umoeller]: animations frequently didn't show up, fixed
  *@@changed V1.0.5 (2006-06-26) [pr]: moved code from apmDoPowerOff()
  *@@changed V1.0.8 (2007-04-13) [pr]: reinstated APM_DOSSHUTDOWN_0 @@fixes 726
+ *@@changed V1.0.9 (2008-12-19) [pr]: moved animation above DosShutdown
  */
 
 VOID xsdFinishPowerOff(PSHUTDOWNDATA pShutdownData)
@@ -3883,6 +3884,17 @@ VOID xsdFinishPowerOff(PSHUTDOWNDATA pShutdownData)
     }
     // else: APM_OK means preparing went alright
 
+    // V1.0.9 (2008-12-19) [pr]: moved this above DosShutdown
+    if (flShutdown & XSD_ANIMATE_SHUTDOWN)
+        // cute power-off animation
+        PowerOffAnim(hpsScreen);
+    else
+        // only hide the status window if
+        // animation is off, because otherwise
+        // we get screen display errors
+        // (hpsScreen...)
+        WinShowWindow(pShutdownData->SDConsts.hwndShutdownStatus, FALSE);
+
     if (ulrc & APM_DOSSHUTDOWN_0)
     {
         // shutdown request by apm.c:
@@ -3916,16 +3928,6 @@ VOID xsdFinishPowerOff(PSHUTDOWNDATA pShutdownData)
         doshClose(&pShutdownData->ShutdownLogFile);
         pShutdownData->ShutdownLogFile = NULL;
     }
-
-    if (flShutdown & XSD_ANIMATE_SHUTDOWN)
-        // cute power-off animation
-        PowerOffAnim(hpsScreen);
-    else
-        // only hide the status window if
-        // animation is off, because otherwise
-        // we get screen display errors
-        // (hpsScreen...)
-        WinShowWindow(pShutdownData->SDConsts.hwndShutdownStatus, FALSE);
 
     // V1.0.5 (2006-06-26) [pr]
     if (pShutdownData->sdParams.optDelay)
