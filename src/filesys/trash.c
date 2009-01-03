@@ -16,7 +16,7 @@
  */
 
 /*
- *      Copyright (C) 1999-2006 Ulrich M”ller.
+ *      Copyright (C) 1999-2009 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -2196,6 +2196,7 @@ APIRET trshValidateTrashObject(XWPTrashObject *somSelf)
  *
  *@@added V0.9.1 (2000-02-03) [umoeller]
  *@@changed V0.9.12 (2001-05-18) [umoeller]: changed defaults to support only FAT, FAT32, HPFS, JFS
+ *@@changed V1.0.9 (2009-01-03) [pr]: defaults moved to xwpclsQueryDrivesSupport @@fixes 1114
  */
 
 BOOL trshSetDrivesSupport(PBYTE pabSupportedDrives)
@@ -2222,53 +2223,7 @@ BOOL trshSetDrivesSupport(PBYTE pabSupportedDrives)
             {
                 // pointer is NULL:
                 // use defaults then
-                ULONG   ulLogicalDrive = 3;     // start with drive C:
-                BYTE    bIndex = 0;             // index into G_abSupportedDrives
-
-                memset(G_abSupportedDrives, 0, sizeof(G_abSupportedDrives));
-
-                for (ulLogicalDrive = 3;
-                     ulLogicalDrive < CB_SUPPORTED_DRIVES + 3;
-                     ulLogicalDrive++)
-                {
-                    APIRET  arc = doshAssertDrive(ulLogicalDrive, 0);
-
-                    switch (arc)
-                    {
-                        case NO_ERROR:
-                        {
-                            // drive is ready:
-                            CHAR szFS[30];
-
-                            // do some more checks V0.9.12 (2001-05-18) [umoeller]
-                            G_abSupportedDrives[bIndex] = XTRC_UNSUPPORTED;
-                            if (!doshQueryDiskFSType(ulLogicalDrive,
-                                                     szFS,
-                                                     sizeof(szFS)))
-                            {
-                                if (    (!stricmp(szFS, "FAT"))
-                                     || (!stricmp(szFS, "HPFS"))
-                                     || (!stricmp(szFS, "JFS"))
-                                     || (!stricmp(szFS, "FAT32"))
-                                   )
-                                    // alright, let's support this
-                                    G_abSupportedDrives[bIndex] = XTRC_SUPPORTED;
-                            }
-                        }
-                        break;
-
-                        case ERROR_INVALID_DRIVE:
-                            G_abSupportedDrives[bIndex] = XTRC_INVALID;
-                        break;
-
-                        default:
-                            // this includes ERROR_NOT_READY, ERROR_NOT_SUPPORTED
-                            G_abSupportedDrives[bIndex] = XTRC_UNSUPPORTED;
-                    }
-
-                    bIndex++;
-                }
-
+                _xwpclsQueryDrivesSupport(_XWPTrashCan, &G_abSupportedDrives);  // V1.0.9
                 // delete INI key
                 PrfWriteProfileString(HINI_USER,
                                       (PSZ)INIAPP_XWORKPLACE,
@@ -2295,11 +2250,63 @@ BOOL trshSetDrivesSupport(PBYTE pabSupportedDrives)
  *      implementation for M_XWPTrashCan::xwpclsQueryDrivesSupport.
  *
  *@@added V0.9.1 (2000-02-03) [umoeller]
+ *@@changed V1.0.9 (2009-01-03) [pr]: defaults moved from xwpclsSetDrivesSupport @@fixes 1114
  */
 
 BOOL trshQueryDrivesSupport(PBYTE pabSupportedDrives)
 {
     BOOL brc = FALSE;
+
+    // V1.0.9
+    TRY_LOUD(excpt1)
+    {
+        ULONG   ulLogicalDrive = 3;     // start with drive C:
+        BYTE    bIndex = 0;             // index into G_abSupportedDrives
+
+        memset(G_abSupportedDrives, 0, sizeof(G_abSupportedDrives));
+
+        for (ulLogicalDrive = 3;
+             ulLogicalDrive < CB_SUPPORTED_DRIVES + 3;
+             ulLogicalDrive++)
+        {
+            APIRET  arc = doshAssertDrive(ulLogicalDrive, 0);
+
+            switch (arc)
+            {
+                case NO_ERROR:
+                {
+                    // drive is ready:
+                    CHAR szFS[30];
+
+                    // do some more checks V0.9.12 (2001-05-18) [umoeller]
+                    G_abSupportedDrives[bIndex] = XTRC_UNSUPPORTED;
+                    if (!doshQueryDiskFSType(ulLogicalDrive,
+                                             szFS,
+                                             sizeof(szFS)))
+                    {
+                        if (    (!stricmp(szFS, "FAT"))
+                             || (!stricmp(szFS, "HPFS"))
+                             || (!stricmp(szFS, "JFS"))
+                             || (!stricmp(szFS, "FAT32"))
+                           )
+                            // alright, let's support this
+                            G_abSupportedDrives[bIndex] = XTRC_SUPPORTED;
+                    }
+                }
+                break;
+
+                case ERROR_INVALID_DRIVE:
+                    G_abSupportedDrives[bIndex] = XTRC_INVALID;
+                break;
+
+                default:
+                    // this includes ERROR_NOT_READY, ERROR_NOT_SUPPORTED
+                    G_abSupportedDrives[bIndex] = XTRC_UNSUPPORTED;
+            }
+
+            bIndex++;
+        }
+    } CATCH(excpt1) { } END_CATCH();
 
     if (pabSupportedDrives)
     {
