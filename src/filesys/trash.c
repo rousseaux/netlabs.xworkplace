@@ -2223,7 +2223,7 @@ BOOL trshSetDrivesSupport(PBYTE pabSupportedDrives)
             {
                 // pointer is NULL:
                 // use defaults then
-                _xwpclsQueryDrivesSupport(_XWPTrashCan, &G_abSupportedDrives);  // V1.0.9
+                _xwpclsQueryDrivesSupport(_XWPTrashCan, G_abSupportedDrives);  // V1.0.9
                 // delete INI key
                 PrfWriteProfileString(HINI_USER,
                                       (PSZ)INIAPP_XWORKPLACE,
