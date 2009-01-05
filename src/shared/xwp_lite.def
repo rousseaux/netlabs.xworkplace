@@ -8,7 +8,7 @@
 ;       ONE .def file when several classes are put into
 ;       one DLL.
 ;
-;       Copyright (C) 1997-2007 Ulrich M”ller.
+;       Copyright (C) 1997-2009 Ulrich M”ller.
 ;       This file is part of the XWorkplace source package.
 ;       XWorkplace is free software; you can redistribute it and/or modify
 ;       it under the terms of the GNU General Public License as published
@@ -193,12 +193,12 @@ EXPORTS
 ;    M_XFldStartupClassData
 ;    M_XFldStartupNewClass
 
-;    XFldShutdownCClassData
-;    XFldShutdownClassData
-;    XFldShutdownNewClass
-;    M_XFldShutdownCClassData
-;    M_XFldShutdownClassData
-;    M_XFldShutdownNewClass
+    XFldShutdownCClassData
+    XFldShutdownClassData
+    XFldShutdownNewClass
+    M_XFldShutdownCClassData
+    M_XFldShutdownClassData
+    M_XFldShutdownNewClass
 
     XFldObjectCClassData
     XFldObjectClassData

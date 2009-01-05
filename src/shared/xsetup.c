@@ -9,7 +9,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2006 Ulrich M”ller.
+ *      Copyright (C) 1997-2009 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -369,6 +369,8 @@ static STANDARDOBJECT G_WPSObjects[] =
             &XFOLDER_STARTUPID, &G_pcszXFldStartup, "<XWP_MAINFLDR>",
                     "ICONVIEW=NONFLOWED,MINI;ALWAYSSORT=NO;",
                     211, 0,
+#endif
+#ifndef __NOXSHUTDOWN__
             &XFOLDER_SHUTDOWNID, &G_pcszXFldShutdown, "<XWP_MAINFLDR>",
                     "ICONVIEW=NONFLOWED,MINI;ALWAYSSORT=NO;",
                     212, 0,
@@ -639,6 +641,8 @@ static const XWPCLASSITEM G_aClasses[] =
         &G_pcszXFldStartup, NULL,
             G_RequirementsXFldStartupShutdown, ARRAYITEMCOUNT(G_RequirementsXFldStartupShutdown),
             1263,
+#endif
+#ifndef __NOXSHUTDOWN__
         &G_pcszXFldShutdown, NULL,
             G_RequirementsXFldStartupShutdown, ARRAYITEMCOUNT(G_RequirementsXFldStartupShutdown),
             1264,

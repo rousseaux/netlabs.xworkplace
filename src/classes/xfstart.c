@@ -4,31 +4,17 @@
  *      This file contains SOM code for the following XWorkplace classes:
  *
  *      --  XFldStartup (startup folder, XFolder subclass)
- *      --  XFldShutdown (shutdown folder, XFolder subclass)
  *
- *      Installation of XFldStartup and XFldShutdown is
- *      optional. However, both classes are derived from
- *      XFolder directly (and not from WPFolder), so
- *      installation of XFolder is required if any of
- *      XFldStartup and XFldShutdown are installed.
- *
- *      These two classes used to be in xfldr.c before
- *      V0.9.0, but have been moved to this new separate file
- *      because the XFolder class is complex enough to be
- *      in a file of its own.
- *
- *      Starting with V0.9.0, the files in classes\ contain only
- *      i.e. the methods themselves.
- *      The implementation for this class is in filesys\folder.c.
+ *      Installation of XFldStartup is optional. However, it is
+ *      derived from XFolder directly (and not from WPFolder), so
+ *      installation of XFolder is required if XFldStartup is installed.
  *
  *@@somclass XFldStartup xfstup_
  *@@somclass M_XFldStartup xfstupM_
- *@@somclass XFldShutdown xfshut_
- *@@somclass M_XFldShutdown xfshutM_
  */
 
 /*
- *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *      Copyright (C) 1997-2009 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -322,8 +308,6 @@ SOM_Scope BOOL  SOMLINK xfstup_wpRestoreState(XFldStartup *somSelf,
     return XFldStartup_parent_XFolder_wpRestoreState(somSelf,
                                                      ulReserved);
 }
-
-/*
 
 /*
  *@@ wpModifyPopupMenu:
@@ -700,163 +684,4 @@ SOM_Scope ULONG  SOMLINK xfstupM_wpclsQueryIconDataN(M_XFldStartup *somSelf,
 
     return sizeof(ICONINFO);
 }
-
-/* ******************************************************************
- *
- *   here come the XFldShutdown methods
- *
- ********************************************************************/
-
-/*
- *@@ wpclsInitData:
- *      this M_WPObject class method gets called when a class
- *      is loaded by the WPS (probably from within a
- *      somFindClass call) and allows the class to initialize
- *      itself.
- *
- *@@changed V0.9.0 [umoeller]: added class object to KERNELGLOBALS
- */
-
-SOM_Scope void  SOMLINK xfshutM_wpclsInitData(M_XFldShutdown *somSelf)
-{
-    /* M_XFldShutdownData *somThis = M_XFldShutdownGetData(somSelf); */
-    M_XFldShutdownMethodDebug("M_XFldShutdown","xfshutM_wpclsInitData");
-
-    M_XFldShutdown_parent_M_XFolder_wpclsInitData(somSelf);
-
-    krnClassInitialized(G_pcszXFldShutdown);
-}
-
-/*
- *@@ wpclsQueryTitle:
- *      this M_WPObject class method tells the WPS the clear
- *      name of a class, which is shown in the third column
- *      of a Details view and also used as the default title
- *      for new objects of a class.
- *
- *@@changed V0.9.6 (2000-11-20) [umoeller]: changed to "XWorkplace"
- *@@changed V1.0.0 (2002-08-31) [umoeller]: finally localized
- */
-
-SOM_Scope PSZ  SOMLINK xfshutM_wpclsQueryTitle(M_XFldShutdown *somSelf)
-{
-    /* M_XFldShutdownData *somThis = M_XFldShutdownGetData(somSelf); */
-    M_XFldShutdownMethodDebug("M_XFldShutdown","xfshutM_wpclsQueryTitle");
-
-    return (PSZ)cmnGetString(ID_XFSI_XWPSHUTDOWNFDR);
-                // V1.0.0 (2002-08-31) [umoeller]
-}
-
-/*
- *@@ wpclsQueryStyle:
- *      we return a flag so that no templates are created
- *      for the Shutdown folder.
- */
-
-SOM_Scope ULONG  SOMLINK xfshutM_wpclsQueryStyle(M_XFldShutdown *somSelf)
-{
-    /* M_XFldShutdownData *somThis = M_XFldShutdownGetData(somSelf); */
-    M_XFldShutdownMethodDebug("M_XFldShutdown","xfshutM_wpclsQueryStyle");
-
-    return (M_XFldShutdown_parent_M_XFolder_wpclsQueryStyle(somSelf)
-                | CLSSTYLE_NEVERTEMPLATE
-                | CLSSTYLE_NEVERCOPY
-                // | CLSSTYLE_NEVERDELETE
-           );
-}
-
-/*
- *@@ wpclsQueryDefaultHelp:
- *      this M_WPObject class method returns the default help
- *      panel for objects of this class. This gets called
- *      from WPObject::wpQueryDefaultHelp if no instance
- *      help settings (HELPLIBRARY, HELPPANEL) have been
- *      set for an individual object. It is thus recommended
- *      to override this method instead of the instance
- *      method to change the default help panel for a class
- *      in order not to break instance help settings (fixed
- *      with 0.9.20).
- *
- *      We override the standard folder help to return help
- *      for the shutdown folder here.
- *
- *@@added V0.9.20 (2002-07-12) [umoeller]
- */
-
-SOM_Scope BOOL  SOMLINK xfshutM_wpclsQueryDefaultHelp(M_XFldShutdown *somSelf,
-                                                      PULONG pHelpPanelId,
-                                                      PSZ pszHelpLibrary)
-{
-    /* M_XFldShutdownData *somThis = M_XFldShutdownGetData(somSelf); */
-    M_XFldShutdownMethodDebug("M_XFldShutdown","xfshutM_wpclsQueryDefaultHelp");
-
-    strcpy(pszHelpLibrary, cmnQueryHelpLibrary());
-    *pHelpPanelId = ID_XMH_STARTUPSHUTDOWN;
-    return TRUE;
-
-}
-
-/*
- *@@ wpclsQueryIconData:
- *      this M_WPObject class method must return information
- *      about how to build the default icon for objects
- *      of a class. This gets called from various other
- *      methods whenever a class default icon is needed;
- *      most importantly, M_WPObject::wpclsQueryIcon
- *      calls this to build a class default icon, which
- *      is then cached in the class's instance data.
- *      If a subclass wants to change a class default icon,
- *      it should always override _this_ method instead of
- *      wpclsQueryIcon.
- *
- *      Note that the default WPS implementation does not
- *      allow for specifying the ICON_FILE format here,
- *      which is why we have overridden
- *      M_XFldObject::wpclsQueryIcon too. This allows us
- *      to return icon _files_ for theming too. For details
- *      about the WPS's crappy icon management, refer to
- *      src\filesys\icons.c.
- *
- *      We give the Shutdown folder a new closed icon.
- */
-
-SOM_Scope ULONG  SOMLINK xfshutM_wpclsQueryIconData(M_XFldShutdown *somSelf,
-                                                    PICONINFO pIconInfo)
-{
-    /* M_XFldShutdownData *somThis = M_XFldShutdownGetData(somSelf); */
-    M_XFldShutdownMethodDebug("M_XFldShutdown","xfshutM_wpclsQueryIconData");
-
-    if (pIconInfo)
-    {
-        pIconInfo->fFormat = ICON_RESOURCE;
-        pIconInfo->resid   = ID_SHUTICON1;
-        pIconInfo->hmod    = cmnQueryMainResModuleHandle();
-    }
-
-    return sizeof(ICONINFO);
-}
-
-/*
- *@@ wpclsQueryIconDataN:
- *      give the Shutdown folder a new animated icon.
- */
-
-SOM_Scope ULONG  SOMLINK xfshutM_wpclsQueryIconDataN(M_XFldShutdown *somSelf,
-                                                     ICONINFO* pIconInfo,
-                                                     ULONG ulIconIndex)
-{
-    /* M_XFldShutdownData *somThis = M_XFldShutdownGetData(somSelf); */
-    M_XFldShutdownMethodDebug("M_XFldShutdown","xfshutM_wpclsQueryIconDataN");
-
-    if (pIconInfo)
-    {
-        pIconInfo->fFormat = ICON_RESOURCE;
-        pIconInfo->resid   = ID_SHUTICON2;
-        pIconInfo->hmod    = cmnQueryMainResModuleHandle();
-    }
-
-    return sizeof(ICONINFO);
-}
-
-
 
