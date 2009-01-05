@@ -80,6 +80,7 @@ $(OUTPUTDIR)\xfontfile.h \
 $(OUTPUTDIR)\xfontobj.h \
 $(OUTPUTDIR)\xwppgmf.h \
 $(OUTPUTDIR)\xfstart.h \
+$(OUTPUTDIR)\xfshut.h \
 $(OUTPUTDIR)\xfsys.h \
 $(OUTPUTDIR)\xfwps.h \
 $(OUTPUTDIR)\xtrash.h \
@@ -210,6 +211,8 @@ $(OUTPUTDIR)\xfdesk.h:           $(@B).idl $(OUTPUTDIR)\xfldr.h
 $(OUTPUTDIR)\xfont.h:            $(@B).idl $(OUTPUTDIR)\xfldr.h
 
 $(OUTPUTDIR)\xfstart.h:          $(@B).idl $(OUTPUTDIR)\xfldr.h
+
+$(OUTPUTDIR)\xfshut.h:           $(@B).idl $(OUTPUTDIR)\xfldr.h
 
 $(OUTPUTDIR)\xtrash.h:           $(@B).idl $(OUTPUTDIR)\xfldr.h
 
