@@ -1,4 +1,4 @@
-/* makewpi001.cmd - create an English WarpIN NLS package for XWorkplace */
+/* makewpi001.cmd - create a Japanese WarpIN NLS package for XWorkplace */
 
 /* change last two characters to your language code */
 /* use the current version number                   */
@@ -56,6 +56,6 @@ setfiletime: procedure expose filetime makedir
   filedate = left(filedate,4)'-'substr(filedate,5,2)'-'substr(filedate,7,2)
   do i = 1 to stem.0
     call SysSetFileDateTime stem.i, filedate, filetime
-    '@'makedir'\tools\setftime' stem.i
+    '@'makedir'\..\tools\setftime' stem.i
   end
   return

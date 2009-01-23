@@ -1,4 +1,4 @@
-/* makewpi049.cmd - create a German WarpIN NLS package for XWorkplace */
+/* makewpi031.cmd - create a Dutch WarpIN NLS package for XWorkplace */
 
 /* change last two characters to your language code */
 /* use the current version number                   */
@@ -22,18 +22,18 @@ call RxFuncAdd 'SysLoadFuncs', 'RexxUtil', 'SysLoadFuncs'
 call SysLoadFuncs
 parse arg reldir
 if reldir = '' then do
-  say 'Usage: makewpi <release directory>'
+  say 'Gebruikt: makewpi <release directory>'
   return
 end
 makedir = directory()
 reldir = directory(reldir)
 if reldir = '' then do
-  say 'Invalid release directory'
+  say 'Ongeldige release directory'
   return
 end
 warpindir = SysIni(USER, 'WarpIN', 'Path')
 if warpindir = 'ERROR:' | warpindir = '' then do
-  say 'WarpIN is not installed correctly'
+  say 'WarpIN is niet juist ge‹nstalleerd'
   return
 end
 call directory warpindir
@@ -49,13 +49,13 @@ wic1 wic2 wic3
 call directory makedir
 return
 
-setfiletime: procedure expose filetime
+setfiletime: procedure expose filetime makedir
   parse arg pkgdir
   call SysFileTree pkgdir'\*', 'stem', 'FOS'
   filedate = date('S')
   filedate = left(filedate,4)'-'substr(filedate,5,2)'-'substr(filedate,7,2)
   do i = 1 to stem.0
     call SysSetFileDateTime stem.i, filedate, filetime
-    '@..\tools\setftime' stem.i
+    '@'makedir'\..\tools\setftime' stem.i
   end
   return
