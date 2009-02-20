@@ -61,6 +61,23 @@ Global.DefaultFont = ':font facename=default size=0x0.';
 
  parse arg _cmdLine
 
+/* Verify user-customizations V1.0.18 (2009-02-19) [shl] */
+
+ s = word(Global.ImageConvert, 1)
+
+ if s == '' then do
+  say 'Global.ImageConvert must be set to a useful value'
+  exit 1
+ end
+ else do
+  if SysSearchPath('PATH', s) = '' then do
+   if SysSearchPath('PATH', s'.exe') = '' then do
+    say 'Required external utility' s 'not found in PATH'
+    if 0 then exit 1
+   end
+  end
+ end
+
 /***************** hard-coded variables **********************/
 /* maximal line length for ipfc :-( */
  Global.maxLineLength = 256;
