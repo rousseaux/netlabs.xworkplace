@@ -745,8 +745,6 @@ release: really_all
 !endif
 !if [@md $(XWPRELEASE)\$(BLD_TYP) 2> NUL]
 !endif
-!ifndef XWPLITE
-!endif
 !if [@md $(XWPRELEASE_MAIN) 2> NUL]
 !endif
 !if [@md $(XWPRELEASE_NLS) 2> NUL]
@@ -960,13 +958,20 @@ release_nls: nls
 !endif
     $(COPY) $(MODULESDIR)\xfldr$(XWP_LANG_CODE).tmf $(XWPRELEASE_NLS)\help
     $(COPY) $(XWP_LANG_CODE)\misc\drvrs$(XWP_LANG_CODE).txt $(XWPRELEASE_NLS)\help
+!ifndef XWPLITE
     $(COPY) $(XWP_LANG_CODE)\misc\xfcls$(XWP_LANG_CODE).txt $(XWPRELEASE_NLS)\help
+!endif
     $(COPY) $(MODULESDIR)\xfldr$(XWP_LANG_CODE).hlp $(XWPRELEASE_NLS)\help
 !if [@md $(XWPRELEASE_NLS)\install 2> NUL]
 !endif
+!ifndef XWPLITE
     $(COPY) $(XWP_LANG_CODE)\misc\crobj$(XWP_LANG_CODE).cmd $(XWPRELEASE_NLS)\install\crobj$(XWP_LANG_CODE).cmd
     $(COPY) $(XWP_LANG_CODE)\misc\instl$(XWP_LANG_CODE).cmd $(XWPRELEASE_NLS)\install\instl$(XWP_LANG_CODE).cmd
     $(COPY) $(XWP_LANG_CODE)\misc\sound$(XWP_LANG_CODE).cmd $(XWPRELEASE_NLS)\install
+!else
+    $(COPY) $(XWP_LANG_CODE)\misc\crobj$(XWP_LANG_CODE)_lite.cmd $(XWPRELEASE_NLS)\install\crobj$(XWP_LANG_CODE).cmd
+    $(COPY) $(XWP_LANG_CODE)\misc\instl$(XWP_LANG_CODE)_lite.cmd $(XWPRELEASE_NLS)\install\instl$(XWP_LANG_CODE).cmd
+!endif
     @echo $(MAKEDIR)\makefile [$@]: Done copying files.
 !ifdef LXLITEPATH
     @echo $(MAKEDIR)\makefile [$@]: Now compacting files.
