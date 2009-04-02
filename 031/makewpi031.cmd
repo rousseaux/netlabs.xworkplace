@@ -22,7 +22,7 @@ call RxFuncAdd 'SysLoadFuncs', 'RexxUtil', 'SysLoadFuncs'
 call SysLoadFuncs
 parse arg reldir
 if reldir = '' then do
-  say 'Gebruikt: makewpi <release directory>'
+  say 'Gebruik: makewpi <release directory>'
   return
 end
 makedir = directory()
