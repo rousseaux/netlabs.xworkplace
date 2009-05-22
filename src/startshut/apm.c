@@ -15,7 +15,7 @@
 /*
  *      Copyright (C) 1998 ARAKAWA Atsushi.
  *      Copyright (C) 1997-2003 Ulrich M”ller.
- *      Copyright (C) 2006-2007 Paul Ratcliffe.
+ *      Copyright (C) 2006-2009 Paul Ratcliffe.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -329,12 +329,14 @@ BOOL acpiPowerOffSupported(VOID)
  *      ORed with _one_ or _none_ of the following:
  *      --  APM_DOSSHUTDOWN_0:
  *                   set this flag if XFolder should
- *                   call DosShutdown(0); this is _not_
- *                   recommended, because this would block
- *                   any subsequent DosDevIOCtl calls.
+ *                   call DosShutdown(0); this is
+ *                   recommended for ACPI, because it
+ *                   ensures that the file system caches
+ *                   are flushed to disk.
  *      --  APM_DOSSHUTDOWN_1:
  *                   the same for DosShutdown(1), which is
- *                   recommended.
+ *                   not recommended for ACPI as it is sure
+ *                   to leave the file systems dirty.
  *
  *      If you return APM_OK only without either
  *      APM_DOSSHUTDOWN_0 or APM_DOSSHUTDOWN_1,
