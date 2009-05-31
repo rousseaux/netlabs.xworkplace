@@ -390,6 +390,7 @@ ULONG acpiPreparePowerOff(PSZ pszError)      // in: error message
 
 VOID acpiDoPowerOff(VOID)
 {
+    DosSleep(250);  // Ensure system has time to really go idle V1.0.9 (2009-05-29) [shl]
     acpihGoToSleep(&G_hACPI, ACPI_STATE_S5);
     acpihClose(&G_hACPI);
 }
