@@ -35,7 +35,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *      Copyright (C) 1997-2009 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -238,6 +238,7 @@ SOM_Scope void  SOMLINK xsndM_wpclsInitData(M_XWPSound *somSelf)
     M_XWPSound_parent_M_WPSound_wpclsInitData(somSelf);
 
     krnClassInitialized(G_pcszXWPSound);
+    fixMmpmIni();  // V1.0.9 (2009-10-08) [pr]: @@fixes 691
 }
 
 
