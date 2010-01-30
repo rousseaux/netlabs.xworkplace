@@ -35,7 +35,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2009 Ulrich M”ller.
+ *      Copyright (C) 1997-2010 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -88,6 +88,7 @@
 #include "setup.h"                      // code generation and debugging options
 
 // headers in /helpers
+#include "helpers\syssound.h"           // system sound helper routines
 
 // SOM headers which don't crash with prec. header files
 #include "xwpsound.ih"
