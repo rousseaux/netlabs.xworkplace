@@ -25,7 +25,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *      Copyright (C) 1997-2010 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -769,6 +769,7 @@ PSZ cmnQueryBootLogoFile(VOID)
  *@@changed V0.9.19 (2002-04-24) [umoeller]: reverting to 001 on errors now
  *@@changed V1.0.0 (2002-09-15) [lafaix]: notify the daemon if fEnforceReload == TRUE
  *@@changed V1.0.1 (2002-12-08) [umoeller]: fixed stupid hwndDaemonObject log message @@fixes 64
+ *@@changed V1.0.9 (2010-01-30) [pr]: modify NLS revision check @@fixes 1097
  */
 
 HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
@@ -853,47 +854,58 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
                                 szResourceModuleName);
                     }
                     // V0.9.19 (2002-04-24) [umoeller]
-                    else if (strcmp(szTest, MINIMUM_NLS_VERSION))
+                    else
                     {
-                        // version level not sufficient:
-                        // load dialog from _old_ NLS DLL which says
-                        // that the DLL is too old; if user presses
-                        // "Cancel", we abort loading the DLL
-                        // V0.9.19 (2002-04-24) [umoeller]
-                        // no, this is not working on startup since we
-                        // have no old NLS DLL
-                        sprintf(szError,
-                                "The version number of the National Language Support DLL \"%s\" "
-                                "(%s) does not match the XWorkplace version that is running "
-                                "(%s). Loading this module might lead to serious problems or "
-                                "frequent error messages. Do you wish to load the module anyway?",
-                                szResourceModuleName,
-                                szTest,
-                                MINIMUM_NLS_VERSION);
-                        if (WinMessageBox(HWND_DESKTOP,
-                                          NULLHANDLE,
-                                          szError,
-                                          "XWorkplace: NLS Warning",
-                                          0,
-                                          MB_MOVEABLE | MB_YESNO)
-                                == MBID_NO)
+                        // V1.0.9 (2010-01-30) [pr]
+                        int iCount, iMajor, iMinor, iRevision;
+
+                        iCount = sscanf(szTest, "%u.%u.%u", &iMajor, &iMinor, &iRevision);
+                        if (   iCount == 3
+                            && iMajor == MINIMUM_NLS_MAJOR
+                            && iMinor == MINIMUM_NLS_MINOR
+                            && iRevision >= MINIMUM_NLS_REVISION
+                           )
                         {
-                            sprintf(szError,
-                                    "The new National Language Support DLL \"%s\" was not loaded.",
-                                    szResourceModuleName);
-                            // revert to English below
+                            // new module is OK:
+                            hmodReturn = hmodLoaded;
                         }
                         else
                         {
-                            // user wants outdated module:
-                            hmodReturn = hmodLoaded;
-                            szError[0] = '\0';
+                            // version level not sufficient:
+                            // load dialog from _old_ NLS DLL which says
+                            // that the DLL is too old; if user presses
+                            // "Cancel", we abort loading the DLL
+                            // V0.9.19 (2002-04-24) [umoeller]
+                            // no, this is not working on startup since we
+                            // have no old NLS DLL
+                            sprintf(szError,
+                                    "The version number of the National Language Support DLL \"%s\" "
+                                    "(%s) does not match the XWorkplace version that is running "
+                                    "(%s). Loading this module might lead to serious problems or "
+                                    "frequent error messages. Do you wish to load the module anyway?",
+                                    szResourceModuleName,
+                                    szTest,
+                                    MINIMUM_NLS_VERSION);
+                            if (WinMessageBox(HWND_DESKTOP,
+                                              NULLHANDLE,
+                                              szError,
+                                              "XWorkplace: NLS Warning",
+                                              0,
+                                              MB_MOVEABLE | MB_YESNO)
+                                    == MBID_NO)
+                            {
+                                sprintf(szError,
+                                        "The new National Language Support DLL \"%s\" was not loaded.",
+                                        szResourceModuleName);
+                                // revert to English below
+                            }
+                            else
+                            {
+                                // user wants outdated module:
+                                hmodReturn = hmodLoaded;
+                                szError[0] = '\0';
+                            }
                         }
-                    }
-                    else
-                    {
-                        // new module is OK:
-                        hmodReturn = hmodLoaded;
                     }
                 } // end if (fEnforceReload)
                 else

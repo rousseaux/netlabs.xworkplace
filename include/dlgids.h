@@ -33,7 +33,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2008 Ulrich M”ller.
+ *      Copyright (C) 1997-2010 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -106,6 +106,10 @@
 // this sets the minimum version number for NLS DLLS
 // which XFolder will accept
 #define MINIMUM_NLS_VERSION    "1.1.0"
+
+#define MINIMUM_NLS_MAJOR      1
+#define MINIMUM_NLS_MINOR      1
+#define MINIMUM_NLS_REVISION   0
 
 /* ******************************************************************
  *
