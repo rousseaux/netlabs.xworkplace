@@ -16,7 +16,7 @@
  */
 
 /*
- *      Copyright (C) 1999-2006 Ulrich M”ller.
+ *      Copyright (C) 1999-2010 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -184,6 +184,108 @@ typedef struct _DRIVERRECORD
 
 /*
  *@@ InsertDrivers:
+ *      called from InsertDrivers for each driver instance.
+ *
+ *@@added V1.0.9 (2010-02-03) [pr]: split off from InsertDrivers() @@fixes 1157
+ */
+
+STATIC void InsertDriver(HWND hwndCnr,                // in: container
+                         PSZ pszRestOfLine,           // in: driver command parameters
+                         PDRIVERRECORD preccHeading,  // in: category record
+                         PDRIVERSPEC pDriverSpec)     // in: current driver details
+{
+    PEXECUTABLE pExec = NULL;
+    APIRET      arc = NO_ERROR;
+
+    // insert driver into cnr:
+    PDRIVERRECORD precc
+        = (PDRIVERRECORD)cnrhAllocRecords(hwndCnr,
+                                          sizeof(DRIVERRECORD),
+                                          1);
+
+    // extract full file name
+    PSZ pEODriver = strchr(pszRestOfLine, ' ');
+    if (pEODriver)
+    {
+        PSZ pSpace2 = pEODriver;
+        strhncpy0(precc->szDriverNameFound,
+                  pszRestOfLine,
+                  (pEODriver - pszRestOfLine));
+
+        // skipp addt'l spaces
+        while (*pSpace2 == ' ')
+            pSpace2++;
+        // copy params
+        strlcpy(precc->szParams,
+                pSpace2,
+                sizeof(precc->szParams));
+    }
+    else
+    {
+        strlcpy(precc->szDriverNameFound,
+                pszRestOfLine,
+                sizeof(precc->szDriverNameFound));
+        precc->szParams[0] = 0;
+    }
+
+    // extract file name only from full name
+    pEODriver = strrchr(precc->szDriverNameFound, '\\');
+    if (pEODriver)
+        strlcpy(precc->szDriverNameOnly, pEODriver + 1, sizeof(precc->szDriverNameOnly));
+    else
+        // no path given: copy all
+        strlcpy(precc->szDriverNameOnly, precc->szDriverNameFound, sizeof(precc->szDriverNameOnly));
+
+    // create full name
+    if (pDriverSpec->ulFlags & DRVF_BASEDEV)
+        // BASEDEVs have no path, so we provide this
+        sprintf(precc->szDriverNameFull,
+                "%c:\\OS2\\BOOT\\",
+                doshQueryBootDrive());
+    strcat(precc->szDriverNameFull,
+           precc->szDriverNameFound);
+
+    // compose full line as in CONFIG.SYS,
+    // for replacing the line later maybe
+    sprintf(precc->szConfigSysLine,
+            "%s%s",
+            pDriverSpec->pszKeyword,
+            pszRestOfLine);
+
+    // get BLDLEVEL
+    if (!(arc = exehOpen(precc->szDriverNameFull,
+                         &pExec)))
+    {
+        if (!(arc = exehQueryBldLevel(pExec)))
+        {
+            if (pExec->pszVersion)
+            {
+                strlcpy(precc->szVersion, pExec->pszVersion, sizeof(precc->szVersion));
+                pDriverSpec->pszVersion = strdup(pExec->pszVersion);
+            }
+
+            if (pExec->pszVendor)
+                strlcpy(precc->szVendor, pExec->pszVendor, sizeof(precc->szVendor));
+        }
+        exehClose(&pExec);
+    }
+    else
+        // error:
+        precc->arc = arc;
+
+    // store driver specs
+    precc->pDriverSpec = pDriverSpec; // can be NULL
+    cnrhInsertRecords(hwndCnr,
+                      (PRECORDCORE)preccHeading, // parent
+                      (PRECORDCORE)precc,
+                      TRUE, // invalidate
+                      precc->pDriverSpec->pszDescription, // precc->szDriverNameOnly,
+                      CRA_RECORDREADONLY | CRA_COLLAPSED,
+                      1);
+}
+
+/*
+ *@@ InsertDrivers:
  *      called from InsertDriverCategories for each driver
  *      category to be inserted into the "Drivers drivers"
  *      container.
@@ -199,6 +301,7 @@ typedef struct _DRIVERRECORD
  *@@changed V0.9.1 (99-12-04) [umoeller]: fixed memory leaks
  *@@changed V0.9.3 (2000-04-10) [umoeller]: added pszVersion to DRIVERSPEC
  *@@changed V1.0.6 (2006-08-08) [pr]: split parameter buffer from heading buffer
+ *@@changed V1.0.9 (2010-02-03) [pr]: allow multiple driver instances @@fixes 1157
  */
 
 STATIC void InsertDrivers(HWND hwndCnr,              // in: container
@@ -227,16 +330,12 @@ STATIC void InsertDrivers(HWND hwndCnr,              // in: container
 
     if (pszConfigSys)
     {
-        // ULONG       ulSpec = 0;
         // walk thru drivers list
         PLISTNODE   pSpecNode = lstQueryFirstNode(pllDriverSpecs);
         while (pSpecNode)
         {
             // search CONFIG.SYS for driver spec's keyword
-            BOOL fInsert = FALSE;
-            PDRIVERSPEC pDriverSpec2Store = 0;
             CHAR szRestOfLine[1000] = "";
-
             PDRIVERSPEC pSpecThis = (PDRIVERSPEC)pSpecNode->pItemData;
 
             PSZ p = pszConfigSys;  // search pointer
@@ -272,110 +371,12 @@ STATIC void InsertDrivers(HWND hwndCnr,              // in: container
                         if (stricmp(pComp,
                                     pSpecThis->pszFilename)
                                == 0)
-                        {
-                            // yup: mark to insert
-                            fInsert = TRUE;
-                            pDriverSpec2Store = pSpecThis;
-                            p = 0; // break;
-                        }
+                             InsertDriver(hwndCnr, szRestOfLine, preccHeading, pSpecThis);
 
                         free(pszFilename);
                     } // end if (pszFilename)
                 } // end if if (p = strhGetParameter(p, ...
             } // end while (p)
-
-            if (fInsert)
-            {
-                PEXECUTABLE pExec = NULL;
-                APIRET      arc = NO_ERROR;
-
-                // insert driver into cnr:
-                PDRIVERRECORD precc
-                    = (PDRIVERRECORD)cnrhAllocRecords(hwndCnr,
-                                                      sizeof(DRIVERRECORD),
-                                                      1);
-
-                // extract full file name
-                PSZ pEODriver = strchr(szRestOfLine, ' ');
-                if (pEODriver)
-                {
-                    PSZ pSpace2 = pEODriver;
-                    strhncpy0(precc->szDriverNameFound,
-                              szRestOfLine,
-                              (pEODriver - szRestOfLine));
-
-                    // skipp addt'l spaces
-                    while (*pSpace2 == ' ')
-                        pSpace2++;
-                    // copy params
-                    strlcpy(precc->szParams,
-                            pSpace2,
-                            sizeof(precc->szParams));
-                }
-                else
-                {
-                    strlcpy(precc->szDriverNameFound,
-                            szRestOfLine,
-                            sizeof(precc->szDriverNameFound));
-                    precc->szParams[0] = 0;
-                }
-
-                // extract file name only from full name
-                pEODriver = strrchr(precc->szDriverNameFound, '\\');
-                if (pEODriver)
-                    strlcpy(precc->szDriverNameOnly, pEODriver + 1, sizeof(precc->szDriverNameOnly));
-                else
-                    // no path given: copy all
-                    strlcpy(precc->szDriverNameOnly, precc->szDriverNameFound, sizeof(precc->szDriverNameOnly));
-
-                // create full name
-                if (pDriverSpec2Store->ulFlags & DRVF_BASEDEV)
-                    // BASEDEVs have no path, so we provide this
-                    sprintf(precc->szDriverNameFull,
-                            "%c:\\OS2\\BOOT\\",
-                            doshQueryBootDrive());
-                strcat(precc->szDriverNameFull,
-                       precc->szDriverNameFound);
-
-                // compose full line as in CONFIG.SYS,
-                // for replacing the line later maybe
-                sprintf(precc->szConfigSysLine,
-                        "%s%s",
-                        pDriverSpec2Store->pszKeyword,
-                        szRestOfLine);
-
-                // get BLDLEVEL
-                if (!(arc = exehOpen(precc->szDriverNameFull,
-                                         &pExec)))
-                {
-                    if (!(arc = exehQueryBldLevel(pExec)))
-                    {
-                        if (pExec->pszVersion)
-                        {
-                            strlcpy(precc->szVersion, pExec->pszVersion, sizeof(precc->szVersion));
-                            pDriverSpec2Store->pszVersion = strdup(pExec->pszVersion);
-                        }
-
-                        if (pExec->pszVendor)
-                            strlcpy(precc->szVendor, pExec->pszVendor, sizeof(precc->szVendor));
-                    }
-                    exehClose(&pExec);
-                }
-                else
-                    // error:
-                    precc->arc = arc;
-
-                // store driver specs
-                precc->pDriverSpec = pDriverSpec2Store; // can be NULL
-
-                cnrhInsertRecords(hwndCnr,
-                                  (PRECORDCORE)preccHeading, // parent
-                                  (PRECORDCORE)precc,
-                                  TRUE, // invalidate
-                                  precc->pDriverSpec->pszDescription, // precc->szDriverNameOnly,
-                                  CRA_RECORDREADONLY | CRA_COLLAPSED,
-                                  1);
-            }
 
             // next driver spec in list
             pSpecNode = pSpecNode->pNext;
