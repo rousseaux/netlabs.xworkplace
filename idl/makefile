@@ -47,9 +47,9 @@ SOMTEMP = $(TEMP)
 
 # Specify the main target.
 
-all: \
 # added all the following from wps\ to avoid problems with warp 4 toolkit
 # V0.9.20 (2002-07-31) [umoeller]
+all: \
 $(OUTPUTDIR)\wps\wpabs.h \
 $(OUTPUTDIR)\wps\wpdataf.h \
 $(OUTPUTDIR)\wps\wpdesk.h \
