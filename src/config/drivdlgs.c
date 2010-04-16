@@ -74,7 +74,7 @@
  */
 
 /*
- *      Copyright (C) 1999-2003 Ulrich M”ller.
+ *      Copyright (C) 1999-2010 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -514,9 +514,12 @@ BOOL drvConfigSupported(PDRIVERSPEC pSpec)
                     if (ul == -1)
                     {
                         CHAR szModule[CCHMAXPATH];
-                        DosQueryModuleName(pDef->hmodPlugin,
-                                           sizeof(szModule),
-                                           szModule);
+
+                        if (DosQueryModuleName(pDef->hmodPlugin,
+                                               sizeof(szModule),
+                                               szModule))
+                            strcpy(szModule, "?");
+
                         cmnLog(__FILE__, __LINE__, __FUNCTION__,
                                "CheckDriverName call failed for plugin DLL"
                                "\n        \"%s\"."
