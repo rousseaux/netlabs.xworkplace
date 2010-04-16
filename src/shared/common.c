@@ -879,8 +879,9 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
                             // no, this is not working on startup since we
                             // have no old NLS DLL
                             sprintf(szError,
-                                    "The version number of the National Language Support DLL \"%s\" "
-                                    "(%s) does not match the XWorkplace version that is running "
+                                    "The requested National Language Support module \"%s\" "
+                                    "(%s) is older than the minimum acceptable version "
+                                    "for the XWorkplace version that is running "
                                     "(%s). Loading this module might lead to serious problems or "
                                     "frequent error messages. Do you wish to load the module anyway?",
                                     szResourceModuleName,
