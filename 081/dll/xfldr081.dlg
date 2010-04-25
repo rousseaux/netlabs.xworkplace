@@ -621,10 +621,13 @@ DLGTEMPLATE ID_SDD_CAD LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     DIALOG  "ダイアログのタイトル", ID_SDD_CAD, 10, 50, 220, 40,
     BEGIN
-        CTEXT           "終了しています。お待ちください...",
+        CTEXT           "終了が完了しました。",
                         ID_SDDI_PROGRESS1, 5, 25, 170, 8, DT_WORDBREAK
                         PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans Combined"
-        CTEXT           "", ID_SDDI_PROGRESS2, 5, 5, 170, 18, DT_WORDBREAK
+        CTEXT           "コンピューターの電源を切ることができます。または Ctrl+Alt+Del を押すと再起動できます。", ID_SDDI_PROGRESS2, 5, 5, 170, 18, DT_WORDBREAK
+                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans Combined"
+        CTEXT           "終了しています。お待ちください...",
+                        ID_SDDI_PROGRESS0, 5, 5, 170, 28, DT_WORDBREAK
                         PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans Combined"
         ICON            ID_SDICON, -1, 190, 20, 20, 16, WS_GROUP
     END

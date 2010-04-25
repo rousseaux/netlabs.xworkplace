@@ -31,7 +31,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2008 Ulrich M”ller.
+ *      Copyright (C) 1997-2010 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -3594,10 +3594,12 @@ STATIC VOID PowerOffAnim(HPS hpsScreen)
  *
  *@@changed V0.9.12 (2001-05-12) [umoeller]: animations frequently didn't show up, fixed
  *@@changed V0.9.17 (2002-02-05) [pr]: fix text not displaying by making it a 2 stage message
+ *@@changed V1.0.9 (2010-04-25) [ataylor]: fix DBCS shutdown dialog @@fixes 1149
  */
 
 VOID xsdFinishStandardMessage(PSHUTDOWNDATA pShutdownData)
 {
+    HWND hwndMsg;
     ULONG flShutdown = 0;
     PCSZ pcszComplete = cmnGetString(ID_SDDI_COMPLETE);
     PCSZ pcszSwitchOff = cmnGetString(ID_SDDI_SWITCHOFF);
@@ -3651,6 +3653,9 @@ VOID xsdFinishStandardMessage(PSHUTDOWNDATA pShutdownData)
     // -- update the message
     WinSetDlgItemText(hwndCADMessage, ID_SDDI_PROGRESS1, (PSZ)pcszComplete);
     WinSetDlgItemText(hwndCADMessage, ID_SDDI_PROGRESS2, (PSZ)pcszSwitchOff);
+    // -- display the shutdown message
+    if (hwndMsg = WinWindowFromID(hwndCADMessage, ID_SDDI_PROGRESS0))
+        WinShowWindow(hwndMsg, FALSE);
     // -- and now loop forever!
     while (TRUE)
         DosSleep(10000);

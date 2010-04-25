@@ -1559,6 +1559,7 @@
 #ifndef __NOXWPSTARTUP__
 #define ID_SDDI_WPS_RUNSHUTDOWNFDR      4329    // V1.0.1 (2003-01-29) [umoeller]
 #endif
+#define ID_SDDI_PROGRESS0               4330    // V1.0.9 (2010-04-25) [ataylor]
 
 /* command defs (used in the Shutdown wnd proc) */
 #define ID_SDMI_CLOSEITEM               4400
