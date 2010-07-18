@@ -15,7 +15,7 @@
 /*
  *      Copyright (C) 1998 ARAKAWA Atsushi.
  *      Copyright (C) 1997-2003 Ulrich M”ller.
- *      Copyright (C) 2006-2009 Paul Ratcliffe.
+ *      Copyright (C) 2006-2010 Paul Ratcliffe.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -179,6 +179,7 @@ BOOL apmPowerOffSupported(VOID)
  *      evaluated if you return APM_CANCEL.
  *
  *@@changed V1.0.5 (2006-06-26) [pr]: rewritten to use Helpers
+ *@@changed V1.0.9 (2010-07-18) [pr]: ignore Enable errors for broken Virtualbox @@fixes 1185
  */
 
 ULONG apmPreparePowerOff(PSZ pszError)      // in: error message
@@ -198,7 +199,7 @@ ULONG apmPreparePowerOff(PSZ pszError)      // in: error message
                         sizeof(sendpowerevent))) != NO_ERROR)
         {
             strcpy(pszError, "Cannot enable APM.");
-            return APM_CANCEL;
+            // return APM_CANCEL;
         }
     }
     else
