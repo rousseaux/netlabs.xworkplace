@@ -305,26 +305,6 @@ SOM_Scope PSZ SOMLINK xtro_xwpQueryRelatedPath(XWPTrashObject *somSelf)
  *@@changed V0.9.6 (2000-11-12) [umoeller]: now using thousands separator from "Country"
  */
 
-
-/*
- * SOM_Scope void  SOMLINK xtro_xwpSetExpandedObjectSize(XWPTrashObject *somSelf,
- *                                                       ULONG ulNewSize,
- *                                                       XWPTrashCan* pTrashCan)
- */
-
-/*
- * The prototype for xtro_xwpSetExpandedObjectSize was replaced by the following prototype:
- */
-
-/*
- * SOM_Scope void  SOMLINK xtro_xwpSetExpandedObjectSize(XWPTrashObject *somSelf,
- *                                                       ULONG ulNewSize,
- *                                                       XWPTrashCan pTrashCan)
- */
-
-/*
- * The prototype for xtro_xwpSetExpandedObjectSize was replaced by the following prototype:
- */
 SOM_Scope void  SOMLINK xtro_xwpSetExpandedObjectSize(XWPTrashObject *somSelf,
                                                       ULONG ulNewSize,
                                                       XWPTrashCan* pTrashCan)
