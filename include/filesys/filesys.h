@@ -11,7 +11,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *      Copyright (C) 1997-2010 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -83,12 +83,15 @@
      *      with every OS/2 version, although it works here
      *      with eCS.
      *
-     *      This mostly has data from the FILEFINDBUF3 that
+     *      This mostly has data from the FILEFINDBUF3L that
      *      we processed, although for some strange reason
      *      the fields have a different ordering here.
      *
      *      This also gets passed to WPFileSystem::wpRestoreState
      *      in the ulReserved parameter. ;-)
+     *
+     *      No idea where the high DWORD of the filesize is supposed
+     *      to go now we have large file support V1.0.9 [pr]
      *
      *@@added V0.9.16 (2001-10-25) [umoeller]
      */
@@ -113,7 +116,7 @@
     APIRET fsysCreateFindBuffer(PEAOP2 *pp);
 
     APIRET fsysFillFindBuffer(PCSZ pszFilename,
-                              PFILEFINDBUF3 *ppfb3,
+                              PFILEFINDBUF3L *ppfb3,
                               PEAOP2 *ppeaop);
 
     VOID fsysFreeFindBuffer(PEAOP2 *pp);

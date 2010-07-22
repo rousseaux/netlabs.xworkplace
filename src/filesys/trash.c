@@ -16,7 +16,7 @@
  */
 
 /*
- *      Copyright (C) 1999-2009 Ulrich M”ller.
+ *      Copyright (C) 1999-2010 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -1086,6 +1086,7 @@ BOOL trshSetupOnce(XWPTrashObject *somSelf,
  *
  *@@added V0.9.2 (2000-02-28) [umoeller]
  *@@changed V0.9.6 (2000-10-25) [umoeller]: now doing a much faster object count
+ *@@changed V1.0.9 (2010-07-17) [pr]: added large file support @@fixes 586
  */
 
 VOID trshCalcTrashObjectSize(XWPTrashObject *pTrashObject,
@@ -1101,9 +1102,9 @@ VOID trshCalcTrashObjectSize(XWPTrashObject *pTrashObject,
                                                     TRUE);  // folders only
         if (pSOI)
         {
-            _xwpSetExpandedObjectSize(pTrashObject,
-                                      pSOI->ulSizeThis,
-                                      pTrashCan);
+            _xwpSetExpandedObjectSizeL(pTrashObject,
+                                       &pSOI->llSizeThis,  // V1.0.9
+                                       pTrashCan);
             fopsFreeExpandedObject(pSOI);
         }
     }

@@ -48,7 +48,7 @@
  */
 
 /*
- *      Copyright (C) 1999-2003 Ulrich M”ller.
+ *      Copyright (C) 1999-2010 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -147,19 +147,21 @@
  *      The details view diplays the pszSize data
  *      as a string (since this can also be "calculating"),
  *      while the "sort by size" criterion is implemented
- *      through the ulSize value, which is hidden in
+ *      through the llSize value, which is hidden in
  *      details view.
  *
  *      See XWPTrashObject::wpclsQueryDetailsInfo for details.
  *
  *@@changed V0.9.1 (2000-01-29) [umoeller]: added pszOriginalClass
  *@@changed V0.9.12 (2001-05-18) [umoeller]: added ulSize
+ *@@changed V1.0.9 (2010-07-17) [pr]: changed ulSize to llSize for large file support @@fixes 586
  */
 
 typedef struct _XTRO_DETAILS
 {
     PSZ     pszDeletedFrom;     // where object was deleted from
-    ULONG   ulSize;             // ULONG size of related object
+    LONGLONG
+            llSize;             // ULONG size of related object
                                 // (this is for sorting only and not displayed)
     PSZ     pszSize;            // formatted size of related object; this points
                                 // to the _szTotalSize instance data
@@ -234,7 +236,7 @@ SOM_Scope BOOL  SOMLINK xtro_xwpSetRelatedObject(XWPTrashObject *somSelf,
         // set size of related object to 0 initially;
         // this is properly calculated on the File thread
         // later
-        _ulTotalSize = 0;
+        _llTotalSize.ulHi = _llTotalSize.ulLo = 0;  // V1.0.9
 
         brc = TRUE;
     }
@@ -328,17 +330,18 @@ SOM_Scope void  SOMLINK xtro_xwpSetExpandedObjectSize(XWPTrashObject *somSelf,
                                                       XWPTrashCan* pTrashCan)
 {
     XWPTrashObjectData *somThis = XWPTrashObjectGetData(somSelf);
-    XWPTrashObjectMethodDebug("XWPTrashObject","xtro_xwpSetExpandedObjectData");
+    XWPTrashObjectMethodDebug("XWPTrashObject","xtro_xwpSetExpandedObjectSize");
 
-    _ulTotalSize = ulNewSize;
+    _llTotalSize.ulHi = 0;  // V1.0.9
+    _llTotalSize.ulLo = ulNewSize;
 
     // update string for details view, which has been
     // "calculating..." so far; we cannot just use the
     // ULONG in the details field, because we had a
     // string previously
     nlsThousandsULong(_szTotalSize,
-                       _ulTotalSize,
-                       cmnQueryThousandsSeparator());
+                      ulNewSize,
+                      cmnQueryThousandsSeparator());
 
     // refresh all details views this object is
     // inserted into (most probably only the trash can)
@@ -359,7 +362,7 @@ SOM_Scope ULONG  SOMLINK xtro_xwpQueryRelatedSize(XWPTrashObject *somSelf)
     XWPTrashObjectData *somThis = XWPTrashObjectGetData(somSelf);
     XWPTrashObjectMethodDebug("XWPTrashObject","xtro_xwpQueryRelatedSize");
 
-    return _ulTotalSize;
+    return _llTotalSize.ulHi ? 1 : _llTotalSize.ulLo;  // V1.0.9
 }
 
 /*
@@ -416,6 +419,50 @@ SOM_Scope BOOL  SOMLINK xtro_xwpRestoreFromTrashCan(XWPTrashObject *somSelf,
     XWPTrashObjectMethodDebug("XWPTrashObject","xtro_xwpRestoreFromTrashCan");
 
     return trshRestoreFromTrashCan(somSelf, pTargetFolder);
+}
+
+/*
+ *@@ xwpSetExpandedObjectSizeL:
+ *      See xwpSetExpandedObjectSize for details.
+ *
+ *@@added V1.0.9 (2010-07-17) [pr]
+ */
+
+SOM_Scope void  SOMLINK xtro_xwpSetExpandedObjectSizeL(XWPTrashObject *somSelf,
+                                                       PLONGLONG pllNewSize,
+                                                       XWPTrashCan* pTrashCan)
+{
+    double dSize;
+
+    XWPTrashObjectData *somThis = XWPTrashObjectGetData(somSelf);
+    XWPTrashObjectMethodDebug("XWPTrashObject","xtro_xwpSetExpandedObjectSizeL");
+
+    _llTotalSize = *pllNewSize;
+    dSize = 65536.0 * 65536.0 * pllNewSize->ulHi + pllNewSize->ulLo;
+    nlsThousandsDouble(_szTotalSize,
+                       dSize,
+                       cmnQueryThousandsSeparator());
+
+    // refresh all details views this object is
+    // inserted into (most probably only the trash can)
+    _wpCnrRefreshDetails(somSelf);
+    _xwpAddObjectSizeL(pTrashCan, pllNewSize);
+}
+
+/*
+ *@@ xwpQueryRelatedSizeL:
+ *      See xwpQueryRelatedSize for details.
+ *
+ *@@added V1.0.9 (2010-07-17) [pr]
+ */
+
+SOM_Scope void  SOMLINK xtro_xwpQueryRelatedSizeL(XWPTrashObject *somSelf,
+                                                  LONGLONG* pllSize)
+{
+    XWPTrashObjectData *somThis = XWPTrashObjectGetData(somSelf);
+    XWPTrashObjectMethodDebug("XWPTrashObject","xtro_xwpQueryRelatedSizeL");
+
+    *pllSize = _llTotalSize;
 }
 
 /*
@@ -581,7 +628,7 @@ SOM_Scope ULONG  SOMLINK xtro_wpQueryDetailsData(XWPTrashObject *somSelf,
     {
         PXTRO_DETAILS pDetails = (PXTRO_DETAILS)*ppDetailsData;
         pDetails->pszDeletedFrom = _xwpQueryRelatedPath(somSelf);
-        pDetails->ulSize = _ulTotalSize;
+        pDetails->llSize = _llTotalSize;  // V1.0.9
         pDetails->pszSize = _szTotalSize;
         if (_pRelatedObject)
         {
@@ -916,15 +963,23 @@ SOM_Scope MRESULT  SOMLINK xtro_wpDrop(XWPTrashObject *somSelf,
  *      enabled), or from the WPS somewhere (if not).
  *
  *@@added V0.9.12 (2001-05-18) [umoeller]
+ *@@changed V1.0.9 (2010-07-17) [pr]: added large file support @@fixes 586
  */
 
-LONG EXPENTRY CompareTrashSize(PULONG pul1,     // ptr to ul1
-                               PULONG pul2)     // ptr to ul2
+LONG EXPENTRY CompareTrashSize(PLONGLONG pll1,
+                               PLONGLONG pll2)
 {
-    if (*pul1 < *pul2)
+    if ((pll1->ulHi < pll2->ulHi) ||
+        ((pll1->ulHi == pll2->ulHi) && (pll1->ulLo < pll2->ulLo))
+       )
         return CMP_GREATER;
-    if (*pul1 > *pul2)
+
+    if ((pll1->ulHi > pll2->ulHi) ||
+        ((pll1->ulHi == pll2->ulHi) && (pll1->ulLo > pll2->ulLo))
+       )
+
         return CMP_LESS;
+
     return CMP_EQUAL;
 }
 
@@ -999,8 +1054,8 @@ SOM_Scope void  SOMLINK xtroM_wpclsInitData(M_XWPTrashObject *somSelf)
                                             // V0.9.12 (2001-05-18) [umoeller]
                 pcfi->flData            |= CFA_ULONG | CFA_INVISIBLE;
                 pcfi->pTitleData        = (PSZ)cmnGetString(ID_XTSI_SIZE);  // pszSize
-                pcfi->offFieldData      = (ULONG)(FIELDOFFSET(XTRO_DETAILS, ulSize));
-                pcfi->ulLenFieldData    = sizeof(ULONG);
+                pcfi->offFieldData      = (ULONG)(FIELDOFFSET(XTRO_DETAILS, llSize));  // V1.0.9
+                pcfi->ulLenFieldData    = sizeof(LONGLONG);
                 pcfi->DefaultComparison = CMP_GREATER;
             break;
 

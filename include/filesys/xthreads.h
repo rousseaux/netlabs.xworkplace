@@ -10,7 +10,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *      Copyright (C) 1997-2010 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -152,7 +152,7 @@
         PSZ         pszDirectory;       // directory (points into DOUBLEFILES.pllDirectories)
         FDATE       fDate;
         FTIME       fTime;
-        ULONG       ulSize;
+        LONGLONG    llSize;
         BOOL        fProcessed;         // anti-recursion flag, ignore
     } FILELISTITEM, *PFILELISTITEM;
 

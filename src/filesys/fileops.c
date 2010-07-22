@@ -39,7 +39,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *      Copyright (C) 1997-2010 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -128,6 +128,25 @@
 // other SOM headers
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
 
+/*
+ *@@ Add64:
+ *      Adds two 64 bit numbers using 32 bit maths.
+ *
+ *@@added V1.0.9 (2010-07-17) [pr]: added large file support @@fixes 586
+ */
+
+STATIC VOID Add64(PLONGLONG pll1, PLONGLONG pll2, PLONGLONG pllResult)
+{
+    LONGLONG llTemp;
+    ULONG ulCarry;
+
+    ulCarry = (pll1->ulLo > (0xFFFFFFFF - pll2->ulLo)) ||
+              (pll2->ulLo > (0xFFFFFFFF - pll1->ulLo)) ? 1 : 0;
+    llTemp.ulLo = pll1->ulLo + pll2->ulLo;
+    llTemp.ulHi = pll1->ulHi + pll2->ulHi + ulCarry;
+    *pllResult = llTemp;
+}
+
 /* ******************************************************************
  *
  *   Expanded object lists
@@ -145,7 +164,7 @@
  *      This ignores all subfolders in *pFolder.
  *
  *      This _raises_ the size of the contents
- *      specified with pulSizeContents by the
+ *      specified with pdSizeContents by the
  *      size of all files found.
  *
  *      Preconditions: The caller should have locked
@@ -154,11 +173,12 @@
  *      here.
  *
  *@@added V0.9.6 (2000-10-25) [umoeller]
+ *@@changed V1.0.9 (2010-07-17) [pr]: added large file support @@fixes 586
  */
 
 APIRET fopsLoopSneaky(WPFolder *pFolder,       // in: folder
                       PULONG pulFilesCount,    // out: no. of dormant files found (raised!)
-                      PULONG pulSizeContents)  // out: total size of dormant files found (raised!)
+                      PLONGLONG pllSizeContents)  // out: total size of dormant files found (raised!)
 {
     APIRET  frc = NO_ERROR;
 
@@ -179,8 +199,8 @@ APIRET fopsLoopSneaky(WPFolder *pFolder,       // in: folder
 
         CHAR            szSearchMask[CCHMAXPATH];
         HDIR            hdirFindHandle = HDIR_CREATE;
-        FILEFINDBUF3    ffb3 = {0};      // returned from FindFirst/Next
-        ULONG           cbFFB3 = sizeof(FILEFINDBUF3);
+        FILEFINDBUF3L   ffb3 = {0};      // returned from FindFirst/Next
+        ULONG           cbFFB3 = sizeof(ffb3);
         ULONG           ulFindCount = 1;  // look for 1 file at a time
 
         // _PmpfF(("doing DosFindFirst for %s", szFolderPath));
@@ -194,7 +214,7 @@ APIRET fopsLoopSneaky(WPFolder *pFolder,       // in: folder
                            &ffb3,
                            cbFFB3,
                            &ulFindCount,
-                           FIL_STANDARD);
+                           FIL_STANDARDL);
         // and start looping...
         while (frc == NO_ERROR)
         {
@@ -212,7 +232,7 @@ APIRET fopsLoopSneaky(WPFolder *pFolder,       // in: folder
                 // add the file's size
                 // _Pmpf(("        not already instantiated"));
                 (*pulFilesCount)++;
-                *pulSizeContents += ffb3.cbFile;
+                Add64(pllSizeContents, &ffb3.cbFile, pllSizeContents);  // V1.0.9
             }
 
             ulFindCount = 1;
@@ -248,14 +268,15 @@ APIRET fopsLoopSneaky(WPFolder *pFolder,       // in: folder
  *@@added V0.9.2 (2000-02-28) [umoeller]
  *@@changed V0.9.3 (2000-04-28) [umoeller]: now pre-resolving wpQueryContent for speed
  *@@changed V0.9.6 (2000-10-25) [umoeller]: added fFoldersOnly
+ *@@changed V1.0.9 (2010-01-17) [pr]: added large file support @@fixes 586
  */
 
 PLINKLIST fopsFolder2ExpandedList(WPFolder *pFolder,
-                                  PULONG pulSizeContents, // out: size of all objects on list
+                                  PLONGLONG pllSizeContents, // out: size of all objects on list
                                   BOOL fFoldersOnly)
 {
     PLINKLIST   pll = lstCreate(FALSE);       // do not free the items
-    ULONG       ulSizeContents = 0;
+    LONGLONG    llSizeContents = {0,0};
 
     BOOL        fFolderLocked = FALSE;
 
@@ -293,7 +314,7 @@ PLINKLIST fopsFolder2ExpandedList(WPFolder *pFolder,
                     // call ourselves again...
                     fSOI = fopsExpandObjectDeep(pObject,
                                                 fFoldersOnly);
-                    ulSizeContents += fSOI->ulSizeThis;
+                    Add64(&llSizeContents, &fSOI->llSizeThis, &llSizeContents);  // V1.0.9
                     lstAppendItem(pll, fSOI);
                 }
 
@@ -302,7 +323,7 @@ PLINKLIST fopsFolder2ExpandedList(WPFolder *pFolder,
                     ULONG ulFilesCount = 0;
                     fopsLoopSneaky(pFolder,
                                    &ulFilesCount,       // not needed
-                                   &ulSizeContents);
+                                   &llSizeContents);
                 }
             }
         }
@@ -312,7 +333,7 @@ PLINKLIST fopsFolder2ExpandedList(WPFolder *pFolder,
     if (fFolderLocked)
         _wpReleaseFolderMutexSem(pFolder);
 
-    *pulSizeContents = ulSizeContents;
+    *pllSizeContents = llSizeContents;
 
     return pll;
 }
@@ -351,6 +372,7 @@ PLINKLIST fopsFolder2ExpandedList(WPFolder *pFolder,
  *
  *@@added V0.9.2 (2000-02-28) [umoeller]
  *@@changed V0.9.6 (2000-10-25) [umoeller]: added fFoldersOnly
+ *@@changed V1.0.9 (2010-07-17) [pr]: added large file support
  */
 
 PEXPANDEDOBJECT fopsExpandObjectDeep(WPObject *pObject,
@@ -370,7 +392,7 @@ PEXPANDEDOBJECT fopsExpandObjectDeep(WPObject *pObject,
                 // object is a folder:
                 // fill list (this calls us again for every object found)
                 pSOI->pllContentsSFL = fopsFolder2ExpandedList(pObject,
-                                                               &pSOI->ulSizeThis,
+                                                               &pSOI->llSizeThis,  // V1.0.9
                                                                 // out: size of files on list
                                                                fFoldersOnly);
             }
@@ -380,10 +402,10 @@ PEXPANDEDOBJECT fopsExpandObjectDeep(WPObject *pObject,
                 pSOI->pllContentsSFL = NULL;
                 if (_somIsA(pObject, _WPFileSystem))
                     // is a file system object:
-                    pSOI->ulSizeThis = _wpQueryFileSize(pObject);
+                    _wpQueryFileSizeL(pObject, &pSOI->llSizeThis);  // V1.0.9
                 else
                     // abstract object:
-                    pSOI->ulSizeThis = 0;
+                    pSOI->llSizeThis.ulHi = pSOI->llSizeThis.ulLo = 0;
             }
 
             PMPF_TRASHCAN(("End of SOI for object %s", _wpQueryTitle(pObject) ));
@@ -512,6 +534,7 @@ VOID fopsFreeExpandedObject(PEXPANDEDOBJECT pSOI)
  *@@changed V0.9.3 (2000-04-28) [umoeller]: now pre-resolving wpQueryContent for speed
  *@@changed V0.9.6 (2000-10-25) [umoeller]: added fFoldersOnly
  *@@changed V1.0.1 (2002-12-15) [umoeller]: now using XWPObjList, changed prototype
+ *@@changed V1.0.9 (2010-01-17) [pr]: added large file support @@fixes 586
  */
 
 APIRET fopsExpandObjectFlat(XWPObjList *pllObjects, // in: object list to append to
@@ -566,12 +589,12 @@ APIRET fopsExpandObjectFlat(XWPObjList *pllObjects, // in: object list to append
                     if (frc == NO_ERROR)
                         if (fFoldersOnly)
                         {
-                            ULONG ulSizeContents = 0;       // not used
+                            LONGLONG llSizeContents = {0,0};
                             // _PmpfF(("calling fopsLoopSneaky; count pre: %d",
                                //                   *pulDormantFilesCount));
                             frc = fopsLoopSneaky(pObject,
                                                  pulDormantFilesCount,
-                                                 &ulSizeContents);
+                                                 &llSizeContents);
                             // _Pmpf(("    count post: %d", *pulDormantFilesCount));
                         }
                 }
@@ -981,6 +1004,7 @@ static const DLGHITEM G_dlgFileExists[] =
  *@@changed V0.9.16 (2001-12-31) [umoeller]: largely rewritten
  *@@changed V0.9.20 (2002-08-08) [umoeller]: now using dialog formatter
  *@@changed V1.0.1 (2002-11-30) [umoeller]: fixed radio box selection problem @@fixes 229
+ *@@changed V1.0.9 (2010-07-17) [pr]: added large file support @@fixes 586
  */
 
 STATIC HWND PrepareFileExistsDlg(WPObject *somSelf,
@@ -1034,7 +1058,7 @@ STATIC HWND PrepareFileExistsDlg(WPObject *somSelf,
 
             // prepare file date/time etc. for
             // display in window
-            FILESTATUS3         fs3;
+            FILESTATUS3L        fs3;
             PCOUNTRYSETTINGS2   pcs = cmnQueryCountrySettings(FALSE);
 
             // disable window updates for the following changes
@@ -1045,7 +1069,7 @@ STATIC HWND PrepareFileExistsDlg(WPObject *somSelf,
             {
                 _wpQueryFilename(pExisting, szExistingFilename, TRUE);
                 DosQueryPathInfo(szExistingFilename,
-                                 FIL_STANDARD,
+                                 FIL_STANDARDL,
                                  &fs3, sizeof(fs3));
                 nlsFileDate(szTemp,
                             &fs3.fdateLastWrite,
@@ -1055,10 +1079,10 @@ STATIC HWND PrepareFileExistsDlg(WPObject *somSelf,
                             &fs3.ftimeLastWrite,
                             pcs);
                 WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_TIMEOLD, szTemp);
-
-                nlsThousandsULong(szTemp,
-                                  fs3.cbFile, // )+512) / 1024 ,
-                                  pcs->cs.cThousands);
+                // V1.0.9
+                nlsThousandsDouble(szTemp,
+                                   65536.0 * 65536.0 * fs3.cbFile.ulHi + fs3.cbFile.ulLo,
+                                   pcs->cs.cThousands);
                 strcat(szTemp, pcszBytes);
                 WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_SIZEOLD, szTemp);
             }
@@ -1079,7 +1103,7 @@ STATIC HWND PrepareFileExistsDlg(WPObject *somSelf,
                 CHAR szSelfFilename[CCHMAXPATH];
                 _wpQueryFilename(somSelf, szSelfFilename, TRUE);
                 DosQueryPathInfo(szSelfFilename,
-                                 FIL_STANDARD,
+                                 FIL_STANDARDL,
                                  &fs3, sizeof(fs3));
                 nlsFileDate(szTemp,
                              &fs3.fdateLastWrite,
@@ -1089,9 +1113,10 @@ STATIC HWND PrepareFileExistsDlg(WPObject *somSelf,
                             &fs3.ftimeLastWrite,
                             pcs);
                 WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_TIMENEW, szTemp);
-                nlsThousandsULong(szTemp,
-                                  fs3.cbFile, // )+512) / 1024,
-                                  pcs->cs.cThousands);
+                // V1.0.9
+                nlsThousandsDouble(szTemp,
+                                   65536.0 * 65536.0 * fs3.cbFile.ulHi + fs3.cbFile.ulLo,
+                                   pcs->cs.cThousands);
                 strcat(szTemp, pcszBytes);
                 WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_SIZENEW, szTemp);
             }

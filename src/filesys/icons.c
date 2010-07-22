@@ -204,7 +204,7 @@
  */
 
 /*
- *      Copyright (C) 2001-2003 Ulrich M”ller.
+ *      Copyright (C) 2001-2010 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -636,6 +636,7 @@ APIRET icoBuildPtrFromFEA2List(PFEA2LIST pFEA2List,     // in: FEA2LIST to check
  *
  *@@added V0.9.18 (2002-03-19) [umoeller]
  *@@changed V1.0.0 (2002-11-23) [umoeller]: returning HPOINTER never worked, fixed
+ *@@changed V1.0.9 (2010-07-17) [pr]: added large file support @@fixes 586
  */
 
 APIRET icoBuildPtrFromEAs(PCSZ pcszFilename,
@@ -644,7 +645,7 @@ APIRET icoBuildPtrFromEAs(PCSZ pcszFilename,
                           PICONINFO pIconInfo)  // out: if != NULL, icon info
 {
     APIRET          arc;
-    PFILEFINDBUF3   pfb3;
+    PFILEFINDBUF3L  pfb3;
     PEAOP2          peaop = NULL;
 
     ULONG           cbRequired = sizeof(ICONINFO);
@@ -657,7 +658,7 @@ APIRET icoBuildPtrFromEAs(PCSZ pcszFilename,
         PBYTE pbIconData = NULL;
 
         PFEA2LIST pFEA2List2 = (PFEA2LIST)(   ((PBYTE)pfb3)
-                                            + FIELDOFFSET(FILEFINDBUF3,
+                                            + FIELDOFFSET(FILEFINDBUF3L,
                                                           cchName));
 
         // if caller has given us a buffer already,

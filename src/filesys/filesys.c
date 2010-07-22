@@ -17,7 +17,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *      Copyright (C) 1997-2010 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -503,7 +503,7 @@ APIRET fsysCreateFindBuffer(PEAOP2 *pp)
 
 /*
  *@@ fsysFillFindBuffer:
- *      fills a FILEFINDBUF3 for the given file system
+ *      fills a FILEFINDBUF3L for the given file system
  *      object, including all the EAs.
  *
  *      This calls fsysCreateFindBuffer internally,
@@ -511,13 +511,14 @@ APIRET fsysCreateFindBuffer(PEAOP2 *pp)
  *      fsysFreeFindBuffer(peaop) when done.
  *
  *      For convenience, *ppfb3 is set to the address
- *      of the FILEFINDBUF3 within the EAOP2 buffer.
+ *      of the FILEFINDBUF3L within the EAOP2 buffer.
  *
  *@@added V0.9.18 (2002-03-19) [umoeller]
+ *@@changed V1.0.9 (2010-07-17) [pr]: added large file support @@fixes 586
  */
 
 APIRET fsysFillFindBuffer(PCSZ pcszFilename,       // in: fully q'fied filename to check
-                          PFILEFINDBUF3 *ppfb3,    // out: ptr into *ppeaop
+                          PFILEFINDBUF3L *ppfb3,   // out: ptr into *ppeaop
                           PEAOP2 *ppeaop)          // out: buffer to be freed
 {
     APIRET arc;
@@ -533,9 +534,9 @@ APIRET fsysFillFindBuffer(PCSZ pcszFilename,       // in: fully q'fied filename 
                                  *ppeaop,     // buffer
                                  FINDBUFSIZE, // 64K
                                  &ulFindCount,
-                                 FIL_QUERYEASFROMLIST)))
+                                 FIL_QUERYEASFROMLISTL)))
         {
-            *ppfb3 = (PFILEFINDBUF3)(((PBYTE)*ppeaop) + sizeof(EAOP2));
+            *ppfb3 = (PFILEFINDBUF3L)(((PBYTE)*ppeaop) + sizeof(EAOP2));
         }
 
         DosFindClose(hdirFindHandle);
@@ -741,7 +742,7 @@ STATIC PCSZ FindBestDataFileClass(PFEA2LIST pFEA2List2,
  *      called by PopulateWithFileSystems for each file
  *      or directory returned by DosFindFirst/Next.
  *
- *      On input, we get the sick FILEFINDBUF3 returned
+ *      On input, we get the sick FILEFINDBUF3L returned
  *      from DosFindFirst/Next, which contains both
  *      the EAs for the object and its real name.
  *
@@ -759,10 +760,11 @@ STATIC PCSZ FindBestDataFileClass(PFEA2LIST pFEA2List2,
  *@@changed V0.9.18 (2002-02-06) [umoeller]: fixed duplicate awakes and "treeInsert failed"
  *@@changed V0.9.19 (2002-04-14) [umoeller]: fixed missing FOUNDBIT after awake
  *@@changed V1.0.1 (2002-12-08) [umoeller]: added detection of .LONGNAME-changed case @@fixes 238
+ *@@changed V1.0.9 (2010-07-17) [pr]: added large file support @@fixes 586
  */
 
 STATIC WPFileSystem* RefreshOrAwake(WPFolder *pFolder,
-                                    PFILEFINDBUF3 pfb3)
+                                    PFILEFINDBUF3L pfb3)
 {
     WPFileSystem *pAwake = NULL;
 
@@ -770,18 +772,18 @@ STATIC WPFileSystem* RefreshOrAwake(WPFolder *pFolder,
 
     // Alright, the caller has given us a pointer
     // into the return buffer from DosFindFirst;
-    // we have declared this to be a FILEFINDBUF3
+    // we have declared this to be a FILEFINDBUF3L
     // here, but according to CPREF, the struct is
     // _without_ the cchName and achName fields...
 
     // My lord, who came up with this garbage?!?
 
     // the FEA2LIST with the EAs comes after the
-    // truncated FILEFINDBUF3, that is, at the
-    // address where FILEFINDBUF3.cchName would
+    // truncated FILEFINDBUF3L, that is, at the
+    // address where FILEFINDBUF3L.cchName would
     // normally be
     PFEA2LIST pFEA2List2 = (PFEA2LIST)(   ((PBYTE)pfb3)
-                                        + FIELDOFFSET(FILEFINDBUF3,
+                                        + FIELDOFFSET(FILEFINDBUF3L,
                                                       cchName));
 
     // next comes a UCHAR with the name length
@@ -881,15 +883,6 @@ STATIC WPFileSystem* RefreshOrAwake(WPFolder *pFolder,
                                         & ~DIRTYBIT)
                                         | FOUNDBIT);
 
-                /* _wpQueryLastWrite(pAwake, &fdateLastWrite, &ftimeLastWrite);
-                _wpQueryLastAccess(pAwake, &fdateLastAccess, &ftimeLastAccess);
-                if (    (memcmp(&fdateLastWrite, &pfb3->fdateLastWrite, sizeof(FDATE)))
-                     || (memcmp(&ftimeLastWrite, &pfb3->ftimeLastWrite, sizeof(FTIME)))
-                     || (memcmp(&fdateLastAccess, &pfb3->fdateLastAccess, sizeof(FDATE)))
-                     || (memcmp(&ftimeLastAccess, &pfb3->ftimeLastAccess, sizeof(FTIME)))
-                   )
-                */
-
                 // this is way faster, I believe V0.9.16 (2001-12-18) [umoeller]
                 _wpQueryDateInfo(pAwake, &ffb4);
 
@@ -904,9 +897,12 @@ STATIC WPFileSystem* RefreshOrAwake(WPFolder *pFolder,
                    )
                 {
                     // object changed: go refresh it
-                    _wpRefreshFSInfo(pAwake, NULLHANDLE, pfb3, TRUE);
+                    _wpRefreshFSInfo(pAwake, NULLHANDLE, NULL, TRUE);
                             // safe to call this method now since we have managed
                             // to override it V0.9.20 (2002-07-25) [umoeller]
+                            // now using NULL instead of pfb3 - guess it wants a
+                            // FILEFINDBUF3 not a FILEFINDBUF3L but who knows
+                            // as it's completely undocumented? V1.0.9 [pr]
                 }
             }
             else
@@ -1025,7 +1021,10 @@ STATIC WPFileSystem* RefreshOrAwake(WPFolder *pFolder,
                     memcpy(&awfs.LastWrite, &pfb3->fdateLastWrite, sizeof(FDATETIME));
 
                     awfs.attrFile           = pfb3->attrFile;
-                    awfs.cbFile             = pfb3->cbFile;
+                    // No idea how the high DWORD is supposed to get set here
+                    // You'd have thought IBM would've changed it, but it seems
+                    // that's not the case V1.0.9 [pr]
+                    awfs.cbFile             = pfb3->cbFile.ulLo;
                     awfs.cbList             = pFEA2List2->cbList;
                     awfs.pFea2List          = pFEA2List2;
 
@@ -1101,7 +1100,7 @@ typedef struct _SYNCHPOPULATETHREADS
     // This must only be read or set by the owner of hmtxBuffer.
     // As a special rule, if fntFindFiles sets this to NULL,
     // it is done with DosFindFirst/Next.
-    PFILEFINDBUF3   pfb3;
+    PFILEFINDBUF3L  pfb3;
     ULONG           ulFindCount;        // find count from DosFindFirst/Next
 
     // synchronization semaphores:
@@ -1151,6 +1150,7 @@ typedef struct _SYNCHPOPULATETHREADS
  *
  *@@added V0.9.16 (2001-10-28) [umoeller]
  *@@changed V0.9.20 (2002-07-25) [umoeller]: lowered priority
+ *@@changed V1.0.9 (2010-07-17) [pr]: added large file support @@fixes 586
  */
 
 STATIC void _Optlink fntFindFiles(PTHREADINFO ptiMyself)
@@ -1227,7 +1227,7 @@ STATIC void _Optlink fntFindFiles(PTHREADINFO ptiMyself)
                                pbCurrentBuffer,     // buffer
                                FINDBUFSIZE,
                                &ulFindCount,
-                               FIL_QUERYEASFROMLIST);
+                               FIL_QUERYEASFROMLISTL);
 
             // start looping...
             while (    (arc == NO_ERROR)
@@ -1240,7 +1240,7 @@ STATIC void _Optlink fntFindFiles(PTHREADINFO ptiMyself)
                 // On output from DosFindFirst/Next, the buffer
                 // has the EAOP2 struct first, which we no
                 // longer care about... after that comes
-                // a truncated FILEFINDBUF3 with all the
+                // a truncated FILEFINDBUF3L with all the
                 // data we need, so give this to the populate
                 // thread, which calls RefreshOrAwake.
 
@@ -1250,7 +1250,7 @@ STATIC void _Optlink fntFindFiles(PTHREADINFO ptiMyself)
                 // because of the explicit request below.
 
                 // 1) set buffer pointer for populate thread
-                pspt->pfb3 = (PFILEFINDBUF3)(pbCurrentBuffer + sizeof(EAOP2));
+                pspt->pfb3 = (PFILEFINDBUF3L)(pbCurrentBuffer + sizeof(EAOP2));
                 pspt->ulFindCount = ulFindCount;        // items found
                 // 2) unset "buffer taken" event sem
                 DosResetEventSem(pspt->hevBufTaken, &ulPosted);
@@ -1406,6 +1406,7 @@ STATIC void _Optlink fntFindFiles(PTHREADINFO ptiMyself)
  *      record management in the containers.
  *
  *@@added V0.9.16 (2001-10-25) [umoeller]
+ *@@changed V1.0.9 (2010-07-17) [pr]: added large file support @@fixes 586
  */
 
 BOOL fsysPopulateWithFSObjects(WPFolder *somSelf,
@@ -1458,7 +1459,7 @@ BOOL fsysPopulateWithFSObjects(WPFolder *somSelf,
                     {
                         // OK, find-files released that sem:
                         // we either have data now or we're done
-                        PFILEFINDBUF3   pfb3;
+                        PFILEFINDBUF3L  pfb3;
                         ULONG           ulFindCount;
                         ULONG           ulPosted;
 
@@ -1493,9 +1494,9 @@ BOOL fsysPopulateWithFSObjects(WPFolder *somSelf,
 
                                 // next item in buffer
                                 if (pfb3->oNextEntryOffset)
-                                    pfb3 = (PFILEFINDBUF3)(   (PBYTE)pfb3
+                                    pfb3 = (PFILEFINDBUF3L)(   (PBYTE)pfb3
                                                             + pfb3->oNextEntryOffset
-                                                          );
+                                                           );
                             }
 
                             if (hwndReserved)
@@ -1569,32 +1570,25 @@ BOOL fsysPopulateWithFSObjects(WPFolder *somSelf,
  *@@added V0.9.16 (2001-12-08) [umoeller]
  *@@changed V1.0.1 (2002-12-08) [umoeller]: added detection of .LONGNAME-changed case @@fixes 238
  *@@changed V1.0.2 (2004-01-08) [umoeller]: fixed infinite recursion during mozilla URL d&d @@fixes 531
+ *@@changed V1.0.9 (2010-01-17) [pr]: added large file support @@fixes 586
  */
 
 APIRET fsysRefresh(WPFileSystem *somSelf,
                    PVOID pvReserved)            // in: ptr to FILEFINDBUF3 or NULL
 {
     APIRET          arc = NO_ERROR;
-
-    PFILEFINDBUF3   pfb3;
+    PFILEFINDBUF3L  pfb3;
     PEAOP2          peaop = NULL;
-
     CHAR            szFilename[CCHMAXPATH];
 
-    if (!(pfb3 = (PFILEFINDBUF3)pvReserved))
-    {
-        // no info given: get it then
-        if (!_wpQueryFilename(somSelf, szFilename, TRUE))
-            arc = ERROR_FILE_NOT_FOUND;
-        else
-            arc = fsysFillFindBuffer(szFilename, &pfb3, &peaop);
-    }
+    // V1.0.9 Ignore pvReserved which only points to a PFILEFINDBUF3 seemingly
+    if (!_wpQueryFilename(somSelf, szFilename, TRUE))
+        arc = ERROR_FILE_NOT_FOUND;
+    else
+        arc = fsysFillFindBuffer(szFilename, &pfb3, &peaop);
 
     if (!arc)
     {
-        // alright, we got valid information, either from the
-        // caller, or we got it ourselves:
-
         WPObject *pobjLock = NULL;
 
         TRY_LOUD(excpt1)
@@ -1608,7 +1602,7 @@ APIRET fsysRefresh(WPFileSystem *somSelf,
                 ULONG flRefresh = _wpQueryRefreshFlags(somSelf);
 
                 PFEA2LIST pFEA2List2 = (PFEA2LIST)(   ((PBYTE)pfb3)
-                                                    + FIELDOFFSET(FILEFINDBUF3,
+                                                    + FIELDOFFSET(FILEFINDBUF3L,
                                                                   cchName));
 
                 PMINIRECORDCORE prec = _wpQueryCoreRecord(somSelf);
@@ -1669,9 +1663,10 @@ APIRET fsysRefresh(WPFileSystem *somSelf,
                 _wpSetDateInfo(somSelf, (PFILEFINDBUF4)pfb3);
                         // this does not call _wpCnrRefreshDetails
                 _wpSetFileSizeInfo(somSelf,
-                                   pfb3->cbFile,        // file size
+                                   pfb3->cbFile.ulLo,         // file size
                                    pFEA2List2->cbList);       // EA size
                         // this calls _wpCnrRefreshDetails
+                _wpSetFileSizeL(somSelf, &pfb3->cbFile);  // V1.0.9
 
                 // refresh the icon... if prec->hptrIcon is still
                 // NULLHANDLE, the WPS hasn't loaded the icon yet,
@@ -1746,5 +1741,4 @@ APIRET fsysRefresh(WPFileSystem *somSelf,
 
     return arc;
 }
-
 

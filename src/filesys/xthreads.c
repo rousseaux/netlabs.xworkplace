@@ -24,7 +24,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *      Copyright (C) 1997-2010 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -804,6 +804,7 @@ ULONG xthrIsFileThreadBusy(VOID)
  *      This runs on the File thread.
  *
  *@@added V0.9.2 (2000-02-21) [umoeller]
+ *@@changed V1.0.9 (2010-07-17) [pr]: added large file support @@fixes 586
  */
 
 STATIC VOID CollectDoubleFiles(MPARAM mp1)
@@ -823,7 +824,7 @@ STATIC VOID CollectDoubleFiles(MPARAM mp1)
         // collect files of that directory
 
         HDIR          hdirFindHandle = HDIR_SYSTEM;
-        FILEFINDBUF3  ffb3           = {0};      // returned from FindFirst/Next
+        FILEFINDBUF3L ffb3           = {0};      // returned from FindFirst/Next
         ULONG         ulResultBufLen = sizeof(FILEFINDBUF3);
         ULONG         ulFindCount    = 1;        // look for 1 file at a time
         APIRET        arc;
@@ -840,7 +841,7 @@ STATIC VOID CollectDoubleFiles(MPARAM mp1)
                                &ffb3,                // result buffer
                                ulResultBufLen,       // result buffer length
                                &ulFindCount,         // number of entries to find
-                               FIL_STANDARD);        // return level 1 file info
+                               FIL_STANDARDL);       // return level 11 file info
 
             // keep finding the next file until there are no more files
             while (arc == NO_ERROR)
@@ -867,7 +868,7 @@ STATIC VOID CollectDoubleFiles(MPARAM mp1)
                 pfliNew->pszDirectory = pszDirThis;
                 pfliNew->fDate = ffb3.fdateLastWrite;
                 pfliNew->fTime = ffb3.ftimeLastWrite;
-                pfliNew->ulSize = ffb3.cbFile;
+                pfliNew->llSize = ffb3.cbFile;
                 pfliNew->fProcessed = FALSE;
                 lstAppendItem(pllFilesTemp, pfliNew);
 

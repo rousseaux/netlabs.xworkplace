@@ -14,7 +14,7 @@
  */
 
 /*
- *      Copyright (C) 2002-2003 Ulrich M”ller.
+ *      Copyright (C) 2002-2010 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -113,6 +113,10 @@ interface WPFileSystem : XFldObject
 
     ULONG wpConfirmKeepAssoc();
 
+    VOID wpQueryFileSizeL(in PLONGLONG pllFileSize);
+
+    ULONG wpSetFileSizeL(in PLONGLONG pllFileSize);
+
 //# new non-public methods hacked in for XWorkplace
 
     BOOL wpRefreshFSInfo(in ULONG ulView,
@@ -171,7 +175,9 @@ interface WPFileSystem : XFldObject
             wpQueryEASupport,
             wpFilesystemPrivate7,
             wpFilesystemPrivate8,
-            wpFilesystemPrivate9
+            wpFilesystemPrivate9,
+            wpQueryFileSizeL,
+            wpSetFileSizeL
 #endif
             ;
 

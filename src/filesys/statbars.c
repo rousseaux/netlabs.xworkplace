@@ -42,7 +42,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *      Copyright (C) 1997-2010 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -2734,6 +2734,7 @@ STATIC VOID ReplaceKeyWithDouble(XSTRING *pstrText, // in/out: status bar text
  *@@changed V0.9.11 (2001-04-22) [umoeller]: added $zX mnemonics for total disk size
  *@@changed V0.9.11 (2001-04-25) [umoeller]: fixed tree view bug introduced on 2001-04-22
  *@@changed V0.9.19 (2002-06-02) [umoeller]: fixed overflow with > 4 GB selected files, more cleanup
+ *@@changed V1.0.9 (2010-07-17) [pr]: added large file support @@fixes 586
  */
 
 PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
@@ -2863,7 +2864,11 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
                 if (pDeref && _somIsA(pDeref, _WPFileSystem))
                 {
                     // OK, we got a WPFileSystem:
-                    ULONG cbThis = _wpQueryFileSize(pDeref);
+                    LONGLONG llThis;  // V1.0.9
+                    double cbThis;
+
+                    _wpQueryFileSizeL(pDeref, &llThis);
+                    cbThis = 65536.0 * 65536.0 * llThis.ulHi + llThis.ulLo;
 
                     if (fThisSelected)
                         // count bytes of selected objects
@@ -2967,11 +2972,15 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
                                     &strText,
                                     pcs);
         if (_somIsA(pobjSelected, _WPFileSystem))
+        {
+            LONGLONG llSel;  // V1.0.9
             // if we have a file-system object, we
             // need to re-query its size, because
             // we might have dereferenced a shadow
             // above (whose size was 0 -- V0.9.0)
-            cbSelected = _wpQueryFileSize(pobjSelected);
+            _wpQueryFileSizeL(pobjSelected, &llSel);
+            cbSelected = 65536.0 * 65536.0 * llSel.ulHi + llSel.ulLo;
+        }
     }
 
     // NOW GO TRANSLATE COMMON CODES

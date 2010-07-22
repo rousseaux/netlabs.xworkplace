@@ -11,7 +11,7 @@
  */
 
 /*
- *      Copyright (C) 1999-2003 Ulrich M”ller.
+ *      Copyright (C) 1999-2010 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -77,6 +77,8 @@ interface XWPTrashCan : XFolder         //# WPFolder is replaced with XFolder
     //# BOOL xwpUpdateStatusBar(in HWND hwndStatusBar, in HWND hwndCnr);
     //#
 
+    VOID xwpAddObjectSizeL(in PLONGLONG pllNewSize);
+
 #ifdef __SOMIDL__
     implementation
     {
@@ -89,10 +91,12 @@ interface XWPTrashCan : XFolder         //# WPFolder is replaced with XFolder
             xwpAddObjectSize,
             xwpQueryTrashObjectsCount,
             xwpSetCorrectTrashIcon,
-            xwpEmptyTrashCan;
+            xwpEmptyTrashCan,
 
             //# xwpUpdateStatusBar,
-            //# xwpProcessViewCommand;
+            //# xwpProcessViewCommand,
+
+            xwpAddObjectSizeL;
 
         /*
          * Class Modifiers:

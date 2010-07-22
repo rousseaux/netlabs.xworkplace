@@ -13,7 +13,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *      Copyright (C) 1997-2010 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -60,7 +60,7 @@
                     // more EXPANDEDOBJECT's;
                     // if the object is not a folder, this
                     // item is always NULL
-            ULONG       ulSizeThis;
+            LONGLONG    llSizeThis;  // V1.0.9 (2010-07-17) [pr]
                     // size of pObject; if pObject is a folder,
                     // this has the size of all objects
                     // on pllContentsSFL and sub-lists

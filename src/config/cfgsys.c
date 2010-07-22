@@ -25,7 +25,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2008 Ulrich M”ller.
+ *      Copyright (C) 1997-2010 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -313,7 +313,7 @@ typedef struct _FILERECORD
     RECORDCORE  recc;               // standard record core
     PSZ         pszFilename;        // filename
     PSZ         pszDirName;         // directory name
-    ULONG       ulSize;             // file size
+    CHAR        szSize[40];         // file size
     CDATE       cDate;              // file date
     CTIME       cTime;              // file time
 } FILERECORD, *PFILERECORD;
@@ -355,6 +355,7 @@ static const MPARAM ampDoubleFilesControls[] =
  *
  *@@changed V0.9.9 (2001-02-28) [pr]: made this modal
  *@@changed V0.9.19 (2002-04-02) [umoeller]: localized hard-coded strings
+ *@@changed V1.0.9 (2010-07-17) [pr]: added large file support @@fixes 586
  */
 
 STATIC MRESULT EXPENTRY fnwpDoubleFilesDlg(HWND hwndDlg,
@@ -395,9 +396,9 @@ STATIC MRESULT EXPENTRY fnwpDoubleFilesDlg(HWND hwndDlg,
             xfi[i].ulDataType = CFA_STRING;
             xfi[i++].ulOrientation = CFA_LEFT;
 
-            xfi[i].ulFieldOffset = FIELDOFFSET(FILERECORD, ulSize);
+            xfi[i].ulFieldOffset = FIELDOFFSET(FILERECORD, szSize);  // V1.0.9
             xfi[i].pszColumnTitle = cmnGetString(ID_XSSI_DOUBLEFILES_SIZE); // "Size";
-            xfi[i].ulDataType = CFA_ULONG;
+            xfi[i].ulDataType = CFA_STRING;
             xfi[i++].ulOrientation = CFA_RIGHT;
 
             xfi[i].ulFieldOffset = FIELDOFFSET(FILERECORD, cDate);
@@ -467,10 +468,14 @@ STATIC MRESULT EXPENTRY fnwpDoubleFilesDlg(HWND hwndDlg,
             {
                 while (pNode)
                 {
+                    CHAR cThousands = cmnQueryThousandsSeparator();
                     PFILELISTITEM pfli = (PFILELISTITEM)pNode->pItemData;
                     preccThis->recc.pszIcon = pfli->szFilename;
                     preccThis->pszDirName = pfli->pszDirectory;
-                    preccThis->ulSize = pfli->ulSize;
+                    // V1.0.9
+                    nlsThousandsDouble(preccThis->szSize,
+                    	65536.0 * 65536.0 * pfli->llSize.ulHi + pfli->llSize.ulLo,
+                        cThousands);
                     cnrhDateDos2Win(&pfli->fDate, &preccThis->cDate);
                     cnrhTimeDos2Win(&pfli->fTime, &preccThis->cTime);
 

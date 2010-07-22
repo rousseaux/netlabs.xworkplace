@@ -67,7 +67,7 @@
  */
 
 /*
- *      Copyright (C) 1999-2003 Ulrich M”ller.
+ *      Copyright (C) 1999-2010 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -686,6 +686,35 @@ SOM_Scope BOOL  SOMLINK xtrc_xwpUpdateStatusBar(XWPTrashCan *somSelf,
     WinSetWindowText(hwndStatusBar, szText);
 
     return TRUE;
+}
+
+/*
+ *@@ xwpAddObjectSizeL:
+ *      See xwpAddObjectSize for details.
+ *
+ *@@added V1.0.9 (2010-07-17) [pr]
+ */
+
+SOM_Scope void  SOMLINK xtrc_xwpAddObjectSizeL(XWPTrashCan *somSelf,
+                                               PLONGLONG pllNewSize)
+{
+    WPObject *pobjLock = NULL;
+    XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
+    XWPTrashCanMethodDebug("XWPTrashCan","xtrc_xwpAddObjectSizeL");
+
+    TRY_LOUD(excpt1)
+    {
+        if (pobjLock = cmnLockObject(somSelf))
+        {
+            _dSizeOfAllObjects += 65536.0 * 65536.0 * pllNewSize->ulHi + pllNewSize->ulLo;
+            // update all visible status bars
+            stbUpdate(somSelf);
+        }
+    }
+    CATCH(excpt1) {} END_CATCH();
+
+    if (pobjLock)
+        _wpReleaseObjectMutexSem(pobjLock);
 }
 
 /*
@@ -1340,6 +1369,7 @@ SOM_Scope BOOL  SOMLINK xtrc_wpAddToContent(XWPTrashCan *somSelf,
  *      icon and the total bytes count then.
  *
  *@@added V0.9.1 (2000-01-29) [umoeller]
+ *@@changed V1.0.9 (2010-07-17) [pr]: added large file support @@fixes 586
  */
 
 SOM_Scope BOOL  SOMLINK xtrc_wpDeleteFromContent(XWPTrashCan *somSelf,
@@ -1357,8 +1387,11 @@ SOM_Scope BOOL  SOMLINK xtrc_wpDeleteFromContent(XWPTrashCan *somSelf,
         {
             // successfully created:
             XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
+            LONGLONG llSize;
+
             _ulTrashObjectCount--;
-            _dSizeOfAllObjects -= _xwpQueryRelatedSize(Object);
+            _xwpQueryRelatedSizeL(Object, &llSize);
+            _dSizeOfAllObjects -= 65536.0 * 65536.0 * llSize.ulHi + llSize.ulLo;
             _xwpSetCorrectTrashIcon(somSelf, FALSE);
         }
     }

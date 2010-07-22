@@ -15,7 +15,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *      Copyright (C) 1997-2010 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -409,6 +409,7 @@ STATIC VOID SetDlgDateTime(HWND hwndDlg,           // in: dialog
  *@@changed V0.9.1 (2000-01-22) [umoeller]: renamed from fsysFileInitPage
  *@@changed V0.9.18 (2002-03-19) [umoeller]: now refreshing page when turned back to
  *@@changed V0.9.19 (2002-04-13) [umoeller]: now using dialog formatter, made page resizeable
+ *@@changed V1.0.9 (2010-07-17) [pr]: added large file support @@fixes 586
  */
 
 VOID fsysFile1InitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
@@ -474,7 +475,7 @@ VOID fsysFile1InitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
         CHAR    szTemp[100];
         PSZ     pszString = NULL;
         ULONG   ulAttr;
-        FILESTATUS3 fs3;
+        FILESTATUS3L fs3;
 
         // on network drives, this can take a second or so
         // V0.9.19 (2002-04-24) [umoeller]
@@ -487,7 +488,7 @@ VOID fsysFile1InitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
         // in there is frequently outdated)
         _wpQueryFilename(pnbp->inbp.somSelf, szFilename, TRUE);
         DosQueryPathInfo(szFilename,
-                        FIL_STANDARD,
+                        FIL_STANDARDL,
                         &fs3, sizeof(fs3));
 
         // real name
@@ -496,7 +497,9 @@ VOID fsysFile1InitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
                           szFilename);
 
         // file size
-        nlsThousandsULong(szTemp, fs3.cbFile, pcs->cs.cThousands);
+        nlsThousandsDouble(szTemp,
+                           65536.0 * 65536.0 * fs3.cbFile.ulHi + fs3.cbFile.ulLo,
+                           pcs->cs.cThousands);  // V1.0.9
         WinSetDlgItemText(pnbp->hwndDlgPage, ID_XSDI_FILES_FILESIZE, szTemp);
 
         // for folders: set work-area flag
