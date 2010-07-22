@@ -10,7 +10,7 @@
  */
 
 /*
- *      Copyright (C) 2001-2006 Ulrich M”ller.
+ *      Copyright (C) 2001-2010 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -185,6 +185,7 @@ static BOOL         G_fInitialized = FALSE;
  *      is returned (shouldn't happen).
  *
  *@@changed V1.0.0 (2002-08-31) [umoeller]: added cbBufs parameter
+ *@@changed V1.0.9 (2010-07-22) [pr]: add exception handler @@fixes 1099
  */
 
 APIRET fonGetFontDescription(HAB hab,
@@ -198,7 +199,10 @@ APIRET fonGetFontDescription(HAB hab,
     PFFDESCS pffd = NULL;
 
     APIRET arc;
-    if (!(arc = doshQueryPathAttr(pcszFilename, NULL)))
+    if (arc = doshQueryPathAttr(pcszFilename, NULL))
+        return arc;
+
+    TRY_QUIET(excpt1)
     {
         // file exists:
         // get size of mem block we need
@@ -273,6 +277,11 @@ APIRET fonGetFontDescription(HAB hab,
             // error getting font descriptions:
             arc = ERROR_BAD_FORMAT;
     }
+    CATCH(excpt1)
+    {
+        arc = ERROR_BAD_FORMAT;
+    }
+    END_CATCH();
 
     return arc;
 }
