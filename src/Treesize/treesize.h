@@ -9,7 +9,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *      Copyright (C) 1997-2010 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -48,6 +48,7 @@ typedef struct _DIRINFO
  *@@ FILEENTRY:
  *
  *@@added V0.9.14 (2001-07-28) [umoeller]
+ *@@changed V1.0.9 (2010-07-17) [pr]: added large file support @@fixes 586
  */
 
 typedef struct _FILEENTRY
@@ -55,6 +56,7 @@ typedef struct _FILEENTRY
     TREE        Tree;
     PDIRINFO    pDir;
     PSZ         pszFilename;
+    double      dSize;
 } FILEENTRY, *PFILEENTRY;
 
 /* extended RECORDCORE structure */

@@ -24,7 +24,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *      Copyright (C) 1997-2010 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -60,6 +60,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 
 #define DONT_REPLACE_FOR_DBCS       // do not replace strchr with DBCS version
 #include "setup.h"
@@ -172,13 +173,15 @@ PRECORDCORE G_precParentOf100Largest = NULL;
  *@@changed V0.9.14 (2001-07-28) [umoeller]: added largest files collect
  *@@changed V0.9.14 (2001-07-28) [umoeller]: now using WinPostMsg, which is speedier
  *@@changed V1.0.4 (2005-02-24) [chennecke]: replaced hard-coded strings with corresponding nlsGetString() calls
+ *@@changed V1.0.9 (2010-07-17) [pr]: added large file support @@fixes 586
+ *@@changed V1.0.9 (2010-07-22) [pr]: fix missing files caused by duplicate tree keys
  */
 
 VOID CollectDirectory(PDIRINFO pdiThis)
 {
     HDIR          hdirFindHandle = HDIR_CREATE;
-    FILEFINDBUF3  ffb3     = {0};      /* Returned from FindFirst/Next */
-    ULONG         cbFFB3 = sizeof(FILEFINDBUF3);
+    FILEFINDBUF3L ffb3     = {0};      /* Returned from FindFirst/Next */
+    ULONG         cbFFB3 = sizeof(ffb3);
     ULONG         ulFindCount    = 1;        /* Look for 1 file at a time    */
     APIRET        rc             = NO_ERROR; /* Return code                  */
     CHAR          szCurrentDir[CCHMAXPATH],
@@ -215,7 +218,7 @@ VOID CollectDirectory(PDIRINFO pdiThis)
                        &ffb3,
                        cbFFB3,
                        &ulFindCount,
-                       FIL_STANDARD);
+                       FIL_STANDARDL);
 
     // and start looping
     while (     (rc == NO_ERROR)
@@ -264,22 +267,29 @@ VOID CollectDirectory(PDIRINFO pdiThis)
             // regular file:
             ulFilesThisDir++;
             // add to total size
-            dSizeThisDir += ffb3.cbFile;
+            dSizeThisDir += 65536.0 * 65536.0 * ffb3.cbFile.ulHi
+                            + ffb3.cbFile.ulLo;  // V1.0.9
 
-            if (ffb3.cbFile > 1000)
+            if (ffb3.cbFile.ulLo > 1024)
             {
                 // create entry for largest files tree
                 PFILEENTRY pFileEntry = NEW(FILEENTRY);
                 if (pFileEntry)
                 {
-                    pFileEntry->Tree.ulKey = ffb3.cbFile;
+                    // V1.0.9
+                    PCHAR pszSize = malloc(40);
+
                     pFileEntry->pDir = pdiThis;
                     pFileEntry->pszFilename = strdup(ffb3.achName);
+                    pFileEntry->dSize = 65536.0 * 65536.0 * ffb3.cbFile.ulHi +
+                        ffb3.cbFile.ulLo;
+                    sprintf(pszSize, "%020.0f", floor(pFileEntry->dSize + 0.5));
+                    pFileEntry->Tree.ulKey = (ULONG) pszSize;
 
                     treeInsert(&G_LargestFilesTree,
                                &G_cLargestFilesTree,
                                (TREE*)pFileEntry,
-                               treeCompareKeys);
+                               treeCompareStrings);
                 }
             }
         }
@@ -332,6 +342,8 @@ VOID CollectDirectory(PDIRINFO pdiThis)
  *      the Collect thread is running by checking
  *      whether (tidCollect != 0). There is never
  *      more than one "instance" of this thread running.
+ *
+ *@@changed V1.0.9 (2010-07-22) [pr]: fix memory leaks
  */
 
 void _System fntCollect(ULONG ulDummy)
@@ -349,6 +361,8 @@ void _System fntCollect(ULONG ulDummy)
                         : PRTYC_REGULAR,
                    0,       // delta
                    0);      // current thread
+
+    treeInit(&G_LargestFilesTree, &G_cLargestFilesTree);
 
     // prepare "root" DIRINFO structure for CollectDirectory()
     G_pdiRoot = (PDIRINFO)malloc(sizeof(DIRINFO));
@@ -401,6 +415,7 @@ VOID SaveSettings(VOID)
  *      must be NULL.
  *
  *@@changed V0.9.15 (2001-08-26) [rbri] free for file entries added
+ *@@changed V1.0.9 (2010-07-22) [pr]: fix memory leaks
  */
 
 VOID Cleanup(PSIZERECORD preccParent)
@@ -431,9 +446,12 @@ VOID Cleanup(PSIZERECORD preccParent)
             if (precc2->pdi)
                 free(precc2->pdi);
 
-/*             if (precc2->pFileEntry) {
+            if (precc2->pFileEntry)
+            {
+                free((void *) precc2->pFileEntry->Tree.ulKey);
                 free(precc2->pFileEntry);
-            } */
+            }
+
             WinSendMsg(G_hwndCnr,
                        CM_REMOVERECORD,
                        &precc2,
@@ -580,6 +598,7 @@ PSZ ComposeFilename(PSZ pszBuf,
  *@@added V0.9.14 (2001-07-28) [umoeller]
  *@@changed V0.9.15 (2001-08-25) [rbri] the 100 largest entries are available only once after D&D
  *@@changed V1.0.4 (2005-02-24) [chennecke]: replaced hard-coded strings with corresponding nlsGetString() calls
+ *@@changed V1.0.9 (2010-07-21) [pr]: fixed memory leaks and missing largest files on Refresh
  */
 
 VOID Insert100LargestFiles(VOID)
@@ -603,49 +622,26 @@ VOID Insert100LargestFiles(VOID)
 
         sprintf(szSize, nlsGetString(ID_TSSI_LARGESTFILES), cFiles);
 
-        // create the entry only if it is not alredy there
+        // create the entry only if it is not already there
+        // V1.0.9
         if (G_precParentOf100Largest == NULL)
-        {
             G_precParentOf100Largest = cnrhAllocRecords(G_hwndCnr,
                                                       sizeof(SIZERECORD),
                                                       1);
-            cnrhInsertRecords(G_hwndCnr,
-                              NULL,      // parent
-                              G_precParentOf100Largest,
-                              TRUE,
-                              strdup(szSize),
-                              CRA_RECORDREADONLY | CRA_COLLAPSED,
-                              1);
-        }
         else
-        {
-            // remove the #old subnodes
-            Cleanup((PSIZERECORD)G_precParentOf100Largest);
+            free(G_precParentOf100Largest->pszIcon);
 
-            WinSendMsg(G_hwndCnr,
-                       CM_INVALIDATERECORD,
-                       NULL,
-                       MPFROM2SHORT(0, CMA_REPOSITION));
-
-            // rename
-            G_precParentOf100Largest->pszIcon
-            = G_precParentOf100Largest->pszName
-            = G_precParentOf100Largest->pszText
-            = G_precParentOf100Largest->pszTree
-                = strdup(szSize);
-
-            // (ToDo) only redraw the changed record
-            WinSendMsg(G_hwndCnr,
-                       CM_INVALIDATERECORD,
-                       NULL,
-                       MPFROM2SHORT(0, CMA_TEXTCHANGED));
-
-        }
-
+        cnrhInsertRecords(G_hwndCnr,
+                          NULL,      // parent
+                          G_precParentOf100Largest,
+                          TRUE,
+                          strdup(szSize),
+                          CRA_RECORDREADONLY | CRA_COLLAPSED,
+                          1);
         // build & insert the new subnodes
         while (pEntry && precThis)
         {
-            precThis->dTotalSize = pEntry->Tree.ulKey;
+            precThis->dTotalSize = pEntry->dSize;  // V1.0.9
 
             szFilename[0] = '\0';
 
@@ -1804,8 +1800,6 @@ int main(int argc, char *argv[])
 
     winhInitGlobals();          // V1.0.1 (2002-11-30) [umoeller]
 
-    treeInit(&G_LargestFilesTree, &G_cLargestFilesTree);
-
     // check command line parameters: in C,
     // the first parameter is always the full
     // path of the TREESIZE executable.
@@ -1934,5 +1928,4 @@ int main(int argc, char *argv[])
 
     return TRUE;
 }
-
 
