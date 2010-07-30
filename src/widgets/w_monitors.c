@@ -29,7 +29,7 @@
  */
 
 /*
- *      Copyright (C) 2000-2007 Ulrich M”ller.
+ *      Copyright (C) 2000-2010 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -786,6 +786,7 @@ BOOL UpdateDiskMonitors(HWND hwnd,
  *      implementation for WM_CREATE.
  *
  *@@changed V0.9.12 (2001-05-26) [umoeller]: added "power" support
+ *@@changed V1.0.9 (2010-07-30) [pr]: fix garbage tooltip on Memory widget
  */
 
 MRESULT MwgtCreate(HWND hwnd,
@@ -837,6 +838,7 @@ MRESULT MwgtCreate(HWND hwnd,
         */
 
         case MWGT_MEMORY:
+            ulUpdateFreq = 0;  // V1.0.9
             pWidget->ulHelpPanelID = ID_XSH_WIDGET_MEMORY_MAIN;
         break;
 
