@@ -35,7 +35,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2008 Ulrich M”ller.
+ *      Copyright (C) 1997-2010 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -3015,6 +3015,7 @@ SOM_Scope BOOL  SOMLINK xo_wpSetupOnce(XFldObject *somSelf,
  *@@changed V0.9.20 (2002-07-16) [umoeller]: added exception handling
  *@@changed V0.9.20 (2002-07-25) [umoeller]: optimized to use real method calls finally
  *@@changed V1.0.0 (2002-09-09) [umoeller]: added wpSetError for errors
+ *@@changed V1.0.9 (2010-07-29) [pr]: remove hotkeys @@fixes 1115
  */
 
 SOM_Scope BOOL  SOMLINK xo_wpFree(XFldObject *somSelf)
@@ -3026,6 +3027,7 @@ SOM_Scope BOOL  SOMLINK xo_wpFree(XFldObject *somSelf)
 
     TRY_LOUD(excpt1)        // V0.9.20 (2002-07-16) [umoeller]
     {
+        _xwpSetObjectHotkey(somSelf, NULL);  // V1.0.9
         if (pKernelGlobals->fAutoRefreshReplaced)
         {
             ULONG   ulStyle = _wpQueryStyle(somSelf);
