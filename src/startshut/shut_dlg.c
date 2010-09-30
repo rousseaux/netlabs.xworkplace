@@ -14,7 +14,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2008 Ulrich M”ller.
+ *      Copyright (C) 1997-2010 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -1541,6 +1541,7 @@ static const DLGHITEM G_dlgRebootActions[] =
  *@@changed V0.9.0 [umoeller]: renamed from fnwpRebootExt
  *@@changed V0.9.0 [umoeller]: added "Partitions" button
  *@@changed V1.0.2 (2003-12-03) [umoeller]: now using the dlg formatter
+ *@@changed V1.0.9 (2010-09-30) [pr]: fix item count on Delete
  */
 
 MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -1830,6 +1831,7 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                                     LM_DELETEITEM,
                                     (MPARAM)pData->sSelected,
                                     MPNULL);
+                            pData->usItemCount--;  // V1.0.9
                         }
                         WinPostMsg(hwndDlg, XM_UPDATE, MPNULL, MPNULL);
                     }
