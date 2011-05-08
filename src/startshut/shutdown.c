@@ -31,7 +31,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2010 Ulrich M”ller.
+ *      Copyright (C) 1997-2011 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -1552,12 +1552,14 @@ VOID xsdUpdateClosingStatus(HWND hwndShutdownStatus,
  *      because we don't want to lose the trap logs.
  *
  *@@added V0.9.13 (2001-06-19) [umoeller]
+ *@@changed V1.0.9 (2011-05-08) [pr]: added timeout
  */
 
 VOID xsdWaitForExceptions(PSHUTDOWNDATA pShutdownData)
 {
     // check the global variable exported from except.h,
     // which is > 0 if some exception is currently running
+
     if (G_ulExplainExceptionRunning)
     {
         ULONG ulSlept = 1;
@@ -1575,6 +1577,8 @@ VOID xsdWaitForExceptions(PSHUTDOWNDATA pShutdownData)
 
             // wait half a second
             winhSleep(500);
+            if (ulSlept > 10)  // V1.0.9
+                break;
         }
 
         WinSetDlgItemText(pShutdownData->SDConsts.hwndShutdownStatus,
