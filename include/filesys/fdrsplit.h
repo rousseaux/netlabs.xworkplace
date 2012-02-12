@@ -16,7 +16,7 @@
  */
 
 /*
- *      Copyright (C) 2001-2003 Ulrich M”ller.
+ *      Copyright (C) 2001-2012 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -323,6 +323,8 @@
 
             HWND            hwndFilesFrame;     // child of hwndSplitWindow
             CNRVIEW         cvFiles;            // hwndCnr is child of hwndFilesFrame
+
+            HWND            hwndFocusCnr;       // container with focus
 
             XFRAMECONTROLS  xfc;                // extended frame struct (cctl_xframe.c)
 

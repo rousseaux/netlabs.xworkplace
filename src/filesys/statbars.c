@@ -42,7 +42,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2010 Ulrich M”ller.
+ *      Copyright (C) 1997-2012 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -102,6 +102,7 @@
 #include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\standards.h"          // some standard macros
 #include "helpers\stringh.h"            // string helper routines
+#include "helpers\threads.h"            // thread helpers
 #include "helpers\winh.h"               // PM helper routines
 #include "helpers\xstring.h"            // extended string helpers
 
@@ -116,8 +117,9 @@
 
 #include "helpers\comctl.h"             // common controls (window procs)
 #include "filesys\folder.h"             // XFolder implementation
-#include "filesys\fdrsplit.h"           // folder split views
 #include "filesys\fdrsubclass.h"        // folder subclassing engine
+#include "filesys\fdrviews.h"           // common code for folder views
+#include "filesys\fdrsplit.h"           // folder split views
 #include "filesys\object.h"             // XFldObject implementation
 #include "filesys\program.h"            // program implementation; WARNING: this redefines macros
 #include "filesys\statbars.h"           // status bar translation logic
@@ -723,6 +725,21 @@ BOOL _Optlink stb_UpdateCallback(WPFolder *somSelf,
             }
         }
     }
+    else  // V1.0.9
+        if (ulView == *G_pulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW)
+        {
+            HWND hwndMainControl = WinWindowFromID(hwndView, FID_CLIENT);
+            PSPLITCONTROLLER pctl;
+
+            if (   hwndMainControl
+                && (pctl = WinQueryWindowPtr(hwndMainControl, QWL_USER))
+                && pctl->xfc.hwndStatusBar
+               )
+            {
+                WinPostMsg(pctl->xfc.hwndStatusBar, STBM_UPDATESTATUSBAR,
+                           (MPARAM) pctl->hwndFocusCnr, MPNULL);
+            }
+        }
 
     return FALSE;
 }
@@ -750,6 +767,7 @@ BOOL _Optlink stb_PostCallback(WPFolder *somSelf,
     if (    (ulView == OPEN_CONTENTS)
          || (ulView == OPEN_DETAILS)
          || (ulView == OPEN_TREE)
+         || (ulView == *G_pulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW)  // V1.0.9
        )
     {
         if (    (psfv = fdrQuerySFV(hwndView, NULL))

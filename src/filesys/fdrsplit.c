@@ -9,7 +9,7 @@
  */
 
 /*
- *      Copyright (C) 2001-2006 Ulrich M”ller.
+ *      Copyright (C) 2001-2012 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -1452,43 +1452,6 @@ MRESULT EXPENTRY fnwpSplitController(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
             break;
 
             /*
-             * WM_CHAR:
-             *
-             */
-#if 0
-            // V1.0.5 (2006-04-13) [pr]: Redundant. Handled in tree/files frame proc.
-            case WM_CHAR:
-            {
-                USHORT usFlags    = SHORT1FROMMP(mp1);
-                UCHAR  ucScanCode = CHAR4FROMMP(mp1);
-                USHORT usvk       = SHORT2FROMMP(mp2);
-
-                PMPF_SPLITVIEW(("WM_CHAR"));
-
-                if (    (usFlags & KC_VIRTUALKEY)
-                     && (usvk == VK_TAB)
-                     && (pctl = WinQueryWindowPtr(hwndClient, QWL_USER))
-                   )
-                {
-                    // process only key-down messages
-                    if  ((usFlags & KC_KEYUP) == 0)
-                    {
-                        HWND hwndFocus = WinQueryFocus(HWND_DESKTOP);
-                        if (hwndFocus == pctl->cvTree.hwndCnr)
-                            hwndFocus = pctl->cvFiles.hwndCnr;
-                        else
-                            hwndFocus = pctl->cvTree.hwndCnr;
-                        WinSetFocus(HWND_DESKTOP, hwndFocus);
-                    }
-
-                    mrc = (MRESULT)TRUE;
-                }
-                else
-                    mrc = WinDefWindowProc(hwndClient, msg, mp1, mp2);
-            }
-            break;
-#endif
-            /*
              * WM_PAINT:
              *      file dialog needs us to paint the background
              *      because in the file dialog, we are not entirely
@@ -1736,9 +1699,10 @@ STATIC MRESULT TreeFrameControl(HWND hwndFrame,
                     // have the status bar updated and make
                     // sure the status bar retrieves its info
                     // from the _left_ cnr
+                    pctl->hwndFocusCnr = pctl->cvTree.hwndCnr;  // V1.0.9 (2012-02-12) [pr]
                     WinPostMsg(pctl->xfc.hwndStatusBar,
                                STBM_UPDATESTATUSBAR,
-                               (MPARAM)pctl->cvTree.hwndCnr,
+                               (MPARAM)pctl->hwndFocusCnr,
                                MPNULL);
                 }
             }
@@ -1764,9 +1728,10 @@ STATIC MRESULT TreeFrameControl(HWND hwndFrame,
                 // have the status bar updated and make
                 // sure the status bar retrieves its info
                 // from the _left_ cnr
+                pctl->hwndFocusCnr = pctl->cvTree.hwndCnr;  // V1.0.9 (2012-02-12) [pr]
                 WinPostMsg(pctl->xfc.hwndStatusBar,
                            STBM_UPDATESTATUSBAR,
-                           (MPARAM)pctl->cvTree.hwndCnr,
+                           (MPARAM)pctl->hwndFocusCnr,
                            MPNULL);
             }
         break;
@@ -2424,9 +2389,10 @@ STATIC MRESULT EXPENTRY fnwpFilesFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MP
                         // have the status bar updated and make
                         // sure the status bar retrieves its info
                         // from the _right_ cnr
+                        pctl->hwndFocusCnr = pctl->cvFiles.hwndCnr;  // V1.0.9 (2012-02-12) [pr]
                         WinPostMsg(pctl->xfc.hwndStatusBar,
                                    STBM_UPDATESTATUSBAR,
-                                   (MPARAM)pctl->cvFiles.hwndCnr,
+                                   (MPARAM)pctl->hwndFocusCnr,
                                    MPNULL);
                     }
                 }
@@ -3129,6 +3095,7 @@ STATIC MRESULT SplitFrameControl(HWND hwndFrame,
                             else
                                 hwndFocus = psvd->ctl.cvTree.hwndCnr;
 
+                            psvd->ctl.hwndFocusCnr = hwndFocus;  // V1.0.9 (2012-02-12) [pr]
                             WinSetFocus(HWND_DESKTOP, hwndFocus);
                             // V1.0.5 (2006-04-13) [pr]: Fix status bar update @@fixes 326
                             if (psvd->ctl.xfc.hwndStatusBar)
@@ -3745,8 +3712,9 @@ HWND fdrCreateSplitView(WPObject *pRootObject,      // in: folder or disk
                                 SWP_MOVE | SWP_SIZE | SWP_SHOW | SWP_ACTIVATE | SWP_ZORDER);
 
                 // and set focus to the tree view
+                psvd->ctl.hwndFocusCnr = psvd->ctl.cvTree.hwndCnr;  // V1.0.9 (2012-02-12) [pr]
                 WinSetFocus(HWND_DESKTOP,
-                            psvd->ctl.cvTree.hwndCnr);
+                            psvd->ctl.hwndFocusCnr);
 
                 // start processing notifications now
                 psvd->ctl.fSplitViewReady = TRUE;
