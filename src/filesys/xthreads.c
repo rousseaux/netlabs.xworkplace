@@ -24,7 +24,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2010 Ulrich M”ller.
+ *      Copyright (C) 1997-2012 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -825,7 +825,7 @@ STATIC VOID CollectDoubleFiles(MPARAM mp1)
 
         HDIR          hdirFindHandle = HDIR_SYSTEM;
         FILEFINDBUF3L ffb3           = {0};      // returned from FindFirst/Next
-        ULONG         ulResultBufLen = sizeof(FILEFINDBUF3);
+        ULONG         ulResultBufLen = sizeof(ffb3);
         ULONG         ulFindCount    = 1;        // look for 1 file at a time
         APIRET        arc;
 
