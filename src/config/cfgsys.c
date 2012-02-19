@@ -313,6 +313,7 @@ typedef struct _FILERECORD
     RECORDCORE  recc;               // standard record core
     PSZ         pszFilename;        // filename
     PSZ         pszDirName;         // directory name
+    PSZ         pszSize;            // pointer to following
     CHAR        szSize[40];         // file size
     CDATE       cDate;              // file date
     CTIME       cTime;              // file time
@@ -396,7 +397,7 @@ STATIC MRESULT EXPENTRY fnwpDoubleFilesDlg(HWND hwndDlg,
             xfi[i].ulDataType = CFA_STRING;
             xfi[i++].ulOrientation = CFA_LEFT;
 
-            xfi[i].ulFieldOffset = FIELDOFFSET(FILERECORD, szSize);  // V1.0.9
+            xfi[i].ulFieldOffset = FIELDOFFSET(FILERECORD, pszSize);  // V1.0.9
             xfi[i].pszColumnTitle = cmnGetString(ID_XSSI_DOUBLEFILES_SIZE); // "Size";
             xfi[i].ulDataType = CFA_STRING;
             xfi[i++].ulOrientation = CFA_RIGHT;
@@ -473,6 +474,7 @@ STATIC MRESULT EXPENTRY fnwpDoubleFilesDlg(HWND hwndDlg,
                     preccThis->recc.pszIcon = pfli->szFilename;
                     preccThis->pszDirName = pfli->pszDirectory;
                     // V1.0.9
+                    preccThis->pszSize = preccThis->szSize; // (2012-02-19) [pr]: @@fixes 1195
                     nlsThousandsDouble(preccThis->szSize,
                     	65536.0 * 65536.0 * pfli->llSize.ulHi + pfli->llSize.ulLo,
                         cThousands);
