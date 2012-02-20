@@ -14,7 +14,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2010 Ulrich M”ller.
+ *      Copyright (C) 1997-2012 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -566,11 +566,9 @@ ULONG xsdConfirmShutdown(PSHUTDOWNPARAMS psdParms)
                     if (WinSendDlgItemMsg(hwndConfirm, ID_SDDI_BOOTMGR,
                                           LM_SELECTITEM,
                                           (MPARAM)cmnQuerySetting(susLastRebootExt), // item index
-                                          (MPARAM)TRUE) // select (not deselect)
-                                == (MRESULT)FALSE)
-                        // error:
-                        // check first item then
-                        fSelectFirst = TRUE;
+                                          (MPARAM)TRUE)) // select (not deselect)
+                        // OK, don't check first item then
+                        fSelectFirst = FALSE;  // V1.0.9 (2012-02-20) [pr]: @@fixes 1135
 
                     if (ulCheckRadioButtonID == ID_SDDI_STANDARDREBOOT)
                         ulCheckRadioButtonID = ID_SDDI_REBOOTTO;
