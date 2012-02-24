@@ -71,7 +71,7 @@
  */
 
 /*
- *      Copyright (C) 2001-2007 Ulrich M”ller.
+ *      Copyright (C) 2001-2012 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -453,14 +453,17 @@ STATIC ULONG PumpAgedNotification(PXWPNOTIFY pNotify)
             // loop thru the folder contents (without refreshing)
             // to check if we have a WPFileSystem with this name
             // already
+            // V1.0.9 (2012-02-24) [pr]: fix folder rename
             WPFileSystem *pobj;
-            if (pobj = _wpclsFileSysExists(_WPFileSystem,
+            if (!(pobj = _wpclsFileSysExists(_WPFileSystem,
                                            pNotify->pFolder,
                                            pNotify->pShortName,
-                                           // attrFile: either directory or file
-                                           (pNotify->CNInfo.bAction == RCNF_DIR_DELETED)
-                                                ? FILE_DIRECTORY
-                                                : 0))
+                                           0)))
+                pobj = _wpclsFileSysExists(_WPFileSystem,
+                                           pNotify->pFolder,
+                                           pNotify->pShortName,
+                                           FILE_DIRECTORY);
+            if (pobj)
             {
                 // yes, we have an FS object of that name:
                 // check if the file still physically exists...
@@ -1307,11 +1310,11 @@ STATIC VOID _Optlink fntNotifyServerThread(PTHREADINFO ptiMyself)
             // create pipe (outbound)
             rc = DosCreateNPipe(PIPE_CHANGENOTIFY, &hPipeHandle,
                                 NP_NOWRITEBEHIND | NP_NOINHERIT | NP_ACCESS_OUTBOUND,
-                                NP_WAIT | NP_TYPE_MESSAGE | 
+                                NP_WAIT | NP_TYPE_MESSAGE |
                                 NP_READMODE_MESSAGE | MAX_NOTIFY_CLIENTS,
                                 MAX_NOTIFY_BUFFER * (sizeof(CNINFO) + _MAX_PATH + 2),
                                 MAX_NOTIFY_BUFFER * (sizeof(CNINFO) + _MAX_PATH + 2),
-                                0); 
+                                0);
             if (rc == NO_ERROR)		// wait for client connection
                 rc = DosConnectNPipe(hPipeHandle);
 
