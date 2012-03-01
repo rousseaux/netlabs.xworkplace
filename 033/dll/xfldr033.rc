@@ -51,7 +51,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2008 Ulrich Mîller.
+ *      Copyright (C) 1997-2012 Ulrich Mîller.
  *      Traduction (C) 2003-2005 êquipe de traduction de XWorkplace :
  *      Laurent Catinaud, Aymeric Peyret, RenÇ Louisor-Marchini,
  *      Guillaume Gay.
@@ -454,9 +454,9 @@ BEGIN
     ID_XSSI_KEY_SCRLLOCK            "Arràt dÇfil"
     ID_XSSI_KEY_NUMLOCK             "Verr Num"
 
-    ID_XSSI_KEY_WINLEFT             "Win95 gauche"
-    ID_XSSI_KEY_WINRIGHT            "Win95 droite"
-    ID_XSSI_KEY_WINMENU             "Win95 menu"
+    ID_XSSI_KEY_WINLEFT             "Win gauche"
+    ID_XSSI_KEY_WINRIGHT            "Win droite"
+    ID_XSSI_KEY_WINMENU             "Win menu"
 
     /* and the corresponding list box items on the
        "Hotkeys" notebook page */

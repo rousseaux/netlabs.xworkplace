@@ -50,7 +50,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2008 Ulrich M”ller.
+ *      Copyright (C) 1997-2012 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -419,9 +419,9 @@ BEGIN
     ID_XSSI_KEY_SCRLLOCK            "ScrlLock"
     ID_XSSI_KEY_NUMLOCK             "NumLock"
 
-    ID_XSSI_KEY_WINLEFT             "Win95 left"
-    ID_XSSI_KEY_WINRIGHT            "Win95 right"
-    ID_XSSI_KEY_WINMENU             "Win95 menu"
+    ID_XSSI_KEY_WINLEFT             "Win left"
+    ID_XSSI_KEY_WINRIGHT            "Win right"
+    ID_XSSI_KEY_WINMENU             "Win menu"
 
     /* and the corresponding list box items on the
        "Hotkeys" notebook page */
