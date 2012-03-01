@@ -24,7 +24,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *      Copyright (C) 1997-2012 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -594,6 +594,7 @@ FLDRHOTKEYDESC G_aDescriptions[FLDRHOTKEYCOUNT] =
  *
  *@@added V0.9.2 (2000-03-08) [umoeller]
  *@@changed V0.9.19 (2002-04-17) [umoeller]: adjusted for new menu
+ *@@changed V1.0.9 (2012-02-27) [pr]: support hotkey description @@fixes 249
  */
 
 STATIC VOID AddHotkeyToMenuItem(HWND hwndMenu,
@@ -617,6 +618,7 @@ STATIC VOID AddHotkeyToMenuItem(HWND hwndMenu,
         cmnDescribeKey(szDescription,
                        usFlags,
                        usKeyCode,
+                       NULL, // V1.0.9
                        sizeof(szDescription));
 
         winhAppend2MenuItemText(hwndMenu,
@@ -671,6 +673,7 @@ VOID fdrAddHotkeysToPulldown(HWND hwndPulldown,     // in: submenu handle
  *@@changed V0.9.4 (2000-06-11) [umoeller]: hotkeys showed up even if hotkeys were globally disabled; fixed
  *@@changed V0.9.19 (2002-04-17) [umoeller]: adjusted for new menu handling
  *@@changed V1.0.0 (2002-08-31) [umoeller]: changed prototype for Warp 4 method overrides
+ *@@changed V1.0.9 (2012-02-27) [pr]: support hotkey description @@fixes 249
  */
 
 VOID fdrAddHotkeysToMenu(WPObject *somSelf,
@@ -707,6 +710,7 @@ VOID fdrAddHotkeysToMenu(WPObject *somSelf,
                 cmnDescribeKey(szDescription,
                                KC_ALT | KC_VIRTUALKEY,
                                VK_ENTER,
+                               NULL, // V1.0.9
                                sizeof(szDescription));
                 winhAppend2MenuItemText(hwndMenu,
                                         WPMENUID_PROPERTIES,
@@ -717,6 +721,7 @@ VOID fdrAddHotkeysToMenu(WPObject *somSelf,
                 cmnDescribeKey(szDescription,
                                KC_VIRTUALKEY,
                                VK_F1,
+                               NULL, // V1.0.9
                                sizeof(szDescription));
                 winhAppend2MenuItemText(hwndMenu,
                                         WPMENUID_EXTENDEDHELP,
@@ -798,6 +803,7 @@ typedef struct _SUBCLHOTKEYEF
  *@@changed V0.9.0 [umoeller]: renamed from fnwpHotkeyEntryField
  *@@changed V0.9.9 (2001-04-04) [umoeller]: added "set" support
  *@@changed V1.0.0 (2002-09-10) [lafaix]: no longer freeing pshef
+ *@@changed V1.0.9 (2012-02-27) [pr]: support hotkey description @@fixes 249
  */
 
 STATIC MRESULT EXPENTRY fnwpFolderHotkeyEntryField(HWND hwndEdit, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -878,6 +884,7 @@ STATIC MRESULT EXPENTRY fnwpFolderHotkeyEntryField(HWND hwndEdit, ULONG msg, MPA
                         cmnDescribeKey(szKeyName,
                                        usFlags,
                                        usKeyCode,
+                                       NULL, // V1.0.9
                                        sizeof(szKeyName));
                         WinSetWindowText(hwndEdit, szKeyName);
 
@@ -1121,6 +1128,7 @@ void fdrSaveFldrHotkeys(HWND hwndCnr)
  *      adjusts the pcsz* values in the HOTKEYRECORD.
  *
  *@@added V1.0.0 (2002-09-15) [lafaix]
+ *@@changed V1.0.9 (2012-02-27) [pr]: support hotkey description @@fixes 249
  */
 
 STATIC VOID AdjustHotkeyRecord(PHOTKEYRECORD pRec)
@@ -1132,6 +1140,7 @@ STATIC VOID AdjustHotkeyRecord(PHOTKEYRECORD pRec)
     cmnDescribeKey(pRec->szHotkeyName,
                    pRec->usFlags,
                    pRec->usKey,
+                   NULL, // V1.0.9
                    sizeof(pRec->szHotkeyName));
 
     pRec->pcszKeyName = pRec->szHotkeyName;

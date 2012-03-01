@@ -26,7 +26,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2006 Ulrich M”ller.
+ *      Copyright (C) 1997-2012 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -717,6 +717,7 @@ BOOL hifDeleteFunctionKey(PFUNCTIONKEY paFunctionKeys,// in: array of function k
  *@@added V0.9.2 (2000-02-21) [umoeller]
  *@@changed V0.9.3 (2000-04-19) [umoeller]: moved this here from xthreads.c
  *@@changed V0.9.3 (2000-04-19) [umoeller]: added XWP function keys support
+ *@@changed V1.0.9 (2012-02-27) [pr]: support hotkey description @@fixes 249
  */
 
 VOID hifCollectHotkeys(MPARAM mp1,  // in: HWND hwndCnr
@@ -771,19 +772,11 @@ VOID hifCollectHotkeys(MPARAM mp1,  // in: HWND hwndCnr
                     pFuncKey = hifFindFunctionKey(paFuncKeys,
                                                   cFuncKeys,
                                                   pHotkeyThis->ucScanCode);
-                if (pFuncKey)
-                {
-                    // it's a function key:
-                    sprintf(preccThis->szHotkey,
-                            "\"%s\"",
-                            pFuncKey->szDescription);
-                }
-                else
-                    cmnDescribeKey(preccThis->szHotkey,
-                                   pHotkeyThis->usFlags,
-                                   pHotkeyThis->usKeyCode,
-                                   sizeof(preccThis->szHotkey));
-
+                cmnDescribeKey(preccThis->szHotkey,
+                               pHotkeyThis->usFlags,
+                               pHotkeyThis->usKeyCode,
+                               pFuncKey ? pFuncKey->szDescription : NULL,  // V1.0.9
+                               sizeof(preccThis->szHotkey));
                 preccThis->pszHotkey = preccThis->szHotkey;
 
                 // get object for hotkey

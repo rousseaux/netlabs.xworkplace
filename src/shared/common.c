@@ -5195,11 +5195,13 @@ BOOL cmnIsValidHotkey(USHORT usFlags,
  *      Returns TRUE if this was a valid key combo.
  *
  *@@changed V1.0.1 (2003-01-30) [umoeller]: added cbBuf parameter, fixed buf overflows
+ *@@changed V1.0.9 (2012-02-27) [pr]: support hotkey description @@fixes 249
  */
 
 BOOL cmnDescribeKey(PSZ pszBuf,            // out: key description
                     USHORT usFlags,
                     USHORT usKeyCode,
+                    PCSZ pcszDescription,
                     ULONG cbBuf)           // in: size of pszBuf
 {
     BOOL brc = TRUE;
@@ -5209,84 +5211,85 @@ BOOL cmnDescribeKey(PSZ pszBuf,            // out: key description
 
     *pszBuf = 0;
     if (usFlags & KC_CTRL)
-        cmnGetString2(pszBuf,
-                      ID_XSSI_KEY_CTRL,
-                      cbBuf);
+        cmnGetString2(pszBuf, ID_XSSI_KEY_CTRL, cbBuf);
     if (usFlags & KC_SHIFT)
         strlcat(pszBuf, cmnGetString(ID_XSSI_KEY_SHIFT), cbBuf);
     if (usFlags & KC_ALT)
         strlcat(pszBuf, cmnGetString(ID_XSSI_KEY_Alt), cbBuf);
 
-    if (usFlags & KC_VIRTUALKEY)
-    {
-        switch (usKeyCode)
-        {
-            case VK_BACKSPACE: ulID = ID_XSSI_KEY_BACKSPACE; break; // pszBackspace
-            case VK_TAB: ulID = ID_XSSI_KEY_TAB; break; // pszTab
-            case VK_BACKTAB: ulID = ID_XSSI_KEY_BACKTABTAB; break; // pszBacktab
-            case VK_NEWLINE: ulID = ID_XSSI_KEY_ENTER; break; // pszEnter
-            case VK_ESC: ulID = ID_XSSI_KEY_ESC; break; // pszEsc
-            case VK_SPACE: ulID = ID_XSSI_KEY_SPACE; break; // pszSpace
-            case VK_PAGEUP: ulID = ID_XSSI_KEY_PAGEUP; break; // pszPageup
-            case VK_PAGEDOWN: ulID = ID_XSSI_KEY_PAGEDOWN; break; // pszPagedown
-            case VK_END: ulID = ID_XSSI_KEY_END; break; // pszEnd
-            case VK_HOME: ulID = ID_XSSI_KEY_HOME; break; // pszHome
-            case VK_LEFT: ulID = ID_XSSI_KEY_LEFT; break; // pszLeft
-            case VK_UP: ulID = ID_XSSI_KEY_UP; break; // pszUp
-            case VK_RIGHT: ulID = ID_XSSI_KEY_RIGHT; break; // pszRight
-            case VK_DOWN: ulID = ID_XSSI_KEY_DOWN; break; // pszDown
-            case VK_PRINTSCRN: ulID = ID_XSSI_KEY_PRINTSCRN; break; // pszPrintscrn
-            case VK_INSERT: ulID = ID_XSSI_KEY_INSERT; break; // pszInsert
-            case VK_DELETE: ulID = ID_XSSI_KEY_DELETE; break; // pszDelete
-            case VK_SCRLLOCK: ulID = ID_XSSI_KEY_SCRLLOCK; break; // pszScrlLock
-            case VK_NUMLOCK: ulID = ID_XSSI_KEY_NUMLOCK; break; // pszNumLock
-            case VK_ENTER: ulID = ID_XSSI_KEY_ENTER; break; // pszEnter
-            case VK_F1: pcszCopy = "F1"; break;
-            case VK_F2: pcszCopy = "F2"; break;
-            case VK_F3: pcszCopy = "F3"; break;
-            case VK_F4: pcszCopy = "F4"; break;
-            case VK_F5: pcszCopy = "F5"; break;
-            case VK_F6: pcszCopy = "F6"; break;
-            case VK_F7: pcszCopy = "F7"; break;
-            case VK_F8: pcszCopy = "F8"; break;
-            case VK_F9: pcszCopy = "F9"; break;
-            case VK_F10: pcszCopy = "F10"; break;
-            case VK_F11: pcszCopy = "F11"; break;
-            case VK_F12: pcszCopy = "F12"; break;
-            case VK_F13: pcszCopy = "F13"; break;
-            case VK_F14: pcszCopy = "F14"; break;
-            case VK_F15: pcszCopy = "F15"; break;
-            case VK_F16: pcszCopy = "F16"; break;
-            case VK_F17: pcszCopy = "F17"; break;
-            case VK_F18: pcszCopy = "F18"; break;
-            case VK_F19: pcszCopy = "F19"; break;
-            case VK_F20: pcszCopy = "F20"; break;
-            case VK_F21: pcszCopy = "F21"; break;
-            case VK_F22: pcszCopy = "F22"; break;
-            case VK_F23: pcszCopy = "F23"; break;
-            case VK_F24: pcszCopy = "F24"; break;
-            default: brc = FALSE; break;
-        }
-    } // end if (usFlags & KC_VIRTUALKEY)
+    if (pcszDescription)
+        pcszCopy = pcszDescription;
     else
-    {
-        switch (usKeyCode)
+        if (usFlags & KC_VIRTUALKEY)
         {
-            case 0xEC00: ulID = ID_XSSI_KEY_WINLEFT; break; // pszWinLeft
-            case 0xED00: ulID = ID_XSSI_KEY_WINRIGHT; break; // pszWinRight
-            case 0xEE00: ulID = ID_XSSI_KEY_WINMENU; break; // pszWinMenu
-            default:
+            switch (usKeyCode)
             {
-                CHAR szTemp[2];
-                if (usKeyCode >= 'a')
-                    szTemp[0] = (CHAR)usKeyCode-32;
-                else
-                    szTemp[0] = (CHAR)usKeyCode;
-                szTemp[1] = '\0';
-                strcat(pszBuf, szTemp);
+                case VK_BACKSPACE: ulID = ID_XSSI_KEY_BACKSPACE; break; // pszBackspace
+                case VK_TAB: ulID = ID_XSSI_KEY_TAB; break; // pszTab
+                case VK_BACKTAB: ulID = ID_XSSI_KEY_BACKTABTAB; break; // pszBacktab
+                case VK_NEWLINE: ulID = ID_XSSI_KEY_ENTER; break; // pszEnter
+                case VK_ESC: ulID = ID_XSSI_KEY_ESC; break; // pszEsc
+                case VK_SPACE: ulID = ID_XSSI_KEY_SPACE; break; // pszSpace
+                case VK_PAGEUP: ulID = ID_XSSI_KEY_PAGEUP; break; // pszPageup
+                case VK_PAGEDOWN: ulID = ID_XSSI_KEY_PAGEDOWN; break; // pszPagedown
+                case VK_END: ulID = ID_XSSI_KEY_END; break; // pszEnd
+                case VK_HOME: ulID = ID_XSSI_KEY_HOME; break; // pszHome
+                case VK_LEFT: ulID = ID_XSSI_KEY_LEFT; break; // pszLeft
+                case VK_UP: ulID = ID_XSSI_KEY_UP; break; // pszUp
+                case VK_RIGHT: ulID = ID_XSSI_KEY_RIGHT; break; // pszRight
+                case VK_DOWN: ulID = ID_XSSI_KEY_DOWN; break; // pszDown
+                case VK_PRINTSCRN: ulID = ID_XSSI_KEY_PRINTSCRN; break; // pszPrintscrn
+                case VK_INSERT: ulID = ID_XSSI_KEY_INSERT; break; // pszInsert
+                case VK_DELETE: ulID = ID_XSSI_KEY_DELETE; break; // pszDelete
+                case VK_SCRLLOCK: ulID = ID_XSSI_KEY_SCRLLOCK; break; // pszScrlLock
+                case VK_NUMLOCK: ulID = ID_XSSI_KEY_NUMLOCK; break; // pszNumLock
+                case VK_ENTER: ulID = ID_XSSI_KEY_ENTER; break; // pszEnter
+                case VK_F1: pcszCopy = "F1"; break;
+                case VK_F2: pcszCopy = "F2"; break;
+                case VK_F3: pcszCopy = "F3"; break;
+                case VK_F4: pcszCopy = "F4"; break;
+                case VK_F5: pcszCopy = "F5"; break;
+                case VK_F6: pcszCopy = "F6"; break;
+                case VK_F7: pcszCopy = "F7"; break;
+                case VK_F8: pcszCopy = "F8"; break;
+                case VK_F9: pcszCopy = "F9"; break;
+                case VK_F10: pcszCopy = "F10"; break;
+                case VK_F11: pcszCopy = "F11"; break;
+                case VK_F12: pcszCopy = "F12"; break;
+                case VK_F13: pcszCopy = "F13"; break;
+                case VK_F14: pcszCopy = "F14"; break;
+                case VK_F15: pcszCopy = "F15"; break;
+                case VK_F16: pcszCopy = "F16"; break;
+                case VK_F17: pcszCopy = "F17"; break;
+                case VK_F18: pcszCopy = "F18"; break;
+                case VK_F19: pcszCopy = "F19"; break;
+                case VK_F20: pcszCopy = "F20"; break;
+                case VK_F21: pcszCopy = "F21"; break;
+                case VK_F22: pcszCopy = "F22"; break;
+                case VK_F23: pcszCopy = "F23"; break;
+                case VK_F24: pcszCopy = "F24"; break;
+                default: brc = FALSE; break;
+            }
+        } // end if (usFlags & KC_VIRTUALKEY)
+        else
+        {
+            switch (usKeyCode)
+            {
+                case 0xEC00: ulID = ID_XSSI_KEY_WINLEFT; break; // pszWinLeft
+                case 0xED00: ulID = ID_XSSI_KEY_WINRIGHT; break; // pszWinRight
+                case 0xEE00: ulID = ID_XSSI_KEY_WINMENU; break; // pszWinMenu
+                default:
+                {
+                    CHAR szTemp[2];
+                    if (usKeyCode >= 'a' && usKeyCode <= 'z')
+                        szTemp[0] = (CHAR)usKeyCode-32;
+                    else
+                        szTemp[0] = (CHAR)usKeyCode;
+                    szTemp[1] = '\0';
+                    strcat(pszBuf, szTemp);
+                }
             }
         }
-    }
 
     if (ulID)
         pcszCopy = cmnGetString(ulID);

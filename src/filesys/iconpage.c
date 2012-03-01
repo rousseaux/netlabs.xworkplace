@@ -14,7 +14,7 @@
  */
 
 /*
- *      Copyright (C) 2001-2003 Ulrich M”ller.
+ *      Copyright (C) 2001-2012 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -852,6 +852,7 @@ STATIC MRESULT EXPENTRY fnwpSubclassedIconStatic(HWND hwndStatic, ULONG msg, MPA
  *
  *@@added V0.9.16 (2001-10-15) [umoeller]
  *@@changed V0.9.19 (2002-06-15) [umoeller]: added support for SP_OBJECT_ICONPAGE1_X
+ *@@changed V1.0.9 (2012-02-27) [pr]: support hotkey description @@fixes 249
  */
 
 VOID XWPENTRY icoIcon1InitPage(PNOTEBOOKPAGE pnbp,
@@ -1082,21 +1083,14 @@ VOID XWPENTRY icoIcon1InitPage(PNOTEBOOKPAGE pnbp,
                 // check if maybe this is a function key
                 // V0.9.3 (2000-04-19) [umoeller]
                 PFUNCTIONKEY pFuncKey;
-                if (pFuncKey = hifFindFunctionKey(pData->paFuncKeys,
-                                                  pData->cFuncKeys,
-                                                  Hotkey.ucScanCode))
-                {
-                    // it's a function key:
-                    sprintf(szKeyName,
-                            "\"%s\"",
-                            pFuncKey->szDescription);
-                }
-                else
-                    cmnDescribeKey(szKeyName,
-                                   Hotkey.usFlags,
-                                   Hotkey.usKeyCode,
-                                   sizeof(szKeyName));
-
+                pFuncKey = hifFindFunctionKey(pData->paFuncKeys,
+                                              pData->cFuncKeys,
+                                              Hotkey.ucScanCode);
+                cmnDescribeKey(szKeyName,
+                               Hotkey.usFlags,
+                               Hotkey.usKeyCode,
+                               pFuncKey ? pFuncKey->szDescription : NULL, // V1.0.9
+                               sizeof(szKeyName));
                 // set entry field
                 WinSetWindowText(pData->hwndHotkeyEF, szKeyName);
 
@@ -1167,6 +1161,7 @@ VOID XWPENTRY icoIcon1InitPage(PNOTEBOOKPAGE pnbp,
  *@@ HandleENHotkey:
  *
  *@@added V0.9.16 (2001-12-08) [umoeller]
+ *@@changed V1.0.9 (2012-02-27) [pr]: support hotkey description @@fixes 249
  */
 
 STATIC MRESULT HandleENHotkey(POBJICONPAGEDATA pData,
@@ -1191,9 +1186,12 @@ STATIC MRESULT HandleENHotkey(POBJICONPAGEDATA pData,
         // add KC_INVALIDCOMP flag (used by us for
         // user-defined function keys)
         usFlags |= KC_INVALIDCOMP;
-        sprintf(phkn->szDescription,
-                "\"%s\"",
-                pFuncKey->szDescription);
+        // V1.0.9
+        cmnDescribeKey(phkn->szDescription,
+                       phkn->usFlags,
+                       phkn->usKeyCode,
+                       pFuncKey->szDescription, // V1.0.9
+                       sizeof(phkn->szDescription));
         flReturn = HEFL_SETTEXT;
         fStore = TRUE;
     }
@@ -1242,6 +1240,7 @@ STATIC MRESULT HandleENHotkey(POBJICONPAGEDATA pData,
                 cmnDescribeKey(phkn->szDescription,
                                phkn->usFlags,
                                phkn->usKeyCode,
+                               NULL, // V1.0.9
                                sizeof(phkn->szDescription));
                 flReturn = HEFL_SETTEXT;
 

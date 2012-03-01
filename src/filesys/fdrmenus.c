@@ -1914,6 +1914,7 @@ STATIC BOOL ModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root fold
  *      method if the menu request is for a folder instance.
  *
  *@@added V1.0.0 (2002-08-31) [umoeller]
+ *@@changed V1.0.9 (2012-02-27) [pr]: support hotkey description @@fixes 249
  */
 
 BOOL mnuModifyFolderMenu(WPFolder *somSelf,
@@ -2078,6 +2079,7 @@ BOOL mnuModifyFolderMenu(WPFolder *somSelf,
                 cmnDescribeKey(szDescription,
                                KC_VIRTUALKEY,
                                VK_F1,
+                               NULL, // V1.0.9
                                sizeof(szDescription));
                 winhAppend2MenuItemText(hwndMenu,
                                         WPMENUID_EXTENDEDHELP,
