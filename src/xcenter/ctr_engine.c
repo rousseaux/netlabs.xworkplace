@@ -21,7 +21,7 @@
  */
 
 /*
- *      Copyright (C) 2000-2008 Ulrich M”ller.
+ *      Copyright (C) 2000-2012 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -1499,6 +1499,7 @@ VOID ctrpReformat(PXCENTERWINDATA pXCenterData,
  *@@changed V0.9.14 (2001-07-14) [lafaix]: fixed possible null dereference
  *@@changed V0.9.14 (2001-08-01) [umoeller]: this never worked for tray subwidgets, fixed (major rework)
  *@@changed V0.9.16 (2001-12-31) [umoeller]: now using WIDGETPOSITION struct
+ *@@changed V1.0.10 (2012-03-02) [pr]: make autohide predictable delay
  */
 
 VOID ctrpShowSettingsDlg(XCenter *somSelf,
@@ -1595,7 +1596,10 @@ VOID ctrpShowSettingsDlg(XCenter *somSelf,
             WinEnableWindow(hwndOwner, TRUE);
 
         if (pXCenterData) // V0.9.14 (2001-07-14) [lafaix]
+        {
             pXCenterData->fShowingSettingsDlg = FALSE;
+            StartAutoHide(pXCenterData); // V1.0.10
+        }
     }
 }
 
@@ -5028,6 +5032,7 @@ STATIC BOOL ClientSaveSetup(HWND hwndClient,
  *@@changed V0.9.14 (2001-07-14) [lafaix]: fixed MB2 click on border/resizing bar
  *@@changed V0.9.14 (2001-08-21) [umoeller]: added "hide on click" support
  *@@changed V1.0.8 (2008-01-08) [pr]: fix flash with "hide on click" when opening @@fixes 499
+ *@@changed V1.0.10 (2012-03-02) [pr]: make autohide predictable delay on mouse leaving
  */
 
 STATIC MRESULT EXPENTRY fnwpXCenterMainClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -5087,6 +5092,16 @@ STATIC MRESULT EXPENTRY fnwpXCenterMainClient(HWND hwnd, ULONG msg, MPARAM mp1, 
 
             case WM_MOUSEMOVE:
                 mrc = ClientMouseMove(hwnd, mp1);
+            break;
+
+            /*
+             * WM_MOUSELEAVE:
+             *
+             * added V1.0.10
+             */
+
+            case WM_MOUSELEAVE:
+                StartAutoHide((PXCENTERWINDATA)WinQueryWindowPtr(hwnd, QWL_USER));
             break;
 
             /*
