@@ -1142,6 +1142,7 @@ STATIC VOID StartAutoHide(PXCENTERWINDATA pXCenterData)
  *
  *@@added V0.9.14 (2001-08-21) [umoeller]
  *@@changed V0.9.19 (2002-04-25) [umoeller]: disabling auto-hide while mb2 is down
+ *@@changed V1.0.10 (2012-03-02) [pr]: autohide quickly if animate off
  */
 
 STATIC BOOL StartAutohideNow(PXCENTERWINDATA pXCenterData)
@@ -1212,10 +1213,16 @@ STATIC BOOL StartAutohideNow(PXCENTERWINDATA pXCenterData)
 
     if (fStart)
     {
+        XCenterData *somThis = XCenterGetData(pXCenterData->somSelf);
+
         // broadcast XN_BEGINANIMATE notification
         ctrpBroadcastWidgetNotify(&pXCenterData->llWidgets,
                                   XN_BEGINANIMATE,
                                   MPFROMSHORT(XAF_HIDE));
+
+        // V1.0.10
+        if (!(_ulWindowStyle & WS_ANIMATE))
+            pXCenterData->ulStartTime = doshQuerySysUptime() - MAX_AUTOHIDE;
 
         pXCenterData->idTimerAutohideRun
             = tmrStartXTimer(pTimerSet,
