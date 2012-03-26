@@ -26,7 +26,7 @@
 
 #define     WC_MY_CLIENT_CLASS  "MyClientClass"
 
-#define     INIAPP              "XWorkplace::xpivciew"
+#define     INIAPP              "XWorkplace::ximgview"
 #define     INIKEY_MAINWINPOS   "MainWinPos"
 #define     INIKEY_LASTDIR      "LastDir"
 #define     INIKEY_SETTINGS     "Settings"
