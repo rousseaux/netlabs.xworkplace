@@ -1225,7 +1225,7 @@ BEGIN
     ID_XFDI_PANIC_DISABLEFEATURES       "Avaktivera alla ~funktioner permanent"
     ID_XFDI_PANIC_DISABLEREPLICONS      "Avaktivera alla ~ikonutbyten permanent"
     ID_XFDI_PANIC_REMOVEHOTKEYS         "~Ta bort alla objektsnabbkommandon"
-    ID_XFDI_PANIC_DISABLEPAGER          "Avaktivera X~Pager"
+    ID_XFDI_PANIC_DISABLEPAGER          "Avaktivera ~&pgr;"
     ID_XFDI_PANIC_DISABLEMULTIMEDIA     "Avaktivera ~multimedia"
     ID_XFDI_PANIC_CONTINUE              "F~orts„tt"
     ID_XFDI_PANIC_CONTINUE_TXT          "Detta kommer att forts„tta startup av Skrivbordet."

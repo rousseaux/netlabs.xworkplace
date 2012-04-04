@@ -1362,7 +1362,7 @@ BEGIN
     ID_XFDI_PANIC_DISABLEFEATURES       "D‚sactivation permanente de ~toutes les fonctionnalit‚s"
     ID_XFDI_PANIC_DISABLEREPLICONS      "D‚sactivation permanente du ~remplacement des ic“nes"
     ID_XFDI_PANIC_REMOVEHOTKEYS         "~Suppression de tous les raccourcis d'objets"
-    ID_XFDI_PANIC_DISABLEPAGER          "D‚sactivation de X~Pager"
+    ID_XFDI_PANIC_DISABLEPAGER          "D‚sactivation de ~&pgr;"
     ID_XFDI_PANIC_DISABLEMULTIMEDIA     "D‚activation du ~multim‚dia"
     ID_XFDI_PANIC_CONTINUE              "C~ontinuer"
     ID_XFDI_PANIC_CONTINUE_TXT          "Le d‚marrage du bureau va continuer."

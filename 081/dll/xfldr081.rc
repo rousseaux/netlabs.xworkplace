@@ -1301,7 +1301,7 @@ BEGIN
     ID_XFDI_PANIC_DISABLEFEATURES       "すべての機能を完全に無効にする(~D)"
     ID_XFDI_PANIC_DISABLEREPLICONS      "アイコンの置き換えを完全に無効にする(~I)"
     ID_XFDI_PANIC_REMOVEHOTKEYS         "すべてのオブジェクト・ホットキーを除去(~R)"
-    ID_XFDI_PANIC_DISABLEPAGER          "XPager を無効にする(~P)"
+    ID_XFDI_PANIC_DISABLEPAGER          "&pgr; を無効にする(~P)"
     ID_XFDI_PANIC_DISABLEMULTIMEDIA     "マルチメディアを無効にする(~M)"
     ID_XFDI_PANIC_CONTINUE              "続行(~O)"
     ID_XFDI_PANIC_CONTINUE_TXT          "引き続きデスクトップを始動します。"

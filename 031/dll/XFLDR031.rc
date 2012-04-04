@@ -1302,7 +1302,7 @@ BEGIN
     ID_XFDI_PANIC_DISABLEFEATURES       "Schakel ~permanent alle instellingen uit"
     ID_XFDI_PANIC_DISABLEREPLICONS      "Schakel pictogram vervanging permanent uit"
     ID_XFDI_PANIC_REMOVEHOTKEYS         "Ve~rwijder alle object sneltoetsen"
-    ID_XFDI_PANIC_DISABLEPAGER          "Schakel X~Pager uit"
+    ID_XFDI_PANIC_DISABLEPAGER          "Schakel ~&pgr; uit"
     ID_XFDI_PANIC_DISABLEMULTIMEDIA     "Schakel ~multimedia uit"
     ID_XFDI_PANIC_CONTINUE              "D~oorgaan"
     ID_XFDI_PANIC_CONTINUE_TXT          "Dit zet de Werkplek start voort."

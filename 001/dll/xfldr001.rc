@@ -1302,7 +1302,7 @@ BEGIN
     ID_XFDI_PANIC_DISABLEFEATURES       "Permanently ~disable all features"
     ID_XFDI_PANIC_DISABLEREPLICONS      "Permanently disable ~icon replacements"
     ID_XFDI_PANIC_REMOVEHOTKEYS         "~Remove all object hotkeys"
-    ID_XFDI_PANIC_DISABLEPAGER          "Disable X~Pager"
+    ID_XFDI_PANIC_DISABLEPAGER          "Disable ~&pgr;"
     ID_XFDI_PANIC_DISABLEMULTIMEDIA     "Disable ~multimedia"
     ID_XFDI_PANIC_CONTINUE              "C~ontinue"
     ID_XFDI_PANIC_CONTINUE_TXT          "This will continue Desktop startup."
