@@ -1,9 +1,3 @@
-
-// timeout
-#define XWP_EXPIRE_YEAR             2002
-#define XWP_EXPIRE_MONTH            10
-#define XWP_EXPIRE_DAY              1
-
 // general
 #define __EWORKPLACE__                          1
 
