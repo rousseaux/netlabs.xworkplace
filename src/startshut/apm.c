@@ -15,7 +15,7 @@
 /*
  *      Copyright (C) 1998 ARAKAWA Atsushi.
  *      Copyright (C) 1997-2003 Ulrich M”ller.
- *      Copyright (C) 2006-2010 Paul Ratcliffe.
+ *      Copyright (C) 2006-2012 Paul Ratcliffe.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -46,6 +46,8 @@
 #define INCL_DOSERRORS
 #define INCL_DOSDEVICES
 #define INCL_DOSDEVIOCTL
+#define INCL_DOSMISC
+#define INCL_DOSSPINLOCK
 #include <os2.h>
 
 // C library headers
@@ -387,10 +389,18 @@ ULONG acpiPreparePowerOff(PSZ pszError)      // in: error message
  *      </LL>
  *
  *@@added V1.0.5 (2006-06-26) [pr]
+ *@@changed V1.0.10 (2012-04-27) [pr]: turn off all CPUs apart from CPU 1
  */
 
 VOID acpiDoPowerOff(VOID)
 {
+     ULONG i, ulCpuCount = 1;
+
+     /* Set all CPUs to OffLine, exept CPU 1 */
+     DosQuerySysInfo(QSV_NUMPROCESSORS, QSV_NUMPROCESSORS, &ulCpuCount, sizeof(ulCpuCount));
+     for (i = 2; i <= ulCpuCount; i++)
+         DosSetProcessorStatus(i, PROC_OFFLINE);
+
     DosSleep(250);  // Ensure system has time to really go idle V1.0.9 (2009-05-29) [shl]
     acpihGoToSleep(&G_hACPI, ACPI_STATE_S5);
     acpihClose(&G_hACPI);
