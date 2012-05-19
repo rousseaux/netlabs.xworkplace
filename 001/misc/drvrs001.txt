@@ -691,8 +691,11 @@ CATEGORY "Other peripherals"
                  DRVF_CONFIGTOOL),
 
         DRIVER ( "DEVICE=", "COM.SYS",
-                 "Standard serial (COM) port",
+                 "Standard serial (COM) port driver",
                  DRVF_CMDREF | DRVF_CONFIGTOOL),
+        DRIVER ( "DEVICE=", "PSCOM.SYS",
+                 "ACPI aware serial (COM) port driver",
+                 0),
         DRIVER ( "DEVICE=", "SIO.SYS",
                  "SIO enhanced serial (COM) port driver",
                  DRVF_CONFIGTOOL),
