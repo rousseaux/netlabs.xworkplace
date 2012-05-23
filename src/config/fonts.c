@@ -10,7 +10,7 @@
  */
 
 /*
- *      Copyright (C) 2001-2010 Ulrich M”ller.
+ *      Copyright (C) 2001-2012 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -1167,7 +1167,10 @@ typedef struct _FONTSAMPLEDATA
     HPS                 hps;                // micro PS allocated at WM_CREATE
     LONG                lcidFont;           // font LCID we're representing here
 
-    FONTMETRICS         FontMetrics;
+    FONTMETRICS         FontMetrics,        // font metrics of an outline font
+                        *pfmBitmap;         // array of bitmap font metrics, if any
+
+    LONG                lBitmaps;           // number of items in pfmBitmap (will be 0 for outline fonts)
 
     HWND                hwndContextMenu;
 
@@ -1184,6 +1187,94 @@ typedef struct _FONTSAMPLEDATA
 #endif
     PSZ                 pszSampleText;
 } FONTSAMPLEDATA, *PFONTSAMPLEDATA;
+
+/*
+ *@@ QSortCompareFonts:
+ *      comparison function used by qsort to sort an array
+ *      of FONTMETRICS structures by DPI and point size.
+ *
+ *@@added V1.0.10 (2012-05-11) [at]: support bitmap fonts @@fixes 1204
+ */
+
+int QSortCompareFonts(const void *key, const void *element)
+{
+    PFONTMETRICS pfm1 = (PFONTMETRICS) key,
+                 pfm2 = (PFONTMETRICS) element;
+
+    if (pfm1->sYDeviceRes < pfm2->sYDeviceRes)                  return -1;
+    else if (pfm1->sYDeviceRes > pfm2->sYDeviceRes)             return 1;
+    else if (pfm1->sNominalPointSize < pfm2->sNominalPointSize) return -1;
+    else if (pfm1->sNominalPointSize > pfm2->sNominalPointSize) return 1;
+    else if (pfm1->lEmHeight < pfm2->lEmHeight)                 return -1;
+    else if (pfm1->lEmHeight > pfm2->lEmHeight)                 return 1;
+    else return 0;
+}
+
+/*
+ *@@ GetBitmapFaces:
+ *      generates the array of available bitmap fonts for the
+ *      given face name, sorted in ascending order by DPI and
+ *      then by point size
+ *
+ *@@added V1.0.10 (2012-05-11) [at]: support bitmap fonts @@fixes 1204
+ */
+
+BOOL GetBitmapFaces(PFONTSAMPLEDATA pWinData, PSZ pszFontName)
+{
+    FONTMETRICS *pfm;
+    LONG  lDPI   = 96,
+          lFonts = 0,
+          lCount = 0,
+          lFirst = -1;
+    ULONG i, ulSize,
+          rc = 0;
+    BOOL  fOK = TRUE;
+
+    lDPI = (LONG) gpihQueryDisplayCaps(CAPS_VERTICAL_FONT_RES);
+    lFonts = GpiQueryFonts(pWinData->hps, QF_PUBLIC, pszFontName,
+                           &lCount, 0, NULL);
+    if (lFonts < 1)
+        return FALSE;
+
+    ulSize = lFonts * sizeof(FONTMETRICS);
+    pfm = (FONTMETRICS *) _wpAllocMem(pWinData->somSelf, ulSize, &rc);
+    if (rc != NO_ERROR)
+        return FALSE;
+
+    GpiQueryFonts(pWinData->hps, QF_PUBLIC, pszFontName,
+                  &lFonts, sizeof(FONTMETRICS), pfm);
+    qsort((PVOID) pfm, lFonts,
+          sizeof(FONTMETRICS), QSortCompareFonts);
+    lCount = 0;
+    for (i = 0; i < lFonts; i++)
+        if (pfm[i].sYDeviceRes == lDPI)
+        {
+            if (lFirst < 0)
+                lFirst = i;
+
+            lCount++;
+        }
+
+    if (lFirst < 0)
+    {
+        lCount = lFonts;
+        lFirst = 0;
+    }
+
+    ulSize = lCount * sizeof(FONTMETRICS);
+    pWinData->pfmBitmap = (FONTMETRICS *)
+                          _wpAllocMem(pWinData->somSelf, ulSize, &rc);
+    if (rc == NO_ERROR)
+    {
+        memcpy(pWinData->pfmBitmap, pfm + lFirst, ulSize);
+        pWinData->lBitmaps = lCount;
+    }
+    else
+        fOK = FALSE;
+
+    _wpFreeMem(pWinData->somSelf, (PBYTE) pfm);
+    return fOK;
+}
 
 /*
  *@@ UpdateScrollBars:
@@ -1216,6 +1307,7 @@ STATIC VOID UpdateScrollBars(PFONTSAMPLEDATA pWinData,
  *      implementation for WM_PAINT.
  *
  *@@changed V0.9.16 (2001-09-29) [umoeller]: now painting small sizes first
+ *@@changed V1.0.10 (2012-05-11) [at]: support bitmap fonts @@fixes 1204
  */
 
 STATIC VOID FontSamplePaint(HWND hwnd,
@@ -1258,7 +1350,9 @@ STATIC VOID FontSamplePaint(HWND hwnd,
                     144
                 };
         POINTL      ptlCurrent;
-        ULONG       ul = 0;
+        LONG        lcidBitmap;
+        ULONG       ul = 0,
+                    ulCount;
         CHAR        szTemp[100];
 
         ULONG       ulMaxCX = 0,        // x extension
@@ -1275,23 +1369,49 @@ STATIC VOID FontSamplePaint(HWND hwnd,
                     RGBCOL_WHITE);
 
         // set charset to lcid created in WM_CREATE
-        GpiSetCharSet(hps, pWinData->lcidFont);
+        if (pWinData->lBitmaps && pWinData->pfmBitmap)
+        {
+            // get a new LCID to use for all the bitmap faces
+            gpihLockLCIDs();
+            lcidBitmap = gpihQueryNextFontID(pWinData->hps);
+            gpihUnlockLCIDs();
+        }
+        else
+            // set charset to lcid created in WM_CREATE
+            GpiSetCharSet(hps, pWinData->lcidFont);
 
         // start at top... this is changed below according to font size
         ptlCurrent.y = rclClient.yTop;
         // add y ofs from scrollbar; we paint over the top of the window
         // if the scroller is down
         ptlCurrent.y += pWinData->ptlScroll.y;
-
-        for (ul = 0;
-             ul < sizeof(aulSizes) / sizeof(aulSizes[0]);
-             ul++)
+        ulCount = pWinData->lBitmaps ? pWinData->lBitmaps :
+                  (sizeof(aulSizes) / sizeof(aulSizes[0]));
+        for (ul = 0; ul < ulCount; ul++)
         {
             POINTL      ptl2;
             RECTL       rcl;
             FONTMETRICS fm;
-            // set current point size from array
-            gpihSetPointSize(hps, aulSizes[ul]);
+            FATTRS      fa = {0};
+
+            if (pWinData->lBitmaps && pWinData->pfmBitmap)
+            {
+                // make the current bitmap font active
+                fa.usRecordLength = sizeof(FATTRS);
+                strcpy(fa.szFacename, pWinData->pfmBitmap[ul].szFacename);
+                fa.fsType          = FATTR_TYPE_MBCS;
+                fa.lMatch          = pWinData->pfmBitmap[ul].lMatch;
+                fa.idRegistry      = pWinData->pfmBitmap[ul].idRegistry;
+                fa.lMaxBaselineExt = pWinData->pfmBitmap[ul].lMaxBaselineExt;
+                fa.lAveCharWidth   = pWinData->pfmBitmap[ul].lAveCharWidth;
+                if (GpiCreateLogFont(pWinData->hps, NULL, lcidBitmap, &fa) == GPI_ERROR)
+                    continue;
+
+                GpiSetCharSet(pWinData->hps, lcidBitmap);
+            }
+            else
+                // set current point size from array
+                gpihSetPointSize(hps, aulSizes[ul]);
 
             // get font metrics...
             GpiQueryFontMetrics(hps, sizeof(fm), &fm);
@@ -1429,7 +1549,9 @@ STATIC VOID FontSamplePaint(HWND hwnd,
             GpiMove(hps, &ptlCurrent);
             sprintf(szTemp,
                     "%d pt: %s",
-                    aulSizes[ul],
+                    pWinData->lBitmaps ?
+                        fm.sNominalPointSize / 10 :
+                        aulSizes[ul],
                     pWinData->pszSampleText);
             GpiCharString(hps, strlen(szTemp), (PSZ)szTemp);
 
@@ -1582,6 +1704,7 @@ STATIC MRESULT EXPENTRY fon_fnwpFontSampleFrame(HWND hwnd, ULONG msg, MPARAM mp1
  *      window proc for the font "Sample" view client.
  *
  *@@changed V1.0.1 (2003-01-25) [umoeller]: adjusted for new scrolling code
+ *@@changed V1.0.10 (2012-05-11) [at]: support bitmap fonts @@fixes 1204
  */
 
 STATIC MRESULT EXPENTRY fon_fnwpFontSampleClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -1617,6 +1740,8 @@ STATIC MRESULT EXPENTRY fon_fnwpFontSampleClient(HWND hwnd, ULONG msg, MPARAM mp
                                                   0,        // no format
                                                   &pWinData->FontMetrics);
                 // GpiSetCharSet(pWinData->hps, pWinData->lcidFont);
+                if (!(pWinData->FontMetrics.fsDefn & FM_DEFN_OUTLINE))
+                    GetBitmapFaces(pWinData, _wpQueryTitle(pWinData->somSelf));
             }
             else
                 // error:
@@ -1766,6 +1891,8 @@ STATIC MRESULT EXPENTRY fon_fnwpFontSampleClient(HWND hwnd, ULONG msg, MPARAM mp
                                         &pWinData->UseItem);
 
                 free(pWinData->pszSampleText);
+                if (pWinData->pfmBitmap)
+                    _wpFreeMem(pWinData->somSelf, (PBYTE)pWinData->pfmBitmap);
 
                 _wpFreeMem(pWinData->somSelf,
                            (PBYTE)pWinData);
