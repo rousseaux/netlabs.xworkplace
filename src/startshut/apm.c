@@ -15,7 +15,7 @@
 /*
  *      Copyright (C) 1998 ARAKAWA Atsushi.
  *      Copyright (C) 1997-2003 Ulrich M”ller.
- *      Copyright (C) 2006-2012 Paul Ratcliffe.
+ *      Copyright (C) 2006-2013 Paul Ratcliffe.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -396,12 +396,12 @@ VOID acpiDoPowerOff(VOID)
 {
      ULONG i, ulCpuCount = 1;
 
-     /* Set all CPUs to OffLine, exept CPU 1 */
+     /* Set all CPUs to OffLine, except CPU 1 */
      DosQuerySysInfo(QSV_NUMPROCESSORS, QSV_NUMPROCESSORS, &ulCpuCount, sizeof(ulCpuCount));
      for (i = 2; i <= ulCpuCount; i++)
          DosSetProcessorStatus(i, PROC_OFFLINE);
 
-    DosSleep(250);  // Ensure system has time to really go idle V1.0.9 (2009-05-29) [shl]
+    DosSleep(250);  // @@changed V1.0.9 (2009-05-29) [shl]: ensure system really has time to go idle
     acpihGoToSleep(&G_hACPI, ACPI_STATE_S5);
     acpihClose(&G_hACPI);
 }
