@@ -210,9 +210,17 @@ INCLUDE_TEMP1=$(DDKBASE)\h;
 INCLUDE_TEMP3=$(LANHEADERS);
 !endif
 
+# @@changed V1.0.9 (2012-02-20) [slevine]: added support for ACPITKBASE
+!undef INCLUDE_TEMP4
+!ifdef ACPITKBASE
+INCLUDE_TEMP4=$(ACPITKBASE)\h;$(ACPITKBASE)\h\platform;
+!endif
+
 LIBC_HEADERS = $(VACBASE)\include
 
-PROJECT_INCLUDE = $(PROJECT_BASE_DIR)\include\classes\wps;$(TKBASE)\h;$(TKBASE)\som\include;$(INCLUDE_TEMP3)$(LIBC_HEADERS);$(PROJECT_BASE_DIR)\include;$(PROJECT_BASE_DIR)\include\classes;$(HELPERS_BASE_DIR)\include;$(INCLUDE_TEMP1)$(INCLUDE_TEMP2)
+# @@changed V1.0.9 (2011-09-05) [rwalsh]: added support for SMBASE
+# @@changed V1.0.9 (2012-02-20) [slevine]: added support for ACPITKBASE
+PROJECT_INCLUDE = $(PROJECT_BASE_DIR)\include\classes\wps;$(TKBASE)\h;$(SMBASE)\include;$(INCLUDE_TEMP3)$(LIBC_HEADERS);$(PROJECT_BASE_DIR)\include;$(PROJECT_BASE_DIR)\include\classes;$(HELPERS_BASE_DIR)\include;$(INCLUDE_TEMP1)$(INCLUDE_TEMP2)$(INCLUDE_TEMP4)
 
 
 # TOOLS SETUP
@@ -303,12 +311,31 @@ $(XWPLITE_STRING) \
 !ifdef ALLOW_INT3
 CC_INT3      = /D__INT3__=1
 !endif
+# 2011-11-30 SHL 3.6.5 does not support /ol
+!ifdef CXXMAIN
+!ifdef CPPMAIN
+!error Only one of CXXMAIN and CPPMAIN may be defined.  Please undefine the variable for the compiler you are not using.
+!endif
+CC_TEMP      = $(CC_SHARED) /o- /oi- /ti+ /D__DEBUG__=1 $(CC_INT3)
+!else
 CC_TEMP      = $(CC_SHARED) /o- /oi- /ol- /ti+ /D__DEBUG__=1 $(CC_INT3)
+!endif
 !else
 # release code
-CC_TEMP      = $(CC_SHARED) /o+ /oi- /ol- /tn+
+# 2011-11-30 SHL 3.6.5 does not support /ol
+!ifdef CXXMAIN
+!ifdef CPPMAIN
+!error Only one of CXXMAIN and CPPMAIN may be defined.  Please undefine the variable for the compiler you are not using.
+!endif
 # V0.9.7 (2000-12-10) [umoeller]: added /tn+, or we won't get line numbers
 # in the map files for the release version...
+# @@changed V1.0.9 (2011-09-07) [rwalsh]: removed "/tn+" - mapsym doesn't
+# understand the way ilink formats line numbers so it doesn't include them
+# 2012-02-09 SHL restore /tn+ for now
+CC_TEMP      = $(CC_SHARED) /o+ /oi- /tn+
+!else
+CC_TEMP      = $(CC_SHARED) /o+ /oi- /ol- /tn+
+!endif
 !endif
 
 # DLL code (multi-threaded)
@@ -386,7 +413,8 @@ CC_HELPERS_DLL    = $(CC_DLL_MT)
 #
 # No need to change this. Change the variables above instead.
 
-LIBDIRS = $(TKBASE)\lib\ $(TKBASE)\som\lib\ $(VACBASE)\lib\ 
+# @@changed V1.0.9 (2011-09-05) [rwalsh]: added support for SMBASE
+LIBDIRS = $(TKBASE)\lib\ $(SMBASE)\lib\ $(VACBASE)\lib\ 
 
 LINK_BASE = ilink /nologo /noe /map:$(MAPDIR)\$(@B).map /linenumbers $(LIBDIRS)
 
