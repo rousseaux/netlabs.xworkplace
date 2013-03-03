@@ -62,14 +62,29 @@ XWPHELPERSDIR = xwphelpers
 TKBASE = e:\Toolkit
 !endif
 
+# SMBASE: the main SOM directory.
+# This is the parent of the "bin", "include" and "lib"
+# directories containing the SOM compiler, include files
+# and libraries. Normally, this would be $(TKBASE)\som.
+# Change it if you're using the SOM compiler from another
+# version of the Toolkit.
+# @@added V1.0.9 (2011-09-05) [rwalsh]:
+!ifndef SMBASE
+SMBASE = $(TKBASE)\som
+!endif
+
 # VACBASE: the main directory of your IBM
-# VisualAge C++ installation. Only 3.0.8 has
-# been tested so far.
+# VisualAge C++ installation. Both v3.0.8 and
+# v3.6.5 should work.
 # This must be the parent of the "include" and "lib"
 # directories with the include files and libraries.
 !ifndef VACBASE
 VACBASE = e:\ibmcpp
 !endif
+
+# ACPITKBASE: your ACPI toolkit "base" directory.
+# @@added V1.0.9 (2012-02-20) [slevine]:
+ACPITKBASE = e:\AcpiToolkit
 
 # DDKBASE: your DDK "base" directory.
 # Not used by the regular makefiles, unless you
@@ -139,5 +154,3 @@ XWP_UNLOCK_MODULES = YES
 !ifndef XWP_LANG_CODE
 XWP_LANG_CODE = 001
 !endif
-
-
