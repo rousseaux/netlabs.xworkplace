@@ -71,7 +71,7 @@
  */
 
 /*
- *      Copyright (C) 2001-2012 Ulrich M”ller.
+ *      Copyright (C) 2001-2013 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -382,6 +382,8 @@ VOID refrClearFolderNotifications(WPFolder *pFolder)
  *@@changed V0.9.16 (2002-01-09) [umoeller]: folder refresh wasn't always working, fixed
  *@@changed V0.9.20 (2002-07-25) [umoeller]: fixed system deadlock if data file was made awake that needed a previously unused association icon
  *@@changed V0.9.20 (2002-07-25) [umoeller]: optimized refresh
+ *@@changed V1.0.10 (2013-03-08) [pr]: undo folder rename fix from 1.0.9 which broke WPInstall
+ *@@changed V1.0.10 (2013-03-08) [pr]: query object pathname rather than using cached name from notification
  */
 
 STATIC ULONG PumpAgedNotification(PXWPNOTIFY pNotify)
@@ -453,62 +455,69 @@ STATIC ULONG PumpAgedNotification(PXWPNOTIFY pNotify)
             // loop thru the folder contents (without refreshing)
             // to check if we have a WPFileSystem with this name
             // already
-            // V1.0.9 (2012-02-24) [pr]: fix folder rename
             WPFileSystem *pobj;
-            if (!(pobj = _wpclsFileSysExists(_WPFileSystem,
+
+            if (pobj = _wpclsFileSysExists(_WPFileSystem,
                                            pNotify->pFolder,
                                            pNotify->pShortName,
-                                           0)))
-                pobj = _wpclsFileSysExists(_WPFileSystem,
-                                           pNotify->pFolder,
-                                           pNotify->pShortName,
-                                           FILE_DIRECTORY);
-            if (pobj)
+                                           (pNotify->CNInfo.bAction == RCNF_DIR_DELETED)
+                                               ? FILE_DIRECTORY
+                                               : 0))
             {
                 // yes, we have an FS object of that name:
                 // check if the file still physically exists...
                 // we better not kill it if it does
-                FILESTATUS3 fs3;
-                APIRET arc = DosQueryPathInfo(pNotify->CNInfo.szName,
-                                              FIL_STANDARD,
-                                              &fs3,
-                                              sizeof(fs3));
+                // V1.0.10
+                char szName[500];
+                ULONG ulSize = sizeof(szName);
 
-                // _PmpfF(("DosQueryPathInfo ret'd %d", arc));
-
-                switch (arc)
+                if (_wpQueryRealName(pNotify->pFolder, szName, &ulSize, TRUE))
                 {
-                    case ERROR_FILE_NOT_FOUND:
-                            // as opposed to what CPREF says,
-                            // DosQueryPathInfo does return
-                            // ERROR_FILE_NOT_FOUND... sigh
-                    case ERROR_PATH_NOT_FOUND:
+                    FILESTATUS3 fs3;
+                    APIRET arc;
+
+                    strcat(szName, "\\");
+                    strcat(szName, pNotify->pShortName);
+                    arc = DosQueryPathInfo(szName,
+                                           FIL_STANDARD,
+                                           &fs3,
+                                           sizeof(fs3));
+
+                    // _PmpfF(("DosQueryPathInfo %s rc %d", szName, arc));
+                    switch (arc)
                     {
-                        // ok, free the object... this needs some hacks
-                        // too because otherwise the WPS modifies the
-                        // folder flags internally during this processing.
-                        // I believe this happens during wpMakeDormant,
-                        // because the FOI_POPULATED* flags are turned off
-                        // even though we have replaced wpFree.
+                        case ERROR_FILE_NOT_FOUND:
+                                // as opposed to what CPREF says,
+                                // DosQueryPathInfo does return
+                                // ERROR_FILE_NOT_FOUND... sigh
+                        case ERROR_PATH_NOT_FOUND:
+                        {
+                            // ok, free the object... this needs some hacks
+                            // too because otherwise the WPS modifies the
+                            // folder flags internally during this processing.
+                            // I believe this happens during wpMakeDormant,
+                            // because the FOI_POPULATED* flags are turned off
+                            // even though we have replaced wpFree.
 
-                        ULONG flFolder = _wpQueryFldrFlags(pNotify->pFolder);
-                        _wpModifyFldrFlags(pNotify->pFolder,
-                                           FOI_POPULATEDWITHALL | FOI_POPULATEDWITHFOLDERS,
-                                           0);
-                        _wpFree(pobj);
-                        _wpSetFldrFlags(pNotify->pFolder, flFolder);
+                            ULONG flFolder = _wpQueryFldrFlags(pNotify->pFolder);
+                            _wpModifyFldrFlags(pNotify->pFolder,
+                                               FOI_POPULATEDWITHALL | FOI_POPULATEDWITHFOLDERS,
+                                               0);
+                            _wpFree(pobj);
+                            _wpSetFldrFlags(pNotify->pFolder, flFolder);
+                        }
+                        break;
+
+                        case NO_ERROR:
+                            // the file has reappeared.
+                            // DO NOT FREE IT, or we would delete a
+                            // valid file; instead, we refresh the
+                            // FS object
+                            // V0.9.16 (2001-12-06) [umoeller]
+                            _wpRefreshFSInfo(pobj, NULLHANDLE, NULL, TRUE);
+                                // safe to call this method now since we have managed
+                                // to override it V0.9.20 (2002-07-25) [umoeller]
                     }
-                    break;
-
-                    case NO_ERROR:
-                        // the file has reappeared.
-                        // DO NOT FREE IT, or we would delete a
-                        // valid file; instead, we refresh the
-                        // FS object
-                        // V0.9.16 (2001-12-06) [umoeller]
-                        _wpRefreshFSInfo(pobj, NULLHANDLE, NULL, TRUE);
-                            // safe to call this method now since we have managed
-                            // to override it V0.9.20 (2002-07-25) [umoeller]
                 }
             }
             // else object not in folder: no problem there
@@ -895,6 +904,7 @@ STATIC BOOL AddNotifyIfNotRedundant(PXWPNOTIFY pNotify)
  *@@changed V0.9.12 (2001-05-18) [umoeller]: added full refresh on overflow
  *@@changed V0.9.16 (2001-10-28) [umoeller]: added support for RCNF_CHANGED
  *@@changed V0.9.16 (2002-01-09) [umoeller]: added RCNF_DEVICE_ATTACHED, RCNF_DEVICE_DETACHED support
+ *@@changed V1.0.10 (2013-03-08) [pr]: fix file/dir detection on rename
  */
 
 STATIC VOID FindFolderForNotification(PXWPNOTIFY pNotify,
@@ -992,16 +1002,6 @@ STATIC VOID FindFolderForNotification(PXWPNOTIFY pNotify,
                             pNotify->CNInfo.szName));
                        */
 
-                    // first of all, special handling for the rename sequence...
-                    // we could use wpSetTitle on the object, but this would
-                    // require extra synchronization, so we'll just dump the
-                    // old object and re-awake it with the new name. This will
-                    // also get the .LONGNAME stuff right then.
-                    if (pNotify->CNInfo.bAction == RCNF_OLDNAME)
-                        pNotify->CNInfo.bAction = RCNF_FILE_DELETED;
-                    else if (pNotify->CNInfo.bAction == RCNF_NEWNAME)
-                        pNotify->CNInfo.bAction = RCNF_FILE_ADDED;
-
                     // store ptr to short name
                     pNotify->pShortName = pLastBackslash + 1;
 
@@ -1050,6 +1050,24 @@ STATIC VOID FindFolderForNotification(PXWPNOTIFY pNotify,
                                    )
                                 {
                                     // OK, this is worth storing:
+
+                                    // V1.0.10 (2013-03-08) [pr]: moved action selection down and
+                                    // set file/dir type correctly.
+                                    // first of all, special handling for the rename sequence...
+                                    // we could use wpSetTitle on the object, but this would
+                                    // require extra synchronization, so we'll just dump the
+                                    // old object and re-awake it with the new name. This will
+                                    // also get the .LONGNAME stuff right then.
+                                    WPFileSystem *pobj;
+
+                                    pobj = _wpclsFileSysExists(_WPFileSystem,
+                                                               pNotify->pFolder,
+                                                               pNotify->pShortName,
+                                                               FILE_DIRECTORY);
+                                    if (pNotify->CNInfo.bAction == RCNF_OLDNAME)
+                                        pNotify->CNInfo.bAction = pobj ? RCNF_DIR_DELETED : RCNF_FILE_DELETED;
+                                    else if (pNotify->CNInfo.bAction == RCNF_NEWNAME)
+                                        pNotify->CNInfo.bAction = pobj ? RCNF_DIR_ADDED : RCNF_FILE_ADDED;
 
                                     // restore the path name that we truncated
                                     // above
@@ -1604,7 +1622,7 @@ VOID _Optlink refr_fntSentinel(PTHREADINFO ptiMyself)
 
                                 if (pcniThis->cbName)
                                     // filter out the items which the
-                                    // "find folder" thrad doesn't understand
+                                    // "find folder" thread doesn't understand
                                     // anyway, this saves us a malloc() call
                                     // V0.9.12 (2001-05-18) [umoeller]
                                     switch (pcniThis->bAction)
