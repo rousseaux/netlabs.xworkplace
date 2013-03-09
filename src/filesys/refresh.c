@@ -5,7 +5,7 @@
  *      the replacement is enabled.
  *
  *      If the user has replaced folder auto-refresh in
- *      XWPSetup, on Desktop startup, krnReplaceWheelWatcher
+ *      XWPSetup, on Desktop startup, ReplaceWheelWatcher
  *      prevents the WPS "wheel watcher" thread from starting,
  *      which usually processes the Dos*ChangeNotify notifications.
  *
@@ -22,7 +22,7 @@
  *          our replacement for the WPS wheel watcher.
  *
  *          This gets started on Desktop startup from
- *          krnReplaceWheelWatcher.
+ *          ReplaceWheelWatcher.
  *          It does not have a PM message queue and now
  *          handles the Dos*ChangeNotify APIs.
  *
@@ -438,8 +438,8 @@ STATIC ULONG PumpAgedNotification(PXWPNOTIFY pNotify)
             if (pobj = _wpclsFileSysExists(_WPFileSystem,
                                            pNotify->pFolder,
                                            pNotify->pShortName,
-                                           // attFile: this is probably no
-                                           // directory, or is it?
+                                           // attFile: this is probably not
+                                           // a directory, or is it?
                                            0))
             {
                 _wpRefreshFSInfo(pobj, NULLHANDLE, NULL, TRUE);
@@ -1479,7 +1479,7 @@ STATIC VOID PostXWPNotify(PCNINFO pCNInfo)
  *
  *      If folder auto-refresh has been replaced in
  *      XWPSetup, this thread gets created from
- *      krnReplaceWheelWatcher and starts the other
+ *      ReplaceWheelWatcher and starts the other
  *      two threads (fntFindFolder, fntPumpThread)
  *      in turn.
  *

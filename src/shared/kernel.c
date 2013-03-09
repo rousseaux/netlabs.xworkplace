@@ -34,7 +34,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2006 Ulrich M”ller.
+ *      Copyright (C) 1997-2013 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -486,8 +486,8 @@ BOOL krnIsClassReady(PCSZ pcszClassName)
 
 /*
  *@@ krnExceptOpenLogFile:
- *      this opens or creates C:\XFLDTRAP.LOG and writes
- *      a debug header into it (date and time); returns
+ *      this opens or creates C:\XWPTRAP.LOG or C:\EWPTRAP.LOG and
+ *      writes a debug header into it (date and time); returns
  *      a FILE* pointer for fprintf(), so additional data can
  *      be written. You should use fclose() to close the file.
  *
