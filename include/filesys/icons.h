@@ -12,7 +12,7 @@
  */
 
 /*
- *      Copyright (C) 2001-2003 Ulrich M”ller.
+ *      Copyright (C) 2001-2013 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -92,6 +92,7 @@
 
     #ifdef SOM_WPDataFile_h
         BOOL icomQueueLazyIcon(WPDataFile *somSelf);
+        VOID icomUnqueueLazyIcon(WPDataFile *somSelf);
     #endif
 
     /* ******************************************************************
