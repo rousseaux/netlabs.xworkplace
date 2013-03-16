@@ -14,7 +14,7 @@
  */
 
 /*
- *      Copyright (C) 2001-2003 Ulrich M”ller.
+ *      Copyright (C) 2001-2013 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -475,13 +475,13 @@ STATIC VOID UnlockLazyIcons(VOID)
  *
  *@@added V0.9.20 (2002-07-25) [umoeller]
  *@@changed V1.0.1 (2003-01-27) [umoeller]: now calling new _xwpLazyLoadIcon method
+ *@@changed V1.0.10 (2013-03-16) [pr]: removed junk and ignore crashes @@fixes 336
  */
 
 STATIC void _Optlink fntLazyIcons(PTHREADINFO ptiMyself)
 {
     BOOL    fLocked = FALSE;
     BOOL    fDummy = 1;
-    HPS     hpsMem = NULLHANDLE;
 
     TRY_LOUD(excpt1)
     {
@@ -522,10 +522,18 @@ STATIC void _Optlink fntLazyIcons(PTHREADINFO ptiMyself)
                     if (!pDataFile)
                         break;
                     else
-                        _xwpLazyLoadIcon(pDataFile,
-                                         flOwnerDraw,
-                                         &ptiMyself->fExit);
-                                // replaced V1.0.1 (2003-01-25) [umoeller]
+                    {
+                        TRY_QUIET(excpt2)
+                        {
+                            _xwpLazyLoadIcon(pDataFile,
+                                             flOwnerDraw,
+                                             &ptiMyself->fExit);
+                                    // replaced V1.0.1 (2003-01-25) [umoeller]
+                        }
+                        CATCH(excpt2)
+                        {
+                        } END_CATCH();
+                    }
 
                     // grab the next item on the list; only if
                     // there's nothing left, sleep on the event
@@ -548,13 +556,6 @@ STATIC void _Optlink fntLazyIcons(PTHREADINFO ptiMyself)
     G_hevLazyIcons = NULLHANDLE;
     DosCloseMutexSem(G_hmtxLazyIcons);
     G_hmtxLazyIcons = NULLHANDLE;
-
-    if (hpsMem)
-    {
-        HDC hdcMem = GpiQueryDevice(hpsMem);
-        GpiDestroyPS(hpsMem);
-        DevCloseDC(hdcMem);
-    }
 }
 
 /*
@@ -595,6 +596,24 @@ BOOL icomQueueLazyIcon(WPDataFile *somSelf)
     }
 
     return brc;
+}
+
+/*
+ *@@ icomUnqueueLazyIcon:
+ *      removes the given data file from the queue of
+ *      icons to be loaded lazily.
+ *
+ *@@added V1.0.10 (2013-03-15) [pr]: @@fixes 336
+ */
+
+VOID icomUnqueueLazyIcon(WPDataFile *somSelf)
+{
+    if (LockLazyIcons())
+    {
+        lstRemoveItem(&G_llLazyIcons,
+                      somSelf);
+        UnlockLazyIcons();
+    }
 }
 
 /* ******************************************************************

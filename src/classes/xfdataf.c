@@ -34,7 +34,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2003 Ulrich M”ller.
+ *      Copyright (C) 1997-2013 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -647,6 +647,7 @@ SOM_Scope void  SOMLINK xdf_wpInitData(XFldDataFile *somSelf)
  *      The parent method must always be called last.
  *
  *@@added V0.9.18 (2002-03-24) [umoeller]
+ *@@changed V1.0.10 (2013-03-15) [pr]: @@fixes 336
  */
 
 SOM_Scope void  SOMLINK xdf_wpUnInitData(XFldDataFile *somSelf)
@@ -677,6 +678,7 @@ SOM_Scope void  SOMLINK xdf_wpUnInitData(XFldDataFile *somSelf)
     #endif
 
     _xwpSetThumbnail(somSelf, -1);
+    icomUnqueueLazyIcon(somSelf);  // V1.0.10
 
     XFldDataFile_parent_WPDataFile_wpUnInitData(somSelf);
 }
