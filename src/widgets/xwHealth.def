@@ -2,7 +2,7 @@
 ; StHealth.def
 ;-------------
 
-LIBRARY XWHEALTH INITGLOBAL TERMGLOBAL
+LIBRARY XWHEALTH INITINSTANCE TERMINSTANCE
 Description '@#Ulrich M”ller:1.1.0#@ XWorkplace xwHealth plugin DLL'
 PROTMODE
 

@@ -6,7 +6,7 @@
 ;       bitmaps). This has been put into a separate DLL to
 ;       speed up link time with V0.9.7 (2000-12-14) [umoeller].
 ;
-;       Copyright (C) 1997-2003 Ulrich M”ller.
+;       Copyright (C) 1997-2013 Ulrich M”ller.
 ;       This file is part of the XWorkplace source package.
 ;       XWorkplace is free software; you can redistribute it and/or modify
 ;       it under the terms of the GNU General Public License as published
@@ -21,7 +21,7 @@
 ;      SOM Precompiler somipc: 2.29.1.2
 ;      SOM Emitter emitdef: 2.41
 
-LIBRARY xwpres INITGLOBAL TERMGLOBAL
+LIBRARY xwpres INITINSTANCE TERMINSTANCE
 Description '@#Ulrich M”ller:1.1.0#@ XWorkplace resources module'
 PROTMODE
 DATA MULTIPLE NONSHARED LOADONCALL

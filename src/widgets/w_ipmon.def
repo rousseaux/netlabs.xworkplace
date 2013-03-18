@@ -4,7 +4,7 @@
 ;       module definition file for IPMON.DLL, an XCenter
 ;       plug-in widget DLL.
 ;
-;       Copyright (C) 2001-2003 Ulrich M”ller.
+;       Copyright (C) 2001-2013 Ulrich M”ller.
 ;       This file is part of the XWorkplace source package.
 ;       XWorkplace is free software; you can redistribute it and/or modify
 ;       it under the terms of the GNU General Public License as published
@@ -16,7 +16,7 @@
 ;       GNU General Public License for more details.
 ;
 
-LIBRARY IPMON INITGLOBAL TERMGLOBAL
+LIBRARY IPMON INITINSTANCE TERMINSTANCE
 Description '@#Ulrich M”ller:1.1.0#@ XWorkplace IP monitor plugin DLL'
 
 DATA              MULTIPLE READWRITE LOADONCALL NONSHARED

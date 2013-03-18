@@ -4,7 +4,7 @@
 ;       module definition file for D_CDFS.DLL, an
 ;       OS/2 kernel driver plug-in DLL.
 ;
-;       Copyright (C) 2001-2003 Ulrich M”ller.
+;       Copyright (C) 2001-2013 Ulrich M”ller.
 ;       This file is part of the XWorkplace source package.
 ;       XWorkplace is free software; you can redistribute it and/or modify
 ;       it under the terms of the GNU General Public License as published
@@ -16,7 +16,7 @@
 ;       GNU General Public License for more details.
 ;
 
-LIBRARY D_CDFS INITGLOBAL TERMGLOBAL
+LIBRARY D_CDFS INITINSTANCE TERMINSTANCE
 Description '@#Ulrich M”ller:1.1.0#@ XWorkplace CDFS.IFS driver plugin DLL'
 PROTMODE
 
@@ -26,6 +26,4 @@ CODE              LOADONCALL
 
 EXPORTS
     CheckDriverName
-
-
 
