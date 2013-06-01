@@ -987,7 +987,7 @@ STATIC MRESULT IwgtCreate(HWND hwnd,
     pPrivate->ulMax = 1;        // avoid division by zero
 
     // create socket for while the widget is running
-    pPrivate->sock = pfn_socket(PF_INET, SOCK_STREAM, 0);
+    pPrivate->sock = pfn_socket(PF_INET, SOCK_RAW, 0);  // V1.0.10 (2013-06-01)
 
     if (pPrivate->sock > 0)
     {
@@ -1461,13 +1461,13 @@ STATIC VOID IwgtPaint(HWND hwnd)
  *
  *@@changed V1.0.8 (2008-05-29) [pr]: make traffic byte count into KB @@fixes 536
  *@@changed V1.0.8 (2008-05-29) [pr]: auto scale maximum reading @@fixes 921
- *@@changed V1.0.10 (2013-06-01) [pr]: add resilience to socket failure
+ *@@changed V1.0.10 (2013-06-01) [pr]: add resilience to socket/ioctl failure
  */
 
 STATIC VOID GetSnapshot(PWIDGETPRIVATE pPrivate)
 {
     if (pPrivate->sock <= 0)
-        pPrivate->sock = pfn_socket(PF_INET, SOCK_STREAM, 0);
+        pPrivate->sock = pfn_socket(PF_INET, SOCK_RAW, 0);
 
     if (pPrivate->sock > 0)
     {
@@ -1479,7 +1479,7 @@ STATIC VOID GetSnapshot(PWIDGETPRIVATE pPrivate)
         if (rc)
         {
             pfn_soclose(pPrivate->sock);
-            pPrivate->sock = pfn_socket(PF_INET, SOCK_STREAM, 0);
+            pPrivate->sock = pfn_socket(PF_INET, SOCK_RAW, 0);
             rc = pfn_ioctl(pPrivate->sock,
                            SIOSTATIF,
                            (caddr_t)&pPrivate->statif,
