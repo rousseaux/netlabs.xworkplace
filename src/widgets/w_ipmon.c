@@ -24,7 +24,7 @@
  */
 
 /*
- *      Copyright (C) 2002-2007 Ulrich M”ller.
+ *      Copyright (C) 2002-2013 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -1077,7 +1077,8 @@ STATIC VOID IwgtDestroy(HWND hwnd)
         if (pPrivate->paSnapshots)
             free(pPrivate->paSnapshots);
 
-        pfn_soclose(pPrivate->sock);
+        if (pPrivate->sock > 0)  // V1.0.10 (2013-06-01)
+            pfn_soclose(pPrivate->sock);
 
         pxstrClear(&pPrivate->strTooltipText);
         free(pPrivate->pszTooltipFormat);
@@ -1460,16 +1461,32 @@ STATIC VOID IwgtPaint(HWND hwnd)
  *
  *@@changed V1.0.8 (2008-05-29) [pr]: make traffic byte count into KB @@fixes 536
  *@@changed V1.0.8 (2008-05-29) [pr]: auto scale maximum reading @@fixes 921
+ *@@changed V1.0.10 (2013-06-01) [pr]: add resilience to socket failure
  */
 
 STATIC VOID GetSnapshot(PWIDGETPRIVATE pPrivate)
 {
+    if (pPrivate->sock <= 0)
+        pPrivate->sock = pfn_socket(PF_INET, SOCK_STREAM, 0);
+
     if (pPrivate->sock > 0)
     {
-        if (!pfn_ioctl(pPrivate->sock,
-                       SIOSTATIF,
-                       (caddr_t)&pPrivate->statif,
-                       sizeof(pPrivate->statif)))
+        int rc = pfn_ioctl(pPrivate->sock,
+                           SIOSTATIF,
+                           (caddr_t)&pPrivate->statif,
+                           sizeof(pPrivate->statif));
+
+        if (rc)
+        {
+            pfn_soclose(pPrivate->sock);
+            pPrivate->sock = pfn_socket(PF_INET, SOCK_STREAM, 0);
+            rc = pfn_ioctl(pPrivate->sock,
+                           SIOSTATIF,
+                           (caddr_t)&pPrivate->statif,
+                           sizeof(pPrivate->statif));
+        }
+
+        if (!rc)
         {
             ULONG       ulMillisecs,
                         ulDivisor,
