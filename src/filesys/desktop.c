@@ -15,7 +15,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2006 Ulrich M”ller.
+ *      Copyright (C) 1997-2014 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -495,6 +495,14 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
         else
 */
 
+        // V1.0.10 (2014-04-17) [pr]
+#ifndef __EASYSHUTDOWN__
+        if ((cmnQuerySetting(sflXShutdown) & XSD_NOCONFIRM))
+            // if XShutdown confirmations have been disabled,
+            // remove "..." from "Shut down" entry
+            winhMenuRemoveEllipse(hwndMenu,
+                                  WPMENUID_SHUTDOWN);
+#endif
         // disable "shutdown" if shutdown is running
         // V0.9.9 (2001-03-07) [umoeller]
         if (fShutdownRunning)

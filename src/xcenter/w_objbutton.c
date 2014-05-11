@@ -19,7 +19,7 @@
  */
 
 /*
- *      Copyright (C) 2000-2008 Ulrich M”ller.
+ *      Copyright (C) 2000-2014 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -1086,16 +1086,25 @@ STATIC VOID BuildXButtonMenu(HWND hwnd,
 
 #ifndef __NOXSHUTDOWN__
 #ifndef __EASYSHUTDOWN__
-    if (cmnQuerySetting(sfXShutdown))
-        if (cmnQuerySetting(sflXShutdown) & XSD_NOCONFIRM)
+    // V1.0.10 (2014-04-17) [pr]
+    if (cmnQuerySetting(sflXShutdown) & XSD_NOCONFIRM)
+    {
+        if (cmnQuerySetting(sfRestartDesktop))
         {
             // if XShutdown confirmations have been disabled,
             // remove "..." from the shutdown menu entries
             winhMenuRemoveEllipse(hMenu,
                                   ID_CRMI_RESTARTWPS);
+        }
+
+        if (cmnQuerySetting(sfXShutdown))
+        {
+            // if XShutdown confirmations have been disabled,
+            // remove "..." from the shutdown menu entries
             winhMenuRemoveEllipse(hMenu,
                                   ID_CRMI_SHUTDOWN);
         }
+    }
 #endif
 #endif
 
