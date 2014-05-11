@@ -67,7 +67,7 @@
  */
 
 /*
- *      Copyright (C) 1999-2010 Ulrich M”ller.
+ *      Copyright (C) 1999-2014 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -1147,6 +1147,7 @@ SOM_Scope BOOL  SOMLINK xtrc_wpMenuItemHelpSelected(XWPTrashCan *somSelf,
  *
  *@@added V0.9.1 (2000-01-30) [umoeller]
  *@@changed V0.9.7 (2001-01-13) [umoeller]: removed trash can frame subclassing
+ *@@changed V1.0.10 (2014-05-11) [pr]: fix split view fallback
  */
 
 SOM_Scope HWND  SOMLINK xtrc_wpOpen(XWPTrashCan *somSelf,
@@ -1158,9 +1159,15 @@ SOM_Scope HWND  SOMLINK xtrc_wpOpen(XWPTrashCan *somSelf,
     XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_wpOpen");
 
+    if (   (ulView == *G_pulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW)  // V1.0.10
+        && !cmnQuerySetting(sfFdrSplitViews)
+       )
+        ulView = OPEN_DETAILS;
+
     if (    (ulView == OPEN_CONTENTS)
          || (ulView == OPEN_DETAILS)
          || (ulView == OPEN_SETTINGS)
+         || (ulView == *G_pulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW)
        )
     {
         if (ulView == OPEN_SETTINGS)

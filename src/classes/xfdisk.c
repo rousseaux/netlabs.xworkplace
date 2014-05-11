@@ -22,7 +22,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2006 Ulrich M”ller.
+ *      Copyright (C) 1997-2014 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -764,6 +764,7 @@ SOM_Scope HWND  SOMLINK xfdisk_wpViewObject(XFldDisk *somSelf,
  *@@changed V0.9.2 (2000-03-06) [umoeller]: drives were checked even if replacement dlg was disabled; fixed
  *@@changed V0.9.3 (2000-04-08) [umoeller]: adjusted for new folder subclassing
  *@@changed V0.9.16 (2001-10-23) [umoeller]: now intercepting OPEN_SETTINGS too
+ *@@changed V1.0.10 (2014-05-11) [pr]: fix split view fallback
  */
 
 SOM_Scope HWND  SOMLINK xfdisk_wpOpen(XFldDisk *somSelf,
@@ -775,6 +776,11 @@ SOM_Scope HWND  SOMLINK xfdisk_wpOpen(XFldDisk *somSelf,
     XFolder         *pRootFolder = NULL;
 
     PMPF_DISK(("entering"));
+
+    if (   (ulView == *G_pulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW)
+        && (!cmnQuerySetting(sfFdrSplitViews)
+       )
+        ulView = OPEN_TREE;
 
     switch (ulView)
     {
@@ -886,9 +892,7 @@ SOM_Scope HWND  SOMLINK xfdisk_wpOpen(XFldDisk *somSelf,
         default:
             // added split view
             // V1.0.0 (2002-08-28) [umoeller]
-            if (    (cmnQuerySetting(sfFdrSplitViews))
-                 && (ulView == *G_pulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW)
-               )
+            if (ulView == *G_pulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW)
             {
                 if (pRootFolder = dskCheckDriveReady(somSelf))
                     hwndNewFrame = fdrCreateSplitView(somSelf,

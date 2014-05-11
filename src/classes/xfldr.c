@@ -50,7 +50,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2006 Ulrich M”ller.
+ *      Copyright (C) 1997-2014 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -2937,6 +2937,7 @@ SOM_Scope BOOL  SOMLINK xf_wpMenuItemHelpSelected(XFolder *somSelf,
  *@@changed V0.9.18 (2002-03-20) [umoeller]: added pre-populate support
  *@@changed V0.9.19 (2002-04-02) [umoeller]: moved pre-populate to XFldDesktop::wpOpen
  *@@changed V1.0.0 (2002-08-24) [umoeller]: added split view
+ *@@changed V1.0.10 (2014-05-11) [pr]: add split view fallback
  */
 
 SOM_Scope HWND  SOMLINK xf_wpOpen(XFolder *somSelf,
@@ -2996,6 +2997,9 @@ SOM_Scope HWND  SOMLINK xf_wpOpen(XFolder *somSelf,
                 if (fFolderLocked) */
                 // V0.9.2 (2000-03-04) [umoeller]: no, don't do this, this
                 // prevents work areas from re-opening
+
+                if (ulView == *G_pulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW)  // V1.0.10
+                    ulView = OPEN_CONTENTS;
 
                 // have parent do the window creation
                 hwndNewFrame = XFolder_parent_WPFolder_wpOpen(somSelf,
