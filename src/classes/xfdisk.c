@@ -778,7 +778,7 @@ SOM_Scope HWND  SOMLINK xfdisk_wpOpen(XFldDisk *somSelf,
     PMPF_DISK(("entering"));
 
     if (   (ulView == *G_pulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW)
-        && (!cmnQuerySetting(sfFdrSplitViews)
+        && !cmnQuerySetting(sfFdrSplitViews)
        )
         ulView = OPEN_TREE;
 
