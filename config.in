@@ -84,7 +84,9 @@ VACBASE = e:\ibmcpp
 
 # ACPITKBASE: your ACPI toolkit "base" directory.
 # @@added V1.0.9 (2012-02-20) [slevine]:
+!ifndef ACPITKBASE
 ACPITKBASE = e:\AcpiToolkit
+!endif
 
 # DDKBASE: your DDK "base" directory.
 # Not used by the regular makefiles, unless you
