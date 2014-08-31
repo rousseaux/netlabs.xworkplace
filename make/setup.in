@@ -210,10 +210,10 @@ INCLUDE_TEMP1=$(DDKBASE)\h;
 INCLUDE_TEMP3=$(LANHEADERS);
 !endif
 
-# @@changed V1.0.9 (2012-02-20) [slevine]: added support for ACPITKBASE
+# @@changed V1.0.10 (2014-08-30) [pr]
 !undef INCLUDE_TEMP4
 !ifdef ACPITKBASE
-INCLUDE_TEMP4=$(ACPITKBASE)\h;$(ACPITKBASE)\h\platform;
+INCLUDE_TEMP4=$(ACPITKBASE)\h;
 !endif
 
 LIBC_HEADERS = $(VACBASE)\include
@@ -414,7 +414,7 @@ CC_HELPERS_DLL    = $(CC_DLL_MT)
 # No need to change this. Change the variables above instead.
 
 # @@changed V1.0.9 (2011-09-05) [rwalsh]: added support for SMBASE
-LIBDIRS = $(TKBASE)\lib\ $(SMBASE)\lib\ $(VACBASE)\lib\ 
+LIBDIRS = $(TKBASE)\lib\ $(SMBASE)\lib\ $(VACBASE)\lib\
 
 LINK_BASE = ilink /nologo /noe /map:$(MAPDIR)\$(@B).map /linenumbers $(LIBDIRS)
 
