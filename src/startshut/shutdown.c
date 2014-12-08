@@ -31,7 +31,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2011 Ulrich M”ller.
+ *      Copyright (C) 1997-2014 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -2593,6 +2593,7 @@ STATIC void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
  *
  *@@added V0.9.1 (99-12-10) [umoeller]
  *@@changed V0.9.19 (2002-05-23) [umoeller]: removed Ctrl+C option, which never worked
+ *@@changed V1.0.10 (20140-12-07) [pr]: DosKillProcess replaced with prc32KillProcessTree @@fixes 1216
  */
 
 VOID xsdCloseVIO(PSHUTDOWNDATA pShutdownData,
@@ -2672,7 +2673,7 @@ VOID xsdCloseVIO(PSHUTDOWNDATA pShutdownData,
                 else
                 {
                     // OS/2 windows: kill
-                    DosKillProcess(DKP_PROCESS, pShutdownData->VioItem.swctl.idProcess);
+                    prc32KillProcessTree(pShutdownData->VioItem.swctl.idProcess);  // V1.0.10
                     doshWriteLogEntry(pShutdownData->ShutdownLogFile, "      Killed pid 0x%lX",
                            pShutdownData->VioItem.swctl.idProcess);
                 }
@@ -2795,7 +2796,7 @@ VOID xsdCloseVIO(PSHUTDOWNDATA pShutdownData,
             break; */
 
             case ACL_KILLSESSION:
-                DosKillProcess(DKP_PROCESS, pShutdownData->VioItem.swctl.idProcess);
+                prc32KillProcessTree(pShutdownData->VioItem.swctl.idProcess);  // V1.0.10
                 doshWriteLogEntry(pShutdownData->ShutdownLogFile, "      xsdCloseVIO: Killed pid 0x%lX",
                        pShutdownData->VioItem.swctl.idProcess);
             break;
