@@ -31,7 +31,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2014 Ulrich M”ller.
+ *      Copyright (C) 1997-2015 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -3678,6 +3678,7 @@ VOID xsdFinishStandardMessage(PSHUTDOWNDATA pShutdownData)
  *@@changed V0.9.3 (2000-05-22) [umoeller]: added reboot animation
  *@@changed V0.9.12 (2001-05-12) [umoeller]: animations frequently didn't show up, fixed
  *@@changed V0.9.16 (2002-01-05) [umoeller]: fixed hang on loading string resource
+ *@@changed V1.0.10 (2015-01-03) [at]: fix hang on DBCS systems
  */
 
 VOID xsdFinishStandardReboot(PSHUTDOWNDATA pShutdownData)
@@ -3686,14 +3687,29 @@ VOID xsdFinishStandardReboot(PSHUTDOWNDATA pShutdownData)
     HFILE       hIOCTL;
     ULONG       ulAction;
     BOOL        fShowRebooting = TRUE;
+    BOOL        fIsDBCS = FALSE;
     // load string resource before shutting down
     // V0.9.16 (2002-01-05) [umoeller]
     PCSZ        pcszRebooting = cmnGetString(ID_SDSI_REBOOTING);
     HPS         hpsScreen = WinGetScreenPS(HWND_DESKTOP);
+    PCSZ        pcszLang;
 
 #ifndef __NOXSHUTDOWN__
     flShutdown = cmnQuerySetting(sflXShutdown);
 #endif
+
+    // set the DBCS flag if using a CJK NLV - this is used below to prevent
+    // trying to update the reboot dialog text after DosShutdown() returns
+    // (as loading DBCS glyphs from file would fail, possibly causing a hang)
+    pcszLang = cmnQueryLanguageCode();
+    if (   !strncmp(pcszLang, "081", 3)     // Japanese
+        || !strncmp(pcszLang, "082", 3)     // Korean (maybe not necessary?)
+        || !strncmp(pcszLang, "086", 3)     // S.Chinese
+        || !strncmp(pcszLang, "088", 3)    // T.Chinese
+       )
+    {
+        fIsDBCS = TRUE;
+    }
 
     // if (optReboot), open DOS.SYS; this
     // needs to be done before DosShutdown() also
@@ -3728,7 +3744,7 @@ VOID xsdFinishStandardReboot(PSHUTDOWNDATA pShutdownData)
         // @@todo what to do if this fails?
 
     // say "Rebooting..." if we had no animation
-    if (fShowRebooting)
+    if (fShowRebooting && !fIsDBCS)
     {
         WinSetDlgItemText(pShutdownData->SDConsts.hwndShutdownStatus,
                           ID_SDDI_STATUS,
