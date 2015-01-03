@@ -11,7 +11,7 @@
  */
 
 /*
- *      Copyright (C) 2001-2003 Ulrich M”ller.
+ *      Copyright (C) 2001-2015 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
@@ -90,7 +90,7 @@
  *
  ********************************************************************/
 
-static const char *G_pcszFontFileFilter = "*.OFM,*.FON,*.TTF,*.TTC";
+static const char *G_pcszFontFileFilter = "*.OFM,*.AFM,*.FON,*.TTF,*.TTC,*.OTF";
 
 /* ******************************************************************
  *
@@ -302,9 +302,13 @@ SOM_Scope ULONG  SOMLINK fonfM_wpclsQueryIconData(M_XWPFontFile *somSelf,
  *
  *      We return filters for what we consider font files:
  *
- *      -- *.OFM: Type 1 OS/2 descriptions. Only these can be installed.
+ *      -- *.OFM,*.AFM: Type 1 metric descriptions (OS/2-binary and ASCII
+ *         format, respectively). Only these can be installed. Note that
+ *         installed AFM files will be converted to OFM by OS/2.
  *
  *      -- *.TTF, *.TTC: TrueType fonts.
+ *
+ *      -- *.OTF: OpenType fonts.
  *
  *      -- *.FON: bitmap font files (actually, DLLs containing font
  *         resources).
@@ -327,4 +331,3 @@ SOM_Scope PSZ  SOMLINK fonfM_wpclsQueryInstanceType(M_XWPFontFile *somSelf)
 
     return "Font file";
 }
-
