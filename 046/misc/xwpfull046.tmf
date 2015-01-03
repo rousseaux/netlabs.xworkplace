@@ -14,7 +14,7 @@
 ;
 ;   --  S506DLG_*
 ;
-;       Copyright (C) 1997-2006 Ulrich M”ller.
+;       Copyright (C) 1997-2015 Ulrich M”ller.
 ;       This file is part of the XWorkplace source package.
 ;       XWorkplace is free software. You can redistribute it and/or modify
 ;       it under the terms of the GNU General Public License as published
@@ -41,7 +41,7 @@ Byggd &datum;
 
 <--XFL0140-->: &copy;&nbsp;1997-2005 Ulrich M”ller.
 <BR>Svenskt Nationellt Spr†kst”d: (C) 2002 Bj”rn S”derstr”m, Roger Lindmark.
-<P>Inneh†ller delar av (C) 2000-2008 Martin Lafaix, Paul Ratcliffe, och andra.
+<P>Inneh†ller delar av (C) 2000-2015 Martin Lafaix, Paul Ratcliffe, och andra.
 <BR>Inneh†ller delar fr†n Standard Function Library (C) 1991-99 iMatix corporation.
 <BR>Inneh†ller delar fr†n expat 1.95.1 (C) 1998-2000 Thai Open Source Software Center Ltd.
 <P>
@@ -51,11 +51,11 @@ Kontakta &contact-user; f”r buggrapporter och f”rslag.
 <BR>Kontakta &contact-dev; om du „r (eller vill bli) bekant med &xwp;'s k„llkod.
 
 <P>
-&xwp; „r fri programvara under GNU General Public Licens (GPL), vilken finns i inneh†llet 
-hos <A HREF="copying">COPYING filen</A> i &xwp; installationskatalog. &xwp; kommer d„rf”r utan 
+&xwp; „r fri programvara under GNU General Public Licens (GPL), vilken finns i inneh†llet
+hos <A HREF="copying">COPYING filen</A> i &xwp; installationskatalog. &xwp; kommer d„rf”r utan
 n†gon som helst <B>garanti.</B>
 
-<P>Den kompletta k„llkoden „r tillg„nglig fr†n Netlabs CVS. 
+<P>Den kompletta k„llkoden „r tillg„nglig fr†n Netlabs CVS.
 Se <A HREF="http://www.xworkplace.org/cvs.html">http://www.xworkplace.org/cvs.html</A> f”r detaljer.
 Du „r v„lkommen att †terdistribuera och/eller modifiera &xwp; under villkoren i GPL.
 
