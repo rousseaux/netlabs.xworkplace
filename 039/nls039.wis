@@ -14,8 +14,6 @@
       REQUIRES: use the current version number
        EXECUTE: change the last three digits of the package index and the instl001.cmd file
                 to your country code
-  CREATEOBJECT: translate "readme" to what the file would be called in your own language
-                change the digits in both the shadow and object ID to your own country code
   WRITEPROFILE: change the digits to your country code
    >text</PCK>: adapt and translate the text to your own language, and use the current
                 version number
@@ -34,9 +32,6 @@
 
      EXECUTE="CREATEOBJECT|$(1039)\install\instl039.cmd"
 
-     CREATEOBJECT="WPShadow|leggimi|<XWP_MAINFLDR>|SHADOWID=$(2039)\leggimi;OBJECTID=<XWP_README039MAINSHADOW>"
-     CREATEOBJECT="WPShadow|leggimi.nls|<XWP_MAINFLDR>|SHADOWID=$(2039)\leggimi.nls;OBJECTID=<XWP_READMENLS039MAINSHADOW>"
-
      WRITEPROFILE="USER\XWorkplace\JustInstalled|1"
      WRITEPROFILE="USER\XWorkplace\Language|039"
 
@@ -46,7 +41,7 @@
 
      PACKAGEID="Gabriele Gamba\XWorkplace\Italian Documentation\1\0\11"
      TARGET="$(Ulrich M”ller\XWorkplace\Kernel)"
-     TITLE="English Documentation"
+     TITLE="Italian Documentation"
 
      SELECT
 
@@ -68,7 +63,7 @@
 Note relative a questa traduzione:
 </TEXT>
                 <!-- change the last three digits to your country code -->
-                <!-- change "readme.nls" to the file name you used in the CREATEOBJECT statement above -->
+                <!-- change "readme.nls" to your translation of this file -->
                 <README
                         FORMAT="PLAIN"
                         EXTRACTFROMPCK="2039">leggimi.nls</README>

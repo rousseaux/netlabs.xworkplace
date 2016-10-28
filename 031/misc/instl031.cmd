@@ -92,10 +92,19 @@ call CreateObject;
 /* "Readme" shadow (added V0.9.2) */
 class = "WPShadow";
 title = "Lees Mij";
-setup = "SHADOWID="pdir||"README;"
+setup = "SHADOWID="pdir||"leesmij;"
 id = "<XWP_READMEMAINSHADOW>"
 target = "<XWP_MAINFLDR>";
 call CreateObject;
+
+/* "Readme.nls" shadow (not present in Dutch version)
+class = "WPShadow";
+title = "Lees Mij.nls";
+setup = "SHADOWID="pdir||"leesmij.nls;";
+id = "<XWP_READMENLSMAINSHADOW>"
+target = "<XWP_MAINFLDR>";
+call CreateObject;
+*/
 
 /* create "XWorkplace Setup" (added V0.9.0) */
 class = "XWPSetup";

@@ -14,8 +14,6 @@
       REQUIRES: use the current version number
        EXECUTE: change the last three digits of the package index and the instl001.cmd file
                 to your country code
-  CREATEOBJECT: translate "readme" to what the file would be called in your own language
-                change the digits in both the shadow and object ID to your own country code
   WRITEPROFILE: change the digits to your country code
    >text</PCK>: adapt and translate the text to your own language, and use the current
                 version number
@@ -33,9 +31,6 @@
      REQUIRES="Ulrich M”ller\XWorkplace\Kernel\1\0\11"
 
      EXECUTE="CREATEOBJECT|$(1049)\install\instl049.cmd"
-
-     CREATEOBJECT="WPShadow|liesmich|<XWP_MAINFLDR>|SHADOWID=$(2049)\liesmich;OBJECTID=<XWP_README049MAINSHADOW>"
-     CREATEOBJECT="WPShadow|liesmich.nls|<XWP_MAINFLDR>|SHADOWID=$(2049)\liesmich.nls;OBJECTID=<XWP_READMENLS049MAINSHADOW>"
 
      WRITEPROFILE="USER\XWorkplace\JustInstalled|1"
      WRITEPROFILE="USER\XWorkplace\Language|049"
@@ -68,7 +63,7 @@
 Beachten Sie bitte die folgenden Hinweise:
 </TEXT>
                 <!-- change the last three digits to your country code -->
-                <!-- change "readme.nls" to the file name you used in the CREATEOBJECT statement above -->
+                <!-- change "readme.nls" to your translation of this file -->
                 <README
                         FORMAT="PLAIN"
                         EXTRACTFROMPCK="2049">liesmich.nls</README>

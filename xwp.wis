@@ -72,8 +72,12 @@
      TITLE="Russian Documentation"
      TARGET="$(WARPIN_DEFAULTTOOLSPATH)\WPS\XWorkplace"
 
+<!-- these entries should be moved to 'instl007.cmd' because they will
+     cause errors when installing XWP-lite which has no <XWP_MAINFLDR>;
+     see 'inst049.cmd' for an example of how to create these objects.
      CREATEOBJECT="WPShadow|readme.ru|<XWP_MAINFLDR>|SHADOWID=$(2007)\readme.ru;OBJECTID=<XWP_README007MAINSHADOW>"
      CREATEOBJECT="WPShadow|readme_nls.ru|<XWP_MAINFLDR>|SHADOWID=$(2007)\readme_nls.ru;OBJECTID=<XWP_READMENLS007MAINSHADOW>"
+ -->
 
      >This package contains the complete Russian documentation for XWorkplace. You can extract this documentation separately to be able to read it before installing the rest of XWorkplace. If you only install this package, your system is not altered in any way.</PCK>
 
@@ -97,9 +101,6 @@
      TITLE="Dutch Documentation"
      TARGET="$(WARPIN_DEFAULTTOOLSPATH)\WPS\XWorkplace"
 
-     CREATEOBJECT="WPShadow|readme.nl|<XWP_MAINFLDR>|SHADOWID=$(2031)\readme.nl;OBJECTID=<XWP_README031MAINSHADOW>"
-     CREATEOBJECT="WPShadow|readme_nls.nl|<XWP_MAINFLDR>|SHADOWID=$(2031)\readme_nls.nl;OBJECTID=<XWP_READMENLS031MAINSHADOW>"
-
      >This package contains the complete Dutch documentation for XWorkplace. You can extract this documentation separately to be able to read it before installing the rest of XWorkplace. If you only install this package, your system is not altered in any way.</PCK>
 
 <PCK INDEX=1039
@@ -122,9 +123,6 @@
      TITLE="Italian Documentation"
      TARGET="$(WARPIN_DEFAULTTOOLSPATH)\WPS\XWorkplace"
 
-     CREATEOBJECT="WPShadow|leggimi|<XWP_MAINFLDR>|SHADOWID=$(2039)\leggimi;OBJECTID=<XWP_README039MAINSHADOW>"
-     CREATEOBJECT="WPShadow|leggimi.nls|<XWP_MAINFLDR>|SHADOWID=$(2039)\leggimi.nls;OBJECTID=<XWP_READMENLS039MAINSHADOW>"
-	
      >This package contains the complete Italian documentation for XWorkplace. You can extract this documentation separately to be able to read it before installing the rest of XWorkplace. If you only install this package, your system is not altered in any way.</PCK>
 
 <PCK INDEX=1046
@@ -147,8 +145,12 @@
      TITLE="Swedish Documentation"
      TARGET="$(WARPIN_DEFAULTTOOLSPATH)\WPS\XWorkplace"
 
+<!-- these entries should be moved to 'instl007.cmd' because they will
+     cause errors when installing XWP-lite which has no <XWP_MAINFLDR>;
+     see 'inst049.cmd' for an example of how to create these objects.
      CREATEOBJECT="WPShadow|readme.sv|<XWP_MAINFLDR>|SHADOWID=$(2046)\readme.sv;OBJECTID=<XWP_README046MAINSHADOW>"
      CREATEOBJECT="WPShadow|readme_nls.sv|<XWP_MAINFLDR>|SHADOWID=$(2046)\readme_nls.sv;OBJECTID=<XWP_READMESV046MAINSHADOW>"
+ -->
 
      >This package contains the complete Swedish documentation for XWorkplace. You can extract this documentation separately to be able to read it before installing the rest of XWorkplace. If you only install this package, your system is not altered in any way.</PCK>
 
@@ -172,9 +174,6 @@
      TITLE="German Documentation"
      TARGET="$(WARPIN_DEFAULTTOOLSPATH)\WPS\XWorkplace"
 
-     CREATEOBJECT="WPShadow|liesmich|<XWP_MAINFLDR>|SHADOWID=$(2049)\liesmich;OBJECTID=<XWP_README049MAINSHADOW>"
-     CREATEOBJECT="WPShadow|liesmich.nls|<XWP_MAINFLDR>|SHADOWID=$(2049)\liesmich.nls;OBJECTID=<XWP_READMENLS049MAINSHADOW>"
-
      >This package contains the complete German documentation for XWorkplace. You can extract this documentation separately to be able to read it before installing the rest of XWorkplace. If you only install this package, your system is not altered in any way.</PCK>
 
 <PCK INDEX=1081
@@ -196,9 +195,6 @@
      EXTERNAL="xwp-1-0-11_nls-ja.exe"
      TITLE="Japanese Documentation"
      TARGET="$(WARPIN_DEFAULTTOOLSPATH)\WPS\XWorkplace"
-
-     CREATEOBJECT="WPShadow|readme.jp|<XWP_MAINFLDR>|SHADOWID=$(2081)\readme.jp;OBJECTID=<XWP_README081MAINSHADOW>"
-     CREATEOBJECT="WPShadow|readme_nls.jp|<XWP_MAINFLDR>|SHADOWID=$(2081)\readme_nls.jp;OBJECTID=<XWP_READMENLS081MAINSHADOW>"
 
      >This package contains the complete Japanese documentation for XWorkplace. You can extract this documentation separately to be able to read it before installing the rest of XWorkplace. If you only install this package, your system is not altered in any way.</PCK>
 

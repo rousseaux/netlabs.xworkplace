@@ -91,9 +91,17 @@ call CreateObject;
 
 /* "Readme" shadow (added V0.9.2) */
 class = "WPShadow";
-title = "readme";
-setup = "SHADOWID="pdir||"README;"
+title = "leggimi";
+setup = "SHADOWID="pdir||"leggimi;"
 id = "<XWP_READMEMAINSHADOW>"
+target = "<XWP_MAINFLDR>";
+call CreateObject;
+
+/* "Readme.nls" shadow */
+class = "WPShadow";
+title = "leggimi.nls";
+setup = "SHADOWID="pdir||"leggimi.nls;";
+id = "<XWP_READMENLSMAINSHADOW>"
 target = "<XWP_MAINFLDR>";
 call CreateObject;
 

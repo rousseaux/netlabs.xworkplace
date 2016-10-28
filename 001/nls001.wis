@@ -14,8 +14,6 @@
       REQUIRES: use the current version number
        EXECUTE: change the last three digits of the package index and the instl001.cmd file
                 to your country code
-  CREATEOBJECT: translate "readme" to what the file would be called in your own language
-                change the digits in both the shadow and object ID to your own country code
   WRITEPROFILE: change the digits to your country code
    >text</PCK>: adapt and translate the text to your own language, and use the current
                 version number
@@ -33,9 +31,6 @@
      REQUIRES="Ulrich M”ller\XWorkplace\Kernel\1\0\11"
 
      EXECUTE="CREATEOBJECT|$(1001)\install\instl001.cmd"
-
-     CREATEOBJECT="WPShadow|readme|<XWP_MAINFLDR>|SHADOWID=$(2001)\readme;OBJECTID=<XWP_README001MAINSHADOW>"
-     CREATEOBJECT="WPShadow|readme.nls|<XWP_MAINFLDR>|SHADOWID=$(2001)\readme.nls;OBJECTID=<XWP_READMENLS001MAINSHADOW>"
 
      WRITEPROFILE="USER\XWorkplace\JustInstalled|1"
      WRITEPROFILE="USER\XWorkplace\Language|001"
@@ -68,10 +63,11 @@
 Please note the following:
 </TEXT>
                 <!-- change the last three digits to your country code -->
-                <!-- change "readme.nls" to the file name you used in the CREATEOBJECT statement above -->
+                <!-- change "readme.nls" to your translation of this file -->
+                <!-- Note: 'readme.nls' should be displayed here but it doesn't exist -->
                 <README
                         FORMAT="PLAIN"
-                        EXTRACTFROMPCK="2001">readme.nls</README>
+                        EXTRACTFROMPCK="2001">readme</README>
 
                 <!-- translate "Next" to your own language -->
                 <NEXTBUTTON TARGET=2>~Next</NEXTBUTTON>

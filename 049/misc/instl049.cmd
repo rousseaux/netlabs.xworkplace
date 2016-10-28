@@ -91,9 +91,17 @@ call CreateObject;
 
 /* "Readme" shadow (added V0.9.2) */
 class = "WPShadow";
-title = "readme";
-setup = "SHADOWID="pdir||"README;"
+title = "liesmich";
+setup = "SHADOWID="pdir||"liesmich;"
 id = "<XWP_READMEMAINSHADOW>"
+target = "<XWP_MAINFLDR>";
+call CreateObject;
+
+/* "Readme.nls" shadow */
+class = "WPShadow";
+title = "liesmich.nls";
+setup = "SHADOWID="pdir||"liesmich.nls;";
+id = "<XWP_READMENLSMAINSHADOW>"
 target = "<XWP_MAINFLDR>";
 call CreateObject;
 

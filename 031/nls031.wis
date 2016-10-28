@@ -3,7 +3,7 @@
 <HEAD>
 
 <!-- adapt and translate this to your language, and use the current version number -->
-<TITLE>English National Language Support for XWorkplace 1.0.11</TITLE>
+<TITLE>Dutch National Language Support for XWorkplace 1.0.11</TITLE>
 
 <!-- change the package descriptions according to the following instructions
 
@@ -14,8 +14,6 @@
       REQUIRES: use the current version number
        EXECUTE: change the last three digits of the package index and the instl031.cmd file
                 to your country code
-  CREATEOBJECT: translate "readme" to what the file would be called in your own language
-                change the digits in both the shadow and object ID to your own country code
   WRITEPROFILE: change the digits to your country code
    >text</PCK>: adapt and translate the text to your own language, and use the current
                 version number
@@ -23,9 +21,9 @@
 
 <PCK INDEX=1031
 
-     PACKAGEID="Ulrich M”ller\XWorkplace\English NLS\1\0\11"
+     PACKAGEID="Ulrich M”ller\XWorkplace\Dutch NLS\1\0\11"
      TARGET="$(Ulrich M”ller\XWorkplace\Kernel)"
-     TITLE="English National Language Support"
+     TITLE="Dutch National Language Support"
 
      FIXED
      SELECT
@@ -34,23 +32,20 @@
 
      EXECUTE="CREATEOBJECT|$(1031)\install\instl031.cmd"
 
-     CREATEOBJECT="WPShadow|readme|<XWP_MAINFLDR>|SHADOWID=$(2031)\readme;OBJECTID=<XWP_README031MAINSHADOW>"
-     CREATEOBJECT="WPShadow|readme.nls|<XWP_MAINFLDR>|SHADOWID=$(2031)\readme.nls;OBJECTID=<XWP_READMENLS031MAINSHADOW>"
-
      WRITEPROFILE="USER\XWorkplace\JustInstalled|1"
      WRITEPROFILE="USER\XWorkplace\Language|031"
 
-     >English National Language Support for XWorkplace 1.0.11</PCK>
+     >Dutch National Language Support for XWorkplace 1.0.11</PCK>
 
 <PCK INDEX=2031
 
-     PACKAGEID="Ulrich M”ller\XWorkplace\English Documentation\1\0\11"
+     PACKAGEID="Ulrich M”ller\XWorkplace\Dutch Documentation\1\0\11"
      TARGET="$(Ulrich M”ller\XWorkplace\Kernel)"
-     TITLE="English Documentation"
+     TITLE="Dutch Documentation"
 
      SELECT
 
-     >This package contains the complete English documentation for XWorkplace. You can extract this documentation separately to be able to read it before installing the rest of XWorkplace. If you only install this package, your system is not altered in any way.</PCK>
+     >This package contains the complete Dutch documentation for XWorkplace. You can extract this documentation separately to be able to read it before installing the rest of XWorkplace. If you only install this package, your system is not altered in any way.</PCK>
 </HEAD>
 
 <!-- Here come the different pages. They are linked by
@@ -64,14 +59,15 @@
         <PAGE INDEX=1 TYPE="README">
 
 <!-- adapt and translate to your own language -->
-<TEXT>Welcome to the English National Language Support for XWorkplace 1.0.11.
+<TEXT>Welcome to the Dutch National Language Support for XWorkplace 1.0.11.
 Please note the following:
 </TEXT>
                 <!-- change the last three digits to your country code -->
-                <!-- change "readme.nls" to the file name you used in the CREATEOBJECT statement above -->
+                <!-- change "readme.nls" to your translation of this file -->
+                <!-- Note: 'leesmij.nls' should be displayed here but it doesn't exist -->
                 <README
                         FORMAT="PLAIN"
-                        EXTRACTFROMPCK="2031">readme.nls</README>
+                        EXTRACTFROMPCK="2031">leesmij</README>
 
                 <!-- translate "Next" to your own language -->
                 <NEXTBUTTON TARGET=2>~Next</NEXTBUTTON>
@@ -457,7 +453,7 @@ Please note the following:
                 <NEXTBUTTON TARGET=0>I~nstall</NEXTBUTTON>
 
                 <!-- translate to your own language -->
-                <TEXT>WarpIN can rename the WPS objects that have been created by XWorkplace to English for you. For that purpose, "Create WPS objects" has to be enabled.
+                <TEXT>WarpIN can rename the WPS objects that have been created by XWorkplace to Dutch for you. For that purpose, "Create WPS objects" has to be enabled.
 
 Press "Install" to start installation.
                 </TEXT>
