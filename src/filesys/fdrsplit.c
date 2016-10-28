@@ -881,6 +881,7 @@ VOID fdrAddFirstChild(PMINIRECORDCORE precParent,
  *@@changed V1.0.0 (2002-09-09) [umoeller]: removed linklist
  *@@changed V1.0.9 (2011-09-24) [rwalsh]: moved FM2_ADDFIRSTCHILD_* logic to fdrAddFirstChild
  *@@changed V1.0.9 (2011-09-24) [rwalsh]: added 'cInsertable' as return value
+ *@@changed V1.0.11 (2016-08-12) [rwalsh]: added details view support
  */
 ULONG fdrInsertContents(WPFolder *pFolder,              // in: populated folder
                         HWND hwndCnr,                   // in: cnr to insert records to
@@ -924,6 +925,8 @@ ULONG fdrInsertContents(WPFolder *pFolder,              // in: populated folder
                                      ulFoldersOnly,
                                      pcszFileMask))
                 {
+                    PMINIRECORDCORE prc;
+
                     // count of records that _could_ be inserted -
                     // used by FM_POPULATED_FILLTREE
                     cInsertable++;
@@ -941,6 +944,15 @@ ULONG fdrInsertContents(WPFolder *pFolder,              // in: populated folder
                             papObjects = (WPObject**)realloc(papObjects, // NULL on first call
                                                              cArray * sizeof(WPObject*));
                         }
+
+                        // mark non-filesystem records with CRA_IGNORE
+                        // to prevent the WPS from drawing f/s details
+                        // columns for objects that have no such data
+                        // V1.0.11 (2016-08-12) [rwalsh]
+                        if (ulFoldersOnly != INSERT_FOLDERSONLY &&
+                            !_somIsA(pObject, _WPFileSystem) &&
+                            (prc = _wpQueryCoreRecord(pObject)))
+                            prc->flRecordAttr |= CRA_IGNORE;
 
                         // store in array
                         papObjects[cObjects++] = pObject;
@@ -2514,6 +2526,7 @@ STATIC MRESULT FilesFrameControl(HWND hwndFrame,
  *@@changed V1.0.0 (2002-11-23) [umoeller]: brought back keyboard support
  *@@changed V1.0.6 (2006-12-06) [pr]: added timer 1 delay @@fixes 326
  *@@changed V1.0.9 (2011-09-24) [rwalsh]: added FM_INSERTOBJECT @@fixes 2
+ *@@changed V1.0.11 (2016-08-12) [rwalsh]: added WM_DRAWITEM to support details view
  */
 
 STATIC MRESULT EXPENTRY fnwpFilesFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -2686,11 +2699,16 @@ STATIC MRESULT EXPENTRY fnwpFilesFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MP
                      && (psv->flSplit & SPLIT_FDRSTYLES)
                    )
                 {
+                    CNRINFO CnrInfo;
+
                     PMPF_POPULATESPLITVIEW(("psv->pobjUseList [%s]", _wpQueryTitle(psv->pobjUseList)));
 
-                    fdrvSetCnrLayout(psv->hwndFilesCnr,
-                                     (WPFolder*)mp1,
-                                     OPEN_CONTENTS);
+                    WinSendMsg(psv->hwndFilesCnr, CM_QUERYCNRINFO,
+                               (MPARAM)&CnrInfo, (MPARAM)sizeof(CNRINFO));
+
+                    fdrvSetCnrLayout(psv->hwndFilesCnr, (WPFolder*)mp1,
+                                     (CnrInfo.flWindowAttr & CV_DETAIL)
+                                      ? OPEN_DETAILS : OPEN_CONTENTS);
 
                     // and set sort func V1.0.0 (2002-09-13) [umoeller]
                     fdrSetFldrCnrSort((WPFolder*)mp1,
@@ -2743,6 +2761,15 @@ STATIC MRESULT EXPENTRY fnwpFilesFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MP
                    )
                 {
                     POINTL ptl = {0, 0};  // required or call will fail
+                    PMINIRECORDCORE prc;
+
+                    // non-filesystem objects have to be marked "ignore"
+                    // or else details view will crash when it tries to
+                    // display filesystem-only details they lack
+                    if (!_somIsA(pObject, _WPFileSystem) &&
+                        (prc = _wpQueryCoreRecord(pObject)))
+                        prc->flRecordAttr |= CRA_IGNORE;
+
                     _wpCnrInsertObject(pObject,
                                        psv->hwndFilesCnr,
                                        &ptl,
@@ -2754,6 +2781,31 @@ STATIC MRESULT EXPENTRY fnwpFilesFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MP
 
             case FM_INSERTFOLDER:
                 PMPF_POPULATESPLITVIEW(("fnwpFilesFrame received FM_INSERTFOLDER in error"));
+            break;
+
+            /*
+             * WM_DRAWITEM:
+             *
+             *  for details view, don't pass this msg to any of the
+             *  subclass procs if it's for a filesystem-only column
+             *  (CFA_IGNORE) for a non-filesystem object (CRA_IGNORE);
+             *  the cnr will paint the appropriate emphasis but leave
+             *  the contents blank (which is what we want)
+             *
+             * added V1.0.11 (2016-08-12) [rwalsh]
+             */
+
+            case WM_DRAWITEM:
+            {            
+                PCNRDRAWITEMINFO pcdi = (PCNRDRAWITEMINFO)((POWNERITEM)mp2)->hItem;
+
+                if (!pcdi
+                    || !pcdi->pFieldInfo
+                    || !(pcdi->pFieldInfo->flData & CFA_IGNORE)
+                    || !pcdi->pRecord
+                    || !(pcdi->pRecord->flRecordAttr & CRA_IGNORE))
+                        fCallDefault = TRUE;
+            }
             break;
 
             default:
