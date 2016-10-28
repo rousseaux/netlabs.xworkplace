@@ -538,7 +538,7 @@ NWPDesktop 1 (Norman Virus Control) Ersatzklasse fÅr WPDesktop fÅgt dem Kontextm
 NVCTaskFile 1 (Norman Virus Control) Klasse fÅr NVC-Task-Definitionsdateien.
 ODCCFix 1 Fehlerkorrektur fÅr das Object Desktop Control Center von Rich Walsh.
 RelishBun 1 (Relish von Sundial Systems) Buns sind benutzerdefinierte Ansichten der Daten des Relish PIMs und beeinflussen deren Darstellung.
-RWS06 1 (Remote Workplace Server) Hierdurch kînnen Einzelanwendungen mit der WPS kommunizieren.
+RWS08 1 (Remote Workplace Server) Hierdurch kînnen Einzelanwendungen mit der WPS kommunizieren.
 TextFolder 1 (VisualAge C++) Beispielklasse fÅr einen Ordner, der nur Dateien vom Typ Plain Text enthalten kann.
 WPSSDesktop 1 (Doodle's Screen Saver) Implementiert einen neuen Bildschirmschoner mit Plug-In-UnterstÅtzung und ersetzt die Seite "Sperren" im Einstellungsnotizbuch der ArbeitsoberflÑche.
 WordPerfectObject 1 (WordPerfect 5.x) Ersatz fÅr WPFileSystem von WordPerfect for OS/2. HINWEIS: Nach der Installation von WordPerfect mu· vor einem Systemneustart im Verzeichnis WPCOS2 der Befehl 'PATCHWP x:' ausgefÅhrt werden (wobei x: das Systemlaufwerk ist). Andernfalls funktioniert die WPS-UnterstÅtzung nicht ordnungsgemÑ·.

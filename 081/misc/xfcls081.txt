@@ -540,7 +540,7 @@ NWPDesktop 5 Part of Norman Virus Control. Replacement class for WPDesktop. Adds
 NVCTaskFile 1 Part of Norman Virus Control. Class for NVC task definition files.
 ODCCFix 1 Fix for the Object Desktop Control Center by Rich Walsh.
 RelishBun 1 Part of Relish by Sundial Systems. Buns are custom views and affect the way the Relish PIM data is presented.
-RWS06 1 Part of Remote Workplace Server. Allows stand-alone programs to interact with the WPS.
+RWS08 1 Part of Remote Workplace Server. Allows stand-alone programs to interact with the WPS.
 TextFolder 1 This is a sample class from VisualAge C++: a folder which only allows plain text files in it.
 Wipeobj 1 Part of the WipeOut screensaver.
 WPSSDesktop 1 Part of Doodle's Screen Saver. Implements a new screen saver with plug-ins and replaces the standard 'Lockup' page in the desktop's settings notebook.

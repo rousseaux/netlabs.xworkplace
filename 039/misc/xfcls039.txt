@@ -540,7 +540,7 @@ NWPDesktop 5 Parte di Norman Virus Control. Classe sostitutiva per WPDesktop. Ag
 NVCTaskFile 1 Parte di Norman Virus Control. Classe per i file di definizione di NVC.
 ODCCFix 1 Fix per l'Object Desktop Control Center realizzata da Rich Walsh.
 RelishBun 1 Parte di Relish della Sundial Systems. La visualizzazione Š personalizzabile ed influenza la prospettazione dei dati Relish.
-RWS06 1 Parte di Remote Workplace Server. Permette a programmi che ne sono all'esterno di interagire con la WPS.
+RWS08 1 Parte di Remote Workplace Server. Permette a programmi che ne sono all'esterno di interagire con la WPS.
 TextFolder 1 Classe di esempio inclusa in VisualAge C++: si tratta di una cartella che pu• contenere solo file di testo semplice.
 Wipeobj 1 Parte del salva schermo WipeOut.
 WPSSDesktop 1 Parte del salva schermo Doodle's Screen Saver. Implementa un nuovo salvaschermo con plug-in, che sostituisce la pagina 'Bloccare' nel blocco appunti impostazioni della Scrivania.

@@ -517,3 +517,39 @@ SomNote 1 (SOMNOTE.DLL) SomNote is an object that is part of the Object Factory 
 // Items added with V1.0.1
 XWPVCard 1 This XWorkplace class allows manipulation of vCard information in *.vcf files.
 
+// Items added with V1.0.4
+CWAudioShadow 1 Part of Chris Wohlgemuth's Multimedia Classes which replaces the current multimedia classes in OS/2. Implements an audio file shadow for the Media Folder. When you drop an audio file on the Media Folder, what appears is one of these. It shows information for the linked audio files in the details view.
+CWCDFolder 1 Part of Chris Wohlgemuth's Multimedia Classes which replaces the current multimedia classes in OS/2. Implements a CD player as folder.
+CWDVDFolder 1 This is part of the CD Creator package by Chris Wohlgemuth and allows creation of data DVDs.
+CWM3UFolder 1 Part of Chris Wohlgemuth's Multimedia Classes which replaces the current multimedia classes in OS/2. Implements a play list.
+CWMMDisk 5 Part of Chris Wohlgemuth's Multimedia Classes which replaces the current multimedia classes in OS/2.
+CWMMDataFile 5 Replacement for the multimedia data file part of Chris Wohlgemuth's Multimedia Classes which replaces the current multimedia classes in OS/2.
+CWLaunchArea 5 Part of Chris Wohlgemuth's WPS Wizard. Can be used by other classes and handles drag and drop.
+CWObject 1 Part of Chris Wohlgemuth's WPS Wizard. Replaces WPObject.
+MMAudioStream 5 Part of Chris Wohlgemuth's Multimedia Classes which replaces the current multimedia classes in OS/2. Points to audio streams from the Internet. Only supports IceCast servers.
+MMCDTrack 5 Part of Chris Wohlgemuth's Multimedia Classes which replaces the current multimedia classes in OS/2. Implements CD track object in CD player folder view.
+MMFLAC 5 Part of Chris Wohlgemuth's Multimedia Classes which replaces the current multimedia classes in OS/2. Provides more WPS integration for Russel O'Conner's FLAC I/O proc.
+MMMP3 5 Part of Chris Wohlgemuth's Multimedia Classes which replaces the current multimedia classes in OS/2. Provides more WPS integration for Russel O'Conner's MP3 I/O proc.
+MMOGG 5 Part of Chris Wohlgemuth's Multimedia Classes which replaces the current multimedia classes in OS/2. Provides more WPS integration for Russel O'Conner's Ogg Vorbis I/O proc.
+MMM3U 5 Part of Chris Wohlgemuth's Multimedia Classes which replaces the current multimedia classes in OS/2. Provides WPS integration for MP3 play lists.
+MMPNG 5 Multimedia class to provide support for PNG image files.
+NWPDisk 5 Part of Norman Virus Control. Replacement class for WPDisk. Adds a "Check for viruses..." item to the pop-up menu of drive objects.
+NWPFileSys 5 Part of Norman Virus Control. Replacement class for WPDisk. Adds a "Check for viruses..." item to the pop-up menu of file system objects.
+NWPDesktop 5 Part of Norman Virus Control. Replacement class for WPDesktop. Adds a submenu "Norman Virus Control" to the desktop's pop-up menu.
+NVCTaskFile 1 Part of Norman Virus Control. Class for NVC task definition files.
+ODCCFix 1 Fix for the Object Desktop Control Center by Rich Walsh.
+RelishBun 1 Part of Relish by Sundial Systems. Buns are custom views and affect the way the Relish PIM data is presented.
+RWS08 1 Part of Remote Workplace Server. Allows stand-alone programs to interact with the WPS.
+TextFolder 1 This is a sample class from VisualAge C++: a folder which only allows plain text files in it.
+Wipeobj 1 Part of the WipeOut screensaver.
+WPSSDesktop 1 Part of Doodle's Screen Saver. Implements a new screen saver with plug-ins and replaces the standard 'Lockup' page in the desktop's settings notebook.
+WordPerfectObject 1 (WordPerfect 5.x) WPFileSystem class replacement installed by WordPerfect for OS/2.  NOTE:  After installing WordPerfect, you should go into your WPCOS2 directory and run the command 'PATCHWP C:' (where 'C:' is your boot drive) before rebooting, otherwise WordPerfect's WPS support may not work properly.
+WordPerfectFile 1 (WordPerfect 5.x) WPDataFile class replacement installed by WordPerfect for OS/2.  NOTE:  After installing WordPerfect, you should go into your WPCOS2 directory and run the command 'PATCHWP C:' (where 'C:' is your boot drive) before rebooting, otherwise WordPerfect's WPS support may not work properly.
+WordPerfectDocument 1 (WordPerfect 5.x) WPS class representing a WordPerfect document file.  Used by WordPerfect for WPS integration.
+WordPerfectGraphic 1 (WordPerfect 5.x) WPS class representing a WordPerfect graphics file.  Used by WordPerfect for WPS integration.
+WPStOfExe 0 Part of StarOffice 3.0 and 3.1. For the Program Objects created by StarOffice. Implements file associations for these programs, superceding the system associations.
+WPStOfCalc 1 Part of StarOffice 3.0 and 3.1. Spreadsheet file for StarCalc.
+WPStOfChar 1 Part of StarOffice 3.0 and 3.1. Chart file for StarChart.
+WPStOfDraw 1 Part of StarOffice 3.0 and 3.1. Drawing file for StarDraw.
+WPStOfVor 1 Part of StarOffice 3.0 and 3.1. Template file.
+WPStOfWri 1 Part of StarOffice 3.0 and 3.1. Word processing document for StarWrite. Note that when versions 3.1 and 5.1 of StarOffice co-exist, the .SDW files from StarOffice 5.1 appear in the WPS with this class and will be opened as default by StarOffice 3.1 which uses a different format.

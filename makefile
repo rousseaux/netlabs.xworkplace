@@ -818,9 +818,7 @@ release: really_all
 !endif
     $(COPY) $(MODULESDIR)\xfldr$(XWP_LANG_CODE).tmf $(XWPRELEASE_NLS)\help
     $(COPY) $(XWP_LANG_CODE)\misc\drvrs$(XWP_LANG_CODE).txt $(XWPRELEASE_NLS)\help
-!ifndef XWPLITE
     $(COPY) $(XWP_LANG_CODE)\misc\xfcls$(XWP_LANG_CODE).txt $(XWPRELEASE_NLS)\help
-!endif
     $(COPY) $(MODULESDIR)\xfldr$(XWP_LANG_CODE).hlp $(XWPRELEASE_NLS)\help
 !ifndef XWPLITE
 # 5) themes
