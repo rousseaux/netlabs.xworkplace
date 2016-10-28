@@ -1,7 +1,6 @@
 /**/
 wpistem = 'xwp-1-0-11'
 filetime = '01:11:00'
-wisfile = 'xwp.wis'
 /**/
 call RxFuncAdd 'SysLoadFuncs', 'RexxUtil', 'SysLoadFuncs'
 call SysLoadFuncs
@@ -15,8 +14,27 @@ end
 if datatype(countrycode) \= 'NUM' | countrycode < 0 | countrycode > 999 then
   countrycode = 1
 
+wisfile = right(countrycode, 3, '0')'\xwp'right(countrycode, 3, '0')'.wis'
+
+select
+  when countrycode = 1 then
+    wpistem = wpistem'-en'
+  when countrycode = 31 then
+    wpistem = wpistem'-nl'
+  when countrycode = 39 then
+    wpistem = wpistem'-it'
+  when countrycode = 49 then
+    wpistem = wpistem'-de'
+  when countrycode = 81 then
+    wpistem = wpistem'-ja'
+  otherwise do
+    wpistem = wpistem'-'right(countrycode, 3, '0')
+    wisfile = 'xwp.wis'
+    end
+end
+
 packages.0 = 3
-packages.1.id = countrycode
+packages.1.id = 1
 packages.1.dir = 'kernel'
 packages.2.id = 1000 + countrycode
 packages.2.dir = right(countrycode, 3, '0')
