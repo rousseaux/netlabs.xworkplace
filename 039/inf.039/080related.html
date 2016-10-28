@@ -1,0 +1,143 @@
+<HTML NOSUBLINKS="xices" NOSUBLINKS="further" NOSUBLINKS="vers_" XPOS=right WIDTH=70%>
+<HEAD>
+    <TITLE>
+        File correlati
+    </TITLE>
+</HEAD>
+<BODY>
+Sono parecchi i file presenti nella cartella di installazione di &xwp; che
+possono essere utili per l'utente:
+
+<UL><LI><CITE><STRONG>BOOTMGR.CMD</STRONG></CITE> ä compreso dalla V0.83.
+Questo script, donato da
+Duane A. Chamblee &lt;duanec@ibm.net&gt;, aggiunge automaticamente alle azioni di
+riavvio definite nella &xshutdown; di &xwp; tutte le scelte presenti in Gestione Caricamento, andando
+a modificare le chiavi di &xwp; direttamente nel file OS2.INI. Non c'ä garanzia
+che questo sistema funzioni per tutti.
+
+<P><LI><CITE><STRONG>CROBJxxx.CMD</STRONG></CITE>
+(dove xxx ä un codice lingua di tre cifre,
+come descritto nella sezione <A HREF="inst_4nls.html">Supporto Lingue Nazionali</A>) viene usato da
+&xwp; per generare le cartelle di configurazione default. Si tratta di un semplice script
+REXX che genera oggetti sulla Scrivania.
+<P>Questo script ä richiamato alla fine dell'installazione (al primo riavvio della Scrivania)
+ed ogni volta che &xwp; non riesce a localizzare la sua cartella di configurazione.
+<P>E' possibile modificare questi script per generare una diversa cartella di configurazione.
+Si presti molta attenzione nel modificare le impostazioni dei vari oggetti,
+specialmente le parole chiave <CITE>OBJECTID</CITE>: il funzionamento di &xwp; si basa su di esse.
+
+<P><LI><CITE><STRONG>NEWOBJ.CMD</STRONG></CITE>
+Usato nelle vecchie versioni di XFolder
+(prima della V0.52)
+per creare nuovi oggetti. Questo compito ora ä svolto
+<A HREF="menu_2template.html">tramite le maschere,</A> ma lo script ä comunque incluso per gli affezionati a questo metodo.
+<P>Lo script richiede i seguenti parametri sulla linea di comando:
+<PRE>newobj &lt;wpsclass&gt; &lt;name&gt;</PRE>
+<P>Nella cartella corrente viene creata una nuova istanza di<CITE>&lt;wpsclass&gt;</CITE> con titolo
+<CITE>&lt;name&gt;</CITE>. Si veda
+la pagina <A HREF="xices_1wpsclasses.html">"Le classi WPS"</A> per una lista delle classi WPS.
+Si tenga presente che nel caso di certe classi non ha senso crearne oggetti.
+<P>Esempio d'uso:
+<PRE>newobj WPFolder Nuova_Cartella</PRE>
+<P>crea un oggetto chiamato "Nuova_Cartella" nella cartella corrente.
+<P><STRONG>Nota:</STRONG> Dalla V0.41, XFolder crea i nuovi oggetti partendo da maschere.
+Questo metodo ha il grande vantaggio di permettere di creare oggetti con
+impostazioni assunte (particolarmente utile per le cartelle).
+
+<P><LI><CITE><STRONG>NETSCDDE.EXE</STRONG></CITE> (L'interfaccia DDE di Netscape):
+si veda la <A HREF="069netscdde.html">pagina specifica</A>.
+
+<P><LI><CITE><STRONG>REPCLASS.EXE</STRONG></CITE>
+era usato nelle vecchie versioni di XFolder per registrare le classi &xwp; sostitutive di quelle
+standard. I parametri per l'uso da linea di comando sono i seguenti:
+<PRE>repclass &lt;oldclass&gt; &lt;replacewithclass&gt; [&lt;dllname&gt;]</PRE>
+<P><CITE>&lt;oldclass&gt;</CITE> ä la classe WPS da sostituire. Fare attenzione a maiuscole
+e minuscole.
+<P><CITE>&lt;replacewithclass&gt;</CITE> ä la nuova classe
+WPS che si vuole registrare e che al tempo stesso va a sostituire
+<CITE>&lt;oldclass&gt;</CITE>. Anche per questa variabile fare attenzione a
+maiuscole e minuscole.
+<P><CITE>&lt;dllname&gt;</CITE> ä la libreria a collegamento dinamico (DLL) che
+contiene <CITE>&lt;replacewithclass&gt;</CITE>.
+Se la DLL non ä nel percorso LIBPATH (come nel caso di XFolder) deve essere
+specificato il percorso completo.
+<P>Se si omette <CITE>&lt;dllname&gt;</CITE>, <CITE>&lt;replacewithclass&gt;</CITE>
+sarÖ de-registrato e tolto dalla lista delle sostituzioni per
+<CITE>&lt;oldclass&gt;</CITE>.
+<P>Esempio preso da &xwp;: le classi da sostituire sono
+<CITE>WPFolder</CITE>, <CITE>WPDisk</CITE> e <CITE>WPSystem</CITE>, mentre le nuove
+classi XFolder sono <CITE>XFolder</CITE>, <CITE>XFldDisk</CITE> e <CITE>XFldSystem</CITE>,
+tutte contenute nel file XFLDR.DLL.
+<P>Tutte le azioni effettuate da questo programma hanno effetto solo dopo il riavvio del sistema o
+della Scrivania (con WPSRESET.EXE, vedi sotto).
+
+<!-- V0.9.6: removed this
+Nota bene: non si cerchi di rimpiazzare manualmente singole classi di &xwp; o sostituzioni effettuate
+da &xwp;. Le classi che &xwp; usa sono disegnate per funzionare l'una in presenza dell'altra edipendono
+l'una dall'altra! Registrarne er / deregister not all of them, the WPS might hang itself up already at boot-up. For registering or deregistering
+of the &xwp; classes, always use the install script. -->
+
+<P><LI><CITE><STRONG>SOUNDxxx.CMD</STRONG></CITE>
+(dove xxx ä un codice lingua di tre cifre,
+come descritto nella sezione <A HREF="inst_4nls.html">Supporto Lingue Nazionali</A>)
+viene eseguito automaticamente da &xwp; quando
+si abilitano i nuovi <A HREF="mm_2sounds.html">suoni di sistema</A>.
+Questo piccolo script va ad aggiungere alcune stringhe, differenti a seconda della lingua scelta,
+nei file INI del sottosistema
+Multimedia (MMPM/2) di &os2;; queste stringhe appaiono nell'oggetto "Suono" di &os2;.
+&xwp; usa i nuovi suoni solo se trova queste stringhe nei file INI.
+
+<P><LI><CITE><STRONG>SOUNDOFF.CMD</STRONG></CITE>
+disabilita i nuovi suoni di sistema eliminando le stringhe aggiunte ai file INI MMPM/2.
+
+<P><B>Nota bene:</B> gli script <CITE>SOUND</CITE> prevedono che il percorso della cartella
+MMPM/2 sia <CITE>unitÖ di avvio\MMOS2</CITE>. Se cosç non fosse l'utente dovrÖ
+provvedere a correggerli manualmente.
+
+<P><LI><CITE><STRONG>TREESIZE.EXE</STRONG></CITE> ä utilizzato per la voce omonima
+("Dimensione totale cartella" in italiano) nei menu contestuali delle cartelle e permette
+di calcolare la quantitÖ di spazio occupata da una cartella, comprese le sottocartelle.
+Avviando Treesize con il nome di una directory come parametro viene mostrato il risultato
+relativo alla cartella inserita invece di quello relativo alla cartella corrente.
+<P>Quando Treesize termina i suoi calcoli si possono trascinare nella finestra principale altre cartelle WPS,
+le cui dimensioni si aggiungeranno a quelle giÖ calcolate.
+<P>Treesize permette di modificare alcune impostazioni attraverso il menu contestuale.
+<P>Tutte le impostazioni sono salvate alla chiusura del programma.
+
+<P><LI><CITE><STRONG>WPSRESET.EXE</STRONG></CITE>
+serve a riavviare la Scrivania senza resettare il sistema
+(si veda la pagina <A HREF="xsd_1restartwps.html">"Riavviare la Scrivania"</A> per i dettagli).
+A partire dalla versione V0.71 viene usato solo durante l'installazione: &xwp; dispone ora
+di una sua routine interna per il riavvio della Scrivania.
+Per evitare avvii involontari ä necessario specificare il parametro
+<CITE>"-D"</CITE> per avviare WPSRESET.EXE.
+
+<P><LI><CITE><STRONG>XHELP.CMD</STRONG></CITE>
+ä un potente script REXX che visualizza messaggi in una data lingua, sia da
+HTML che dal normale formato ASCII. Fa parte di "OS/2 CommandPak" (dello stesso
+autore) disponibile su
+<A HREF="http://www.xworkplace.org">xworkplace.org</A>. Nel pacchetto xhelp ä
+ampiamente documentato.
+
+<P>Questo script veniva utilizzato dal vecchio programma di installazione di
+&xwp; in modalitÖ di testo. Dato che oggi &xwp; si installa tramite WarpIN,
+xhelp.cmd non ä pió necessario. E' ancora incluso nel caso qualcuno volesse
+continuare ad usare la vecchia procedura di installazione.
+
+<P><LI><CITE><STRONG>XSHUTDWN.EXE</STRONG></CITE> ä stato rimosso a partire dalla versione V0.9.7.
+
+<P><LI><STRONG>Tutti gli altri file .CMD</STRONG> nella cartella di &xwp; sono
+script REXX, utilizzati nella configurazione di &xwp; per modificare comodamente
+certe impostazioni cartella (le stesse presenti nel sottomenu "Impostazioni veloci").
+Questi script sono tutti molto simili tra loro: varia solo l'impostazione che viene applicata alla
+cartella. ALWSSORT.CMD ä completo di commenti (in inglese) che permettono di capirne
+facilmente il funzionamento. E' sufficiente fare una copia di ALWSSORT.CMD con un altro nome e cambiare le impostazioni
+su cui agisce per poter applicare alle cartelle la configurazione che pió si preferisce.
+<!-- V0.9.16 See the
+<A HREF="xices_30wpsstrings.html">"WPFolder Setup Strings"</A> page for a list
+of applicable settings. -->
+</UL>
+</BODY>
+</HTML>
+
+

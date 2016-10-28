@@ -1,0 +1,41 @@
+<HTML NOSUBLINKS="config"  WIDTH=70% XPOS=right>
+<HEAD>
+    <TITLE>
+        Tasti rapidi oggetti
+    </TITLE>
+</HEAD>
+<BODY>
+<B>Classi: XFldObject, XWPSetup, XWPKeyboard</B>
+<HR>
+A partire dalla V0.9.0, &xwp; introduce i "tasti rapidi globali", il che significa
+che ä possibile aprire ogni oggetto nella sua vista predefinita tramite una certa combinazione
+di tasti, definibile individualmente per ogni oggetto.
+
+<P>Come per tutte le funzioni dello hook di &xwp;, le scorciatoie agli oggetti sono inizialmente disabilitate.
+‘ necessario abilitarle nell'oggetto "Impostazioni &xwp;".
+
+<P><B>Nota:</B> non si confondano i tasti rapidi globali con i
+<A HREF="fldr_5xelerators.html">tasti rapidi cartella,</A> cosç come
+mostrate nell'oggetto impostazioni "Workplace Shell". I tasti rapidi globali sono usati
+per l'apertura di oggetti tramite una definizione di tasti e funzionano sempre, mentre i tasti rapidi
+cartella sono usati per particolari comandi sulle cartelle e lavorano solo nelle cartelle.
+
+<P>I tasti rapidi globali possono essere <B>configurati</B> in due modi. Cliccando nella finestrella "Tasto rapido" 
+alla pagina "Icona" del blocco impostazioni di ogni oggetto, ä possibile definire una combinazione di tasti per
+l'oggetto. D'ora in poi, premendo quella combinazione di tasti in qualunque situazione,
+l'oggetto verrÖ aperto nella sua vista predefinita (come se si fosse fatto doppio clic su di esso).
+
+<P>In seconda battuta, &xwp; inserisce una nuova pagina nell'oggetto impostazioni<B>"Tastiera"</B>,
+che si trova nella cartella "Impostazione del Sistema". Su questa nuova pagina, chiamata per alcune
+ragioni "Tasti rapidi", sono elencate tutte le scorciatoie attualmente definite.
+
+<P>Ci sono alcune <B>limitazioni</B> a riguardo dei tasti rapidi globali. Dato che il rilevamento
+dei tasti rapidi ä effettuato dallo hook di &xwp; a PM, i tasti rapidi globali funzionano solo nella sessione
+di Presentation Manager (PM). Questo include tutte le applicazioni PM, la
+WPS stessa e le sessioni in finestra (seamless) &os2;, DOS e &winos2;, ma
+<I>non</I> le sessioni DOS, &os2; o &winos2; <I>a schermo intero</I>, sfortunatamente.
+<BR>
+</BODY>
+</HTML>
+
+

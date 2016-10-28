@@ -1,0 +1,108 @@
+<HTML>
+<HEAD>
+    <TITLE>
+         Il Virtual Address Space in &os2;
+    </TITLE>
+</HEAD>
+<BODY>
+
+Come si sa, i processori 80386 e superiori utilizzano 32 bit per tutti gli indirizzi,
+il che permette di indirizzare fino a 4 GB di memoria.
+Questo ä comunemente chiamato "spazio di indirizzamento virtuale ("virtual address space").
+
+<P>Si noti che questo spazio di indirizzamento esiste a prescindere dalla
+quantitÖ di memoria fisica installata nel sistema. Uno dei vantaggi maggiori
+del processore 80386 (rispetto ai suoi predecessori) ä infatti la capacitÖ del
+processore di convertire un indirizzo virtuale in un indirizzo fisico RAM hardware
+-- con un minimo aiuto da parte del sistema operativo (nel nostro caso
+&os2;), che deve solo fornire le tabelle processore dove registrare i dati di conversione.
+
+<P>Per poter gestire la memoria virtuale rispetto ai vari processi attivi nel sistema,
+&os2; divide i 4 GB dello spazio di indirizzamento virtuale in <B>arene.</B>
+
+<PRE>
+ 4096 MB -----------------------------------------------------
+
+                arena di sistema
+
+  512 MB -----------------------------------------------------
+                arena condivisa
+  variabile ----------------+------------+---------------
+                 arena      | arena      | arena
+                 privata    | privata    | privata
+                 processo 1 | processo 2 | processo 23
+    0 MB -------------------+------------+---------------
+</PRE>
+
+L'<B>arena di sistema</B> ä lo spazio riservato al codice che lavora a ring 0,
+cioä i programmi di controllo per i dispositivi e il kernel &os2; stesso. Le
+applicazioni normali non possono accedere a quest'area.
+
+<P>Al contrario, sia l'<B>arena condivisa</B> che quelle <B>private</B> sono accessibili
+a tutte le applicazioni.
+
+<P>Mentre le arene di sistema e condivisa sono ospitate nelle stesse pagine 
+di memoria fisica, l'arena privata ä differente per ogni processo: ciascuna
+applicazione ha infatti la sua memoria privata riservata (codice e dati).
+L'arena condivisa ä invece utilizzata per codice e dati che possono essere
+condivisi tra le applicazioni: le 
+<A HREF="glossary/gls_dll.html">DLL</A>,
+per es., vengono tutte caricate in quest'area.
+
+<P>Il confine tra l'arena condivisa e quelle private ä variabile
+e dipende dalla quantitÖ di memoria condivisa usata dal sistema. E'
+infatti possibile "esaurire la memoria" del sistema caricando troppe DLL.
+Nella realtÖ, in un caso del genere il sistema non ha affatto esaurito la memoria fisica
+(nel qual caso verrebbe semplicemente allargato il 
+<a href="glossary/gls_mem_paging.html">file di appoggio</a>);
+si ä invece esaurito lo spazio di indirizzamento.
+
+<P>In tutti i kernel &os2; dal 2.0 al 4.5 escluso (il kernel Aurora), il 
+limite per la memoria riservata alle applicazioni era fisso a 
+512 MB, per consentire un facile supporto per le applicazioni 16 bit, che avrebbero
+avuto difficoltÖ ad accedere alla memoria al di sopra di quella linea.
+
+
+<P>Questo limite ä stato modificato a partire dal kernel Aurora, che consente
+alle applicazioni di allocare memoria oltre la linea dei 512 MB, se 
+<CODE>VIRTUALADDRESSLIMIT</CODE> in &cfgsys; ä impostato 
+ad un valore superiore a 512.
+In questo caso, lo spazio di indirizzamento appare cosç:
+
+<PRE>
+ 4096 MB ---------------------------------------------
+                arena di sistema
+ VIRTUALADDRESSLIMIT ---------------------------------
+                arena memoria alta (condivisa e privata)
+  512 MB ---------------------------------------------
+                arena condivisa
+  variabile ----------------+------------+---------------
+                 arena      | arena      | arena
+                 privata    | privata    | privata
+                 processo 1 | processo 2 | processo 23
+    0 MB -------------------+------------+---------------
+</PRE>
+
+Come si vede chiaramente, lo spazio tra l'arena di sistema e
+quella condivisa si chiama "memoria alta", ed ä diviso anch'esso
+tra arena condivisa e arene private. La memoria alta ä assegnata
+solo alle applicazioni che la richiedono esplicitamente, perciï, anche se abilitata,
+puï essere utilizzata solo da quelle applicazioni che ne prevedono l'esistenza.
+La macchina virtuale Java, per esempio, usa questa arena "alta" se si
+specifica <CODE>SET JAVA_HIGH_MEMORY=1</CODE> in
+&cfgsys;.
+
+<P>Abilitare la memoria alta ha perï anche delle controindicazioni.
+Come si ä detto, questa regione non ä accessibile dal codice a 16 bit.
+Per questo motivo, se si usa la memoria alta con Java, bisogna usare
+un'implementazione a 32 bit del TCP/IP (qualunque versione dalla  4.1 in su).
+
+<P>Inoltre, pió elevato ä il valore <CODE>VIRTUALADDRESSLIMIT</CODE>,
+minore ä lo spazio per l'arena di sistema; ä per questo motivo che
+aumentare il limite per l'indirizzamento virtuale puï ridurre il numero 
+di processi disponibili.
+
+<BR>
+</BODY>
+</HTML>
+

@@ -1,0 +1,51 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: stringa impostazioni oggetto
+    </TITLE>
+</HEAD>
+<BODY>
+Il campo "Impostazioni"
+visualizza la stringa impostazioni corrente dell'oggetto.
+Tale stringa viene ricavata da &xwp; basandosi sulle impostazioni dell'oggetto. 
+Il campo Š di sola lettura e non pu• essere modificato; Š comunque possibile copiarne negli 
+<A HREF="glossary/gls_clipboard.html">Appunti</A> il contenuto
+utilizzando i tasti <CODE>Ctrl+Insert</CODE>.
+
+<P>Si veda <A HREF="glossary/gls_objstrings.html">"Stringhe impostazioni WPS"</A> per 
+un'introduzione
+alle stringhe impostazioni e un elenco di quelle usate pi— comunemente.
+
+
+E' possibile utilizzare la stringa impostazioni per creare un altro oggetto simile usando le funzioni 
+<A HREF="glossary/gls_cmd_rexx.html">REXX</A>.
+
+<P>Al momento &xwp; Š in grado di interpretare alcune delle stringhe relative alle classi seguenti:
+
+<UL><LI><A HREF="objects/string_1wpobject.html">WPObject</A>
+<P><LI><A HREF="objects/string_2wpfolder.html">WPFolder</A>
+<P><LI><A HREF="objects/string_5wpprogram.html">WPProgram</A>;
+Con queste classi la stringa impostazioni pu• diventare
+molto lunga. E' possibile vedere come la WPS immagazzina le variabili d'impostazione DOS
+(bottone "propriet… DOS" o "&winos2;" nella pagina "Sessione") 
+nell'<A HREF="glossary/gls_env.html">ambiente</A> del programma, 
+utilizzando stringhe <CODE>SET xxx=yyy</CODE>.
+<P><LI><A HREF="objects/string_7xcenter.html">XCenter</A>
+
+</UL>Se le stringhe impostazioni sono relative ad una classe pi— specifica ma &xwp; non Š in grado
+di decodificarle si vedranno solo le informazioni relative alla(e) classe(i) superiore(i).
+In particolare, non sono supportate le stringhe impostazioni di WPPalette (e le sue sottoclassi),
+WPDesktop/XFldDesktop, WPDisk/XFldDisk,
+WPHost, WPLaunchPad, WPNetgrp, WPPdr, WPPrinter, WPRPrinter, WPServer, WPShadow,
+e WPUrl.
+
+<P>Inoltre, anche per le classi elencate all'inizio non tutte le 
+stringhe impostazioni sono note ad &xwp;, dato
+che non vi Š una interfaccia standard per recuperarle. Si veda, come gi… consigliato, 
+<A HREF="glossary/gls_objstrings.html">"Stringhe impostazioni WPS"</A> per i dettagli.
+
+
+<BR>
+</BODY>
+</HTML>
+

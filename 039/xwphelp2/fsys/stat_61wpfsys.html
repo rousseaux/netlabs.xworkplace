@@ -1,0 +1,41 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        Barra di stato: codici aggiuntivi relativi agli oggetti appartenenti al file-system
+    </TITLE>
+</HEAD>
+<BODY>
+Gli <B>oggetti file-system</B> (appartenenti cioä alla classe WPFileSystem, come cartelle e file dati)
+supportano <I>anche</I> i codici seguenti:
+<BR><DL>
+<DT><CITE>  $r  1)  </CITE><DD>nome "reale" dell'oggetto
+<DT><CITE>  $y  1)  </CITE><DD>tipo dell'oggetto (attributo esteso .TYPE)
+<DT><CITE>  $a  1)  </CITE><DD>
+<A HREF="glossary/gls_fattrs.html">attributi</A>
+dell'oggetto; vengono inseriti quattro caratteri
+("ahrs") a indicare gli attributi Archivio, Nascosto, Solo lettura e Sistema. Gli
+attributi attivi sono indicati in maiuscolo (per es. "Ahrs")
+<DT><CITE>  $D  1)  </CITE><DD>data ultima scrittura oggetto
+<DT><CITE>  $T  1)  </CITE><DD>ora ultima scrittura oggetto
+<DT><CITE>  $Eb 1,2)</CITE><DD>dimensione attributi estesi in byte
+<DT><CITE>  $Ek 1,2)</CITE><DD>dimensione attributi estesi in kByte, cioä byte / 1000
+<DT><CITE>  $EK 1,2)</CITE><DD>dimensione attributi estesi in KBytes, cioä byte / 1024
+<!-- V0.9.6: added the following two -->
+<DT><CITE>  $Ea 1,2)</CITE><DD>dimensione attributi estesi in byte/kByte;
+sceglie automaticamente la scala ottimale a seconda del valore
+<DT><CITE>  $EA 1,2)</CITE><DD>dimensione attributi estesi in byte/KByte;
+sceglie automaticamente la scala ottimale a seconda del valore
+</DL>
+<BR><B>Nota bene:</B>
+<P>1) Questi codici si limitano a mostrare i valori contenuti nella memoria interna della WPS.
+Se i valori cambiano, perchÇ ad es. un file viene modificato da un altro programma,
+le informazioni nella barra di stato cambiano solo quando il buffer della WPS si aggiorna, il che succede
+ad es. selezionando "Aggiornare ora".
+<P>2) Nella WPS vi ä da sempre un difetto per cui dimensioni degli attributi estesi superiori a 32767 risultano
+sempre come 32767, anche se sono tecnicamente possibili dimensioni fino a 64 KB.
+In questi casi anche &xwp; riporta il valore sbagliato.
+<BR>
+</BODY>
+</HTML>
+
+

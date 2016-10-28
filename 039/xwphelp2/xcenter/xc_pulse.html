@@ -1,0 +1,105 @@
+<HTML RESID=&ID_XSH_WIDGET_PULSE_MAIN;>
+<HEAD>
+    <TITLE>
+        &xcenter;: elemento Pulse (carico CPU)
+    </TITLE>
+</HEAD>
+<BODY>
+L'elemento <B>Pulse (carico CPU)</B> di <A HREF="xcenter/xc_main.html">&xcenter;</A>
+mostra il carico corrente della CPU insieme ad un grafico della sua attivitÖ precedente.
+E' aggiornato una volta al secondo.
+<IFNDEF __EWORKPLACE__>
+Funziona in maniera analoga al Monitor dello &warpcenter;.
+</IFNDEF>
+
+<P>Il suo aspetto ä simile a questo:
+<BR><IMG SRC="img/xc_pulse.gif">
+
+<P>La parte ciano del grafico rappresenta il carico causato sul sistema
+dall'"utente", mentre la parte blu mostra il carico "IRQ". La percentuale
+visualizzata al centro dÖ sempre il valore combinato corrente, "utente" pió "IRQ". Se
+si sta usando un sistema multiprocessore si avrÖ un grafico "utente" per ognuna delle
+CPU presenti. Ci sarÖ perï comunque un solo grafico "IRQ" dato che, per definizione,
+&os2; elabora tutti gli interrupt sulla prima CPU del sistema. Si vedano le note
+aggiuntive qui sotto per dettagli.
+
+<P>E' possibile
+<A HREF="glossary/gls_dropfonts.html">trascinare tipi di carattere e colori</A>
+sull'elemento "Pulse (carico CPU)".
+Tale elemento, inoltre, ä
+<A HREF="xcenter/xc_main_sizbar.html">ridimensionabile</A>.
+
+<P><B>Dettagli di funzionamento</B>
+
+<P>Internamente, l'elemento "Pulse" utilizza l'API <CODE>DosPerfSysCall</CODE>.
+Questa API ha il vantaggio di misurare l'attivitÖ della CPU accedendo direttamente al
+contatore di prestazioni nel kernel di &os2;, senza dover usare un secondo
+sottoprocesso che occupa il restante tempo libero della CPU (consumando inutilmente
+le batterie sui computer portatili).
+
+<P>Di conseguenza, l'utilizzo di questo elemento <I>non</I> consuma tempo CPU
+addizionale, al di fuori di quanto ä necessario a ridisegnare l'elemento stesso. In
+altre parole, l'elemento non verifica direttamente il carico della CPU, limitandosi
+piuttosto a richiedere tale valore al kernel &os2; ed a visualizzarlo poi in un
+grafico.
+
+<P>D'altra parte, il carico provocato dall'elemento per ridisegnarsi fa sç che
+difficilmente si vedrÖ mai un carico uguale a zero per la CPU, anche se in quel momento
+non si sta facendo nulla. Sulla macchina dell'autore (un Pentium II-400), il carico
+della CPU non scende mai al di sotto dello 0.7%, con l'elemento alla lunghezza
+standard.
+
+<P><B>Requisiti</B>
+
+<IFNDEF __EWORKPLACE__>
+<P>L'API <CODE>DosPerfSysCall</CODE> ä stata introdotta relativamente di recente, e
+perciï potrebbe non funzionare su tutti i sistemi. Non dovrebbero esserci problemi
+con Warp 4 e sistemi superiori (o Warp 3 con un livello di fixpak equivalente, che
+dovrebbe essere il fixpak 26). </IFNDEF>
+
+<P>La documentazione IBM relativa a <CODE>DosPerfSysCall</CODE> afferma che per il
+funzionamento dei contatori prestazioni nel kernel ä necessario disporre di un
+processore Pentium o superiore.
+
+<P>Se l'elemento non mostra il grafico ma solo un <CODE>"E xxx"</CODE> (dove
+<CODE>xxx</CODE> sta per un codice di errore standard &os2;), si ä verificato un
+errore. Il pió comune ä il codice <CODE>"E 182"</CODE>, che significa che l'API
+<CODE>DosPerfSysCall</CODE> non ä disponibile nel sistema. Per altri codici di
+errore, si puï digitare <CODE>HELP SYSxxx</CODE> dalla linea di comando.
+
+<P><B>Carico "Utente" e "IRQ"</B>
+
+<P>Ad ogni richiesta del livello di prestazioni, <CODE>DosPerfSysCall</CODE> fornisce
+un valore carico "utente" ed uno "IRQ".
+
+<P>Il  <B>carico "utente"</B> ä il tempo speso nell'elaborazione di codice "task time".
+In sostanza, ä il tempo speso dalla CPU nell'eseguire codice relativo o ad
+un'applicazione, o al kernel &os2;, o ad un programma di controllo, all'interno del
+normale flusso di esecuzione di processi e sottoprocessi, sotto il controllo dello
+"scheduler" nel kernel &os2; (Per ulteriori dettagli, si veda
+<A HREF="glossary/gls_scheduler.html">"Processi e sottoprocessi"</A>).
+
+<P>Il <B>carico "IRQ"</B>, invece, rappresenta il tempo speso nella gestione degli
+interrupt. Come si sa, gli interrupt sono un sistema utilizzato dalle componenti
+hardware per segnalare alla CPU che si sono verificati eventi significativi che
+richiedono un immediato intervento. Nei casi pió comuni gli interrupt sono attivati dai
+dischi rigidi, dalle schede sonore, dagli adattatori di rete e dalle porte seriali e
+per stampanti. Queste periferiche non possono aspettare che lo scheduler &os2; abbia
+terminato il tempo dedicato ad un processo e sia pronto a passare al successivo. Quando
+viene attivato un IRQ, il kernel &os2; interrompe la normale sequenza programmata e
+richiama subito un gestore dell'interrupt che, nella maggior parte dei casi, ä
+all'interno di un programma di controllo (in generale, in &os2; soltanto i driver dei
+dispositivi possono prevedere gestori degli interrupt). Per esempio, se si attiva un
+interrupt dal disco rigido, a gestire tale IRQ viene immediatamente richiamato
+l'apposito codice contenuto in <CODE>IBM1S506.ADD</CODE>.
+
+<P>E' normale non rilevare mai carico IRQ sul proprio sistema: significa
+probabilmente che non ci sono adattatori di rete installati e che si ä abilitato il
+busmastering per i dischi rigidi. Se invece si nota un alto carico "IRQ", sarÖ
+opportuno prendere in considerazione misure per ridurlo, abilitando il busmastering per
+i dischi rigidi e/o utilizzando un adattatore di rete capace di busmastering.
+
+<BR>
+</BODY>
+</HTML>
+

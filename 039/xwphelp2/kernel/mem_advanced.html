@@ -1,0 +1,71 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: memoria
+    </TITLE>
+</HEAD>
+<BODY>
+Le impostazioni nel gruppo "Impostazioni avanzate" permettono di controllare l'utilizzo della
+memoria alta in &os2;.
+
+<P>Si noti che tutte queste impostazioni richiedono l'utilizzo del
+kernel Aurora (cioŠ il kernel &os2; versione 4.5 o superiore:
+Warp Server per e-business, Warp 4 con installato almeno il fixpak 13,
+o un "Convenience Pack" IBM, o eComStation).
+Altrimenti tutte queste impostazioni sono disabilitate.
+
+<UL><LI><B>"Limite indirizzamento virtuale"</B> specifica quale debba essere l'indirizzo pi— alto
+che &os2; dar… alle applicazioni quando queste richiedono memoria alta
+(sopra la linea dei 512 MB). Corrisponde all'impostazione
+<CODE>VIRTUALADDRESSLIMIT</CODE> nel file &cfgsys;,
+e si pu• selezionare un valore tra 512 e 3072 MB.
+
+<P>Se impostato su 512 MB, che Š anche il valore assunto, nonch‚
+l'unico possibile se si usano kernel non-Aurora), l'uso della memoria alta Š disabilitato.
+
+<P>Impostare valori superiori ai 512 MB riduce il numero di processi che possono essere
+attivi contemporaneamente.
+
+<P>Si veda <A HREF="glossary/gls_mem_himem.html">Il Virtual Address Space in &os2;</A> per ulteriori
+informazioni su questo argomento.
+
+<P><LI>Se <B>"Disabilita DLL basing"</B> Š abilitato, &os2; al momento del caricamento
+della <A HREF="glossary/gls_dll.html">DLL</A> ne ignorer… l'indirizzo base
+(che sarebbe l'indirizzo di caricamento preferito). Corrisponde all'impostazione
+<CODE>DLLBASING=OFF</CODE> nel file &cfgsys;.
+
+<P>Abilitare questa impostazione riduce la frammentazione nella
+"shared arena" e riduce perci• la possibilit… di esaurire la memoria
+condivisa, ma le prestazioni nel caricamento delle DLL ne potrebbero soffrire.
+
+<P><LI>Se si abilita <B>"Memoria alta per Java"</B> la Java
+Virtual Machine &os2; cercher… di utilizzare l'area di memoria alta
+&os2; (al di sopra della linea dei 512 MB). Utilizzabile solo se il limite indirizzamento
+virtuale Š stato impostato su un valore superiore a 512 MB.
+
+<P>Corrisponde all'impostazione <CODE>SET JAVA_HIGH_MEMORY=1</CODE> nel file &cfgsys;.
+
+<P>L'utilizzo della memoria alta Š impossibile per il codice a 16-bit. Per cui, innanzitutto,
+Š necessario avere installato il TCP/IP 4.1 o superiore.
+
+<P><LI>Abilitando <B>"Inizializzazione precoce memoria"</B>, &os2; rende
+disponibile ai programmi di controllo (driver) tutta la memoria in una
+fase iniziale dell'avvio del sistema; corrisponde all'impostazione <CODE>EARLYMEMINIT</CODE>
+nel file &cfgsys;.
+
+<P>Come valore assunto, solo 16 MB di memoria sono disponibili durante la prima fase
+di avvio del sistema, a prescindere dalla quantit… totale di memoria effettivamente
+installata nella macchina. L'ammontare reale della memoria viene reso disponibile
+solo dopo che i programmi di controllo sono stati caricati, poco prima che sia avviata
+la shell. Qualora si dovessero caricare molti driver, o alcuni di essi fossero di dimensioni
+particolarmente grandi, il sistema potrebbe esaurire la memoria disponibile, rendendo
+impossibile caricare i driver restanti. Attivando questa opzione si risolve il problema.
+
+<P><B>Attenzione: NON</B> attivare questa opzione se si usa il file system HPFS386
+o vecchio hardware ISA che accede direttamente alla memoria, per es. vecchi controller
+SCSI ISA, per evitare il verificarsi di corruzione o perdita dei dati.
+
+</UL>
+</BODY>
+</HTML>
+

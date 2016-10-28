@@ -1,0 +1,39 @@
+<HTML SUBLINKS="xxx" WIDTH=70% XPOS=right>
+<HEAD>
+    <TITLE>
+        Nuovi suoni di sistema
+    </TITLE>
+</HEAD>
+<BODY>
+<B>Classi: XFolder, XFldDesktop</B><HR>
+Se Š stato installato il sottosistema multimediale di &os2; (MMPM/2) con una scheda audio,
+&xwp; pu• introdurre suoni di sistema aggiuntivi collegati a certi eventi, come gi…
+facevano versioni meno recenti di XFolder.
+
+<P>Abilitando la voce "Suoni di sistema avanzati" in
+"Impostazioni &xwp;", &xwp; aggiunger… nuovi eventi alla pagina "Suoni" nell'oggetto "Suono".
+
+<P>Si noti che i suoni di sistema di &xwp; rallentano il sistema, cosa che del resto
+fanno anche i normali suoni di sistema. Anche sul mio Pentium-133 con 32 MB RAM, il fenomeno Š
+apprezzabile, nonostante &xwp; usi un thread separato per riprodurre i suoi suoni.
+
+<P>Configurare questi nuovi suoni non Š difficile: &xwp; aggiunge semplicemente
+alcuni elementi alla lista degli eventi nella pagina "Suoni".
+Tutti gli eventi di &xwp; iniziano per "&xwp;", per cui si pu• riconoscerli raggruppati insieme.
+
+<P>Alcuni piccoli file sonori sono presenti nella subdirectory <CODE>WAV</CODE> della
+directory di installazione di &xwp; per poter cominciare. <CODE>;-)</CODE>
+
+<P><B>Implementazione.</B> Per introdurre queste funzioni, parecchie componenti di
+&xwp; devono interagire. Per intercettare gli eventi di sistema per i nuovi suoni di sistema,
+Š necessario che siano installate le classi XFolder e XFldDesktop. Comunque, la nuova classe
+sostitutiva XWPSound (consultare la <A HREF="mm_1sndobj.html">pagina precedente</A>)
+non Š richiesta per i nuovi suoni di sistema. Tale classe semplifica soltanto la configurazione.
+
+<BR>
+</BODY>
+</HTML>
+
+
+
+

@@ -1,0 +1,31 @@
+
+/*
+ * xfix.rc:
+ *      Copyright (C) 1997-2002 Ulrich M”ller.
+ *      This program is free software; you can redistribute it and/or modify
+ *      it under the terms of the GNU General Public License as published by
+ *      the Free Software Foundation, in version 2 as it comes in the COPYING
+ *      file of the XWorkplace main distribution.
+ *      This program is distributed in the hope that it will be useful,
+ *      but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *      GNU General Public License for more details.
+ */
+
+#include <os2.h>
+
+#define ID_FXICO_BLANK                       11011
+#define ID_FXICO_ERROR                       11012
+#define ID_FXICO_DELETE                      11013
+#define ID_FXICO_PROTECT                     11014
+#define ID_FXICO_SAFE                        11015
+#define ID_FXICO_ORPHAN                      11016
+
+POINTER 1                LOADONCALL MOVEABLE DISCARDABLE xfix.ico
+POINTER ID_FXICO_BLANK   LOADONCALL MOVEABLE DISCARDABLE blank.ico
+POINTER ID_FXICO_ERROR   LOADONCALL MOVEABLE DISCARDABLE error.ico
+POINTER ID_FXICO_DELETE  LOADONCALL MOVEABLE DISCARDABLE delete.ico
+POINTER ID_FXICO_PROTECT LOADONCALL MOVEABLE DISCARDABLE protect.ico
+POINTER ID_FXICO_SAFE    LOADONCALL MOVEABLE DISCARDABLE safe.ico
+POINTER ID_FXICO_ORPHAN  LOADONCALL MOVEABLE DISCARDABLE orphan.ico
+

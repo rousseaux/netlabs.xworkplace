@@ -1,0 +1,65 @@
+<HTML RESID=&ID_XFH_BATCHRENAME;>
+<HEAD>
+    <TITLE>
+        &xwp;: Objecten andere naam geven
+    </TITLE>
+</HEAD>
+<BODY>
+Het "Hernoem objecten..." menu onderdeel staat u toe om in ‚‚n keer een aantal objecten een andere
+naam te geven door uitgebreide
+<A HREF="glossary/gls_regexps.html">vaste uitdrukkingen</A>
+te gebruiken ("groepsgewijs hernoemen").
+Let op dat de eenvoudige
+<A HREF="glossary/gls_wildcards.html">jokerteken</A>
+uitdrukkingen niet door deze dialoog worden ondersteund.
+
+<P>"Groepsgewijs hernoemen" kan zeer bruikbaar zijn als in ‚‚n keer aan veel objecten, die voldoen
+aan dezelfde criteria, een andere naam gegeven moet worden - - b.v., indien u alle bestanden die
+eindigen op <CODE>.JPEG</CODE> wilt wijzigen naar <CODE>.jpg</CODE>.
+
+<P>"Groepsgewijs hernoemen" gaat als volgt:
+
+<OL><LI>Zet een vaste uitdrukking in het <B>"Zoek vaste uitdrukking"</B> invoerveld. Dit
+is de tekst waartegen de objecten worden getoetst volgens de regels die zijn vastgelegd in uitgebreide
+<A HREF="glossary/gls_regexps.html">vaste uitdrukkingen</A>.
+
+<P>B.v., als u hier opgeeft <CODE>(.*)\.JPEG</CODE>, zullen alle bestanden die eindigen op
+<CODE>(.*)\.JPEG</CODE> hernoemd worden.
+
+<P>Let erop dat ieder tekstonderdeel dat u wilt vervangen door een andere tekst
+tussen 'haakjes', '(' en ')', wordt geplaatst. Anders kunt u het ondedeel niet refereren
+vanaf de "Hernoem naar uitdrukking:".
+
+<P><LI>Zet de uitdrukking waarnaar hernoemd moet worden in het <B>"Hernoem naar uitdrukking:"</B>
+invoerveld.
+Die bepaalt waarnaar ieder object wordt hernoemd.
+
+<P>Merk op dat de te vervangen teksts geen volledige vaste uitdrukking is omdat hij
+niet gebruikt wordt voor corresponderende objecten.
+Daardoor hoeft u geen speciale tekens zoals de punt '<B>.</B>' over te slaan.
+Echter, een backslash ('\') met een decimaal teken wordt beschouwd als een referentie naar de
+tussen haakjes '(' en ')' staande uitdrukking in de zoekreeks.
+
+<P>Als voorbeeld: om bestanden die eindigen op <CODE>.JPEG</CODE> te hernoemen naar
+<CODE>.jpg</CODE>, geeft u <CODE>\1.jpg</CODE> op.
+B.v. we houden een object <CODE>FILE.JPEG</CODE> tegen de <CODE>(.*)\.JPEG</CODE> zoektekst. Dan
+zal <CODE>\1</CODE> de naam van het object <CODE>FILE</CODE> opleveren, dus het object wordt hernoemd
+naar <CODE>FILE.jpg</CODE>
+
+<P><LI>Selecteren of (De)selecteren van het <B>"Hoofdletter gevoelige vergelijking"</B> veld,
+bepaalt of de zoekreeks moet worden gebruikt wel of niet rekening houdend met hoofdletters.
+
+<P><LI>Indien u <B>"Vergelijk alleen geselecteerde objecten"</B> selecteert, zal het
+zoekproces alleen van toepassing zijn op objecten in de map, die momenteel geselecteerd zijn.
+Anders worden alle objecten in de map op de zoekreeks gecontroleerd.
+
+<P><LI>Druk op de <B>"Start hernoemen ..."</B> toets. Dan wordt bij ieder object dat
+overeenkomt met de brontekst gevraagd of het naar de voorgestelde tekst hernoemd moet worden.
+Zo kunt u verifi‰ren of de tekst die u ingevoerd heeft werkelijk doet wat u wilde bereiken.
+
+</OL>
+De dialoog onderhoudt een overzicht van respectievelijk de laatste tien geldige bron- en doel
+uitdrukkingen. U kunt dit overzicht benaderen via de afrollijsten van ieder invoerveld.
+</BODY>
+</HTML>
+

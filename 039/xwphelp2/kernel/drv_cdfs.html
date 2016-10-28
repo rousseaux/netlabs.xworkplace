@@ -1,0 +1,48 @@
+<HTML RESID=&ID_XSH_DRIVER_CDFS;>
+<HEAD>
+    <TITLE>
+        Kernel &os2;: CDFS.IFS
+    </TITLE>
+</HEAD>
+<BODY>
+Questa finestra di dialogo permette di configurare <CODE>CDFS.IFS</CODE>.
+
+<P>Per informazioni generali sui file system, vedere:
+<UL><LI><A HREF="glossary/gls_fs.html">File system</A>
+<LI><A HREF="glossary/gls_caches.html">Cache dei file system</A>
+
+</UL><P>Premere <B>"Ottimizza"</B> per far scegliere ad &xwp; le impostazioni migliori.
+<P>Premere <B>"Valore assunto"</B> per visualizzare le impostazioni assunte di &os2;.
+
+<P>Premendo <B>"OK"</B> le modifiche effettuate vengono inserite nel campo
+"Parametri", nella pagina "Programmi controllo" del blocco appunti impostazioni 
+<A HREF="objects/obj_krnl.html">"Kernel &os2;"</A>.
+Questo passaggio non modifica perï il file &cfgsys;. Per farlo bisogna premere "Applica", nella
+pagina "Programmi controllo", dopo aver premuto "OK" in questa finestra di dialogo.
+
+<P>Si consiglia di abilitare il supporto <B>Joliet</B>, che ä l'estensione 
+Microsoft dello standard ISO per il file system dei CD-ROM e che consente il supporto dei nomi 
+lunghi (fino a 64 caratteri).
+Molti nuovi CD-ROM non vengono letti correttamente da &os2; se questo formato non ä abilitato.
+
+<P><B>Kanji</B> aggiunge il supporto addizionale per la lingua giapponese.
+
+<P>Il cursore <B>"Dimensione cache"</B> imposta la dimensione della cache per il file system dei CD-ROM.
+Il valore predefinito, 128 KB, non ä molto ampio, quindi si consiglia di portarlo a 512 KB o pió.
+Dato che la testina di un lettore CD-ROM ä molto pió lenta di quella di un disco fisso, una cache pió 
+grande puï veramente velocizzare la lettura da CD-ROM.
+
+<P>Per lo stesso motivo ä utile impostare <B>"Settori letti per volta"</B>
+al valore massimo. Questa impostazione determina il numero di settori che vengono letti
+per ogni singola richiesta fatta dal driver del file-system. Dato che, verosimilmente, i settori 
+letti saranno anche quelli successivi a quello appena richiesto, il fatto di averli giÖ inseriti nella 
+cache ridurrÖ di molto i tempi di accesso al CD-ROM.
+
+Infine, le impostazioni in <B>"Inizializzazione"</B> regolano cosa il driver
+IFS visualizza durante l'avvio del sistema. Come <B>valore assunto</B> viene mostrato
+un breve messaggio relativo al caricamento. <B>"Quiet"</B> fa sç che non venga visualizzato nulla, mentre con 
+<B>"Verbose"</B> vengono mostrate le impostazioni IFS correnti. 
+<BR>
+</BODY>
+</HTML>
+

@@ -1,0 +1,29 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        Data/Ora
+    </TITLE>
+</HEAD>
+<BODY>
+Il gruppo di campi <B>"Data/Ora"</B> raccoglie le informazioni relative alla data del file registrate
+da &os2;:
+
+<OL><LI><B>Creazione</B> mostra data e ora in cui il file Š stato creato. Questa informazione non 
+viene mai modificata (a meno che il file non sia completamente riscritto da un'applicazione).
+<P>Si noti che il file system
+<A HREF="glossary/gls_fs.html">FAT</A>
+non conserva questa informazione, per cui questo campo non ha valore su una unit… FAT.
+
+<P><LI><B>Ultima modifica</B> mostra data e ora in cui per l'ultima volta si Š scritto nel file. Tale 
+valore sar… uguale o successivo alla data e ora di creazione. 
+
+<P><LI><B>Ultimo accesso</B> mostra data e ora in cui per l'ultima volta si Š letto dal file. Tale 
+valore sar… uguale o successivo alla data e ora dell'ultima modifica.
+
+<P>Si noti che il file system
+<A HREF="glossary/gls_fs.html">FAT</A>
+non conserva neanche questa informazione, per cui anche questo campo non ha valore su una unit… FAT.
+</OL>
+</BODY>
+</HTML>
+

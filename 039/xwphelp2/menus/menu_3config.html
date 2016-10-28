@@ -1,0 +1,78 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: configurare i &popmenu;i
+    </TITLE>
+</HEAD>
+<BODY>
+&xwp; permette di aggiungere voci di menu globali nei
+<A HREF="glossary/gls_popmenu.html">&popmenu;i</A>
+di tutte le
+&link_folders;
+presenti nel sistema. A questo scopo viene usata una speciale
+<B>&cfgfdr;,</B> che all'apparenza si presenta come una normale cartella WPS.
+
+<P>Questa cartella si trova
+<IFDEF __EWORKPLACE__>
+nella &link_lookfdr;.
+</IFDEF>
+<IFNDEF __EWORKPLACE__>
+nella cartella "Installazione XWorkplace".
+</IFNDEF>
+
+<P>Qualunque cosa collocata in questa cartella apparirÖ subito
+nei &popmenu;i di tutte le cartelle del sistema.
+Si noti che alcune classi di oggetti assumono una funzionalitÖ particolare se usate
+all'interno della &cfgfdr;:
+
+<OL><LI>Gli <B>oggetti programma</B> presenti nella &cfgfdr; vengono avviati
+quando si seleziona la voce di menu corrispondente.
+(Per la precisione, non viene avviato l'oggetto programma ma il programma indicato nel
+<A HREF="glossary/gls_notebook.html">blocco appunti impostazioni</A>
+dell'oggetto programma).
+
+<P>&xwp; permette di usare diversi trucchi con gli oggetti programma. Si veda
+<A HREF="menus/menu_4wpprogram.html">"FunzionalitÖ aggiuntive per gli oggetti programma"</A>
+per informazioni ulteriori.
+
+<BR><LI>Inserendo nella &cfgfdr; <B>un'altra cartella</B> si crea
+un sottomenu a cascata tra i &popmenu;i. In questa sottocartella
+si possono collocare altri oggetti e cartelle. E' possibile in questa maniera creare una
+intera gerarchia di menu (come mostra l'installazione assunta).
+Non ci sono limiti al numero di cartelle annidate, perciï ä possibile creare gerarchie profonde
+vari livelli.
+
+<BR><LI>Un  <B><A HREF="tasks/tsk_templates.html">modello</A>
+o la copia collegata di un modello</B> permetteranno, selezionando la rispettiva voce di menu
+di creare nuovi oggetti. I nuovi oggetti verranno creati all'interno della cartella il cui
+&popmenu;e si ä usato.
+<P>Per esempio: si puï creare un modello di cartella con impostazioni speciali per caratteri,
+colori ecc. e metterne una copia collegata nella Cartella configurazione. Quando dal &popmenu;e
+di una cartella si seleziona la voce di menu corrispondente, all'interno della cartella viene
+creata una nuova cartella con le impostazioni desiderate, proprio come se la si fosse
+trascinata partendo dalla cartella modello.
+<P>Si veda <A HREF="menus/menu_2template.html">Creare oggetti con la funzione "Creare nuovo"</A>
+per altre informazioni.
+
+<BR><LI>Usando un <A HREF="objects/obj_string.html">oggetto stringhe impostazioni</A>,
+la stringa impostazioni memorizzata nell'oggetto stringa viene richiamata sulla cartella dal &popmenu;e
+della quale si ä selezionata la voce di menu.
+
+<BR><LI><B>Tutti gli altri tipi di oggetto</B> quando si seleziona la voce di menu
+corrispondente vengono aperti. Si possono usare copie collegate di oggetti programma, copie collegate di
+cartelle, file "veri" o loro copie collegate e cosç via.
+<P>E' cosç per esempio possibile avere la copia collegata del proprio file dati di uso pió comune (per es. "Cose da fare")
+in tutti i &popmenu;i.
+
+<BR><LI>Una funzionalitÖ particolare ä quella che permette di inserire <B>separatori di menu</B>
+creando nella &cfgfdr; un oggetto programma il cui nome sia <CITE>"---"</CITE> (tre trattini).
+Ancora una volta, si veda <A HREF="menus/menu_4wpprogram.html">"FunzionalitÖ aggiuntive per gli oggetti programma"</A>
+per spiegazioni ulteriori.
+
+</OL>Infine, l'uso del carattere <CITE>"~"</CITE>
+all'interno del nome di un oggetto permette di avere un carattere sottolineato nella relativa voce del
+&popmenu;e, utilizzabile come tasto rapido da tastiera.
+<BR>
+</BODY>
+</HTML>
+

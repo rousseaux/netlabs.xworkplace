@@ -1,0 +1,76 @@
+<HTML RESID=&ID_XFH_REBOOTEXT;>
+<HEAD>
+    <TITLE>
+        Opzioni di riavvio
+    </TITLE>
+</HEAD>
+<BODY>
+La finestra di dialogo "Opzioni per il riavvio" permette di impostare &xshutdown; in
+modo che non utilizzi la routine interna di riavvio ma un programma a scelta.
+Le voci impostate qui sono quelle che appariranno nella finestra di conferma di &xshutdown;:
+scegliendo una voce diversa
+da "Valore assunto" verrÖ eseguito il programma corrispondente invece della routine interna.
+
+<P>Questa funzione risulta di particolare utilitÖ se usata assieme al programma di Gestione Caricamento IBM,
+in dotazione ad &os2;. Gestione Caricamento si attiva da linea di comando digitando <CITE>SETBOOT</CITE>.
+
+<P>Si veda la <A HREF="cmdref.inf#setboot">documentazione</A> relativa in
+<I>&warp; - Riferimento per i comandi</I> per i dettagli.
+
+<P>&xshutdown; ne utilizza la funzione "reboot to", che si richiama con il comando
+<CITE>SETBOOT /iba:&lt;os&gt;</CITE>, dove "&lt;os&gt;" corrisponde al nome del sistema operativo
+come indicato nel menu Gestione Caricamento dopo l'avvio del sistema.
+L'utilizzo di questa funzione permette di riavviare il sistema dalla partizione
+selezionata, saltando il menu Gestione Caricamento.
+
+<P>Per esempio, si supponga di voler riavviare direttamente PC-DOS 7, che nel menu di Gestione Caricamento
+ä indicato come "PC-DOS 7". Dalla linea di comando immettere:
+
+<P><CITE>    setboot /iba:"PC-DOS 7" </CITE>
+
+<P>Se si vuole fare di PC-DOS 7 un'opzione di riavvio in &xshutdown; procedere nel modo seguente:
+
+<OL><LI>scegliere "Nuovo";
+<BR><LI>nel campo "Descrizione" inserire quello che si desidera appaia nella finestra di conferma (ad es "PC-DOS 7");
+<BR><LI>nel campo "Comando" inserire il comando da eseguire, in questo caso:
+<BR><CITE>   setboot /iba:"PC-DOS 7"</CITE>
+<BR><LI>scegliere "OK". La nuova voce appare nella finestra di conferma di &xshutdown;.
+
+</OL>
+A partire dalla versione 0.9.0, in questa finestra di dialogo ä stato aggiunto il tasto <B>"Partizioni"</B>
+(questo tasto ä abilitato solo se si ä selezionata un'opzione per il riavvio nell'elenco soprastante;
+puï darsi che sia necessario premere "Nuovo" per abilitare il tasto "Partizioni").
+Premuto tale tasto viene proposto un menu che elenca tutte le partizioni avviabili presenti nel sistema
+(questo menu non ä disponibile se Gestione caricamento non ä stato installato, dato che ä
+questo il programma che legge nella tabella delle partizioni alla ricerca delle voci aggiunte alla
+Gestione caricamento).
+Quando si seleziona una voce in questo menu, vengono aggiornati titolo e comando
+(<CODE>SETBOOT.EXE</CODE> ...) dell'opzione di riavvio selezionata in quel momento.
+
+<P><B>Nota bene:</B>
+<UL><LI>Non c'ä nessuna forma di verifica, nÇ nella finestra di dialogo "Opzioni per il riavvio"
+nÇ al momento della chiusura del sistema.
+Sia nel caso si sia sbagliata la sintassi del comando, sia che si cerchi di usare il comando
+<CITE>SETBOOT</CITE> senza Gestione
+caricamento installata, il sistema si bloccherÖ una volta chiuse tutte le finestre.
+
+<BR><LI>Nel caso sul proprio computer non si conoscano i titoli esatti delle partizioni gestite da Gestione caricamento
+e il tasto "Partizioni" non sia utilizzabile, digitare <CITE>FDISK</CITE> (<CODE>LVM</CODE> su Aurora) da linea di comando e prenderne nota da lç.
+
+<BR><LI>Il programma qui definito viene eseguito una volta completata la chiusura delle finestre
+e salvati i file INI;
+i file system non vengono rilasciati, dato che &xshutdown; si aspetta che sia il programma stesso
+a chiuderli (ad es. con l'API <CITE>DosShutdown</CITE>).
+<CITE>SETBOOT</CITE>, per esempio, lo fa.
+
+<BR><LI>Il programma qui definito viene avviato via CMD.EXE con il parametro <CITE>/C</CITE>.
+Se lo si deisdera ä possibile avviare anche uno script <A HREF="glossary/gls_cmd_rexx.html">REXX</A>.
+
+<BR><LI>Naturalmente, se il programma non si trova in una directory
+compresa nella variabile <CITE>PATH</CITE>, sarÖ necessario specificarne il
+<A HREF="glossary/gls_path.html">percorso</A>. Questo non ä necessario per
+<CITE>SETBOOT</CITE>, che si trova nella directory <CITE>OS2</CITE>.
+</UL>
+</BODY>
+</HTML>
+

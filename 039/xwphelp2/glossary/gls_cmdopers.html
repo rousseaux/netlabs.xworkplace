@@ -1,0 +1,124 @@
+<HTML HIDDEN RESID=9005>
+<HEAD>
+    <TITLE>
+        &xwp;: operatori comando e redirezione
+    </TITLE>
+</HEAD>
+<BODY>
+Gli operatori comando sono caratteri speciali interpretati dai processori di
+comando come comandi specifici piuttosto che normali caratteri.
+Questi operatori possono essere scritti in una linea di comando, o inclusi
+in un file di comandi o batch.
+
+<P>Se si desidera usare come carattere normale un carattere normalmente usato
+come operatore comando, ä necessario dargli un <B>escape</B> facendolo
+precedere dal carattere <CODE>^</CODE>.
+Alcuni operatori comando sono validi solo nelle finestre comandi OS/2, non
+nelle sessioni DOS.
+
+<P>Segue un elenco degli operatori comando nell'ordine in cui vengono
+riconosciuti dagli interpreti di comandi:
+
+<UL><LI>Il carattere <CODE>^</CODE> "fuga" (escape) un operatore comando, per
+farlo riconoscere come un normale carattere in ingresso o in uscita
+(solo sessioni OS/2).
+
+Per esempio, per mostrare sullo schermo la seguente frase:
+<PRE>INSERIRE ETA` &amp; NUMERO PREVIDENZA SOCIALE ==&gt;</PRE>
+si scriva:
+<PRE>INSERIRE ETA` ^&amp; NUMERO PREVIDENZA SOCIALE ==^&gt;</PRE>
+
+<LI>Le parentesi <CODE>()</CODE> raggruppano comandi, cosç da sovvertire
+l'ordine normale di precedenza riconosciuto dai processori di comandi
+(solo sessioni OS/2).
+
+<P><LI><CODE>&gt;</CODE> ridirige l'uscita verso un file o un dispositivo.
+Se il file esiste viene sovrascritto.
+
+<P><CODE>&gt;&gt;</CODE> ridirige l'uscita verso un file e, se questo esiste,
+appende l'uscita alla fine del file preesistente.
+
+<P><CODE>&lt;</CODE> recupera e ridirige l'input dal dispositivo standard
+di ingresso.
+
+<P>La sorgente d'ingresso e l'uscita di un programma sono predefinite e
+identificate da un numero (chiamato <B>handle</B>). Esistono i seguenti tre
+handle:
+
+<UL><LI>Standard input, chiamato <CODE>STDIN</CODE>, con handle 0.
+Per default corrisponde alla tastiera.
+<LI>Standard output, chiamato <CODE>STDOUT</CODE>, con handle 1.
+Per default corrisponde allo schermo.
+<LI>Viene usata un'uscita differente per gli errori (<CODE>STDERR</CODE>),
+con handle 2. Normalmente ä associata allo schermo, ma ciï permette di
+ridirigere i messaggi d'errore separatamente.
+
+</UL>L'ingresso e l'uscita di un programma possono essere ridiretti solo
+se il programma sta leggendo da <CODE>STDIN</CODE> e sta scrivendo su
+<CODE>STDOUT</CODE>, incluso <CODE>STDERR</CODE>. Se il programma non 
+implementa queste convenzioni, per esempio se non ä un programma in modo testo
+o se legge e scrive direttamente sull'hardware, la redirezione non funziona.
+
+<P>Se vengono specificate pió operazioni, l'unica riconosciuta ä l'ultima.
+
+<P><B>Esempio 1:</B> Per ridirigere l'uscita del comando
+<A HREF="cmdref.inf#DIR"><CODE>DIR</CODE></A> alla stampante,
+si scriva:
+<PRE>DIR &gt; PRN</PRE>
+
+<B>Esempio 2:</B> Per ridirigere l'uscita del comando <CODE>DIR</CODE> a un
+nuovo file chiamato <CODE>listing.txt</CODE>, si scriva:
+<PRE>DIR &gt; listing.txt</PRE>
+Il file <CODE>listing.txt</CODE> verrÖ creato automaticamente o, se 
+preesistente, verrÖ sovrascritto.
+
+<P><B>Esempio 3:</B> Per ridirigere <CODE>STDERR</CODE> e
+<CODE>STDOUT</CODE>, si ridirige prima <CODE>STDOUT</CODE>, e quindi
+<CODE>STDERR</CODE> a <CODE>STDOUT</CODE>. Gli handle di ridirezione
+usati al posto dei nomi di file devono essere preceduti da un carattere
+<CODE>&amp;</CODE>. Cosç, per mandare tutta l'uscita e i messaggi d'errore del
+comando <CODE>DIR</CODE> verso un nuovo file chiamato 
+<CODE>listing.txt</CODE>, si scriva: <PRE>DIR *.* &gt;listing.txt 
+2&gt;&amp;1</PRE>
+
+<LI>La barra verticale (<CODE>|</CODE>), codice ASCII 124,
+ä usata per separare due comandi <B>(piping).</B> Una pipe intercetta l'uscita
+di un programma in esecuzione e la manda come ingresso di un altro programma.
+
+<P>Le pipe sono usate sopratutto con i <B>filtri.</B> I filtri sono utilitÖ di
+sistema che intercettano dati da <CODE>STDIN</CODE>, li elaborano e
+mandano i risultati a <CODE>STDOUT</CODE>.
+
+<P>&os2; fornisce tre filtri:
+<A HREF="cmdref.inf#SORT"><CODE>SORT</CODE></A>,
+<A HREF="cmdref.inf#FIND"><CODE>FIND</CODE></A>, e
+<A HREF="cmdref.inf#MORE"><CODE>MORE</CODE></A>. Molti filtri addizionali
+sono disponibili presso terzi.
+
+<P><B>Esampio:</B> Per mostrare l'elenco ordinato della corrente directory e
+mandare l'uscita in un file chiamato <CODE>sorted.txt</CODE>, si scriva:
+<PRE>DIR | SORT &gt; sorted.txt</PRE>
+
+<B>Nota:</B> se un comando non valido ä posto
+a sinistra della pipe, il comando a destra della pipe non avrÖ effetto.
+Per esempio:
+<PRE>xxxx 2&gt;&amp;1 | MORE
+</PRE>non manderÖ il messaggio d'errore a <CODE>MORE</CODE>, poichÇ
+<CODE>xxxx</CODE> non ä un programma valido.
+
+<P><LI><CODE>&amp;&amp;</CODE> elabora sotto condizione una sequenza di
+comandi.  Un comando nella sequenza verrÖ elaborato solo se i comandi
+precedenti girano correttamente 
+(solo sessioni OS/2).
+
+<P><LI><CODE>||</CODE> elabora sotto condizione una sequenza di comandi.
+Un comando nella sequenza verrÖ elaborato solo se i comandi precedenti NON
+hanno girato correttamente (solo sessioni OS/2).
+
+<P><LI><CODE>&amp;</CODE> elabora senza condizioni comandi individuali in una
+sequenza, senza curarsi del successo o del fallimento di comandi lanciati in 
+precedenza nella sequenza (solo sessioni OS/2).
+</UL>
+</BODY>
+</HTML>
+

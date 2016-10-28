@@ -1,0 +1,30 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        Lo hook PM di &xwp; 
+    </TITLE>
+</HEAD>
+<BODY>
+Lo "hook" PM di &xwp; ä una routine all'interno di <CODE>XWPDAEMN.EXE</CODE> che, se 
+abilitata, si occupa di "sorvegliare" e modificare i messaggi Presentation Manager (PM).
+
+<P>In questa maniera &xwp; puï controllare il comportamento delle 
+finestre e degli eventi mouse e tastiera nel sistema: ä cosç che
+funzionano tasti rapidi, primo piano scorrevole, selezione automatica dei menu,
+oggetti assegnati ai bordi dello schermo ecc. quando lo "hook" rileva un certo 
+evento puï attivare un'azione speciale, come aprire un oggetto o cambiare la
+finestra attiva.
+
+<P>Chiaramente ä necessario che lo "hook" PM di &xwp; sia abilitato perchÇ
+tutte tutte queste funzionalitÖ siano utilizzabili.
+
+<P>Il problema degli "hook" ä che sono globali. Dato che pió applicazioni
+possono installare questi "hook", si possono verificare dei conflitti. 
+Applicazioni "famose" che installano "hook" sono NPS WPS, WarpEnhancer, DragText, ma
+numerose altre lo fanno. Per questo motivo, se si dovessero verificare conflitti con altre applicazioni, 
+ä possibile disabilitare lo "hook" di &xwp;.
+
+<BR>
+</BODY>
+</HTML>
+

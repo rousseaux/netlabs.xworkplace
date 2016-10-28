@@ -1,0 +1,168 @@
+<HTML>
+  <HEAD>
+    <TITLE>
+      xfix: Men&uuml;leiste Kommandos
+    </TITLE>
+  </HEAD>
+  <!-- this page is all new with V0.9.7 -->
+  <!-- revised V1.0.9 --> <body>
+    Die xfix <b>Men&uuml;leiste</b> stellt Kommandos bereit die man auf
+    die meisten oder alle aufgelisteten Handles anwenden kann. Siehe <a
+      href="xfix_menu2.html">Popup Men&uuml; und Tastaturk&uuml;rzel</a>
+    f&uuml;r weitere Details in Bezug auf die Kommandos die auf einzelne
+    Handles angewendet werden k&ouml;nnen.
+    <ul>
+      <li><b>xfix</b> Men&uuml;
+        <ul>
+          <br>
+          <li><b>Puffer nochmals verarbeiten</b> durchsucht noch einmal
+            den Handles Puffer <b>so wie er gegenw&auml;rtig ist</b>
+            und erzeugt die Handles Liste neu. Die Handles werden also
+            nicht von <code>OS2SYS.INI</code> neu geladen. Dies ist
+            hilfreich wenn sie einige Handles gel&ouml;scht haben und
+            die Auswirkungen der L&ouml;schung sehen wollen. Wenn
+            pl&ouml;tzlich Handles auftauchen die einen Fehler anzeigen,
+            vorher aber in Ordnung waren, so speichern sie bitte ihre
+            &Auml;nderungen nicht dauerhaft ab! <br>
+          </li>
+          <li><b>Zur&uuml;ck in OS2SYS.INI schreiben...</b> schreibt die
+            ge&auml;nderte Handletabelle zur&uuml;ck in die <code>OS2SYS.INI</code>
+            Datei. Die &Auml;nderungen an der Handleliste werden erst
+            dauerhaft gespeichert wenn sie diesen Men&uuml;eintrag
+            w&auml;hlen. Wenn Handles zum L&ouml;schen ausgew&auml;hlt
+            sind werden sie um Best&auml;tigung des Vorgangs gebeten
+            bevor die &Auml;nderungen dauerhaft abgespeichert werden.
+            <p>Seien sie sich bewu&szlig;t da&szlig; dies keinen Effekt
+              hat wenn die WPS im Hintergrund l&auml;uft weil die WPS
+              eine interne Kopie der Handletabelle verwaltet und es
+              wahrscheinlich ist, da&szlig; ihre &Auml;nderungen
+              wiederrum von der WPS &uuml;berschrieben werden. Dies ist
+              der Grund warum die WPS nicht aktiv sein sollte wenn sie
+              die &Auml;nderungen dauerhaft abspeichern wollen. Siehe
+              auch <a href="xfix_delete.html">Die Grundlagen</a>.
+              <!-- V0.9.20: rewrote this --> <br>
+            </p>
+          </li>
+          <li><b>xfix beenden</b> beendet das Programm. </li>
+        </ul>
+        <!-- V1.0.4: added View menu --> </li>
+      <li><b>Anzeige</b> Men&uuml;
+        <ul>
+          <br>
+          <li><b>Objekt-IDs...</b> zeigt ein neues Fenster an welches
+            alle WPS Objekte auflistet denen eine Objekt-ID zugeordnet
+            ist. Es werden f&uuml;r jedes Objekt die ID, das Handle
+            sowie der Langname (voller Dateipfad) angezeigt. Die Liste
+            kann nach den entsprechenden Feldern sortiert werden. Dieses
+            Fenster dient nur ihrer Information, es k&ouml;nnen keine
+            Aktionen ausgef&uuml;hrt werden. </li>
+        </ul>
+      </li>
+      <li><b>Sortieren nach</b> Men&uuml;
+        <p>Dies erlaubt es die Handles nach den verschiedenen Spalten zu
+          sortieren. (Siehe <a href="xfix_list.html">Die Handletabelle</a>
+          f&uuml;r eine Beschreibung der Spalten.) Wenn sie nach Index
+          sortieren wird ihnen genau die Reihenfolge angezeigt wie die
+          Handle in der <code>Handletabelle in OS2SYS.INI</code> zu
+          finden sind (mit entsprechend ansteigenden Knoten Offsets).
+          "Sortieren nach Index" ist die Standard Sortierreihenfolge
+          nach dem Start von xfix. </p>
+        <p> </p>
+      </li>
+      <li><b>Aktionen</b> Men&uuml;
+        <ul>
+          <br>
+          <li><b>Suche ung&uuml;ltige Dateien</b> pr&uuml;ft alle
+            Handles in der Handletabelle ob sie auf existierende Dateien
+            verweisen. Jeder ung&uuml;ltige Eintrag wird als solcher <img
+              src="img/xfix_error.gif"> markiert und der Hinweis "Datei
+            nicht gefunden" als Status angezeigt. Dies passiert
+            automatisch da dieser Prozess eine Weile dauern kann. Siehe
+            <a href="xfix_howto.html">Schritt f&uuml;r Schritt</a>
+            f&uuml;r eine typische Benutzung dieses Men&uuml;eintrags. <br>
+          </li>
+          <li><b>Auto-Schutz</b> sch&uuml;tzt das Handle vor
+            unbeabsichtigtem L&ouml;schen all der Dateien bzw. Ordner
+            die f&uuml;r das korrekte Funktionieren der WPS unabdingbar
+            sind und die sie h&ouml;chstwahrscheinlich auch nicht
+            l&ouml;schen wollen. Es wendet den Schutz auf folgende
+            Dateien an:
+            <ul>
+              <li>Dateien mit diesen Dateiendungen: <code>.EXE .COM
+                  .CMD .BAT</code> </li>
+              <li>Ordner die abstrakte Objekte enthalten wie zum
+                Beispiel Programmobjekte oder Schattenobjekte</li>
+              <li>Dateien oder Ordner denen eine Objekt-ID zugewiesen
+                wurde<br>
+              </li>
+              <li>Eintr&auml;ge f&uuml;r <code>Laufwerke und </code><code>Wurzelordner</code>.</li>
+            </ul>
+            Jeder gesch&uuml;tzte Eintrag wird markiert als <img
+              src="img/xfix_protect.gif">. Jeder &uuml;bergeordnete
+            Ordner (der im Dateipfad liegt) wird markiert als <img
+              src="img/xfix_safe.gif"> und das zugeh&ouml;rige Handle
+            ist ebenso vor dem L&ouml;schen gesch&uuml;tzt.<br>
+          </li>
+          <li><b>Schutz aufheben (alle)</b> entfernt den
+            L&ouml;schschutz von allen Eintr&auml;gen. <br>
+          </li>
+          <li><b>Jetzt l&ouml;schen...</b> zeigt einen
+            Best&auml;tigungsdialog an um nachzufragen ob Eintr&auml;ge
+            die als <img src="img/xfix_delete.gif"> markiert sind
+            gel&ouml;scht werden sollen. Wenn sie mit <code>Ja</code>
+            antworten werden diese vom Fenster und aus dem Speicher
+            entfernt. Sie werden <b>nicht</b> aus <code>OS2SYS.INI</code>
+            gel&ouml;scht bis sie <b>Zur&uuml;ck in OS2SYS.INI
+              schreiben...</b> aus dem <b>xfix</b> Submen&uuml;
+            ausw&auml;hlen.
+            <p>Wenn das L&ouml;schen von Handles dazu f&uuml;hren
+              w&uuml;rde das andere Handles "verwaisen"<img
+                src="img/xfix_orphan.gif"> (und damit auch
+              dauerhaft ung&uuml;ltig w&uuml;rden) werden sie eine
+              Warnung erhalten. Sie sollten mit <code>Nein</code>
+              antworten um die Handles vom L&ouml;schen auszunehmen die
+              das Problem hervorgerufen haben. </p>
+          </li>
+        </ul>
+      </li>
+      <li><b>Ausw&auml;hlen</b> Men&uuml;
+        <!-- V1.0.4: made this an unordered list -->
+        <ul>
+          <br>
+          <li><b>Alle ung&uuml;ltigen ausw&auml;hlen</b> selektiert alle
+            Handles die, aus welchem Grund auch immer, als ung&uuml;ltig
+            <img src="img/xfix_error.gif"> markiert sind. Sie
+            k&ouml;nnen mit der rechten Maustaste auf den selektierten
+            Eintrag klicken und "L&ouml;schen" vom &amp;popmenu;
+            w&auml;hlen.<br>
+          </li>
+          <li><b>Nach Name ausw&auml;hlen...</b> zeigt einen neuen
+            Dialog an der es ihnen erlaubt mehrere Handles auf einmal
+            an- bzw. abzuw&auml;hlen. Sie k&ouml;nnen alle Handles an-
+            bzw. abw&auml;hlen oder sie k&ouml;nnen eine Suchmaske
+            &auml;hnlich der die auf einer OS/2 Kommandozeile benutzt
+            werden kann benutzen, die <a
+              href="glossary/gls_wildcards.html">Platzhalter</a> <code>?</code>
+            and <code>*</code> k&ouml;nnen also benutzt werden um einen
+            oder mehrere Zeichen zu substituieren. Die Suchmaske <code>"*.txt"</code>
+            w&uuml;rde also alle Handles mit der Namensendung <code>".txt"</code>
+            an- bzw. abw&auml;hlen. Der Dialog bleibt ge&ouml;ffnet bis
+            sie den <b>"Schlie&szlig;en"</b> Knopf ausw&auml;hlen oder
+            die <b>Esc</b> Taste bet&auml;tigen. Auf diese Weise
+            k&ouml;nnen Auswahlen nach unterschiedlichen Suchmasken eine
+            nach der anderen angewendet werden.
+            <p>Die Dateimaske wird nur auf <b>Kurzer Name</b>
+              angewendet. Es ist also nicht m&ouml;glich die Handles
+              aller Objekte die in einem bestimmten Ordner liegen auf
+              diese Weise auszuw&auml;hlen. </p>
+          </li>
+        </ul>
+      </li>
+      <li><b>Hilfe</b> Men&uuml;
+        <!-- V1.0.4: changed "info" to "information" -->
+        <p>Zeigt Hilfe- und Produktinformationen f&uuml;r xfix an,
+          inklusive Version und Build Datum. </p>
+      </li>
+    </ul>
+  </body>
+</html>

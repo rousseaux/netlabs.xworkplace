@@ -1,0 +1,34 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &os2;: Automatische controle HPFS.IFS
+    </TITLE>
+</HEAD>
+<BODY>
+
+Het <B>"Automatische controle"</B> invoerveld komt overeen met de
+/AUTOCHECK:xxx in de HPFS of HPFS386 &cfgsys; opdrachtregel.
+Hier kunt u opgeven op welke volumes &os2; automatisch een
+<CITE>CHKDSK</CITE> zal uitvoeren bij het opstarten van het systeem.
+<P>Geef simpelweg de respectievelijke stationsletters op (zonder de opvolgende "<CITE>:</CITE>").
+&os2; zal elk station controleren dat u hier opgeeft tijdens het opstarten van het systeem als
+u uw systeem niet netjes heeft afgesloten (bijvoorbeeld, na een zwart scherm vastloper).
+
+<P>Als u hier een plus teken ("<CITE>+</CITE>") opgeeft <I>voor</I> een stationsletter, zal dat
+station altijd gecontroleerd worden, wat niet echt wenselijk is.
+<P>Voorbeeld: Als u "<CITE>C+DE</CITE>" opgeeft, zal Station D: altijd gecontroleerd worden, terwijl
+bij C: en E: dat alleen gebeurt indien nodig.
+
+<P><B>Opmerking:</B> Voor HPFS volumes is de automatische controle absoluut noodzakelijk
+want het benaderen van "vieze" HPFS volumes zal resulteren in systeemfouten. U dient al uw
+HPFS volumes hier op te geven want &os2; zal anders foutberichten tonen bij het opstarten.
+Dit geldt specifiek voor uw opstart volume, anders zal &os2; helemaal weigeren op te starten
+als u vergat af te sluiten of uw systeem vastgelopen is.
+<P>Druk op de <B>"Voorstel"</B> knop om alle HPFS volumes op uw systeem toegevoegd te krijgen
+aan het invoerveld.
+
+<BR>
+</BODY>
+</HTML>
+
+

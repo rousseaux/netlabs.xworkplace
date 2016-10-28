@@ -1,0 +1,126 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        xfix: Menubar Commands
+    </TITLE>
+</HEAD>
+<!-- this page is all new with V0.9.7 -->
+<!-- revised V1.0.9 -->
+<BODY>
+The xfix <B>menu bar</B> provides commands that operate on most or all of
+the handles listed.
+See <A HREF="xfix_menu2.html">Popup Menu and Hot Keys</A> for details
+on the commands you can use for individual handles.
+
+<UL><LI><B>xfix</B> menu
+
+<UL><BR><LI><B>Re-parse buffer</B> will re-parse the handles buffer <B>as it
+is now</B> and will completely refresh the handles list.  It will not reload
+the handles from <CODE>OS2SYS.INI</CODE>. It is useful if you've deleted
+some handles and want to see what the effect is.  If any handles that were
+OK before are now marked as invalid, do not save your changes!
+
+<BR><LI><B>Write back to OS2SYS.INI</B> writes the handles table back to the
+<CODE>OS2SYS.INI</CODE> file. Any changes you make to the handles list are not
+stored unless you select this menu item.  If any handles are marked for deletion,
+you will be asked whether you want to delete them before saving your work.
+
+<P>Note that this will probably have no effect if the WPS is currently running
+because the WPS holds an internal copy of the handles table and will probably
+overwrite your changes soon. This is why the WPS should not be running while
+you're writing the handles back.
+See <A HREF="xfix_delete.html">The Basics</A> page also.
+
+<!-- V0.9.20: rewrote this -->
+<BR><LI><B>Exit</B> will terminate the program.
+</UL>
+
+<!-- V1.0.4: added View menu -->
+<LI><B>View</B> menu
+
+<UL><BR><LI><B>Object IDs</B> displays a new window with a list of all WPS
+objects with an object ID. For each object, information about ID, handle,
+and long file name is displayed. The list can be sorted by all fields. This
+is a purely informational window and no actions can be applied to the objects.
+</UL>
+
+<LI><B>Sort</B> menu
+
+<P>This allows you to sort the handles list according to the values in the various
+columns. (See <A HREF="xfix_list.html">The Handles List</A> for a description of the
+columns.) If you sort by index, the display shows the the exact order in which the
+handle entries appeared in the <CODE>OS2SYS.INI</CODE> table (with ascending
+node offsets as well). "Sort by index" is the default sort order after xfix startup.
+<P>
+
+<LI><B>Actions</B> menu
+
+<UL><BR><LI><B>Find invalid files</B> will check all handles in the table to
+see if they point to valid files. Each item that is outdated will be marked
+<IMG SRC="img/xfix_error.gif"> invalid and given the "File not found" status.
+This is not done automatically because this process can take a while.
+See <A HREF="xfix_howto.html">Step By Step</A> for a typical usage of this menu
+item.
+
+<BR><LI><B>Auto-Protect</B> prevents you from accidentally deleting all of the
+files and folders you probably don't want to delete anyway.  It applies
+protection to:
+<UL><LI>files with these extensions: <CODE>.EXE .COM .CMD .BAT</CODE>
+<LI>folders containing abstract objects such as program objects or shadows
+<LI>files or folders that have been assigned an Object ID
+<LI>entries for <CODE>Drives</CODE> and for <CODE>Root</CODE> folders
+</UL>
+Each protected entry will be marked with <IMG SRC="img/xfix_protect.gif">.  Each
+folder that lies on the path to a protected entry will be marked with
+<IMG SRC="img/xfix_safe.gif"> and will also be protected.
+
+<BR><LI><B>Unprotect all</B> removes protection from from every entry.
+
+<BR><LI><B>Delete now...</B> will display a dialog asking if you want to
+remove all of the entries that you have marked <IMG SRC="img/xfix_delete.gif">
+for deletion.  If you answer <CODE>Yes</CODE>, they will be removed from the
+window and from memory. They will <B>not</B> be deleted from
+<CODE>OS2SYS.INI</CODE> until you select <B>Write back to OS2SYS.INI</B>
+from the <B>xfix</B> submenu,
+
+<P>If deleting any of the handles you have marked would cause other handles
+to become <IMG SRC="img/xfix_orphan.gif"> orphans (and thus, permanently invalid),
+the dialog will warn you.  You should probably answer <CODE>No</CODE>, then
+unmark the handles which are causing the problem.
+</UL>
+
+<LI><B>Select</B> menu
+
+<!-- V1.0.4: made this an unordered list -->
+<UL><BR><LI><B>Select all invalid</B> will select all handles which have
+been marked <IMG SRC="img/xfix_error.gif"> invalid for any reason.
+You can then right-click on any of the selected items and select "Delete"
+from the &popmenu;.
+
+<!-- V1.0.4: added Select by name item -->
+<BR><LI><B>Select by name</B> displays a new dialog that allows you to select
+and deselect several handles at once. You can select and deselect all handles,
+or specify a mask similar to those that are used on the OS/2 command line,
+i.e. the <a href="glossary/gls_wildcards.html">wildcards</a> <CODE>?</CODE>
+and <CODE>*</CODE> can be used to substitute one or several characters.
+The mask <CODE>"*.txt"</CODE> would (de)select all handles with a name ending
+in <CODE>".txt"</CODE>, for instance. The dialog stays opened until you press
+the <B>"Close"</B> button or the <B>Esc</B> key.  That way, selections with
+different masks can be applied successively.
+
+<P>Note that the mask is matched against the <B>short name</B>. Thus, it is
+not possible to use this dialog to easily select all handles of objects that
+reside in a certain directory.
+</UL>
+
+<LI><B>Help</B> menu
+
+<!-- V1.0.4: changed "info" to "information" -->
+<P>Displays help and the xfix product information with the current version
+and build date.
+
+</UL>
+
+</BODY>
+</HTML>
+

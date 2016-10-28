@@ -1,0 +1,61 @@
+<HTML RESID=&ID_XSH_MEDIA_IOPROCS;>
+<HEAD>
+    <TITLE>
+        &xwp;: IOProcs
+    </TITLE>
+</HEAD>
+<BODY>
+Le "IOProcs" sono procedure di ingresso/uscita, usate da MMPM/2 per comprendere
+i vari formati dei file multimediali.
+
+<P>Le IOProcs rispondono ad un concetto decisamente astratto e di difficile comprensione.
+Fondamentalmente, questo concetto consente a MMPM/2 di comprendere nuovi formati multimediali
+senza che si debba riscrivere l'intero software MMPM/2.
+Il che significa che, per permettere a tutte le applicazioni &os2; di comprendere un nuovo formato 
+multimediale, occorre scrivere solo una IOProc, che Š contenuta in una 
+<A HREF="glossary/gls_dll.html">DLL</A> e va registrata con il programma MINSTALL.
+
+<P>Le IOProcs possono leggere o scrivere file, o entrambe le cose, a seconda dell'impegno del
+programmatore.
+
+<P><B>"FourCC"</B> significa "codice di quattro caratteri" e viene usato per correlare
+una IOProc a un formato di file, nonch‚, se necessario, per trovare un codec per una IOProc. Per i dettagli 
+si veda la pagina successiva.
+
+<P>Vi sono diversi <B>"Tipi IOProc"</B>:
+<UL><LI>La IOProc <B>"File"</B> gestisce un certo tipo di formato di file e viene usata per aprirlo
+e interpretarlo. Si vedano i vari tipo multimediali, pi— sotto.
+
+<P><LI>Le IOProc <B>"Storage"</B> consentono alle interfacce file di MMPM/2 di 
+essere molto generiche. Dato che le IOProc possono essere organizzate su livelli, alcune
+IOProc, se non comprendono un certo formato di file o
+necessitano di qualche altro aiuto, possono richiamare altre IOProc. Per esempio, la IOProc di tipo 
+"File" richiama una
+IOProc "Storage" per avere accesso diretto al file. Di conseguenza, lo stesso file 
+IOProc puo' essere usato per gestire i dati sul disco o in memoria, in base al tipo di 
+"storage IOProc" usata.
+
+</UL>Nelle IOProc <B>"File"</B> vi sono tre principali <B>tipi multimediali</B>:
+
+<UL><LI><B>Audio</B> per i file audio, ovviamente. Si noti che con i file audio, le 
+IOProcs gestiscono solo il <I>formato del file</I> (es. <CODE>.WAV</CODE>), ma non il
+<I>contenuto</I> del file.
+La maggior parte dei file audio sono compressi, quindi, per realmente comprendere il 
+contenuto del file, MMPM/2 necessita di un codec per il file (maggiori dettagli nella
+pagina seguente).
+
+<P><LI><B>Filmati</B> Š per file video. Analogamente ai file audio, MMPM/2 necessita di codec
+per essere in grado di gestire <I>contenuti</I> del file (maggiori dettagli nella
+pagina seguente).
+
+<P><LI><B>Immagine</B> per i file immagine (bitmap). Questa tipologia Š stata 
+enormemente migliorata con Warp4: sono ora comprese IOProc per la maggior parte dei formati 
+di file immagine.
+Tuttavia, alcune sono ancora mancanti, mentre altre sono un po' fragili
+(si provi a salvare un'immagine TIFF di 20 MB compressi usando l'Editor di immagini di Warp 4...).
+A differenza dei due precedenti tipi, non servono codec per gestire file immagine.
+
+</UL>
+</BODY>
+</HTML>
+

@@ -1,0 +1,86 @@
+<HTML RESID=&ID_XSH_SETTINGS_WPSCLASSES;>
+<HEAD>
+    <TITLE>
+        &xwp;: elenco classi WPS
+    </TITLE>
+</HEAD>
+<BODY>
+L'oggetto "Elenco classi WPS" mostra la lista completa delle classi WPS sotto forma di un albero gerarchico,
+fornendo numerose informazioni WPS e SOM aggiuntive.
+Attraverso questo oggetto Š possibile registrare e deregistrare classi WPS, come pure sostituire o
+reintegrare classi gi… registrate.
+
+<P>Si veda <A HREF="glossary/gls_wpsclasses.html">"Classi WPS"</A> per un'introduzione generale
+alle classi WPS.
+
+<P><B>Attenzione:</B> Attraverso l'oggetto Elenco classi WPS si possono apportare modifiche tali
+da rendere inutilizzabile il sistema. Se non si sa esattamente a cosa serve una certa classe,
+o se in generale non si sa bene cosa sono le classi WPS, <I>NON</I> si faccia nessuna modifica!
+E' possibile prendere visione in completa sicurezza di tutte le informazioni riportate, ma non modificate
+l'Elenco se non sapete esattamente cosa state facendo!
+Molti dei cambiamenti possibili attraverso questa pagina potrebbero, nella migliore delle impotesi, rendere instabile
+il sistema, ma si potrebbero anche verificare danni tali alla Workplace Shell da obbligare ad una reinstallazione
+di tutto il sistema.
+<B>In ogni caso, prima di procedere in qualunque cambiamento, assicuratevi di avere a disposizione una 
+copia di riserva della WPS, aggiornata!</B>
+
+<P>Questa pagina comprende tre sottofinestre, le cui dimensioni sono regolabili a piacimento con il mouse.
+
+<P><B>Selezionando una classe dalla finestra di sinistra</B>
+nelle due finestre sulla destra vengono visualizzate le informazioni
+relative a quella classe.
+
+<OL><LI><B>In alto a destra</B> sono riportate informazioni relative alla WPS, come il nome della classe,
+il titolo assunto (quello riportato nella terza colonna della visualizzazione dettagli di una cartella) ed il nome della
+<A HREF="glossary/gls_dll.html">DLL</A>
+che contiene la classe.
+<P>Se la DLL Š nel 
+<A HREF="glossary/gls_path_sys.html"><CODE>LIBPATH</CODE></A>,
+nella maggior parte dei casi non vengono riportate informazioni relative
+al percorso.
+Questo vale soprattutto per le classi standard della WPS, che sono contenute in
+<CITE>\OS2\DLL\PMWP.DLL</CITE>.
+<P>Viene inoltre visualizzata l'icona "classe standard", che Š di solito registrata all'interno della classe.
+E' l'icona che viene visualizzata come valore assunto se non vi Š un'icona specifica impostata
+nella pagina "Icona" delle impostazioni dell'oggetto.
+<P>Nella maggior parte dei casi, se la classe selezionata Š nota all'autore di &xwp;, Š presente anche 
+una sua breve descrizione.
+
+<P><LI><B>In basso a destra</B> sono elencate le informazioni relative ai metodi che vengono ricavate
+direttamente dal kernel SOM (sul quale si basa la Workplace Shell per organizzare le proprie classi).
+Queste informazioni possono interessare solo i programmatori WPS e sono analoghe a quelle
+che si ottengono con il programma "RWX".
+<P>
+A seconda di quel che si Š selezionato, questa finestra visualizza o tutti i metodi istanza (instance methods)
+o tutti quelli classe (class methods) relativi alla classe selezionata.
+<P>Per ogni metodo sono disponibili le seguenti <B>informazioni relative al metodo</B>
+(potrebbe essere necessario utilizzare le barre laterali per vedere tutte le colonne):
+<BR><OL><LI><B>Indice metodo.</B> E' utilizzato internamente dalla SOM per poter ricavare velocemente
+i metodi basandosi sulle tabelle. Viene visualizzato l'indice in cui il metodo Š registrato
+nella tabella metodi delle classi. Si noti che non necessariamente lo stesso metodo ha lo stesso indice in tutte
+le classi.
+<P><LI><B>Nome metodo.</B> Il nome del metodo.
+<P><LI><B>Indirizzo.</B> Il puntatore procedurale che la SOM ha restituito nel risolvere il metodo. 
+Se una classe Š subentrata ad un metodo, il puntatore sar… differente per classi differenti.
+<P><LI><B>Classe.</B> La classe che per prima ha introdotto (definito) il metodo.
+<P><LI><B>Superato da.</B> Elenco di classi che sono subentrate a questo metodo.
+Si noti che vengono mostrate solo le classi al di sopra di quella selezionata. Anche se ci fossero altre classi al di sotto di quella
+corrente che hanno superato questo metodo, non verranno mostrate. Selezionare le classi inferiori per visualizzarle.
+
+</OL><BR>Si noti anche che per maggior comodit… Š possibile <B>ordinare</B> le informazioni secondo quattro criteri differenti.
+Cliccare con il tasto destro nell'area titolo della visualizzazione metodo (cioŠ sui titoli delle colonne) per ottenere
+il relativo &popmenu;e.
+
+</OL>E' possibile <B>modificare</B> l'Elenco classi WPS utilizzando i 
+<A HREF="glossary/gls_popmenu.html">&popmenu;i</A>.
+Premere con il tasto di destra del mouse su un nome classe nell'albero delle classi per aprire il &popmenu;e,
+che mostra le opzioni possibili per quella classe. Se alcune opzioni sono disabilitate Š perch‚ &xwp; non 
+ritiene possibili certe modifiche.
+
+<P>Se si preme con il tasto destro del mouse in una <B>area vuota</B> della finestra di sinistra, si ottiene un 
+&popmenu;e differente, che permette di registrare nuove classi.
+
+<BR>
+</BODY>
+</HTML>
+

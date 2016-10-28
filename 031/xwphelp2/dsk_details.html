@@ -1,0 +1,86 @@
+<HTML RESID=&ID_XSH_SETTINGS_DISKDETAILS;>
+<HEAD>
+    <TITLE>
+        &xwp;: Station, Details pagina
+    </TITLE>
+</HEAD>
+<BODY>
+De "Details" pagina in de instellingen notitieblokken van een station toont extra
+bestandssysteem informatie van een stationsobject.
+<IFNDEF __NOXWPSETUP__>
+&xwp; vervangt de "Details" pagina in de stations instellingen notitieblokken door een
+nieuwe, uitgebreide pagina. Om de originele "Gegevens" pagina te zien, moeten de respectievelijke
+instelling in het
+<A HREF="objects/obj_xwpsetup.html">&xwp;: Instellingen object van &xwp;</A>
+ongedaan worden gemaakt.
+</IFNDEF>
+<P>Behalve van het "Stationslabel" veld, kan de informatie op deze pagina niet worden gewijzigd.
+
+<OL><LI>De <B>"Stationsdetails"</B> geven u de volgende informatie:
+
+<BR><OL><LI><B>Stationslabel:</B> Dit is het stations label op bestandssysteem niveau
+dat u kunt hebben opgegeven
+<IFNDEF __EWORKPLACE__>
+achter de &os2; opdrachtaanwijzing
+</IFNDEF>
+<IFDEF __EWORKPLACE__>
+achter de opdrachtaanwijzing
+</IFDEF>
+d.m.v. de <CODE>LABEL</CODE> opdracht.
+&xwp; geeft u nu de mogelijkheid om het stations label te wijzigen via deze notitieblok pagina,
+zonder de opdrachtaanwijzing te gebruiken. Dit kan handig zijn omdat veel "Bestand open"
+dialogen de stations labels laten zien omdat zij geen toegang hebben tot de naam van het
+WPS stationsobject.
+<P>
+De stations aanduiding kan slechts 11 karakters bevatten en wordt altijd omgezet in hoofdletters.
+
+<P><LI><B>Bestandssysteem:</B> het type bestandssysteem op het station. Dit is waarschijnlijk
+"FAT", "HPFS", "JFS", of "CDFS" (voor Cd-Rom's). Andere bestandssystemen zijn mogelijk,
+indien u extra Installeerbare Bestandssystemen (IFS's) heeft ge‹nstalleerd.
+
+<P>Kijk in
+<A HREF="glossary/gls_fs.html">"Bestandssystemen"</A>
+voor een introductie over bestandssystemen.
+
+<P><LI><B>Blok grootte:</B> dit toont u de grootte van de minimum toe te wijzen eenheid op het station.
+Dat is, als een bestand met de lengte van 1 byte wordt gemaakt, het geringste aantal bytes dat op het
+station wordt toegewezen.
+
+<P>Voor <B>HPFS volumes,</B> is dit aantal altijd 512 omdat dit de minimum grootte is van een gegevensblok
+in bytes.
+
+<P>Voor <B>JFS volumes</B> is dit aantal afhankelijk van wat er bij het formatteren
+van het volume is opgegeven. JFS kent blok afmetingen van 512, 1024, 2048 en 4096,
+waarbij 4096 standaard is.
+
+<P>Voor <B>FAT volumes</B> hangt de blok grootte af van de grootte van het station. Omdat de
+'File Allocation Tables' maar een beperkt aantal blokken kunnen omvatten moeten voor grotere
+schijven, voor ieder blok, meer bytes worden gebruikt. Dit heeft tot gevolg dat, hoe groter
+de FAT volumes zijn, des te meer bytes worden verspild t.g.v. het groter worden
+van de blok grootte.
+
+<PRE>
+Stations grootte:   Blok grootte:
+
+&lt;   16 MB          4 KB
+&lt;   32 MB          2 KB
+&lt;   64 MB          2 KB
+&lt;  128 MB          2 KB
+&lt;  256 MB          4 KB
+&lt;  512 MB          8 KB
+&lt; 1024 MB         16 KB
+&lt; 2048 MB         32 KB
+</PRE>
+</OL><LI>De <B>"Toewijzingen"</B> groep toont u informatie over het station gebruik.
+In "Totale grootte:", "In gebruik:" en "Vrij:" worden in bytes en blokken getoond, waarbij
+de "Bytes" informatie gelijk is aan het aantal "Blokken" vermenigvuldigd met de er onder
+"Stationdetails" getoonde "Blok grootte".
+
+<P>
+Als extra, krijgt u een cirkel diagram te zien dat u de vrije ruimte (in het groen) op het station
+toont.
+</OL>
+<BR>
+</BODY>
+</HTML>
+

@@ -1,0 +1,42 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: esempi di file batch
+    </TITLE>
+</HEAD>
+<BODY>
+<B>Esempio 1</B>:
+
+<PRE><A HREF="cmdref.inf#echo">ECHO</A> OFF
+<A HREF="cmdref.inf#rem">REM</A> Questo script crea una copia di riserva del file CONFIG.SYS 
+<A HREF="cmdref.inf#rem">REM</A> nella cartella C:\OS2.
+<A HREF="cmdref.inf#echo">ECHO</A> Copia del file CONFIG.SYS in C:\OS2.
+<A HREF="cmdref.inf#echo">ECHO</A> Se un file CONFIG.SYS modificato non dovesse funzionare, ricopiare questo su C:.
+<A HREF="cmdref.inf#copy">COPY</A> C:\CONFIG.SYS C:\OS2\CONFIG.SYS
+<A HREF="cmdref.inf#echo">ECHO</A> Script terminato.
+</PRE>
+
+<B>Esempio 2</B>:
+
+<PRE><A HREF="cmdref.inf#echo">ECHO</A> OFF
+<A HREF="cmdref.inf#rem">REM</A> Questo script stampa un file di testo standard.
+<A HREF="cmdref.inf#rem">REM</A> Per usarlo, digitare il nome del file da stampare dopo
+<A HREF="cmdref.inf#rem">REM</A> aver digitato il nome dello script.
+<A HREF="cmdref.inf#rem">REM</A> Se lo script si chiama STAMPA.CMD ed il file da stampare
+<A HREF="cmdref.inf#rem">REM</A> LEGGIMI, digitare STAMPA LEGGIMI
+<A HREF="cmdref.inf#echo">ECHO</A> Stampa in corso di %1.
+<A HREF="cmdref.inf#TYPE">TYPE</A> %1 &gt; lPT1
+<A HREF="cmdref.inf#echo">ECHO</A> ON
+</PRE>
+
+<B>Esempio 3</B>:
+
+<PRE><A HREF="cmdref.inf#echo">ECHO</A> OFF
+<A HREF="cmdref.inf#rem">REM</A> Questo script modifica il prompt della richiesta comandi
+<A HREF="cmdref.inf#rem">REM</A> in modo da visualizzare data, ora e percorso corrente.
+<A HREF="cmdref.inf#prompt">PROMPT</A> $d     $t     $_$p\$s
+<A HREF="cmdref.inf#echo">ECHO</A> ON
+<A HREF="cmdref.inf#CLS">CLS</A>
+</PRE>
+</BODY>
+</HTML>

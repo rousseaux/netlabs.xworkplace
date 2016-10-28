@@ -1,0 +1,96 @@
+<HTML RESID=&ID_XSH_SETTINGS_DTP_ARCHIVES;>
+<HEAD>
+    <TITLE>
+        &xwp;: pagina "Archivio"
+    </TITLE>
+</HEAD>
+<BODY>
+<IFNDEF __NOXWPSETUP__>
+Se nell'oggetto
+<A HREF="objects/obj_xwpsetup.html">"Impostazioni &xwp;"</A>
+si ä abilitata l'opzione relativa, &xwp; sostituisce la pagina "Archivio" normale con una
+nuova versione migliorata.
+</IFNDEF>
+Da questa pagina ä possibile definire criteri dettagliati per gestire l'archiviazione della Scrivania
+durante il suo avvio.
+
+<P>Per recuperare un archivio creato con questo meccanismo, premere Alt-F1 quando, durante
+l'avvio del sistema, appare la piccola scritta bianca "&os2short;".
+
+<IFNDEF __EWORKPLACE__>
+Si veda la <I>"Guida ad &xwp;"</I> per ulteriori dettagli.
+Nota bene: da questa pagina non si modifica il meccanismo di archiviazione in sÇ, ma solo <I>quando</I>
+questa viene effettuata, secondo i criteri qui specificati.
+</IFNDEF>
+
+<P><B>"Archivia file di sistema"</B> determina se la funzione di archiviazione di &xwp; ä attiva.
+
+<P>Se questa funzione ä abilitata, ä possibile modificare in dettaglio <I>quando</I> archiviare la
+Scrivania.
+Si noti che l'archiviazione comunque avviene solo durante l'avvio della WPS. Per rendere attive
+le modifiche ä necessario riavviare la WPS:
+
+<UL>
+<IFNDEF __EWORKPLACE__>
+<LI><B>"Ad ogni avvio della Scrivania"</B> funziona esattamente come la procedura di
+backup generica della vecchia pagina "Archivio" WPS. Se viene abilitato, la Scrivania ä archiviata
+ogni volta che viene avviata.
+</IFNDEF>
+
+<IFDEF __EWORKPLACE__>
+<LI>Se <B>"Ad ogni avvio della Scrivania"</B> ä attivo, la Scrivania ä archiviata ogni volta
+che viene avviata. E' lo stesso tipo di funzionamento presente in OS/2 Warp.
+</IFDEF>
+
+<P><LI><B>"Solo al prossimo avvio della Scrivania"</B> esegue il  backup una volta sola; al
+successivo riavvio della Scrivania l'opzione viene automaticamente disabilitata.
+
+<P><LI><B>"Se i file INI sono cambiati..."</B> esamina i file
+<CODE>OS2.INI</CODE> e <CODE>OS2SYS.INI</CODE>
+durante l'avvio della
+Scrivania. Se il contenuto dei file ä cambiato in percentuale superiore a quella impostata,
+la Scrivania viene salvata automaticamente.
+<P>Valori utili sono tra 0.5 e  5 per cento. Se si impostano valori troppo bassi, verrÖ
+eseguito un backup ad ogni riavvio.
+
+<P><LI><B>"Ogni x giorni"</B> si limita a verificare quanto tempo ä passato dall'ultimo backup.
+Se il numero di giorni ä superiore a quello specificato, la Scrivania viene archiviata.
+<P>Questa funzione verifica solo la data; non tiene cioÇ conto della quantitÖ di tempo passata
+effettivamente (per es. ore). Quindi, se la Scrivania viene riavviata un minuto dopo la mezzanotte,
+ä possibile che venga effettuto un salvataggio, anche se era stato giÖ effettuato appena
+prima la mezzanotte.
+
+</UL>La casella <B>"Mostra stato archiviazione all'avvio"</B> specifica se visualizzare una
+finestra di stato in cui mostrare il risultato dei controlli precedenti durante l'avvio della Scrivania.
+Puï essere utile per controllare il funzionamento delle impostazioni scelte.
+
+<P><B>"Conserva n archivi"</B> permette di decidere quanti archivi saranno conservati dalla Scrivania
+nella cartella apposita. Il valore assunto ä 3, ma ä possibile in teoria conservare fino a 9 archivi.
+Tuttavia, impostando un valore superiore a 3 parte della schermata che viene visualizzata premendo
+Alt-F1 all'avvio del sistema risulterÖ illeggibile, poichÇ le informazioni riguardanti gli archivi
+addizionali ne spingeranno fuori dallo schermo la parte superiore.
+Si tratta comunque solo di un problema estetico.
+
+<P>Selezionando <B>Mostra ad ogni avvio
+del sistema</B>, il sistema visualizza automaticamente ad ogni
+riavvio la schermata Opzioni per il ripristino, evitando cosç
+di dover premere Alt-F1 per aprirla.
+
+<P>Il campo <B>Tempo limite</B> indica quanto a lungo, durante
+l'avvio, la schermata Opzioni per il ripristino resterÖ aperta.
+Non ä possibile specificare un tempo limite se non si ä prima
+selezionata l'opzione "Mostra ad ogni avvio del sistema".
+
+<P>E' possibile specificare un tempo limite compreso tra 0 e 999 secondi.
+Se si seleziona 0, il sistema non verrÖ riavviato fino a quando non si
+effettua una scelta dalla schermata Opzioni per il ripristino.
+Se si seleziona un valore di tempo limite compreso tra 1 e 999, il sistema
+visualizza la schermata Opzioni per il ripristino fino allo scadere del
+numero di secondi specificati o fino a quando non si sceglie un'opzione di
+ripristino, a seconda di quale azione viene eseguita per prima. Se il tempo
+limite scade prima della scelta dell'utente, il sistema riprende l'avvio
+utilizzando i file di sistema correnti.
+<BR>
+</BODY>
+</HTML>
+

@@ -1,0 +1,75 @@
+<HTML RESID=&ID_XSH_DATAFILE_MAIN;>
+<HEAD>
+    <TITLE>
+        &xwp;: Gegevensbestanden
+    </TITLE>
+</HEAD>
+<BODY>
+Bestanden worden door programma's gebruikt om gegevens in op te slaan b.v. op de harde schijf.
+Alle bestandsobjecten die geen
+<A HREF="objects/obj_pgmf.html">programmabestanden</A>
+of geen
+&link_folders; zijn, worden door &os2; beschouwd als een bestand. Deze kunnen al dan niet voor
+mensen leesbare gegevens bevatten.
+
+<P>Bestanden hebben meestal een <B>type</B>. U kunt een bestandstype
+expliciet opgeven via de "Type" pagina van het
+<A HREF="glossary/gls_notebook.html">instellingen notitieblok</A>
+van een bestand.
+
+<IFNDEF __NEVEREXTASSOCS__>
+Als er niet expliciet een type is opgegeven, zal &xwp; automatisch een type toekennen
+op basis van de bestandsuitbreiding, dat zijn de laatste drie letters achter de laatste punt
+in de bestandsnaam.
+</IFNDEF>
+
+<P>Ter aanvulling, bestanden zijn veelal <B>gekoppeld</B> met &link_progobjs;.
+Dit geeft u de mogelijkheid om, door simpel te dubbelklikken op een bestand, het
+bijbehorende programma te openen met het bestand al direct geladen, of
+om een programma te selecteren vanuit het "Openen als" submenu in het &popmenu;
+van het bestand.
+
+<P>Als het bestand geen type koppelingen heeft (noch expliciet, noch automatisch),
+koppelt &os2; het met
+<IFDEF __EWORKPLACE__>
+het "Tekst Editor" object, dat normaliter te vinden is in de "Hulpprogramma's" map van
+de "Programma's" map op uw Werkplek.
+</IFDEF>
+<IFNDEF __EWORKPLACE__>
+de OS/2 System Editor.
+</IFNDEF>
+
+<IFNDEF __NEVEREXTASSOCS__>
+<IFNDEF __EWORKPLACE__>
+<P>U kunt de bestandstypen en koppelingen van &xwp; instellen op de "Bestandstypen"
+pagina in het
+<A HREF="objects/obj_wps.html">"Werkplek" object.</A>
+<P>Zie:
+<A HREF="glossary/gls_assocs.html">Typen en koppelingen</A>
+voor een introductie in koppelingen tussen bestanden en programma's.
+</IFNDEF>
+<IFDEF __NEVEREXTASSOCS__>
+<P>U kunt de koppelingen tussen een programma en bestanden aanpassen op de
+"Koppelingen" pagina in het instellingen notitieblok van een programma.
+</IFDEF>
+
+<IFDEF __EWORKPLACE__>
+<P>U kunt de koppelingen tussen een programma en bestanden aanpassen op de
+"Koppelen" pagina in het instellingen notitieblok van een programma.
+</IFDEF>
+
+
+<P>Kijk voor meer informatie in de onderstaande onderwerpen:
+
+
+<UL>
+<LI><A HREF="tasks/tsk_crobjs.html">Maken nieuwe objecten</A>
+<LI><A HREF="tasks/tsk_templates.html">Modellen</A>
+<LI><A HREF="tasks/tsk_crshadow.html">Reflecties</A>
+<LI><A HREF="tasks/tsk_copymove.html">Kopi‰ren, verplaatsen en reflecties</A>
+<LI><A HREF="tasks/tsk_chicons.html"> Pictogrammen van objecten wijzigen</A>
+<LI><A HREF="tasks/tsk_rename.html">Objectnamen wijzigen</A>
+<LI><A HREF="tasks/tsk_delete.html">Verwijderen van objecten</A>
+</UL>
+</BODY>
+</HTML>

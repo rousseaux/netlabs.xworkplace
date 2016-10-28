@@ -1,0 +1,54 @@
+<HTML NOSUBLINKS="config"  WIDTH=70% XPOS=right>
+<HEAD>
+    <TITLE>
+        Introduzione
+    </TITLE>
+</HEAD>
+<BODY>
+<B>Classi: XFldObject, XWPSetup, XWPMouse, XWPKeyboard</B>
+<HR>
+A partire dalla V0.9.0, &xwp; introduce anche alcune migliorie alla gestione di
+mouse e tastiera installando uno "Hook" sullo Hook del Presentation Manager, analogamente
+a estensioni ben note come FeelX, NPS WPS e WarpEnhancer.
+<P>
+Cosç &xwp; puï ora fornire funzioni come "fuoco scorrevole", "angoli attivi",
+e "tasti rapidi globali", descritte in dettaglio nelle pagine successive.
+<P>
+L'obiettivo finale di questa componente di &xwp; ä sostituire in futuro tutte queste utilitÖ.
+A mio parere esistono molti problemi con queste utilitÖ:
+
+<OL><LI>Innanzitutto, la maggior parte di esse non ä attivamente supportata da anni.
+Questo vale sopratutto per FeelX e NPS WPS, che ho usato per diverso tempo
+Entrambe hanno alcune limitazioni che non verranno mai eliminate
+dato che probabilmente i due programmi non verranno pió aggiornati.
+
+<P><LI>Entrambe le utilitÖ non sono ben integrate nella WPS. Ossia, le loro impostazioni non possono
+essere cambiate usando i blocchi appunti impostazioni WPS. &xwp; permette di configurare
+il suo hook a PM usando gli oggetti "Mouse" e "Tastiera" nella cartella
+"Impostazione del sistema". Inoltre NPS WPS si chiude automaticamente quando la WPS
+viene riavviata, cosa noiosa.
+
+<P><LI>Nessuna di queste utilitÖ per PM ä OpenSource, eccezion fatta per
+ProgramCommander/2 (che ä anche di pubblico dominio). &xwp; ä OpenSource,
+cosç gli utenti possono riportare e/o correggere bug.
+
+<P><LI>Infine, ä semplicemente odioso dover installare tre diversi hook a PM quando si vuole
+soltanto una funzione di ognuno. Ogni hook installato rallenta il sistema, poichÇ
+ogni singolo messaggio prodotto da &os2; e spedito o
+lanciato verso una finestra deve passare per ogni hook, ognuno dei quali deve fare molti calcoli
+per ogni messaggio. Si noti che parliamo - in certe situazioni - di centinaia
+di messaggi al secondo. Allora, invece di avere tre hook installati
+e usati solo in parte, &xwp; tenta di mettere le funzioni pió usate 
+insieme in un solo hook.
+
+</OL>Notare che lo hook a PM di &xwp; ä una funzione totalmente opzionale. Se non lo si
+desidera, preferendo comunque altre utilitÖ, si ä liberi di eliminarlo.
+
+<P>Per questa ragione lo hook di &xwp; ä disabilitato come valore assunto.
+Prima di poterlo usare bisogna abilitarlo nell'oggetto "Impostazioni &xwp;".
+
+<BR>
+</BODY>
+</HTML>
+
+

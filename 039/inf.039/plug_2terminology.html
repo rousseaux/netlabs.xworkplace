@@ -1,0 +1,86 @@
+<HTML WIDTH=70% XPOS=right>
+<HEAD>
+    <TITLE>
+        Terminologia
+    </TITLE>
+</HEAD>
+<BODY>
+I termini seguenti sono quelli usati in questa documentazione, ed ä bene
+acquisire familiaritÖ con essi.
+
+<UL><LI>Un'<B>"istanza di &xcenter;"</B> ä un oggetto della classe <CODE>&xcenter;</CODE> di WPS.
+Puï esserci solo una vista aperta per ogni &xcenter;, cosç che
+un'istanza di &xcenter; ä identica a una vista di &xcenter;
+quando questo ä aperto, ma possono esserci parecchie istanze di &xcenter;
+nel sistema (una per ogni bordo dello schermo).
+
+<P>Anche se lo &xcenter; stesso ä ovviamente un oggetto della Scrivania, esso isola completamente
+gli elementi dal materiale della WPS internamente. Questo ä il motivo per cui non ä necessaria una conoscenza
+della programmazione SOM/WPS per scrivere una nuova classe elemento, ma ä comunque possibile fare programmazione
+WPS se lo si desidera.
+
+<P><LI>Un <B>"elemento"</B> ä una sottofinestra PM di uno &xcenter; aperto, che
+mostra qualcosa. Uno &xcenter; aperto puï contenere zero,
+uno, o pió elementi. Ogni &xcenter; mantiene una lista degli elementi
+assieme alle loro impostazioni nei dati della sua istanza SOM. Il tutto ä completamente trasparente agli
+elementi, ma se si ä interessati ä comunque possibile vedere questi dati dalla pagina "Elementi" nel
+blocco impostazioni dello &xcenter;.
+
+<P>Per spiegarsi meglio: un elemento ä una finestra di PM interna allo &xcenter;.
+
+<P><LI>Una <B>"classe elemento"</B> definisce un elemento. Basilarmente, ä una classe di finestre
+PM con una struttura in C come wrapper
+(<A HREF="plug_9xcenterwidgetclass.html"><CODE>XCENTERWIDGETCLASS</CODE></A>).
+Questa struttura contiene il nome di una classe di finestre PM usata dallo &xcenter;
+per creare le finestre PM degli elementi. In dipendenza dagli attributi della classe dell'elemento,
+possono esserci una o pió istanze di una classe elemento.
+Volendo un elemento differente nello &xcenter;
+ä necessario scrivere una classe elemento.
+
+<P>Scrivere una classe elemento significa fondamentalmente scrivere una classe di finestre PM
+(si veda oltre), con alcune regole addizionali da seguire. Per semplificare
+le cose, molte classi elemento possono condividere la stessa classe PM.
+
+<P>Alcune classi elemento sono interne allo stesso &xcenter; (risiedono in
+<CODE>XFLDR.DLL</CODE>), ma lo &xcenter; puï ovviamente caricare DLL plug-in.
+Parecchie delle classi elemento fornite con &xwp; sono state create come plug-in per
+mostrare come sono fatte. Avendo a diposizione il
+<A HREF="notices_40source.html">codice sorgente di &xwp;e</A>,
+basta cercare la directory <CODE>src\widgets</CODE>.
+
+<P><LI>Una <B>"classe di finestre PM"</B> non ä una definizione dello &xcenter;... Questo
+argomento ä spiegato in dettaglio nella <I>Guida alla programmazione in Presentation Manager</I>.
+
+<P>Fondamentalmente, PM organizza le finestre in classi. Per esempio, se si crea
+un bottone PM si invoca <CODE>WinCreateWindow</CODE> con il nome della classe di
+finestre dei bottoni (<CODE>WC_BUTTON</CODE>), che ä una classe predefinita su
+ogni sistema &os2;.
+
+<P>‘ possibile perï creare nuove classi di finestre. Lo &xcenter; usa appunto
+questa funzione, per implementare classi elemento. Ancora, una classe elemento ä una classe
+di finestre di PM con alcuni dati extra, per fornire allo &xcenter; informazioni a riguardo
+degli elementi di quella classe che possono essere creati.
+
+<P>Il vantaggio di usare classi separate ä che un elemento ä essenzialmente libero
+di fare qualunque cosa voglia. Puï stampare la scritta "Ciao mondo", ma puï anche scegliere di
+lanciare una dozzina di sottoprocessi con la riproduzione di video.
+
+<P>Lo svantaggio ä che scrivere una classe di finestre di PM da zero ä un po' pió complesso
+che usare controlli standard. Ma proprio per questo c'ä abbondanza di esempi da studiare.
+
+<P>Quando viene creato un elemento (perchÇ viene aggiunto a uno &xcenter; aperto
+o quando uno &xcenter; viene aperto per primo e quindi bisogna creare tutti gli elementi),
+esso chiama <CODE>WinCreateWindow</CODE> con il nome della classe di finestre di PM 
+specificato nella classe elemento. Per cui, non c'ä niente di spettacolare.
+
+<P><LI>Una <B>"DLL plug-in elemento"</B> ä una DLL separata, residente nella
+directory <CODE>plugins\xcenter</CODE> della directory di installazione di &xwp;.
+Questa DLL deve contenere una o pió classi elemento. Ci sono tre procedure
+che una DLL plug-in deve esportare, perchÇ lo &xcenter; possa vedere le classi elemento. Nelle prossime
+pagine saranno date spiegazioni dettagliate.
+
+</UL>
+</BODY>
+</HTML>
+
+

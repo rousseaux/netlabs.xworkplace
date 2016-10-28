@@ -1,0 +1,63 @@
+<HTML WIDTH=70% XPOS=right>
+<HEAD>
+    <TITLE>
+        Come funziona il Cestino?
+    </TITLE>
+</HEAD>
+<BODY>
+Anche se in apparenza il cestino sembra una normale cartella, in realt… esso funziona in 
+maniera molto diversa.
+<UL><LI>Quando un  <B>oggetto viene cancellato</B>, sia trascinandolo nel cestino che
+selezionando "Cancella" dal suo menu contestuale, esso <I>non</I> viene spostato
+fisicamente nella cartella del cestino (che, essendo una cartella, Š una
+normale directory sul disco).
+<P>Questo Š quello che invece avviene:
+<BR><OL><LI>Il cestino crea una cartella invisibile nella directory radice del volume dove
+l'oggetto si trova. Questa directory si chiama <CODE>\TRASH</CODE> (la si pu• vedere
+digitando <CODE>DIR /A \</CODE> dalla linea di comando).
+<P><LI>Il cestino crea in questa directory nascosta un sottopercorso corrispondente del 
+percorso in cui l'oggetto effettivamente si trova. Quindi, se per esempio l'oggetto si trova
+nella cartella <CODE>D:\MIEI_FILE\ARTICOLI</CODE>, viene creata una directory 
+<CODE>D:\TRASH\MIEI_FILE\ARTICOLI</CODE>. In questo modo il cestino ricorda la 
+provenienza dell'oggetto cancellato.
+<P><LI>L'oggetto Š spostato in <I>quella</I> directory (quindi, non nella vera cartella 
+cestino).
+<P>In questa maniera si guadagna in velocit…: spostare fisicamente gli oggetti nella cartella 
+cestino vorrebbe spesso dire spostare file tra volumi differenti (si immagini il tempo perso per
+spostare 30 MB di file nel cestino). Seguendo il nostro sistema, invece, dato che la directory
+<CODE>\TRASH</CODE> si trova sullo stesso volume dell'oggetto da cancellare, anche spostare
+alberi di cartelle di grandi dimensioni richiede pochi attimi.
+<P><LI>Per permettere poi che nel cestino vi sia un corrispondente oggetto visibile, al suo interno 
+viene automaticamente creata un'istanza di XWPTrashObject. Questa Š una sottoclasse di WPTransient,
+il che significa che non sopravvive ad un riavvio della Scrivania e che esiste solo finch‚ la WPS
+Š attiva. Questi "oggetti cestinati", quindi, non consumano spazio nel file OS2.INI.
+<P>Quando un oggetto viene spostato nel cestino, esso in pratica viene duplicato: l'oggetto "reale"
+finisce nella directory invisibile <CODE>\TRASH</CODE> ed un "oggetto cestinato"
+(XFldTrashObject, sottoclasse WPTransient) va a rappresentarlo nel cestino.
+
+</OL>
+<BR><LI>Quando si <B>apre il cestino</B> (e quindi lo si popola), su tutti i volumi viene effettuata
+una scansione delle directory nascoste <CODE>\TRASH</CODE> e nel cestino vengono creati 
+oggetti corrispondenti a quelli trovati nelle sottodirectory.
+<P><LI><B>Ripristinando un oggetto</B> (o spostandolo dal cestino), l'oggetto "reale"
+corrispondente viene estratto dalla directory <CODE>\TRASH</CODE> e rimesso nella sua
+posizione originaria (o in qualunque altro posto l'utente abbia deciso di spostarlo) mentre il 
+corrispondente oggetto nel cestino viene cancellato, essendo a quel punto diventato inutile.
+<P><LI>Quando si <B>elimina un oggetto</B> (o quando si svuota il cestino) viene definitivamente
+cancellato sia l'oggetto nella directory <CODE>\TRASH</CODE> che quello nel cestino.
+</UL>
+Questo approccio garantisce un buon compromesso tra stabilit… e velocit… evitando di lavorare troppo
+sui meccanismi interni della WPS. Inizialmente avevo pensato di usare per il cestino una sottoclasse 
+di WPAbstract, ma questo avrebbe portato alla creazione di una serie di voci in OS2.INI, con i problemi 
+annessi ben noti.
+
+<P>Oltre a ci•, usare una sottoclasse di WPTransient presenta anche un altro vantaggio. Dato che 
+gli oggetti nel cestino (gli oggetti temporanei) vengono ricreati da zero dopo ogni riavvio della WPS,
+se si dovessero verificare dei problemi baster… cancellare tutte le directory nascoste
+<CODE>\TRASH</CODE> sui vari volumi ed al successivo riavvio della Scrivania il cestino risulter…
+completamente vuoto.
+<BR>
+</BODY>
+</HTML>
+
+

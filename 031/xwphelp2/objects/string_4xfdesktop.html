@@ -1,0 +1,170 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: WPDesktop instellingen reeksen
+    </TITLE>
+</HEAD>
+<BODY>
+<CODE>WPDesktop</CODE> implementeert de &os2; Werkplek.
+Omdat de Werkplek gewoon een speciale map is, ondersteunt de Werkplek, in
+aanvulling op de reeksen hieronder genoemd, ook de reeksen van de
+<A HREF="objects/string_1wpobject.html">WPObject</A>
+en
+<A HREF="objects/string_2wpfolder.html">WPFolder</A>
+classes.
+
+<P>Om de huidige open Werkplek te krijgen, dienen deze reeksen uitgevoerd te worden op het
+object met het ID <CODE>&lt;WP_DESKTOP&gt;</CODE>.
+
+<DL>
+
+<DT><P><CITE><B>AUTOLOCKUP</B>={YES|NO}</CITE>
+<DD>Bepaalt of de automatisch blokkeren optie geactiveerd is
+(of het toetsenbord en de muis automatisch blokkeren na een bepaalde
+tijd van inactiviteit -- zie <CODE>LOCKUPTIMEOUT</CODE>).
+De standaardwaarde is <CODE>NO</CODE>.
+
+<DT><P><CITE><B>LOCKUPAUTODIM</B>={YES|NO}</CITE>
+<DD>Bepaalt of de automatisch wegvallen optie geactiveerd is
+(of het scherm automatisch wegvalt en er een bewegend slot pictogram getoond wordt
+twee minuten nadat het toetsenbord en de muis geblokkeerd zijn).
+De standaardwaarde is <CODE>YES</CODE>.
+
+<DT><P><CODE><B>LOCKUPBACKGROUND</B>=<I>naam</I>,<I>mode</I>,<I>factor</I>,<I>bgtype</I>,<I>bgcol</I></CODE>
+<DD>Stelt de blokkeer achtergrond in. Het formaat is hetzelfde als met de
+<A HREF="objects/string_2wpfolder.html">WPFolder</A> <CODE>BACKGROUND</CODE> reeks.
+
+<DT><P><CITE><B>LOCKUPFULLSCREEN</B>={YES|NO}</CITE>
+<DD>Bepaalt of blokkeren het gehele scherm gebruikt.
+Bij <CODE>YES</CODE>, zal de in <CODE>LOCKUPBACKGROUND</CODE> opgegeven blokkeer achtergrond
+getoond worden als het systeem geblokkeerd wordt. Bij <CODE>NO</CODE>, zal er alleen
+een berichtenscherm getoond worden waarin u gevraagd wordt om het blokkeer wachtwoord op te geven.
+De standaardwaarde is <CODE>YES</CODE>.
+
+<DT><P><CITE><B>LOCKUPONSTARTUP</B>={YES|NO}</CITE>
+<DD>Bepaalt of het systeem automatisch blokkeert bij het opstarten (of nadat het weer gestart is).
+De standaardwaarde is <CODE>NO</CODE>.
+
+<DT><P><CITE><B>LOCKUPTIMEOUT</B>=<I>n</I></CITE>
+<DD>Geeft het aantal minuten aan dat het toetsenbord en de muis inactief moeten zijn voordat
+het systeem automatisch geblokkeerd wordt. Deze instelling wordt genegeerd als
+<CODE>AUTOLOCKUP</CODE> niet aan staat.
+
+<DT><P><CITE><B>SHOWHELPPANEL</B>=[XWP|<I>bestandsnaam</I>,]<I>panelid</I></CITE> (alleen &xwp;)
+<DD>Toont elke hulppagina ("scherm") vanuit elk <CODE>.HLP</CODE> bestand. Dit kan gebruikt
+worden door programma's of REXX scripts om hulp te laten zien, ofwel van een
+systeem hulpscherm ofwel van een specifiek hulpscherm dat meegekomen is met een programma.
+
+<P>Met &os2; heeft elk hulpscherm in een .HLP bestand een uniek nummer toegekend gekregen, het
+<I>panel-id</I>.
+Als gevolg hiervan kan elk hulpscherm ge‹dentificeerd worden door het hulpbestand en dat ID op
+te geven.
+Met <CODE>SHOWHELPPANEL</CODE>, kan het te tonen scherm op verschillende manieren gespecificeerd worden:
+
+<UL><LI><CODE>XWP,<I>panelid</I></CODE> specificeert een scherm uit &xwp; zijn eigen hulpbestand,
+XFLDRxxx.HLP. <CODE>XWP</CODE> is een afkorting voor de bestandsnaam zodat u de huidige taal code
+niet hoeft te weten. De hulpscherm ID's die door &xwp; gebruikt worden, kunnen gevonden worden
+in het <CODE>helpids.h</CODE> bestand in de <CODE>toolkit\shared</CODE> directory.
+
+<P><LI>Als <CODE><I>panel-id</I></CODE> alleen gespecificeerd is, wordt er vanuit gegaan dat dit een
+ID is dat gespecificeerd is in &os2; zijn <CODE>WPHELP.HLP</CODE> bestand.
+
+<P><LI>Door ook de <CODE><I>bestandsnaam</I></CODE> op te geven, kunt u elk hulpbestand op het systeem
+openen. Als het bestand zich in ‚‚n van de directory's van het <B>HELP</B> systeempad bevindt, zie:
+<A HREF="glossary/gls_path_sys.html">systeempad</A>,
+dan kunt u het volledige pad, zie:
+<A HREF="glossary/gls_path.html">pad</A>,
+van het bestand weglaten.
+
+</UL>
+
+<DT><CITE><B>SHOWRUNDLG</B>=<I>opstartdir</I></CITE> (alleen &xwp;)
+<DD>Toont de "Run" dialoog van &xwp;, zoals de "Run" opdracht van de
+<A HREF="xcenter/xc_main.html">&xcenter;</A>
+<A HREF="xcenter/xc_xbtn1.html">&xbutton; widget</A>.
+
+<P>Als <CITE><I>opstartdir</I></CITE> op <CITE>DEFAULT</CITE> gezet wordt, zal het invoerveld voor de
+opstart directory eerst leeg zijn
+(wat betekent dat de root directory van het boot station gebruikt moet worden).
+Elke andere waarde zal gebruikt worden als de eerste waarde van de opstart directory.
+
+<P><B>Notitie 1:</B> Deze instellingen reeks verandert geen instellingen,
+maar is meer een opdracht die direct uitgevoerd moet worden.
+
+<P><B>Notitie 2:</B> Als u deze instellingen reeks via een programma wilt uitvoeren (ofwel via
+<CODE>WinSetObjectData</CODE> ofwel via <CODE>SysSetObjectData</CODE>),
+dan zal die functie niet ge‰indigd zijn voordat de dialoog afgesloten is.
+
+<P><B>Voorbeeld:</B> <CITE>SHOWRUNDLG=F:\OS2</CITE> zal de "Run" dialoog laten zien met
+het opstart directory veld vooringevuld met <CITE>F:\OS2</CITE>.
+
+<IFNDEF __NOXSHUTDOWN__>
+<DT><P><CITE><B>XSHUTDOWNNOW</B>=<I>instellingen</I></CODE> (alleen &xwp;)
+<DD>Start &xshutdown; nu op met de opgegeven <I>instellingen</I>, die overeenkomen met
+de verschillende instellingen op de "&xshutdown;" pagina in het instellingen notitieblok
+van de Werkplek .
+
+<P><B>Notitie 1:</B> Deze instellingen reeks verandert geen instellingen,
+maar is meer een opdracht die direct uitgevoerd moet worden.
+De onderstaande <CODE><I>instellingen</I></CODE> hebben alleen invloed op deze ene systeem afsluiting.
+
+<P><B>Notitie 2:</B> Als u deze instellingen reeks via een programma wilt uitvoeren (ofwel via
+<CODE>WinSetObjectData</CODE> ofwel <CODE>SysSetObjectData</CODE>) en bevestigingen staan aan,
+dan zal die functie niet ge‰indigd zijn voordat de bevestigingsdialoog afgesloten is.
+
+<P><I><B>Instellingen</I></B> is een komma gescheiden lijst van &xshutdown; instellingen
+of <CODE>DEFAULT</CODE>. U kunt elke combinatie opgeven van wat hieronder opgesomd staat.
+Als ‚‚n van de onderstaande kernwoorden niet gespecificeerd is, zal &xshutdown;, in het algemeen,
+gebruiken wat er opgegeven is op de "&xshutdown;" pagina in het instellingen notitieblok van
+de  Werkplek.
+
+<P>Om het vooraf ingestelde gedrag aan te passen, nadat &xshutdown; gereed is, dient u ‚‚n
+van de volgende te gebruiken:
+
+<UL><LI><CODE>HALT</CODE> zal een volledig afsluiten uitvoeren en het "Het is nu veilig om...."
+bericht laten zien en het systeem dan stoppen als het afsluiten gereed is.
+
+<LI><CODE>REBOOT</CODE> zal een volledig afsluiten doen en een standaard herstart.
+
+<LI><CODE>USERREBOOT(<I>cmd</I>)</CODE> zal een volledig afsluiten doen en dan een door de gebruiker
+gespecificeerde herstart proberen met de herstart actie <CODE><I>cmd</I></CODE>.
+
+<LI><CODE>POWEROFF</CODE> zal een volledig afsluiten doen en dan een 'APM stroom-uit'
+poging, als dat ondersteund wordt door het systeem.
+
+<LI><CODE>RESTARTWPS</CODE> zal het systeem niet afsluiten, maar alleen de WPS herstarten.
+
+<LI><CODE>FULLRESTARTWPS</CODE> zal het systeem niet afsluiten, maar alleen de WPS herstarten,
+maar toch eerst alle open sessies afsluiten en de opstartmap van &xwp; weer doorlopen bij
+de volgende start van de Werkplek.
+
+</UL><BR>Om het vooraf ingestelde gedrag van VIO vensters te overschrijven, gebruikt u
+ofwel <CODE>AUTOCLOSEVIO</CODE> ofwel <CODE>NOAUTOCLOSEVIO</CODE>.
+
+<P>Om het vooraf ingestelde gedrag van <CODE>XSHUTDWN.LOG</CODE> te overschrijven,
+gebruikt u ofwel <CODE>LOG</CODE> ofwel <CODE>NOLOG</CODE>.
+
+<P>Om de vooraf ingestelde animatie instellingen te overschrijven, gebruikt u ofwel
+<CODE>ANIMATE</CODE> ofwel <CODE>NOANIMATE</CODE>.
+
+<P>Om de vooraf ingestelde bevestigings instellingen te overschrijven, gebruikt u ofwel
+<CODE>CONFIRM</CODE> ofwel <CODE>NOCONFIRM</CODE>. Let er op dat als bevestigingen aan staan
+(ofwel omdat <CODE>CONFIRM</CODE> opgegeven was ofwel omdat het standaard ingesteld stond en niet
+overschreven is), zal het merendeel van de opgegeven instellingen van <CODE>XSHUTDOWNNOW</CODE>
+alleen de verschillende standaard opties laten zien in de bevestigingsdialoog.
+
+<P>Als u geen instellingen wilt overschrijven dient u <CODE>DEFAULT</CODE> op te geven.
+
+<P>Voorbeelden:
+
+<BR><UL><LI><CODE>XSHUTDOWNNOW=DEFAULT</CODE> zal &xshutdown; opstarten met de huidige instellingen.
+
+<P><LI><CODE>XSHUTDOWNNOW=RESTARTWPS,NOCONFIRM,LOG</CODE> zal de Werkplek nu opstarten
+zonder bevestiging, maar het maken van een logbestand deze ene keer aanzetten.
+
+</UL>
+</IFNDEF>
+</DL>
+</BODY>
+</HTML>
+

@@ -1,0 +1,96 @@
+<HTML RESID=&ID_XSH_SETTINGS_WPS;>
+<HEAD>
+    <TITLE>
+        &xwp;: WPS instellingen
+    </TITLE>
+</HEAD>
+<BODY>
+Op deze pagina kunt u een aantal WPS instellingen in de <B>CONFIG.SYS</B> instellen.
+<P>Als de informatie op deze pagina, in relatie tot verschillende <B>CONFIG.SYS</B> instellingen, voor u
+niet voldoende is, kunt u aanvullende toelichtingen vinden in de respectievelijke
+hoofdstukken van de <I>Handleiding bij opdrachten.</I>
+
+<P>Druk op <B>"Toepassen"</B> om de door u gemaakte aanpassingen op te slaan in het <B>CONFIG.SYS</B>
+bestand.
+Dit zal alleen de <B>CONFIG.SYS</B> regels aanpassen die overeenkomen met de instellingen op deze pagina.
+De regels die overeenkomen met de andere pagina's in het "&os2; Kernel" object zullen niet worden aangepast.
+Deze knop is alleen actief als u iets aangepast heeft aan de instellingen op deze pagina.
+Let a.u.b. op dat u de computer dient te herstarten om de aanpassingen te activeren.
+Een Werkplek herstart is <I>niet</I> voldoende.
+<P>Druk op <B>"Optimaliseer"</B> zodat &xwp; u nieuwe instellingen voorstelt op basis van
+uw systeem karakteristieken.
+De <B>CONFIG.SYS</B> zal ook alleen aangepast worden nadat u op "Toepassen" heeft gedrukt.
+<P>Druk op <B>"Standaard"</B> om de &os2; standaard instellingen op de notitieblokpagina te krijgen.
+De <B>CONFIG.SYS</B> zal ook alleen aangepast worden nadat u op "Toepassen" heeft gedrukt.
+
+<P>In de <B>"Automatisch starten"</B> groep kunt u opgeven wat gestart moet worden als
+uw computer aan het opstarten is. Dit komt overeen met de
+<CITE>SET AUTOSTART=xxx</CITE> instelling in de <B>CONFIG.SYS</B>. U kunt dus de volgende onderdelen
+automatisch laten opstarten
+<UL><LI><B>Programma's</B> (<CITE>xxx = PROGRAMS</CITE>). Als u dit uitschakelt, kunnen er geen
+<B>programma's</B> worden gestart, met uitzondering van de programma's in de "Opstarten" map van het Systeem.
+
+<BR><LI><B>Taakoverzicht</B> (<CITE>xxx = TASKLIST</CITE>) Als u dit uitschakelt, zal het
+<B>Taakoverzicht</B> niet worden getoond.
+
+<BR><LI><B>Mappen</B> (<CITE>xxx = FOLDERS</CITE>) als u dit zou kunnen uitschakelen, zouden er geen mappen
+worden geopend en dus ook ook de Werkplek niet. Daarom wordt dit onderdeel niet getoond op de notitieblok
+pagina en zal altijd door &xwp; automatisch aan <CITE>SET AUTOSTART=</CITE> in de <B>CONFIG.SYS</B> worden
+toegevoegd.
+
+<BR><LI><B>Netwrkverbindingen</B> (<CITE>xxx = CONNECTIONS</CITE>) Als u dit uitschakelt, dan worden er geen
+<B>netwerk verbindingen</B> gestart.
+
+<BR><LI><B>Hoofdvenster</B> (<CITE>xxx = LAUNCHPAD</CITE>) Als u dit uitschakelt, zal het
+<B>Hoofdvenster</B> niet worden gestart. Maar u kunt het nog steeds in de "Opstarten" map van het Systeem
+plaatsen of het handmatig starten.
+
+<BR><LI><CITE>WARPCENTER</CITE>: Als u dit uitschakelt, zal het <B>&warpcenter;</B> niet worden gestart.
+Het 'Warpcenter' is alleen aanwezig in OS/2 Warp 4 en hoger.
+Maar u kunt het nog steeds in de "Systeem opstarten" map plaatsen of het handmatig starten.
+
+</UL>Standaard zijn alle onderdelen geactiveerd.
+
+<P>In de groep <B>"Opnieuw starten na systeem starten..."</B> kunt u bepalen welke objecten
+herstart zullen worden nadat de WPS opgestart is. Dit komt overeen met de
+<B>SET RESTARTOBJECTS=xxx</B> instelling in de <B>CONFIG.SYS</B>.
+
+<UL><LI><B>"Alles"</B> (<CITE>xxx = YES</CITE>) zal alle objecten starten die
+geopend waren toen het systeem de laatste keer afgesloten werd. Helaas is dit niet de
+standaardwaarde. <B>Let op:</B> Het herstarten van objecten zal niet werken als u
+gebruik maakt van het 'Uitgebreid afsluiten' van &xwp;.
+
+<BR><LI><B>"Niets"</B> (<CITE>xxx = NO</CITE>) herstart geen enkel object, zelfs niet die in de
+"Systeem opstarten" map staan. (Maar het start wel die op die in de Opstart map van &xwp; staan.)
+
+<BR><LI><B>"Alleen opstartmappen"</B> (<CITE>xxx = STARTUPFOLDERSONLY</CITE>) zal alleen de objecten
+herstarten uit de &os2; Systeem opstart map. Deze instelling wordt sterk aangeraden want de standaard
+instelling kan tot enorme problemen leiden als een programma het systeem heeft laten vastlopen en dan
+herstart wordt.
+Ter aanvulling, &xwp; gaat er vanuit dat deze instelling geactiveerd is.
+
+<BR><LI><B>"Alleen na opnieuw starten"</B> (<CITE>=REBOOT ONLY</CITE>) zal alleen iets herstarten
+als het systeem weer gestart wordt en niet nadat de WPS opnieuw opstart na een fout.
+Dit heeft alleen zin als u gebruik maakt van de bovenstaande "Alles" optie.
+
+</UL>Met Warp 4 kunt u ook de instelling <B>"Automatisch verversen van mappen"</B> uitschakelen,
+wat standaard geactiveerd is. In deze situatie worden open mappen alleen ververst als u dat
+handmatig uitvoert, want het automatisch verversen kost soms veel tijd.
+Deze instelling komt overeen met
+<CITE>SET AUTOREFRESHFOLDERS=xxx</CITE> (met xxx = YES of NO).
+
+<P>De optie <B>"Extra bestand ingangen"</B> stelt u instaat het aantal bestanden dat, op een
+moment, geopend kan zijn voor de WPS te verhogen. De waarde wordt ook overge‰rfd door andere
+processeb. Deze instelling komt overeen mey
+<CITE>SET SHELLHANDLESINC=xxx</CITE> waarin xxx een getal is tussen nul en 255.
+
+<P>In sommige situaties, kan de WPS een tekort aan bestands ingangen hebben en dus geen extra
+bestanden openen. Het probleem kan ook optreden met applicaties die niet het gewenste aantal
+bestands ingangen opvragen maar terugvallen op een bruikbare standaard die is ingesteld. Dit
+probleem kan voorkomen worden door een groot genoeg aantal in de optie hierboven op te geven.
+
+<P>De optie werkt alleen in OS/2 Warp4 Fixpak 6 en latere versies.
+<BR>
+</BODY>
+</HTML>
+

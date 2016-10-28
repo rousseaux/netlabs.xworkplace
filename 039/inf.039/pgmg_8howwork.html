@@ -1,0 +1,36 @@
+<HTML NOSUBLINKS="config"  WIDTH=70% XPOS=right>
+<HEAD>
+<TITLE>Funzionamento</TITLE>
+</HEAD>
+<BODY>
+<B>Classe: XWPScreen</B>
+<HR>
+&pgr; <B>non necessita</B> di hardware particolare per implementare le scrivanie virtuali.
+Mentre le varie implementazioni del sistema X Window Unix (una delle quali
+Š XFree/2, che funziona sotto &os2;) possono usare la memoria addizionale della
+scheda video per gestire spazio per varie scrivanie, &pgr; semplicemente sposta le
+finestre lungo lo schermo.
+
+<P>Pi— in dettaglio: con &pgr; tecnicamente si ha sempre un solo schermo.
+N‚ il Presentation Manager n‚ il driver video sanno nulla delle scrivanie virtuali.
+Tutto quello che &pgr; fa nel commutare le scrivanie Š spostare le finestre fuori e dentro
+lo schermo visibile. Ossia, commutando una scrivania a destra &pgr; sposta
+tutte le finestre a sinistra dello schermo, di una quantit… pari alla larghezza dello schermo fisico
+(rendendole, ovviamente, invisibili).
+Per questo motivo non sono necessari hardware, software o programmi di controllo speciali. Se il
+computer Š in grado di gestire le finestre vuol dire anche che pu• usare &pgr;.
+
+<P>La piccola finestra di &pgr; effettua diversi calcoli per rendere tutte le
+finestre come parte di un grande schermo virtuale, ma in realt… lo schermo fisico
+non cambia: vengono soltanto spostate le finestre al suo interno.
+
+<P>&pgr; ha anche bisogno dello Hook PM di &xwp; per tracciare il movimento delle finestre;
+anzitutto per riflettere i cambiamenti nella finestra di &pgr;, in secondo luogo per essere informato
+della creazione o distruzione di finestre, per qualsiasi ragione essa avvenga. 
+&pgr; pu• in questo modo, per esempio, passare automaticamente da una scrivania virtuale
+all'altra (spostando tutte le finestre) se il primo piano passa
+ad una finestra in una scrivania diversa da quella corrente.
+
+<BR>
+</BODY>
+</HTML>

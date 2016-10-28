@@ -1,0 +1,57 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        Disabilitare il subclassing per le cartelle
+    </TITLE>
+</HEAD>
+<BODY>
+Con questa impostazione ä possibile far sç che &xwp; non effettui
+il subclassing per nessuna cartella.
+<P><B>Nota importante:</B> Molte delle caratteristiche di &xwp; si 
+appoggiano sul subclassing delle cartelle.
+Abilitare questa impostazione limita notevolmente le 
+possibilitÖ di &xwp;. Questa impostazione ä da intendersi come 
+"ultima risorsa" nel caso in cui &xwp; dia problemi non altrimenti risolvibili.
+<P>Abilitando questa opzione vengono automaticamente disattivate le seguenti 
+funzionalitÖ:
+<UL><LI>tasti rapidi cartelle;
+<BR><LI>vista ad albero con scorrimento automatico;
+<BR><LI>i <A HREF="menus/menu_content.html">menu contenuto cartella</A>;
+<BR><LI>barre di stato per le cartelle;
+<BR><LI>suoni di sistema per le cartelle.
+
+</UL>Solo le cartelle aperte dopo il cambio di questa impostazione 
+saranno interessate. Non verrÖ cioÇ annullato il subclassing delle cartelle aperte 
+PRIMA della modifica.
+In particolare, la Scrivania (che ä una cartella) non 
+sarÖ interessata Se si notassero problemi, riavviare
+la WPS o l'intero sistema.
+
+<P><B>Spiegazione dettagliata:</B>
+
+<P>In &os2; (come in Windows), le finestre usano  "messaggi" per notificarsi l'un l'altra certi eventi.
+Il sistema operativo stesso usa questi messaggi per notificare certi eventi 
+alle finestre. Per esempio, ogni volta che si muove il mouse o si preme un 
+tasto, una finestra riceve un messaggio di notifica per poter reagire all'evento. 
+<P>Il "subclassing" ä una potente caratteristica di &os2;, che permette 
+a un programma di intercettare messaggi per una certa finestra o una classe di 
+finestre e far reagire cosç una finestra diversa da quella prevista.
+&xwp; fa ampio uso di questa funzione, per esempio per intercettare i 
+messaggi di tastiera diretti alle cartelle. E' cosç che funzionano i tasti rapidi:
+se &xwp; intercetta un messaggio dalla 
+tastiera ede il messaggio corrisponde ad una combinazione di tasti rapidi, viene eseguita l'azione 
+corrispettiva per la cartella.
+<P>Il subclassing puï perï dare problemi se pió programmi cercano
+di effettuare il subclassing di finestre senza essere a conoscenza l'uno 
+dell'altro. Per esempio, la WPS usa intensivamente il subclassing (in maniera non ben 
+documentata), e vari "WPS enhancer" diversi da &xwp; (per es. Object 
+Desktop) implementano cosç alcune delle loro caratteristiche.
+Sfortunatamente non esiste un "registro" che fornisca informazioni su 
+quale software ha effettuato il subclassing di quali finestre, quindi
+&xwp; non puï sapere quello che fanno altri programmi.
+<P>
+Perciï, se sembra che qualcosa non funzioni bene, ä possibile dire ad &xwp; 
+di lasciare libere le cartelle e le finestre. <BR>
+</BODY>
+</HTML>
+

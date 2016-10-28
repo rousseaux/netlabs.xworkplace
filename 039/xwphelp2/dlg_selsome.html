@@ -1,0 +1,51 @@
+<HTML RESID=&ID_XFH_SELECTSOME;>
+<HEAD>
+    <TITLE>
+        Selezionare per nome
+    </TITLE>
+</HEAD>
+<BODY>
+La voce di menu "Selezionare per nome" permette di selezionare solo alcuni degli oggetti presenti in una
+<A HREF="objects/obj_fdr_main.html">cartella</A>
+aperta.
+
+<P>La selezione si effettua tramite una nuova finestra di dialogo, da cui Š possibile specificare una maschera
+e quindi premere "Seleziona" o "Deseleziona".
+
+<P>La maniera in cui viene interpretato il contenuto del campo dipende dallo stato della
+<B>casella "Espressione regolare".</B>
+
+<UL><LI>Se la casella non Š selezionata, nel campo d'inserimento si potranno usare espressioni
+analoghe a quelle che si userebbero da una finestra comandi &os2;: si potranno quindi usare i
+<A HREF="glossary/gls_wildcards.html">caratteri jolly</A> <CITE>*</CITE> e <CITE>?</CITE>
+per selezionare pi— file per volta. Per esempio, inserendo nel campo la stringa
+<CITE>"*.txt"</CITE> tutti i file il cui nome termina per ".txt"
+verranno selezionati una volta premuto il tasto <B>"Seleziona"</B>;
+analogamente, sar… possibile deselezionare solo alcuni file
+inserendo una maschera e premendo il tasto <B>"Deseleziona"</B>.
+
+<P><LI>Invece, selezionando la casella "Espressione regolare", si potranno inserire nel
+campo immissione solo
+<A HREF="glossary/gls_regexps.html">espressioni regolari estese</A>,
+che verranno analizzate una volta premuto "Seleziona" o "Deseleziona".
+Questa possibilit… torna utile nel caso si vogliano usare stringhe complesse, ma si tenga ben presente
+che le selezioni tramite caratteri jolly, come <CODE>*.txt</CODE>, causeranno un messaggio d'errore,
+dato che i caratteri <CODE>*</CODE> e punto saranno interpretati in maniera differente.
+L'esempio precedente sotto forma di espressione regolare sarebbe infatti
+da scriversi come <CODE>.*\.txt</CODE>.
+
+</UL>
+
+Anche se qui usiamo il termine "file", i caratteri jolly operano correttamente
+anche su oggetti astratti, come programmi o copie collegate.
+
+<P>I tasti<B>"Seleziona tutto"</B> e <B>"Deseleziona tutto"</B>
+rispettivamente selezionano o deselezionano tutti gli elementi
+presenti nella cartella, indipendentemente dalla stringa di selezione.
+
+<P>La finestra si chiude solo usando il pulsante <B>"Chiudi"</B> oppure il tasto <B>"Esc"</B>.
+Non si chiude, invece, premendo gli altri pulsanti. Questo permette la selezione di pi— gruppi di file.
+<BR>
+</BODY>
+</HTML>
+

@@ -1,0 +1,76 @@
+<HTML RESID=&ID_XSH_XFIX_INTRO;>
+  <HEAD>
+    <TITLE>
+      xfix: Einleitung
+    </TITLE>
+  </HEAD>
+  <!-- this page is all new with V0.9.7 -->
+  <!-- revised V1.0.9 --> <body>
+    Dies ist <b>xfix</b>, das &amp;xwp; Dateihandle Reparatur Werkzeug.
+    <p><b>&Uuml;bersicht</b> </p>
+    <p>xfix erlaubt es ihnen: </p>
+    <ul>
+      <li>den Inhalt der WPS Dateihandletabellen aus der <code>OS2SYS.INI</code>
+        Datei in einem PM Fenster anzuzeigen </li>
+      <li>Handles zu l&ouml;schen die nicht mehr gebraucht werden weil
+        die Datei/der Ordner auf die referenziert wird nicht mehr
+        existiert </li>
+      <li>Handles auf Dateien/Ordner zu l&ouml;schen da sie von der WPS
+        nicht benutzt werden (zum Beispiel Handles auf DLLs oder ZIP
+        Dateien) </li>
+      <li>Ordnerpositionen zu entfernen die nicht ben&ouml;tigt werden </li>
+      <li>verlorengegangene abstrakte Objekte wie z.B. Progammobjekte
+        oder Schattenobjekte auf die Arbeitsoberfl&auml;che zu
+        verschieben</li>
+    </ul>
+    Verglichen mit Henk Kelder's hervorragendem CHECKINI Programm gibt
+    ihnen xfix mehr Kontrolle, ben&ouml;tigt aber auch mehr Vorsicht und
+    Wissen. Ein Dank geht an Henk Kelder der herausgefunden hat wie
+    Handles funktionieren und wie die WPS sie benutzt. xfix basiert zum
+    Teil auf seiner Vorarbeit.
+    <p><b>Warnung</b> </p>
+    <p>Dieses Programm erlaubt es ihnen Dateihandles zu l&ouml;schen die
+      die WPS zwingend ben&ouml;tigt wie zum Beispiel das Dateihandle
+      der Arbeitsoberfl&auml;che. xfix enth&auml;lt Funktionen wie
+      Auto-Schutz die ihnen dabei helfen sollen katastrophale Fehler zu
+      vermeiden, nichtsdestotrotz ist eine Fehlbedienung immer noch
+      m&ouml;glich. </p>
+    <p>Es wird keine dauerhafte &Auml;nderung vorgenommen bis sie
+      "xfix-&gt;Zur&uuml;ck in OS2SYS.INI schreiben..." vom
+      Hauptmen&uuml; ausw&auml;hlen. Machen sie sich mit xfix vertraut
+      aber <b>speichern sie die &Auml;nderungen nicht dauerhaft ab es
+        sei denn sie wissen was sie tun.</b> Lesen sie die folgende
+      Information bevor sie das Tool benutzen. </p>
+    <ul>
+      <li><a href="xfix_handles.html">xfix und WPS Dateihandles</a> </li>
+      <li><a href="xfix_list.html">Die Handletabelle</a> </li>
+      <li><a href="xfix_menus.html">Men&uuml;kommandos</a> </li>
+      <li><a href="xfix_menu2.html">Popup Men&uuml; und Hot Keys</a> </li>
+      <li><a href="xfix_delete.html">Die Grundlagen</a> </li>
+      <li><a href="xfix_howto.html">Schritt f&uuml;r Schritt Anleitung</a>
+      </li>
+    </ul>
+    <p><b>Kommandozeilenoptionen</b> </p>
+    <p>Standardm&auml;&szlig;ig benutzt xfix die Kopien von <code>OS2.INI</code>
+      und <code>OS2SYS.INI</code> die gegenw&auml;rtig vom System
+      benutzt werden. Sie k&ouml;nnen xfix aber anweisen andere Kopien
+      dieser Dateien zu benutzen. Hierf&uuml;r benutzen sie die <code><b>-U</b></code>
+      und <code><b>-S</b></code> Optionen. Die Option mu&szlig; als
+      Gro&szlig;buchstaben angegeben werden und der Dateiname mu&szlig;
+      der Option ohne Zwischenraum folgen. In eigentlich allen
+      F&auml;llen werden sie beide Optionen zusammen nutzen wollen: </p>
+    <ul>
+      <br>
+      <li><code><b>-Udateiname</b></code> -- dies ist die "user" INI,
+        normalerweise <code>OS2.INI</code> <br>
+        zum Beispiel: <code>-Uc:\os2\myos2.ini</code> <br>
+      </li>
+      <li><code><b>-Sdateiname</b></code> -- dies ist die "system" INI,
+        normalerweise <code>OS2SYS.INI</code> <br>
+        zum Beispiel: <code>-Sc:\os2\myos2sys.ini</code> </li>
+    </ul>
+    Hier ein komplettes Beispiel: <br>
+    <code>xfix -Uc:\os2\os2.ini-test -Sc:\os2\os2sys.ini-test</code>
+    <p> </p>
+  </body>
+</html>

@@ -1,0 +1,40 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: limitazioni nella copia e nello spostamento dei file
+    </TITLE>
+</HEAD>
+<BODY>
+Spostando o copiando oggetti file-system
+(&link_datafiles; o &link_folders;)
+tra volumi differenti bisogna tenere in considerazione che i volumi 
+potrebbero usare <A HREF="glossary/gls_fs.html">file system</A> differenti.
+
+<OL><LI>Gli altri sistemi operativi (per es. DOS o Windows) di solito
+ignorano gli 
+<A HREF="glossary/gls_eas.html">attributi estesi</A> di &os2;. Si tratta
+di un problema limitato probabilmente al solo file system FAT, dato
+che n‚ DOS n‚ Windows possono leggere volumi HPFS o JFS. Ma se questi
+sistemi dovessero toccare file &os2; ne cancellerebbero probabilmente
+gli attributi estesi.
+
+<P><LI>Copiando o spostando file da un'unit… formattata 
+HPFS o JFS ad un'unit… formattata FAT, il sistema operativo stesso
+provvede a troncare il nome del file secondo le restrizioni FAT 
+8+3 per i nomi. Il nome lungo originale viene salvato come attributo
+esteso del file. Osservando il contenuto dell'unit… con un altro sistema
+operativo, il file sar… visibile solo con il suo nome corto.
+
+<P>Si tenga presente che i dischetti sono sempre formattati con il file
+system FAT.
+
+<P><LI>La conversione automatica del nome file appena descritta funziona 
+solo se per copiare o spostare i file si usa la Workplace Shell di &os2;.
+Usando invece <A HREF="glossary/gls_cmd.html">le sessioni riga di comando</A>
+(per esempio i comandi <A HREF="cmdref.inf#copy"><CODE>COPY</CODE></A> e
+<A HREF="cmdref.inf#xcopy"><CODE>XCOPY</CODE></A>) la copia di file con nomi 
+non conformi alle restrizioni FAT 8+3 fallir….
+</OL>
+</BODY>
+</HTML>
+

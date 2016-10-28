@@ -1,0 +1,35 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        PrioritÖ assunta sottoprocesso "worker"
+    </TITLE>
+</HEAD>
+<BODY>
+Da qui ä possibile modificare la prioritÖ di default per il
+sottoprocesso "Worker".
+
+<P>Durante il caricamento della Scrivania il sottoprocesso "Worker" viene avviato con la
+prioritÖ indicata in questa pagina. Questa impostazione permette di specificare: prioritÖ
+"idle" con un delta prioritÖ 0, "idle" con un delta +31, o prioritÖ "regular" con delta 0.
+
+<P>Si veda <A HREF="glossary/gls_scheduler.html">"Processi e sottoprocessi"</A> per ulteriori 
+informazioni riguardo la prioritÖ dei sottoprocessi.
+
+<P>Nota bene: questa impostazione determina la prioritÖ <I>assunta</I> del sottoprocesso "Worker";
+se &xwp; ritiene che "Worker" non abbia sufficiente tempo macchina, ne alzerÖ automaticamente
+la prioritÖ.
+Si veda <A HREF="setup/xset_p_prtybeep.html">"Segnalazione sonora cambio prioritÖ"</A> per 
+altre informazioni.
+
+<P>Nella maggior parte dei casi il valore migliore ä quello di default, 
+"idle +31". Tale valore fa sç che il sottoprocesso "Worker" funzioni in background senza rallentare
+in maniera sensibile l'interfaccia utente.
+Tuttavia, se si utilizzano normalmente processi che impegnano pesantemente la CPU (ad es. certe applicazioni
+Windows, che impegnano la CPU al 100% senza interruzioni), puï essere necessario alzare la prioritÖ a 
+"regular".
+<P>
+Nella pagina "Sottoprocessi" si puï leggere la prioritÖ corrente del sottoprocesso "Worker".
+<BR>
+</BODY>
+</HTML>
+

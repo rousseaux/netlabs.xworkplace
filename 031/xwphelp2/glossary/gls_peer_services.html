@@ -1,0 +1,39 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: Bestand en printer diensten
+    </TITLE>
+</HEAD>
+<BODY>
+De volgende &link_peer;diensten zullen op uw systeem worden gestart:
+
+<UL><LI>De <CODE>REQUESTER</CODE> dienst maakt het mogelijk dat uw computer de andere
+hulpmiddelen op het LAN ziet. De "requester" is echt een synoniem voor "client".
+Nadat de requester is gestart kunt u bestanden en printers op het LAN benaderen.
+Bovendien kunt u directory's die worden gedeeld met andere computers een stationsletter
+toekennen in uw eigen systeem.
+
+<P><LI>De <CODE>PEER</CODE> dienst is een uitgeklede versie van de serverdiensten die
+alleen maar onderdeel zijn van de serverversies van OS/2.
+Nadat de peerdienst is gestart, kan uw computer lokale directory's, bestanden en printers
+delen met andere computers op het LAN.
+
+<P>Deze dienst verlangt dat de <CODE>REQUESTER</CODE> dienst ook acktief is.
+
+</UL>Gebruik een
+<A HREF="glossary/gls_cmd.html">opdrachtaanwijzing</A>
+om in detail met deze dienst om te gaan:
+
+<UL><LI>Gebruik om een dienst expliciet te starten de
+<CODE>NET START <I>dienst</I></CODE>, b.v. <CODE>NET START REQUESTER</CODE>.
+
+<P><LI>Gebruik om een dienst expliciet te stoppen
+<CODE>NET STOP <I>dienst</I></CODE>, b.v. <CODE>NET STOP REQUESTER</CODE>.
+
+<P><LI>Om te bepalen welke diensten er op dit moment lopen, tik <CODE>NET START</CODE>,
+zonder de naam van een dienst.
+
+</UL>
+</BODY>
+</HTML>
+

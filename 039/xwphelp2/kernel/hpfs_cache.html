@@ -1,0 +1,35 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        Kernel &os2;: HPFS.IFS
+    </TITLE>
+</HEAD>
+<BODY>
+
+Le voci nel gruppo <B>"Cache"</B> determinano l'ammontare di memoria principale
+riservata alla memoria di transito cache per il file system HPFS.
+Corrispondono al parametro <CODE>/CACHE:xxx</CODE> nella riga di comando
+HPFS.IFS.
+
+<P>La dimensione massima della cache per i volumi HPFS ä 2048
+KB (piuttosto poco, detto per inciso).
+
+<P>E' possibile far sç che &os2; determini <B>automaticamente</B> la dimensione della 
+cache. Questo nella maggior parte dei casi corrisponde al 10% della memoria installata,
+ma non ä una impostazione raccomandata.
+
+<P>Si veda <A HREF="glossary/gls_caches.html">"La cache dei file system"</A> per una presentazione
+sulle cache dei vari file system.
+
+<P>L'impostazione <B>"Limite cache per file"</B> regola la dimensione massima (in KB) dei file
+che verranno salvati nella cache. Corrisponde al parametro
+<CODE>/CRECL:xxx</CODE> nella linea di comando HPFS.IFS.
+
+Tale impostazione serve ad evitare che file di grandi dimensioni intasino tutta la memoria cache. 
+Tuttavia, il valore assunto (4 KB) ä ormai sicuramente troppo basso ed ä preferibile impostare 
+32 KB o anche il valore massimo (64 KB).
+<BR>
+</BODY>
+</HTML>
+
+

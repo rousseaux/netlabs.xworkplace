@@ -1,0 +1,152 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: WPObject instellingen reeksen
+    </TITLE>
+</HEAD>
+
+<BODY>
+<CODE>WPObject</CODE> is de WPS basis class voor alle objecten. Hij wordt niet direct gebruikt,
+maar alle andere WPS classes zijn er van afgeleid
+(zie:
+<A HREF="glossary/gls_wpsclasses.html">WPS classes</A>
+voor details).
+Als gevolg daarvan, ondersteunen alle Werkplek objecten (inclusief
+bestanden, mappen en programma objecten) de volgende instellingen reeksen:
+<DL>
+<DT><CODE><B>CCVIEW=</B>DEFAULT</CODE>
+<DD>Gebruikt de standaardwaarde van de gezamenlijke
+weergave instelling op het systeem, als de gebruiker "openen" kiest.
+Dit is de standaardwaarde.
+
+<P><DT><CODE><B>CCVIEW=</B>YES</CODE>
+<DD>Maakt een nieuwe weergave van het object, telkens wanneer de gebruiker "openen" kiest.
+
+<P><DT><CODE><B>CCVIEW=</B>NO</CODE>
+<DD>Heropent een weergave van het object, als de gebruiker openen kiest.
+
+<P><DT><CODE><B>HELPLIBRARY=</B><I>bestandsnaam</I></CODE>
+<DD>Stelt de help bibliotheek in.
+
+<P><DT><CODE><B>HELPPANEL=</B><I>id</I></CODE>
+<DD>Stelt het object zijn standaard help paneel in binnen de help bibliotheek.
+U kunt beter niet rommelen met deze instellingen, want u dient de WPS interne help
+bronnen ID's te kennen.
+
+<P><DT><CODE><B>HIDEBUTTON=</B>{YES|NO}</CODE>
+<DD>Bepaalt of een weergave van dit object een verberg knop heeft in plaats van
+een minimaliseer knop. De standaard is de huidige systeem knoppen weergave voor de
+venster instellingen. Dit kan hier niet opgegeven worden.
+
+<P><DT><CODE><B>ICONFILE=</B><I>bestandsnaam</I></CODE>
+<DD>Bepaalt het object zijn pictogram <B><I>bestandsnaam</I></B>.
+Moet een ".ICO" bestand zijn.
+
+<P>Denk er om dat dit voor mappen het "gesloten" pictogram betreft.
+Het bewegende ("open") pictogram kan ingesteld worden met
+<CODE><B>ICONNFILE=</B><I>index</I>,<I>bestandsnaam</I></CODE>
+(zie:
+<A HREF="objects/string_2wpfolder.html">WPFolder reeksen</A>
+voor details).
+
+<P><DT><CODE><B>ICONPOS=</B><I>x</I>,<I>y</I></CODE>
+<DD>Bepaalt van het object zijn eerste pictogram positie in de bron map.
+De x en y waarden vertegenwoordigen de positie in de map in procentuele co”rdinaten.
+
+<P><DT><CODE><B>ICONRESOURCE=</B><I>id</I>,<I>dllfile</I></CODE>
+<DD>Stelt het pictogram van het object in op gegevens die zich in een bron bestand bevinden.
+De bron id van het pictogram is het <CODE><B><I>id</I></B></CODE> in de
+<A HREF="glossary/gls_dll.html">DLL</A>
+<CODE><I>dllfile</I></CODE>.
+
+<P>Denk er om dat dit voor mappen het "gesloten" pictogram betreft.
+Het bewegende ("open") pictogram kan ingesteld worden met
+<CODE><B>ICONNRESOURCE=</B><I>index</I>,<I>id</I>,<I>dllfile</I></CODE>
+(zie <A HREF="objects/string_2wpfolder.html">WPFolder reeksen</A> voor details).
+
+<P><DT><CODE><B>LOCKEDINPLACE=</B>{YES|NO}</CODE> (alleen &warp4;)
+<DD>Geeft aan of een object vast of niet vast staat op een positie.
+
+<P><DT><CODE><B>MENUITEMSELECTED</B><I>menu-item-id</I></CODE> (alleen &warp4;)
+<DD>Simuleert de selectie van het &popmenu; van de opgegeven menu optie van het object.
+<B><I>menu-item-id</I></B> moet een numerieke waarde zijn.
+
+<BR>Dit is niet echt een instelling, maar meer een opdracht die uitgevoerd kan worden op een map.
+
+<P><DT><CODE><B>MENUS=</B>{SHORT|LONG}</CODE> (alleen &warp4;)
+<DD>Bepaalt of dit object wel of niet een kort &popmenu; heeft
+(zonder menu regels die sleep en loslaat acties dupliceren) of alleen het volledige.
+
+<P><DT><CODE><B>MINWIN=</B>{HIDE|VIEWER|DESKTOP}</CODE>
+<DD>Bepaalt of het geminimaliseerde object wel of niet verborgen kan worden,
+in de "Vensters als pictogrammen" weergave, of als pictogram op de Werkplek terecht komt.
+<P>De standaardwaarde is de huidige minimaliseer knop instelling. Die kan hier niet opgegeven
+worden.
+
+<P><DT><CODE><B>NOCOPY=</B>{YES|NO}</CODE>
+<DD>Het object kan niet gekopieerd worden.
+
+<P><DT><CODE><B>NODELETE=</B>{YES|NO}</CODE>
+<DD>Het object kan niet verwijderd worden. Wees hier voorzichtig mee.
+
+<P><DT><CODE><B>NODRAG=</B>{YES|NO}</CODE>
+<DD>Het object kan niet versleept worden met de muis.
+
+<P><DT><CODE><B>NODROP=</B>{YES|NO}</CODE>
+<DD>Het object zal geen objecten accepteren die er op los gelaten worden.
+
+<P><DT><CODE><B>NOLINK=</B>{YES|NO}</CODE>
+<DD>Er kunnen geen reflecties van dit object gemaakt worden.
+
+<P><DT><CODE><B>NOMOVE=</B>{YES|NO}</CODE>
+<DD>Het object kan niet verplaatst worden.
+
+<P><DT><CODE><B>NOPRINT=</B>{YES|NO}</CODE>
+<DD>Het object kan niet afgedrukt worden.
+
+<P><DT><CODE><B>NORENAME=</B>{YES|NO}</CODE>
+<DD>Het object kan niet een andere naam gegeven worden.
+
+<P><DT><CODE><B>NOSETTINGS=</B>{YES|NO}</CODE>
+<DD>Het object zijn instellingen notitieblok kan niet geopend worden.
+
+<P><DT><CODE><B>NOSHADOW=</B>{YES|NO}</CODE>
+<DD>Zelfde als NOLINK.
+
+<P><DT><CODE><B>NOTVISIBLE=</B>{YES|NO}</CODE>
+<DD>Het object is niet zichtbaar. Wees voorzichtig met
+deze stijl, want u zou het object wel eens niet meer terug kunnen krijgen.
+
+<P><DT><CODE><B>OBJECTID=</B><I>&lt;name&gt;</I></CODE>
+<DD>Stelt een blijvend ID in voor het object.
+Een Object ID is een unieke reeks voorafgegaan door
+een <CODE>&lt;</CODE> en afgesloten met een <CODE>&gt;</CODE>.
+<BR>Zie:
+<A HREF="glossary/gls_objids.html">WPS Object ID's</A>
+voor meer over dit onderwerp.
+<P>De standaard is om geen ID te hebben.
+
+<P><DT><CODE><B>OPEN=</B>{SETTINGS|DEFAULT|ICON|TREE|DETAILS}</CODE>
+<DD>Open nu een weergave.
+
+<BR><CODE><B>OPEN=</B>DEFAULT</CODE> zal de standaard weergave van het object openen
+(alsof u erop dubbelgeklikt had).
+<CODE><B>OPEN=</B>SETTINGS</CODE> zal het instellingen notitieblok van het object openen.
+Alle andere waarden zijn alleen geldig voor mappen.
+<BR>Dit is niet echt een "instelling", maar meer een opdracht die uitgevoerd
+kan worden op een map. Die zal dan direct openen.
+
+<P><DT><CODE><B>TEMPLATE=</B>{YES|NO}</CODE>
+<DD>Bepaalt of dit object een
+<A HREF="tasks/tsk_templates.html">model</A>
+is of niet. De standaardwaarde is (natuurlijk) <CODE>NO</CODE>.
+
+<P><DT><CODE><B>TITLE=</B><I>naam</I></CODE>
+<DD>Stelt de object naam in op iets nieuws. Dit zal ook de "echte"
+bestandsnaam aanpassen (als het object een bestand vertegenwoordigt),
+net alsof u de naam gewijzigd heeft op de Werkplek.
+
+</DL>
+</BODY>
+</HTML>
+

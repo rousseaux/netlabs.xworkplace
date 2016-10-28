@@ -1,0 +1,59 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        xfix: xfix and WPS File Handles
+    </TITLE>
+</HEAD>
+<!-- this page is all new with V0.9.7
+<!-- Changed V0.9.20: changed title, moved most stuff to glossary/gls_objhandle.html -->
+<!-- revised V1.0.9 -->
+
+<BODY>
+The Workplace Shell uses the file handles table to keep track of the files
+required by program objects and shadows no matter where they are located.
+These objects remain usable even if the files they need are moved.
+
+<P>This works because program objects and shadows never store the physical
+<A HREF="glossary/gls_path.html">path</A> of a file or folder, just its
+handle.  When the WPS needs the full path, it is built piece by piece
+from the handles for each part of that path.
+
+<P>The WPS starts by looking in the table for the file handle it got from
+the program object or shadow.  The entry for that handle provides the file's
+name (as displayed in xfix's "Short name" column), along with the handle for
+the parent folder containing this file.  The WPS then looks up the parent
+folder's handle, gets its name, and adds it (along with a backslash) to the
+begining of the path.  It then goes for the parent's parent... and so on,
+until the root folder for the drive is reached.
+
+<P>This has several advantages:
+<UL><LI>Only the short name has to be stored in <CODE>OS2SYS.INI</CODE>, which
+saves space.
+<LI>More important, this is very efficient when files or folders
+are moved because only the parent handle of the object being moved has to
+be updated. Since all sub-objects of the item being moved only contain a parent
+handle, the next time the full file name is needed, it can be correctly built with
+the new path.
+</UL>
+For more details about object handles, see
+<A HREF="glossary/gls_objhandle.html">"About Object Handles."</A>
+
+<P>Unfortunately, this also has several disadvantages:
+<UL><LI>The WPS never deletes handles, even when the files or folders
+they refer to are deleted.
+<LI>The WPS creates handles for files that will never be used by
+program objects or shadows (such as DLLs or ZIP files).
+<LI>Bugs and/or crashes in the WPS can corrupt the handles table,
+leaving you with duplicate entries for a handle, entries that point at
+the wrong file or folder, etc.
+</UL>
+
+xfix can definitely help with the first two problems and may be useful for
+dealing with some types of corruption.  Note that xfix mostly deals with
+file-system handles. To fix abstract objects, you might use Henk Kelder's
+CHECKINI program (from the <A HREF="http://www.os2site.com/sw/util/wps/wptools33.zip">
+WPTOOLS</A> package).
+
+</BODY>
+</HTML>
+

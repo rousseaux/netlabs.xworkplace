@@ -1,0 +1,79 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: sessioni &winos2;
+    </TITLE>
+</HEAD>
+<BODY>
+<IMG SRC="img/os2_win16.gif">
+
+<P>&os2; incorpora il supporto per i programmi scritti per Microsoft
+Windows 3.x. Questo supporto ä chiamato <B>&winos2;</B> ed ä realizzato
+grazie ad una versione modificata di Microsoft Windows 3.1 funzionante
+all'interno del sistema &os2;.
+In questo modo si possono far funzionare programmi Windows come se fossero 
+programmi &os2;. Si possono, per esempio, avere programmi
+Windows sulla Scrivania di &os2; o in una sessione separata a schermo
+intero, condividendo le informazioni tra i programmi &os2; e quelli
+Windows.
+
+<P>Si noti che il supporto &winos2; ä equivalente a Windows 3.1, non a 
+Windows 95. &winos2; non supporta nativamente le applicazioni Windows 
+32-bit. Per poter utilizzare questo tipo di applicazioni bisogna installare
+software aggiuntivo di terze parti.
+
+<P>Nella &link_syssetupfdr; si trova l'oggetto
+<A HREF="objects/obj_setup_win16.html">"&winos2setup;"</A>, che permette di 
+impostare le proprietÖ relative all'intero sottosistema &winos2;.
+E' comunque possibile impostare proprietÖ particolari per una data
+applicazione &winos2; modificando le impostazioni assunte
+dall'<A HREF="objects/obj_pgmobj.html">oggetto programma</A> ad essa
+collegato.
+
+<P>I programmi &winos2; possono essere eseguiti sia in finestra che in sessioni
+a schermo intero.
+
+<UL><LI>Come valore assunto, tutti i programmi <B>&winos2; in finestra</B> condividono
+la stessa sessione. Detto altrimenti, anche se si presentano come finestre 
+della Scrivania, indipendenti l'una dall'altra, esse funzionano tutte all'interno 
+dello stesso <A HREF="glossary/gls_scheduler.html">processo</A>.
+Tutti i programmi nel processo condividono le stesse impostazioni DOS e &winos2;,
+definite dal primo programma avviato nella sessione.
+
+<P>Si puï perï decidere di far funzionare un programma &winos2; in una 
+<B>sessione separata</B>, semplicemente attivando l'impostazione relativa nel
+<A HREF="glossary/gls_notebook.html">blocco appunti impostazioni</A> dell'oggetto
+programma. Cosç facendo si consumerÖ pió memoria ma, facendolo funzionare in una
+sessione separata, si proteggerÖ il programma dalle altre applicazioni
+&winos2;.
+
+<P><LI>Usando una sessione <B>&winos2; a schermo intero</B>, come ä naturale
+trattandosi di una
+<A HREF="glossary/gls_sessions_fs.html">sessione a schermo intero</A>, la
+Scrivania &os2; non ä visibile. E' perï possibile rientrarvi semplicemente 
+selezionando l'icona "Scrivania" presente sul margine inferiore della 
+sessione &winos2;.
+
+</UL>Oltre a ciï, ogni sessione &winos2; (sia in finestra che a schermo intero)
+puï essere eseguita in modalitÖ "standard" o "enhanced compatibility [compatibilitÖ
+avanzata]".
+
+<UL><LI>Il <B>modo standard</B> ä per i programmi scritti per lo "standard mode"
+Microsoft Windows 3.0 e 3.1 .
+
+<P><LI>Il <B>modo Enhanced compatibility</B> serve per i programmi
+Microsoft Windows 3.0 e 3.1 che richiedono lo "Enhanced mode".
+
+</UL>Dato che i tutti i programmi "standard mode" Windows 3.0 e 3.1 funzionano
+senza problemi nelle sessioni &winos2; in modo Enhanced-compatibility, il valore
+assunto per le sessioni ä Enhanced compatibility.
+
+Per ulteriori informazioni selezionare un'argomento dall'elenco seguente:
+
+<UL>
+<LI><A HREF="glossary/gls_sessions.html">Tipi di sessione</A>
+<LI><A HREF="glossary/gls_sessions_fs.html">Sessioni a schermo intero</A>
+<LI><A HREF="glossary/gls_scheduler.html">Processi e sottoprocessi</A>
+</UL>
+</BODY>
+</HTML>

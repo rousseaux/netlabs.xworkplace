@@ -1,0 +1,34 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        Kernel &os2;: controllo automatico JFS.IFS
+    </TITLE>
+</HEAD>
+<BODY>
+Il parametro <B>"Autocheck"</B> determina per quali volumi &os2; esegue automaticamente il 
+<CITE>CHKDSK</CITE> all'avvio del sistema.
+
+<P>Inserire la lettera identificativa dell'unit… (senza i due punti "<CITE>:</CITE>").
+
+<P>Si noti che le impostazioni di questo parametro hanno un significato leggermente differente rispetto
+a quelle del corrispondente parametro di <CODE>HPFS.IFS</CODE>:
+
+<UL><LI>Se si specifica solo <CODE>*</CODE> (il valore assunto), tutti i volumi JFS 
+vengono verificati automaticamente rimpiazzando il "journal log". Si tenga presente che JFS
+non si limita a verificare i volumi marcati come "sporchi" (quelli cioŠ non sono stati chiusi correttamente
+durante lo spegnimento del sistema): il  "journal log" viene rimpiazzato <I>comunque</I>.
+
+<LI>Se si specifica il segno pi— (<CITE>+</CITE>) <I>prima</I> della lettera dell'unit…
+JFS non si limita a sostituirne il "journal log" ma esegue anche una verifica
+completa dell'integrit… del file system.
+
+<LI>Se la lista dei parametri termina con <CODE>+*</CODE>, JFS esegue un controllo completo
+dell'integrit… su tutti i volumi che non sono stati specificati esplicitamente.
+
+</UL>Per esempio: impostando <CITE>C+DE</CITE> viene eseguita una verifica completa dell'unit… D:,
+mentre su C: ed E: viene soltanto sostituito il "journal log".
+
+<BR>
+</BODY>
+</HTML>
+

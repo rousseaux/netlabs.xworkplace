@@ -1,0 +1,51 @@
+<HTML>
+<HEAD>
+    <TITLE>
+       &xwp;: Sla gegevensbestand object ingang, in de omgeving, over
+    </TITLE>
+</HEAD>
+<BODY>
+
+De <B>"Sla gegevensbestand object ingang, in omgeving, over"</B> instelling bepaalt hoe &xwp; de
+<CODE>WP_OBJHANDLE</CODE> variabele zal instellen in de omgeving van een programma dat werd
+gestart via een gegevensbestandskoppeling.
+Uitschakelen van deze instelling maakt het u mogelijk om het aantal bestandssysteem
+<A HREF="glossary/gls_objhandle.html">object ingangen</A>
+te verminderen die op uw systeem worden gemaakt.
+
+<UL><LI>Als  u een programma start via een gegevensbestandskoppeling, en de instelling is
+<B>aangevinkt</B>, zullen de
+<A HREF="glossary/gls_objhandle.html">object ingangen</A>
+van de gegevensbestanden in de omgeving ook worden overgeslagen. De <CODE>WP_OBJHANDLE</CODE> zal
+dan als volgt worden ingesteld:
+
+<P><CODE>WP_OBJHANDLE=<I>programma</I>,<I>gegevensbestand</I></CODE>
+
+<P>waarin <I><CODE>programma</I></CODE> de object ingang is van het programma object of
+programmabestand dat werd gestart en <I><CODE>gegevensbestand</I></CODE> de object ingang
+is van het gegevensbestand waarvan de koppeling het starten van het programma veroorzaakte.
+
+<P>Dit is het standaard gedrag van de Workplace Shell.
+
+<P><LI>Als de instelling <B>niet is aangevinkt</B>, zal de <CODE>WP_OBJHANDLE</CODE> als volgt
+worden ingesteld:
+
+<P><CODE>WP_OBJHANDLE=<I>programma</I></CODE>
+
+<P>M.a.w., de gegevens bestandsingang zal <I>niet</I> worden overgeslagen
+
+</UL>Deze instelling werd toegevoegd omdat iedere keer als een gegevensbestand wordt
+gestart, b.v. wanneer u dubbelklikt op een gegevensbestand, er een object ingang voor
+het bestand moet worden gemaakt. Die object ingang blijft voor altijd in het <CODE>OS2SYS.INI</CODE> bestand
+staan, zelfs als het bestand nooit meer gebruikt wordt. Uiteindelijk zal dit een groot aantal
+ingangen cre‰ren. U kunt dus deze instelling nu uitzetten en u zult zien dat de ingangen
+sectie in <CODE>OS2SYS.INI</CODE> niet zo snel meer zal groeien.
+
+<P>Echter, bepaalde applicaties zijn afhankelijk van het standaard Workplace Shell gedrag.
+Als u deze instelling uitschakelt en een applicatie werkt niet meer, moet u de instelling
+weer inschakelen.
+
+<P>Deze instelling werkt onmiddellijk.
+<BR>
+</BODY>
+</HTML>

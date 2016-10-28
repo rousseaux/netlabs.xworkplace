@@ -1,0 +1,143 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: stringhe WPObject
+    </TITLE>
+</HEAD>
+<BODY>
+<CODE>WPObject</CODE> Š la classe WPS di base per tutti gli oggetti. Non viene utilizzata direttamente,
+ma tutte le altre classi WPS dipendono da questa classe
+(si veda <A HREF="glossary/gls_wpsclasses.html">Classi WPS</A> per i dettagli).
+Di conseguenza tutti gli oggetti della Scrivania (compresi quindi i file, le cartelle e
+gli oggetti programma) supportano le stringhe impostazioni seguenti:
+
+<DL>
+<DT><CODE><B>CCVIEW</B>=DEFAULT</CODE>
+<DD>Quando l'utente seleziona "Aprire come" viene utilizzato il valore assunto 
+tra le modalit… visualizzazione possibili; Š l'impostazione assunta per questa stringa.
+
+<P><DT><CODE>CCVIEW=YES</CODE>
+<DD>Ogni volta che l'utente apre l'oggetto viene creata una nuova visualizzazione.
+
+<P><DT><CODE>CCVIEW=NO</CODE>
+<DD>Quando l'utente apre l'oggetto viene riportata in primo piano l'eventuale visualizzazione gi… aperta.
+
+<P><DT><CODE><B>HELPLIBRARY</B>=<I>nomefile</I></CODE>
+<DD>Imposta la libreria di aiuto.
+
+<P><DT><CODE><B>HELPPANEL</B>=<I>id</I></CODE>
+<DD>Imposta il pannello di aiuto assunto per l'oggetto all'interno della libreria di aiuto.
+Meglio non modificare queste impostazioni se non si conoscono esattamente le ID delle 
+risorse dell'aiuto interno WPS.
+
+<P><DT><CODE><B>HIDEBUTTON</B>={YES|NO}</CODE>
+<DD>Specifica se le visualizzazioni dell'oggetto avranno il bottone per minimizzare o il
+bottone per nascondere. Il valore assunto Š quello specificato per
+l'aspetto del bottone nelle impostazioni di sistema per le finestre, che non si pu• modificare da qui.
+
+<P><DT><CODE><B>ICONFILE</B>=<I>nomefile</I></CODE>
+<DD>Imposta l'icona dell'oggetto. <CODE><I>nomefile</I></CODE>
+deve essere un file ".ICO" .
+<P>Nel caso delle cartelle, questo valore determina la icona "chiusa".
+La icona animata ("aperta") si specifica con
+<CODE><B>ICONNFILE</B>=<I>indice</I>,<I>nomefile</I></CODE>
+(si veda <A HREF="objects/string_2wpfolder.html">Stringhe WPFolder</A> per i dettagli).
+
+<P><DT><CODE><B>ICONPOS</B>=<I>x</I>,<I>y</I></CODE>
+<DD>Specifica la posizione iniziale dell'icona dell'oggetto nella
+cartella genitore. I valori x e y rappresentano la posizione nella cartella
+in coordinate percentuali.
+
+<P><DT><CODE><B>ICONRESOURCE</B>=<I>id</I>,<I>filedll</I></CODE>
+<DD>Specifica che l'icona dell'oggetto Š contenuta in un file di risorse.
+La <CODE><I>id</I></CODE> Š la 
+"icon resource ID" nella
+<A HREF="glossary/gls_dll.html">DLL</A>
+<CODE><I>filedll</I></CODE>.
+<P>Nel caso delle cartelle, questo valore determina la icona "chiusa".
+La icona animata ("aperta") si specifica con
+<CODE><B>ICONNRESOURCE</B>=<I>indice</I>,<I>id</I>,<I>filedll</I></CODE>
+(si veda <A HREF="objects/string_2wpfolder.html">Stringhe WPFolder</A> per i dettagli).
+
+<P><DT><CODE><B>LOCKEDINPLACE</B>={YES|NO}</CODE> (solo &warp4; e superiori)
+<DD>Specifica se la posizione dell'oggetto Š fissa o meno.
+
+<P><DT><CODE><B>MENUITEMSELECTED</B> <I>id-voce-menu</I></CODE> (solo &warp4; e superiori)
+<DD>Simula la selezione della voce di menu specificata dal &popmenu;e dell'oggetto.
+<CODE><I>id-voce-menu</I></CODE> deve essere un valore numerico.
+<BR>Non si tratta di una vera "impostazione", ma piuttosto di un comando da eseguire sulla cartella.
+
+<P><DT><CODE><B>MENUS</B>={SHORT|LONG}</CODE> (solo &warp4; e superiori)
+<DD>Determina se l'oggetto ha un &popmenu;e corto
+(cioŠ senza le voci che duplicano le funzioni
+drag 'n' drop) o quello completo.
+
+<P><DT><CODE><B>MINWIN</B>={HIDE|VIEWER|DESKTOP}</CODE>
+<DD>Determina se l'oggetto minimizzato viene nascosto, piazzato nella vista "Finestre minimizzate" o
+minimizzato sulla Scrivania.
+<P>L'impostazione assunta Š quella corrente per il bottone Minimizzare, che non pu•
+essere specificata qui.
+
+<P><DT><CODE><B>NOCOPY</B>={YES|NO}</CODE>
+<DD>L'oggetto non si pu• copiare.
+
+<P><DT><CODE><B>NODELETE</B>={YES|NO}</CODE>
+<DD>L'oggetto non si pu• cancellare. Usare con cautela questa impostazione.
+
+<P><DT><CODE><B>NODRAG</B>={YES|NO}</CODE>
+<DD>L'oggetto non pu• essere trascinato con il mouse.
+
+<P><DT><CODE><B>NODROP</B>={YES|NO}</CODE>
+<DD>L'oggetto ignora altri oggetti trascinati e rilasciati su di esso.
+
+<P><DT><CODE><B>NOLINK</B>={YES|NO}</CODE>
+<DD>Non si possono creare copie collegate dell'oggetto.
+
+<P><DT><CODE><B>NOMOVE</B>={YES|NO}</CODE>
+<DD>L'oggetto non pu• essere mosso.
+
+<P><DT><CODE><B>NOPRINT</B>={YES|NO}</CODE>
+<DD>L'oggetto non pu• essere stampato.
+
+<P><DT><CODE><B>NORENAME</B>={YES|NO}</CODE>
+<DD>Non si pu• cambiare nome all'oggetto.
+
+<P><DT><CODE><B>NOSETTINGS</B>={YES|NO}</CODE>
+<DD>Il blocco appunti impostazioni dell'oggetto non pu• essere aperto.
+
+<P><DT><CODE><B>NOSHADOW</B>={YES|NO}</CODE>
+<DD>Uguale a <CODE>NOLINK</CODE>.
+
+<P><DT><CODE><B>NOTVISIBLE</B>={YES|NO}</CODE>
+<DD>L'oggetto non Š visibile. Da usare con molta cautela, dato che dopo potrebbe
+essere difficile ritrovare l'oggetto per annullare l'inpostazione.
+
+<P><DT><CODE><B>OBJECTID</B>=<I>&lt;name&gt;</I></CODE>
+<DD>Imposta una ID permanente per l'oggetto.
+Una ID Oggetto Š una stringa univoca preceduta da 
+<CODE>&lt;</CODE> e chiusa da <CODE>&gt;</CODE>.
+<BR>Si veda <A HREF="glossary/gls_objids.html">Identit… degli oggetti WPS</A> per altre informazioni sull'argomento.
+<P>Il valore assunto non prevede una ID.
+
+<P><DT><CODE><B>OPEN</B>={SETTINGS|DEFAULT|ICON|TREE|DETAILS}</CODE>
+<DD>Apre subito una visualizzazione.
+
+<BR><CODE>OPEN=DEFAULT</CODE> apre la visualizzazione assunta dell'oggetto (come
+se vi si fosse cliccato sopra due volte). <CODE>OPEN=SETTINGS</CODE> apre il blocco appunti
+impostazioni dell'oggetto. Tutti gli altri valori sono validi solo per le cartelle.
+<BR>Non si tratta di una vera "impostazione", ma piuttosto di un comando da eseguire sulla cartella.
+Viene eseguito immediatamente.
+
+<P><DT><CODE><B>TEMPLATE</B>={YES|NO}</CODE>
+<DD>Determina se l'oggetto Š o no un 
+<A HREF="tasks/tsk_templates.html">modello</A>.
+Il valore assunto Š (naturalmente) <CODE>NO</CODE>.
+
+<P><DT><CODE><B>TITLE</B>=<I>titolo</I></CODE>
+<DD>Imposta il nome dell'oggetto. Modifica anche il nome del file "reale"
+(se l'oggetto rappresenta un file), proprio come se si fosse modificato il nome dalla WPS.
+
+</DL>
+</BODY>
+</HTML>
+

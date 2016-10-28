@@ -1,0 +1,71 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: Geheugen, Swapbestand (SWAPPER.DAT) venster
+    </TITLE>
+</HEAD>
+<BODY>
+De instellingen in het "Swapbestand" venster bieden u de mogelijkheid om de manier waarop
+&os2; omgaat met zijn 'swapbestand' te be‹nvloeden.
+Al deze instellingen komen overeen met de <CODE>SWAPPATH</CODE> opdracht in <B>CONFIG.SYS</B>.
+Zie de
+<A HREF="cmdref.inf#swappath">SWAPPATH documentatie</A>
+in de
+<I>Handleiding bij opdrachten</I> voor details.
+
+<P>Voor meer informatie over dit onderwerp, zie:
+<A HREF="glossary/gls_mem_paging.html">Pagineren</A>.
+
+<UL><LI>Het <B>"Huidige grootte:"</B> veld laat u de huidige grootte van het &os2; swapbestand
+(<CODE>SWAPPER.DAT</CODE>) zien.
+Dit scherm wordt continu bijgewerkt als de grootte van het swapbestand verandert.
+
+<P><LI>Het <B>"Hoofdgeheugen grootte:"</B> veld laat u zien hoeveel fysiek hoofdgeheugen (RAM)
+u ge‹nstalleerd heeft in uw systeem.
+Dit getal plus de grootte van het swapbestand (hierboven) is de hoeveelheid virtueel
+geheugen dat werkelijk op dit moment gebruikt wordt door &os2;.
+
+<P><LI>Het <B>"Minimale grootte"</B> veld laat u bepalen welke grootte het swapbestand
+altijd dient te hebben. U dient dit op een redelijk hoge waarde in te stellen want anders zal
+&os2; steeds de grootte van het swapbestand aanpassen, wat een hoop tijd kost.
+
+<P>De standaardwaarde van 2 MB is zeker te laag voor de meeste systemen, tenzij u veel
+geheugen ge‹nstalleerd heeft. Bijvoorbeeld, als de huidige grootte van het swapbestand 20 MB
+is en u heeft een minimale grootte van 2MB ingesteld, zou u die waarde moeten verhogen naar
+32 MB om onnodige aanpassingen van de grootte van het swapbestand.
+
+<P>Deze instelling komt overeen met de derde parameter van de <CITE>SWAPPATH</CITE>
+<B>CONFIG.SYS</B> opdracht.
+
+<P><LI>Het <B>"Waarschuwingsdrempel"</B> veld laat u bepalen wanneer &os2; u moet waarschuwen
+dat u uit stationsruimte loopt op het station dat het swapbestand bevat, wanneer het probeert
+zijn grootte aan te passen. Bijvoorbeeld als u hier 20 MB opgegeven heeft en &os2; komt er achter
+dat er nog maar 19 MB stationsruimte over is op het swapbestand station, dan krijgt u een
+waarschuwingsbericht.
+
+<P>Deze instelling komt overeen met de tweede parameter van de <CITE>SWAPPATH</CITE>
+<B>CONFIG.SYS</B> opdracht.
+
+<P><LI>Het <B>"Pad"</B> invoerveld biedt u de mogelijkheid om de locatie van het swap
+bestand op te geven. U mag hier elke geldige directory opgeven. Let er echter op dat u niet
+de naam van het swapbestand kunt wijzigen, dat zal altijd <CITE>SWAPPER.DAT</CITE> zijn.
+
+<P>In het algemeen dient u het swapbestand op een HPFS station te zetten, want dat voorkomt
+fragmentatie en is over het algemeen sneller. Ter aanvulling, u dient het swapbestand
+op de meest gebruikte partitie van de minst gebruikte harde schijf te zetten (als u meerdere
+harde schijven in uw computer heeft). Dit voorkomt onnodige verplaatsing van de lees/schrijf
+koppen van de harde schijven als het swapbestand gebruikt wordt. Maar het is logisch dat, als die
+partitie zich op een harde schijf bevindt die veel trager is dan de andere, een snellere
+harde schijf te prefereren kan zijn.
+
+<P>Deze instelling komt overeen met de eerste parameter van de <CITE>SWAPPATH</CITE>
+<B>CONFIG.SYS</B> opdracht.
+
+<P>Let er echter op dat als u de swapbestand locatie aanpast, het oude swapbestand,
+bij de volgende herstart,  niet automatisch verwijderd zal worden. U dient derhalve de oude locatie
+te onthouden en handmatig het oude swapbestand te verwijderen nadat het systeem opnieuw
+opgestart is, anders zullen verscheidene MB's harde schijfruimte onnodig in gebruik blijven.
+</UL>
+</BODY>
+</HTML>
+

@@ -1,0 +1,57 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: il TCP/IP
+    </TITLE>
+</HEAD>
+<BODY>
+<B>Il TCP/IP</B> (Transmission Control Protocol/Internet Protocol)
+deve la sua fama all'essere il 
+<A HREF="glossary/gls_protocols.html">protocollo di rete</A>
+usato per &link_internet;.
+Pu• per• essere usato come protocollo anche in una rete locale.
+
+<P>Il TCP/IP Š composto da due livelli differenti:
+
+<UL><LI>Il <B>livello superiore, TCP,</B> spezzetta ogni blocco di
+informazione (un messaggio di posta, un file) in 
+<B>pacchetti</B>, che vengono numerati e trasmessi separatamente.
+Il TCP all'altro capo della connessione provvede poi a riassemblare i 
+pacchetti nella loro forma originale.
+
+<P><LI>Il <B>livello inferiore, IP,</B> si occupa della trasmissione dei pacchetti
+prodotti dal TCP. Perch‚ il meccanismo funzioni ogni computer nella rete deve avere
+un indirizzo univoco,
+l'<A HREF="glossary/gls_prot_ipaddr.html">indirizzo IP</A>.
+
+<P>In ogni pacchetto, prima che sia inviato, Š inserito sia l'indirizzo IP del 
+computer mittente che quello del destinatario, ed Š quest'ultimo ad essere preso
+in considerazione dai computer per i quali transita il pacchetto, che in base ad 
+esso decidono in che direzione inoltrarlo ulteriormente. In questo modo ogni
+pacchetto prima di arrivare a destinazione si trova a transitare per 
+numerosi computer sparsi per il mondo. Pacchetti appartenenti allo stesso insieme
+di dati originario possono anche arrivare attraverso percorsi differenti alla 
+loro destinazione comune, dove vengono infine riassemblati dal TCP.
+
+</UL>Per ogni pacchetto di dati inviato viene stabilita una singola connessione,
+che termina col ricevimento dei dati: in questo modo si riduce di molto il 
+traffico sulla rete e si rende possibile un meccanismo di comunicazione globale.
+
+<P>Quando ci si connette al proprio fornitore di servizi internet (ISP) per
+accedere alla rete, si fa generalmente uso di un ulteriore protocollo, il
+<B>Point-to-Point Protocol (PPP)</B>, che incapsula i pacchetti IP in modo
+da permetterne la trasmissione verso il modem dell'ISP attraverso una normale
+linea telefonica.
+
+<P><A HREF="glossary/gls_internet_serv.html">Servizi Internet</A> come il
+World Wide Web (WWW) e la posta elettronica sono implementati grazie a livelli
+di protocollo al di sopra del TCP/IP, che per• non sono integrati 
+nelle componenti di rete del sistema operativo ma forniti dalle singole 
+applicazioni Internet, come il Web browser. Tra questi protocolli aggiuntivi
+vi sono lo HyperText Transfer Protocol (HTTP) usato per il WWW,
+il File Transfer Protocol (FTP), Telnet (Telnet), e
+Simple Mail Transfer Protocol (SMTP) per la posta elettronica.
+
+<BR>
+</BODY>
+</HTML>

@@ -1,0 +1,44 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: librerie a collegamento dinamico (DLL)
+    </TITLE>
+</HEAD>
+<BODY>
+Una <B>libreria a collegamento dinamico (DLL)</B> ä un tipo particolare di
+file eseguibile che contiene codice condivisibile tra pió applicazioni.
+Le DLL hanno di solito <CODE>.DLL</CODE> come estensione del nome file.
+
+<P>Le DLL possono essere comprese nel sistema operativo o far parte di una applicazione.
+Il codice di sistema di &os2; stesso ä in massima parte contenuto in file DLL, che si
+trovano nella cartella <CODE>OS2\DLL</CODE> dell'unitÖ di avvio.
+
+<P>"Collegamento dinamico" significa che il codice nel modulo viene caricato quando
+un'applicazione ne fa richiesta. Se il codice era giÖ caricato per un'altra applicazione viene
+riutilizzato. Questo presenta numerosi vantaggi:
+
+<UL><LI>Pió applicazioni possono <B>condividere il codice</B> nella DLL,
+risparmiando spazio sul disco e memoria del computer.
+
+<P><LI>Le applicazioni possono essere rese <B>modulari.</B> Per esempio, il Supporto
+Lingue Nazionali (NLS) puï essere separato in una DLL a parte, permettendo cosç di modificare
+il linguaggio dell'applicazione cambiando un singolo file. Le DLL, inoltre, semplificano il
+supporto software dato che, per correggere difetti, ä sufficiente sostituire la sola DLL.
+
+<P><LI>Le DLL possono contenere veri <B>sottosistemi</B> utilizzati da parecchie applicazioni,
+dato che la DLL puï condividere dati tra i processi. Questo rende, per es., molto agevole lo scambio
+di dati ed ä anche una delle ragioni per cui larghe parti di &os2; sono immagazzinate
+in DLL.
+
+<P><LI>Le DLL servono anche ad <B>estendere</B> un'applicazione. Se l'applicazione ä disegnata
+per supportare DLL di espansione, chiunque puï sviluppare tali estensioni che si integreranno poi
+perfettamente nell'applicazione. L'esempio migliore di questo meccanismo ä la
+Workplace Shell di &os2;, le cui funzionalitÖ possono essere estese usando aggiunte di terze parti.
+Si veda <A HREF="glossary/gls_wpsclasses.html">"Classi WPS"</A> per i dettagli.
+Un altro esempio ä lo <A HREF="xcenter/xc_main.html">&xcenter;</A>, che come estensione supporta
+DLL plug-in.
+
+</UL>
+</BODY>
+</HTML>
+

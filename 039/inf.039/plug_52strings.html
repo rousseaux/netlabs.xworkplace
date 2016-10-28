@@ -1,0 +1,86 @@
+<HTML WIDTH=70% XPOS=right>
+<HEAD>
+    <TITLE>
+        Passo 2: supporto stringhe impostazione
+    </TITLE>
+</HEAD>
+<!-- This is all new with V0.9.9. -->
+<BODY>
+A questo punto l'elemento minimale dal passo 1 ä in esecuzione.
+
+<P>Probabilmente giÖ ä chiaro che, anche se l'elemento cosç com'ä risponde al trascinamento
+di oggetti colore e font su di esso, tali oggetti (colori e font) non vengono salvati quando
+lo &xcenter; viene chiuso e successivamente riaperto.
+
+<P>Similmente, cambiando l'elemento minimale per renderlo dimensionabile (settando il flag
+<CODE>WGTF_SIZEABLE</CODE> nel campo <CODE>ulClassFlags</CODE> della struttura
+<A HREF="plug_9xcenterwidgetclass.html"><CODE>XCENTERWIDGETCLASS</CODE></A>),
+si nota che le dimensioni dell'elemento non vengono comunque memorizzate.
+
+<P>Ovviamente, lo &xcenter; potrebbe aver implementate delle funzioni di salvataggio per l'elemento.
+Ma allora, come potrebbe l'elemento memorizzare dati addizionali dei quali lo &xcenter;
+non puï essere a conoscenza? Usare le funzioni di profilo per memorizzare i dati dell'elemento
+in <CODE>OS2.INI</CODE> potrebbe non essere una buona idea, dato che possono esistere molte
+istanze di un elemento, che dovrebbero memorizzare i loro dati independentemente.
+
+<P>Come risultato, ho immaginato che memorizzare i dati degli elementi insieme ai dati
+dello &xcenter; cui appartiene l'elemento stesso sia una buona idea.
+
+<P>Per rendere questo comportamento il pió possibile flessibile e semplice, gli elementi possono avere
+<B>stringhe di impostazione</B> associate. Osservando la pagina "Elementi" nel blocco delle impostazioni di
+uno &xcenter;, si noterÖ che ogni
+elemento puï avere le sue proprie stringhe di impostazione per memorizzare i dati desiderati.
+
+<P>Anche se gli elementi non sono oggetti della Scrivania, per semplicitÖ, ho scelto di usare
+il formato delle stringhe di impostazione di WPS anche per gli elementi. Dunque, l'elemento sviluppato puï,
+per esempio, comprendere una stringa <CODE>BACKGROUNDCOLOR=00FF00;</CODE>,
+che imposterebbe il colore di sfondo dell'elemento al verde.
+
+<P>La classe elemento deve ora implementare due cose:
+
+<UL><LI><B>Elaborare una stringa di impostazione</B> e convertirla in dati binari che l'elemento
+possa usare. Nell'esempio sopra, si puï dire che la stringa
+<CODE>BACKGROUNDCOLOR</CODE> deve essere seguita da un valore esadecimale RGB
+a sei cifre. La definizione sta alla classe elemento.
+
+<P><LI><B>Creare una stringa di impostazione</B> da un insieme di valori binari. Questo ä necessario
+quando i dati dell'elemento devono essere salvati.
+
+</UL>Quando l'elemento viene creato, riceve una stringa precedentemente immagazzinata nel campo
+<CODE>pcszSetupString</CODE> della sua struttura
+<A HREF="plug_9xcenterwidget.html"><CODE>XCENTERWIDGET</CODE></A> che viene con il messaggio
+<CODE>WM_CREATE</CODE>. ‘ possibile allocare una struttura e immagazzinarla
+in <CODE>XCENTERWIDGET.pUser</CODE>, elaborare la stringa di impostazione, e immagazzinare
+i valori lç. Ovviamente, bisogna impostare valori predefiniti sicuri se i dati di una stringa
+mancano, dato che quando l'elemento viene creato per la prima volta, questi dati saranno assenti.
+
+<P>Di converso, quando i dati dell'elemento sono cambiati (per esempio, dopo il trascinamento di un nuovo
+colore di sfondo), l'elemento dovrebbe comporre una nuova stringa di impostazioni completa.
+<!-- V0.9.14: changed the following -->
+Dopo la composizione della nuova stringa, l'elemento deve mandare il messaggio
+<CODE>XCM_SAVESETUP</CODE> alla sua finestra genitore (che ä lo
+&xcenter; oppure una finestra di un elemento cassetto, se l'elemento ä in un cassetto),
+<!-- end V0.9.14 -->
+cosa che causerÖ il salvataggio della nuova stringa
+di impostazione insieme con gli altri dati dell'elemento nei dati privati dello &xcenter;.
+Si consulti il file <CODE>center.h</CODE> per dettagli.
+
+<P>Per incapsulare la funzione delle stringhe di impostazione, raccomando di creare una nuova
+definizione di struttura per "dati salvabili dell'istanza". Questa, per esempio, potrebbe contenere
+campi per i colori di sfondo e di primo piano, e per i font da usare.
+Per elementi dimensionabili, la struttura potrebbe contenere le dimensioni correnti.
+
+<P>Questo incapsulamento permette alla classe elemento di lavorare su stringhe di impostazione anche con
+dialog di impostazione, che possono essere invocate anche quando non esistono, correntemente,
+istanze dell'elemento.
+
+<P>L'esempio distribuito non ha supporto per le stringhe di impostazione. Si scarichi il codice sorgente di &xwp;
+e si consulti la directory <CODE>src\widgets</CODE>, che ha altri esempi sul funzionamento
+di questa funzione. <CODE>XFLDR.DLL</CODE> esporta anche un paio di funzioni utili per facilitare
+l'elaborazione di stringhe di impostazioni.
+
+<BR>
+</BODY>
+</HTML>
+
+

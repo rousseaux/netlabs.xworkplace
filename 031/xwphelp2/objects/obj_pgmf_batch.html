@@ -1,0 +1,56 @@
+<HTML RESID=&ID_XSH_PROGRAMFILE_BATCH;>
+<HEAD>
+    <TITLE>
+        &xwp;: Batch- en opdrachtbestanden
+    </TITLE>
+</HEAD>
+<BODY>
+<IMG SRC="img/os2_os2win.gif">
+<IMG SRC="img/os2_doswin.gif">
+<BR>
+<P>Batch- en opdrachtbestanden, of <B>"scripts",</B> zijn gewone tekstbestanden die een
+verzameling
+<A HREF="glossary/gls_cmd.html">opdrachtenaanwijzingen</A>
+bevatten voor een opdrachtprocessor.
+Ze worden in volgorde verwerkt als het bestand wordt uitgevoerd.
+
+<P>Batch- en opdrachtbestanden worden uitgevoerd door een opdrachtprocessor. Welke opdrachtprocessor
+gebruikt wordt is afhankelijk van de bestandsuitbreiding:
+
+<UL><LI>Als de uitbreiding <CODE>.CMD</CODE> is <B>(opdrachtbestand),</B> dan wordt hij uitgevoerd
+door de &os2; opdrachtprocessor, <CODE>CMD.EXE</CODE>.
+Het bestand wordt verondersteld een verzameling opdrachten te bevatten, tenzij het begint met een
+REXX commentaar (<CODE>/* ... */</CODE>). In dat geval wordt het beschouwd als een
+<A HREF="glossary/gls_cmd_rexx.html">REXX</A>
+script.
+
+<P><LI>Bestanden met de <CODE>.BAT</CODE> uitbreiding <B>(batchbestanden)</B> worden uitgevoerd
+in
+<A HREF="glossary/gls_sessions.html">DOS sessies</A>
+via de DOS opdrachtprocessor, <CODE>COMMAND.COM</CODE>.
+Wees er op bedacht dat de &os2; opdrachtprocessor (<CODE>CMD.EXE</CODE>) de <CODE>.BAT</CODE>
+bestandsuitbreiding ook herkent. Als u in een opdrachtaanwijzing staat en de naam van een batch
+bestand als volgt invoert <CODE>.BAT</CODE>, zal het automatisch een DOS sessie starten.
+
+</UL>Batch- en opdrachtbestanden zijn handig voor het automatiseren van taken.
+Als u bijvoorbeeld vaak een aantal opdrachten regelmatig achter elkaar uitvoert in
+een opdrachtaanwijzing, dan kunt u die verzameling opdrachten in een batch- of opdrachtbestand
+stoppen en dat "script" uitvoeren om tijd te besparen.
+U kunt zulk soort bestanden maken met elke tekst editor, bijvoorbeeld de &os2; &eexe;.
+
+<P>Denk er om dat als u eenmaal een batch- of opdrachtbestand gemaakt heeft, die ook
+gestart kan worden vanaf de Werkplek. U kunt ook &link_progobjs; voor batch- en
+opdrachtbestanden maken.
+
+<P>Kijk voor meer informatie in de onderstaande onderwerpen:
+
+<UL>
+<LI><A HREF="glossary/gls_cmd.html">Opdrachtaanwijzingen</A>
+<LI><A HREF="glossary/gls_cmdopers.html">Opdracht operatoren en doorsturen</A>
+<LI><A HREF="glossary/gls_cmdsubvars.html">Vervangingsvariabelen</A>
+<LI><A HREF="objects/obj_pgmf_batch_expl.html">Batchbestand voorbeelden</A>
+<LI><A HREF="objects/obj_pgmf_autoexec.html">AUTOEXEC.BAT</A>
+<LI><A HREF="glossary/gls_sessions.html">Sessietypen</A>
+</UL>
+</BODY>
+</HTML>

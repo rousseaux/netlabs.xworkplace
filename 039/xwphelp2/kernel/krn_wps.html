@@ -1,0 +1,85 @@
+<HTML RESID=&ID_XSH_SETTINGS_WPS;>
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: WPS
+    </TITLE>
+</HEAD>
+<BODY>
+Da questa pagina ä possibile configurare alcune delle caratteristiche della WPS presenti nel file &cfgsys;.
+<P>Se le informazioni riportate in questa pagina riguardo al file &cfgsys; non fossero
+sufficienti, consultare i capitoli relativi  in <I>&os2; - Riferimento per i comandi</I>.
+
+<P>Premere <B>"Applica"</B> per salvare le modifiche apportate al file &cfgsys;.
+Quest'azione influenza solo le linee di &cfgsys; corrispondenti alle impostazioni modificate da questa
+pagina. Le linee corrispondenti alle altre pagine dell'oggetto "Kernel &os2;" non vengono
+modificate. Il bottone ä attivo solo se si sono effettuati dei cambiamenti nella pagina.
+Nota bene: ä necessario riavviare il sistema perchÇ i cambiamenti apportati
+abbiano effetto. Il solo riavvio della Scrivania <I>non</I> ä sufficiente.
+
+<P>Premere <B>"Ottimizza"</B> perchÇ sia &xwp; a proporre le impostazioni migliori in accordo con le
+caratteristiche del sistema.
+Anche in questo caso &cfgsys; verrÖ modificato solo selezionando "Applicare".
+<P>Premere <B>"Valore assunto"</B> per caricare nella pagina le impostazioni predefinite di &os2;.
+Anche in questo caso &cfgsys; verrÖ moficato solo selezionando "Applicare".
+
+<P>Nel gruppo <B>"Avvio automatico"</B> ä possibile decidere cosa verrÖ riattivato automaticamente
+all'avvio del sistema.
+Queste impostazioni corrispondono al comando
+<CITE>SET AUTOSTART=xxx</CITE> in &cfgsys;, dove "xxx" puï comprendere una o pió
+delle espressioni riportate qui di seguito.
+<UL><LI><CITE>PROGRAMS</CITE>: se non ä compresa nessun <B>programma</B> verrÖ riavviato,
+tranne quelli nella cartella "Avviamento".
+<BR><LI><CITE>TASKLIST</CITE>: se non ä compresa l'<B>l'Elenco finestre</B> non verrÖ
+mostrato.
+<BR><LI><CITE>FOLDERS</CITE>: se questa espressione non fosse compresa nessuna cartella verrebbe
+aperta, nemmeno la Scrivania. Per questo motivo in questa pagina non viene visualizzata nessuna voce
+corrispondente ed &xwp; fa sç che sia comunque presente nel &cfgsys;.
+<BR><LI><CITE>CONNECTIONS</CITE>: se non ä compresa le
+<B>connessioni di rete</B> non verranno riavviate automaticamente.
+<BR><LI><CITE>LAUNCHPAD</CITE>: se non ä compresa il <B>Pannello di avvio</B> non verrÖ
+riavviata; resta naturalmente possibile lanciarla manualmente o dalla cartella "Avviamento".
+<BR><LI><CITE>WARPCENTER</CITE>: se non ä compresa il <B>&warpcenter;</B> non verrÖ attivato.
+E' un'opzione valida solo per Warp 4; resta naturalmente possibile lanciarlo manualmente o dalla
+cartella "Avviamento".
+</UL>Inizialmente tutte le opzioni sono attivate.
+
+<P>Nel gruppo <B>"Riaprire all'avvio del sistema..."</B> ä possibile determinare quali
+oggetti verranno avviati di nuovo all'apertura della WPS. Corrisponde all'impostazione
+<B>SET RESTARTOBJECTS=xxx</B> in &cfgsys;:
+<UL><LI><B>"Tutto"</B> (<CITE>SET RESTARTOBJECTS=YES</CITE>) riavvierÖ tutti gli oggetti aperti
+al momento dell'ultima chiusura. Questo ä sfortunatamente
+il valore predefinito. <B>Nota:</B> riavviare tutti gli oggetti non ä possibile se si sta usando
+la chiusura avanzata di &xwp;.
+<BR><LI><B>"Nulla"</B> (<CITE>=NO</CITE>) non riavvia nessun oggetto, nemmeno quelli
+nella cartella "Avviamento" (quelli presenti nella cartella "Avvio &xwp;" invece sç).
+<BR><LI><B>"Soltanto cartella avvio"</B> (<CITE>=STARTUPFOLDERSONLY</CITE>) avvierÖ solo gli oggetti presenti nella
+cartella Avviamento di &os2;. Questa impostazione ä quella raccomandata, perchÇ quella predefinita
+puï causare seri problemi, per es. riavviando automaticamente un programma che in precedenza ha bloccato
+il sistema. Inoltre &xwp; presume che sia questa l'impostazione abilitata.
+<BR><LI><B>"Solo dopo riavvio del sistema"</B> (<CITE>REBOOT ONLY</CITE>) riavvierÖ quanto
+definito solo se il sistema si sta riavviando e  non dopo un riavvio della sola WPS conseguente ad un errore.
+Ha senso probabilmente solo se viene usata anche l'opzione "Tutto".
+
+</UL>Con Warp 4, ä possibile anche disabilitare l'impostazione <B>"Aggiornamento automatico cartelle"</B>,
+abilitata come valore assunto. Se disabilitata le cartelle aperte verranno aggiornate solo dietro comando
+manuale; l'auto-aggiornamento a volte causa lunghe attese.
+Questa impostazione corrisponde a
+<CITE>SET AUTOREFRESHFOLDERS=xxx</CITE> (dove xxx = YES o NO).
+
+<P>L'opzione <B>"File handle addizionali"</B> permette di aumentare il numero di file
+che possono essere aperti contemporaneamente per la WPS. Il valore viene ereditato dagli
+altri processi. L'impostazione corrisponde alla variabile
+<CITE>SET SHELLHANDLESINC=xxx</CITE>, dove xxx ä un numero tra zero e 255.
+
+<P>Puï succedere in alcune situazioni che la WPS esaurisca i file handle a sua disposizione e non sia
+per questo pió in grado di aprire nuovi file. Il problema si puï verificare anche con applicazioni
+che non richiedono un corretto numero di file handle, contando sull'esistenza di un valore assunto
+adeguato. Questi problemi possono essere risolti aumentando il valore di questa opzione.
+
+<P>Questa opzione ha effetto solo su sistemi OS/2 Warp 4 con Fixpak 6 o superiore.
+
+<BR>
+</BODY>
+</HTML>
+

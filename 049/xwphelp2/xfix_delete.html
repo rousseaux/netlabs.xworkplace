@@ -1,0 +1,143 @@
+<HTML>
+  <HEAD>
+    <TITLE>
+      xfix: Die Grundlagen
+    </TITLE>
+  </HEAD>
+  <!-- this page is all new with V0.9.7 -->
+  <!-- rewritten and renamed V1.0.9 --> <body>
+    Diese Seite beschreibt detailliert die Funktionsweise von xfix.
+    Siehe <a href="xfix_howto.html">Schritt f&uuml;r Schritt</a>
+    f&uuml;r eine Kurzeinf&uuml;hrung.
+    <p><b>Wichtige Handles sch&uuml;tzen</b> </p>
+    <p>Bevor sie etwas l&ouml;schen, lassen sie xfix automatisch
+      diejenigen Handles sch&uuml;tzen, die f&uuml;r die korrekte
+      Funktionsweise des Systems unabdingbar sind. Jeder
+      L&ouml;schversuch von gesch&uuml;tzten Handles wird von xfix
+      ignoriert. </p>
+    <p>W&auml;hlen sie Men&uuml;eintrag <b>Aktionen-&gt;Auto-Schutz</b>.
+      Dies sch&uuml;tzt jede Datei die f&uuml;r ein Programmobjekt
+      genutzt werden k&ouml;nnte, jeden Ordner der abstrakte Objekte
+      enth&auml;lt (z.B. Shadow Objekte) sowie jede Datei und Ordner die
+      eine Objekt-ID haben. Handles die bereits als ung&uuml;ltig <img
+        src="img/xfix_error.gif"> markiert sind werden ignoriert. </p>
+    <p>Dann lassen sie xfix nach jeder Datei und Ordner suchen f&uuml;r
+      die es ein Schattenobjekt auf der Arbeitsoberfl&auml;che gibt
+      (nach "Langer Name" sortieren erleichtert diese Aufgabe). Wenn
+      nicht schon gesch&uuml;tzt w&auml;hlen sie mit rechter Maustaste
+      aus, w&auml;hlen <b>Sch&uuml;tzen</b> vom &amp;popmenu; (sie
+      k&ouml;nnen auch <code><b>Ctrl+S</b></code> ausw&auml;hlen). Sie
+      k&ouml;nnen keine Handles sch&uuml;tzen die als ung&uuml;ltig
+      gekennzeichnet sind. </p>
+    <p>Jedes gesch&uuml;tzte Handle <img src="img/xfix_protect.gif">
+      wird in der Spalte "Bild" entsprechend angezeigt. Jeder dem
+      gesch&uuml;tzten Objekt &uuml;bergeordnete Ordner wird als <img
+        src="img/xfix_safe.gif"> angezeigt um darauf hinzuweisen
+      da&szlig; dieser ebenfalls l&ouml;schgesch&uuml;tzt ist. </p>
+    <p>Wenn sie den L&ouml;schschutz f&uuml;r ein Handle aufheben wollen
+      w&auml;hlen sie entweder vom &amp;popmenu; <b>Schutz aufheben</b>
+      oder sie dr&uuml;cken <code><b>Ctrl+S</b></code>. Beachten sie,
+      da&szlig; sie den Schutz nur f&uuml;r die Handles aufheben
+      k&ouml;nnen die mit <img src="img/xfix_protect.gif"> markiert
+      sind. F&uuml;r jedes Handle da&szlig; als <img
+        src="img/xfix_safe.gif"> markiert ist wird automatisch der
+      Schutz aufgehoben sobald keine weiteren Handles mehr als
+      gesch&uuml;tzt markiert sind die dieses Handle
+      ben&ouml;tigen/referenzieren. </p>
+    <p><b>Handles l&ouml;schen</b> </p>
+    <p>Sie k&ouml;nnen ungesch&uuml;tzte Handles l&ouml;schen indem sie
+      <b>L&ouml;schen</b> vom &amp;popmenu; ausw&auml;hlen oder indem
+      sie die <b><code>Entf</code> Taste</b> oder <code><b>Ctrl+L</b></code>
+      bet&auml;tigen. Das Handle wird dann als <img
+        src="img/xfix_delete.gif"> angezeigt, wird aber nicht sofort
+      gel&ouml;scht. Es wird erst aus dem Speicher gel&ouml;scht wenn
+      sie Aktionen-&gt;Jetzt l&ouml;schen... ausw&auml;hlen. Es wird
+      dauerhaft gel&ouml;scht wenn sie xfix-&gt;Zur&uuml;ck in
+      OS2SYS.INI schreiben... ausw&auml;hlen. </p>
+    <p>Wenn das L&ouml;schen eines Ordnerhandles dazu f&uuml;hren
+      w&uuml;rde da&szlig; weitere Handles ung&uuml;ltig w&uuml;rden
+      dann werden die betroffenen Handles als <img
+        src="img/xfix_orphan.gif"> dargestellt um anzuzeigen da&szlig;
+      sie "verwaist" sind (d.h. die Zuordnung zu dem Ordner in dem das
+      Objekt enthalten ist ist zerst&ouml;rt). Wenn sie nicht das Handle
+      des Ordners ebenfalls l&ouml;schen m&ouml;chten so machen sie das
+      L&ouml;schen f&uuml;r die betreffenden Handles
+      r&uuml;ckg&auml;ngig. Dazu w&auml;hlen sie entweder <b>L&ouml;schen
+
+
+
+        r&uuml;ckg&auml;ngig</b> vom &amp;popmenu; oder sie
+      bet&auml;tigen die <code><b>Entf</b></code> Taste um das
+      L&ouml;schen aufzuheben. </p>
+    <p>Wenn sie die gew&uuml;nschten Handles zum L&ouml;schen
+      ausgew&auml;hlt haben w&auml;hlen sie <b>Aktionen-&gt;Jetzt
+        l&ouml;schen...</b>. Dieser Schritt ist optional aber ratsam
+      weil ihnen angezeigt wird ob das L&ouml;schen zu Problemen
+      gef&uuml;hrt hat. Sie werden aufgefordert das L&ouml;schen zu
+      best&auml;tigen und bekommen eine Warnung wenn dies zu
+      "verwaisten" Handles f&uuml;hren w&uuml;rde. Ist dies der Fall
+      sollten sie <code>Nein</code> ausw&auml;hlen und die
+      Auswahl der Handles &auml;ndern. </p>
+    <p>Antworten sie mit <code>Ja</code> passiert das Folgende: (keine
+      der &Auml;nderungen ist dauerhaft solange sie nicht
+      xfix-&gt;Zur&uuml;ck in OS2SYS.INI schreiben... ausgew&auml;hlt
+      haben): </p>
+    <ul>
+      <li>Jeder betroffene Handle Eintrag in xfix's interner
+        Speicherkopie wird, zusammen mit dem Listeneintrag, entfernt. </li>
+      <li>Alle mit einem Ordnerhandle verbundenen abstrakten Objekte
+        (als <code>Abstrakte Objekte</code> angezeigt) werden zum
+        L&ouml;schen vorgemerkt wenn sie ihre &Auml;nderungen
+        abspeichern. Dies ist n&ouml;tig weil anderenfalls diese Objekte
+        (wahrscheinlich) in einem v&ouml;llig anderen Ordner wieder
+        auftauchen w&uuml;rden wenn die WPS das Ordnerhandle wieder
+        benutzen sollte. </li>
+      <li>Alle einem Ordnerhandle zugeordneten Ordnerpositionen (als <code>Ordnerposition</code>
+        angezeigt) werden zum L&ouml;schen vorgemerkt. </li>
+      <li>Wenn dem Handle eine Objekt ID zugeordnet ist wird diese
+        ebenfalls gel&ouml;scht wenn sie ihre &Auml;nderungen
+        abspeichern. </li>
+    </ul>
+    <b>Warnung:</b> Obwohl sie xfix's Auto-Schutz Funktionalit&auml;t
+    davor bewahren kann einen katastrophalen Fehler zu machen sollten
+    sie sich dar&uuml;ber im Klaren sein da&szlig; sie ihr System
+    trotzdem besch&auml;digen k&ouml;nnen. Da&szlig; eine Datei oder
+    Ordner nicht l&ouml;schgesch&uuml;tzt ist bedeutet nicht automatisch
+    da&szlig; das Handle nicht gebraucht wird. Sie sollten sich vor dem
+    L&ouml;schen vergewissern da&szlig; das Handle nirgendwo gebraucht
+    wird.
+    <p><b>Die &Auml;nderungen abspeichern</b> </p>
+    <p>Wenn sie alle Handles gel&ouml;scht haben die ung&uuml;ltig sind
+      oder nicht gebraucht werden k&ouml;nnen sie ihre &Auml;nderungen
+      dauerhaft abspeichern indem sie <b>xfix-&gt;Write back to
+        OS2SYS.INI...</b> ausw&auml;hlen.<br>
+    </p>
+    <p>Wenn sie sich nicht sicher sind ob sie Handles l&ouml;schen
+      w&uuml;rden die vielleicht noch vom System ben&ouml;tigt werden,
+      benutzen sie Aktionen -&gt;Jetzt l&ouml;schen... um Handles zu
+      entfernen die zum L&ouml;schen ausgew&auml;hlt sind, dann
+      w&auml;hlen sie xfix-&gt;Puffer nochmals verarbeiten. Wenn dann
+      Fehler angezeigt werden die vorher nicht existiert haben dann
+      speichern sie <b>nicht</b> ihre &Auml;nderungen dauerhaft
+      ab. Beenden sie stattdessen xfix, starten sie es erneut und
+      treffen sie eine andere Auswahl. Ansonsten k&ouml;nnen sie
+      fortfahren. </p>
+    <p>Bevor sie Zur&uuml;ck in OS2SYS.INI schreiben... ausw&auml;hlen
+      stellen sie bitte sicher: </p>
+    <ul>
+      <li>da&szlig; sie eine funktionerende WPS Sicherung haben falls
+        etwas schiefgeht. Dies bedeutet im besonderen da&szlig; sie
+        funktionierende Kopien der Dateien <code>OS2.INI</code> und <code>OS2SYS.INI</code>
+        haben. </li>
+      <li>da&szlig; die WPS nicht aktiv ist. Sie sind auf der sicheren
+        Seite wenn <code>RUNWORKPLACE</code> in ihrer &amp;cfgsys;
+        Datei nicht auf PMSHELL.EXE verweist oder when sie xfix von
+        &amp;xwp;'s "Panik" Dialog w&auml;hrend des Startens der
+        Arbeitsoberfl&auml;che gestartet haben. </li>
+    </ul>
+    <p>Nachdem ihre &Auml;nderungen dauerhaft gespeichert sind
+      k&ouml;nnen sie durch Schlie&szlig;en von xfix's Hauptfenster das
+      Programm verlassen. </p>
+    <p> </p>
+  </body>
+</html>

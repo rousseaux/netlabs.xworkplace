@@ -1,0 +1,37 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        "Chiudi &warpcenter; prima della Scrivania"
+    </TITLE>
+</HEAD>
+<BODY>
+Questa impostazione determina se la &xshutdown; riserva
+o meno un trattamento particolare per lo &warpcenter;;
+Š stata introdotta con la versione 0.9.7 per risolvere problemi relativi alla
+Scrivania che si verificavano su alcuni sistemi, dove, al riavvio della WPS, apparivano
+fastidiose barre di scorrimento.
+
+<P><B>Abilitatando</B> questa impostazione la &xshutdown; chiude esplicitamente lo &warpcenter; 
+prima di chiudere la finestra della Scrivania, il che probabilmente Š utile se si avvia lo
+&warpcenter; dalla cartella di avvio (quindi, con la Scrivania gi… avviata).
+
+<P>Se questa impostazione Š <B>disabilitata</B> la &xshutdown; non si preoccupa 
+di chiudere lo &warpcenter;.
+
+<P>La casella Š disabilitata se &xwp; non ha rilevato la presenza dello &warpcenter; nel
+sistema, il che pu• accadere perch‚:
+
+<UL><LI>si sta usando &warp; 3 (lo &warpcenter; Š stato introdotto con &warp4;);
+
+<P><LI>l'oggetto &warpcenter; non Š ancora stato risvegliato: pu• capitare se lo &warpcenter; non Š
+attivo e la cartella "Sistema" non Š ancora stata popolata;
+
+<P><LI>l'oggetto &warpcenter; Š stato risvegliato durante l'avvio della Scrivania, prima del termine
+dell' inizializzazione di &xwp;, il che si verifica quando si avvia lo &warpcenter; usando 
+la riga <CODE>AUTOSTART</CODE>
+nel file &cfgsys;. In questo caso &xwp; (e &xshutdown;) non
+possono in ogni caso fare molto relativamente allo &warpcenter;.
+</UL>
+</BODY>
+</HTML>
+

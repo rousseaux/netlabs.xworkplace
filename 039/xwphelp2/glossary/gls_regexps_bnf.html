@@ -1,0 +1,101 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        Definizione BNF delle espressioni regolari per &xwp;
+    </TITLE>
+</HEAD>
+<BODY>
+
+Definizioni fondamentali :-
+
+<PRE>
+  &lt;ch&gt;      ::= qualsiasi carattere scrivibile
+  &lt;digit&gt;   ::= qualsiasi cifra da '0' a '9'
+  &lt;digits&gt;  ::= &lt;digit&gt; { &lt;digit&gt; }
+  &lt;digit19&gt; ::= qualsiasi cifra da '1' a '9'
+  &lt;hext&gt;    ::= qualsiasi cifra o lettera tra 'a' ed 'f' o tra 'A' ed 'F'
+</PRE>
+
+<P>Definizioni base dei caratteri :-
+
+<PRE>
+  &lt;c&gt; ::= '\n'              nuova linea
+        | '\t'                    tabulazione
+        | '\r'                    ritorno carrello
+        | '\b'                    backspace
+        | '\f'                    nuova pagina
+        | '\e'                    escape
+        | '\x' &lt;hex&gt; ( &lt;hex&gt; )    specifica di carattere in esadecimale, una o due cifre esadecimali
+        | '\' &lt;ch&gt;                altri caratteri, escape di ogni significato speciale
+        | &lt;ch&gt;                    carattere normale
+</PRE>
+
+<P>Elementi in parentesi (qualcosa che va in un'espressione in parentesi) :-
+
+<PRE>
+  &lt;be&gt; ::= &lt;c&gt;                    un carattere
+         | &lt;c&gt; '-' &lt;c&gt;            una gamma di caratteri
+         | '[:alnum:]'            caratteri alfanumerici POSIX
+         | '[:alpha:]'            caratteri alfabetici POSIX
+         | '[:blank:]'            caratteri di spazio e tabulazione POSIX
+         | '[:cntrl:]'            caratteri di controllo POSIX
+         | '[:digit:]'            caratteri numerici POSIX
+         | '[:graph:]'            caratteri stampabili e visibili (non-spazio) POSIX
+         | '[:lower:]'            caratteri minuscoli POSIX
+         | '[:print:]'            caratteri alfanumerici POSIX
+         | '[:punct:]'            caratteri di punteggiatura POSIX
+         | '[:space:]'            caratteri di spazio vuoto POSIX
+         | '[:upper:]'            caratteri maiuscoli POSIX
+         | '[:xdigit:]'           cifre esadecimali POSIX
+
+         | '[.' ??? '.]'          caratteri di confronto POSIX
+         | '[=' ??? '=]'          classi di equivalenza POSIX
+                                  NON SONO SUPPORTATI
+</PRE>
+
+<P>Espressioni in parentesi :-
+
+<PRE>
+  &lt;bx&gt; ::= [ '^' ] { &lt;be&gt; }       definisce un insieme di caratteri accettabili
+                                  o un insieme di caratteri non accettabili (se Š presente '^')
+</PRE>
+
+<P>Espressioni regolari estese :-
+
+<PRE>
+  &lt;re&gt; ::=                        espressione regolare vuota
+         | &lt;c&gt;                    carattere
+         | '~' &lt;c&gt;                carattere non specificato
+                                  scorciatoia per '[^' &lt;c&gt; ']'
+         | '\w'                   corrisponde a ogni carattere 'costitutivo di parola'
+                                  scorciatoia per '[[:alnum:]_]'
+         | '\W'                   corrisponde a ogni carattere non 'costitutivo di parola'
+                                  scorciatoia per '[^[:alnum:]_]'
+         | '.'                    corrisponde a ogni carattere (ma non fine linea)
+         | '[' &lt;bx&gt; ']'           corrisponde ai caratteri nell'espressione in parentesi
+         | '^'                    corrisponde alla stringa vuota all'inizio della 'linea'
+         | '$'                    corrisponde alla stringa vuota alla fine della 'linea'
+         | '\`'                   sinonimo di '^'
+         | '\''                   sinonimo di '$'
+         | '\&lt;'                   corrisponde alla stringa vuota all'inizio di una 'parola'
+         | '\&gt;'                   corrisponde alla stringa vuota alla fine di una 'parola'
+         | '\B'                   corrisponde alla stringa vuota all'interno di una 'parola'
+         | '\y'                   corrisponde alla stringa vuota all'inizio o alla fine di una 'parola'
+                                  scorciatoia per '(\&lt;|\&gt;)'
+                                  nota: non '\b', che si confonde con il backspace
+         | &lt;re&gt; &lt;re&gt;              2 &lt;re&gt; concatenate formano una &lt;re&gt;
+         | '(' &lt;re&gt; ')'           espressione regolare annidata
+         | '\' &lt;digit19&gt;          retro-riferimento a una espressione regolare annidata
+         | &lt;re&gt; '?'               zero o una occorrenza di &lt;re&gt;
+         | &lt;re&gt; '+'               una o pi— occorrenze di &lt;re&gt;
+         | &lt;re&gt; '*'               zero o pi— occorrenze di &lt;re&gt;
+         | &lt;re&gt; '{' &lt;digits&gt; '}'  corrisponde a M occorrenze di &lt;re&gt;
+         | &lt;re&gt; '{' &lt;digits&gt; ',}' corrisponde ad almeno M occorrenze di &lt;re&gt;
+         | &lt;re&gt; '{' &lt;digits&gt; ',' &lt;digits&gt; '}'
+                                  corrisponde a un numero tra M ed N occorrenze di &lt;re&gt;
+         | &lt;re&gt; '|' &lt;re&gt;          corrisponde a una &lt;re&gt; o all'altra
+</PRE>
+<BR>
+</BODY>
+</HTML>
+

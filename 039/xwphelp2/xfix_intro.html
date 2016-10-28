@@ -1,0 +1,85 @@
+<HTML RESID=&ID_XSH_XFIX_INTRO;>
+<HEAD>
+    <TITLE>
+        xfix: Introduction
+    </TITLE>
+</HEAD>
+<!-- this page is all new with V0.9.7 -->
+<!-- revised V1.0.9 -->
+<BODY>
+This is <B>xfix</B>, the &xwp; File Handles Fixer.
+
+<P><B>Overview</B>
+
+<P>xfix allows you to:
+
+<UL><LI>view the contents of the WPS's file handle data blocks from the
+<CODE>OS2SYS.INI</CODE> files in a PM window.
+
+<LI>remove handles that are no longer needed because the file
+or folder it refers to no longer exists.
+
+<LI>remove handles for existing files and folders that aren't needed
+because the WPS doesn't use them (for instance, handles for DLLs or
+ZIP files).
+
+<LI>remove folder position entries that aren't needed.
+
+<LI>move lost abstract objects such as Program Objects and Shadows
+to the Desktop.
+</UL>
+
+Compared to Henk Kelder's formidable CHECKINI program (from the
+<A HREF="http://www.os2site.com/sw/util/wps/wptools33.zip">WPTOOLS</A> package),
+xfix gives you more control, but also requires more attention and knowledge.
+Thanks go out to Henk Kelder again for finding out how the handles work in
+the first place. xfix is partly based on his work.
+
+<P><B>Warning</B>
+
+<P>This program allows you to remove file handles that the WPS relies
+on, such as the handle for the Desktop. xfix contains features such
+as Auto-Protect to help prevent you from making catastrophic errors
+but it is still possible to make changes that should not be made.
+
+<P>Your system will not be modified until you save your work by
+selecting "xfix-&gt;Write back to OS2SYS.INI" from the main menu.
+Feel free to examine xfix's info and options but <B>don't save
+anything until you know what you're doing.</B> Read through the
+following before using it.
+
+<UL><LI><A HREF="xfix_handles.html">About WPS file handles</A>
+<P><LI><A HREF="xfix_list.html">The Handles List</A>
+<P><LI><A HREF="xfix_menus.html">Menubar Commands</A>
+<P><LI><A HREF="xfix_menu2.html">Popup Menu and Hot Keys</A>
+<P><LI><A HREF="xfix_delete.html">The Basics</A>
+<P><LI><A HREF="xfix_howto.html">Step by Step Guide</A>
+</UL>
+
+<P><B>Commandline Options</B>
+
+<P>By default, xfix uses the copies of <CODE>OS2.INI</CODE> and
+<CODE>OS2SYS.INI</CODE> that are currently in use by your system.
+However, you can tell it to use other copies of these files instead.
+To do so, use the <CODE><B>-U</B></CODE> and <CODE><B>-S</B></CODE>
+options.  The letters must be uppercase and the filename must
+follow the letter with no space in between.  In almost every situation,
+you should use both options:
+
+<UL>
+<BR><LI><CODE><B>-Ufilename</B></CODE> -- this is the "user" INI,
+normally <CODE>OS2.INI</CODE>
+<BR>for example: <CODE>-Uc:\os2\myos2,ini</CODE>
+
+<BR><LI><CODE><B>-Sfilename</B></CODE> -- this is the "system" INI,
+normally <CODE>OS2SYS.INI</CODE>
+<BR>for example: <CODE>-Uc:\os2\myos2sys,ini</CODE>
+</UL>
+
+Here is a complete example:
+<BR><CODE>xfix -Uc:\os2\os2.ini-test -Sc:\os2\os2sys.ini-test</CODE>
+
+<P>
+</BODY>
+</HTML>
+

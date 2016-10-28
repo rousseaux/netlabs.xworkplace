@@ -1,0 +1,32 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        Offset dell'ID per le voci di menu di &xwp;
+    </TITLE>
+</HEAD>
+<BODY>
+Questo numero notifica ad &xwp; quali ID di menu usare 
+per le proprie voci di menu aggiuntive; si cambi questo 
+numero se &xwp; sembra causare conflitti con altri programmi WPS che 
+inseriscono proprie voci di menu nei &popmenu;i.  
+<P>Questa impostazione ha effetto immediato.
+
+<P><B>Spiegazione dettagliata:</B>
+<P>In &os2;, ogni voce di menu (che sia un sottomenu oppure una voce di menu di 
+primo livello) ha un numero (ID) unico all'interno del menu. Questo numero va 
+da 0 a 0xFFFF (esadecimale) ed identifica la voce di menu per il sistema 
+cosç che il "proprietario" del menu possa reagire quando viene selezionata 
+una voce di menu.
+<P>IBM raccomanda agli sviluppatori di programmi WPS di usare un ID di 
+menu superiore a WPMENUID_USER (che per Warp 3 e 4 ä 0x6500) per le 
+aggiunte ai &popmenu;i. <P>Le precedenti versioni di XFolder usavano 
+sempre WPMENUID_USER+100 (decimale) e superiori per i numeri variabili di 
+menu, ma questo ha creato talora conflitti con altri   
+software WPS. Siccome &xwp; non ha modo per determinare gli offset usati dagli altri  
+software WPS, si ä resa configurabile questa impostazione; &xwp; 
+userÖ voci di menu con ID almeno pari a WPMENUID_USER pió il 
+numero specificato qui.
+<BR>
+</BODY>
+</HTML>
+

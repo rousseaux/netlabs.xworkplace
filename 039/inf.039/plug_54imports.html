@@ -1,0 +1,41 @@
+<HTML WIDTH=70% XPOS=right>
+<HEAD>
+    <TITLE>
+        Passo 4: importare funzioni da XFLDR.DLL
+    </TITLE>
+</HEAD>
+<BODY>
+Come si pu• immaginare, c'Š molto codice utile in <CODE>XFLDR.DLL</CODE> -- per
+grafica, stringhe, controlli di PM e altro. La maggior parte di ci• che si
+vede nei codici degli "helper di &xwp;" Š probabilmente in qualche punto di
+<CODE>XFLDR.DLL</CODE>.
+
+<P>Se si vuole usare questo codice, si hanno in effetti due opzioni.
+
+<OL><LI>Copiare le funzioni dai sorgenti degli helper (o da altre fonti)
+nel codice dell'elemento.
+
+<P><LI>La strada furba per questo per• sarebbe quella di evitare codice doppio
+e usare quello in <CODE>XFLDR.DLL</CODE>. Le interfacce allo &xcenter;
+permettono proprio questo:
+
+<P>Quando la export "init" (ordinale 1) della DLL dell'elemento viene chiamata,
+essa riceve lo handle al modulo di <CODE>XFLDR.DLL</CODE>. Si pu• allora usare <CODE>DosQueryProcAddr</CODE>
+per risolvere gli indirizzi di funzioni esportate da <CODE>XFLDR.DLL</CODE>,
+immagazzinare questi puntatori a funzioni in variabili globali e usare queste ultime.
+
+<P>Si consiglia ancora di esaminare il codice in <CODE>src\widgets\</CODE> nei
+sorgenti di &xwp;, in cui si usa sempre questa tecnica.
+
+<P>Per assicurarsi della correttezza dei prototipi, ne sono stati definiti molti
+nei vari file d'intestazione di &xwp;. Come linea guida ho aggiunto un "typedef"
+ovunque volevo un'export. Similmente, in <CODE>src\shared\xwp.def</CODE>, sono
+disponibili quelle funzioni esportate che servivano ai plugin standard. Se
+sono necessarie altre funzioni e altri prototipi si contatti l'autore, che li
+aggiunger….
+
+</OL>
+</BODY>
+</HTML>
+
+

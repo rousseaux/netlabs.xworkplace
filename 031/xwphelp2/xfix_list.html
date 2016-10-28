@@ -1,0 +1,109 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        xfix: De ingangen lijst
+    </TITLE>
+</HEAD>
+<!-- this page is all new with V0.9.7 -->
+<!-- revised V1.0.9 -->
+<BODY>
+Bij het opstarten, laadt xfix de ingangen tabel vanuit de actieve
+<CODE>PM_Workplace:HandlesX</CODE> sectie in <CODE>OS2SYS.INI</CODE>.
+(Zie <A HREF="xfix_handles.html">Over WPS bestandsingangen</A> voor details.)
+Het verdeelt dan de tabel en toont van iedere gevonden ingang de volgende informatie:
+<OL><LI><B>"Index"</B> geeft de volgorde aan waarin de ingangen zijn gevonden
+in de <CODE>OS2SYS.INI</CODE> en is de "natuurlijke" sorteer volgorde van de tabel. Dit aantal
+is niet aanwezig in de ingangen tabel en wordt niet bijgewerkt wanneer u ingangen wist.
+<P><LI>De <B>"Pictogram"</B> kolom toont de algemene status van de ingang:
+<UL><LI><IMG SRC="img/xfix_error.gif"> bevat een fout en is <B>ongeldig</B>
+<LI><IMG SRC="img/xfix_delete.gif"> is gemarkeerd voor <B>wissen</B>
+<LI><IMG SRC="img/xfix_orphan.gif"> wordt een <B>wees</B> omdat de ingang waar het van
+afhankelijk is gemarkeerd voor wissen
+<LI><IMG SRC="img/xfix_protect.gif"> is gemarkeerd als <B>beveiligd</B> tegen wissen
+<LI><IMG SRC="img/xfix_safe.gif"> is <B>veilig</B> en kan niet worden gewist omdat een
+ingang die hiervan afhankelijk beveiligd is.
+</UL>
+Als het pictogram leeg is, is de ingang <B>OK</B> en zal intakt worden gelaten.
+<P><LI>De derde kolom toont u de <B>"Status"</B> van elke ingang. Deze wordt toegekend door xfix. Als
+de pictogram kolom een fout of een wees pictogram toont, laat deze kolom het probleem
+zien. Anders is de kolom leeg.
+<P>Gedurende het opstarten, zal xfix ongeldige ouder ingangen vinden en duplicaat
+ingangen.
+Gebruik de "Zoek ongeldige bestanden" opdracht in het
+<A HREF="xfix_menus.html">"Acties" menu</A>, om ingangen te identificeren en te markeren
+die verwijzen naar gewiste bestanden en mappen.
+<P><LI>Het <B>"Ingang"</B> veld komt uit de "node" in <CODE>OS2SYS.INI</CODE> en
+toont u de bestandsysteem ingang in hexadecimaal. Indien de ingang wordt gebruikt door de
+WPS zal de ingang die u ziet een prefix krijgen met het getal "3" om het aan te geven dat
+het een ingang voor een bestandssysteem object (WPDataFile of WPFolder) is.
+Zie <A HREF="xfix_handles.html">Over WPS bestandsingangen</A> voor details.
+<P>Het getal dat wordt gebruikt voor ingangen heeft geen speciale betekenis. Als een
+nieuwe ingang nodig is, wordt hij random gekozen uit getallen tussen 1
+en 65535. Het veld is leeg voor <CODE>Stations</CODE> toegangen omdat deze nooit ingangen hebben.
+<P><LI>Het <B>"Ouder"</B> veld wordt ook opgeslagen met de toegang in
+<CODE>OS2SYS.INI</CODE> en geeft de ingang voor de map aan waarin het bestand of
+map zich bevindt. Als de ouder ingang niet geldig is, kan de WPS van een bestand of
+map geen volledig <A HREF="glossary/gls_path.html">pad</A> opbouwen.
+xfix zal deze ingang markeren met "Wees" en ongeldig omdat hij niet langer bruikbaar is.
+<P>De enige uitzondering op deze regel is de <CODE>Root</CODE> map van een station.
+Hij heeft geen ouder, dus zijn ouder ingang is altijd nul.
+<P><LI>Het <B>"Type"</B> veld geeft aan wat deze ingang vertegenwoordigt. Het kan een
+schijf <CODE>Station</CODE>, een <CODE>Root</CODE> map, een gewone <CODE>Map</CODE>, of
+een <CODE>Bestand</CODE> zijn.
+Als u <A HREF="xfix_menus.html">Sorteren op Index</A> selecteert om de originele volgorde
+van de onderdelen zoals in de <CODE>OS2SYS.INI</CODE> te zien, ziet u dat er altijd een
+<CODE>Station</CODE> toegang is, gevolgd door een <CODE>Root</CODE> toegang, gevolgd door
+elke andere <CODE>Map</CODE> en <CODE>Bestand</CODE> toegangen die bij dat station horen.
+<P><LI>De <B>"Korte naam"</B> wordt opgeslagen in het ingangen blok en specificeert de naam van
+het bestandssysteem object zonder de volledige pad specificatie. De lengte van de bestandsnaam
+is variabel en dat is ook de reden waarom iedere toegang een andere afmeting heeft.
+<P>Gewoonlijk, voorziet de WPS de korte namen van hoofdletters. Sommige toegangen
+kunnen echter ook in gemengde vorm voorkomen. Dit veroorzaakt geen enkel probleem.
+<P><LI>Het <B>"Node ofs"</B> veld toont de verschuiving waarop deze toegang (de "node")
+werd gevonden in de ingangen tabel in <CODE>OS2SYS.INI</CODE>.
+De eerst ingang begint altijd op verschuiving 4. De lengte van elke toegang hangt af van
+zijn korte naam.
+<P><LI>Het <B>"Kinderen"</B> veld wordt berekent door xfix terwijl het de ingangen tabel
+ontleedt. Het specificeert hoeveel andere toegangen afhangen van deze toegang omdat het
+gespecificeerd is als hun 'ouder' ingang, of direct (zoals te zien is in het "Ouder" veld)
+of indirect (omdat er andere ouders tussen zitten).
+<P>Indien "Kinderen" 0 (nul) is, kunt u deze ingang wissen zonder andere toegangen te
+beschadigen. Als hij niet nul is, weet u zeker dat u wezen maakt als u hem wist. (Dit
+houdt toch niet in dat altijd veilig is om een toegang met nul kinderen te wissen omdat
+het reflecties kan vernielen enz. zie:
+<A HREF="xfix_delete.html">De basis idee‰n</A> pagina voor details.)
+het reflecties kan vernielen enz. zie:
+
+<P><LI>Het <B>"Dups"</B> veld wordt ook ingesteld door xfix en telt het aantal
+duplicaten van elke ingang. <B>Dit zou beter nul kunnen zijn voor iedere ingang</B>.
+Als dat niet zo is, wordt de WPS waarschijnlijk snel opgeblazen. Daarom geeft
+xfix dan de ingang de "Duplicaat" status en markeert hem als ongeldig.
+<P><LI>Het <B>"Referenties"</B> veld laat zien of er bepaalde ingangen in de
+<CODE>OS2.INI</CODE> refereren naar deze ingang.
+<P>Als u <CODE>Abstract objecten</CODE> in dit veld ziet, wordt de ingang vermeld in de
+<CODE>PM_Abstract:FldrContent</CODE> sectie van <CODE>OS2.INI</CODE>. Die sectie vermeldt
+de abstract (geen-bestand) objecten die voorkomen in een map wanneer u deze opent. Als de
+ingang voor deze map wordt gewist, worden deze objecten onbenaderbaar omdat de WPS niet
+langer instaat is ze aan deze map te koppelen. <P>Als u hier <CODE>Map positie</CODE>
+ziet, heeft de ingang ‚‚n of meer toegangen in de <CODE>PM_Workplace:FolderPos</CODE>
+sectie. Deze sectie wordt snel fout benoemd omdat het de afmeting en de positie
+opslaat van niet alleen de mapvensters, maar ook voor WPS Instellingen notitieblokken
+die zowel bij bestanden als mappen horen. Derhalve is het geen fout om een
+<CODE>FPOS</CODE> gekoppeld te zien aan een bestandnaam.
+<P>U kunt ook iets zien dat lijkt op: <CODE>WP_DESKTOP</CODE>.
+Dit komt uit de <CODE>PM_Workplace:Location</CODE> sectie van <CODE>OS2.INI</CODE> en
+geeft aan dat een Object Id is toegewezen aan dit bestand, deze map.
+<P>Zie <A HREF="xfix_delete.html">De basis ide‰en</A> pagina voor de implicaties wanneer
+bestandsingangen worden gewist die deze velden hebben ingesteld.
+<P><LI>De <B>"Lange naam"</B> laat u de volledige pad specificaties zien van deze ingang,
+zoals dat wordt opgelost door de WPS. Bij mappen wordt een leidende backslash toegevoegd
+om het eenvoudiger te maken het verschil te zien tussen bestanden en mappen. Merk op dat
+de lange naam niet in de ingang toegang voorkomt in <CODE>OS2SYS.INI</CODE>.
+In plaats daarvan, construeert xfix het pad met gebruik van de ingang van de
+ouder en voorouders (zie: <A HREF="xfix_handles.html">xfix en WPS Bestandsingangen</A>
+voor meer details).
+
+</OL>
+</BODY>
+</HTML>
+

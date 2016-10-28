@@ -1,0 +1,94 @@
+<HTML WIDTH=70% XPOS=right>
+<HEAD>
+    <TITLE>
+        XCENTERGLOBALS
+    </TITLE>
+</HEAD>
+<BODY>
+<B>Nota:</B> Questo ä un estratto da <CODE>center.h</CODE>. Questa
+definizione non ä necessariamente aggiornata. Per il proprio codice si
+faccia sempre riferimento a <CODE>center.h</CODE> e non a questa definizione.
+
+<PRE>
+    /*
+     *@@ XCENTERGLOBALS:
+     *      dati globali per un'istanza in esecuzione dello &xcenter;.
+     *      Esiste un puntatore a questa struttura in ogni istanza di
+     *      XCENTERWIDGET cosç che gli elementi possono avere
+     *      accesso ad alcuni dei dati globali.
+     *
+     *      In questa struttura, un'istanza dello &xcenter;
+     *      passa alcune variabili ai suoi elementi membro
+     *      cosç che essi possono accedere pió rapidamente ad
+     *      alcuni dati per convenienza. Questa struttura
+     *      viene inizializzata al momento della creazione
+     *      degli elementi.
+     *
+     *      "Globali" non ä un nome adatto, dato che una di
+     *      queste strutture viene creata per ogni istanza dello
+     *      &xcenter; (e possono essercene parecchie),
+     *      ma ä senza dubbio una struttura pió globale di quelle
+     *      specifiche degli elementi.
+     */
+
+    typedef struct _XCENTERGLOBALS
+    {
+        HAB                 hab;                // anchor block di frame e client
+        HWND                hwndFrame,          // frame window dello &xcenter;
+                            hwndClient;         // client
+
+        PVOID               pCountrySettings;
+                    // impostazioni nazionali; punta a una struttura
+                    // COUNTRYSETTINGS (prfh.h)
+
+        ULONG               cyTallestWidget;
+                    // altezza della client (uguale all'altezza di tutti gli elementi!)
+
+        ULONG               cxMiniIcon;
+                    // dimensioni della mini-icona di sistema (per comoditÖ); 16 o 20
+
+        LONG                lcol3DDark,
+                            lcol3DLight;
+                    // colori di sistema per cornici 3D (per comoditÖ; RGB!)
+
+        // seguono le impostazioni di ampiezza per la seconda pagina di
+        // impostazioni "Visualizzare";
+        // un elemento potrebbe considerarle o meno.
+        ULONG               flDisplayStyle;
+                    // flag di visualizzazione dello &xcenter;;
+                    // un elemento potrebbe considerarli o meno.
+                    // Questi flag possono essere una combinazione dei seguenti:
+                    // -- XCS_FLATBUTTONS: bottoni piatti. Se non ä settato,
+                    //      i bottoni sono disegnati sollevati.
+                    // -- XCS_SUNKBORDERS: traccia i controlli statici (attivitÖ CPU...)
+                    //      con una cornice 3D "svasata", se settato.
+                    // -- XCS_SIZINGBARS: lo &xcenter; dovrebbe tracciare automaticamente barre
+                    //      di dimensionamento per elementi ridimensionabili.
+                    // -- XCS_ALL3DBORDERS: lo &xcenter; dovrebbe tracciare tutti i quattro
+                    //      bordi in 3D attorno a sÇ. Se non ä settato, traccerÖ solo
+                    //      un bordo (quello verso lo schermo).
+
+        ULONG               ulPosition;
+                    // posizione dello &xcenter; sullo schermo, se interessa...
+                    // ‘ _una_ delle seguenti:
+                    // -- XCENTER_BOTTOM
+                    // -- XCENTER_TOP
+                    // Sinistra e destra non sono ancora supportate.
+
+        ULONG               ul3DBorderWidth;
+                    // ampiezza del bordo 3D
+        ULONG               ulBorderSpacing;
+                    // spazio al bordo (aggiunto all'ampiezza del bordo 3D)
+        ULONG               ulSpacing;
+                    // spazio tra gli elementi
+
+    } XCENTERGLOBALS, *PXCENTERGLOBALS;
+
+</PRE>
+
+
+<BR>
+</BODY>
+</HTML>
+
+

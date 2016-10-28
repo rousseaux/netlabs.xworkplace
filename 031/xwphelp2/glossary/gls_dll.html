@@ -1,0 +1,57 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: Dynamic Link Libraries (DLL's)
+    </TITLE>
+</HEAD>
+<BODY>
+Een <B>Dynamic Link Library</B> is een speciaal soort uitvoerbaar bestand
+dat code bevat die door verschillende applicaties kan worden gedeeld.
+Dynamic link libraries hebben meestal een <CODE>.DLL</CODE> bestandsnaam
+uitbreiding.
+
+<P>DLL's kunnen of met het besturingssysteem of met een applicatie meekomen.
+De systeemcode van &os2; zelf is ook in grote mate verzameld in DLL's. die staan
+in de
+<IFNDEF __EWORKPLACE__>
+<CODE>OS2\DLL</CODE> directory's op het opstartstation.
+</IFNDEF>
+<IFDEF __EWORKPLACE__>
+<CODE>OS2\DLL</CODE> en <CODE>ecs\dll</CODE> directory's op het opstartstation.
+</IFDEF>
+
+<P>"Dynamisch linken" betekent dat de code uit de module alleen wordt geladen
+als een bepaalde applicatie er om vraagt. Als de code reeds geladen is door een
+andere applicatie wordt hij hergebruikt. Dit heeft verschillende voordelen:
+
+<UL><LI>Diverse applicaties kunnen <B>de code delen</B> van een DLL
+wat u zowel schijfruimte als hoofdgeheugen bespaart.
+
+<P><LI>Applicaties kunnen als <B>modules</B> gemaakt worden. B.v., het
+taalafhankelijke deel (NLS) voor een DLL kan in een aparte DLL zitten.
+Dit maakt wijzigingen van de taal in een applicatie mogelijk door de
+wisseling van een enkel bestand.
+DLL's kunnen ook de software ondersteuning vereenvoudigen omdat dan het
+opnieuw versturen van een complete applicatie, om fouten te herstellen,
+niet zo vaak nodig is.
+
+<P><LI> DLL's kunnen recente <B>subsystemen</B> bevatten die door verschillende
+applicaties worden gebruikt, omdat een DLL gegevens kan delen tussen processen.
+Dit maakt b.v. gegevensuitwisseling eenvoudiger en is ook ‚‚n van de
+redenen waarom grote delen van &os2; zelf zijn opgeslagen in DLL's.
+
+<P><LI>DLL's kunnen worden gebruikt om een applicatie <B>uit te breiden</B>.
+Als de applicatie is ontwikkeld om uitbreiding m.b.v. DLL's te ondersteunen, kan iedereen
+zulke uitbreidingen ontwikkelen en die dan naadloos integreren in de applicatie.
+Het beste voorbeeld hiervan is de Workpalce Shell van &os2; zelf, die in functionaliteit
+kan worden uitgebreid door toevoegingen van derden.
+Zie:
+<A HREF="glossary/gls_wpsclasses.html">&xwp;: Workplace Shell Classes</A>
+voor details.
+Een ander voorbeeld is het
+<A HREF="xcenter/xc_main.html">&xcenter;</A>
+dat, voor uitbreiding, 'plug-in' DLL's ondersteunt.
+
+</UL>
+</BODY>
+</HTML>

@@ -1,0 +1,498 @@
+;
+; This is the monster &xwp; text message file (XFLDR001.TMF).
+; This is used for messages which might turn out to be longer
+; than 256 characters and might thus not fit into the STRINGTABLE
+; resources. These are loaded by XWorkplace on the fly and appear
+; mostly in the new XWorkplace message boxes.
+;
+; Required changes for translations: Look at each line after the
+; message identifier (in angle brackets) and translate only that
+; part. Beware of line breaks, as these messages will normally be
+; formatted by XWorkplace. Inserting line breaks will cause
+; _additional_ line breaks to be displayed.
+;
+; The format of this file has slightly changed with V0.9.0. We now use
+; the angle-bracket syntax, as seen below. Whatever is in angle
+; brackets at the beginning of a line will be used by &xwp;
+; to find the corresponding message, which must follow. If you
+; change the identifiers, &xwp; can no longer find the message!
+;
+; Also, make sure to keep all those "%1", "%c", "%s" etc. thingies in
+; place, because those placeholders will be replaced at run-time with
+; variable information. &xwp; might crash if these placeholders
+; are not found or, even worse, if a "%s" key doesn't get a string but
+; a decimal number in sprintf.
+;
+;       Copyright (C) 1997-2005 Ulrich Mîller.
+;       This file is part of the &xwp; source package.
+;       &xwp; is free software. You can redistribute it and/or modify
+;       it under the terms of the GNU General Public License as published
+;       by the Free Software Foundation, in version 2 as it comes in the
+;       "COPYING" file of the &xwp; main distribution.
+;       This program is distributed in the hope that it will be useful,
+;       but WITHOUT ANY WARRANTY, without even the implied warranty of
+;       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;       GNU General Public License for more details.
+;
+
+<--XFL0100-->: &xwp;: modifica del file CONFIG.SYS
+
+<--XFL0101-->: Per attivare le nuove impostazioni &xwp; deve modificare il file CONFIG.SYS; verrÖ creato un file di backup con il nome CONFIG.001 (o maggiore, se necessario). Si ä certi di voler modificare il file CONFIG.SYS?
+
+<--XFL0102-->: &xwp;: lingua cambiata
+
+<--XFL0103-->: E' stata selezionata un'altra lingua per &xwp;: l'oggetto "Impostazioni &xwp;" verrÖ chiuso e verrÖ usata la nuova lingua selezionata.
+
+<--XFL0104-->: &xwp;: errore
+
+<--XFL0105-->: &xwp; non ä riuscito a creare sulla Scrivania la cartella Avviamento: forse la classe XFldStartup non ä installata correttamente.
+
+<--XFL0106-->: &xwp; non ä riuscito a creare sulla Scrivania la cartella &xsd;: forse la classe XFldShutdown non ä installata correttamente.
+
+<--XFL0107-->: Cambiare l'identificatore oggetto WPS
+
+<--XFL0108-->: ‘ stato inserito un identificatore oggetto non valido. Le ID oggetto devono essere sempre nella forma "<valore>". VerrÖ ripristinato la vecchia ID.
+
+<--XFL0109-->: Si ä certi di voler cambiare l'identificatore oggetto WPS?
+
+<--XFL0110-->: &xsd;: errore
+
+<--XFL0111-->: Durante il salvataggio dei file INI si ä verificato l'errore %1:
+
+%2
+
+C'ä il rischio che al successivo riavvio la Workplace Shell risulti danneggiata; ä opportuno non proseguire, riavviare la WPS, disabilitare la funzione &xsd; ed utilizzare invece la chiusura &os2; standard. Riavviare subito la WPS?
+
+<--XFL0112-->: Scegliere la classe dell'oggetto
+
+<--XFL0113-->: Scegliere la classe dell'oggetto per cui si vogliono impostare le informazioni nella barra stato. Le classi che non supportano questa funzione appaiono del colore delle copie collegate WPS.
+
+<--XFL0114-->: &xsd;
+
+<--XFL0115-->: Nello spooler della stampante ä (sono) in attesa %1 lavoro(i). La &xsd; non funziona se la coda di stampa non ä vuota: eliminare i lavori ancora presenti nello spooler .
+
+<--XFL0116-->: &xwp;: attenzione
+
+<--XFL0118-->: Si ä chiesto di rimuovere la classe "%1" dalla lista delle classi WPS. Alterare la lista delle classi WPS solo se si sa esattamente ciï che si sta facendo! Deregistrare certe classi puï causare gravi malfunzionamenti della Workplace Shell, fino a richiedere una completa reinstallazione di &os2;. Si ä certi di voler deregistrare la classe?
+
+<--XFL0119-->: Non ä stato possibile deregistrare la classe "%1".
+
+<--XFL0120-->: Si ä chiesto di rimuovere la classe "%1" dalla lista delle classi WPS. Questa classe appartiene a &xwp; e le classi di &xwp; sono progettate per lavorare insieme: rimuoverne una puï causare seri malfunzionamenti alla Workplace Shell. Si ä certi di voler deregistrare questa classe?
+
+<--XFL0121-->: &xwp;
+
+<--XFL0122-->: La classe "%1" ä stata deregistrata con successo. SarÖ necessario riavviare la WPS per vederne gli effetti.
+
+<--XFL0123-->: Scegliere la classe con cui rimpiazzare "%1".
+
+<--XFL0124-->: Si ä certi di voler rimpiazzare la classe oggetto "%1" con "%2"? Quest'operazione funziona solo per classi progettate appositamente per questo scopo. In caso contrario questa procedura potrebbe causare seri malfunzionamenti della Workplace Shell e addirittura richiedere una reinstallazione completa del sistema. Si vuole procedere con la sostituzione?
+
+<--XFL0125-->: Si ä scelto di regredire nella sostituzione della classe "%1" con "%2". Questa classe ä parte di &xwp;. Le classi di &xwp; sono progettate per lavorare insieme, e modificare le sostituzioni puï causare seri malfunzionamenti della Workplace Shell. Si ä certi di voler regredire nella sostituzione della classe?
+
+<--XFL0126-->: Si ä scelto di regredire nella sostituzione  della classe "%1" con "%2". Modificare le classi WPS solo se si sa esattamente cosa si sta facendo! Annullare la sostituzione di alcune classi puï causare seri malfunzionamenti della Workplace Shell, fino a costringere alla reinstallazione completa di &os2;. Si vuole ancora annullare la sostituzione di questa classe?
+
+<--XFL0127-->: La regressione nella sostituzione della classe "%1" con "%2" ä stata eseguita con successo.
+
+<--XFL0128-->: La regressione della sostituzione della classe "%1" con "%2" ä fallita.
+
+<--XFL0129-->: La classe "%1" ä stata sostituita con la classe "%2". Quest'operazione avrÖ effetto solo dopo il riavvio della Scrivania: anche la lista delle classi WPS sarÖ aggiornata solo dopo il riavvio.
+
+<--XFL0130-->: La sostituzione della classe "%1" con "%2" ä fallita.
+
+<--XFL0131-->: La classe "%1" ä stata registrata con successo. Un riavvio della WPS ä probabilmente superfluo.
+
+<--XFL0132-->: La registrazione della classe "%1" ä fallita.
+
+<--XFL0133-->: ‘ stato scelto l'ordinamento con il metodo assunto per tutte le cartelle del sistema, Scrivania compresa. Si ä certi di non voler disabilitare l'ordinamento automatico per la Scrivania?
+
+<--XFL0135-->: Dato che la corrispondente cartella di configurazione di &xwp; non contiene oggetti, ä stato aperto un sottomenu privo di voci. Per creare voci di menu, piazzare degli oggetti nella cartella di configurazione.
+
+<--XFL0136-->: Il file CONFIG.SYS ä stato modificato. Il file precedente ä stato salvato come file %1. E' necessario un riavvio del sistema perchÇ le nuove impostazioni abbiano effetto; il solo riavvio della Scrivania non ä sufficiente.
+
+<--XFL0137-->: &xwp; non riesce a trovare la sua Guida. Forse l'oggetto corrispondente, creato dal programma di installazione, ä stato rimosso. La Guida (XFLDR039.INF) dovrebbe essere comunque presente nella cartella di installazione di &xwp;.
+
+<--XFL0138-->: Si ä certi di voler avviare tutti gli oggetti in questa cartella? Se alcuni di essi fossero giÖ in esecuzione si potrebbero verificare dei problemi.
+
+<--XFL0139-->: La classe "%1" ä correntemente rimpiazzata dalla classe "%2". Bisogna regredire nella sostituzione prima di poter deregistrare questa classe.
+
+<--XFL0141-->: Questa operazione crea sulla Scrivania un oggetto di classe "%1" con nome "%2". Attenzione: alcune classi WPS non sono state progettate per creare oggetti da esse e potrebbero creare problemi nella configurazione del sistema. Proseguire ugualmente?
+
+<--XFL0142-->: Sono state apportate le seguenti modifiche all'impostazione delle classi &xwp;:
+
+<--XFL0143-->: Registrazione delle seguenti classi:
+
+<--XFL0144-->: Sostituzione delle seguenti classi:
+
+<--XFL0145-->: Deregistrazione delle seguenti classi:
+
+<--XFL0146-->: Regredire nella sostituzione delle seguenti classi:
+
+<--XFL0147-->: Attenzione: le modifiche parziali all'impostazione delle classi di &xwp; non sono testate adeguatamente e potrebbero verificarsi interazioni impreviste tra le differenti classi di &xwp;. Procedere ugualmente?
+
+<--XFL0148-->: Impostazione di &xwp;
+
+<--XFL0149-->: Sono stati riscontrati degli errori con le seguenti classi di &xwp;:
+%1
+Le modifiche alle classi potrebbero comunque essere avvenute con successo: riavviare la WPS perchÇ abbiano effetto.
+
+<--XFL0150-->: La lista delle classi WPS ä stata modificata correttamente. E' necessario riavviare la WPS perchÇ i cambiamenti abbiano effetto.
+
+<--XFL0151-->: &xwp;: oggetto "Suono"
+
+<--XFL0152-->: Lo schema sonoro "%1" esiste giÖ. Sovrascrivere?
+
+<--XFL0153-->: Questa operazione sovrascriverÖ i dati sonori correnti. Si desidera salvare i dati in un nuovo schema?
+
+<--XFL0154-->: Si ä certi di voler cancellare lo schema sonoro "%1"?
+
+<--XFL0155-->: Questa operazione sostituisce la linea:
+
+%1
+
+nel file CONFIG.SYS con la linea:
+
+%2
+
+Si desidera procedere?
+
+<--XFL0156-->: Non sono state effettuate modifiche alle impostazioni del driver "%1". Non ä necessario modificare il file CONFIG.SYS.
+
+<--XFL0157-->: Lo Hook &xwp; ä attivato: i tasti rapidi per gli oggetti e le funzioni opzionali del mouse sono ora configurabili dagli oggetti "Tastiera" e "Mouse".
+
+<--XFL0158-->: Lo Hook &xwp; ä disattivato: i tasti rapidi per gli oggetti e le funzioni opzionali del mouse negli oggetti "Tastiera" e "Mouse" non sono pió disponibili.
+
+<--XFL0159-->: Benvenuti in &xwp;: la Workplace Shell sta per essere avviata per la prima volta con &xwp; installato.
+
+Se si tratta della prima installazione di &xwp;, tutte le impostazioni di &xwp; saranno disabilitate cosç da non creare problemi all'avvio della WPS.
+
+Se si era in precedenza giÖ installato XFolder, &xwp; provvederÖ ad importare la maggior parte delle vecchie impostazioni.
+
+Se invece era giÖ installata una precedente versione di &xwp; non verrÖ modificata nessuna impostazione.
+
+Se dovessero verificarsi problemi con &xwp;, per es. blocchi del sistema in fase di avvio, riavviare il sistema premendo i tasti Ctrl+Alt+Canc; all'apparire della WPS premere il tasto "Maiusc" e tenerlo premuto: si aprirÖ la finestra "Panico", dalla quale sarÖ possibile disattivare selettivamente le funzioni di &xwp;.
+
+Ora premere "OK" per terminare l'avvio della WPS; questo messaggio non verrÖ pió visualizzato nei successivi riavvii.
+
+<--XFL0160-->: Il file OS2.INI non contiene impostazioni per &xwp;; sono state invece trovate quelle di una vecchia versione di XFolder.
+
+&xwp; puï ora convertire le vecchie impostazioni di XFolder, cosç da non dover riconfigurare tutto: &xwp; si avvierÖ funzionando come la versione esistente di XFolder. Le vecchie impostazioni di XFolder saranno conservate, se per caso in un secondo tempo si preferisse reinstallare XFolder al posto di &xwp;.
+
+In caso contrario &xwp; si avvierÖ con tutte le funzioni disabilitate.
+
+Si vogliono convertire per &xwp; le vecchie impostazioni di XFolder?
+
+<--XFL0161-->: Questa operazione crea la cartella "Configurazione &xwp;" nella cartella "Installazione &xwp;" o, se questa cartella non esiste, sulla Scrivania.
+
+Proseguire?
+
+<--XFL0162-->: Eliminare il tasto rapido "%1" per l'oggetto "%2"?
+
+<--XFL0163-->: Questa operazione crea nella cartella "%2" un oggetto chiamato "%1" con la stringa di impostazione "%3".
+
+Proseguire?
+
+<--XFL0164-->: L'oggetto "%1" ä stato creato con successo.
+
+<--XFL0165-->: Errore: l'oggetto non ä stato creato. Assicurarsi che la classe WPS corrispondente sia installata.
+
+<--XFL0166-->: Si ä scelto di abilitare i suoni di sistema estesi, ma i suoni aggiuntivi di &xwp; non sono ancora stati installati nell'oggetto "Suono". Eseguire ora l'installazione?
+
+<--XFL0167-->: Si ä scelto di disabilitare i suoni di sistema estesi. Si vogliono rimuovere i suoni di sistema aggiuntivi di &xwp; dall'oggetto "Suono"?
+
+<--XFL0168-->: Cestino di &xwp;
+
+<--XFL0169-->: L'operazione elimina tutti gli oggetti che si trovano nel cestino.
+
+Procedere nello svuotamento?
+
+<--XFL0170-->: Le classi WPS  necessarie al funzionamento del cestino di &xwp; (XWPTrashCan, XWPTrashObject) non sono ancora state registrate.
+
+Registrarle ora?
+
+<--XFL0171-->: Si ä verificato un errore durante la registrazione delle classi WPS del cestino.
+
+<--XFL0172-->: Si vuole distruggere l'oggetto cestino deregistrandone le classi (XWPTrashCan, XWPTrashObject)?
+
+<--XFL0173-->: L'oggetto cestino ä stato rimosso con successo e le classi relative sono state deregistrate. ‘ necessario riavviare la WPS perchÇ i cambiamenti abbiano effetto.
+
+<--XFL0174-->: Questa operazione non ä valida per gli oggetti cestino.
+
+<--XFL0175-->: &xwp;: errore nelle operazioni su file.
+
+<--XFL0177-->: Si ä sicuri di voler eliminare definitivamente "%1"?
+
+<--XFL0178-->: Si sono selezionati %1 oggetti da eliminare definitivamente. Procedere con la cancellazione?
+
+<--XFL0179-->: "%1" ä un file di sola lettura. Si ä certi di volerlo spostare nel cestino?
+
+<--XFL0180-->: L'unitÖ corrente non ä supportata dal cestino. Eliminare "%1" definitivamente?
+
+<--XFL0181-->: L'unitÖ corrente non ä supportata dal cestino. Eliminare definitivamente i %1 oggetti selezionati?
+
+<--XFL0182-->: Spostare "%1" nel cestino?
+
+<--XFL0183-->: Sono selezionati %1 oggetti da spostare nel cestino. Procedere?
+
+<--XFL0184-->: "%1" ä un file di sola lettura. Si ä certi di volerlo eliminare definitivamente?
+
+<--XFL0185-->: "%1" non puï essere cancellato.
+
+<--XFL0186-->: Annullare l'operazione in corso? Selezionare "Riprova" per continuare, "Annulla" per terminare.
+
+<--XFL0188-->: E' stato ripristinato un archivio WPS. L'archiviazione automatica di &xwp; ä sospesa per evitare sovrascritture. La funzione di archiviazione si puï riattivare dal blocco appunti impostazioni della Scrivania.
+
+<--XFL0189-->: Svuotamento del cestino fallito. Procedere ugualmente con la chiusura?
+
+<--XFL0190-->: Prima di utilizzare la &xsd; per la prima volta regolarne le funzioni dalla nuova pagina "&xsd;", nel blocco appunti impostazioni della Scrivania.
+
+Attenzione: pur essendo stata ampiamente collaudata, la &xsd; potrebbe NON FUNZIONARE CORRETTAMENTE sul vostro sistema. Prima di utilizzarla, assicuratevi di essere in possesso di un archivio WPS aggiornato.
+
+<--XFL0191-->: Stringa impostazioni &xwp;
+
+<--XFL0192-->: VerrÖ utilizzata la stringa impostazioni "%1" sull'oggetto "%2". Procedere?
+
+<--XFL0193-->: VerrÖ utilizzata la stringa impostazioni "%1" sui seguenti oggetti:
+
+%2
+
+Procedere?
+
+<--XFL0194-->: &xcenter;: errore
+
+<--XFL0195-->: &xcenter; non ha potuto creare l'elemento relativo alla classe "%1".
+
+Il file xwplog.log, nell'indirizzario radice dell'unitÖ di avvio, potrebbe contenere ulteriori informazioni.
+
+Si vuole rimuovere questo elemento dall'elenco elementi di &xcenter;?
+
+<--XFL0196-->: Errore nella creazione del tipo di file "%1": potrebbe essere giÖ esistente.
+
+<--XFL0197-->: &xcenter;
+
+<--XFL0198-->: Si ä sicuri di voler mettere il sistema in modo sospeso?
+
+<--XFL0199-->: E' andato tutto bene! Ora, per incominciare: le funzioni di &xwp; si attivano dall'oggetto "Impostazioni &xwp;", nella cartella di installazione che si ä appena aperta.
+
+Gli altri collegamenti nella cartella puntano per lo pió ad oggetti creati nella cartella "Impostazione del sistema".
+
+La "Guida ad &xwp;" contiene tutte le informazioni necessarie. Se non dovessero bastare, vi potrete trovare gli indirizzi cui rivolgervi per ulteriori informazioni.
+
+Buon divertimento con &xwp;!
+
+<--XFL0200-->: Si ä verificato l'errore %1 durante l'elaborazione del tipo di carattere "%2".
+
+Ignorare l'errore e continuare l'installazione dei tipi di carattere?
+
+<--XFL0201-->: Il tipo di carattere "%1" ä giÖ installato.
+
+Ignorare l'errore e continuare l'installazione dei tipi di carattere?
+
+<--XFL0202-->: Si ä certi di voler disinstallare il tipo di carattere "%1"?
+
+<--XFL0203-->: Sono stati selezionati %1 tipi di carattere da disinstallare. Procedere?
+
+<--XFL0204-->: Il tipi di carattere "%1" non puï essere rimosso ora: ä possibile che un'applicazione lo stia utilizzando e verrÖ eliminato al prossimo riavvio.
+
+Ignorare l'errore e continuare la rimozione dei tipi di carattere?
+
+<--XFL0205-->: La sezione "handle"  nel file OS2SYS.INI ä aggiornata: &xwp; ora riavvierÖ la Workplace Shell.
+
+<--XFL0206-->: &xwp; non ä stato in grado di avviare "%1".
+
+<--XFL0207-->: Per rendere effettive le modifiche ä necessario riavviare la Workplace Shell.
+
+; 208 removed with V1.0.1 (2002-12-15) [umoeller]
+;<--XFL0208-->: Le associazioni file estese di &xwp; sono ora attivate.
+;
+;Nota bene. Se non si ä ancora configurato nessun tipo di file &xwp;, tutto il meccanismo delle associazioni file WPS ä disabilitato: usare la pagina "Tipi di file", nell'oggetto "Workplace Shell", per importare i tipi di file relativi alle associazioni esistenti.
+;
+;Le associazioni estese possono essere disabilitate in qualunque momento, tornando cosç ad utilizzare il meccanismo WPS originale.
+
+<--XFL0209-->: Il tipo di file %1 non si trova nel file OS2.INI.
+
+<--XFL0210-->: Il tipo di file %1 esiste giÖ e non puï essere usato per rinominare.
+
+<--XFL0211-->: &xwp; creerÖ ora gli oggetti previsti per l'installazione standard.
+
+Alcuni, utili per configurare &xwp; e la WPS, saranno posizionati nella cartella "Impostazione del sistema".
+
+VerrÖ inoltre creata sulla Scrivania una cartella "Installazione &xwp;", contenente tra l'altro la cartella di configurazione per le voci aggiuntive nei menu.
+
+Per interrompere la creazione premere "Annulla", ma farlo solo se si ä davvero sicuri di non voler creare questi oggetti: senza di essi non ä possibile configurare &xwp;!
+
+Premere "OK" per procedere.
+
+<--XFL0212-->:  Per attivare la funzione di autoaggiornamento &xwp; ä necessario riavviare la WPS.
+
+Attenzione: questa funzione non ä ancora del tutto stabile. Difficilmente il sistema verrÖ danneggiato ma i sottoprocessi di autoaggiornamento potrebbero bloccarsi.
+
+<--XFL0213-->: I tipi di file sono stati esportati con successo nel file "%1".
+
+<--XFL0214-->: Si ä verificato l'errore %2 durante l'esportazione dei tipi di file nel file "%1".
+
+<--XFL0215-->: I tipi di file sono stati importati con successo dal file "%1".
+
+<--XFL0216-->: Si ä verificato un errore durante l'importazione dei tipi di file dal file "%1":
+%2
+
+<--XFL0217-->: Il file "%1" esiste giÖ: sovrascriverlo con i nuovi dati?
+
+<--XFL0218-->: Il volume audio principale non funziona correttamente: il controllo verrÖ chiuso.
+
+<--XFL0219-->: Il sistema ha riportato il codice di errore %1. Non ä stato perï possibile trovare il corrispondente messaggio d'errore.
+
+<--XFL0220-->: Cancellare contenitore.
+
+<--XFL0221-->: Si ä sicuri di voler cancellare il contenitore "%1"?
+
+<--XFL0222-->: &xcenter; non ä riuscito a creare l'elemento appartenente alla classe "%1".
+
+Questa classe elemento non puï essere usata in un contenitore.
+
+Si desidera rimuovere tale elemento dalla lista elementi &xcenter;?
+
+<--XFL0134-->: Il pannello di aiuto contrassegnato con ID "%1" non si trova in "%2". L'aiuto non ä disponibile.
+
+<--XFL0187-->: Il nome oggetto inserito non ä valido. Dato che ogni oggetto deve avere un nome valido, ä stato ripristinato il nome precedente.
+
+<--XFL0223-->: La funzione "Cartelle turbo" ä attivata; per sicurezza la nuova impostazione avrÖ effetto solo con il riavvio della Scrivania.
+
+Nota: se non si ä ancora configurato nessun tipo di file &xwp;, tutto il meccanismo delle associazioni file WPS ä disattivato: usare la pagina "Tipi di file", nell'oggetto "Workplace Shell", per importare i tipi di file relativi alle associazioni esistenti.
+
+La funzione "Cartelle turbo" puï essere disattivata in qualunque momento, ripristinando cosç il meccanismo originale WPS.
+
+<--XFL0224-->: La funzione "Cartelle turbo" ä disattivata; per sicurezza la nuova impostazione avrÖ effetto solo con il riavvio della Scrivania.
+
+<--XFL0225-->: Le cartelle selezionate non possono essere cancellate perchÇ il cestino &xwp; non esiste. Ricreare sulla Scrivania l'oggetto cestino?
+
+<--XFL0226-->: "%1" ä una cartella; si ä sicuri di volerla eliminare definitivamente insieme a tutto il suo contenuto?
+
+<--XFL0227-->: Impossibile avviare il programma.
+
+<--XFL0228-->: Si ä verificato un errore nel tentativo di avviare il programma "%1". Il sistema operativo ha riportato il messaggio di errore seguente:
+
+<--XFL0229-->: Aprire il blocco appunti impostazioni dell'oggetto programma?
+
+<--XFL0230-->: Errore Scrivania
+
+<--XFL0231-->: &xwp; sta verificando lo stato di integritÖ della Scrivania.
+Si ä verificato l'errore %1 durante l'esame della tabella marcatori file-system relativi alla Workplace Shell nei file profilo del sistema, il che non significa necessariamente che la Scrivania sia guasta. Ci sono perï sicuramente degli errori nella tabella marcatori file-system.
+
+&xwp; aprirÖ la finestra di dialogo "Panico", dalla quale ä possibile:
+1) avviare xfix, il "file handles fixer" di &xwp;, col quale si potrÖ verificare lo stato della tabella marcatori file-system ed eventualmente correggere gli errori.
+2) disabilitare la funzione "Verifica Scrivania all'avvio", impedendo cosç a questo messaggio di errore di apparire di nuovo. Cosç facendo c'ä perï il rischio di incorrere in seguito nel messaggio "Impossibile trovare la Scrivania"!
+
+Aprire la finestra "Panico" o ignorare l'errore e procedere normalmente con l'avvio?
+
+<--XFL0232-->: &xwp; non ä riuscito a connettersi al demone &xwp; che, tra le altre cose, ä indispensabile per l'avvio dei programmi.
+Riavviare subito il demone?
+
+<--XFL0233-->: &xwp; non ä riuscito a trovare la classe WPS "%1": probabilmente tale classe non ä installata.
+
+<--XFL0234-->: L'espressione regolare specificata dall'utente non ä valida. Si ä verificato l'errore seguente:
+
+%1
+
+<--XFL0235-->: La voce di menu selezionata dovrebbe usare il contenuto degli Appunti come parametro, ma gli Appunti sono vuoti.
+
+Avviare ugualmente il programma?
+
+<--XFL0236-->: "%1" ä una cartella; si ä certi di volerla spostare nel cestino con tutto il suo contenuto?
+
+<--XFL0237-->: Si ä verificata una violazione di protezione. L'operazione non puï continuare.
+
+<--XFL0238-->: Rinominare
+    "%1"
+come
+    "%2"?
+
+<--XFL0239-->: L'espressione "rinomina come" specificata non ä valida. Si ä verificato l'errore seguente:
+
+%1
+
+Se nella stringa "rinomina come" si sono usati riferimenti (per es. "\1"), verificare le parentesi corrispondenti nella stringa "trova".
+
+<--XFL0240-->: Non sono stati trovati oggetti rispondenti ai criteri di ricerca impostati.
+
+<--XFL0241-->: %1 oggetto(i) corrispondente(i) ai criteri di ricerca impostati. Rinominato(i) %2 oggetto(i).
+
+<--XFL0242-->: Svuotare il cestino
+
+<--XFL0243-->: Rimuovere elemento
+
+<--XFL0244-->: Si ä certi di voler rimuovere l'intero elemento "%1"? L'operazione non potrÖ essere annullata.
+
+<--XFL0245-->: Durante l'avvio da parte di &xwp; del browser assunto di sistema (%1) si ä verificato il seguente errore:
+
+<--XFL0246-->: Aprire un oggetto URL qualsiasi e verificare le impostazioni del browser assunto.
+
+<--XFL0247-->: Classi sostitutive &xwp;
+
+<--XFL0248-->: &xwp; ha rilevato nel sistema un problema relativo all'ordine delle classi sostitutive Workplace Shell.
+
+La classe sostitutiva &xwp; %2 deve essere al primo posto nell'elenco delle classi sostitutive di %1.
+
+&xwp; puï riordinare subito l'elenco classi; l'ordine corrente ä :
+
+%3
+
+che deve essere modificato in:
+
+%4
+
+Effettuare subito la modifica?
+
+<--XFL0249-->: &xwp; ha corretto il problema relativo all'ordine delle classi sostitutive Workplace Shell.
+
+Per rendere le modifiche effettive bisogna riavviare la Workplace Shell; riavviare subito?
+
+<--XFL0250-->: &xwp; ha rilevato un problema relativo all'ordine delle classi sostitutive Workplace Shell.
+
+Il formato elenco della classe sostitutiva di %1 non ä valido.
+
+Si desidera che &xwp; corregga subito il problema?
+
+<--XFL0251-->: &xwp; ha copiato negli Appunti un modello di "bug report" giÖ completo delle informazioni relative al sistema.
+
+Aprite un editor di testo e incollate il contenuto degli Appunti in un nuovo documento, che salverete temporaneamente.
+Quanto, attraverso il "bugtracker", segnalerete il difetto riscontrato, potrete allegare tale documento.
+
+Grazie!
+
+<--XFL0252-->: "%1" non puï essere cancellato. Si ä verificato l'errore seguente:
+
+%2
+
+<--XFL0253-->: Specificare un tasto rapido valido. Se la sequenza tasto rapido inserita nel campo immissione non viene accettata, significa probabilmente che la combinazione non ä riconosciuta come sequenza.
+
+(I tasti "normali" non possono essere usati come tasti rapidi: per es., nÇ "A" nÇ "Maius-A" sono sequenze valide, a differenza di "Ctrl-A" o "Ctrl-Maius-A")
+
+<--XFL0254-->: Specificare un parametro; cliccare sulla freccina del menu a tendina per un elenco delle opzioni disponibili.
+
+<--XFL0255-->: Il tasto rapido scelto ä giÖ in uso; sostituire la definizione esistente con quella appena impostata?
+
+<--XFL0256-->: &xwp;: ricerca per classe
+
+<--XFL0257-->: Inserire il nome della classe:
+
+<--XFL0258-->: Il file "%1" non ä un file tipo di carattere.
+
+Ignorare l'errore e continuare nell'installazione degli altri tipi di carattere?
+
+<--XFL0259-->: L'oggetto "%1" non ä un oggetto tipo di carattere
+
+Ignorare l'errore e continuare nella disinstallazione degli altri tipi di carattere?
+
+<--XFL0260-->: Il tipo di carattere "%1" ä giÖ stato disinstallato.
+
+Ignorare questo errore e continuare nella disinstallazione dei tipi di carattere?
+
+<--XFL0261-->: Operazione non riuscita. XWorkplace Security ha riportato l'errore seguente:
+
+%1
+
+<--XFL0262-->: Rimuovi account utente
+
+<--XFL0263-->: Si sta per rimuovere l'account relativo alla ID utente %1 ("%2"). Continuare?
+
+

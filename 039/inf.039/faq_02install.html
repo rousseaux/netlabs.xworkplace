@@ -1,0 +1,81 @@
+<HTML NOSUBLINKS="xices" NOSUBLINKS="vers_" XPOS=right WIDTH=70%>
+<HEAD>
+    <TITLE>
+        FAQ: Domande sull'installazione
+    </TITLE>
+</HEAD>
+<!-- This file is all new with V0.82. -->
+<!-- changes for V0.83 and V0.84: see below -->
+<!-- Changed with V0.9.0: replace XFolder with &xwp;;
+                          also see notes below -->
+<BODY>
+<OL><LI><B>La WPS crolla/continua a riavviarsi dopo l'avvio della Scrivania. Come mai?</B>
+<P>Difficile da dire. Se il sistema continua a ripartire ä segno che la WPS va in
+trap, a causa per esempio di eccezioni durante l'avvio. Come si ä detto giÖ nella
+ <A HREF="faq_01general.html">pagina precedente</A>, &xwp;
+ä molto sensibile ai conflitti con altre estensioni WPS.
+<P>‘ anche possibile che il riavvio di WPS non funzioni sul sistema in questione.
+Il riavvio della Scrivania ä inteso solo come una scorciatoia: se non funziona
+si provi a riavviare tutto il sistema.
+<!-- this paragraph added with V0.82 -->
+<P>Alcuni utenti riportano che rimuovere le chiavi di &xwp; dai file INI sembra migliorare la situazione. Si puï
+usare un editor di file INI, cercando nel file OS2.INI i nomi delle applicazioni che iniziano per "XFolder" e cancellandole.
+&xwp; infatti <I>non si affida pió</I> alle chiavi nei file INI. Cosç facendo si annulleranno
+tutte le impostazioni, riportando la lingua all'Inglese, ma probabilmente &xwp; riprenderÖ a funzionare.
+<!-- this paragraph added with V0.82 -->
+<P>In aggiunta ä sempre raccomandato avere applicato i fixpak &os2; pió recenti:
+almeno il fixpak 35 per Warp 3 e il fixpak 5 per Warp 4. &xwp; funziona anche in sistemi senza
+fixpak, ma ä pió facile che sorgano dei problemi.
+IBM ha cambiato molte cose nel nucleo del SOM con il tempo e tale nucleo ä usato da WPS per la gestione delle
+sue classi. Ho provato il pió possibile a migliorare la compatibilitÖ ma non posso
+controllare da solo tutte le possibili configurazioni. Per esempio, ho notato che 
+il kernel standard del SOM di Warp 3 ä carico di errori,
+cosç, almeno per Warp 3 <I>raccomando caldamente</I> di applicare i fixpak.
+<!-- V0.9.13: removed this
+(Although since XFolder V0.82, I am checking installation on Warp 3 without
+fixpaks.) -->
+
+<!-- this item added with V0.82 -->
+<!-- modified for V0.83 -->
+<!-- modified for V0.9.0 -->
+<!-- V0.9.13: removed this finally
+<P><LI><B>The install program says that some of the classes could not be installed.
+What can I do?</B>
+<P>There were serious installation problems with the previous V0.8x versions.
+Apparently, with V0.82, things have become much better since I've removed
+SOM multiple inheritance, which the WPS apparently doesn't like too much on some
+systems.
+<P>&xwp; 0.9.0's classes have been redesigned to allow for installation of
+only some of the classes, which was not possible with previous versions. Only two
+classes are required now (XFldObject, which replaces WPObject, and XWPSetup,
+the "&xwp; Setup" object). Open "&xwp; Setup" and
+press the "Classes" button on the "Features" page. This will show you all the
+classes which have been properly installed and allows you to change the class
+setup. Maybe this helps.
+
+<P><LI><B>The install program does not create the "&os2; Kernel" and "Workplace Shell"
+objects.</B>
+<P>With V0.80, the install script failed to create the
+new system objects if the XFolder config folder already existed. This should be
+fixed now, but if problems persist, simply delete your config
+folder, and all the objects should be created.
+<P>Otherwise, you can still execute the
+<CODE>INSTLxxx.CMD</CODE> and <CODE>CROBJxxx.CMD</CODE> scripts in the
+<CODE>INSTALL</CODE> subdirectory, with "xxx" being your three-digit language code,
+as described on the <A HREF="inst_4nls.html">"NLS"</A> page.
+<P>However, this might also be due to the fact that the "XFldSystem" and "XFldWPS"
+classes could not be properly registered. I have seen this happen on a Warp 3
+system without any fixpaks installed. -->
+
+
+<P><LI><B>Con quali versioni e con quali fixpack &os2; ä stato collaudato &xwp;?</B>
+<P>Si veda la sezione <A HREF="inst_0req.html">"Requisiti".</A>
+<!-- end V0.9.13 -->
+
+</OL>
+<BR>
+</BODY>
+</HTML>
+
+
+

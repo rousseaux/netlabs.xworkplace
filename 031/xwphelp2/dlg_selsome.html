@@ -1,0 +1,52 @@
+<HTML RESID=&ID_XFH_SELECTSOME;>
+<HEAD>
+    <TITLE>
+        &xwp;: Selecteer op naam
+    </TITLE>
+</HEAD>
+<BODY>
+Met de "Selecteer op naam..." menu optie kunt u alleen een aantal objecten selecteren in de huidige
+open
+<A HREF="objects/obj_fdr_main.html">map</A>.
+
+<P>Het selecteren van objecten gebeurt dan in een nieuw dialoogvenster, waar u een
+bestandsspecificatie kunt opgeven en daarna "Selecteren" of "Deselecteren" kunt kiezen.
+
+<P>Hoe de inhoud van de invoervelden wordt ge‹nterpreteerd hangt af van de status van het
+<B>"Vaste uitdrukking" aankruisvakje.</B>
+
+<UL><LI>Als het vakje niet is aangekruist, verwacht het invoerveld een bestandsspecificatie die
+gelijk is aan die op een &os2; opdrachtregel, d.w.z. u mag de '<CITE>*</CITE>' en '<CITE>?</CITE>'
+<A HREF="glossary/gls_wildcards.html">jokertekens</A>
+gebruiken om verschillende bestanden te selecteren.
+Bijvoorbeeld, als u hier '<CITE>*.txt</CITE>' invoert, zullen alle bestanden die eindigen op
+<CODE>.txt</CODE> worden geselecteerd na het drukken op <B>"Selecteer"</B>. Omgekeerd
+kunt u alleen maar bestanden deselecteren door een specificatie in te voeren en dan op
+<B>"Deselecteer"</B> te drukken.
+
+<P><LI>Daartegenover staat dat, indien "Vaste uitdrukking" wordt aangekruist, verwacht wordt dat het
+invoerveld een
+<A HREF="glossary/gls_regexps.html">vaste uitdrukking</A> bevat,
+die wordt beoordeeld als u "Selecteer" of "Deselecteer" indrukt.
+Dit kan nuttig zijn bij complexe gegevens. Merk echter op dat jokertekens
+zoals <CODE>*.txt</CODE> dan een fout aanduiding veroorzaken omdat zowel het '<B>*</B>'
+als de punt '<B>.</B>' afzonderlijk worden ge‹nterpreteerd.
+Het voorgaande voorbeeld zal als volgt als vaste uitdrukking moeten worden gespecificeerd
+<CODE>.*\.txt</CODE>.
+
+</UL>
+
+Ondanks dat we hier de term "bestand" specificeren, doet de overeen te komen tekst het ook bij
+abstracte objecten, zoals programma en reflectie objecten.
+
+<P>Het <B>"Alles selecteren"</B> en <B>"Alles deselecteren" </B> selecteert of de-selecteert alle
+onderdelen in de map, ongeacht de huidige zoektekst.
+
+<P>Het dialoogvenster sluit alleen indien u <B>"Sluiten"</B> drukt of de <B>"Esc"</B> toets indrukt.
+Het sluit niet nadat u op ‚‚n van de andere heeft gedrukt. Dit geeft u de mogelijkheid om
+diverse groepen bestanden te selecteren.
+
+<BR>
+</BODY>
+</HTML>
+

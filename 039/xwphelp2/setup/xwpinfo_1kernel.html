@@ -1,0 +1,45 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        Stato &xwp;: il kernel di &xwp;
+    </TITLE>
+</HEAD>
+<BODY>
+Il gruppo <B>"Kernel &xwp;"</B> mostra informazioni relative ai parametri interni  
+di <CODE>XFLDR.DLL</CODE>.
+Se le informazioni seguenti dovessero risultare troppo complicate non ci si preoccupi: 
+la loro comprensione non Š necessaria per il corretto funzionamento di &xwp;.
+
+<P>Il campo <B>"Versione"</B> mostra il numero di versione di <CODE>XFLDR.DLL</CODE> e
+la data di compilazione.
+
+<P>Il campo <B>"Oggetti Scrivania attivati"</B> mostra il numero di oggetti che la WPS ha
+attivato al suo interno: ogni volta che la WPS popola una cartella (a partire dalla Scrivania, 
+al momento dell'avvio del sistema), gli oggetti presenti sono caricati in memoria. Questo campo mostra 
+il numero totale degli oggetti attivati in questo modo dalla WPS, a partire dall'avvio della 
+WPS stessa. Questo numero generalmente cresce man mano che si aprono nuove cartelle, dato che 
+la WPS raramente "addormenta" gli oggetti attivati.
+Questo numero viene aggiornato una volta al secondo. Aprendo una qualsiasi cartella non ancora popolata 
+(non ancora aperta) si potr… vedere crescere questo numero.
+
+<P><B>"Conteggio sottoprocessi WPS"</B> mostra il numero corrente di sottoprocessi attivati dal 
+processo  Workplace Shell (la seconda istanza di <CODE>PMSHELL.EXE</CODE>). Questo numero 
+Š variabile e dipende dalle 
+<A HREF="glossary/gls_wpsclasses.html">classi WPS</A>
+aggiuntive installate. Inoltre il numero cambia se, per esempio, una cartella Š in fase di popolamento.
+Anche questo numero viene aggiornato una volta al secondo.
+
+<P>Il campo <B>"Riavvii Scrivania"</B> mostra quante volte la WPS Š stata riavviata.
+
+<P>Il campo <B>"Stato XSound"</B>, infine, mostra se &xwp; pu• eseguire i suoni di 
+sistema. Il campo dovrebbe mostrare "OK". Se si vede qualcosa di diverso vuol dire che
+i suoni di sistema sono disabilitati, ad esempio perch‚ l'MMPM/2 non Š installato
+oppure per altri problemi con il multimedia di &xwp;.
+
+<P>Il campo <B>"Stato XWPHook"</B> mostra se lo hook &xwp; Š stato correttamente 
+installato. Questo campo dovrebbe essere "OK" se la impostazione relativa 
+Š stata abilitata dalla pagina "Funzioni".
+<BR>
+</BODY>
+</HTML>
+

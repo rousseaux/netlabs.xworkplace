@@ -1,0 +1,47 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: introduzione al NetBIOS
+    </TITLE>
+</HEAD>
+<BODY>
+Il <B>Network Basic Input/Output System (NetBIOS)</B> Š il 
+<A HREF="glossary/gls_protocols.html">protocollo di rete</A> oggi pi— usato
+per le <A HREF="glossary/gls_lan.html">reti locali (LAN)</A>.
+
+<P>Introdotto da IBM al tempo delle prime reti di PC, in seguito adottato
+da Microsoft, Š oggi diventato lo standard di fatto per l'industria, dato che
+Š supportato dalla maggior parte dei sistemi operativi compresi
+&os2; e Microsoft Windows. Anche Linux supporta NetBIOS grazie
+al software aggiuntivo Samba.
+
+<P>Ci sono differenze sostanziali tra il &link_tcpip; e 
+NetBIOS, sia per quanto riguarda l'implementazione che per la maniera in cui
+l'utente lavora con questi protocolli. Essi hanno in effetti usi ben distinti:
+il TCP/IP permette di gestire una rete di scala planetaria come &link_internet;, 
+mentre il NetBIOS Š la scelta pi— efficente per comunicare all'interno di
+una rete locale singola. Per questo motivo sulla maggior parte dei computer
+sono installati entrambi i protocolli.
+
+<UL><LI>Il NetBIOS non assegna indirizzi statici numerici ai computer della rete:
+ogni server ha un nome identificativo ed anche le risorse che condivide sono esportate
+per nome. Per questo motivo le risorse nella rete si identificano con il loro nome 
+pi— il nome del server.
+
+<P><LI>Il NetBIOS non fornisce un meccanismo di trasporto ed usa 
+generalmente il NetBEUI, che viene installato automaticamente assieme al
+supporto &os2; per il NetBIOS. Si pu• per• scegliere di installare il 
+"NetBIOS su TCP/IP", che usa come meccanismo di trasporto il TCP/IP.
+
+<P><LI>Il sistema operativo stesso supporta l'accesso alle risorse di rete
+mappando automaticamente i computer remoti con specificazioni file standard.
+Per esempio, si pu• assegnare una lettera di unit… ad un nome NetBIOS ed
+accedere alla risorsa usando la lettera di unit… ed il nome file, come se 
+la risorsa fosse presente sul proprio sistema.
+
+</UL>&os2; Š fornito con il &link_peer;
+che, se installato, supporta la condivisione di risorse con altri computer
+e l'accesso alle risorse remote nella propria rete locale.
+
+</BODY>
+</HTML>

@@ -1,0 +1,28 @@
+<HTML RESID=&ID_XSH_MEDIA_CODECS;>
+<HEAD>
+    <TITLE>
+        &xwp;: Codecs
+    </TITLE>
+</HEAD>
+<BODY>
+"Codec" Š un acronimo per "compressore/decompressore". Un codec Š necessario per 
+comprimere o decomprimere i contenuti di un file audio o video. Mentre il
+<I>formato</I> di un file (ad es. <CODE>.AVI</CODE> o <CODE>.WAV</CODE>)
+viene gestito da un IOProc (vedere pagina precedente), i <I>contenuti</I> di 
+un file sono gestiti da un codec.
+
+<P>Per esempio, MMPM/2 viene fornito con un IOProc
+per il formato file <CODE>.AVI</CODE>, ma non ha abbastanza codec per 
+comprendere tutti i formati di compressione solitamente utilizzati per i file AVI.
+
+<P>Il "FourCC" (codice di quattro caratteri) di un codec deve combaciare quello del IOProc.
+Lo stesso codec pu• essere installato diverse volte per diversi IOProcs. Per esempio,
+il codec "Intel Indeo" Š installato nell'IOProc per i file AVI. Ma se si disponesse di 
+un nuovo IOProc per qualche altro formato video (ad es. il ".MOV" di QuickTime), si potrebbe 
+utilizzare lo stesso codec per i file .MOV, dato che il formato di compressione Š lo stesso!
+Soltanto il formato del file cambia.
+
+<BR>
+</BODY>
+</HTML>
+

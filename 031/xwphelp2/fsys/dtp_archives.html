@@ -1,0 +1,110 @@
+<HTML RESID=&ID_XSH_SETTINGS_DTP_ARCHIVES;>
+<HEAD>
+    <TITLE>
+        &xwp;: Archiveren van de Werkplek
+    </TITLE>
+</HEAD>
+<BODY>
+<IFNDEF __NOXWPSETUP__>
+&xwp; vervangt de standaard OS/22 Archieven pagina met een uitgebreidere versie als de bijbehorende
+instelling "Vervang Wekplek archivering" in het
+<A HREF="objects/obj_xwpsetup.html"><B>&xwp;: Instellingen object</B></A>
+is ingeschakeld.
+</IFNDEF>
+Op deze pagina, kunt u gedetailleerd de criteria aangeven of en wanneer van uw Werkplek
+tijdens het opstarten een archief/reservekopie moet worden gemaakt.
+
+<P>Om een archief/reservekopie terug te zetten die door het Workplace Shell archiveringsmechanisme
+is gemaakt, druk u op Alt-F1 op het moment dat een klein venster met
+"&os2short;" wordt getoond tijdens het opstarten van het systeem.
+
+<IFNDEF __EWORKPLACE__>
+<P>Zie de <I>xWorkPlace User Guide and Reference</I> voor een introductie van deze mogelijkheid.
+Nogmaals, deze uitgebreide pagina verandert het archiveringsmechanisme zelf niet; het
+bepaalt alleen <I>of</I> het maken van archieven/reservekopie‰n is ingeschakeld, op de wijze die u hier
+heeft aangegeven.
+
+<P>De <B>Werkplek archiveren;</B> instelling bepaalt of &xwp; werkelijk enige
+archivering zal uitvoeren.
+</IFNDEF>
+
+<IFDEF __EWORKPLACE__>
+<P>De <B>Werkplek archiveren:</B> instelling bepaalt of er een reservekopie van de werkplek
+wordt gemaakt.
+</IFDEF>
+
+<P>Als deze instelling is ingeschakeld, kunt u in detail bepalen <I>wanneer</I>
+van uw Werkplek een archief/reservekopie moet worden gemaakt.
+Merk op dat al deze instellingen alleen maar worden uitgevoerd terwijl de Werkplek
+aan het opstarten is. U zult daarom de Werkplek opnieuw moeten starten om alle
+wijzigingen te zien:
+
+<UL>
+<IFNDEF __EWORKPLACE__>
+<LI><B>tijdens iedere Werkplek start</B> doet precies hetzelfde als de algemene
+reservekopie maken instelling van de oude WPS Reservekopie pagina. Als deze is
+ingeschakeld, zal van de Werkplek een reservekopie worden gemaakt iedere keer
+dat deze opstart.
+</IFNDEF>
+
+<IFDEF __EWORKPLACE__>
+<LI>Als <B>tijdens iedere Werkplek start</B> is aangekruisd, zal van de Werkplek
+een reservekopie worden gemaakt iedere keer als deze opstart. Dat is het hetzelfde
+als bij OS/2 Warp.
+</IFDEF>
+
+<P><LI><B>alleen tijdens de volgende Werkplek start</B> zal maar ‚‚nmaal een reservekopie van de
+Werplek maken.
+Na de volgende Werkplek start zal deze instelling automatisch worden uitgeschakeld.
+
+<P><LI>Het <B>na wijziging INI bestanden voor ... %</B> gaat over de
+<CODE>OS2.INI</CODE> en <CODE>OS2SYS.INI</CODE> bestanden. Gedurende de Werkplek start
+wordt een aantal controle berekeningen uitgevoerd om te bepalen hoeveel de inhoud van deze
+bestanden, t.o.v. de vorige Werkplek start zijn gewijzigd.<BR>
+Als deze berekening het percentage overschrijdt dat u heeft opgegeven in deze instelling
+wordt van uw Werkplek automatisch een reservekopie gemaakt.
+<BR>Gebruikelijke waarden hiervoor zijn 0,5 en 5 procent. Als u zeer lage waarden opgeeft,
+kan het zijn dat van uw Werkplek bij iedere start een reserve kopie wordt gemaakt.
+
+<P><LI>Het <B>elke xxx dagen</B> zal eenvoudig controleren wanneer de laatste reservekopie
+werd gemaakt; als meer dan het aantal dagen dat u heeft opgegeven is verstreken, wordt van
+uw Werkplek een reservekopie gemaakt.
+
+<P>Bedenk dat dit alleen de werkelijke kalender datum controleert, niet de hoeveelheid tijd
+(b.v. uren) die er verlopen zijn. Als u de Werplek ‚‚n minuut na middernacht start wordt
+van de Werkplek een reserve kopie gemaakt, zelfs als dat al gebeurd is even v¢¢r middernacht.
+
+</UL>De <B>Toon archiveringsstatus bij iedere Werkplek start</B> instelling bepaalt of &xwp;
+een ander status venster toont (dat het resultaat laat zien van de voorafgaande berekeningen)
+terwijl de Werkplek start. Dit kan handig zijn om uw instellingen te testen.
+
+<P>Met <B>Behoud xxx reservekopie‰n</B> kunt u opgeven hoeveel reservekopi‰n er moeten worden
+bewaard in de 'Archives' directory. Standaard is dat 3, maar u kunt, theoretisch, tot 9
+reservekopi‰n bewaren.
+Echter, als dit aantal meer is dan 3, zal het standaard scherm, dat verschijnt wanneer
+u Alt-F1 indrukt tijdens het starten van het systeem, gedeeltelijk onleesbaar zijn omdat
+de erbij komende archiefinformatie er voor zorgt dat de bovenzijde van het scherm verdwijnt.
+Het is niet erg, maar het staat vreemd.
+
+<!-- this section is all new with V1.0.4 -->
+<!-- Midified with 1.0.05 -->
+
+<P>Als <B>Toon bij iedere systeem start</B> is geselecteerd, laat het systeem automatisch het
+venster "Herstel opties" zien en u hoeft dan niet, tijdens het opstarten, op Alt-F1 te drukken om
+het te zien.
+
+<P>Gebruik <B>Tijdsduur</B> om aan te geven hoe lang het systeem, tijdens het opstarten,
+het "Herstelopties" venster moet laten zien. U kunt geen waarde opgeven als geen waarde opgeven
+indien "Altijd afbeelden bij opstarten" niet is geselecteerd.
+
+<P>U kunt een tijdsduur instellen van 0 tot 999 seconden. Als u 0 opgeeft, zal het systeem niet
+starten totdat u een keuze heeft gemaakt uit het 'Herstelopties' venster.
+Als u een tijdsduur selecteert tussen 1 en 999, wordt het venster "Herstelopties" afgebeeld totdat
+het aantal seconden dat u heeft gespecificeerd is verlopen of totdat u een hersteloptie kiest, wat het
+eerste komt. Als de tijdsduur verstrijkt voordat u een hersteloptie kiest, gaat het systeem door met
+opstarten en gebruikt de huidige actieve systeembestanden.<BR>
+
+<BR>
+</BODY>
+</HTML>
+

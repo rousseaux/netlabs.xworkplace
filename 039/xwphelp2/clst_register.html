@@ -1,0 +1,34 @@
+<HTML RESID=&ID_XFH_REGISTERCLASS;>
+<HTML>
+<HEAD>
+    <TITLE>
+        Registrare una nuova classe
+    </TITLE>
+</HEAD>
+<BODY>
+Questa finestra permette di registrare una nuova 
+<A HREF="glossary/gls_wpsclasses.html">classe WPS</A>.
+E' necessario conoscere sia la 
+<A HREF="glossary/gls_dll.html">libreria (DLL)</A>
+che contiene
+tale classe, sia il nome esatto di tale classe. &xwp; non pu• trovare da solo queste informazioni.
+<P>Nel campo <B>"DLL"</B>, specificare la libreria a collegamento dinamico che contiene la classe.
+Se la DLL si trova nel 
+<A HREF="glossary/gls_path_sys.html"><CODE>LIBPATH</CODE></A>
+non Š necessario indicarne il 
+<A HREF="glossary/gls_path.html">percorso</A>
+completo.
+Altrimenti premere "Sfoglia..." per trovare la DLL con il suo percorso completo.
+<P>Nel campo  <B>"Classe"</B> inserire il nome esatto della classe da registrare.
+Si noti che, a differenza di quanto succede coi nomi dei file, i nomi delle classi sono sensibili alla differenza tra maiuscolo e minuscolo.
+Se il nome Š sbagliato, o se si confondono maiuscole con minuscole, la registrazione della classe fallisce.
+<P>Il tasto <B>OK</B> Š disabilitato finch‚ non si sono riempiti entrambi i campi.
+Non viene eseguito nessun controllo automatico; premendo <B>OK</B> si registra la classe usando
+l'API <A HREF="pmref.inf#WinRegisterClass"><CODE>WinRegisterClass</CODE></A><A HREF="_toolkitlink.html">*</A>.
+
+<P>Nella maggior parte dei casi la nuova classe pu• essere usata subito, senza dover 
+riavviare la Scrivania.
+<BR>
+</BODY>
+</HTML>
+

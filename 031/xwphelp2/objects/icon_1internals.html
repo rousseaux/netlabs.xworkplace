@@ -1,0 +1,75 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: Object details venster
+    </TITLE>
+</HEAD>
+<BODY>
+Het "Details:" veld laat u veel interne object gegevens zien waar u
+wel of niet in ge‹nteresseerd bent. Veel hiervan is voornamelijk interessant voor programmeurs.
+
+<P>Deze informatie is gegroepeerd in een boomstructuur, die op een
+vergelijkbare manier als een mapstructuur weergave te gebruiken is. Echter, de meeste informatie
+in deze map is <I>alleen-lezen,</I> oftewel kan niet aangepast worden
+(uitgezonderd het "Object ID" gegeven).
+
+<P>De <B>"Object ingang"</B> is een vijfcijferig hexadecimaal getal dat het object
+uniek identificeert op uw systeem.
+Abstracte objecten krijgen altijd object ingangen, terwijl bestandssysteem objecten
+die niet altijd hoeven te hebben.
+
+Denk er om dat object ingangen niet gebruikt kunnen worden om objecten te identificeren op andere dan uw
+eigen systeem: dat kan niet. Ga er bijvoorbeeld eens vanuit dat de "Informatie" map op het systeem van
+uw buurman dezelfde object ingang heeft als die op uw systeem.
+Object ingangen verwijzen alleen naar objecten op <I>uw</I> computer.
+
+<P>Zie:
+<a href="glossary/gls_objhandle.html">Object ingangen</a>
+voor een introductie.
+
+<P>Het <B>"Object ID"</B> kan echter ook op andere computers bestaan. Object ID's hebben
+altijd het volgende formaat <CODE>&lt;OBJECTID&gt;</CODE> en worden gebruikt om naar
+objecten te verwijzen zonder te weten waar ze in werkelijkheid staan.
+Zie:
+<A HREF="glossary/gls_objids.html">Object IDs</A>
+voor een introductie.
+
+<P>Het "Object ID" veld kan <B>aangepast</B> worden door er op te klikken met de "Alt" toets ingedrukt.
+Wees echter voorzichtig met het wijzigen van object ID's. Sommige programma's kunnen afhankelijk zijn van
+bepaalde ID's.
+
+<P>De <B>"Objectstijl"</B> boomstructuur laat u WPS-interne objectvlaggen zien. De
+objectstijl vlaggen bepalen alleen het WPS gedrag, bijvoorbeeld, als de "Niet kopi‰ren"
+vlag is geselecteerd, dan kunt u, vanaf de WPS, geen sleep-kopieer actie op het bestand doen.
+Denk er om dat deze vlaggen normaliter los staan van de
+<A HREF="glossary/gls_fattrs.html">&xwp; Bestandskenmerken bits</A>,
+oftewel een bestand kan de "niet verwijderen" vlag hebben staan, maar kan vervolgens toch
+via de opdrachtregel verwijderd worden.
+
+<P>De <B>"Object gebruik"</B> boomstructuur laat u extra interne objectgegevens zien.
+Deze gegevens zijn voornamelijk handig voor programmeurs en geven de informatie weer
+die terugkomt van de
+<A HREF="wpsref.inf#wpFindUseItem"><CITE>wpFindUseItem</CITE></A>
+methode. Zie:
+<A HREF="_toolkitlink.html"><B>*</B></A>.
+
+<IFNDEF __EWORKPLACE__>
+<P>&xwp; voegt bij mappen ook de <B>"Map gegevens"</B> boomstructuur toe.
+Deze bevat vlaggen die gegevens vertegenwoordigen die teruggegeven worden bij de
+<A HREF="wpsref.inf#wpQueryFldrFlags"><CITE>wpQueryFldrFlags</CITE></A>
+<A HREF="_toolkitlink.html"><B>*</B></A>
+methode, bijvoorbeeld of de map opgebouwd is of niet.
+</IFNDEF>
+
+<IFDEF __EWORKPLACE__>
+<P>De <B>"Map gegevens"</B> boomstructuur bevat vlaggen
+die gegevens vertegenwoordigen die teruggegeven worden bij de
+<A HREF="wpsref.inf#wpQueryFldrFlags"><CITE>wpQueryFldrFlags</CITE></A>
+<A HREF="_toolkitlink.html"><B>*</B></A>
+methode, bijvoorbeeld of de map opgebouwd is of niet.
+</IFDEF>
+
+<BR>
+</BODY>
+</HTML>
+

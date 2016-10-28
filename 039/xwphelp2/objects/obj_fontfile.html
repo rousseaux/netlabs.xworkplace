@@ -1,0 +1,46 @@
+<HTML RESID=&ID_XSH_FONTFILE;>
+<HEAD>
+    <TITLE>
+        &xwp;: file tipo di carattere
+    </TITLE>
+</HEAD>
+<BODY>
+Se la cartella <A HREF="objects/obj_fontfdr.html">Tipi di carattere</A> Š installata,
+&xwp; considera automaticamente come "file font" tutti i file dati presenti
+nel sistema che sembrino file tipo di carattere.
+
+<P>I file font differiscono dai file di dati normali solo per gli aspetti riportati
+qui di seguito:
+
+<UL><LI>viene ad essi assegnato automaticamente il tipo file "Font file";
+
+<P><LI>se non esiste gi… un associazione per quel tipo (o per quell'estensione di file), 
+ai file tipo di carattere Š assegnata una propria icona specifica;
+
+<P><LI>i file font sono gli unici file che si possono trascinare nella cartella Tipi di 
+carattere, il che permette di installarli comodamente.
+
+</UL>Correntemente sono considerati file tipo di carattere tutti i file 
+con le estensioni seguenti:
+
+<UL><LI><CODE>.TTF</CODE>, <CODE>.TTC</CODE>: sono le estensioni caratteristiche dei file font TrueType.
+<IFNDEF __EWORKPLACE__>
+Si presume che il sistema  &os2; possa visualizzare i tipi di carattere TrueType, il che Š vero nel caso di 
+Warp 4 (e superiori). Con Warp 3, Š necessario installare il motore FreeType/2 -- raccomandato anche 
+per Warp 4,  dato che ha una resa grafica migliore rispetto al motore interno.
+</IFNDEF>
+
+<P><LI><CODE>.OFM</CODE>: sono i file speciali che permettono a &os2; di accedere
+ai tipi di carattere Adobe Type-1 (con l'estensione <CODE>.PFB</CODE>). Perch‚ sia possibile installare un 
+file font Type-1 in &os2;, Š necessario sia il file <CODE>.OFM</CODE> che quello 
+<CODE>.PFB</CODE>, anche se solo il file <CODE>.OFM</CODE> sar… effettivamente conservato
+nel registro tipi di carattere del sistema (ed Š per questo che solo il file <CODE>.OFM</CODE> diventa 
+un file tipo di carattere &xwp;).
+
+<P><LI>I file <CODE>.FON</CODE> rappresentano tipi di carattere bitmap. Anche se appaiono 
+correttamente nella cartella Tipi di carattere, con questi file possono esserci problemi
+nella visualizzazione del testo di esempio.
+</UL>
+</BODY>
+</HTML>
+

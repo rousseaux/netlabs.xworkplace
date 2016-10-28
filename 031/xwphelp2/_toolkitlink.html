@@ -1,0 +1,38 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: Opmerkingen over 'Toolkit' documentatie koppelingen
+    </TITLE>
+</HEAD>
+
+<BODY>
+Koppelingen vanuit deze documentatie naar de documentatie van de 'Toolkit' werken alleen
+als aan de volgende voorwaarden is voldaan:
+
+<OL><LI>U moet de 'Toolkit' ge‹nstalleerd hebben. De 'Toolkit' zorgt voor de
+nodige hulpmiddelen, documentatie, koptekst en bibliotheek bestanden voor het
+programmeren onder het &os2; besturingssysteem.
+<IFDEF __EWORKPLACE__>
+De 'Toolkit' staat op de eComStation installatie CD #2 en kan worden ge‹nstalleerd.
+</IFDEF>
+<IFNDEF __EWORKPLACE__>
+De 'Toolkit' staat op de installatie Cd's van de IBM Convenience
+Packs.
+</IFNDEF>
+
+<P><LI>De 'Toolkit' documentatie omgevingsvariabelen moeten in &cfgsys; worden
+ingesteld. B.v., <CODE>SET CPREF=CP1.INF+CP2.INF+CP3.INF</CODE> geeft aan dat
+bij gebruik van <CODE>view cpref</CODE>, u de volledige
+<I>Control Program Programming Guide and Reference</I> kunt openen, zelfs al bestaat
+die uit drie INF boeken.
+
+<P><LI>De 'Toolkit' INF boeken moeten in een directory staan op de
+<CODE>BOOKSHELF</CODE> (zie <A HREF="glossary/gls_path_sys.html">&xwp; Systeempaden</A>)
+
+</OL>Aan deze voorwaarden wordt voldaan als u het 'Toolkit' installatieprogramma
+heeft toegestaan de <B>CONFIG.SYS</B> aan te passen.
+
+<BR>
+</BODY>
+</HTML>
+

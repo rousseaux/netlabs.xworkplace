@@ -1,0 +1,78 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        xfix: Voorgrondmenu en sneltoetsen
+    </TITLE>
+</HEAD>
+<!-- this page is new with V1.0.9 -->
+<BODY>
+Dit beschrijft de opdrachten in het xfix <B>Voorgrondmenu</B> en zijn sneltoetsen (zie
+<A HREF="xfix_menus.html">Menubalk opdrachten</A> voor een beschrijving van de opties
+die beschikbaar zijn in de hoofdmenubalk).
+<P><B>Voorgrondmenu</B>
+<UL><LI><B>Verplaats abstracts naar de werkplek</B> verplaatst niet-bestand objecten
+toegewezen aan deze map naar de &link_desktop;. Zij zullen daar blijven staan tot de
+WPS opnieuw gestart is.
+Dit menu onderdeel is alleen maar beschikbaar als een enkele ingang is geselecteerd -- u
+kunt niet in ‚‚n keer objecten uit meerdere mappen verplaatsen.
+<P>Gebruik deze opties voordat u een ingang wist die
+<CODE>Abstract objecten</CODE> in de "Referenties" kolom laat zien. Anders worden
+deze objecten tezamen met de ingang gewist.
+<P><LI><B>Verwijder map posities</B> verwijdert de <CODE>OS2.INI</CODE> toegang die de
+grootte en de positie bevat van mapvensters en van WPS Instellingen notitieblokken.
+Het is altijd veilig deze ingangen te wissen omdat zij niet kritisch zijn. In het ergste
+geval moet u de afmetingen en positie wijzigen als u het venster de volgende maal opent. <P><LI><B>Verwijder
+object ID</B> wist de op tekst gebaseerde identificatie gekoppeld aan dit object. Object
+ID's worden gebruikt door programma's en REXX scripts om een object te vinden zonder zijn
+exacte naam of locatie te weten. Deze ingangen moeten waarschijnlijk niet worden
+gewist tenzij u zeker weet dat zij niet nodig zijn.
+<P><LI><B>Wissen</B> markeert een ingang met <IMG SRC="img/xfix_delete.gif"> om te wissen.
+Het feitelijke wissen zal niet plaatsvinden totdat u of "Nu wissen" kiest uit het
+"Acties" menu of "Terugschrijven naar OS2SYS.INI..." uit het "xfix" menu heeft gekozen.
+<P>Als het wissen van een ingang veroorzaakt dat andere ingangen <B>wezen</B> worden
+(omdat u hun ouder ingang heeft gewist), worden de betrokken ingangen gemarkeerd met
+<IMG SRC="img/xfix_orphan.gif"> en de Status kolom zal <B>"Mogelijk wees"</B> laten zien.
+Tenzij u van plan bent de wezen te wissen, moet u beslist de ingang niet wissen die deze waarschuwing
+veroorzaakte.
+<P>Opm.: indien een ingang is gemarkeerd met <IMG SRC="img/xfix_error.gif"> ongeldig of
+met <IMG SRC="img/xfix_orphan.gif"> wees wordt gewist, wordt het aantal ongeldige of
+wezen objecten in de statusbalk verlaagd. Bij wezen wordt de fout beschrijving in de
+statusbalk ook verwijderd. <P><LI><B>Niet wissen</B>
+verwijdert de <IMG SRC="img/xfix_delete.gif"> van een ingang dus wordt hij niet gewist. Als
+de ingang eerder was gemarkeerd met <IMG SRC="img/xfix_error.gif"> ongeldig of <IMG SRC="img/xfix_orphan.gif">
+wees gemaakt, worden deze pictogrammen opnieuw opgeslagen en verschijnt de fout
+beschrijving opnieuw in de Status kolom.
+<P><LI><B>Beveiligen</B> markeert een ingang met <IMG SRC="img/xfix_protect.gif"> dus kan
+hij niet per ongeluk worden gewist. De ingangen voor alle mappen op het beschermde object
+pad worden gemarkeerd met <IMG SRC="img/xfix_safe.gif"> dus zijn ook beveiligd tegen
+wissen. Pogingen om ‚‚n van deze ingangen te wissen worden genegeerd. Als zij reeds voor
+wissen zijn gemarkeerd met <IMG SRC="img/xfix_delete.gif">
+zullen zij niet worden gewist. Ingangen die zijn gemarkeerd als ongeldig
+<IMG SRC="img/xfix_error.gif"> kunnen niet worden beveiligd.
+<P>Opm.: u kunt "Auto-beveiligen" gebruiken uit het "Acties" menu om automatisch alle
+belangrijke ingangen te beveiligen. Dit zal fouten voorkomen die uw Werkplek kunnen
+vernietigen. Zie:
+<A HREF="xfix_menus.html">Menubalk opdrachten</A> voor meer details,
+<P><LI><B>Verwijderd beveiliging</B> verwijdert <IMG SRC="img/xfix_protect.gif">
+van de beschermde ingang. De <IMG SRC="img/xfix_safe.gif"> toegewezen aan mappen in
+het beveiligd ingangen pad zullen ook worden verwijderd als geen andere beveiligde
+ingang er gebruik van maakt.
+<P>Opm.: ingangen die gemarkeerd zijn met <IMG SRC="img/xfix_safe.gif"> kunnen niet
+direct niet beveiligd worden. U moet de ingang die het probleem veroorzaakt niet
+beveiligen om beschermd te zijn tegen wissen (diegene gemarkeerd met <IMG SRC="img/xfix_protect.gif">).
+Omdat verschillende beveiligde ingangen een bijzonder map in hun pad kunnen hebben,
+moet u van allemaal de beveiliging opheffen. U kunt "Verwijder alle beveiligingen"
+gebruiken uit het "Acties" menu om de beveiliging van iedere ingang te verwijderen.
+</UL>
+
+<P><B>Sneltoetsen</B>
+
+<P>Anders dan de overeenkomende menu onderdelen, schakelen deze sneltoetsen de
+instelling: van uit naar aan, en dan terug naar uit.
+<UL><LI><B>Wissen</B> - <CODE>Delete</CODE> toets of <CODE>Ctrl+D</CODE>
+<P><LI><B>Beveiligen</B> - <CODE>Ctrl+P</CODE>
+</UL>
+
+</BODY>
+</HTML>
+

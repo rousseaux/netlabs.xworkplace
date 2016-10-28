@@ -1,0 +1,41 @@
+<HTML RESID=&ID_XFH_CLOSEVIO;>
+<HEAD>
+    <TITLE>
+        &xshutdown;: chiusura sessioni non-PM
+    </TITLE>
+</HEAD>
+<BODY>
+La finestra "Impossibile chiudere ..." appare quando la &xshutdown; di &xwp; incontra
+una sessione non-Presentation Manager (PM) &os2; o DOS, &winos2;, a schermo
+intero o in finestra.
+
+<P>Dato che non vi Š una maniera prestabilita per chiudere questo tipo di sessioni, la &xshutdown;
+chiede istruzioni sul da farsi. Sono possibili le seguenti azioni:
+
+<UL><BR><LI><B>"Ignora sessione"</B> <I>non chiude</I> la sessione, limitandosi ad ignorarla, 
+come si premesse il tasto "Ignorare" nella finestra di stato della &xshutdown;.
+
+<BR><LI><B>"Chiudi finestra PM"</B> simula la voce di menu "Chiudere" del menu di sistema 
+della sessione; dovrebbe funzionare sia con le finestre VIO che con le sessioni a schermo pieno, dato che anche
+queste ultime sono rappresentabili con un'icona ridotta sulla Scrivania. Pu• portare per• ad un'altra
+finestra di conferma, con la quale &os2; chiede se si sicuri di voler chiudere la sessione.
+
+<BR><LI><B>"Termina sessione"</B> termina la sessione senza ulteriori indugi, utilizzando l'API
+<CODE>DosKillProcess</CODE> contro il processo che gestisce la sessione.
+
+</UL>Si noti bene che nessuno di questi metodi permette di salvare i dati della sessione.
+Per salvare i dati di una certa sessione Š necessario farlo prima e solo poi chiudere manualmente la finestra.
+Una volta fatto questo, la &xshutdown; proceder… automaticamente.
+
+<P>Se la casella <B>"Memorizza impostazioni..."</B> Š attivata, la &xshutdown; considerer… la scelta fatta 
+come azione assunta per tutte le sessioni che dovessero avere lo stesso titolo di quella appena chiusa: 
+attivare questa casella aggiunge il titolo della sessione all'elenco
+di voci registrate per la chiusura automatica, visibile dalla finestra 
+<A HREF="xshutdown/xsd_autoclose.html">"Dettagli chiusura automatica..."</A> 
+alla pagina "&xshutdown;"
+del <A HREF="glossary/gls_notebook.html">blocco appunti impostazioni</A> della Scrivania.
+
+<BR>
+</BODY>
+</HTML>
+

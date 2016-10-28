@@ -1,0 +1,69 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: nomi reali
+    </TITLE>
+</HEAD>
+<BODY>
+Mentre, per definizione, tutti gli oggetti WPS hanno un nome associato ad essi,
+gli oggetti del file-system (cioŠ i 
+&link_datafiles;
+e le &link_folders;
+che risiedono fisicamente nel 
+<A HREF="glossary/gls_fs.html">file system</A>)
+sono i soli ad avere anche un "nome fisico".
+Si tratta del nome del file cui punta l'oggetto del file-system 
+e che si trova materialmente sul disco; Š lo stesso nome visualizzabile
+con il comando <a href="cmdref.inf#dir"><CODE>DIR</CODE></a>
+in una <a href="glossary/gls_cmd.html">finestra comandi</a> &os2;.
+
+<P>Nella maggior parte dei casi il nome fisico Š uguale al nome dell'oggetto
+(visibile nella pagina "Icona"); tuttavia i nomi nei file system presentano delle limitazioni.
+
+<P>Per quel che riguarda i <I>nomi</I> degli oggetti, l'unica restrizione Š che non possono essere
+pi— lunghi di 256 caratteri e l'uso del carattere backslash (<CODE>\</CODE>)
+Š vietato.
+<P>Invece, a seconda del <A HREF="glossary/gls_fs.html">file-system</A> su cui risiede l'oggetto,
+al <I>nome fisico</I> si applicano le limitazioni seguenti:
+
+<UL><LI>Nel caso di file system FAT, i nomi dei file sono limitati ad una lunghezza di 8 caratteri, pi—
+un'estensione di 3 caratteri. Inoltre non Š possibile usare nei nomi di file i seguenti caratteri
+
+<P><CODE>&lt; &gt; | + = : ; , " / [ ]</CODE>
+
+<P>Infine, il file system FAT ignora le differenze tra caratteri maiuscoli e minuscoli.
+
+<P><LI>Nel caso dei file system installabili (IFS), come HPFS o JFS, il nome del file
+pu• essere lungo fino a 254 caratteri e non Š previsto nulla di specifico per l'estensione del nome file.
+Tuttavia restano dei caratteri non utilizzabili:
+
+<P><CODE>&lt; &gt; | : " / </CODE>
+
+</UL>Il carattere backslash (<CODE>\</CODE>) Š naturalmente vietato in ogni file system, dato che serve
+ad &os2; come separatore di <A HREF="glossary/gls_path.html">percorso</A>.
+
+<P>Se il nome dell'oggetto nel file-system object obbedisce a queste limitazioni il nome fisico non sar… 
+differente dal nome dell'oggetto.
+<I>In caso contrario</I> la WPS modifica il nome dell'oggetto in modo da renderlo conforme,
+troncandolo alla lunghezza massima consentita e rimpiazzando i caratteri non permessi con punti
+esclamativi (<CODE>!</CODE>).
+Il nome originale Š salvato nell'<A HREF="glossary/gls_eas.html">attributo esteso</A>
+<CODE>.LONGNAME</CODE> dell'oggetto.
+
+<P>In una situazione del genere il "nome fisico" visibile con il comando
+<CODE>DIR</CODE> dalla linea di comando &os2; Š differente dal titolo dell'icona nella cartella WPS.
+
+<P>Due esempi:
+
+<OL><LI>Il nome della cartella Š <CITE>NomeLungoDiCartella</CITE> e la cartella si trova
+su un'unit… FAT: il <A HREF="glossary/gls_path.html">percorso</A> visualizzato dalla 
+pagina "File" nel blocco impostazioni della cartella sar… soltanto
+<CITE>C:\NOMELUNG</CITE>.
+
+<P><LI>Il nome della cartella Š<CITE>Spese\Tasse</CITE>: il nome fisico sar…
+<CITE>Spese!Tasse</CITE> (se la cartella Š su un'unit… HPFS o JFS).
+</OL>
+
+</BODY>
+</HTML>
+

@@ -1,0 +1,120 @@
+<HTML SUBLINKS="xxx" WIDTH=70% XPOS=right>
+<HEAD>
+    <TITLE>
+        Il logo di avvio
+    </TITLE>
+</HEAD>
+<BODY>
+<B>Classe: XFldObject</B><HR>
+XFolder 0.85 ha introdotto la possibilit… di visualizzare un'immagine bitmap
+definita dall'utente durante l'avvio della Scrivania. Con &xwp; 0.9.0, una
+nuova pagina "Avviamento" Š stata inserita nel blocco impostazioni della
+Scrivania per configurare facilmente questa funzione.
+
+<P> Il logo di avvio rimane visibile fino alla completa inizializzazione di
+WPS, dopodich‚ scompare senza consumare ulteriormente le risorse di sistema.
+
+<P> La pagina <B>"Avviamento" nel blocco impostazioni della Scrivania</B>
+permette di definire bitmap di avvio e stile. Per altre informazioni, premere
+il bottone "Aiuto" nella pagina.
+
+<P> Ho incluso tre logo di avvio con &xwp;:
+<UL><LI><CODE>xfolder.bmp</CODE> (immagine predefinita) Š una variazione del
+vecchio logo di XFolder. Dovrebbe essere correttamente gestita anche dai
+sistemi meno potenti.
+<LI><CODE>os2warpx.bmp</CODE> Š un design alternativo,
+che gradisco maggiormente, che potrebbe per• impiegare troppo tempo per
+essere mostrato su sistemi pi— vecchi e meno potenti. Sul mio Pentium-133,
+richiede circa due secondi per apparire sullo schermo.
+<LI><CODE>penguin.bmp</CODE> Š introdotto a partire dalla ver. 0.9.0. Ô il
+ben noto pinguino di Linux con aggiunto il logo &os2;.
+</UL>
+Nell'<B>usare delle bitmap personali</B> si tengano a mente le seguenti note:
+
+<OL><LI>Il logo di avvio deve essere una <B>bitmap OS/2 1.3 non
+compressa</B>. Le bitmap V2.0 non verranno caricate. Ho dovuto includere un mio
+codice per caricare bitmap, poich‚ all'avvio della Scrivania le classi
+multimediali WPS non sono ancora in azione. Ô possibile usare PMView oppure
+le stesse classi multimedia WPS per convertire file esistenti in formato 1.3.
+
+<P><LI>La trasparenza viene calcolata in accordo al pixel in basso a sinistra
+della bitmap. Dunque tutti i pixel dello stesso colore di quello in (0, 0)
+saranno resi trasparenti.
+
+<P><LI>Ô bene prestare molta attenzione nel sostituire queste bitmap. I calcoli
+di trasparenza sono molto impegnativi. Se si usa una bitmap 500x500 con met…
+dei pixel trasparenti, il sistema pu• restare bloccato per molti minuti.
+Intendo <I>blocccato</I> perch‚ la maggior parte del tempo di calcolo Š
+impegnata dal Presentation Manager (PM), il che normalmente rende impossibile
+all'utente usare l'intero sistema.
+
+<P>Se le cose andassero male e la WPS non dovesse pi… avviarsi, riavviate il
+sistema <B>tenendo premuto il tasto "Maiusc"</B> durante il caricamento della
+WPS. Si aprir… la finestra di dialogo <A HREF="xsd_01intro.html">"Panico"</A>
+da cui si potr… disabilitare il logo di avvio.
+
+<P> Dato che il PM Š stato progettato solo per finestre rettangolari, il modo
+in cui queste finestra "sagomate" vengono realizzate consiste nell'analisi
+pixel per pixel della finestra, e la creazione di varie finestre PM
+corrispondenti alle aree non trasparenti, rettangolari, esistenti nella bitmap.
+
+<P> Per questo motivo si presti molta attenzione alla trasparenza. Pi— numerose
+sono le aree non rettangolari trasparenti nella bitmap, pi— finestre sar…
+necessario creare.
+
+<P> Esempio:
+<PRE>         ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+         ³                    ³
+         ³   11111111111111   ³
+         ³   11111111111111   ³
+         ³   2222      3333   ³
+         ³   44444444444444   ³
+         ³   44444444444444   ³
+         ³                    ³
+         ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ</PRE>
+
+(dove " " Š un pixel trasparente) porter… alla creazione di quattro
+sottofinestre (segnate come "1"-"4").
+
+<P> Se si hanno trasparenze diagonali o comunque non rettangolari, una o pi—
+sottofinestre dovranno essere create <I>per ogni linea</I> della bitmap, cosa
+che pu• impegnare pesantemente PM.
+
+<P> Altro esempio:
+<PRE>         ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+         ³                    ³
+         ³   111111111        ³
+         ³    2222  333       ³
+         ³     44     55      ³
+         ³      666 777777    ³
+         ³       8888888888   ³
+         ³        9999999999  ³
+         ³                    ³
+         ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ</PRE>
+
+Questo esempio crea gi… nove finestra: una per la linea superiore, due ciascuna
+per le linee successive e una per ognuna delle linee di base. Si immagini
+un'immagine con 500 linee: si dovrebbero creare almeno 500 sottofinestre.
+
+<P> Spieghiamoci meglio: non Š la lettura della bitmap a richiedere molto tempo
+di CPU, ma la creazione delle sottofinestre. Grandi bitmap non daranno problemi
+se ci sono poche trasparenze, oppure solo trasparenze rettangolari.
+
+<P>Ho personalmente osservato questo problema quando accidentalmente ho fatto
+il dithering di una bitmap con la tavolozza di colori del sistema.
+Immediatamente sono state create migliaia di aree trasparenti e non,
+alternate (dato che lo sfondo che desideravo era appunto in dithering).
+
+<P> La bitmap di partenza aveva circa 100 linee ed ha causato la generazione di
+diverse migliaia di finestre! Dopo un paio di minuti sono stato costretto a
+premere Ctrl-Alt-Canc.
+
+<P>Prestate dunque attenzione: provando con bitmap piccole si pu• vedere come
+si comporta il sistema. Per bitmap grandi, provate a rendere rettangolari le
+aree trasparenti e non usate il dithering ma solo colori solidi.
+
+</OL>
+<BR>
+</BODY>
+</HTML>
+

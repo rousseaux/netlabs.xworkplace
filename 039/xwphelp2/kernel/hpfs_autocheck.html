@@ -1,0 +1,33 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        Kernel &os2;: controllo automatico HPFS 
+    </TITLE>
+</HEAD>
+<BODY>
+
+Il campo <B>"Autocheck"</B> corrisponde al parametro
+/AUTOCHECK:xxx nella riga relativa ad HPFS o ad HPFS386 nel file &cfgsys;.
+Serve a specificare per quali volumi &os2; esegue automaticamente il 
+<CITE>CHKDSK</CITE> all'avvio del sistema.
+<P>Inserire la lettera identificativa dell'unit… (senza i due punti "<CITE>:</CITE>").
+Se il sistema non Š stato fermato correttamente (ad esempio per un'interruzione dell'alimentazione) &os2; 
+al successivo riavvio controller… automaticamente tutte le unit… qui elencate.
+
+<P>Inoltre, se si specifica un segno ("<CITE>+</CITE>")
+<I>prima</I> della lettera identificativa di unit…, tale unit… sar… controllata ad ogni avvio (il che non Š generalmente
+auspicabile).
+<P>Per esempio: se si digita "<CITE>C+DE</CITE>", l'unit… D: sar… controllata ad ogni avvio, le unit…
+C: ed E: solo in caso di bisogno.
+
+<P><B>Nota bene:</B> il controllo automatico Š assolutamente indispensabile per i volumi HPFS;
+partizioni HPFS "sporche" causano errori di sistema. Bisogna elencare tutti i volumi
+HPFS, altrimenti &os2; all'avvio dar… un messaggio di errore. Questo vale in misura particolare per
+quello di avvio, altrimenti &os2; non sar… in grado di avviare il sistema in caso di errato spegnimento o di blocco.
+<P>Premere il tasto <B>"Proporre"</B> per inserire automaticamente nel campo tutte le unit… HPFS.
+
+<BR>
+</BODY>
+</HTML>
+
+

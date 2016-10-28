@@ -1,0 +1,57 @@
+<HTML WIDTH=70% XPOS=right>
+<HEAD>
+    <TITLE>
+        Passo 5: dialog impostazioni
+    </TITLE>
+</HEAD>
+<!-- This is all new with V0.9.9. -->
+<BODY>
+Le dialog di impostazioni possono essere mostrate dallo &xcenter; per perfezionare
+i dati dell'istanza di un certo elemento. Un esempio di una dialog di impostazioni
+Š la dialog "Filtri" mostrata dall'elemento standard "Elenco finestre",
+distribuito con &xwp;.
+
+<P>Le dialog di impostazioni richiedono un impianto pi— ampio. La cosa pi—
+importante da ricordare Š che lo &xcenter; <I>non</I> invoca una dialog di
+impostazioni su un elemento dello &xcenter; aperto, ma soltanto su una
+<I>stringa di impostazioni</I>.
+
+<!-- V0.9.14: changed the following -->
+<P>Ci• Š stato fatto in modo che le dialog di impostazioni possano essere 
+mostrate per un elemento, anche se questo non Š correntemente visibile (ossia,
+non esiste correntemente come finestra). Questo permette allo &xcenter; di
+mostrare le dialog di impostazioni sia dalla voce di menu "Propriet…" (correggi!)
+in un menu contestuale dell'elemento, sia dal menu contestuale della pagina
+"Elementi" nel blocco impostazioni dello &xcenter; --- anche se lo &xcenter; 
+stesso non Š attualmente aperto.
+<!-- end V0.9.14 -->
+
+<P>In sostanza, per supportare le dialog di impostazioni, la classe widget
+deve fare le seguenti cose:
+
+<OL><LI>Nella definizione della classe elemento
+(<A HREF="plug_9xcenterwidgetclass.html"><CODE>XCENTERWIDGETCLASS</CODE></A>), 
+impostare il campo <CODE>pShowSettingsDlg</CODE> alla funzione nella DLL usata
+per mostrare la dialog di impostazioni.
+
+<P>Questa funzione deve avere il seguente prototipo:
+
+<P><CODE>typedef VOID EXPENTRY ShowSettingsDialog(PWIDGETSETTINGSDLGDATA pData);</CODE>
+
+<P><LI>Quando lo &xcenter; deve invocare la dialog (per esempio a causa di una
+selezione da menu contestuale ), esso chiamer… esattamente questa funzione, che
+dovrebbe fare un <CODE>WinDlgBox</CODE> e non ritornare fino alla chiusura
+della dialog (tramite pressione di "OK" o "Annullare").
+
+<P>Tale funzione riceve un puntatore a una struttura temporanea di tipo
+<A HREF="plug_9widgetsettingsdlgdata.html"><CODE>WIDGETSETTINGSDLGDATA</CODE></A>,
+che lo &xcenter; ha composto per la dialog di impostazioni. In essa, le dialog
+di impostazioni possono sapere se l'elemento Š attualmente visibile.
+
+</OL>Per dettagli, si consulti il codice di "Window list" <CODE>src\widgets</CODE>
+nei sorgenti di &xwp;.
+<BR>
+</BODY>
+</HTML>
+
+

@@ -1,0 +1,30 @@
+<HTML XPOS=right WIDTH=70%>
+<HEAD>
+    <TITLE>
+        Introduzione
+    </TITLE>
+</HEAD>
+<BODY>
+Per cambiare le impostazioni di un certo oggetto usando il REXX, si usino le
+seguenti funzioni RexxUtil:
+<PRE>rc = SysSetObjectData(<I>name</I>, <I>setup</I>)</PRE>
+<P>dove:
+<P><CODE><I>name</I></CODE> Š l'oggetto che si desidera cambiare (riferito da
+un percorso completo o un ID di oggetto, come <CODE>&lt;WP_DESKTOP&gt;</CODE>);
+<P><CODE><I>setup</I></CODE> Š una stringa di impostazione di WPS, che ha sempre
+sintassi <CODE><I>keyword</I>=<I>data</I></CODE>. Parecchie impostazioni possono
+essere combinate separandole da un punto e virgola (<CODE>;</CODE>).
+<P>Esempio:
+
+<PRE>  if SysSetObjectData(directory(),"NOMOVE=YES;DEFAULTVIEW=ICON") then
+    Say "Impostazioni cambiate!"
+</PRE>
+
+<P>Questo cambier… le impostazioni di cartella per la directory corrente, cosa utilissima
+per script chiamati da XFolder nel caso si sia gi… passati automaticamente ad una directory
+differente.
+<P>Consultare le <A HREF="rexx.inf#syssetobjectdata">Informazioni sul REXX di &os2;</A> per dettagli.
+<BR>
+</BODY>
+</HTML>
+

@@ -1,0 +1,86 @@
+<HTML NOSUBLINKS="config"  WIDTH=70% XPOS=right>
+<HEAD>
+    <TITLE>
+        Utilizzare tasti funzione speciali
+    </TITLE>
+</HEAD>
+<BODY>
+<B>Classe: XWPKeyboard</B>
+<HR>
+Partendo dalla V0.9.3, &xwp; permette di dare, ad alcuni tasti normalmente non considerati
+sotto &os2;, un significato speciale. ‘ possibile usare questi tasti extra come scorciatoie agli oggetti.
+Per usare questa funzione, questi tasti devono essere registrati
+nella pagina "Tasti funzione" nell'oggetto avanzato "Tastiera".
+
+<P>Questa funzione ä ancora una volta implementata tramite lo hook di &xwp; a PM. Per comprendere il suo
+funzionamento (e prima di usare la pagina "Tasti funzione"), ä bene capire le
+spiegazioni seguenti.
+
+<P>L'elaborazione della tastiera ä un argomento complesso sotto ogni sistema operativo. Questo problema
+coinvolge l'interpretazione di messaggi hardware e la loro traduzione in accordo alle correnti
+impostazioni di lingua.
+
+<P>Sotto &os2;, questo trattamento viene effettuato su parecchi livelli del sistema. Innanzitutto,
+c'ä il device driver dell'hardware della tastiera che viene caricato mediante un comando BASEDEV
+nel file &cfgsys;. Questo driver reagisce agli interrupt hardware lanciati dal driver fisico della
+tastiera e quindi riceve ogni singola battitura sulla tastiera.
+
+<P>Il nucleo di &os2; (kernel) elabora queste battiture per l'applicazione che attualmente si giova
+dell'input focus. L'elaborazione successiva dipende dal tipo di applicazione.
+Le applicazioni per Presentation Manager (PM) (inclusa la Workplace Shell)
+ricevono solitamente un messaggio riguardante la pressione o il
+rilascio di un tasto. Lo hook di &xwp; a PM puï allora intercettare questi messaggi e manipolarli.
+(Questo ä lo stesso processo di funzionamento delle <A HREF="mouse_81objhotkeys.html">scorciatoie agli oggetti</A>,
+a proposito.)
+
+<P>Sfortunatamente, l'elaborazione standard della tastiera fatta da &os2; ä ancora basata sulle
+tastiere originali AT 101/102-key IBM-compatibili introdotte negli anni '80.
+Attualmente molte tastiere hanno tasti addizionali che non sono assolutamente
+riconosciuti da &os2; o semplicemente producono un'uscita a caratteri anche se
+inattesa.
+
+<P>Questi tasti funzione extra possono per esempio essere i tre tasti "Windows" trovati sulla maggior parte
+delle tastiere attualmente in commercio. In aggiunta, ci sono alcune tastiere estese che hanno tasti
+"multimedia" aggiunti. Inoltre molti portatili hanno tasti extra.
+
+<P>Lo hook di &xwp; a PM puï identificare il tasto fisico che ä stato premuto valutando
+lo <B>hardware scan code</B> del tasto, che viene passato a qualsiasi applicazione PM
+direttamente dall'hardware di tastiera. Su qualsiasi tastiera, ogni tasto dovrebbe avere
+uno "scan code" univoco. Questo codice non ha alcunchÇ a che vedere con il codice ASCII di un
+carattere, ma ä un numero univoco assegnato a ogni tasto fisico sulla tastiera.
+Per esempio, il tasto "Maiusc" ha un codice simile al tasto "A", anche se
+il tasto "Maiusc" premuto da solo non produce alcuna uscita ASCII (carattere).
+
+<P>Dunque, lo hook di &xwp; deve conoscere lo scan code hardware dei tasti speciali per poter
+rispondere alla loro pressione. Come risultato, ä necessario <B>registrare</B>
+questi tasti extra con &xwp;. Questi tasti vengono chiamati
+<B>"Tasti funzione di &xwp;"</B> e verranno riconosciuti da &xwp;. ‘ possibile,
+per esempio, usarli come <A HREF="mouse_81objhotkeys.html">scorciatoie agli oggetti</A>
+dopo la loro registrazione.
+
+<P>Per <B>registrare un tasto funzione in &xwp;</B>, si apra l'oggetto
+"Tastiera" e si arrivi alla pagina "Tasti funzione". Si faccia clic con il tasto destro del mouse sullo
+spazio bianco del container e si selezioni "Nuovo tasto funzione...". ‘ possibile avere ulteriori informazioni
+premendo i tasti "Aiuto" lç presenti.
+
+<P><B>Avvertimenti.</B>
+
+<OL><LI>Virtualmente non c'ä <B>controllo di errore</B> nel registrare un tasto
+funzione con &xwp;. Gli scan code sono dipendenti dall'hardware, per cui &xwp; non ha modo per
+capire se un certo scan code non dovrebbe essere registrato.
+Per esempio, ä possibile registrare anche il tasto "Invio" o un qualsiasi tasto alfanumerico come
+tasto funzione, idea decisamente pericolosa. <B>Si registrino solo i tasti extra "reali" in
+&xwp;, o il tasto potrebbe non funzionare pió.</B>
+
+<P><LI>Alcuni tasti non possono essere registrati. Se questo succede, significa che l'hardware
+di tastiera non genera uno scan code per il particolare tasto. Io posseggo una tastiera multimediale Fujitsu
+che ha 15 tasti extra, e tre di essi non funzionano. Immagino che sia necessario un
+device driver per interpretare questi tre tasti extra, ma ciï va oltre le mie conoscenze.
+
+<P><LI>Come solito, i tasti funzione verranno rilevati solo mentre il focus appartiene a una finestra PM.
+Non funzioneranno in sessioni DOS &winos2; a schermo intero.
+</OL>
+</BODY>
+</HTML>
+
+

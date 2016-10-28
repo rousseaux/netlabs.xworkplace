@@ -1,0 +1,71 @@
+<HTML NOSUBLINKS="config"  WIDTH=70% XPOS=right>
+<HEAD>
+    <TITLE>
+        Introduzione
+    </TITLE>
+</HEAD>
+<BODY>
+<B>Classi: XWPSetup, XFldWPS, XFldSystem, XWPClassList</B>
+<HR>
+Dopo l'installazione di &xwp;, nella cartella "Impostazione del sistema" saranno presenti alcuni 
+nuovi oggetti. Inoltre, la maggior parte delle funzioni implementate da &xwp; aggiunge 
+nuove pagine di impostazioni negli oggetti normali. La cosa potrebbe sembrare inizialmente 
+sovrabbondante, ma ho cercato di seguire una certa logica nell'implementare le impostazioni.
+<UL>
+<P><LI><IMG SRC="xwsetup.gif"> A partire dalla V0.9.0, &xwp; introduce un nuovo oggetto di
+impostazioni globali chiamato <B>"Impostazioni &xwp;"</B>. Esso presenta alcune pagine
+di impostazioni per controllare lo stato interno di alcune parti di 
+&xwp;, abilitare o disabilitare globalmente le funzioni principali di &xwp;
+a cui si pu• essere interessati o meno, e alcune impostazioni correttive.
+<P>Queste voci sono spiegate in dettaglio premendo il bottone "Aiuto" sulle
+nuove pagine di impostazioni.
+
+<P><LI><IMG SRC="xfwps.gif"> Il nuovo oggetto <B>"Workplace Shell"</B> contiene le pagine
+del vecchio oggetto "Sistema" riguardanti la sola Workplace Shell. Ritengo che esse
+non siano proprio impostazioni "di sistema" e meritino un oggetto a s‚.
+<P>&xwp; aggiunge inoltre qui la maggior parte delle sue pagine di impostazioni,
+dato che esse influenzano massimamente la Workplace Shell.
+Ci• Š descritto pi— dettagliatamente nella pagina
+<A HREF="sys_2global.html">"Impostazioni globali"</A> in questa guida.
+
+
+<P><LI><IMG SRC="xclslist.gif"> C'Š un altro nuovo oggetto: l'<B>"Elenco Classi WPS"</B>.
+In origine,  prima di &xwp; V0.9.0, era una pagina nell'oggetto "Workplace Shell" 
+ma tale pagina era diventata troppo piccola per contenere tutte le informazioni.
+
+<P><LI><IMG SRC="xfsys.gif"> Il nuovo oggetto <B>"Kernel &os2;"</B> contiene le pagine del
+vecchio oggetto "Sistema" riguardanti le caratteristiche interne di &os2;, come le impostazioni "Schermo".
+<P>In quest'oggetto si trovano molte nuove pagine per cambiare varie impostazioni
+nel file &cfgsys; nella directory radice del disco di avvio. Dato che queste
+impostazioni sono piuttosto difficili da ricordare, e poich‚ impostazioni errate nel file
+possono anche impedire a &os2; di riavviarsi, &xwp; cerca di aiutare impostandole
+automaticamente.
+<P>Su ognuna di queste nuove pagine di impostazioni, che saranno meglio spiegate nelle pagine
+seguenti, sar… presente un bottone chiamato "Applicare" in luogo degli usuali
+"Regredire" e "Valore assunto". Premendo questo bottone, il file
+&cfgsys; sar… riscritto in accordo ai cambiamenti effettuati.
+
+<P>Le diverse impostazioni sono spiegate in modo molto dettagliato premendo il
+bottone <B>"Aiuto"</B> su una delle pagine di impostazioni.
+
+<P><LI><IMG SRC="xwpscreen.gif"> L'oggetto <B>"Schermo"</B> Š nuovo con la V0.9.3
+e contiene le pagine di impostazioni del vecchio oggetto "Sistema" riguardanti lo schermo.
+In aggiunta, se si Š attivato <A HREF="06342intro_pagemage.html">&pgr;</A>,
+parecchie pagine di impostazioni vengono inserite qui, appositamente per configurare &pgr;.
+
+</UL>Il vecchio oggetto <B>"Sistema"</B> continua a funzionare, in caso altre
+estensioni WPS vogliano anch'esse aggiungervi nuove pagine. Tali estensioni
+appariranno anche nel nuovo oggetto "Kernel &os2;", che eredita le
+caratteristiche dell'oggetto "Sistema".
+<P>Si noti che non si dovrebbe aprire il vecchio oggetto "Sistema" insieme a uno dei nuovi
+oggetti per cambiare impostazioni. Le pagine di impostazioni non sono preparate per questo, e
+ci• potrebbe confondere le impostazioni WPS.
+<P>Altre pagine di impostazioni si trovano nei blocchi appunti impostazioni di ogni cartella,
+della Scrivania, della <A HREF="xsd_3folders.html">Cartella di avvio di &xwp;</A>,
+e del <A HREF="file_2trashcan.html">Cestino di &xwp;</A>.
+
+<BR>
+</BODY>
+</HTML>
+
+

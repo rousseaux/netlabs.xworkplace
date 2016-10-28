@@ -1,0 +1,74 @@
+README.NLS - 日本語
+(C) 2008 Alex Taylor
+
+
+
+INTRODUCTION
+
+このフャイルは XWorkplace の日本語の国籍言語のサポートを
+含んでいます。
+
+[まだ日本語で書かれません。]
+
+
+
+The original Japanese XWorkplace translation was done by Jun Mikami and 
+can still be found at <http://www.geocities.co.jp/SiliconValley/1300/>.  
+It does not appear to have been updated since version 1.0.1, however.
+
+Using these sources, I have updated it for XWorkplace 1.0.9.  This mostly 
+involved reorganizing the file contents slightly, but it did require the 
+addition of a handful of new strings.  (My Japanese is limited, so they 
+may be slightly strange, but I tried to do my best.)  
+
+
+
+KNOWN PROBLEMS AND LIMITATIONS
+
+At present, only the language DLL, the message file, and object creation 
+are available in Japanese.  The following are all still in English: 
+
+ * The help file and documentation (although I did update a couple of 
+   the more language-critical screenshots)
+
+ * The WarpIN installer text.  
+
+ * The text used in the XFix utility.
+
+ * The driver descriptions used in the Kernel object.
+
+ * The WPS class descriptions used in the Class List object.
+
+ * The README and README.NLS files. 
+
+There is some slight text clipping visible in the WPS class list.
+
+As well, the vertical spacing in various dialogs will tend to be rather
+crowded if you have the desktop's default dialog font set to a smallish 
+value like 9.WarpSans or 8.Helv.
+
+When the XPager is first enabled (or immediately following a reinstall),
+the desktop IME controls may not become "sticky" until you reboot.  
+
+XWorkplace automatically sets the font on most of its dialogs to 
+9.WarpSans, instead of using the desktop's default dialog font.  This 
+means that DBCS glyphs will be displayed using Presentation Manager's 
+automatic glyph substitution, instead of the "Combined" font glyphs.
+I have not observed any problems with this, but it is possible that it 
+could affect the display quality of glyphs under some situations.
+
+You may see some garbled text in the Trash Can folder immediately after 
+it is first created.  As far as I can tell, this should go away once 
+you reboot.
+
+
+
+REQUIREMENTS
+
+You should use this NLS package under the Japanese DBCS version of 
+OS/2, with codepage 932 as the default.
+
+It will install and run under SBCS versions (like US English), but none 
+of the Japanese text will be readable (unless you take some special and 
+rather unorthodox steps which are really not recommended).
+

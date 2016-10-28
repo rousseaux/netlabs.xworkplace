@@ -1,0 +1,95 @@
+<HTML RESID=&ID_XSH_NETSCAPEDDE;>
+<HEAD>
+    <TITLE>
+        DDE Netscape
+    </TITLE>
+</HEAD>
+<BODY>
+DDE Netscape (abbreviato in seguito in NetscDDE) permette di aprire pagine HTML o URL
+con il proprio browser preferito. A dispetto del nome, NetscDDE supporta i seguenti
+browser:
+<UL><LI>Netscape 2.02 e 4.61 per OS/2;
+<LI>Mozilla e lo IBM Web Browser (si vedano le note sotto);
+<LI>la versione OS/2 di Opera.
+</UL>
+
+Utilizzando questo programma ä possibile visualizzare il documento desiderato con il browser
+giÖ aperto invece di dover aprire un'altra sessione per ogni nuova pagina.
+
+<P>Quando si avvia NetscDDE ä necessario fornire dalla linea di comando
+almeno l'URL da aprire. Questo URL puï essere anche un file HTML locale.
+
+<P>A questo punto NetscDDE per prima cosa verifica se il browser ä giÖ avviato.
+In caso affermativo, alla sessione giÖ aperta del browser viene richiesto di aprire all'interno 
+di una finestra giÖ esistente l'URL specificata.
+In caso contrario NetscDDE chiede all'utente se desidera avviare 
+il browser assunto definito per gli oggetti URL; se questo non ä definito
+cerca di avviare <CODE>NETSCAPE.EXE</CODE> dal percorso di sistema
+<A HREF="glossary/gls_path_sys.html"><CODE>PATH</CODE></A>.
+
+<P>Questa procedura funziona con tutte le versioni di Netscape disponibili per &os2;. Per 
+utilizzarla con Mozilla ä necessario specificare il parametro
+<CODE>-S</CODE>, dato che Mozilla usa un diverso nome di server DDE.
+In &os2; Mozilla supporta il DDE fin dalla versione 0.9.3.
+
+<P>DDE Netscape accetta i seguenti parametri dalla linea di comando:
+
+<DL>
+<DT><CODE>-q</CODE>
+<DD>Specificando questo parametro NetscDDE non mostra la finestra "Ricerca..." ecc.
+(modalitÖ <B>silenziosa</B>).
+
+<DT><CODE>-n</CODE>
+<DD>Specifica se usare una <B>nuova finestra browser</B> nel caso il browser sia giÖ
+avviato. Usando questo parametro viene aperta una nuova finestra.
+Come valore assunto viene usata una finestra esistente del browser.
+
+<DT><CODE>-x</CODE> or <CODE>-X</CODE>
+<DD>Queste opzioni controllano il comportamento di NetscDDE nel caso la connessione DDE
+fallisca (quando cioä Netscape non ä giÖ avviato).
+Se non si ä specificato nÇ <CODE>-x</CODE> nÇ <CODE>-X</CODE>, NetscDDE 
+<B>chiede</B> se aprire o meno una sessione del browser.
+Se si specifica <CODE>-x</CODE>, NetscDDE non chiede nulla e <B>non avvia</B> nessuna
+nuova sessione.
+Se invece si specifica <CODE>-X</CODE>, NetscDDE non chiede nulla ed <B>avvia automaticamente</B>
+una nuova sessione.
+
+<DT><CODE>-p <I>percorsocompleto</I></CODE>
+<DD>Specifica l'<B>eseguibile</B> da avviare in caso di non riuscita della connessione DDE.
+Se tale valore non ä specificato NetscDDE cerca di ricavare le impostazioni del browser assunto
+dagli oggetti WPUrl. Se questo non riesce viene richiamato <CODE>NETSCAPE.EXE</CODE> dal percorso
+di sistema <A HREF="glossary/gls_path_sys.html"><CODE>PATH</CODE></A>.
+Se si vuole usare Mozilla si puï cosç specificare il 
+<A HREF="glossary/gls_path.html">percorso</A> completo per
+<CODE>MOZILLA.EXE</CODE>. Si puï anche avviare un file batch.
+
+<DT><CODE>-P <I>parametri</I></CODE>
+<DD>Permette di specificare parametri aggiuntivi per il browser da aprire. L'URL specificata viene 
+aggiunta dopo i <CODE><I>parametri</I></CODE>.
+
+<DT><CODE>-s <I>cartella</I></CODE>
+<DD>Specifica la <B>cartella di avvio</B> da usare in caso di fallimento della connessione DDE. Utile se
+l'eseguibile del browser non si trova nel percorso <CODE>LIBPATH</CODE> ed il programma non trova
+altrimenti le sue <A HREF="glossary/gls_dll.html">DLL</A>.
+Se tale valore non ä specificato NetscDDE cerca di ricavare le impostazioni del browser assunto
+dagli oggetti WPUrl. Se questo non riesce non viene definita nessuna cartella di avvio.
+
+<DT><CODE>-S <I>server</I></CODE>
+<DD>Permette di specificare il <B>nome del server DDE</B> da usare. Se non si specifica nulla NetscDDE
+usa il nome <CODE>NETSCAPE</CODE>, che ä adatto per tutte le versioni &os2; di Netscape.
+Dato perï che Mozilla usa <CODE>Mozilla</CODE> come nome del server, se si desidera utilizzare
+Mozilla con NetscDDE ä necessario specificare esplicitamente questo valore.
+
+<DT><CODE>-h</CODE>
+<DD>Specificando questo parametro il browser viene avviato <B>nascosto</B>. Puï essere utile quando
+si usa l'opzione <CODE>-p</CODE> con un file batch.
+
+<DT><CODE>-m</CODE>
+<DD>Specificando questo parametro il browser viene avviato <B>minimizzato</B>. Puï essere utile quando
+si usa l'opzione <CODE>-p</CODE> con un file batch.
+
+</DL>
+
+<BR>
+</BODY>
+</HTML>

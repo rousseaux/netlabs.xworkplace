@@ -1,0 +1,62 @@
+<HTML>
+  <HEAD>
+    <TITLE>
+      xfix: xfix und WPS Dateihandles
+    </TITLE>
+  </HEAD>
+  <!-- this page is all new with V0.9.7
+<!-- Changed V0.9.20: changed title, moved most stuff to glossary/gls_objhandle.html -->
+  <!-- revised V1.0.9 --> <body>
+    Die Workplace Shell benutzt Dateihandles im Zusammenhang mit
+    Programmobjekten und Schattenobjekten damit diese eine Datei
+    auffinden k&ouml;nnen, egal wo sich diese im System befindet.
+    Programm- und Schattenobjekte bleiben deshalb unangetastet wenn die
+    Datei auf die sie verweisen verschoben wird.
+    <p>Dies funkioniert da Programmobjekte und Schattenobjekte niemals
+      den pyhsikalischen <a href="glossary/gls_path.html">Pfad</a> auf
+      eine Datei abspeichern sondern nur ihr Handle. Wenn die WPS den
+      vollen Pfad auf eine Datei braucht wird dieser st&uuml;ckweise
+      zusammengesetzt aus den Teilpfaden derjenigen Handles die einen
+      Teil des Dateipfades ausmachen. </p>
+    <p>Die WPS holt sich zun&auml;chst das Dateihandle welches im
+      Programmobjekt oder Schattenobject verzeichnet ist. Der Eintrag
+      f&uuml;r dieses Handle bezeichnet den Dateinamen/Ordnernamen
+      (angezeigt in xfix's "Kurzer Name" Spalte), zusammen mit dem
+      Handle f&uuml;r den &uuml;bergeordneten Ordner. Die WPS holt sich
+      dann den Dateipfad des &uuml;bergeordneten Ordners und f&uuml;gt
+      ihn vorne (zusammen mit einem Pfadtrenner) an den Dateipfad an.
+      Danach geht es dann zum &uuml;bergeordneten Ordner dieses Ordners
+      ... und so weiter, bis der Wurzelordner des Laufwerks erreicht
+      wird. </p>
+    <p>Dies hat die folgenden Vorteile: </p>
+    <ul>
+      <li>Nur der Kurzname (Dateiname bzw. Pfadkomponenten) mu&szlig; in
+        <code>OS2SYS.INI</code> abgespeichert werden was nat&uuml;rlich
+        Platz spart </li>
+      <li>Noch wichtiger, dies macht das Verschieben einer Datei oder
+        eines Ordners sehr effizient da nur das Handle des
+        &uuml;bergeordneten Ordners ge&auml;ndert werden mu&szlig;. Da
+        alle Subobjekte eines Ordners (Dateien und/oder Ornder) der
+        verschoben wird das gleiche &uuml;bergeordnete Handle haben kann
+        der Pfad f&uuml;r diese Objekte schnell neu erzeugt werden. </li>
+    </ul>
+    F&uuml;r weitere Informationen &uuml;ber Objekthandles siehe <a
+      href="glossary/gls_objhandle.html">"&Uuml;ber Objekthandles."</a>
+    <p>Ungl&uuml;cklicherweise hat dies auch einige Nachteile: </p>
+    <ul>
+      <li>Die WPS l&ouml;scht nie Handles auch wenn die Dateien/Ordner
+        auf die sie sich beziehen gel&ouml;scht werden. </li>
+      <li>Die WPS erzeugt Handles f&uuml;r Dateien die nicht von
+        Programm- oder Schattenobjekten benutzt werden (z.B. DLLs oder
+        ZIP Dateien). </li>
+      <li>Fehler und/oder Abst&uuml;rze der WPS kann die Handletabelle
+        besch&auml;digen, zur&uuml;ck bleiben dann Handleduplikate,
+        Handles die auf die falsche Datei/Ordner zeigen, etc. </li>
+    </ul>
+    xfix kann die ersten zwei Probleme beheben und ist auch
+    n&uuml;tzlich um einige andere Probleme zu beheben. Xfix behandelt
+    aber vor allem Probleme mit Dateihandles. Um Probleme mit abstrakten
+    Objekten zu beheben k&ouml;nnen/sollten sie Henk Kelder's CHECKINI
+    Programm benutzen.
+  </body>
+</html>

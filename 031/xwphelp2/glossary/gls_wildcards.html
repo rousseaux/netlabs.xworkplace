@@ -1,0 +1,36 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: Jokertekens
+    </TITLE>
+</HEAD>
+<BODY>
+Jokertekens zijn een zeer gesimplificeerde variant van de UNIX-stijl
+<A HREF="glossary/gls_regexps.html">vaste uitdrukkingen</A>.
+Zij maken het 'overeenkomen' van verschillende bestandsnamen mogelijk met behulp van ‚‚n teken
+en worden het meest gebruikt op de DOS en &os2; opdrachtregels.
+
+<P>&os2; kent twee jokertekens:
+
+<OL><LI>Het <B>asterisk</B> (<CODE>*</CODE>) teken dat staat voor: 'komt overeen' met iedere karakter
+volgorde (geen karakter, ‚‚n karakter of meerdere karakters).
+
+<P>B.v., <CODE>h*e</CODE> zal overeenkomen met <CODE>he</CODE>, <CODE>hoe</CODE>, en <CODE>halte</CODE>.
+
+<P><LI>Het <B>vraagteken</B> (<CODE>?</CODE>) komt overeen met precies ‚‚n karakter.
+
+<P>B.v., <CODE>h??e</CODE> zal overeenkomen met alle vierletterwoorden die beginnen met 'h' en eindigen op 'e'
+waarbij de twee middelste tekens ieder karakter kunnen zijn.
+
+</OL>Jokertekens kunnen ook worden gecombineerd. B.v., <CODE>h*e.?x?</CODE>
+zal overeenkomen met h<CODE>ous</CODE>e.<CODE>txt</CODE> en <CODE>he.exe</CODE>
+
+<P>Merk op dat in tegenstelling tot DOS, onder &os2; de punt (<CODE>.</CODE>),
+in bestandsnamen, alleen in bestanden van het
+<A HREF="glossary/gls_fs.html">FAT</A>
+bestandssysteem, een speciaal karakter is.
+
+<BR>
+</BODY>
+</HTML>
+

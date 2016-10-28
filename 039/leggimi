@@ -1,0 +1,287 @@
+
+XWorkplace 1.0.11, file LEGGIMI
+
+(W) Ulrich M”ller, 7 febbraio 2000
+
+Ultimo aggiornamento: 2011-11-18
+
+
+0. CONTENUTO DEL FILE
+=====================
+
+    1. INTRODUZIONE
+
+    2. REQUISITI
+
+    3. INSTALLAZIONE
+
+    4. AGGIORNAMENTO
+
+    5. SUPPORTO LINGUE NAZIONALI
+
+    6. PER INIZIARE
+
+    7. LICENZA, COPYRIGHT, DISCLAIMER
+
+    8. CONTATTI
+
+
+1. INTRODUZIONE
+===============
+
+    Benvenuti in XWorkplace Versione 1.0.11
+
+    XWorkplace Š un insieme di classi sostitutive per la Workplace
+    Shell di OS/2, che permette di potenziarne in vari modi le
+    funzionalit….
+
+    Questo file LEGGIMI contiene le informazioni aggiuntive non ancora
+    incluse nella Guida ad XWorkplace. Leggerlo con attenzione prima
+    di procedere con l'installazione.
+
+    Al termine dell'installazione questo file LEGGIMI verr… copiato
+    nella cartella di installazione.
+
+
+    A proposito di questa versione
+    ------------------------------
+
+    La presente versione Š ancora una volta basata sulla "branch" 1.0
+    e comprende tutte le correzioni effettuate rispetto al rilascio
+    precedente.
+
+    Per i dettagli si veda "Informazioni sulla versione" nella
+    "Guida ad XWorkplace". Per limitarsi ad estrarre la documentazione
+    si veda "3. INSTALLAZIONE", pi— sotto.
+
+
+2. REQUISITI
+============
+
+    XWorkplace Š sviluppato e testato solo con eComStation.
+
+    NOTA: a differenza delle versioni precedenti, XWorkplace 1.0.0
+    e successive NON funzionano con OS/2 Warp 3.
+    Quindi, NON CERCATE DI INSTALLARE QUESTA VERSIONE SU WARP 3.
+    Alcuni utenti hanno riscontrato problemi utilizzando XWorkplace
+    con versioni di Warp 4 prive dei fixpack pi— recenti, ma io non
+    ho avuto modo di confermare il problema.
+
+    Le versioni di OS/2 elencate di seguito non dovrebbero dare problemi,
+    dato che si basano tutte sul medesimo codice IBM:
+
+    --  Warp 4 FP 15
+
+    --  WarpServer per e-Business
+
+    --  Merlin/Aurora Convenience Packages
+
+    --  eComStation 1.x / 2.x
+
+    XWorkplace 1.0.4 e superiori consentono di accedere ad informazioni
+    supplementari sui driver. I requisiti da soddisfare sono i seguenti:
+
+    -- Il file CFGDAT.INF, parte del pacchetto gratuito ConfigTool,
+       deve trovarsi in una cartella compresa nel percorso definito
+       dalla variabile ambiente BOOKSHELF nel file CONFIG.SYS.
+
+    -- Il visualizzatore di aiuto avanzato NewView deve essere installato
+       o come sostituto di VIEW.EXE o come applicazione singola, ma in
+       questo caso con l'eseguibile raggiungibile attraverso il percorso
+       PATH e la dll attraverso quello LIBPATH.
+
+
+3. INSTALLAZIONE
+================
+
+    XWorkplace va installato usando WarpIN. Una volta copiati i
+    file WarpIN riavvier… la Workplace Shell per rendere effettive
+    le modifiche. Un riavvio del sistema non dovrebbe essere
+    necessario.
+
+    Se si Š  incerti se usare o no XWorkplace, si pu• scegliere di
+    installare solo il pacchetto "Documentazione". Si potr… cos
+    leggere con calma tutta la documentazione di XWorkplace e
+    decidere poi se procedere con una installazione completa.
+    Per finire l'installazione in un secondo tempo, Š sufficiente
+    fare doppio clic sul pacchetto .WPI di XWorkplace.
+
+    Alcuni AVVERTIMENTI:
+
+    --  In ogni caso, prima dell'installazione FARE UN BACKUP DELLA WPS.
+
+    --  Con l'opzione "Bloccare all'avvio" attiva sono stati segnalati
+        casi di "congelamento" della Workplace Shell al riavvio.
+        Disabilitare tale opzione prima di far riavviare la WPS da WarpIN.
+
+
+    Installazione su eComStation
+    ----------------------------
+
+    Se si sta installando XWorkplace su eComStation, si deve
+    sapere che l'opzione "Funzioni avanzate per la scrivania"
+    di eCS 1.1 include una versione speciale di XWorkplace che
+    non pu• essere usata assieme alla versione completa.
+    Si pu• risolvere il problema in due diverse maniere:
+
+    *   installando la presente versione di XWorkplace sopra
+        la versione inclusa in eCS -- quando WarpIN richiede
+        il percorso di installazione per la cartella di destinazione
+        inserire ?:\ecs\system\ewps (sul proprio volume di avvio).
+
+        Si tenga presente che cos facendo la versione inclusa in eCS
+        verr… sovrascritta e non potr… facilmente essere ripristinata.
+
+    *   In alternativa, interrompere la presente installazione di
+        XWorkplace e procedere a disinstallare la versione inclusa in
+        eCS, utilizzando il comando
+
+            ?:\ecs\system\ewps\install\deinst.cmd
+
+        Quindi riavvare la scrivania (o il sistema), e ricominciare
+        l'installazione della presente versione di XWorkplace in una
+        cartella di proprio gradimento.
+
+
+4. AGGIORNAMENTO
+================
+
+    Aggiornamento da una precedente versione di XWorkplace
+    ------------------------------------------------------
+
+    IMPORTANTE: se durante l'installazione la WPS Š attiva (il che
+    sar… vero nella maggior parte dei casi), WarpIN visualizzer…
+    alcune finestre di conferma relative a file correntemente in uso,
+    XFLDR.DLL in particolare. E' una cosa del tutto normale, dato che
+    si tratta di moduli caricati per il funzionamento della WPS (e di
+    XWorkplace).
+
+    In ognuna di queste finestre SELEZIONARE "Unlock (DosReplaceModule)",
+    altrimenti l'installazione sar… solo parziale.
+
+    Se la finestra si riferisce ad un file di aiuto (con estensione .HLP)
+    significa che il file di aiuto di XWorkplace Š tenuto aperto dalla WPS.
+    Sfortunatamente in OS/2 Š impossibile sbloccare automaticamente i
+    file dati. Per sbloccare il file di aiuto di XWorkplace Š sufficiente
+    aprire un pannello di aiuto standard WPS (cliccando, per es., in uno
+    spazio vuoto sulla Scrivania e premendo F1), senza chiudere la
+    finestra con il messaggio "locked".
+
+    Si avr… poi probabilmente una richiesta di conferma per la chiusura
+    del programma XWPDAEMN.EXE (che Š il demone XWorkplace): lasciate
+    pure che WarpIN lo chiuda.
+    Cos facendo, per•, se si lascia che al termine dell'installazione
+    WarpIN riavvii la Scrivania, tutte le cartelle di avvio di XWorkplace
+    verranno processate, comprese quelle selezionate per essere aperte
+    solo all'avvio del sistema.
+    Se questo dovesse provocare problemi, non accettate che WarpIN riavvii
+    la Scrivania e provvedete invece ad un riavvio manuale del sistema
+    una volta completata l'installazione.
+
+    Se l'aggiornamento non dovesse funzionare, Š consigliabile disinstallare
+    la precedente versione di XWorkplace usando WarpIN, riavviare la WPS
+    e installare nuovamente la nuova versione.
+
+
+    Aggiornamento da XFolder
+    ------------------------
+
+    XWorkplace Š il successore di XFolder 0.85.
+
+    XWorkplace e XFolder non possono coesistere, dato che XWorkplace
+    comprende tutte le funzioni di XFolder 0.85 pi— numerose altre e ne
+    corregge i difetti.
+
+    Per questo motivo, se XFolder Š installato, XWorkplace lo disabilita
+    automaticamente durante l'installazione.
+
+    XWorkplace deve essere comunque installato in una cartella DIFFERENTE
+    rispetto a quella di XFolder per essere sicuri che non si verifichino
+    conflitti tra file. Diversi utenti hanno verificato che installandolo
+    nella stessa cartella si rischia di bloccare la WPS.
+
+    XWorkplace pu• importare le impostazioni di XFolder 0.85: al primo
+    riavvio della WPS dopo l'installazione, XWorkplace chieder… esplicitamente
+    se importare o no tali impostazioni. Dato per• che nel frattempo si sono
+    aggiunte moltissime nuove funzioni, molte di esse saranno comunque
+    inizialmente disabilitate.
+
+    Se in un secondo tempo si scegliesse di ritornare ad usare XFolder, si
+    dovr… disinstallare XWorkplace con WarpIN ed installare nuovamente
+    XFolder usando il comando INSTALL.CMD, nella vecchia cartella di
+    installazione; le vecchie impostazioni di XFolder non vengono
+    modificate da XWorkplace.
+
+
+5. SUPPORTO LINGUE NAZIONALI
+============================
+
+    Questo archivio contiene solo il supporto lingue nazionali (NLS)
+    in inglese.
+
+    XWorkplace Š per• predisposto per supportare altre lingue
+    mediante l'installazione di pacchetti NLS aggiuntivi, che sono
+    curati e rilasciati da persone diverse dall'autore.
+
+    Alcuni di questi pacchetti aggiuntivi sono indicati su
+    www.xworkplace.org, alla pagina "Download". Per informazioni
+    pi— aggiornate Š per• meglio fare riferimento alla mailing list
+    (si veda CONTATTI, pi— sotto).
+
+
+6. PER INIZIARE
+===============
+
+    Terminata l'installazione, aprire il nuovo oggetto "Impostazioni
+    XWorkplace" ed andare alla pagina "Funzioni", che Š il punto di
+    partenza per abilitare le nuove funzionalit… di XWorkplace;
+    selezionare "Aiuto" per ulteriori informazioni.
+
+
+7. LICENZA, COPYRIGHT, DISCLAIMER
+=================================
+
+    Copyright (C) 1997-2016 Ulrich M”ller,
+                            Martin Lafaix,
+                            Paul Ratcliffe
+                            Rich Walsh,
+                            ed altri.
+
+    Questo programma Š free software; lo si pu• redistribuire e/o modificare
+    rispettando i termini della GNU General Public License, riportata nel file
+    COPYING presente nella cartella di installazione.
+
+    L'intero codice sorgente Š disponibile. Si veda XFLDR039.INF per i dettagli.
+
+    Questo programma Š distribuito nella speranza che possa risultare utile
+    ma SENZA ALCUNA GARANZIA, esclusa quindi anche quella implicita di
+    COMMERCIABILITA' o ADEGUATEZZA PER UNA FUNZIONE PARTICOLARE.
+
+    Per i dettagli si veda la sezione "Note" in XFLDR039.INF.
+
+
+8. CONTATTI
+===========
+
+    Sono state create su netlabs.org due mailing list.
+    Si prega di usarle per domande, suggerimenti e per segnalare
+    bachi.
+
+    Per gli utenti XWorkplace:
+        xworkplace-user@netlabs.org
+
+    Per gli sviluppatori XWorkplace e per tutti coloro che fossero
+    comunque interessati:
+        xworkplace-dev@netlabs.org
+
+    Per i dettagli si veda "Note" --> "Contatti - Commenti e
+    suggerimenti" in XFLDR039.INF.
+
+    Un "bugtracker" riservato a XWorkplace Š disponibile all'indirizzo
+
+            http://xtracker.netlabs.org
+
+    Tutti sono pregati di usare questo strumento per segnalare eventuali errori,
+    evitando di riferirne sulle mailing list. Grazie!
+
+

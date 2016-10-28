@@ -1,0 +1,108 @@
+<HTML XPOS=right WIDTH=70%>
+<HEAD>
+    <TITLE>
+        Nuove stringhe impostazioni di XFolder
+    </TITLE>
+</HEAD>
+<BODY>
+<B>Classe: XFolder</B><HR>
+Le seguenti stringhe di impostazioni possono essere usate nello stesso modo
+delle classiche stringhe descritte nella <A HREF="xices_30wpsstrings.html">pagina precedente</A>;
+comunque esse hanno effetto solo se XFolder Š correttamente installato.
+
+<DL>
+<DT><CODE><B>ACCELERATORS</B>={YES|NO|DEFAULT}</CODE>
+<DD>Stabilisce, per una singola cartella, se questa debba o meno 
+rispondere alle scorciatoie di cartella.
+Quest'impostazione corrisponde a quella sulla pagina "XFolder" del blocco impostazioni.
+YES o NO imposter… questo attributo, senza riguardo a ci• che era specificato
+nelle impostazioni globali, mentre DEFAULT imposter… il valore globale.
+Consultare <A HREF="fldr_5xelerators.html">"Tasti rapidi cartella"</A>.
+
+<P><DT><CODE><B>ALWAYSSORT</B>={YES|NO|DEFAULT}</CODE>
+<DD>Stabilisce, per una singola cartella, se questa manterr… o meno il suo
+metodo di ordinamento. A differenza delle 
+<A HREF="xices_30wpsstrings.html">standard WPS folder setup string</A>,
+la nuova interpretazione di XFolder accetta anche "DEFAULT" come parametro, che
+riporter… l'impostazione a quanto specificato sulla pagina "Ordinare"
+dell'oggetto "Sistema".
+
+<P><DT><CODE><B>DEFAULTSORT</B>=<I>crit</I></CODE>
+<DD>Imposta il criterio di ordinamento predefinito per una singola cartella
+a un valore diverso dal criterio usato globalmente.
+<!-- V0.9.12: the following has been rewritten -->
+<CODE><I>crit</I></CODE> pu• essere uno dei seguenti:
+<BR><CODE>  -1   </CODE>per tipo
+<BR><CODE>  -2   </CODE>per nome
+<BR><CODE>  -3   </CODE>per classe oggetto
+<BR><CODE>  -4   </CODE>per estensione
+<BR><CODE>  255  </CODE>ripristina il criterio globale
+<P>Notare che in dipendenza dalla classe di ordinamento della cartella,
+potrebbero essere supportati anche valori tra 0 e 100. Quei valori corrispondono
+agli indici delle colonne dei dettagli degli oggetti nella Vista dettagli e
+sono specifici della classe. Si provino i valori riportati in un blocco
+impostazioni di una cartella.
+<!-- end V0.9.12 -->
+
+<P><DT><CODE><B>FAVORITEFOLDER</B>={YES|NO}</CODE>
+<DD>Stabilisce per una singola cartella se i suoi contenuti possano essere visti
+da tutti i menu contestuali sul sistema.
+Questa impostazione corrisponde a quella sulla pagina di impostazioni "XFolder".
+Il valore predefinito Š NO. Non ci sono valori globali per quest'impostazione.
+Si consulti <A HREF="menu_6favorite.html">"Folder content functions"</A> per dettagli.
+
+<P><DT><CODE><B>FULLPATH</B>={YES|NO|DEFAULT}</CODE>
+<DD>Stabilisce, per una singola cartella, se il suo percorso completo debba
+essere riportato nella barra del titolo della cartella.
+Quest'impostazione corrisponde a quella sulla pagina di impostazioni "XFolder".
+YES o NO impostano quest'attributo senza riguardo per quanto specificato nelle
+impostazioni globali, mentre DEFAULT porter… l'impostazione al valore predefinito.
+Consultare <A HREF="fldr_2fullpath.html">"Full path in window titles"</A> per dettagli.
+
+<!-- V0.9.9: added QUICKOPEN -->
+<P><DT><CODE><B>QUICKOPEN</B>={YES|NO|IMMEDIATE}</CODE>
+<DD>Stabilisce, per una singola cartella, se questa dovr… essere prepopolata all'avvio della Scrivania.
+Quest'impostazione corrisponde a quella sulla pagina di impostazioni "XFolder".
+YES o NO impostano l'attributo per la cartella. Il valore assunto Š NO. Non ci
+sono valori globali per quest'impostazione.
+Consultare <A HREF="fldr_5quickopen.html">"Cartelle ad apertura rapida"</A> per i dettagli.
+<P>Come comando speciale <CODE>QUICKOPEN=IMMEDIATE</CODE> popola immediatamente
+la cartella. Pu• essere usato in uno script  REXX per popolare una cartella senza doverla
+aprire. <CODE>QUICKOPEN=IMMEDIATE</CODE>, quindi, non Š tanto un'impostazione quanto un
+comando da eseguire sulla cartella.
+
+<P><DT><CODE><B>SNAPTOGRID</B>={YES|NO|DEFAULT|EXEC}</CODE>
+<DD>Sets for an individual folder whether the "Snap to grid" item will appear
+in the folder's context menu.
+This setting corresponds to the one on the "XFolder" notebook settings page.
+YES or NO will set this setting for this folder no matter what was specified in the
+global settings, while DEFAULT will set this setting to the global value.
+EXEC will execute the "Snap to grid" function on the folder, just as if you had
+selected it from the context menu. EXEC is thus no setting, but a command to be performed
+on a folder.
+See <A HREF="menu_8snaptogrid.html">"Snap to grid"</A> for details.
+
+<!-- V0.9.12: added this -->
+<P><DT><CODE><B>SORTFOLDERSFIRST</B>={YES|NO|DEFAULT}</CODE>
+<DD>Sets for an individual folder whether folders will always be sorted in first.
+This setting corresponds to the one on the folder's "Sort" notebook settings page.
+YES or NO will set this setting for this folder no matter what was specified in the
+global settings, while DEFAULT will set this setting to the global value.
+<!-- end V0.9.12 -->
+
+<P><DT><CODE><B>SORTNOW</B>=<I>crit</I></CODE>
+<DD>This will sort all currently open views of an individual folder without changing
+a folder's setting (as opposed to <CODE>DEFAULTSORT</CODE>). This is not really a
+"setting", but rather a command to be performed on a folder.
+<CODE><I>crit</I></CODE> has the same meaning as with <CODE>DEFAULTSORT</CODE>.
+
+<P><DT><CODE><B>STATUSBAR</B>={YES|NO|DEFAULT}</CODE>
+<DD>Sets the visibility state for an individual folder status bar.
+This setting corresponds to the one on the "XFolder" notebook settings page.
+YES or NO will set this setting for this folder no matter what was specified in the
+global settings, while DEFAULT will set this setting to the global value.
+See <A HREF="stat_1intro.html">"Folder status bars"</A> for details.
+</DL>
+</BODY>
+</HTML>
+

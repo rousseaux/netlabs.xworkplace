@@ -1,0 +1,41 @@
+<HTML NOSUBLINKS="config"  WIDTH=70% XPOS=right>
+<HEAD>
+    <TITLE>
+        Sostituire autoaggiornamento cartelle
+    </TITLE>
+</HEAD>
+<BODY>
+<B>Classi: XFldObject, XFolder</B><HR>
+
+A partire dalla V0.9.9 &xwp; permette di sostituire il meccanismo di autoaggiornamento delle cartelle Workplace Shell.
+
+<P>Questa caratteristica della WPS sar… probabilmente ben nota ai pi—: se si ha una cartella aperta e 
+da linea di comando si manipolano i file ivi contenuti, la WPS si accorge automaticamente 
+delle modifiche ed aggiorna da sola il contenuto della cartella.
+
+<P>Si tratta di una funzionalit… in teoria praticissima; purtroppo la sua implementazione all'interno della WPS 
+presenta seri limiti. L'aspetto peggiore sta nel gran numero di marcatori file-system generati 
+ogni volta che si aggiornano degli oggetti, che causa una crescita inutile
+dei file INI. Si noti che questo problema si presenta anche se nel file &cfgsys; si Š aggiunta
+la direttiva <CODE>AUTOREFRESHFOLDERS=NO</CODE>.
+
+<P>&xwp; permette oggi, se lo si desidera, di rimpiazzare tutto questo meccanismo, semplicemente attivando 
+l'impostazione relativa nella pagina "Funzioni" dell'oggetto <A HREF="sys_2global.html">"Impostazione di &xwp;".</A>
+
+<P>Se la sostituzione Š attivata, &xwp; previene il lancio dei sottoprocessi WPS responsabili
+dell'autoaggiornamento delle cartelle, il che tra le altre cose evita la creazione
+dei marcatori file-system inutili. Vengono invece usati specifici sottoprocessi di &xwp;,
+che controlanno l'attivit… del file-system e aggiornano automaticamente il contenuto
+delle cartelle aperte.
+
+<P>Si noti che, come conseguenza indiretta, abilitare e disabilitare il meccanismo sostitutivo richiede
+il riavvio della Scrivania: &xwp; infatti pu• effettuare questo scambio solo mentre la WPS sta caricandosi.
+
+<P>In ogni caso, una volta attivata la sostituzione e riavviata la WPS Š possibile 
+abilitare e disabilitare l'autoaggiornamento delle cartelle dalla pagina "Visualizzare" nell'oggetto
+"Workplace Shell" senza pi— dover riavviare la Scrivania.
+<BR>
+</BODY>
+</HTML>
+
+

@@ -1,0 +1,75 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: processi e sottoprocessi
+    </TITLE>
+</HEAD>
+<BODY>
+Dato che, anche se il sistema dispone di un solo processore, ci si trova comunemente ad 
+avere numerosi processi da far funzionare contemporaneamente, &os2; passa dall'elaborazione 
+di un processo a quella di un altro numerose decine di volte al secondo, dando cosç 
+l'impressione che tutti questi programmi stiano funzionando in parallelo.
+Questo ä il <B>multitasking.</B>
+
+<P>Anche se il sistema avesse pió processori (SMP) i processi sarebbero
+sempre in numero maggiore rispetto ai processori, rendendo comunque necessario 
+il loro alternarsi.
+
+<P>Il <B>sottoprocesso (thread)</B> ä, in &os2;, l'unitÖ per amministrare questa alternanza
+tra i processi. Ogni programma puï avere numerosi sottoprocessi; per definizione ne deve 
+avere almeno uno. Dato che perï puï anche averne pió di uno, l'alternanza puï aver luogo anche
+tra i vari sottoprocessi di uno stesso programma. E' quello che si chiama
+<B>multithreading.</B> &os2;, a differenza di molti altri sistemi operativi, supporta pienamente il
+multithreading, e lo fa anche in maniera particolarmente intelligente ed affidabile.
+
+<P>La parte del kernel &os2; che gestisce il passaggio tra i vari sottoprocessi si chiama
+<B>"scheduler".</B>
+
+<P>Il termine inglese per sottoprocesso, "thread" ("filo"), fu scelto perchÇ all'interno del 
+singolo sottoprocesso le istruzioni sono eseguite in sequenza, mentre tra pió sottoprocessi
+ä impossibile sapere con sicurezza se una certa istruzione in un dato sottoprocesso sarÖ
+eseguita prima o dopo l'istruzione di un altro sottoprocesso. Il passaggio da un
+sottoprocesso all'altro riguarda solo &os2;, senza che il sottoprocesso ne sappia nulla
+(in sistemi SMP puï darsi benissimo che diversi sottoprocessi dello stesso programma funzionino in 
+contemporanea su diversi processori).
+
+<P>I programmi ben scritti utilizzano numerosi sottoprocessi, per garantire
+all'utente una risposta veloce rispetto alle sue azioni sulla tastiera e sul mouse. Se, per
+esempio, all'interno di un programma si lancia un comando che richiede molto tempo
+per essere eseguito, per svolgerlo dovrebbe essere lanciato un sottoprocesso secondario,
+in modo da liberare l'interfaccia utente (gestita dal sottoprocesso principale del programma) 
+mentre il compito viene eseguito in secondo piano.
+
+<P>I programmi scritti male usano un solo sottoprocesso per l'interfaccia utente e
+l'esecuzione dei compiti. Cosç facendo durante l'esecuzione del compito l'interfaccia
+utente resta bloccata.
+
+<P>I sottoprocessi possono avere <B>prioritÖ</B> differenti. 
+Si veda <A HREF="glossary/gls_sched_prty.html">"PrioritÖ dei sottoprocessi"</A> per i dettagli.
+
+<P>In &os2;, con il termine <B>processo</B> si identifica l'applicazione che ä stata
+caricata in memoria. Ciascun processo deve avere almeno un sottoprocesso.
+
+<P>Ciascun processo contiene dati comuni e controlla l'accesso alle risorse del
+sistema. I processi sono protetti l'uno dall'altro da &os2;, che impedisce loro
+di accedere alle aree di memoria assegnate agli altri ("memory protection").
+
+<P>I sottoprocessi all'interno di un processo, invece, possono condividere la sua memoria;
+il sistema, infatti, la assegna basandosi sui singoli processi. La stessa cosa vale per le altre 
+risorse del sistema, ad esempio i file aperti.
+
+<P>Per riepilogare, il <B>sottoprocesso</B> ä il concetto usato nel kernel di &os2; 
+per gestire la proprietÖ della CPU.
+Il <B>processo</B>, invece, ä il concetto usato per gestire la proprietÖ di ogni altra cosa:
+file, dispositivi e memoria.
+
+<P>Per ulteriori informazioni si vedano gli argomenti seguenti:
+
+<UL><LI><A HREF="glossary/gls_sessions.html">Tipi di sessione</A>
+<LI><A HREF="glossary/gls_cmd.html">Richieste comandi</A>
+</UL>
+
+<BR>
+</BODY>
+</HTML>
+

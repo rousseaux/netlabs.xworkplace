@@ -1,0 +1,39 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: client stampa e file
+    </TITLE>
+</HEAD>
+<BODY>
+Generalmente i servizi &link_peer; attivi nel sistema sono i seguenti:
+
+<UL><LI>Il servizio <CODE>REQUESTER</CODE>, che permette al computer di vedere le altre
+risorse nella LAN. "Requester" Š in effetti da intendersi come sinonimo per "client".
+Una volta avviato il Requester, file e stampanti remote presenti nella LAN
+diventano accessibili. Inoltre si possono assegnare lettere di unit… del proprio sistema
+a cartelle remote messe in condivisione da altri computer.
+
+<P><LI>Il servizio <CODE>PEER</CODE> Š una versione ridotta del servizio
+server che fa parte delle versioni server di &os2;. Una volta avviato il servizio Peer, 
+il proprio computer potr… condividere cartelle locali, file e stampanti con gli
+altri computer della LAN.
+
+<P>Questo servizio per funzionare richiede che sia attivo anche il 
+servizio <CODE>REQUESTER</CODE>.
+
+</UL>Utilizzare la <A HREF="glossary/gls_cmd.html">linea comando</A> per gestire i 
+servizi in dettaglio:
+
+<UL><LI>Per avviare un certo servizio digitare
+<CODE>NET START <I>servizio</I></CODE>; per esempio: <CODE>NET START REQUESTER</CODE>.
+
+<P><LI>Per interromente un certo servizio digitare
+<CODE>NET STOP <I>servizio</I></CODE>; per esempio: <CODE>NET STOP REQUESTER</CODE>.
+
+<P><LI>Per vedere un elenco dei servizi attivi al momento digitare
+<CODE>NET START</CODE>, senza specificare nomi di servizi.
+
+</UL>
+</BODY>
+</HTML>
+

@@ -1,0 +1,272 @@
+
+XWorkplace 1.0.11 LEESMIJ.TXT 
+
+(W) Ulrich Mller, Feb 7, 2000 
+
+Laatste wijziging: 7 Juni 2008 
+
+
+0. INHOUD VAN DIT BESTAND 
+======================== 
+
+   1. INTRODUCTIE 
+
+   2. BENODIGHDHEDEN 
+
+   3. INSTALLATIE 
+
+   4. BIJWERKEN 
+
+   5. TAAL ONDERSTEUNING 
+
+   6. BEGINNEN 
+
+   7. LICENTIE, AUTERURSRECHT, VERANTWOORDELIJKHEID 
+
+   8. KONTAKT 
+
+
+1. INTRODUCTIE 
+============== 
+
+   Welkom bij XWorkplace V1.0.11 
+
+   XWorkplace is een complexe geheel van vervangende classes 
+   voor de Workplace Shell van OS/2 om het gedrag van de WPS 
+   in veel opzichten uit te breiden. 
+
+   Dit LEESMIJ bestand bevat veel extra informatie die niet is te 
+   vinden in de XWorkplace Gebruikers handleiding. 
+   Lees dit LEESMIJ bestand a.u.b. voor installatie door. 
+
+   Na de installatie vindt u dit LEESMIJ bestand in de hoofd 
+   installatie directory van XWorkplace. 
+
+
+   Over deze vrijgave 
+   ------------------ 
+
+   Dit is de eerste vrijgave vanuit de 1.1 boom met daarin de 
+   bugfixes die verzameld zijn sinds de laatste 1.0 vrijgaven. 
+
+   Voor details, kijk in de "Version Notices" in de 
+   "XWorkplace Gebruikers handleiding". 
+   Om alleen de documentatie te installeren, zie "3. INSTALLATIE" hieronder. 
+
+
+2. BENODIGHEDEN 
+=============== 
+
+   XWorkplace is ontwikkeld en getest onder eComStation 1.x 
+   dat een equivalent is -- zover het de OS/2 code basis 
+   betreft -- en het Merlin Convenience Package 1 (MCP1). 
+
+   Opm.: In tegenstelling tot de eerdere vrijgaven zullen 
+   XWorkplace 1.0.0 en hoger NIET LANGER werken op OS/2 Warp 3. 
+   DUS PROBEER HET NIET TE INSTALLEREN OP WARP 3. 
+   Er zijn ook meldingen van XWorkplace problemen met Warp 4 als 
+   de laatste fixpacks niet zijn ge‹nstalleerd, maar dat is nog 
+   niet het test team bevestigd. 
+
+   De volgende OS/2 versies zijn veilig, omdat zij zijn gebaseerd 
+   op ruwweg dezelfde IBM code: 
+
+   --  Warp 4 FP 15 
+
+   --  WarpServer voor e-Business 
+
+   --  Merlin/Aurora Convenience Packages 
+
+   --  eComStation 1.x 
+
+   XWorkplace 1.0.4 en hoger leveren toegang tot extra informatie 
+   over stuurprogramma's. De volgende benodigdheden zijn van toepassing: 
+
+   -- Het CFGDAT.INF bestand uit het ConfigTool freeware pakket moet 
+      aanwezig zijn in een directory van een pad dat is opgegeven in 
+      de BOOKSHELF omgevingsvariabele in de CONFIG.SYS. 
+
+   -- De uitgebreide help weergever NewView moet ge‹nstalleerd zijn of 
+      als een complete vervanging van VIEW.EXE of als een alleenstaand 
+      programma met het uitvoerbare bestand in een PATH en de DLL 
+      aanwezig in het LIBPATH statements. 
+
+
+3. INSTALLATIE 
+============== 
+
+   XWorkplace moet m.b.v. WarpIN worden ge‹nstalleerd. Nadat alle bestanden 
+   zijn gekopieerd, zal Warpin de Workplace Shell opnieuw starten om er 
+   zeker van te zijn dat alle wijzigingen actief worden. Herstarten zal niet 
+   nodig zijn. 
+
+   Als u op dit moment nog niet weet of u XWorkplace wilt gebruiken, kunt ook 
+   alleen het "Documetation" package selecteren uit het archief. Op deze wijze 
+   kan eerst de documentatie van XWorkplace gelezen worden en kan besloten worden 
+   om alsnog alles te installeren. Om het later te installeren, klik dan simpel 
+   weg opnieuw op de .WPI van het XWorplace archief. 
+
+   Enige WAARSCHUWINGEN: 
+
+   --  MAAK, voor de installatie, in ieder geval EEN BACKUP VAN DE WPS. 
+
+   --  Er is gemeld dat de Workplace Shell zichzelf 'ophangt' na het 
+       herstarten als u de "Automatisch vergrendelen bij opstarten" instellingen 
+       heeft ingeschakeld. In dat geval, schakel deze instelling uit voor dat 
+       WarpIN de WPS mag herstarten. 
+
+
+   Installeren op eComStation 1.x 
+   ----------------------------- 
+
+   Als u xWP installeert op eComStation 1.x, weet dan dat eCS 
+   een speciale versie van XWorkplace bevat die conflicteert 
+   met de 'losse' versie. Doe een van de volgende dingen: 
+
+   *   Installeer deze vrijgave van XWorkplace over de versie 
+       die zit in eCS 1.x heen -- d.w.z., als WarpIN u vraagt naar de 
+       doel directory geef dan op: 
+       ?:\ecs\system\ewps (? uw opstart station). 
+
+       Merk op dat dit de versie die in eCS zit, zal overschrijven 
+       en dat dat niet eenvoudig kan worden hersteld. 
+
+   *   Als alternatief, verlaat nu deze XWorkplace installatie en 
+       de-installeer eerst de eCS versie door het uitvoeren van 
+
+           ?:\ecs\system\ewps\install\deinst.cmd 
+
+       Herstart uw werkplek (of herstart de PC), en installeer dan 
+       XWorkplace in een willekeurige directory. 
+
+
+4. BIJWERKEN 
+============ 
+
+   Bijwerken vanuit XWorkplace 
+   --------------------------- 
+
+   BELANRIJK: Als u installeert terwijl de WPS draait (wat het meest 
+   waarschijnlijke is), zal WarpIN u bevestiging dialogen laten zien 
+   over de bestanden die momenteel in gebruik zijn, als meest belangrijke, 
+   XFLDR031.DLL. Dat is normaal omdat die modules worden geladen als de 
+   WPS (en dus XWorkplace) draait. 
+
+   In deze dialogen, MOET u "Unlock (DosReplaceModule)" selecteren, 
+   anders wordt uw installatie niet volledig bijgewerkt. 
+
+   Als u dit bericht krijgt voor een help bestand (.HLP uitbreiding), 
+   wordt het help bestand van XWorkplace open gehouden door de WPS. 
+   Helaas is het met OS/2 niet mogelijk om gegevens bestanden automatisch 
+   te ontkoppelen (unlock). Om het help bestand te ontkoppelen, terwijl de 
+   'gekoppeld' dialoog wordt getoond, open een standaard WPS help 
+   venster (bijv. door op een lege plek op de werkplek te klikken en F1 in 
+   te drukken), dit zal het XWorkplace help bestand ontkoppelen. 
+
+   Daarnaast krijgt u waarschijnlijk een informatie bericht dat de 
+   XWPDAEM.EXE draait en dat die gesloten moeten worden. Laat WarpIN dat 
+   programma sluiten (dat is de XWorkplace Daemon). 
+   Dit is het ongelukkige neven effect dat al uw 'XWorkplace Opstart' mappen, 
+   starten als u accepteert wat WarpIN aanbiedt het starten van de werkplek 
+   aan het einde van de installatie, zelfs als zij zijn ingesteld om alleen te 
+   starten bij het herstarten. 
+   Als dit een probleem is, moet u het aanbod om de Werkplek opnieuw te starten 
+   weigeren, en u moet handmatig herstarten nadat de installatie gereed is. 
+
+   Als het bijwerken niet werkt, laat dan WarpIN de ge‹nstalleerde XWorkplace 
+   versie eerst verwijderen, herstart de WPS en installeer dan de nieuwe versie. 
+
+
+   Bijwerken vanuit XFolder 
+   ------------------------ 
+
+   XWorkplace is de opvolger van XFolder V0.85. 
+
+   XWorkplace en XFolder kunnen niet samenwerken, omdat XWorkplace 
+   alle mogelijkheden bevat van XFolder 0.85 plus veel bugfixes 
+   en zelfs meer mogelijkheden. 
+
+   Met als resultaat, als XFolder is ge‹nstalleerd, XWorkplace uw XFolder 
+   installatie zal uitschakelen. 
+
+   Toch moet u XWorkplace in een ANDERE directory installeren dan de bestaande 
+   XFolder directory om er zeker van te zijn dat geen bestand conflicten ontstaan. 
+   Verscheidene mensen hebben laten weten dat het installeren in dezelfde directory 
+   de WPS kan laten hangen 
+
+   XWorkplace kan uw bestaande XFolder 0.85 instellingen, indien aanwezig overnemen. 
+   U zal daar tijdens de eerste WPS herstart na de installatie 
+   om worden gevraagd. Echter er zijn veel nieuwe instellingen bijgekomen, dus 
+   veel zal worden uitgeschakeld. 
+
+   Als u prefereert om later terug te gaan naar uw bestaande XFolder installatie 
+   (uiteindelijk, is dit een ontwikkelaars vrijgave), laat WarpIN dan XWorkplace 
+   de-installeren en installeer XFolder weer door het gebruik van het INSTALL.CMD 
+   in uw XFolder directory. Uw oude XFolder instellingen worden door XWorkplace 
+   niet be‹nvloed 
+
+
+5. TAAL ONDERSTEUNING 
+===================== 
+
+   Dit archief bevat alleen de taal ondersteuning voor Nederlands, 
+   een paar uitzonderingen daar gelaten die nog niet vertaald zijn. 
+
+   Andere talen zijn te vinden op: 
+   ftp://ftp.netlabs.org/pub/xworkplace/nls 
+
+
+6. BEGINNEN 
+=========== 
+
+   Open in ieder geval, na installatie, eerst het nieuwe "XWorkplace Instellingen" 
+   object en ga naar de "Kenmerken" pagina. Dit is de meest centrale 
+   plaats om de mogelijkheden van XWorkplace in te schakelen. Klik op de "Help" 
+   toets voor meer informatie. 
+
+
+7. LICENTIE, AUTERURSRECHT, VERANTWOORDELIJKHEID 
+================================================ 
+
+   Auteursrecht (C) 1997-2016 Ulrich Mller, 
+                              Martin Lafaix, 
+                              Paul Ratcliffe, 
+                              Rich Walsh,
+                              en anderen. 
+
+   Dit programma is gratis; u kan het distribueren en/of verbeteren onder 
+   de condities van de "GNU General Public License" zoals opgenomen 
+   in het bestand " COPYING in de installatie directory. 
+
+   De volledige broncode is beschikbaar. Zie XFLDR031.INF voor details. 
+
+   Dit programma wordt gedistribueerd in de verwachting dat het bruikbaar is, 
+   maar ZONDER ENIGE GARANTIE; zonder zelfs de daaronder begrepen garantie 
+   van VERKOOPBAARHEID of GESCHIKTHEID VOOR EEN BEPAALD DOEL. 
+
+   Voor details, ga naar de "Notices" sectie in XFLDR031.INF. 
+
+
+8. KONTAKT 
+========== 
+
+   Er zijn twee "mailing lists" gemaakt op netlabs.org voor kontakt. 
+   Gebruik deze 'lists' a.u.b. voor algemene discussies over XWorkplace: 
+
+   Voor XWorkplace gebruikers: 
+       xworkplace-user@netlabs.org 
+
+   Voor XWorkplace ontwikkelaars en ander belangstellenden: 
+       xworkplace-dev@netlabs.org 
+
+   Voertaal in beide 'lists' is Engels. 
+
+   Voor details, zie "Notices" --> "Contact" in XFLDR031.INF. 
+
+   Een bugtracker voor XWorkplace is beschikbaar op: 
+
+           http://xtracker.netlabs.org 
+
+   Gebruik deze mogelijkheid om bugs te rapporten in  plaats van ze 
+   te plaatsen in de "mailing lists". Bij voorbaat dank. 
+

@@ -1,0 +1,86 @@
+<HTML WIDTH=70% XPOS=right>
+<HEAD>
+    <TITLE>
+        Trucchi e suggerimenti
+    </TITLE>
+</HEAD>
+<BODY>
+
+
+<OL>
+
+<LI>Per sfruttare il supporto NetscapeDDE con <b>Mozilla</b> (presente nelle versioni 1.0.0 e
+superiori), specificare <code>Mozilla</code> come nome del server DDE attraverso il parametro
+<code>-S</code>. Si veda il piccolo script pi— avanti.
+
+<p><LI>In effetti Š possibile utilizzare NetscapeDDE con tutte le applicazioni che permettono di 
+specificare il browser assunto da lanciare quando si clicca su di un collegamento. Tra queste 
+applicazioni vi sono gli oggetti Url di Warp 4, PMMail, e ProNews. Dato che la linea di comando
+NetscapeDDE non Š molto comoda da usare, ho preparato questo piccolo script, che ho chiamato 
+<code>netscdde.cmd</code> e collocato in una cartella nel <code>PATH</code>. che mi permette
+di avviare Mozilla attraverso <code>NETSCDDE.EXE</code>:
+
+<pre>@echo off
+SET XWPBASE=<i>your XWorkplace base directory path</i>
+SET MOZILLADIR=<i>where your mozilla.exe resides</i>
+%XWPBASE%\bin\netscdde.exe -h -X -p %MOZILLADIR%\mozilla.exe -S Mozilla -s %MOZILLADIR% %1 %2 %3 %4 %5 %6 %7
+</pre>
+
+Nelle applicazioni che lo richiedono indico questo script anzich‚ la linea di comando completa; il meccanismo funziona 
+senza problemi.
+
+<p><LI>C'Š poi un effetto collaterale non previsto ma a volte utile: dato che
+&os2; pu• condividere il suo ambiente DDE con una sessione &winos2;,
+NetscapeDDE pu• passare URL anche ad una copia di Netscape Navigator
+in esecuzione in ambiente <B>&winos2;</B>, ad es. Communicator (Netscape 4).
+La sola cosa necessaria da fare Š abilitare WIN_DDE nelle impostazioni delle
+sessioni &winos2; nell'oggetto programma Netscape di Windows.
+Specificando il file EXE di Netscape in Windows con <CITE>-p &lt;exe&gt;</CITE> 
+(vedi sopra), NetscapeDDE permette addirittura l'integrazione di Windows Netscape
+nella WPS.
+
+<BR><LI>Ô possibile (V1.1) anche specificare un file <B>.CMD</B> con <CITE>-p</CITE> e
+<CITE>-P</CITE> per eseguire particolari comandi prima e dopo il lancio di
+Netscape. Si dovrebbe specificare anche <CITE>-m</CITE> o <CITE>-mh</CITE>,
+in modo da non avere la finestra VIO sullo schermo.
+Ecco un file <CITE>NETSCAPE.CMD</CITE> di esempio:
+
+<PRE>@echo off
+rem inizializzazioni, per esempio un cambio di directory
+cd D:\WebStuff
+rem chiama Netscape
+netscape.exe
+rem il file .cmd Š in attesa fino al termine dell'
+rem esecuzione di Netscape; chiamate successive a NETSCDDE
+rem contatteranno quest'istanza di Netscape
+rem Dopo che Netscape Š stato terminato, esegue questo:
+call cleanup.cmd
+rem o qualsiasi cosa si voglia</PRE>
+
+Grazie a Marcus de Geus per il suggerimento.
+
+<BR><LI>Ecco un trucco da parte di Chris Wenham, redattore anziano di
+<A HREF="http://www.os2ezine.com">OS/2 e-zine</A>,
+trovato nella <B>SmartSuite</B> Mailing List (smartsuite-os2@makelist.com):
+<P><CITE>"Se si desidera modificare il browser web che le applicazioni Smartsuite 
+chiamano cliccando sui loro pulsanti Internet (come il bottone dell'Organizer 
+per arrivare alla pagina Almanacco), o mandare l'URL alla copia in esecuzione di 
+Netscape piuttosto che lanciarne una nuova istanza, Š necessario seguire questi passi:
+<P>Lanciare REGEDIT2.EXE, che si trova nella cartella /OS2/SYSTEM.
+Espandere l'albero HKEY_CLASSES_ROOT.
+Scorrere in basso fino ad "http" ed espandere totalmente (attraverso
+"shell" e "open") fino ad arrivare a "command".
+<P>Fare clic con il tasto destro sui dati nella chiave "(Default)", scegliere "Modify", ed
+indicare il nuovo percorso per il browser, assicurandosi di chiuderlo con "%1" (che 
+rappresenta l'URL).
+Chiudere RegEdit.
+<P>Non dovrebbe essere necessario un riavvio del sistema, ma potrebbe servire il riavvio di tutte
+le componenti in esecuzione di SmartSuite.</CITE>
+<P>Chris assicura che in questa sezione del file di registro Š possibile specificare <code>NETSCDDE.EXE</code>
+come browser prescelto.
+</OL>
+<BR>
+</BODY>
+</HTML>
+
+

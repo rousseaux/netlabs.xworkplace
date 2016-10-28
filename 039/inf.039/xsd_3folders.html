@@ -1,0 +1,60 @@
+<HTML NOSUBLINKS="config"  WIDTH=70% XPOS=right>
+<HEAD>
+    <TITLE>
+        Cartelle di Avvio e Chiusura
+    </TITLE>
+</HEAD>
+<BODY>
+<B>Classi: XFldObject, XFldDesktop, XFolder, XFldStartup, XFldShutdown</B><HR>
+&xwp; offre cartelle separate di avvio e di chiusura.
+
+<P><B>Nota:</B> le cartelle di avvio e di chiusura non sono create automaticamente
+dal programma di installazione, per evitare confusione. Si apra l'oggetto
+<A HREF="sys_1intro.html">"Impostazioni &xwp;"</A>
+per crearle manualmente.
+
+<P>Se &xwp; trova la <STRONG>Cartella di avvio di &xwp;</STRONG> all'apertura della Scrivania, ne elabora tutti i contenuti
+similmente a quanto WPS fa con la sua cartella di avviamento. Le differenze principali sono:
+
+<UL><LI>Si puï impostare un tempo che &xwp; aspetterÖ tra un'apertura e l'altra degli oggetti. La cartella
+di avvio convenzionale alle volte porta dei problemi se ci sono molti oggetti contenuti, che 
+normalmente vengono lanciati tutti nello stesso momento, causando alle volte dei blocchi alla WPS.
+Questo ritardo puï essere cambiato nel blocco impostazioni della Cartella di avviamento di &xwp;.
+
+<BR><LI>‘ possibile osservare il progredire del processo di avvio in una finestra separata
+(che puï essere disattivata nel blocco impostazioni della cartella di avviamento di &xwp;,
+se si preferisce).
+
+<BR><LI>L'avvio degli oggetti puï essere interrotto in corso.
+
+<BR><LI>L'avviamento puï essere totalmente saltato mantenendo premuto il tasto "Maiusc" durante
+l'avvio di WPS (e facendo cosç apparire la finestra <A HREF="xsd_01intro.html">"Panico"</A>).
+
+<BR><LI>La cartella di avviamento di &xwp; viene elaborata anche dopo un riavvio della Scrivania, 
+cosa che non accade alla cartella di avviamento classica.
+Questo comportamento si ha solo selezionando la casella relativa nella finestra di conferma "Riavvio Scrivania".
+
+<BR><LI>La cartella di avviamento di &xwp; Startup Folder ha ora (V0.80) una voce di menu 
+"Avvia il contenuto della cartella", che permette di lanciare gli oggetti in essa contenuti anche 
+dopo che la WPS si ä aperta.
+
+</UL>La <STRONG>Cartella di chiusura di &xwp;</STRONG> viene invece elaborata prima
+di una chiusura avanzata (non prima di una chiusura regolare). A differenza della cartella di avviamento
+non ä possibile impostare ritardi: &xwp; attende, prima di lanciare il successivo oggetto, che 
+quello attualmente aperto si chiuda. Solo se tutti gli oggetti presenti nella cartella
+di chiusura si sono chiusi ha luogo la chiusura avanzata.
+
+<P>La cartella di chiusura puï essere utile se si hanno dei programmi da eseguire prima
+di disattivare il sistema.
+Per esempio, si possono creare degli script REXX che eseguono operazioni di pulizia prima
+della chiusura, come la disconnessione dalla rete, la cancellazione di file temporanei
+o qualsiasi altra cosa si voglia.
+
+<P>Per le cartelle di avviamento e di chiusura di &xwp;, si puï definire l'ordine di esecuzione
+degli oggetti. Il comportamento ä lo stesso descritto nella relativa
+<A HREF="menu_5order.html">pagina</A> della Cartella di configurazione di &xwp;.
+<BR>
+</BODY>
+</HTML>
+
+

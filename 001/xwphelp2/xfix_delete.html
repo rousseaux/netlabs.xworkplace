@@ -1,0 +1,120 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        xfix: The Basics
+    </TITLE>
+</HEAD>
+<!-- this page is all new with V0.9.7 -->
+<!-- rewritten and renamed V1.0.9 -->
+<BODY>
+This page describes the mechanics of using xfix in some detail. See
+<A HREF="xfix_howto.html">Step by Step Guide</A> for a quick tutorial.
+
+<P><B>Protecting Important Handles</B>
+
+<P>Before you delete anything, let xfix protect the handles your system
+needs to work properly. Once they are protected, xfix will ignore any
+attempt to delete them.
+
+<P>Start by selecting <B>Actions-&gt;Auto-protect</B> on the menubar.
+This will protect every file that could be used by a program
+object, every folder that contains abstract (non-folder) objects such
+as shadows, and every file or folder that has an Object ID. Handles
+that are already marked <IMG SRC="img/xfix_error.gif"> as invalid
+will be ignored.
+
+<P>Next, scan the list for any file or folder that has a shadow on your
+Desktop (sorting by "Full name" can make this easier). If it isn't
+protected already, right-click on it, then select <B>Protect</B> from the
+&popmenu; (you can also use <CODE><B>Ctrl+P</B></CODE>). You will not be
+able to protect handles that are invalid.
+
+<P>Every protected handle will display <IMG SRC="img/xfix_protect.gif">
+in the Icon column. Every folder that is on the path to a protected
+object will display <IMG SRC="img/xfix_safe.gif"> meaning that it is
+also safe from deletion.
+
+<P>If you want to unprotect a handle, either select <B>Unprotect</B> from
+the &popmenu; or press <CODE><B>Ctrl+P</B></CODE>.  Note that you can only
+unprotect handles marked <IMG SRC="img/xfix_protect.gif">.  Any handle
+marked <IMG SRC="img/xfix_safe.gif"> will be unprotected automatically
+when there are no more protected handles that require it.
+
+<P><B>Deleting Handles</B>
+
+<P>You can delete unprotected handles by selecting <B>Delete</B> on
+the &popmenu; or by pressing either the <B><CODE>Delete</CODE> key</B>
+or <CODE><B>Ctrl+D</B></CODE>. The handle will be marked
+<IMG SRC="img/xfix_delete.gif"> but will not be deleted immediately.
+It won't be removed from memory until you select
+Actions-&gt;Delete now..., and it won't be permanently deleted
+until you select xfix-&gt;Write back to OS2SYS.INI.
+
+<P>If deleting a folder's handle would cause other handles to become
+invalid, the affected handles are marked <IMG SRC="img/xfix_orphan.gif">
+to indicate that they are "orphans" (that is, they don't have a parent).
+Unless you plan to delete them too, undelete the handle that caused
+the problem. You can use either <B>Undelete</B> on the &popmenu; or
+the <CODE><B>Delete</B></CODE> key to unmark the deleted handle.
+
+<P>When you are done marking handles for deletion (or you just want to
+get them out of the way), select <B>Actions-&gt;Delete now...</B>.
+This step is optional but advisable because it lets you see if
+you've created any errors.  You will be asked to confirm the deletions
+and warned if this action would create any orphans.  If it would, you
+should probably press <CODE>No</CODE> and fix the error.
+
+<P>If you answer <CODE>Yes</CODE>, the following will happen.  None of
+these changes will become permanent until you save your work by selecting
+xfix-&gt;Write back to OS2SYS.INI.
+
+<UL><LI>Each handle's entry in xfix's internal copy of the handles table
+will be removed, along with its entry in the listing.  
+
+<LI>All abstract objects associated with this handle (marked with
+<CODE>Abstract objects</CODE>) will be scheduled for deletion when you
+save your work. This is necessary because otherwise they would reappear
+in some new folder when the WPS reused this folder's handle.
+
+<LI>Any folder positions associated with this handle (marked with
+<CODE>Folder position</CODE>) will be scheduled for deletion.
+
+<LI>If the handle had an Object ID assigned it, the ID will be deleted
+when you save your work.
+</UL>
+
+<B>Warning:</B> While xfix's Auto-protect feature can help prevent
+you from making a catastophic mistake, you can still do some damage
+to your system.  Just because a file or folder isn't protected doesn't
+mean its handle isn't needed.  You should only delete a handle if you
+know it is not used.
+
+<P><B>Saving Your Work</B>
+
+<P>Once you've deleted handles that are invalid or not needed, you can
+save your changes using <B>xfix-&gt;Write back to OS2SYS.INI...</B>.
+
+<P>If you're not entirely sure that you haven't created new problems,
+try this:  use Actions-&gt;Delete now... to remove handles that are
+marked for deletion, then select xfix-&gt;Re-parse buffer.  If the
+updated display shows errors that didn't exist before <B>do not</B>
+save your work.  Just exit xfix, restart, and try again.  Otherwise,
+you're ready to proceed.
+
+<P>Before using "Write back...", make sure the following  is true:
+
+<UL><LI>You have a working WPS backup in case something goes wrong.
+In particular, have backup copies of <CODE>OS2.INI</CODE> and
+<CODE>OS2SYS.INI</CODE>.
+<P><LI>The WPS is not currently running. You are safe if you have changed
+<CODE>RUNWORKPLACE</CODE> in your &cfgsys; file or if you
+have started xfix from &xwp;'s "Panic" dialog during Desktop startup.
+</UL>
+
+<P>After you're changes have been saved, you can close xfix's main
+window to exit.
+
+<P>
+</BODY>
+</HTML>
+

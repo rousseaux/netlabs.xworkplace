@@ -1,0 +1,63 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: memoria
+    </TITLE>
+</HEAD>
+<BODY>
+Le impostazioni nel gruppo "File di appoggio" controllano la gestione del file di appoggio di &os2;.
+Tutte queste impostazioni fanno riferimento al comando <CODE>SWAPPATH</CODE> 
+in &cfgsys;. Si veda la <A HREF="cmdref.inf#swappath">documentazione relativa a SWAPPATH</A> 
+in  <I>&os2; - Riferimento per i comandi</I> per i dettagli.
+
+<P>Per ulteriori informazioni su quest'argomento, si veda 
+<A HREF="glossary/gls_mem_paging.html">Il paging</A>.
+
+<UL><LI>Il campo <B>"Dimensione corrente"</B> mostra la dimensione attuale del file di appoggio &os2;
+(<CODE>SWAPPER.DAT</CODE>).
+Il valore Š aggiornato continuamente al variare della dimensione del file di appoggio.
+
+<P><LI>Il campo <B>"Memoria principale"</B> mostra la quantit… di memoria fisica (RAM) principale
+installata nel sistema.
+Questo numero, sommato alla dimensione del file di appoggio riportata subito sopra, rappresenta la
+memoria virtuale totale utilizzata al momento da &os2;.
+
+<P><LI>Il campo <B>"Dimensione minima"</B> determina la dimensione minima al di sotto della quale
+il file di appoggio non deve scendere mai. E' opportuno impostare un valore abbastanza alto altrimenti
+&os2; rallenter… mentre ne aggiusta la dimensione, operazione che richiede un certo tempo.
+
+<P>Il valore assunto, 2 MB, Š decisamente troppo basso per la gran parte dei sistemi, a meno che 
+non si abbia moltissima memoria installata. Per esempio, se la dimensione abituale del file di appoggio 
+Š 20 MB e il valore di dimensione minima Š impostato a 2 MB, sar… opportuno alzarlo a  32 MB
+per evitare inutili variazioni nelle dimensioni del file di appoggio.
+
+<P>L'impostazione corrisponde al terzo parametro del comando <CITE>SWAPPATH</CITE>.
+
+<P><LI>Il campo <B>"Soglia di allarme"</B> determina quando &os2; avviser… per esaurimento 
+dello spazio libero sul disco che ospita il file di appoggio, in caso di crescita di quest'ultimo.
+Se, per esempio, qui si Š impostato un valore di 20 Mb ed &os2; rileva che sono rimasti solo 19 Mb liberi 
+sull'unit… che ospita il file di appoggio, si avr… un messaggio di avvertimento.
+
+<P>L'impostazione corrisponde al secondo parametro del comando <CITE>SWAPPATH</CITE>.
+
+<P><LI>Il campo <B>"Percorso"</B> determina la posizione del file di appoggio.
+E' possibile indicare un qualunque indirizzario valido. Si noti per• non si pu• cambiare
+il nome del file di appoggio, che deve restare <CITE>SWAPPER.DAT</CITE>.
+
+<P>In generale, sarebbe opportuno posizionare il file di appoggio su un'unit… HPFS, 
+al fine di ridurre la frammentazione e dato che Š generalmente pi— veloce.
+Inoltre, Š opportuno posizionarlo sulla partizione pi— usata del disco meno utilizzato
+(nel caso siano disponibili pi— dischi). Questo evita movimenti inutili delle testine dei dischi
+nell'accesso al file di appoggio. Ovviamente, se tale partizione risultasse su un disco pi— lento degli altri
+sarebbe meglio sceglierne uno differente.
+
+<P>L'impostazione corrisponde al primo parametro del comando <CITE>SWAPPATH</CITE>.
+
+<P>Si tenga presente che, quando si modifica la posizione del file di appoggio, il vecchio file
+non viene cancellato automaticamente al successivo riavvio. Bisogner… perci• ricordarsi la
+vecchia posizione e cancellare manualmente il vecchio file di appoggio dopo il riavvio del sistema, 
+altrimenti diversi MB di spazio resteranno occupati.
+</UL>
+</BODY>
+</HTML>
+

@@ -1,0 +1,173 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: stringhe impostazioni WPDesktop
+    </TITLE>
+</HEAD>
+<BODY>
+La classe <CODE>WPDesktop</CODE> implementa la Scrivania &os2;.
+Dato che la Scrivania non ä che un tipo particolare di cartella, essa supporta, oltre alle
+stringhe proprie di <CODE>WPDesktop</CODE>, anche quelle relative alle classi
+<CODE><A HREF="objects/string_1wpobject.html">WPObject</A></CODE> e
+<CODE><A HREF="objects/string_2wpfolder.html">WPFolder</A></CODE>.
+
+<P>Per influenzare la Scrivania aperta correntemente bisogna richiamare queste stringhe
+sull'oggetto che ha <CODE>&lt;WP_DESKTOP&gt;</CODE> come ID.
+
+<DL>
+
+<DT><P><CITE><B>AUTOLOCKUP</B>={YES|NO}</CITE>
+<DD>Determina se la funzione di blocco automatico ä o no attiva
+(se cioä la scrivania ed il mouse si bloccano automaticamente dopo
+un certo periodo di inattivitÖ; vedi <CODE>LOCKUPTIMEOUT</CODE>).
+Il valore assunto ä <CODE>NO</CODE>.
+
+<DT><P><CITE><B>LOCKUPAUTODIM</B>={YES|NO}</CITE>
+<DD>Determina se la funzione salva schermo ä o no attiva
+(se cioä, due minuti dopo il blocco di tastiera e mouse, lo schermo 
+si oscura e viene visualizzata un'immagine).   
+Il valore assunto ä <CODE>YES</CODE>.
+
+<DT><P><CODE><B>LOCKUPBACKGROUND</B>=<I>name</I>,<I>mode</I>,<I>factor</I>,<I>bgtype</I>,<I>bgcol</I></CODE>
+<DD>Imposta lo sfondo di blocco. La sintassi ä la stessa della stringa
+<A HREF="objects/string_2wpfolder.html">WPFolder</A> <CODE>BACKGROUND</CODE>.
+
+<DT><P><CITE><B>LOCKUPFULLSCREEN</B>={YES|NO}</CITE>
+<DD>Determina se il blocco ä a schermo intero.
+Se <CODE>YES</CODE>, al blocco del sistema viene visualizzata l'immagine 
+di sfondo specificata in <CODE>LOCKUPBACKGROUND</CODE>.
+Se <CODE>NO</CODE>, viene visualizzata solo una finestra per
+cui inserire la parola d'ordine di sblocco.
+Il valore assunto ä <CODE>YES</CODE>.
+
+<DT><P><CITE><B>LOCKUPONSTARTUP</B>={YES|NO}</CITE>
+<DD>Determina se il sistema si blocca o no automaticamente finito l'avvio
+(o subito dopo un riavvio).
+Il valore assunto ä <CODE>NO</CODE>.
+
+<DT><P><CITE><B>LOCKUPTIMEOUT</B>=<I>n</I></CITE>
+<DD>Specifica quanti minuti di inattivitÖ di tastiera e mouse devono passare
+prima che il sistema vada automaticamente in blocco. L'impostazione viene
+ignorata se <CODE>AUTOLOCKUP</CODE> ä disabilitato.
+
+<DT><P><CITE><B>SHOWHELPPANEL</B>=[XWP|<I>nomefile</I>,]<I>panelid</I></CITE> (solo &xwp;)
+<DD>Visualizza una pagina di aiuto ("pannello") da un file <CODE>.HLP</CODE>; permette alle
+applicazioni o agli script REXX di visualizzare il proprio aiuto in linea, sia in un pannello di aiuto
+di sistema sia in un pannello specifico dell'applicazione.
+
+<P>In &os2;, ad ognuna delle pagine di aiuto all'interno di un file .HLP viene assegnato un numero
+univoco, il <I><CODE>panelid</CODE></I>.
+In questa maniera ogni pannello di aiuto ä identificabile specificando il nome del file di aiuto
+ed il numero del pannello.
+<CODE>SHOWHELPPANEL</CODE> permette di visualizzare tale pannello in diverse
+maniere:
+
+<UL><LI><CODE>XWP,<I>panelid</I></CODE> specifica un pannello dal file di aiuto
+di &xwp;, XFLDRxxx.HLP. <CODE>XWP</CODE> ä un'abbreviazione per il nome file, che permette
+di non dover limitarsi ad un codice lingua specifico. Le ID nel pannello di aiuto usate da &xwp; 
+si trovano nel file <CODE>helpids.h</CODE>, nella cartella
+<CODE>toolkit\shared</CODE>.
+
+<P><LI>Se si specifica solo <CODE><I>panelid</I></CODE> si assume di far 
+riferimento ad un pannello di aiuto nel file <CODE>WPHELP.HLP</CODE> di &os2;.
+
+<P><LI>Se invece si specifica anche il <CODE><I>nomefile</I></CODE>, ä possibile
+aprire un qualunque file .HLP nel sistema. Se il file si trova in una cartella
+elencata nel <A HREF="glossary/gls_path_sys.html">percorso di sistema</A>
+<CODE>HELP</CODE>, non ä necessario
+<A HREF="glossary/gls_path.html">percorso completo.</A>
+
+</UL>
+
+<DT><CITE><B>SHOWRUNDLG</B>=<I>cartelladiavvio</I></CITE> (solo &xwp;)
+<DD>Mostra la finestra di dialogo "Eseguire..." di &xwp;, analogamente al comando "Eseguire..."
+<A HREF="xcenter/xc_xbtn1.html">dell'elemento &xbutton;</A>
+di <A HREF="xcenter/xc_main.html">&xcenter;</A>.
+
+<P>Se il valore <CITE><I>cartelladiavvio</I></CITE> ä <CITE>DEFAULT</CITE>, la voce relativa alla cartella
+di avvio nella finestra di dialogo sarÖ vuota (il che significa che sarÖ usato l'indirizzario radice
+del volume di avvio). Ogni altro valore sarÖ usato come valore iniziale per la cartella di avvio.
+
+<P><B>Nota 1:</B> questa stringa impostazione non ä una vera "impostazione", 
+ma piuttosto un comando, che viene eseguito immediatamente.
+
+<P><B>Nota 2:</B> se si richiama questa stringa impostazioni attraverso un programma
+(con <CODE>WinSetObjectData</CODE> o <CODE>SysSetObjectData</CODE>) la funzione non 
+termina finchÇ la finestra non viene chiusa.
+
+<P><B>Per esempio:</B> <CITE>SHOWRUNDLG=F:\OS2</CITE> mostra la finestra "Eseguire..." con il campo
+Cartella di avvio impostato su <CITE>F:\OS2</CITE>.
+
+<IFNDEF __NOXSHUTDOWN__>
+<DT><P><CITE><B>XSHUTDOWNNOW</B>=<I>impostazioni</I></CITE> (solo &xwp;)
+<DD>Avvia subito la &xshutdown; con le <I>impostazioni</I> specificate, corrispondenti alle
+varie impostazioni nella pagina"&xshutdown;" nel blocco appunti impostazioni della Scrivania.
+
+<P><B>Nota 1:</B> questa stringa impostazione non ä una vera "impostazione", 
+ma piuttosto un comando, che viene eseguito immediatamente.
+Le <CODE><I>impostazioni</I></CODE> elencate sotto influenzano solo la chiusura di sistema corrente.
+
+<P><B>Nota 2:</B> se si richiama questa stringa impostazioni attraverso un programma
+(con <CODE>WinSetObjectData</CODE> o <CODE>SysSetObjectData</CODE>), e le richieste 
+conferma sono abilitate,
+la funzione non viene rilasciata finchÇ la finestra non si chiude.
+
+<P><CODE><I>impostazioni</I></CODE> puï essere uguale ad una lista di impostazioni specifiche per la &xshutdown; separate da virgole o a
+<CODE>DEFAULT</CODE>. Si puï specificare una qualunque combinazione
+dei valori riportati sotto. In generale, se una delle parole chiave seguenti non viene specificata
+&xshutdown; utilizza l'impostazione relativa nella pagina
+"&xshutdown;" del blocco appunti impostazioni della Scrivania.
+
+<P>Per superare il comportamento prestabilito, una volta completata la &xshutdown; utilizzare
+una delle istruzioni seguenti:
+
+<UL><LI><CODE>HALT</CODE> avvia la chiusura del sistema, mostra la finestra "E' ora
+possibile spegnere..." e ferma il sistema.
+
+<LI><CODE>REBOOT</CODE> esegue una chiusura del sistema seguita da un riavvio normale.
+
+<LI><CODE>USERREBOOT(<I>cmd</I>)</CODE> esegue la chiusura del sistema cui segue
+un riavvio definito dall'utente attraverso il comando di riavvio
+<CODE><I>cmd</I></CODE>.
+
+<LI><CODE>POWEROFF</CODE> chiude il sistema e spegne la macchina via 
+APM, se questa possibilitÖ ä supportata dall'hardware.
+
+<LI><CODE>RESTARTWPS</CODE> non chiude il sistema ma si limita a riavviare la 
+WPS.
+
+<LI><CODE>FULLRESTARTWPS</CODE> non chiude il sistema ma si limita a riavviare la 
+WPS, chiudendo perï prima tutte le sessioni aperte e rileggendo il contenuto
+della cartella di avvio &xwp; al riavvio della Scrivania.
+
+</UL><BR>Per superare le impostazioni predefinite per le finestre VIO utilizzare
+<CODE>AUTOCLOSEVIO</CODE> o <CODE>NOAUTOCLOSEVIO</CODE>.
+
+<P>Per superare le impostazioni predefinite per <CODE>XSHUTDWN.LOG</CODE>
+usare <CODE>LOG</CODE> o <CODE>NOLOG</CODE>.
+
+<P>Per superare le impostazioni predefinite per l'animazione, usare
+<CODE>ANIMATE</CODE> o <CODE>NOANIMATE</CODE>.
+
+<P>Per superare le impostazioni predefinite di conferma usare 
+<CODE>CONFIRM</CODE> o <CODE>NOCONFIRM</CODE>. Si noti che se le richieste di conferma
+sono attive (o perchÇ si ä specificato <CODE>CONFIRM</CODE> o perchÇ tale ä il valore 
+assunto) la maggior parte delle impostazioni specificate con <CODE>XSHUTDOWNNOW</CODE>
+farÖ soltanto sç che la finestra di conferma venga presentata con differenti valori assunti preselezionati.
+
+<P>Se non si vuole modificare nessuna impostazione, specificare <CODE>DEFAULT</CODE>.
+
+<P>Esempi:
+
+<BR><UL><LI><CODE>XSHUTDOWNNOW=DEFAULT</CODE> avvia la &xshutdown; con le impostazioni
+correnti.
+
+<P><LI><CODE>XSHUTDOWNNOW=RESTARTWPS,NOCONFIRM,LOG</CODE> riavvia subito la WPS, senza richieste di 
+conferma, ma abilitando, solo per questa volta, il file resoconto.
+
+</UL>
+</IFNDEF>   
+</DL>
+</BODY>
+</HTML>
+

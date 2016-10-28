@@ -1,0 +1,41 @@
+<HTML WIDTH=70% XPOS=right>
+<HEAD>
+    <TITLE>
+        Requisiti
+    </TITLE>
+</HEAD>
+<BODY>
+Per scrivere una DLL plug-in DLL bisogna avere una certa familiarit… con:
+
+<OL><LI>La programmazione in C. Al momento non c'Š supporto per la programmazione
+nei vari dialetti Pascal per &os2;.
+
+<P><LI>La programmazione per il Presentation Manager. Una "classe elemento" 
+Š essenzialmente una classe finestra PM (si veda la <A HREF="plug_2terminology.html">"Terminologia"</A>).
+
+<P>Non c'Š ragione di preoccuparsi anche se prima d'ora non si Š mai scritta una classe finestra PM da zero 
+Gli esempi faranno da guida e il tutto non Š comunque particolarmente difficile se si sa cos'Š una 
+procedura finestra, se si conosce la differenza tra "genitore" e "figlio" e <CODE>WinSendMsg</CODE> 
+e <CODE>WinPostMsg</CODE>; naturalmente, pi— se ne sa meno problemi si avranno.
+
+<P><LI>Si deve anche sapere cos'Š una DLL, per cosa si usa e perch‚ una DLL Š una cosa diversa
+da un processo ;-)
+
+</OL>Ed ecco le buone notizie: <I>non Š</I> necessario conoscere la programmazione WPS o 
+SOM, il che certo far… tirare un sospiro di sollievo a molti aspiranti contributori.
+
+<P>Inoltre, si pu• usare il proprio compilatore C preferito. Dovrebbe andare bene anche EMX/GCC.
+Il solo codice &xwp; necessario sono gli "header" da includere, che ora sono compresi nella
+distribuzione binaria di &xwp; (nella cartella <CODE>toolkit</CODE>).
+
+<P>Nel caso non ci si raccapezzasse, si pu• sempre scaricare il 
+<A HREF="notices_40source.html">codice sorgente completo di &xwp;</A>,
+dove si potr… esaminare il codice sorgente per le DLL degli elementi standard inclusi in 
+&xwp; (l'elenco finestre, l'orologio ed i monitor memoria), vedendo dettagliatamente come sono
+scritti e come funzionano.
+
+<BR>
+</BODY>
+</HTML>
+
+

@@ -1,0 +1,148 @@
+<HTML>
+  <HEAD>
+    <TITLE>
+      xfix: Schritt f&uuml;r Schritt Anleitung
+    </TITLE>
+  </HEAD>
+  <!-- this page is new with V1.0.9 --> <body>
+    Wenn sie noch keine <b>Sicherung</b> von <code>OS2.INI</code> und
+    <code>OS2SYS.INI</code> durchgef&uuml;hrt haben, beenden sie bitte
+    xfix und f&uuml;hren eine Sicherung durch. Danach k&ouml;nnen sie
+    xfix erneut starten.
+    <ol>
+      <br>
+      <li><b>Der Anfang</b>
+        <ul>
+          <br>
+          <li>W&auml;hlen sie Men&uuml;eintrag <b>Aktionen-&gt;Suche
+              ung&uuml;ltige Dateien</b>. Dies f&uuml;hrt zum Suchen
+            nach Handles die auf gel&ouml;schte Dateien und Ordner
+            verweisen. Die Suche k&ouml;nnte einen Moment dauern. Wenn
+            sie beendet ist werden ung&uuml;ltige Handles wie folgt
+            angezeigt: <img src="img/xfix_error.gif">. <br>
+          </li>
+          <li>W&auml;hlen sie Men&uuml;eintrag <b>Aktionen-&gt;Auto-Schutz</b>.
+            Dies f&uuml;hrt zum L&ouml;schschutz von Handles die die WPS
+            f&uuml;r eine korrekte Funktionsweise zwingend braucht.
+            Diese Handles werden wie folgt dargestellt: <img
+              src="img/xfix_protect.gif"> oder <img
+              src="img/xfix_safe.gif">. <br>
+          </li>
+          <li>W&auml;hlen sie Men&uuml;eintrag <b>Sortieren
+              nach-&gt;Bild</b>. Daraufhin werden alle ung&uuml;ltigen
+            Handles am Listenanfang angezeigt. </li>
+        </ul>
+      </li>
+      <li><b>L&ouml;schen ung&uuml;ltiger Handles</b>
+        <p>xfix kann viele Probleme identifizieren aber nur einige von
+          diesen beheben. Wenn ihr System stark besch&auml;digt ist
+          bestehen m&ouml;glicherweise diese Probleme auch nach der
+          Benutzung von xfix weiter. </p>
+        <ul>
+          <br>
+          <li>Werfen sie f&uuml;r jedes ung&uuml;ltigen Handle einen
+            Blick auf die "Referenzen" Spalte. Wenn sie eine Nummer
+            sowie den Eintrag <code>Abstrakte Objekte</code> sehen
+            haben sie ein Problem mit "Nicht-Dateisystem" Objekten wie
+            zum Beispiel Schattenobjekten die verlorengegangen sind. Um
+            diese wiederherzustellen, klicken sie mit gedr&uuml;ckter
+            Maustaste 2 auf den entsprechenden Handleeintrag und
+            w&auml;hlen dann <b>Abstrakte Objekte auf
+              Arbeitsoberfl&auml;che verschieben</b>. Wenn sie dies
+            nicht tun wird das Objekt gel&ouml;scht sobald sie das
+            Handle l&ouml;schen. <br>
+          </li>
+          <li>W&auml;hlen sie alle als ung&uuml;ltig markierten Handles
+            aus, dann w&auml;hlen sie <b>L&ouml;schen</b> um sie zu
+            l&ouml;schen. Sie k&ouml;nnen hierzu die <code>Entf</code>
+            Taste bet&auml;tigen oder <code>L&ouml;schen</code> vom
+            &amp;popmenu; ausw&auml;hlen. </li>
+        </ul>
+      </li>
+      <li><b>Nicht ben&ouml;tigte Handles l&ouml;schen</b>
+        <p>Hier zeigt xfix seine wahre St&auml;rke. Es ist gut
+          m&ouml;glich da&szlig; es massenhaft Handles gibt die die WPS
+          nie benutzt und die nur das System verlangsamen. Auch wenn sie
+          auf existierende Dateien zeigen sind die Handles oft
+          unn&ouml;tig und k&ouml;nnen gel&ouml;scht werden. </p>
+        <ul>
+          <br>
+          <li>W&auml;hlen sie <b>Sortieren nach-&gt;Langer Name</b> um
+            nach Laufwerk,Verzeichnis, Dateiname zu sortieren. <br>
+          </li>
+          <li>Finden sie Dateien und Ordner mit Schattenobjekten auf der
+            Arbeitsoberfl&auml;che, dann w&auml;hlen sie <b>Sch&uuml;tzen</b>
+            um ein L&ouml;schen der Handles zu verhindern. Dazu
+            w&auml;hlen sie entweder <code>Sch&uuml;tzen</code> vom
+            &amp;popmenu; or sie bet&auml;tigen <code>Ctrl+S</code>. <br>
+          </li>
+          <li>W&auml;hlen sie <b>Sortieren-&gt;Dateiendung</b>. Jetzt
+            werfen sie einen Blick auf die "Kurzer Name" Spalte und
+            scrollen herunter bis sie Dateien sehen die nach Dateiendung
+            sortiert sind. <br>
+          </li>
+          <li>Jedes Handles das nicht schon gesch&uuml;tzt ist <img
+              src="img/xfix_protect.gif"> kann zum L&ouml;schen
+            ausgew&auml;hlt werden. L&ouml;schen sie <b>kein</b> Handle
+            wenn sie ein Schattenobjekt auf diese Datei/Ordner erzeugt
+            haben.
+            <p>Vorrangig zum L&ouml;schen geeignet sind Handles auf <code><b>.DLL</b></code>
+              und <code><b>.ZIP</b></code> Dateien. Programmierer
+              k&ouml;nnen wahrscheinlich alle <code><b>.C</b></code>, <code><b>.CPP</b></code>
+              sowie <code><b>.H</b></code> Eintr&auml;ge l&ouml;schen.
+              Wenn sie eine gro&szlig;e Anzahl von Handles auf z.B. <code><b>.JPG</b></code>
+              Dateien sehen und nicht sicher sind ob sie diese
+              l&ouml;schen k&ouml;nnen dann l&ouml;schen sie
+              zun&auml;chst nur ein oder zwei Eintr&auml;ge.
+              &Uuml;berpr&uuml;fen sie nach dem Beenden von xfix ob dies
+              irgendwelche negativen Auswirkungen hat -- wenn nicht
+              starten sie xfix neu und l&ouml;schen dann alle weiteren
+              dieser Art. <br>
+            </p>
+          </li>
+          <li>Wenn sie dem Grundsatz folgen nie WPS Objekte f&uuml;r
+            bestimmte Dateien oder Ordner anzulegen (zum Beispiel
+            f&uuml;r Ordner "DOWNLOADS" oder "TEMP") dann k&ouml;nnen
+            sie die Handles f&uuml;r diese Dateien in diesen Ordnern
+            l&ouml;schen. W&auml;hlen sie noch einmal <b>Sortieren-&gt;Langer
+
+
+              Name</b> um nach Dateipfad zu sortieren, finden sie den
+            entsprechenden Ordner auf und l&ouml;schen sie alle Handles
+            mit dem entsprechenden Dateipfad. </li>
+        </ul>
+      </li>
+      <li><b>Speichern und Beenden</b>
+        <ul>
+          <br>
+          <li>Die <b>Statusleiste</b> am unteren Fensterrand sollte "0
+            ung&uuml;ltig" and "0 verwaist" anzeigen. Wenn nicht,
+            w&auml;hlen sie <b>Sortieren-&gt;Bild</b>. Die
+            ung&uuml;ltigen <img src="img/xfix_error.gif"> Handles
+            werden am Listenanfang angezeigt -- l&ouml;schen <img
+              src="img/xfix_delete.gif"> sie diese. Die verwaisten <img
+              src="img/xfix_orphan.gif"> Handles sind als n&auml;chstes
+            an der Reihe -- sch&uuml;tzen <img
+              src="img/xfix_protect.gif"> sie diese vor dem
+            L&ouml;schen.<br>
+          </li>
+          <li>Select <b>xfix-&gt;Zur&uuml;ck in OS2SYS.INI schreiben...</b><br>
+          </li>
+          <li>Sie werden gefragt ob sie die Handles entfernen wollen die
+            sie zum L&ouml;schen ausgew&auml;hlt haben. Wenn eine
+            Warnung angezeigt wird da&szlig; verwaiste Handles
+            existieren, w&auml;hlen sie <code>Abbrechen</code> und
+            beheben sie das Problem. Wenn nicht, w&auml;hlen sie <code>Ja</code>.
+            <br>
+          </li>
+          <li>Danach werden sie gefragt ob sie wirklich die
+            &Auml;nderungen abspeichern wollen. Lesen sie eventuelle
+            Warnungen, wenn sie sicher sind da&szlig; sie keine neuen
+            Probleme erzeugt haben antworten sie mit <code>Ja</code>. <br>
+          </li>
+          <li>Schlie&szlig;en sie das Hauptfenster um xfix zu beenden. </li>
+        </ul>
+      </li>
+    </ol>
+  </body>
+</html>

@@ -1,0 +1,79 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: stringhe impostazioni WPS
+    </TITLE>
+</HEAD>
+<BODY>
+La WPS implementa le stringhe impostazioni oggetto per permettere di 
+modificare le impostazioni degli oggetti anche dall'"esterno" della Workplace Shell.
+
+<P>Una stringa impostazioni WPS Š una sequenza di coppie <CODE>parolachiave=valore</CODE>,
+ognuna separata dall'altra da un punto e virgola. E' la <A HREF="glossary/gls_wpsclasses.html">classe</A>
+dell'oggetto a determinare quali stringhe si possono applicare e quali no.
+
+<P>Per esempio, la stringa seguente permette di modificare le due icone
+che rappresentano la cartella aperta e chiusa:
+
+<P><CODE>ICONFILE=C:\closed.ico;ICONNFILE=1,C:\open.ico;</CODE>
+
+<P>Dato che le classi WPS sono organizzate secondo un albero gerarchico e le loro propriet… sono
+ereditate dall'una all'altra, un oggetto Š in grado di interpretare le stringhe impostazioni non sono della
+sua classe di appartenenza, ma anche delle classi superiori. Per esempio, una 
+cartella interpreta correttamente
+non solo le parole chiave previste per <CODE>WPFolder</CODE>, ma anche quelle pi— generiche per
+la classe <CODE>WPObject</CODE> (queste ultime, in effetti, sono comprese da qualunque oggetto).
+
+<P>Ci sono un'infinit… di stringhe impostazioni oggetto differenti 
+per le varie classi WPS.
+
+Per maggior informazioni si vedano le voci seguenti:
+
+<UL>
+<LI><A HREF="objects/string_1wpobject.html">WPObject</A> (tutti gli oggetti)
+<LI><A HREF="objects/string_2wpfolder.html">WPFolder</A> (tutte le cartelle)
+<LI><A HREF="objects/string_4xfdesktop.html">WPDesktop</A> (la Scrivania)
+<LI><A HREF="objects/string_6xwptrashcan.html">XWPTrashCan</A> (il cestino)
+<LI><A HREF="objects/string_5wpprogram.html">WPProgram</A> (tutti gli oggetti programma)
+<LI><A HREF="objects/string_7xcenter.html">XCenter</A> (lo &xcenter;)
+<LI><A HREF="objects/string_8xwpstring.html">XWPString</A> (gli oggetti stringhe impostazioni)
+</UL>
+
+Ci sono diverse maniere per richiamare le stringhe impostazioni su di un oggetto:
+
+<UL><LI>&xwp; permette di utilizzare gli 
+<A HREF="objects/obj_string.html">oggetti stringhe impostazioni</A>.
+
+<P><LI>Con il <A HREF="glossary/gls_cmd_rexx.html">REXX</A> Š possibile usare 
+la funzione <A HREF="rexx.inf#SysSetObjectData"><CODE>SysSetObjectData</CODE></A> o,
+se si sta creando un nuovo oggetto, quella
+<A HREF="rexx.inf#SysCreateObject"><CODE>SysCreateObject</CODE></A>.
+
+<P><LI>Con il C si possono usare le API PM
+<A HREF="pmref.inf#WinSetObjectData"><CODE>WinSetObjectData</CODE></A> e
+<A HREF="pmref.inf#WinCreateObject"><CODE>WinCreateObject</CODE></A><A HREF="_toolkitlink.html">*</A>.
+
+<P><LI>Dall'interno di una classe WPS si pu• usare il metodo
+<A HREF="wpsref.inf#wpSetup"><CODE>WPObject::wpSetup</CODE></A><A HREF="_toolkitlink.html">*</A>,
+che Š superato da numerose sottoclassi ed inplementa l'effettivo sistema di analisi 
+delle stringhe impostazioni nella WPS.
+
+</UL>
+
+<B>Nota bene:</B> diversamente da quanto si crede comunemente, quando su di un oggetto
+viene richiamata una stringa impostazioni, quest'ultima <I>non</I> Š poi conservata da 
+nessuna parte: la stringa viene analizzata dalla classe cui appartiene l'oggetto WPS, tradotta,
+inserita nelle propriet… dell'oggetto sotto forma di dati binari e poi abbandonata.
+
+<P>Il che significa che, per poter recuperare nuovamente la stringa impostazioni
+da visualizzare nella pagina "Icona" del blocco appunti impostazioni di un dato oggetto, &xwp;
+deve analizzare le propriet… immagazzinate nei dati binari dell'oggetto e cercare di interpretarle al meglio,
+inventandosi una stringa impostazioni che le riproduca il pi— fedelmente possibile.
+Alcuni dei dati degli oggetti sono per• non documentati, e, finch‚ non si trova una maniera
+di scovare cosa significano quei dati binari, &xwp; non sar… in grado di creare la 
+stringa impostazioni relativa.
+
+<BR>
+</BODY>
+</HTML>
+

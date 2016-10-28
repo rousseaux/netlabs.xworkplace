@@ -1,0 +1,83 @@
+<HTML RESID=&ID_XSH_SETTINGS_HPFS;>
+<HEAD>
+    <TITLE>
+        &xwp;: impostazioni FAT
+    </TITLE>
+</HEAD>
+<BODY>
+La pagina "FAT" nell'oggetto "Kernel &os2;" permette di modificare 
+le impostazioni che nel file &cfgsys; regolano il funzionamento del 
+file system FAT.
+
+<P>Per un'introduzione generale ai file system si vedano:
+<UL><LI><A HREF="glossary/gls_fs.html">File system</A>
+<LI><A HREF="glossary/gls_caches.html">Cache dei file system</A>
+
+</UL>In questa pagina di aiuto sono prese in considerazione solo le impostazioni relative ai
+parametri del comando <CODE>DISKCACHE</CODE> nel file &cfgsys;.
+
+<P>Si veda la <A HREF="cmdref.inf#diskcache">documentazione</A> in
+<I>&warp; - Riferimento per i comandi</I> per i dettagli.
+
+<P>Premere <B>"Applica"</B> per salvare nel file &cfgsys; le modifiche
+effettuate. Verranno cambiate solo le linee corrispondenti alle impostazioni di questa pagina. Non 
+verranno toccate le linee cui fanno riferimento le altre pagine dell'oggetto "Kernel &os2;".
+Si noti che sarÖ necessario riavviare il sistema per rendere effettive le modifiche apportate.
+<I>Non</I> ä sufficiente il solo riavvio della Scrivania.
+<P>Premere <B>"Ottimizza"</B> per far sç che sia &xwp; a suggerire i nuovi valori basandosi sulle
+caratteristiche del sistema.
+Il file &cfgsys; sarÖ modificato solo se si seleziona il tasto "Applica".
+<P>Premere <B>"Valore assunto"</B> per visualizzare nella pagina le impostazioni &os2; assunte.
+Anche in questo caso, il file &cfgsys; sarÖ modificato solo selezionando il tasto "Applica".
+
+<P>Questa pagina permette di controllare le seguenti impostazioni FAT:
+
+<UL><LI><B>Dimensione cache</B> determina quanti KB di memoria principale sono riservati per
+la cache di questo file system.
+Corrisponde al comando 
+<CITE>DISKCACHE=xxx</CITE> per volumi FAT in &cfgsys;.
+<P>La dimensione massima della cache per volumi FAT ä 14440 KB.
+
+<P>E' possibile far sç che &os2; determini <B>automaticamente</B> la dimensione della
+cache. Nella maggior parte dei casi, verrÖ riservato il 10% della memoria installata: l'uso di 
+questa impostazione ä generalmente sconsigliato.
+
+<P>Si veda <A HREF="glossary/gls_caches.html">"Cache dei file-system"</A> per un'introduzione generale
+alla cache nei vari file-system.
+
+<BR><LI>L'impostazione <B>"Salva solo file di dimensione inferiore a"</B> determina la dimensione massima (in KB) 
+degli oggetti che possono essere salvati nella cache, e corrisponde al secondo parametro
+del comando <CITE>DISKCACHE=xxx</CITE> nel file &cfgsys;.
+Tale impostazione serve ad evitare che file di grosse dimensioni, che vengono generalmente caricati una volta sola,
+intasino tutta la cache. Tuttavia il valore assunto, 4 KB, ä decisamente troppo basso. E' consigliabile
+impostare a 32 KB  questo valore per entrambi i sistemi  (&xwp; provvederÖ a convertire automaticamente
+il valore FAT nella dimensione di settore attesa in &cfgsys;).
+
+<BR><LI>Il campo immissione <B>"Autocheck"</B> corrisponde al parametro
+<CITE>/AC:xxx</CITE>  in <CITE>DISKCACHE=xxx</CITE> nel file &cfgsys;.
+Determina quali sono i volumi che &os2; sottoporrÖ automaticamente al
+<CITE>CHKDSK</CITE> all'avvio del sistema.
+<P>Inserire le lettere identificative dei volumi (senza i "<CITE>:</CITE>").
+Se il sistema non ä stato chiuso correttamente, al successivo riavvio &os2; controllerÖ
+automaticamente tali volumi. Se si specifica un segno pió ("<CITE>+</CITE>")
+<I>prima</I> della lettera identificativa, quel volume verrÖ controllato ad ogni riavvio
+del sistema (il che generalmente non ä desiderabile).
+<P>Per esempio: inserendo "<CITE>C+DE</CITE>", il volume D: sarÖ controllato ad ogni avvio del sistema, mentre
+C: ed E: solo in caso di bisogno.
+
+<P>Contrariamente ai volumi HPFS e JFS, per i volumi FAT il controllo automatico non ä indispensabile per 
+avviare il sistema.
+
+<P>Premere il tasto <B>"Proponi"</B> per aggiungere nel campo di immissione tutti i volumi FAT.
+
+<BR><LI>L'impostazione <B>"Abilita lazy write"</B> abilita la scrittura ritardata dei dati sul disco.
+Ancora una volta, si veda <A HREF="glossary/gls_caches.html">"Cache dei file-system"</A> per ulteriori spiegazioni.
+
+<P>Tale impostazione corrisponde al parametro
+<CITE>LW</CITE> nel comando <CITE>DISKCACHE</CITE>.
+Come valore assunto, la scrittura ritardata ä abilitata.
+
+</UL>
+</BODY>
+</HTML>
+

@@ -1,0 +1,12 @@
+NAME XFIX
+
+Description '@#Ulrich M”ller:1.0.11#@ WPS handles fixer'
+
+CODE  MOVEABLE
+DATA  MOVEABLE MULTIPLE
+
+STACKSIZE   400000
+
+PROTMODE
+
+

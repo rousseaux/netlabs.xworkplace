@@ -1,0 +1,132 @@
+<HTML NOSUBLINKS="xices" NOSUBLINKS="vers_" XPOS=right WIDTH=70%>
+<HEAD>
+    <TITLE>
+        FAQ: le domande pió comuni
+    </TITLE>
+</HEAD>
+<BODY>
+Per prima cosa vi consigliamo di fare qualche esperimento con le impostazioni
+nell'oggetto <A HREF="sys_2global.html">"Workplace Shell"</A>,
+da dove ä possibile modificare a piacimento le funzionalitÖ di &xwp;.
+<P>Se poi nei paragrafi seguenti non trovaste quello che cercate, consultate la
+<A HREF="notices_3comments.html">pagina web</A> di &xwp;, su cui l'autore
+mantiene una lista aggiornata dei difetti segnalati, dove potrete forse trovare
+risposta alle vostre domande.
+
+<OL>
+<LI><B>&xwp; rallenta la WPS?</B>
+<P>Dipende. Alcune funzioni causano un certo rallentamento; ad es., la prima volta che
+si apre un menu contestuale &xwp; deve esaminare il contenuto della Cartella di configurazione
+con tutte le sue sottocartelle.
+<P>D'altro canto, altre funzioni aumentano sensibilmente la velocitÖ della WPS.
+Ad esempio, la funzione <A HREF="fldr_30turbo.html">"Cartelle turbo"</A>
+aumenta in maniera evidente la velocitÖ di apertura delle cartelle e attivando le
+associazioni estese dei file il popolamento delle cartelle
+diventa molto pió veloce, dato che &xwp; usa routine di caching molto efficienti
+per la gestione interna dei marcatori oggetti.
+<P>C'ä infine da dire che, rispetto ad altri programmi che potenziano la  WPS, &xwp; consuma
+poca memoria. Sul sistema dell'autore &xwp; occupa, al di fuori delle proprie DLL, solo alcune
+centinaia di kB di memoria allocata mentre libera dinamicamente quella non pió utilizzata.
+
+<!-- this item removed with V1.0.1
+<P><LI><B>PerchÇ le finestre di dialogo di &xwp; sono cosç brutte in Warp 3?</B>
+<P>&xwp; usa il font <B>WarpSans</B> per la maggior parte delle sue finestre di dialogo, poichÇ questo tipo di carattere
+ä decisamente pió bello del "System Proportional". Questo font ä
+distribuito solo con &warp4; e superiori, perciï su Warp 3, non venendo trovato, viene sostituito dal font
+assunto (System Proportional, appunto).
+<P>In questo caso basta trovare una copia del file <CITE>\OS2\DLL\DSPRES.DLL</CITE> di &warp4;
+e copiarlo sul file omonimo nella directory \OS2\DLL di Warp 3.
+Questo file contiene molte risorse di sistema, tra le quali il carattere
+WarpSans, ma Warp 3 gira senza problemi con la DLL di Warp 4
+(Questa sostituzione ä possibile solo avviando &os2; dalla linea di comando, premendo Alt-F1 all'avvio,
+dato che questa DLL viene bloccata appena il sistema commuta in modalitÖ grafica).
+<P>A partire da &xwp; V0.9.0, nella pagina "Paranoia" dell'oggetto "Impostazione di &xwp;" vi ä
+un comando per far sç che &xwp; usi il carattere "8.Helv" nel maggior numero di casi possibile.
+-->
+
+<P><LI><B>PerchÇ i nuovi suoni di sistema non vengono utilizzati?</B>
+<P>Per prima cosa vanno installati. Si veda la
+<A HREF="mm_2sounds.html">pagina corrispondente</A>.
+<P>Alcuni utenti hanno notato che, dopo l'aggiornamento della propria scheda audio, i suoni di
+sistema di &xwp; non vengono pió eseguiti; se questo succede, si puï provare ad aprire
+l'oggetto "Impostazione Multimedia", alla pagina "Audio Digitale", per
+assicursi che l'estensione "WAV" appaia nella lista delle associazioni.
+
+<P><LI><B>PerchÇ si verificano continui crash in SOM.DLL?</B>
+<P>Se si sta usando il <B>VisualAge C++</B> o altri software che installano
+runtime SOM, ci si assicuri che
+<CITE>SOM.DLL</CITE> venga caricata da <CITE>\OS2\DLL</CITE>. Questa DLL ä stata aggiornata con i
+fixpak pió recenti di Warp ma VAC++ aggiunge le proprie cartelle
+all'inizio del percorso <CITE>LIBPATH</CITE> in &cfgsys;,
+il che causa il caricamento delle vecchie DLL.
+Si spostino queste cartelle in <CITE>LIBPATH</CITE> dopo <CITE>\OS2\DLL</CITE>.
+
+<P><LI><B>PerchÇ la Scrivania si riavvia se cambio unitÖ nei dischi rimovibili (MO, ZIP, ...)?</B>
+<P>Non ne ho idea. Molti utenti hanno riferito di strani comportamenti della WPS aprendo una cartella unitÖ
+dopo aver cambiato un rimovibile. La WPS al riavvio riprende a funzionare
+correttamente (fino alla successiva sostituzione di disco).
+<P>Non possedendo unitÖ rimovibili, CD-ROM e masterizzatore a parte,
+non mi ä possibile riprodurre questi problemi. Se qualcuno, analizzando il codice sorgente di
+&xwp;, ne trovasse la causa mi darebbe un grande aiuto.
+
+<P>L'IBM ha introdotto il supporto per le unitÖ rimovibili con il fixpak 6 di Warp 4: ä
+possibile che la causa dei problemi sia lç. Christian Hennecke &lt;christian.hennecke@ruhr-uni-bochum.de&gt;
+mi ha fatto sapere che sostituire <CODE>PMWP.DLL</CODE> con una versione anteriore al
+fixpak 6 pare aiuti a risolvere il problema. E' anche necessario installare NEWDASD, che dovrebbe essere
+disponibile su Hobbes e Leo.
+
+<P><LI><B>PerchÇ le funzioni di &xwp; lavorano correttamente solo con alcune cartelle?</B>
+<P>E' una questione complicata. Molte persone hanno riscontrato, in una forma o nell'altra,
+questo problema; per esempio: i tasti rapidi funzionano solo sulla Scrivania, oppure non funzionano
+nelle cartelle URL o in quelle "Gruppo" (implementate con un programma EWS IBM), ecc. La stessa
+cosa pare valere per le barre di stato.
+<P>Questo difetto sembrerebbe dipendere dal subclassing delle cartelle. &xwp; si basa su messaggi
+finestra per implementare queste funzioni: se altre classi WPS intercettano
+questi messaggi, &xwp; potrebbe iniziare a funzionare in maniera imprevista, causando crash di sistema
+o, pió semplicemente, non funzionando affatto.
+<P>In generale, pió classi WPS sostitutive sono installate pió ä alta la probabilitÖ che
+qualcosa non funzioni. Con una WPS "pulita" &xwp; funziona correttamente; coloro che
+hanno riferito di questi problemi avevano talora anche quattro sostituti della classe WPFolder
+installati; in casi del genere per me diventa davvero difficile isolare il problema.
+In una tale situazione si dovrebbe provare a disinstallare le estensioni WPS non indispensabili.
+<P>Inoltre, pió i file INI del sistema sono "sporchi" pió ä facile riscontrare una instabilitÖ generale della WPS.
+Raccomando caldamente il regolare utilizzo del pacchetto <CITE>WPTOOLS</CITE> di Henk Kelder
+per ripulire i file INI. Questo pacchetto ä disponibile su Hobbes.
+<P>Infine, sembra che sia importante anche l'ordine di installazione. Alcuni programmi che potenziano la WPS
+sembrano semplicemente "ingoiare" i messaggi di cui non hanno bisogno, ignorando altre estensioni
+eventualmente presenti.
+Se &xwp; anticipa queste estensioni WPS "maleducate" nella sostituzione delle classi WPS,
+il che accade installando per primo &xwp;,
+esso puï intercettare i messaggi finestra prima degli altri programmi.
+
+<P><LI><B>&xwp; coopera con Object Desktop?</B>
+<P>In teoria, sç. In pratica, non sempre. Per dettagli ulteriori su questo argomento (e su altri programmi
+di espansione WPS), si veda la sezione
+<A HREF="vers_1compat.html">"CompatibilitÖ"</A>.
+
+<P><LI><B>PerchÇ le unitÖ disco si avviano ogni volta che apro
+la cartella "UnitÖ"?</B>
+<P>Sono le barre di stato di &xwp; che stanno verificando lo spazio libero sulle varie unitÖ.
+Se il primo oggetto nella cartella "UnitÖ" rappresenta un floppy disc, questo sarÖ la prima unitÖ
+analizzata.
+<P>Per evitare che questo si verifichi basta cambiare
+l'impostazione prevista per gli oggetti WPDisk nell'oggetto "Workplace Shell", "Barre di Stato", pagina 2.
+<P>Altrimenti si puï disabilitare la barra di stato per la sola cartella "UnitÖ", dalla pagina
+"Visualizzare" nel blocco impostazioni dell'oggetto UnitÖ.
+
+<P><LI><B>&xwp; gira su sistemi Macintosh?</B>
+<P>No.
+</OL>
+
+PubblicitÖ senza pudore: &xwp; funziona perfettamente con il pacchetto
+<STRONG>CommandPak</STRONG>, dello stesso autore, disponibile su
+<A HREF="http://www.xworkplace.org">xworkplace.org</A>. Questo pacchetto
+migliora sensibilmente la linea di comando di &os2; e offre un supporto
+WPS dalla linea di comando.
+
+<BR>
+</BODY>
+</HTML>
+
+
+

@@ -1,0 +1,381 @@
+
+/*
+ * xfobj.idl:
+ *      SOM interface description file for the following
+ *      XWorkplace classes (in this order):
+ *          XFldObject
+ *      and the respective metaclasses.
+ *
+ *      See src\classes\xfobj.c for details.
+ *
+ *      Copyright (C) 1997-2006 Ulrich M”ller.
+ *      This file is part of the XWorkplace source package.
+ *      XWorkplace is free software; you can redistribute it and/or modify
+ *      it under the terms of the GNU General Public License as published
+ *      by the Free Software Foundation, in version 2 as it comes in the
+ *      "COPYING" file of the XWorkplace main distribution.
+ *      This program is distributed in the hope that it will be useful,
+ *      but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *      GNU General Public License for more details.
+ */
+
+#include <wpobject.idl>         // this is SOM for WPObject
+
+/*
+   CLASS: XFldObject
+
+   CLASS HIERARCHY:
+
+       SOMObject
+         ÀÄÄ WPObject
+               ÀÄÄ XFldObject
+*/
+
+interface M_XFldObject;            // Forward Reference to XFldObject metaclass
+
+interface XFldObject : WPObject
+{
+
+    /*
+     *@@ WPOBJECTLONGS:
+     *      internal data structure for WPObject
+     *      settings. We store a pointer to the
+     *      instance's structure in _pWPObjectLongs,
+     *      which is examined in _wpRestoreData.
+     *
+     *@@added V0.9.1 (2000-01-22) [umoeller]
+     *@@changed V0.9.16 (2001-12-06) [umoeller]: renamed
+     */
+
+    struct WPOBJECTLONGS
+    {
+        LONG  lDefaultView;
+        ULONG ulHelpPanel;      // 0 means default, apparently
+        ULONG ulUnknown3;
+        ULONG ulObjectStyle;
+        ULONG ulMinWin;         // MINWIN_DEFAULT=0, MINWIN_HIDDEN=1, MINWIN_VIEWER=2, MINWIN_DESKTOP=3
+        ULONG ulConcurrent;     // CCVIEW_DEFAULT=0, CCVIEW_ON=1, CCVIEW_OFF=2
+        ULONG ulViewButton;     // HIDEBUTTON=1, MINBUTTON=2, DEFAULTBUTTON=3
+        ULONG ulMenuFlag;       // 2?
+    };
+    typedef WPOBJECTLONGS *PWPOBJECTLONGS;
+
+    /*
+     *@@ WPOBJECTSTRINGS:
+     *      internal data structure for WPObject
+     *      strings. We store a pointer to the
+     *      instance's structure in _pWPObjectStrings,
+     *      which is examined in _wpRestoreData.
+     *
+     *@@added V0.9.16 (2001-12-06) [umoeller]
+     */
+
+    struct WPOBJECTSTRINGS
+    {
+        PSZ pszHelpLibrary;         // help library
+        PSZ pszObjectID;            // object ID
+        PSZ pszViewPos;             // strange listing of view positions... what is this?
+    };
+    typedef WPOBJECTSTRINGS *PWPOBJECTSTRINGS;
+
+    /*
+     *@@ OBJECTHOTKEY:
+     *      definition of an object hotkey.
+     *
+     *@@added V0.9.16 (2001-10-15) [umoeller]
+     */
+
+    struct OBJECTHOTKEY
+    {
+        USHORT  usFlags;
+        UCHAR   ucScanCode;
+        USHORT  usKeyCode;
+    };
+    typedef OBJECTHOTKEY *POBJECTHOTKEY;
+
+    /*
+     * New instance methods for XFldObject:
+     *
+     */
+
+    HOBJECT xwpQueryHandle(in BOOL fCreate);
+
+    ULONG xwpQueryLocks();
+
+    ULONG xwpAddReplacementIconPage(in HWND hwndNotebook,
+                                    in ULONG ulPageID,
+                                    in ULONG ulDefaultHelpPanel);
+
+    ULONG xwpQueryRealDefaultView();
+    PSZ xwpQueryOriginalObjectID();
+
+    BOOL xwpSetTitleOnly(in PSZ pszNewTitle);
+
+    BOOL xwpQueryDeletion(in CDATE* pcdateDeleted, in CTIME* pctimeDeleted);
+    BOOL xwpSetDeletion(in BOOL fSet);
+    ULONG xwpTrashObjectID();
+
+    BOOL xwpSetTrashObject(in WPObject pTrashObject);
+
+    ULONG xwpQueryFlags();
+    BOOL xwpModifyFlags(in ULONG flFlags,
+                        in ULONG flMask);
+
+    BOOL xwpAddWidgetNotify(in HWND hwnd);
+    BOOL xwpRemoveDestroyNotify(in HWND hwnd);
+
+    BOOL xwpQueryObjectHotkey(in POBJECTHOTKEY pHotkey);
+    BOOL xwpSetObjectHotkey(in POBJECTHOTKEY pHotkey);
+
+    PSZ xwpQuerySetup(in PULONG pulLength);
+    VOID xwpFreeSetupBuffer(in PSZ pszSetupBuffer);
+
+    BOOL xwpQuerySetup2(in PVOID pstrSetup);
+
+    HWND xwpHotkeyOrBorderAction(in ULONG hab, in ULONG ulCorner);
+
+#ifdef __SOMIDL__
+  implementation {
+
+    releaseorder: xwpQueryDeletion,
+                  xwpSetDeletion,
+                  xwpTrashObjectID,
+                  xwpSetTrashObject,
+                  xwpQueryObjectHotkey,
+                  xwpSetObjectHotkey,
+                  xwpQuerySetup,
+                  xwpQuerySetup2,
+                  xwpQueryFlags,
+                  xwpModifyFlags,
+                  xwpAddWidgetNotify,
+                  xwpRemoveDestroyNotify,
+                  xwpQueryRealDefaultView,
+                  xwpFreeSetupBuffer,
+                  xwpQueryOriginalObjectID,
+                  xwpHotkeyOrBorderAction,
+                  xwpAddReplacementIconPage,
+                  xwpQueryHandle,
+                  xwpQueryLocks,
+                  xwpSetTitleOnly;
+
+    xwpQuerySetup2:nonstatic;
+    xwpHotkeyOrBorderAction:nonstatic;
+
+    /*
+     * Class Modifiers:
+     *
+     */
+
+    externalprefix = xo_;
+    externalstem = xo;
+    majorversion = 1;
+    minorversion = 1;
+    filestem = xfobj;           //# specifies the filestem for sc-generated files
+    metaclass = M_XFldObject;
+    dllname = "xfldr.dll";
+    callstyle = oidl;           //# forget CORBA stuff (*ev and such)
+
+    /*
+     * Internal instance variables for XFldObject:
+     *
+     */
+
+    // trash can deletion; this is only != NULL if the object
+    // currently resides in the trash can. We use this extra
+    // pointer to avoid having to allocate all the fields
+    // with every object, even if it is not in the trash.
+    // V0.9.20 (2002-07-25) [umoeller]
+    PVOID       pvTrashData;
+
+    // pointer to WPObject instance data
+    // V0.9.18 (2002-03-23) [umoeller]
+    PVOID       pvWPObjectData;         // IBMOBJECTDATA struct, include\filesys\object.h
+
+    // the following two have been added with V0.9.2
+    // and removed again because we can now use pvWPObjectData
+    // V0.9.19 (2002-07-01) [umoeller]
+    //# PWPOBJECTLONGS pObjectLongs;      // ptr to array of LONGs in instance data
+    //# ULONG       cbObjectLongs;
+
+    PSZ         pWszOriginalObjectID;   // copy of object ID as found with wpRestoreState
+                                        // WARNING: allocated using wpAllocMem
+                                        // V0.9.16 (2001-12-06) [umoeller]
+
+    // the following has been added with V0.9.16 (2001-12-06) [umoeller]
+    //# PWPOBJECTSTRINGS pObjectStrings;  // ptr to array of strings in instance data
+
+    ULONG       flObject;           // OBJFL_* and OBJLIST_* flags
+                                    // combined V0.9.20 (2002-07-25) [umoeller]
+
+    PVOID       pvllWidgetNotifies; // really a PLINKLIST for xwpSetWidgetNotify
+
+    // ULONG       ulDefaultView;
+                            // for xwpQueryRealDefaultView
+                            // V0.9.16 (2001-11-25) [umoeller]
+                            // no longer needed V0.9.19 (2002-07-01) [umoeller]
+
+    // doubly-linked list of awake objects
+    // (the root of the list is a global variable in xfobj.c)
+    // V0.9.20 (2002-07-25) [umoeller]
+
+    XFldObject  pNextAwake;     // next object for the list of currently awake objects
+    XFldObject  pPreviousAwake; // previous object for the list of currently awake objects
+
+    // icon server/client stuff (see icomShareIcon):
+    // V0.9.20 (2002-07-25) [umoeller]
+
+    // We implement a linked list here, using object instance data. This
+    // looks like the best solution to me since the LARGE majority of awake
+    // WPS objects will be data files and thus icon clients.
+
+    // 1) If we are an icon server, pFirstIconClient and pLastIconClient
+    //    implement a linked list of icon clients, pointing to the first
+    //    and the last WPObject* client.
+
+    // 2) In each icon client object, pNextClient and pPreviousClient
+    //    implement the linked list.
+
+    WPObject    pFirstIconClient;       // if != NULL, we have clients, and this is the
+                                        // first one (where pFirstClient->pNextClient is
+                                        // the next etc.)
+    WPObject    pLastIconClient;        // last item in list (for speedy append)
+
+    ULONG       cIconClients;           // total clients count
+
+    // the object that _we_ took our icon from, or NULL
+    WPObject    pobjIconServer;         // if != NULL, our icon server
+    XFldObject  pNextClient;            // next object for pobjIconServer's list of clients
+    XFldObject  pPreviousClient;        // previous object for pobjIconServer's list of clients
+
+    /*
+     * WPObject methods overridden by XFldObject:
+     *
+     */
+
+    //# 1)  init/uninit methods
+
+    wpInitData: override;
+    wpObjectReady: override;
+
+    wpSetup: override;
+    wpSetupOnce: override;
+
+    wpFree: override;
+    wpUnInitData: override;
+
+    wpSaveDeferred: override;
+    wpSaveImmediate: override;
+
+    wpSaveState: override;
+    wpRestoreState: override;
+
+    //# 2)  WPObject query/set methods
+
+    wpSetObjectID: override;
+
+    wpQueryDefaultHelp: override;
+
+    //# 3)  icon methods
+
+    wpSetIcon: override;
+
+    //# 4)  class-specific query/set methods
+
+    wpAddToObjUseList: override;
+    wpDeleteFromObjUseList: override;
+    wpCnrSetEmphasis: override;
+
+    wpRequestObjectMutexSem: override;
+    wpAssertObjectMutexSem: override;
+    wpReleaseObjectMutexSem: override;
+
+    //# 5)  menu methods
+
+    //# wpFilterPopupMenu: override;        removed V1.0.0 (2002-08-31) [umoeller]
+    wpFilterMenu: override;                 //# added V1.0.0 (2002-08-31) [umoeller]
+    //# wpModifyPopupMenu: override;        removed V1.0.0 (2002-08-31) [umoeller]
+    wpModifyMenu: override;                 //# added V1.0.0 (2002-08-31) [umoeller]
+    wpMenuItemSelected: override;
+    wpMenuItemHelpSelected: override;
+
+    //# 6)  open view methods
+
+    wpDisplayHelp: override;
+
+    wpSwitchTo: override;                   //# added V1.0.6 (2006-11-08) [pr]
+
+    wpViewObject: override;
+
+    wpAddSettingsPages: override;
+    wpAddObjectGeneralPage: override;
+
+    //# 7)  file operation methods
+
+    wpSetTitle: override;
+
+    wpConfirmObjectTitle: override;
+
+#ifdef __PRIVATE__
+
+#endif
+
+  }; // implementation
+#endif /* __SOMIDL__ */
+};
+
+//#
+//#
+//# Now define Metaclass.
+//# ---------------------
+//#
+
+interface M_XFldObject : M_WPObject
+{
+
+    /*
+     * New class methods  for M_XFldObject:
+     *
+     */
+
+    BOOL xwpclsRemoveObjectHotkey(in HOBJECT hobj);
+
+#ifdef __SOMIDL__
+  implementation {
+
+    releaseorder:
+                xwpclsRemoveObjectHotkey;
+
+    //# Class Modifiers
+    externalprefix = xoM_;
+    externalstem = xoM;
+    functionprefix = xoM_;
+    majorversion = 1;
+    minorversion = 1;
+    filestem = xfobj;           //# specifies the filestem for sc-generated files
+    dllname = "xfldr.dll";
+    callstyle = oidl;
+
+    /*
+     * Internal class variables for M_XFldObject:
+     *
+     */
+
+    /*
+     * M_WPObject methods overridden by M_XFldObject:
+     *
+     */
+
+    wpclsInitData: override;
+
+    wpclsQueryObject: override;
+
+    wpclsQuerySettingsPageSize: override;
+
+    wpclsSetIconData: override;
+
+  };
+#endif /* __SOMIDL__ */
+};
+
+

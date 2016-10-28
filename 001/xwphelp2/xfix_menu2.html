@@ -1,0 +1,94 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        xfix: Popup Menu and Hot Keys
+    </TITLE>
+</HEAD>
+<!-- this page is new with V1.0.9 -->
+<BODY>
+This describes the commands on the xfix <B>Popup menu</B> and its keyboard
+shortcuts 
+(see <A HREF="xfix_menus.html">Menubar Commands</A> for a description of
+options available on the main menubar).
+
+<P><B>Popup Menu</B>
+
+<UL><LI><B>Move abstracts to desktop</B> moves non-file objects assigned to this
+folder to the &link_desktop;.  They will appear there after the WPS is restarted.
+This menu item is only available when a single handle is selected --
+you can not move objects from multiple folders at once.
+
+<P>Use this option before deleting a handle that displays
+<CODE>Abstract objects</CODE> in the "References" column.  Otherwise, these
+objects will be deleted along with the handle.
+
+<P><LI><B>Remove folder positions</B> deletes the <CODE>OS2.INI</CODE> entry
+that stores the size and position of folder windows and of WPS Properties notebooks.
+It is always safe to delete these entries because they are not critical. At worst,
+you will have to resize or reposition the window when you next open it.
+
+<P><LI><B>Remove object ID</B> deletes the text-based identifier associated with
+this object.  Object IDs are used by programs and REXX scripts to locate an object
+without having to know its exact name or location.  These entries should probably
+not be deleted unless you know for certain that they are unneeded.
+
+<P><LI><B>Delete</B> marks a handle <IMG SRC="img/xfix_delete.gif"> for deletion.
+The actual deletion won't happen until you choose either "Delete now.." from the
+"Actions" menu or "Write back to OS2SYS.INI..." from the "xfix" menu.
+
+<P>If deleting a handle would cause other handles to become <B>orphans</B>
+(invalid because you've deleted their parent's handle), the affected handles
+will be marked <IMG SRC="img/xfix_orphan.gif"> and the Status column will display
+<B>"Possible orphan"</B>.  Unless you plan to delete the orphans, you should
+definitely undelete the handle which caused this warning to appear.
+
+<P>Note: when a handle that is marked <IMG SRC="img/xfix_error.gif"> invalid
+or <IMG SRC="img/xfix_orphan.gif"> orphaned is deleted, the count of invalid
+or orphaned items in the status bar is decreased.  For orphans, the error
+description in the Status column is also removed.
+
+<P><LI><B>Undelete</B> removes the <IMG SRC="img/xfix_delete.gif"> from a
+handle so it won't be deleted.  If the handle was previously marked as
+<IMG SRC="img/xfix_error.gif"> invalid or <IMG SRC="img/xfix_orphan.gif">
+orphaned, those icons will be restored and the error description will
+reappear in the Status column.
+
+<P><LI><B>Protect</B> marks a handle <IMG SRC="img/xfix_protect.gif"> so
+it can't be deleted by accident.  The handles for all of the folders on
+the protected object's path are marked <IMG SRC="img/xfix_safe.gif"> so
+they are safe from deletion as well.  Attempts to delete any of these handles
+will be ignored.  If they are already marked <IMG SRC="img/xfix_delete.gif">
+for deletion, they will be undeleted. Handles that are marked
+<IMG SRC="img/xfix_error.gif"> invalid can not be protected.
+
+<P>Note: you can use "Auto-protect" on the "Actions" menu to automatically
+protect all of the most important handles.  Doing so will prevent errors
+that could destroy your Desktop.  See
+<A HREF="xfix_menus.html">Menubar Commands</A> for more details,
+
+<P><LI><B>Unprotect</B> removes the <IMG SRC="img/xfix_protect.gif">
+from the protected handle.  The <IMG SRC="img/xfix_safe.gif"> assigned
+to folders on the protected handle's path will also be removed if no
+other protected handle relies on them.
+
+<P>Note: handles that are marked <IMG SRC="img/xfix_safe.gif"> can not
+be unprotected directly.  You must unprotect the handle that caused them
+to become safe from deletion (the one marked <IMG SRC="img/xfix_protect.gif">),
+Since several protected handles may have a particular folder in their path,
+you will have to unprotect all of them.  You can use "Unprotect all" on the
+"Actions" menu to remove protection from every handle.
+</UL>
+
+<P><B>Hot Keys</B>
+
+<P>Unlike the corresponding menu items, these keyboard shortcuts toggle the setting:
+from off to on, and then back to off.
+
+<UL><LI><B>Delete</B> - <CODE>Delete</CODE> key or <CODE>Ctrl+D</CODE>
+
+<P><LI><B>Protect</B> - <CODE>Ctrl+P</CODE>
+</UL>
+
+</BODY>
+</HTML>
+

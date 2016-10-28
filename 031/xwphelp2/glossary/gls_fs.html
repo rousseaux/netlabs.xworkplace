@@ -1,0 +1,133 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: Bestandssystemen
+    </TITLE>
+</HEAD>
+<BODY>
+Een "bestandssysteem" is een afspraak over de wijze waarop
+&link_folders; en &link_datafiles; op een fysiek medium worden opgeslagen.
+
+<P>Bij harde schijven kan ieder volume een ander bestandssysteem hebben.
+Het bestandssysteem wordt bepaald wanneer het volume wordt geformatteerd. Het kan naderhand
+niet worden gewijzigd zonder het volume opnieuw in te delen.
+
+<P>Met de moderne besturingssystemen zijn er veel verschillende
+bestandssystemen beschikbaar, elk met zijn eigen unieke zwakke en sterke kanten.
+&os2; kent de volgend bestandssystemen:
+
+<OL><LI>Historisch gezien is het <B>FAT</B> bestandssysteem (FAT staat voor
+"File Allocation Table") het oudste bestandssysteem dat op PC's wordt gebruikt.
+Het werd ge‹ntroduceerd in de eerste PC-DOS versies en is noch krachtig, noch snel,
+noch flexibel, noch effici‰nt.
+Even erg, FAT volumes kunnen heel makkelijk gefragmenteerd raken.
+
+<P>Heden ten dage is het enige voordeel van FAT dat het wordt herkend door bijna alle
+besturingssystemen, dus als u diverse besturingssystemen heeft ge‹nstalleerd, kunt u
+een FAT volume gebruiken voor het uitwisselen van gegevens.
+Als u ook snelheid belangrijk vindt, moet u veel gebruikte gegevens niet op FAT volumes
+opslaan.
+
+<P>Bij &os2; is FAT ondersteuning direct in de kernel van &os2; ingebouwd en is geen
+IFS instelling in de &cfgsys; nodig.
+
+<P>In Windows95 heeft Microsoft het FAT bestandssysteem uitgebreid om het opslaan
+van lange bestandsnamen mogelijk te maken, ofschoon dit evenmin de andere begrenzingen
+van het FAT bestandssysteem oploste. In &os2; ziet u alleen de 8+3 bestandsnamen.
+
+<P>Als toevoeging, met Windows 98 heeft Microsoft een nieuw bestandssysteem toegevoegd
+"FAT32" genaamd. Ondanks zijn naam, is het in het geheel niet uitwisselbaar met FAT.
+Er zijn oplossingen van derden die het mogelijk maken dat &os2; ook FAT32 volumes ziet
+(leest en schrijft) via een IFS driver die aan het &cfgsys; bestand wordt toegevoegd.
+
+<P><LI><B>HPFS</B> staat voor "High Performance File System".
+Het is een uniek bestandssysteem dat speciaal voor &os2; werd ontworpen.
+Het heeft veel voordelen boven FAT.
+Zijn bestandsnamen kunnen tot 254 karakters lang zijn, het ondersteunt natuurlijk
+<A HREF="glossary/gls_eas.html">&xwp; Uitgebreide kenmerken</A>,
+het is een stuk sneller (vandaar de naam), het verspilt niet zoveel ruimte en is zeer
+bestand tegen fragmentatie.
+
+<P>Vergeleken met zelfs de meer moderne bestandssystemen heeft HPFS
+ook zijn beperkingen. Meest belangrijke, standaard HPFS kan alleen maar een
+<A HREF="glossary/gls_caches.html">&xwp; Bestandssysteem buffers</A>
+tot 2 MB aan.
+Uitgaande van het geheugen dat in de tegenwoordige computers is ingebouwd, is dat niet veel.
+
+<P>Voor HPFS ondersteuning moet het
+<A HREF="cmdref.inf#hpfs.ifs"><CODE>HPFS.IFS</CODE></A>
+stuurprogramma, door een vermelding in het &cfgsys; bestand, geladen worden.
+
+<P><LI><B>HPFS386,</B> een zeer geoptimaliseerde versie van HPFS, heeft de buffergrootte
+beperking van 2 MB niet. Als toevoeging, het is geoptimaliseerd voor het werken op een server.
+Het kan direct gegevens transporteren van het bestandssysteem stuurprogramma naar netwerk
+stuurprogramma's zonder dat er door een ring 3 overgang gegaan moet worden.
+Het ondersteunt ook lokale beveiliging en heeft beperkte software fout tolerantie ondersteuning.
+
+<P>Echter dit bestandssysteem is alleen te verkrijgen tegen extra kosten.
+Indien geinstalleerd, vervangt HPFS386 het standaard HPFS. Het wordt geladen door het
+<CODE>HPFS386.IFS</CODE> stuurprogramma in de &cfgsys;, maar dat zal niet werken als u de server
+componenten niet heeft geinstalleerd.
+
+<IFNDEF __EWORKPLACE__>
+<P><LI>Voor 'OS/2 Warp Server for e-Business (WSeB)', zette IBM <B>JFS</B> het
+'Journaling File System' om, vanuit AIX naar OS/2.
+Maar nu is JFS ook omgezet voor Linux. JFS is nu ook beschikbaar op eComStation en de
+IBM Convenience Packs
+</IFNDEF>
+
+<IFDEF __EWORKPLACE__>
+<P><LI>Om de bovenstaande beperkingen op te heffen, ondersteunt eComStation ook het
+<B>Journaling File System (JFS),</B> een modern bestandssysteem met hoog prestatievermogen
+dat ook door IBM's AIX en Linux wordt ondersteund.
+</IFDEF>
+
+<P>JFS heeft de volgende voordelen boven HPFS:
+
+<BR><OL><LI>Het legt alle schrijf bewerkingen naar schijf vast in een speciale 'log' sectie
+het "journal".
+Als het systeem vastloopt, hoeft JFS niet een volledige <B>CHKDSK</B> uit te voeren om de
+integriteit van het bestandssysteem terug te zetten, maar kan eenvoudig "het 'journal' afspelen"
+dat het heeft onderhouden.
+Met als resultaat dat <B>CHKDSK</B> op een JFS volume seconden duurt i.p.v. minuten of zelfs
+uren zoals met grote HPFS volumes.
+
+<BR><LI>Het heeft niet de 2 MB buffergrootte limiet van standaard HPFS.
+
+<BR><LI>Met de hulp van LVM kunnen JFS volumes zonder herstarten worden uitgebreid.
+
+<BR><LI>JFS maakt gebruik van nieuwe 32-bits code uit de &os2; kernel (KEE32 en IFS32)
+en hoeft daarom niet door 16-bits compatabiliteitslagen heen te gaan.
+Dit maakt de gegevens transporten, groter dan 64 KB, veel sneller en staat JFS toe
+veel beter te presteren op multi-processor systemen.
+
+<BR><LI>Alle interne JFS structuren zijn 64 bits groot. JFS heeft daarom niet
+de 2 GB limiet van bestanden (en de 64 GB limiet aan volume) van HPFS.
+
+</OL>Een nadeel van JFS was dat het niet startbaar zijn. In eComStation is dat probleem
+opgelost door 'bootable JFS'.
+
+<P>JFS ondersteuning wordt mogelijk door het
+<A HREF="cmdref.inf#jfs.ifs"><CODE>JFS.IFS</CODE></A>
+stuurprogramma aan het &cfgsys; bestand toe te voegen.
+
+<P><LI>Ten laatste, <B>CDFS</B> is een speciaal bestandssysteem dat gegevens CD-ROM's
+gebruiken.
+CD-ROM's gebruiken hun eigen speciale opmaak om gegevens op de schijf te organiseren.
+Die afwijkt van FAT, HPFS of JFS zodat een andere bestandssysteem stuurprogramma nodig is.
+Deze wordt ge‹mplementeerd door het
+<A HREF="cmdref.inf#cdfs.jfs"><CODE>CDFS.IFS</CODE></A>
+stuurprogramma en wordt gebruikt wanneer gegevens CD-ROM's worden benaderd.
+Het &os2; CDS stuurprogramma ondersteunt lange bestandsnamen in de Microsoft Joliet indeling.
+
+</OL>
+Kijk voor meer informatie in de onderstaande onderwerpen:
+
+<UL>
+<LI><A HREF="glossary/gls_volume.html">&xwp; Stations, volumes, en partities</A>
+<LI><A HREF="tasks/tsk_format.html">&xwp;: Formatteren</A>
+
+</UL>
+</BODY>
+</HTML>
+

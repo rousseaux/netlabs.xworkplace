@@ -1,0 +1,162 @@
+<HTML>
+  <HEAD>
+    <TITLE>
+      xfix: Die Handletabelle
+    </TITLE>
+  </HEAD>
+  <!-- this page is all new with V0.9.7 -->
+  <!-- revised V1.0.9 --> <body>
+    Beim Start l&auml;dt xfix die Handletabelle von der aktiven <code>PM_Workplace:HandlesX</code>
+    Sektion in <code>OS2SYS.INI</code>. (Siehe <a
+      href="xfix_handles.html">xfix und WPS Dateihandles</a> f&uuml;r
+    Details.) Es durchsucht die Tabelle und zeigt f&uuml;r jedes
+    gefundene Handle folgendes an:
+    <ol>
+      <li><b>"Index"</b> identifiziert die Reihenfolge in der die
+        Handles in <code>OS2SYS.INI</code> gefunden wurden und ist die
+        "nat&uuml;rliche" Sortierreihenfolge der Tabelle. Diese Nummer
+        ist in der Handletabelle nicht verzeichnet und wird auch nicht
+        aufgefrischt wenn sie Handles l&ouml;schen. </li>
+      <li>Die <b>"Bild"</b> Spalte zeigt den Gesamtstatus f&uuml;r ein
+        Handle:
+        <ul>
+          <li><img src="img/xfix_error.gif"> ist fehlerhaft und damit <b>ung&uuml;ltig</b>
+          </li>
+          <li><img src="img/xfix_delete.gif"> ist zum <b>L&ouml;schen</b>
+            markiert </li>
+          <li><img src="img/xfix_orphan.gif"> wird in den Zustand <b>verwaist</b>
+            wechseln weil ein Handle von dem es abh&auml;ngt zum
+            L&ouml;schen ausgew&auml;hlt ist</li>
+          <li><img src="img/xfix_protect.gif"> ist zum <b>Sch&uuml;tzen</b>
+            (vor L&ouml;schung) markiert</li>
+          <li><img src="img/xfix_safe.gif"> ist <b>sicher</b> und kann
+            nicht gel&ouml;scht werden weil ein Handle von dem es
+            abh&auml;ngt vor dem L&ouml;schen gesch&uuml;tzt wurde</li>
+        </ul>
+        Wenn kein Bild angezeigt wird ist das Handle <b>in Ordnung</b>
+        und bleibt unangetastet.</li>
+      <li>Die dritte Spalte zeigt den <b>"Status"</b> jedes Handles an.
+        Dieser wird durch xfix zugewiesen. Wenn die "Bild" Spalte ein
+        Bild f&uuml;r ein verwaistes Handle anzeigt dann kann einem die
+        "Status" Spalte helfen das Problem zu identifizieren. Ansonsten
+        ist die Spalte leer.
+        <p>Beim Start ermittelt xfix ung&uuml;ltige Elternhandles und
+          Duplikathandles. Wenn es Handles identifizieren soll die auf
+          gel&ouml;schte Dateien oder Ordner verweisen, benutzen sie den
+          "Suche ung&uuml;ltige Dateien" Eintrag des <a
+            href="xfix_menus.html">"Aktionen" Men&uuml;</a>. </p>
+      </li>
+      <li>Das <b>"Handle"</b> Feld kommt direkt aus der <code>OS2SYS.INI</code>
+        und zeigt ihnen das Dateisystemhandle als hexadezimale Zahl an.
+        Wenn das Handle von der WPS benutzt wird f&auml;ngt diese Zahl
+        mit einer "3" an um anzuzeigen da&szlig; das Handle einem Datei-
+        oder Ordnerobjekt zugeordnet ist (WPDataFile oder WPFolder
+        Klasse). Siehe <a href="xfix_handles.html">xfix und WPS
+          Dateihandles</a> f&uuml;r Details.
+        <p>Die Handlenummer hat keine besondere Bedeutung. Wenn ein
+          neues Handle erzeugt werden mu&szlig; wird ein beliebiger Wert
+          zwischen 1 und 65536 erzeugt. Das "Handle" Feld ist f&uuml;r <code>Laufwerk</code>
+          Eintr&auml;ge leer weil diesen nie Handles zugeordnet sind. </p>
+      </li>
+      <li>Das <b>"Eltern"</b> Feld ist ebenfalls in <code>OS2SYS.INI</code>
+        gespeichert und spezifiziert den Ordner in dem eine Datei oder
+        ein Ordner zu finden ist. Wenn das Elternhandle ung&uuml;ltig
+        ist kann die WPS nicht den vollen <a
+          href="glossary/gls_path.html">Verzeichnispfad</a> auf ein
+        Object ermitteln. xfix markiert den Eintrag dann als "verwaist"
+        und ung&uuml;ltig weil er in diesem Falle nutzlos geworden ist.
+        <p>Eine Ausnahme bildet der <code>Wurzelordner</code> eines
+          Laufwerks. Dieser hat keine "Eltern" und ist damit immer 0. </p>
+      </li>
+      <li>Das <b>"Typ"</b> Feld identifiziert was das Handle
+        repr&auml;sentiert. Dies kann ein <code>Laufwerk</code>, ein <code>Wurzelordner</code>
+        , ein normaler <code>Ordner</code> oder eine <code>Datei</code>
+        sein. Wenn sie <a href="xfix_menus.html">Sortieren nach Index</a>
+        ausw&auml;hlen um die Reihenfolge zu bekommen wie sie in <code>OS2SYS.INI</code>
+        abgespeichert ist werden sie immer ein <code>Laufwerk</code>
+        Eintrag, gefolgt von einem <code>Wurzelordner</code>
+        Eintrag, gefolgt von <code>Ordner</code> Eintr&auml;gen und
+        schlie&szlig;lich <code>Datei</code> Eintr&auml;gen sehen
+        die auf diesem Laufwerk liegen. </li>
+      <li>Das <b>"Kurzer Name"</b> Feld ist ebenfalls in der
+        Handletabelle gespeichert und spezifiziert den Namen des
+        Dateisystemobjektes (Datei oder Ordner) ohne den vollen
+        Dateipfad. Die Datei/Ordnernamenl&auml;nge ist variabel und
+        damit auch die Gr&ouml;&szlig;e des Eintrags.
+        <p>Normalerweise benutzt die WPS nur Gro&szlig;buchstaben
+          f&uuml;r "Kurzer Name". Manchmal kommen aber auch Namen mit
+          gemischten Gro&szlig;/Kleinbuchstaben vor. Dies scheint
+          allerdings kein Problem darzustellen. </p>
+      </li>
+      <li>Das <b>"Knoten ofs"</b> Feld zeigt den Offset wo dieser
+        Eintrag ("Knoten") in der Handletabelle in <code>OS2SYS.INI</code>
+        gefunden wurde. Der erste Eintrag hat immer den Wert 4 (byte
+        offset ist 4). Die L&auml;nge jedes Eintrags h&auml;ngt von der
+        L&auml;nge von "Kurzer Name" ab. </li>
+      <li>Das <b>"Kinder"</b> Feld wird von xfix berechnet wenn es die
+        Handletabelle durchsucht. Es spezifiziert wieviele andere
+        Eintr&auml;ge von diesem Eintrag abh&auml;ngen. Das sind alle
+        Eintr&auml;ge die als "Eltern" diesen Wert direkt oder indirekt
+        (wenn weitere "Eltern" dazwischenliegen) spezifizieren.
+        <p>Wenn "Kinder" 0 ist kann dieser Eintrag ohne R&uuml;ckwirkung
+          auf andere Eintr&auml;ge gel&ouml;scht werden. Wenn dieser
+          Wert gr&ouml;&szlig;er als 0 ist wird das L&ouml;schen dieses
+          Eintrags zu "verwaisten" Eintr&auml;gen anderswo f&uuml;hren.
+          (Dies bedeutet nicht da&szlig; es immer erlaubt ist einen
+          Eintrag zu l&ouml;schen nur weil er keine "Kinder" hat. Dies
+          k&ouml;nnte zum Beispiel zu Problemen mit Schattenobjekten
+          f&uuml;hren die auf diesen Eintrag verweisen. Siehe <a
+            href="xfix_delete.html">Die Grundlagen</a> f&uuml;r weitere
+          Details.) </p>
+      </li>
+      <li>Das <b>"Duplikate"</b> Feld wird von xfix erzeugt und
+        bezeichnet die Anzahl von Duplikaten mit dem gleichen
+        Handlewert. <b>Dieser sollte f&uuml;r jedes Handle unbedingt 0
+          sein.</b> Wenn nicht wird die WPS mit ziemlicher Sicherheit
+        bald abst&uuml;rzen. Darum vergibt xfix in diesem Fall den
+        "Duplikat" Status und markiert das Handle als "ung&uuml;ltig". </li>
+      <li>Das <b>"Referenzen"</b> Feld sagt ihnen ob bestimmte
+        Eintr&auml;ge in <code>OS2.INI</code> auf dieses Handle
+        verweisen.
+        <p>Wenn sie <code>Abstrakte Objekte</code> in diesem Feld sehen
+          wird dieses Handle in der <code>PM_Abstract:FldrContent</code>
+          Sektion der <code>OS2.INI</code> aufgelistet. Diese Sektion
+          listet die abstrakten ("Nicht-Dateisystem") Objekte auf die in
+          einem Ordner vorhanden sein k&ouml;nnen. Wenn das Handle des
+          entsprechenden Ordners gel&ouml;scht wird sind diese Objekte
+          nicht mehr benutzbar weil die WPS nicht mehr in der Lage ist
+          sie mit einem bestimmten Ordner zu assoziieren (sie wei&szlig;
+          nicht mehr in welchem Ordner das abstrakte Objekt anzuzeigen
+          ist). </p>
+        <p>Wenn sie hier <code>Ordnerposition</code> sehen taucht das
+          Handle an einer oder mehreren Stellen in der <code>PM_Workplace:FolderPos</code>
+          Sektion auf. Der Name dieser Sektion ist etwas
+          irref&uuml;hrend weil nicht nur Ordnerpositionen sondern auch
+          die Fensterpositionen von z.B. des (ge&ouml;ffneten)
+          Eigenschaften Dialogs f&uuml;r Datei- und Ordnerobjekte
+          abgespeichert werden. Deshalb taucht auch f&uuml;r
+          Dateiobjekte bisweilen ein Eintrag <code>Ordnerposition auf</code>.
+        </p>
+        <p>Wom&ouml;glich sehen sie hier auch so etwas wie <code>&lt;WP_DESKTOP&gt;</code>.
+          Dies kommt aus der <code>PM_Workplace:Location</code> Sektion
+          von <code>OS2.INI</code> und zeigt an ob dieser Datei/diesem
+          Ordner eine Objekt ID ((hoffentlich) systemweit eindeutiger
+          Klartextname) zugewiesen wurde. </p>
+        <p>Siehe <a href="xfix_delete.html">Die Grundlagen</a> welche
+          Auswirkungen das L&ouml;schen von Handles hat bei denen diese
+          Felder gesetzt sind. </p>
+      </li>
+      <li>Das <b>"Langer Name"</b> Feld schlie&szlig;lich zeigt die
+        volle Pfadangabe f&uuml;r das Objekt dem dieses Handle
+        zugeordnet ist, so wie es auch die WPS ermitteln w&uuml;rde.
+        F&uuml;r Ordner geht der Pfadangabe ein Pfadtrenner voraus um
+        besser Ordner von Dateien unterscheiden zu k&ouml;nnen. "Langer
+        Name" taucht nicht direkt im Handleeintrag in der Handletabelle
+        in <code>OS2SYS.INI</code> auf. Stattdessen konstruiert xfix
+        die volle Pfadangabe aus den Teilpfadangaben des Elternhandles
+        und dessen Elternhandles usw. (siehe <a
+          href="xfix_handles.html">xfix und WPS Dateihandles</a>
+        f&uuml;r weitere Details). </li>
+    </ol>
+  </body>
+</html>

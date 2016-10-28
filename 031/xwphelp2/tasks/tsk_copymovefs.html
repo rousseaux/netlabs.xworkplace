@@ -1,0 +1,44 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: Beperkingen bij het kopi‰ren en verplaatsen van bestanden
+    </TITLE>
+</HEAD>
+<BODY>
+Tijdens het kopi‰ren of verplaatsen van bestanden
+(&link_datafiles; of &link_folders;) tussen verschillende stations, dient u bekend te zijn
+met de beperkingen die er zijn als de stations verschillende
+<A HREF="glossary/gls_fs.html">bestandssystemen</A>
+gebruiken.
+
+<OL><LI>Andere besturingssystemen (zoals DOS of Windows) zijn niet bekend met de
+<A HREF="glossary/gls_eas.html">uitgebreide kenmerken</A>
+van &os2;.
+Dit is waarschijnlijk alleen een probleem met het FAT bestandssysteem, want DOS of Windows
+kunnen die HPFS of JFS onderdelen in beginsel niet zien. Maar als u werkt aan &os2; bestanden vanuit
+DOS of Windows, dan kunnen hun uitgebreide kenmerken verloren gaan.
+
+<P><LI>Als u een bestand kopieert of verplaatst van een station dat HPFS of JFS geformatteerd
+is naar een station dat met het FAT bestandssysteem geformatteerd is, kan het systeem de
+bestandsnaam afkappen om te voldoen aan de FAT 8+3 bestandsnaam beperking.
+De oorspronkelijke lange bestandsnaam wordt dan opgeslagen als een uitgebreid kenmerk van
+het bestand.
+Als u echter naar het station kijkt vanuit een ander besturingssysteem, zult u de ingekorte
+naam van het bestand zien.
+
+<P>Wees er op bedacht dat diskettes altijd geformatteerd zijn met het FAT bestandssysteem.
+
+<P><LI>De automatische bestandsnaam conversie die hierboven beschreven is, werkt alleen
+als u de Workplace Shell van &os2; gebruikt om bestanden te kopi‰ren of te verplaatsen.
+Als u
+<A HREF="glossary/gls_cmd.html">opdrachtaanwijzingen</A>
+gebruikt (bij voorbeeld, de
+<A HREF="cmdref.inf#copy"><CODE>COPY</CODE></A>
+en
+<A HREF="cmdref.inf#xcopy"><CODE>XCOPY</CODE></A>
+opdrachten) om bestanden te kopi‰ren of te verplaatsen, die niet voldoen aan de FAT 8+3
+naambeperking, zal de opdracht simpelweg mislukken.
+</OL>
+</BODY>
+</HTML>
+

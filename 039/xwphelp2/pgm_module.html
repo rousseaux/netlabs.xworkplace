@@ -1,0 +1,73 @@
+<HTML RESID=&ID_XSH_SETTINGS_PGMFILE_MODULE;>
+<HEAD>
+    <TITLE>
+        &xwp;: pagina "Modulo"
+    </TITLE>
+</HEAD>
+<BODY>
+La pagina "Modulo" Š presente nel blocco impostazioni di tutti i file eseguibili e
+mostra informazioni aggiuntive riguardanti l'eseguibile.
+
+<P>Un <B>"modulo"</B> Š la rappresentazione nel kernel di &os2; di un file eseguibile
+caricato con successo. Pu• essere sia un 
+<A HREF="objects/obj_pgmf.html">file programma</A> che una
+<A HREF="glossary/gls_dll.html">DLL</A>.
+
+<P>Le informazioni in questa pagina sono ricavate direttamente dal file e non possono 
+essere modificate.
+Nei sistemi operativi che mantengono un certo grado di compatibilit… con il DOS (come &os2; e
+Windows), gli eseguibili usano ancora l'intestazione EXE propria del DOS 3.x.  
+Nei formati "estesi" utilizzati da &os2; e Windows vengono per• aggiunte alla vecchia intestazione DOS 
+informazioni addizionali.
+&xwp; esamina le diverse intestazioni presenti nel file e
+mostra i risultati in questa pagina.
+
+<P>Nella sezione <B>"Formato modulo"</B> il <B>"Formato eseguibile"</B> sar… uno
+dei seguenti:
+
+<UL><LI><B>"DOS 3.x"</B>: il file contiene solo la vecchia intestazione DOS: si tratta
+probabilmente di un file DOS.
+
+<P><LI><B>"Linear Executable (LX)":</B>
+E' il formato eseguibile OS/2 nativo usato per i moduli 32-bit,
+librerie 32-bit comprese. La maggior parte dei file EXE e DLL OS/2 funzionanti con OS/2
+versione 2.x o superiore sono in questo formato.
+
+<P><LI><B>"New Executable (NE)"</B>:
+Questo formato fu introdotto da IBM e Microsoft
+con &os2; 1.x, ed Š tuttora utilizzato per gli eseguibili 16-bit, sia in Windows che in &os2;.
+La maggior parte delle applicazioni Windows 3.x sono in questo formato, come anche le applicazioni
+16-bit &os2; (comprese le librerie 16-bit). 
+Questo Š il formato pi— comune per i programmi di controllo OS/2, dato che molti di essi sono 
+tuttora a 16-bit.
+
+<P><LI><B>"Portable Executable (PE)"</B>: questo formato Š stato introdotto
+da Microsoft per le applicazioni Windows 32-bit, ed Š usato comunemente in tutte le versioni di Windows 
+a partire da Windows 95 (comprese le versioni derivate da Windows NT).
+Anche alcune applicazioni Win32s hanno questo formato (per es. applicazioni  32-bit 
+funzionanti sotto Windows 3.x).
+Come valore assunto OS/2 non usa e non comprende questo formato, ma installando Odin
+diventa possibile usare con OS/2 anche questo tipo di eseguibili.
+
+</UL><B>"OS di destinazione"</B> indica per quale sistema operativo Š stato scritto l'eseguibile. Sar…
+"DOS 3.x", "DOS 4.x", "&os2;", 
+"Win16", "Win386", o "Win32". Per certi formati &xwp; indica il sistema operativo
+come indicato all'interno dell'eseguibile stesso; negli altri casi 
+mostra l'ipotesi pi— probabile.
+
+<P>La sezione <B>"Descrizione modulo"</B> mostra le informazioni addizionali eventualmente specificate dal
+creatore dell'eseguibile
+che possono essere presenti nei formati LX e NE.
+Sono le stesse informazioni ricavabili con il comando
+<CODE>BLDLEVEL.EXE</CODE>, fornito con &os2;.
+
+<P>IBM ha introdotto per gli eseguibili &os2; 
+un formato speciale, che riunisce in una sola stringa
+fornitore, versione e descrizione del file; se si rispetta questo formato, &xwp; mostra tutte le informazioni,
+altrimenti verr… mostrato solo il campo "Descrizione".
+
+
+<BR>
+</BODY>
+</HTML>
+

@@ -1,0 +1,36 @@
+<HTML WIDTH=70% XPOS=right>
+<HEAD>
+    <TITLE>
+        Introduzione
+    </TITLE>
+</HEAD>
+<BODY>
+Lo &xcenter; supporta DLL plug-in per gli elementi. Allo &xcenter; non interessa che una classe
+elemento sia inserita in <CODE>XFLDR.DLL</CODE> stesso o implementata esternamente tramite
+una DLL plug-in.
+Si consulti <A HREF="ctr_9plugin.html">"Le DLL plug-in"</A> per un'introduzione generale a
+questa funzione dello &xcenter;.
+
+<P>Le <A HREF="ctr_3stdwgt.html">classi elemento standard</A> esistenti sono in parte
+contenute in <CODE>XFLDR.DLL</CODE> (se fanno uso estensivo delle funzioni di WPS,
+come con l'elemento XButton), ma alcune sono gi… implementate come DLL
+plug-in. Questo per due motivi: anzitutto, per controllare il funzionamento corretto della
+corrente interfaccia alle DLL plug-in, e come secondo motivo, per dare ai potenziali sviluppatori la
+possibilit… di vedere come realizzarne altre.
+
+<P>Si prega di consultare attentamente la sezione <A HREF="plug_2terminology.html">Terminologia</A> prima
+di tutto, per assicurarsi di conoscere i termini usati qui.
+
+<P>Fatto questo si pu• partire con l'elemento minimale che viene distribuito con
+i binari di &xwp;, nel qual caso non Š nemmeno necessario il codice sorgente di &xwp;.
+Tutto quel che serve Š il file include dello &xcenter;, che viene distribuito con &xwp;
+(consultare <CODE>toolkit\center.h</CODE>).
+
+<P>Si legga <A HREF="plug_51simple.html">Passo 1: Un solo header</A>
+per un'introduzione (che diverr… pi— complicata nei passi successivi).
+
+<BR>
+</BODY>
+</HTML>
+
+

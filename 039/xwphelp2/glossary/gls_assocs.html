@@ -1,0 +1,60 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: tipi e associazioni
+    </TITLE>
+</HEAD>
+<BODY>
+Nella Workplace Shell, le associazioni servono a collegare i file di dati con gli 
+&link_progobjs;.
+
+<IFNDEF __NOXWPSETUP__>
+Se nell'<A HREF="objects/obj_xwpsetup.html">oggetto "Impostazioni &xwp;"</A> si abilitano
+le associazioni per tipo di file avanzate, questi collegamenti si baseranno esclusivamente
+sui tipi di file.
+</IFNDEF>
+
+<P>Il <B>tipo</B> cui appartiene il file dati ä influenzato da due fonti:
+
+<UL><LI>E' possibile impostare il tipo in maniera esplicita, selezionandolo nella
+pagina "Tipo" del <A HREF="glossary/gls_notebook.html">blocco appunti impostazioni</A> 
+del file di dati. Il tipo viene registrato negli 
+<A HREF="glossary/gls_eas.html">attributi estesi</A>
+del file e vi rimane finchÇ non si decide di modificarlo.
+
+<P><LI>Inoltre &xwp; associa automaticamente i tipi ai file basandosi sui
+cosiddetti "filtri", cioä stringhe che contengono i consueti
+<A HREF="glossary/gls_wildcards.html">caratteri jolly</A>
+"*" e/o "?".
+
+<P>Questi filtri per i tipi di file vengono definiti dalla pagina "Tipi di file", presente 
+nell'&link_wpsobj;. Per esempio, con il filtro <CODE>*.PDF</CODE> ä possibile creare
+il tipo di file "Acrobat PDF": tutti i file con l'estensione .PDF apparterranno automaticamente 
+a questo tipo.
+
+</UL>Se ad un dato tipo di file ä stato <B>associato</B> un
+oggetto programma, quest'ultimo apparirÖ nel 
+<A HREF="glossary/gls_popmenu.html">&popmenu;e</A>
+"Aprire come" di tutti i file dati di quel tipo. La prima associazione ä quella che determina il tipo di 
+icona del file dati ed ä anche quella usata quando si clicca due volte sul file.
+
+<P>Nell'esempio precedente, se si associa il tipo "Acrobat PDF" all'oggetto
+programma di Adobe Acrobat Reader, tutti i file che rispondono alla stringa
+<CODE>*.PDF</CODE> potranno essere aperti con quell'oggetto programma.
+
+<P>In aggiunta a quanto detto, i tipi di file possono anche venire <B>ereditati</B>. E' possibile 
+definire queste relazioni "padre-figlio" dalla pagina "Tipi di file"
+dell'&link_wpsobj;, riordinando i vari tipi di file trascinandoli nella posizione desiderata. Se un 
+tipo diventa "figlio" di un altro tipo, le associazioni previste per il tipo "genitore" 
+diventano disponibili anche per tutti i file dati del tipo "figlio".
+
+<P>Per esempio: supponiamo che si sia definito un tipo di file "PostScript".
+Dato che i documenti PDF sono in effetti nient'altro che dei file PostScript,
+seppure molto particolari, si puï decidere di fare del tipo "Acrobat PDF" 
+un "figlio" del tipo "PostScript". Cosç facendo, e supponendo che GhostScript
+sia il programma associato al tipo "PostScript", sarÖ possibile aprire i file PDF
+anche con GhostScript.
+<BR>
+</BODY>
+</HTML>
+

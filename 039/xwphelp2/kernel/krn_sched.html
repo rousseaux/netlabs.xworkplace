@@ -1,0 +1,110 @@
+<HTML RESID=&ID_XSH_SETTINGS_KERNEL1;>
+<HEAD>
+    <TITLE>
+        &xwp;: scheduler
+    </TITLE>
+</HEAD>
+<BODY>
+Questa pagina permette di modificare le impostazioni relative allo scheduler &os2;
+presenti nel file &cfgsys;.
+
+<P>Si veda <A HREF="glossary/gls_scheduler.html">"Processi e sottoprocessi"</A> per una spiegazione
+introduttiva sullo scheduler.
+
+<P>Qui si parla solo dei comandi nel file &cfgsys; relativi alle impostazioni presenti in questa pagina.
+Se tali informazioni dovessero risultare insufficienti, si faccia riferimento ai paragrafi specifici
+in <I>&os2; - Riferimento per i comandi</I>.
+
+<P>Premere <B>"Applica"</B> per salvare nel file &cfgsys; le modifiche
+effettuate. Verranno cambiate solo le linee corrispondenti alle impostazioni di questa pagina. Non
+verranno toccate le linee cui fanno riferimento le altre pagine dell'oggetto "Kernel &os2;".
+Si noti che sarÖ necessario riavviare il sistema per rendere effettive le modifiche apportate.
+<I>Non</I> ä sufficiente il solo riavvio della Scrivania.
+<P>Premere <B>"Ottimizza"</B> per far sç che sia &xwp; a suggerire i nuovi valori basandosi sulle
+caratteristiche del sistema.
+Il file &cfgsys; sarÖ modificato solo se si seleziona il tasto "Applica".
+<P>Premere <B>"Valore assunto"</B> per visualizzare nella pagina le impostazioni &os2; assunte.
+Anche in questo caso, il file &cfgsys; sarÖ modificato solo selezionando il tasto "Applica".
+
+<P>Sono presenti i campi seguenti:
+
+<UL><LI><B>"Processi, numero totale corrente"</B> mostra il numero totale dei processi
+al momento attivi nel sistema. Il valore viene aggiornato continuamente: avviando un nuovo
+programma, si vedrÖ aumentare il numero dei processi attivi
+
+<P><LI>L'impostazione <B>"Processi, numero totale consentito"</B> corrisponde al valore
+<CITE>PROCESSES</CITE> nel file &cfgsys;. Il valore determina quanti processi &os2; puï
+avviare contemporaneamente. Il valore massimo dipende dalla quantitÖ di memoria disponibile
+nel sistema. Abbassare questo valore riduce il consumo di memoria e l'impegno dello
+scheduler ed aiuta anche ad evitare problemi con la memoria condivisa.
+
+<P>PerchÇ la funzione di ottimizzazione possa funzionare al meglio, si dovrÖ prima ricreare il
+proprio contesto di lavoro abituale. Avviare tutte le applicazioni che generalmente si usano in
+contemporanea e premere "Ottimizza".
+
+<P>Si tenga perï presente che il sistema puï bloccarsi in maniera del tutto improvvisa se
+si imposta un valore eccessivamente basso! Si puï considerare un valore sicuro quello visualizzato
+da "Processi, numero totale corrente" aumentato del 50%.
+
+<P>PerchÇ la funzione di ottimizzazione possa funzionare al meglio, si dovrÖ prima ricreare il
+proprio contesto di lavoro abituale. Avviare tutte le applicazioni che generalmente si usano in
+contemporanea e premere "Ottimizza".
+
+<P>Questa impostazioni ä presente solo su sistemi OS/2 Warp 4 con Fixpak 13 o superiore.
+
+<P><LI><B>"Sottoprocessi, numero totale corrente"</B> mostra il numero totale dei
+sottoprocessi attivi al momento nel sistema. Il valore viene aggiornato continuamente: lanciando
+un nuovo programma, si vedrÖ aumentare il numero dei sottoprocessi attivi.
+
+<P><LI>L'impostazione <B>"Sottoprocessi, numero totale consentito"</B> corrisponde al valore
+<CITE>THREADS</CITE>
+presente nel file &cfgsys;. Il valore determina il numero massimo di sottoprocessi che &os2; puï avviare
+contemporaneamente. Il valore massimo ä 4096. Riducendo questo valore, ä possibile alleggerire il
+lavoro dello scheduler e ridurre il consumo di memoria.
+Secondo le informazioni IBM, &os2; utilizza almeno una pagina di memoria (4 KB) per ciascun sottoprocesso. Il che
+significa che, specificando 1024 sottoprocessi, si impegnano almeno 4 MB di memoria.
+Se non si utilizzano le funzioni di rete locale, 256 sarÖ probabilmente una cifra sufficiente.
+<P>Si tenga perï presente che il sistema puï bloccarsi senza alcun preavviso se si imposta un valore
+troppo basso! Si puï considerare un valore sicuro quello visualizzato da "Sottoprocessi, numero totale corrente"
+aumentato del 50%.
+Questo dovrebbe dare un certo margine di sicurezza, dato che la maggior parte dei sottoprocessi vengono avviati
+all'apertura del sistema e la maggior parte dei processi addizionali usa solo uno o due sottoprocessi.
+
+<P>PerchÇ la funzione di ottimizzazione possa funzionare al meglio, si dovrÖ prima ricreare il
+proprio contesto di lavoro abituale. Avviare tutte le applicazioni che generalmente si usano in
+contemporanea e premere "Ottimizza".
+
+<P>Si veda la <A HREF="cmdref.inf#threads">documentazione</A> in
+<I>&os2; - Riferimento per i comandi</I> per dettagli ulteriori.
+
+<P><LI><B>"Consenti aumento di prioritÖ"</B> corrisponde all'impostazione <CITE>MAXWAIT</CITE>
+nel file &cfgsys;. Tale impostazione determina il numero di secondi passati i quali un sottoprocesso
+pronto ad eseguire ottiene tempo del processore, anche in presenza di altri sottoprocessi con prioritÖ
+pió alta. Questa impostazione influenza solo i sottoprocessi con classe di prioritÖ "regular".
+Il valore assunto ä tre secondi. Abbassando questo valore i sottoprocessi
+in secondo piano avranno pió tempo processore, a discapito perï di quelli in primo piano, che verranno interrotti
+pió spesso. Evitare di impostare un valore superiore a tre secondi. IBM raccomanda di ridurre questo
+numero se si utilizzano numerose applicazioni DOS/Windows; in ogni caso NON deve essere abbassato se
+il sistema dispone di poca memoria e &os2; ä costretto ad utilizzare molto il file di appoggio (SWAPPER.DAT).
+
+<P>Si veda la <A HREF="cmdref.inf#maxwait">documentazione</A> in
+<I>&os2; - Riferimento per i comandi</I> per dettagli ulteriori.
+
+<P><LI><B>"Privilegia I/E su disco per le applicazioni ad alta prioritÖ"</B> corrisponde
+all'impostazione <CITE>PRIORITY_DISK_IO</CITE> in &cfgsys;.
+Se questa impostazione ä attiva (lo ä per valore assunto),
+l'applicazione correntemente in primo piano riceverÖ un aumento di prioritÖ
+quando l'operazione sul disco ä completa. Questo si applica al primo intervallo di tempo assegnato
+al sottoprocesso al completatamento dell'operazione sul disco. Scaduto questo intervallo viene ripristinato
+lo stato originario per il sottoprocesso ed ä annullato l'aumento di prioritÖ. Questo comporta un miglioramento
+nel tempo di risposta della sessione in primo piano, per lo meno quando sta accedendo ai dischi del sistema.
+<P>E' possibile disattivare questa impostazione se si utilizzano normalmente in secondo piano programmi
+che accedono pesantemente al disco, ad esempio compilatori.
+
+<P>Si veda la <A HREF="cmdref.inf#priority_disk_io">documentazione</A> in
+<I>&os2; - Riferimento per i comandi</I> per dettagli ulteriori.
+
+</UL>
+</BODY>
+</HTML>
+

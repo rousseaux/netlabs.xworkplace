@@ -1,0 +1,55 @@
+<HTML RESID=&ID_XSH_SETTINGS_ERRORS;>
+<HEAD>
+    <TITLE>
+        &xwp;: Fout instellingen
+    </TITLE>
+</HEAD>
+<BODY>
+Op deze pagina kunt u enkele &cfgsys; instellingen aanpassen die bepalen hoe de afhandeling van
+fouten door &os2; zal verlopen.
+<P>Als de informatie op deze pagina, betreffende de verschillende &cfgsys; instellingen, niet
+voldoende voor u is, dan kunt u aanvullende toelichtingen vinden in de respectievelijke hoofdstukken
+van de <I>Handleiding bij opdrachten.</I>
+
+<P>Druk op <B>"Toepassen"</B> om de door u gemaakte aanpassingen weg te schrijven naar het
+&cfgsys; bestand.
+Dit zal alleen de regels aanpassen die overeenkomen met de instellingen op deze pagina.
+De regels overeenkomend met de andere pagina's in het "&os2; kernel" object zullen niet
+aangepast worden.
+Deze knop zal alleen geactiveerd worden als u aanpassingen gemaakt heeft aan de
+instellingen op deze pagina.
+Let a.u.b. op dat u de computer moet herstarten om de
+aanpassingen te activeren. Een Werkplek herstart is <I>niet</I>
+voldoende.
+<P>Druk op <B>"Optimaliseer"</B> zodat &xwp; u nieuwe instellingen
+voorstelt op basis van uw systeem karakteristieken. De &cfgsys; zal ook
+alleen worden aangepast nadat u op "Toepassen" gedrukt heeft.
+<P>Druk op <B>"Standaard"</B> om de standaard &os2; instellingen op de notitieblok
+pagina getoond te krijgen. De &cfgsys; zal ook alleen aangepast worden nadat
+u op "Toepassen" gedrukt heeft.
+
+<P>Als u de <B>"Onderdruk apparatuur fouten"</B> activeert, zullen
+vervelende &os2; foutberichten over stations die niet gereed zijn en
+andere apparatuur fouten eindelijk verdwijnen. Als dit geactiveerd is zal
+&os2; automatisch de fout die opgetreden is melden aan de applicatie, wat
+het normaliter alleen doet als u "Teruggeven fout code" had geselecteerd in
+het witte foutvenster, wat dan verschijnt. Dit komt overeen met de
+<CITE>AUTOFAIL=YES</CITE> instelling in de &cfgsys;.
+
+<P>Het activeren van de <B>"Onderdruk uitzonderingsberichten"</B> instelling zal tot resultaat
+hebben dat uitzonderingsberichten niet meer getoond worden in een foutvenster. Ze worden
+alleen naar het <CITE>POPUPLOG.OS2</CITE> bestand geschreven in de hoofddirectory van
+het station dat u opgeeft.
+Dit komt overeen met de
+<CITE>SUPPRESSPOPUPS=x</CITE> instelling. Let op dat sinds &warp; 3 fixpak 29
+dit bestand altijd naar het opstartstation geschreven wordt, zelfs als deze instelling niet
+geactiveerd is.
+
+<P>Als u de <B>"Automatisch herstarten na trap"</B> instelling geactiveerd heeft, zal &os2;
+automatisch het hele systeem herstarten na een van die onherstelbare fout boodschappen waarbij
+"Het systeem is gestopt." verschijnt. Dit is handig voor machines die zonder toezicht moeten
+draaien, zoals netwerk servers.
+<BR>
+</BODY>
+</HTML>
+

@@ -1,0 +1,28 @@
+<HTML RESID=&ID_XFH_LIMITREACHED;>
+<HEAD>
+    <TITLE>
+        "Troppe voci"
+    </TITLE>
+</HEAD>
+<BODY>
+Questo messaggio viene visualizzato nel caso siano state mostrate troppe voci nel menu 
+contestuale.
+Si tratta soltanto di un avvertimento, privo di conseguenze. Viene visualizzato quando si 
+naviga molto a lungo attraverso i menu, senza mai chiudere il &popmenu;e.
+<P><B>Soluzione:</B>
+<P>E' sufficiente chiudere il &popmenu;e di tanto in tanto, cliccando sulla Scrivania.
+<P><B>Spiegazione dettagliata:</B>
+&os2; non fornisce un numero illimitato di voci per i sottomenu. A ciascuna voce viene 
+assegnato un numero di
+identificazione interna (ID). Per questi ID, &xwp; somma 0x6500 (25856 in decimale) al 
+numero specificato come "offset" nelle impostazioni globali
+ed assegna un nuovo ID per ogni voce visualizzata nei &popmenu;i. &os2;, per•, incomincia 
+a funzionare in maniera
+imprevedibile se si utilizzano ID di menu superiori a 0x8000 (32768 in decimale); per questo motivo 
+&xwp; smette di visualizzare i menu quando si raggiunge questo limite.
+Alla successiva apertura di un &popmenu;e il conteggio riparte dall'inizio, per cui questo 
+errore in realt… non ha mai conseguenze.
+<BR>
+</BODY>
+</HTML>
+

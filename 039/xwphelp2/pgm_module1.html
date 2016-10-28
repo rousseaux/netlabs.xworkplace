@@ -1,0 +1,50 @@
+<HTML RESID=&ID_XSH_SETTINGS_PGMFILE_MODULE1;>
+<HEAD>
+    <TITLE>
+        &xwp;: pagina "Moduli importati"
+    </TITLE>
+</HEAD>
+<BODY>
+La pagina "Moduli" Š presente nel blocco appunti impostazioni di tutti i 
+file eseguibili e mostra informazioni aggiuntive relative al modulo.
+
+<P>Sono elencati nella pagina i sottomoduli importati dal modulo. 
+
+<P>Pi— precisamente, sono elencati i nomi dei sottomoduli esplicitamente indicati
+nell'intestazione del modulo come da collegare al momento del caricamento;
+al termine del caricamento questi collegamenti sono quindi gi… stati
+effettuati, a differenza dei collegamenti realizzati durante l'esecuzione (vedi sotto).
+I nomi sono quelli delle 
+<A HREF="glossary/gls_dll.html">librerie a collegamento dinamico</A> da importare,
+generalmente senza l'estensione <CODE>.DLL</CODE>, che devono trovarsi nel percorso
+<CODE>LIBPATH</CODE> (si veda
+<A HREF="glossary/gls_path_sys.html">"Percorsi di sistema"</A> per ulteriori informazioni).
+
+<P>Se il caricamento di un eseguibile fallisce le informazioni in questa pagina possono
+aiutare a capire qual'Š il sottomodulo che ha causato il problema.
+
+<P>Come conseguenza di quanto detto, in questa pagina <I>non</I> sono elencate:
+
+<UL><LI>Le <B>risorse importate durante l'esecuzione</B> dall'applicazione che, 
+gi… caricata completamente, richiama API &os2; specifiche per importare 
+dinamicamente altro codice; sono informazioni che non sono presenti nell'intestazione
+dell'eseguibile, dato che Š il codice programma ad effettuare concretamente l'importazione.
+Si veda la documentazione relativa a 
+<A HREF="cpref.inf#DosQueryProcAddr"><CODE>DosQueryProcAddr</CODE></A>
+nella documentazione del Toolkit<A HREF="_toolkitlink.html">*</A>.
+
+<P><LI>Le <B>risorse importate indirettamente</B>, richiamate cioŠ dai moduli elencati 
+nella pagina, che variano a seconda del contesto di esecuzione: il
+<A HREF="glossary/gls_path_sys.html">percorso di sistema</A>
+<CODE>LIBPATH</CODE> attivo, come pure
+<CODE>BEGINLIBPATH</CODE> ed <CODE>ENDLIBPATH</CODE> sono tutte variabili 
+che determinano quali moduli saranno caricati effettivamente.
+
+</UL>Se si vuole sapere quali moduli sono effettivamente usati da un dato programma
+si pu• usare il comando  <CODE>PSTAT /L</CODE> da una richiesta comandi &os2; 
+mentre il programma Š in esecuzione.
+
+<BR>
+</BODY>
+</HTML>
+

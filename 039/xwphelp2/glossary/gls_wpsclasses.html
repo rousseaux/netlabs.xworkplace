@@ -1,0 +1,127 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: classi WPS
+    </TITLE>
+</HEAD>
+<BODY>
+La Workplace Shell di &os2; (WPS) deve parte della sua fama al fatto di essere costruita su un modello
+<B>"object-oriented".</B> Quest'espressione sta a significare che -- diversamente dalle interfacce
+utente degli altri sistemi operativi -- qualsiasi cosa manipolata attraverso la Workplace Shell
+viene trattata in primo luogo come un <B>"oggetto":</B> questo vale per i
+&link_datafiles;, le
+&link_folders;,
+le stampanti, i dischi eccetera. Sono tutti oggetti che hanno in comune
+certe caratteristiche (come i 
+<A HREF="glossary/gls_popmenu.html">&popmenu;i</A> e i 
+<A HREF="glossary/gls_notebook.html">blocchi appunti impostazioni</A>), 
+ma differiscono tra loro
+per certe altre: il contenuto del &popmenu;e, per esempio, varia a seconda del tipo di oggetto selezionato.
+
+<P>Per poter gestire al meglio tanto le caratteristiche comuni quanto quelle particolari la
+WPS utilizza le <B>"classi".</B> Si tratta di un termine derivato dalla programmazione orientata
+ad oggetti; una classe ä, per cosç dire, l'astrazione, o lo "stampo", di un certo tipo di oggetto.
+Le classi non sono visibili sulla Scrivania, dato che non "esistono" nella stessa maniera degli
+oggetti; pure, esse contengono tutte le informazioni relative alle proprietÖ e alle capacitÖ degli oggetti,
+nonchÇ il codice eseguibile necessario per far "funzionare" l'oggetto.
+
+<P>Tutte le classi WPS risiedono in  
+<A HREF="glossary/gls_dll.html">librerie a collegamento dinamico (DLL)</A>. Per fare
+un esempio, la maggior parte delle classi di base della WPS sono contenute nel grosso file
+<CODE>PMWP.DLL</CODE>, nell'indirizzario <CODE>\OS2\DLL</CODE>. Le classi di &xwp; sono invece
+immagazzinate in <CODE>XFLDR.DLL</CODE>, nella cartella di installazione di &xwp;.
+
+<P>Qualunque oggetto sulla scrivania ä considerato una <B>"istanza"</B> di una certa classe.
+I nomi delle classi WPS iniziano sempre con "WP": ad esempio, un oggetto stampante ä
+un'istanza della classe "WPPrinter", una cartella lo ä della classe
+"WPFolder", un file di dati lo ä di "WPDataFile", e cosç via.
+
+<P>La ragione della potenza e flessibilitÖ di questo tipo di architettura sta nel
+fatto che classi differenti possono <B>discendere</B> l'una dall'altra e la classe "figlia"
+<B>eredita</B> tutte le proprietÖ e le funzionalitÖ della classe "madre". E' cosç possibile rendere
+pió astratte alcune delle proprietÖ dell'interfaccia utente, ubbidendo al principio per cui l'astrazione ä il
+miglior strumento per trattare la complessitÖ.
+
+<P>La WPS contiene dunque numerose classi che sono legate tra loro in una gerarchia
+complessa. L'esempio seguente, preso dall'elenco classi WPS, permette di rendere
+pió chiaramente l'idea della struttura generale (le linee rappresentano una parentela):
+
+<PRE>
+ WPObject
+   √ƒƒ WPAbstract
+   ≥     √ƒƒ WPPrinter
+   ≥     √ƒƒ WPProgram
+   ≥     ¿ƒƒ WPShadow
+   √ƒƒ WPFileSystem
+   ≥     √ƒƒ WPDataFile
+   ≥     ≥      √ƒƒ WPIcon
+   ≥     ≥      ¿ƒƒ WPProgramFile
+   ≥     ¿ƒƒ WPFolder
+   ≥            √ƒƒ WPDesktop
+   ≥            ¿ƒƒ WPStartup
+   ¿ƒƒ WPTransient
+</PRE>
+
+Come si vede, tutte le classi discendono da <CODE>WPObject</CODE>,
+che ä per questo chiamata "classe radice" per le classi WPS, e serve ad implementare
+le funzionalitÖ comuni a tutti gli oggetti della Scrivania: ad es., come si ä detto, i &popmenu;i ed i
+blocchi appunti impostazioni. Tuttavia, la classe WPObject ä troppo astratta perchÇ possano esisterne
+"istanze" dirette: essa ä stata concepita solo per derivarne altre classi. Non vi sono dunque oggetti di 
+questa classe.
+
+<P>Da WPObject derivano solo tre classi, ed anch'esse sono -- come WPObject -- solo
+classi "madri" astratte, dalle quali non sono creabili oggetti.
+
+<OL><LI><CODE>WPAbstract</CODE> ä la classe genitrice comune a tutti gli oggetti cosiddetti "astratti",
+quegli oggetti cioä che non esistono in maniera fisicamente indipendente nel file system, ma che sono conservati sotto forma
+di dati nel file <CODE>OS2.INI</CODE>. Esempi comuni sono la classe <CODE>WPPrinter</CODE> per gli
+oggetti stampante, <CODE>WPProgram</CODE> per gli oggetti programma, e <CODE>WPShadow</CODE>
+per le copie collegate. Sono tutti oggetti normalmente visibili all'interno delle cartelle WPS, ma che non appaiono
+se, per es.,  si digita <CODE>DIR</CODE> dalla linea di comando.
+
+<P><LI>Al contrario, <CODE>WPFileSystem</CODE> ä la classe genitrice comune per tutti gli oggetti
+che esistono fisicamente nel file system. Di essa vi sono due sottotipi:
+le cartelle (classe <CODE>WPFolder</CODE>) e i file dati (<CODE>WPDataFile</CODE>).
+Sono poi numerosissime le sottoclassi di  WPDataFile, come <CODE>WPIcon</CODE> per i file icona
+e <CODE>WPProgramFile</CODE> per i file programma (cioä gli eseguibili, contraddistinti generalmente
+dall'estensione <CODE>.EXE</CODE>).
+Tutti i file dati per cui non vi ä una sottoclasse pió specifica sono istanze di
+<CODE>WPDataFile</CODE>.
+
+<P><LI>Infine, la WPS utilizza la classe <CODE>WPTransient</CODE> per quegli oggetti i cui
+dati non vengono salvati affatto, dato che sono solo rappresentazioni temporanee di qualcosa d'altro. Un esempio
+sono i lavori di stampa nell'oggetto stampante e le periferiche che appaiono nello Hardware Manager.
+
+</OL>La WPS permette anche la <B>sostituzione delle classi.</B>
+Tale possibilitÖ ä sfruttata ampiamente da &xwp;, che rimpiazza diverse classi WPS standard, per collegare le sue funzionalitÖ aggiuntive
+alla WPS. Per esempio, la classe <CODE>WPFolder</CODE> ä sostituita dalla classe <CODE>XFolder</CODE>, 
+che implementa tutte le nuove funzionalitÖ delle cartelle.
+
+<P>Questa classe sostitutiva ä sempre una discendente della classe che va a 
+rimpiazzare; "sostituire" una classe significa che la WPS utilizzerÖ la classe sostitutiva (discendente) invece
+della classe originale che sarebbe stata usata altrimenti.
+Perciï, se per es. si ä installato &xwp;, tutte le cartelle nel sistema diventano istanze di
+<CODE>XFolder</CODE> anzichÇ di <CODE>WPFolder</CODE>.
+Dato perï che <CODE>XFolder</CODE> ä "figlia" di <CODE>WPFolder</CODE>,
+le cartelle nel sistema conservano, oltre alle funzioni introdotte da &xwp;, anche tutte le proprietÖ 
+abituali delle cartelle standard.
+
+<P>Utilizzare classi sostitutive permette a chi programma di implementare nuove funzioni
+senza dover conoscere in dettaglio il funzionamento interno di una certa classe.
+Si tratta di un concetto innovativo e potente, che non ha uguale in nessun altro sistema operativo.
+
+<IFNDEF __NOWPSCLASSLIST__>
+<P>Se si apre l'oggetto <A HREF="clst_main.html">"Elenco classi WPS"</A>,
+ä possibile vedere tutte le classi installate nel sistema. Sono generalmente pió di un centinaio,
+ordinate in una struttura ad albero. Utilizzando i &popmenu;i ä possibile registrare, rimpiazzare e
+deregistrare classi, nonchÇ annullare sostituzioni. E' inoltre possibile creare sulla Scrivania oggetti (cioä istanze),
+selezionandone direttamente la classe.
+
+<P>Si presti la massima cautela nel manipolare l'elenco delle classi WPS!
+Basta una modifica erronea per rendere del tutto inutilizzabile l'intero sistema!
+</IFNDEF>
+
+<BR>
+</BODY>
+</HTML>
+

@@ -1,0 +1,134 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: i marcatori oggetto
+    </TITLE>
+</HEAD>
+<BODY>
+I <B>marcatori oggetto ("object handles")</B> sono numeri interi a 32 bit 
+che si presume all'interno del sistema siano univoci.
+La parola pi— significativa dell'intero rappresenta la classe di 
+immagazzinamento dell'oggetto, mentre la parola
+meno significativa garantisce l'identificazione univoca all'interno di 
+quella classe di immagazzinamento.
+
+<UL><LI>Gli <B>oggetti astratti</B> hanno generalmente parola pi— significativa pari a 
+<CODE>0x0002</CODE>, mentre la parola meno significativa Š conservata nella sezione
+<CODE>PM_Abstract:Objects</CODE> in <CODE>OS2.INI</CODE>, assieme ai dati relativi 
+all'oggetto.
+
+<P>Agli oggetti astratti Š <I>sempre</I> assegnato un marcatore ("handle"), dato che essi non
+hanno altrimenti un nome file proprio ed il marcatore Š l'unico sistema per farvi riferimento.
+
+<P><LI>Al contrario, agli <B>oggetti nel file system</B> (file e cartelle) solo 
+di rado viene assegnato un marcatore.
+Se questo capita, la parola pi— significativa Š generalmente <CODE>0x0003</CODE>, 
+mentre la parola meno significativa
+Š immagazzinata nel database dei marcatori, nella sezione <CODE>PM_Workplace:HandlesX</CODE> 
+del file <CODE>OS2SYS.INI</CODE>.
+
+<P>Si noti che vi sono due diverse sezioni <CODE>PM_Workplace:HandlesX</CODE> (dove X
+pu• essere 0 o 1). La Workplace Shell conserva permanentemente in memoria una lista 
+aggiornata dei marcatori file, salvandola di tanto in tanto nel file <CODE>OS2SYS.INI</CODE>; 
+al momento del salvataggio controlla quale delle due sezioni Š attiva in quel momento, 
+verificando lo stato della chiave <CODE>PM_Workplace:ActiveHandles</CODE>,
+dopodich‚ salva nell'altra sezione i marcatori ed infine modifica la chiave 
+in modo che punti all'altra sezione. Il complicato meccanismo Š reso necessario dal fatto che 
+le singole voci nei file INI &os2; non possono contenere pi— di 64 KB di dati e 
+perci• la WPS ha bisogno di pi— blocchi per poter immagazzinare l'intera tabella
+marcatori.
+
+</UL>Per capire da dove arrivano tutti questi marcatori file Š necessario
+spendere qualche parola sul meccanismo interno di funzionamento della WPS.
+
+<P>La Workplace Shell infatti dovrebbe in teoria creare marcatori per gli oggetti
+file system (file dati e cartelle) solo quando questo Š realmente necessario, quando cioŠ 
+da qualche parte vi si fa riferimento. 
+
+<P>Tali marcatori file-system possono anche causare problemi. Pi— ve ne sono e pi—
+la WPS in generale diventa lenta. Ma pi— importante ancora Š il fatto che il numero
+complessivo dei marcatori file-system non pu• crescere illimitatamente: se i marcatori
+diventano troppi la WPS pu• diventare instabile.
+
+<P>I marcatori file vengono creati, tra l'altro, nelle occasioni seguenti
+
+<OL><LI>Per gli oggetti programma e le copie collegate, il che Š desiderabile,
+dato che permette di mantenere legati oggetti programma e copie collegate all'oggetto
+di destinazione anche quando tale oggetto viene spostato dalla sua posizione originale.
+
+<P>Quando, per esempio, si inserisce nel blocco appunti impostazioni di un oggetto
+programma il  <A HREF="glossary/gls_path.html">percorso</A> del file eseguibile, 
+l'oggetto programma fa riferimento all'eseguibile attraverso un marcatore, che 
+viene generato automaticamente se ancora non ne era stato assegnato uno. Lo stesso vale per
+le copie collegate.
+
+<P><LI>Per altre componenti della WPS (o di &xwp;), allo scopo per immagazzinare 
+riferimenti agli oggetti; per esempio, &xwp; utilizza marcatori oggetti per creare
+gli oggetti bottone sullo &xcenter;.
+
+<P><LI>Ogni volta che ad un oggetto Š assegnata un'IDentit… oggetto (la 
+stringa tra parentesi ad angolo, per es. <CODE>&lt;WP_DESKTOP&gt;</CODE>); 
+le IDentit… oggetto sono conservate nella sezione
+<CODE>PM_Workplace:Location</CODE> del file <CODE>OS2.INI</CODE> assieme ai
+marcatori oggetto, e possono evidentemente essere risolte solo se il marcatore Š valido.
+
+<P>Il problema principale di questa implementazione Š che, se la tabella dei marcatori
+file si corrompe, la WPS non Š pi— in grado di riconoscere la Scrivania, solitamente
+individuata grazie alla IDentit… oggetto <CODE>&lt;WP_DESKTOP&gt;</CODE> all'avvio
+del sistema.
+Il messaggio di errore "Impossibile trovare la Scrivania" Š nel 95% dei casi dovuto
+alla tabella marcatori file corrotta.
+
+<P><LI>Dalle applicazioni che utilizzano le API <CODE>Win*</CODE> per creare oggetti della
+Scrivania o per modificarli. E' un comportamento generalmente tollerabile, 
+dato che di norma riguarda un numero limitato di file. Alcune di queste API,
+ad es. <CODE>WinMoveObject</CODE>,
+richiedono sfortunatamente proprio un marcatore oggetto come input.
+
+<P><LI>Per ognuna delle cartelle aperte nel sistema. Anche questo Š tollerabile, dato che
+la WPS usa il marcatore per memorizzare, nel file <CODE>OS2.INI</CODE>, la posizione 
+di apertura della cartella sullo schermo
+e poterla ricordare anche se la cartella viene spostata.
+
+<P><LI>Automaticamente per ogni cartella genitore nel percorso di un file, quando 
+per questo file viene creato l'dentificatore. E' necessario per il meccanismo 
+di implementazione del database marcatori, che per gli oggetti file system 
+conserva solo il nome corto assieme ad un riferimento
+alla cartella genitore. Si tratta di un sistema estremamente efficente: se infatti si 
+sposta una cartella con molti oggetti all'interno, nel database sar… necessario 
+aggiornare una sola voce; gli oggetti all'interno della cartella infatti continuano a
+conservare solo il nome della cartella genitore, che non cambia.
+
+<P><LI>Per ogni file dati aperto attraverso l'associazione con un oggetto programma.
+La WPS infatti imposta la variabile ambiente <CODE>WP_OBJHANDLE</CODE> sul marcatore
+del file dati aperto. Questo Š utile per certi programmi, ma ha l'effetto indesiderato
+di generare un marcatore ogni volta che si fa doppio clic su di un oggetto, anche quando l'applicazione
+non ne fa alcun uso.
+
+<IFNDEF __NEVEREXTASSOCS__>
+
+<P>&xwp; permette di eliminare questo comportamento facendo uso delle associazioni file estese.
+
+</IFNDEF>
+
+<IFNDEF __ALWAYSREPLACEREFRESH__>
+
+<P><LI>Disgraziatamente la WPS crea un marcatore per ogni 
+oggetto nuovo trovato durante l'aggiornamento automatico delle cartelle. Il che significa che,
+se si apre una cartella e si fa qualcosa al suo interno attraverso la linea di comando (o con
+un'applicazione), verr… creato un nuovo marcatore per ogni file modificato nella cartella.
+
+<P>Un semplice test consiste nello scompattare un file ZIP all'interno di una cartella aperta.
+Questa operazione crea una serie di marcatori file system che non saranno probabilmente mai pi— usati.
+Sono numerosissimi i marcatori relativi a oggetti file system creati a causa di questo difetto.
+
+<P>Inoltre, lo ripetiamo, dato che tali marcatori non vengono mai cancellati, sono destinati a restare per sempre nel 
+sistema pur essendo del tutto inutili.
+
+<P>La funzione sostitutiva di aggiornamento cartelle di &xwp; elimina il problema.
+
+</IFNDEF>
+
+</OL>
+</BODY>
+</HTML>

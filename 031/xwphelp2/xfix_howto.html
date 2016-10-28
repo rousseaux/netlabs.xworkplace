@@ -1,0 +1,112 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        xfix: Stap voor stap handleiding
+    </TITLE>
+</HEAD>
+<!-- this page is new with V1.0.9 -->
+<BODY>
+<B>Om te beginnen</B>
+<P>
+<B>!! Maak voordat u xfix gaat gebruiken een back-up van <CODE>OS2.INI</CODE> en
+<CODE>OS2SYS.INI</CODE> !!.</B>
+<BR>
+Omdat zowel OS2.INI als OS2SYS.INI zogenoemde verborgen bestanden zijn moet, voordat u een
+backup kunt maken, het verborgen kenmerk "-H" verwijderd worden. Open een opdrachtregel en voer
+op beide bestanden de opdracht:
+ATTRIB -H uit. Bijv.: ?:\ATTRIB -H OS2.INI en ?:\ATTRIB -H OS2SYS.INI (waarin ?:\ de aanduiding
+is voor de partitie waarop &os2; is ge‹nstalleerd).
+
+<P>xfix kan op twee manieren worden gestart:
+<OL>
+<LI><B>Via een koude of via een warme start</B>
+<BR>Druk, tijdens het opstarten, direct na het verschijnen van het blauwe of oranje scherm op
+de shift toets. Het "&xwp; paniek" dialoog venster wordt nu getoond.
+<LI><B>Via "Herstart Werkplek" uit het Werkplek  &popmenu;.</B>
+<BR>Sluit eerst alle lopende applicaties af, hoewel dat ook nog een keer gevraagd wordt na
+het bevestigen van de Herstart Werkplek mogelijkheid.
+<BR>Druk direct na het verschijnen van het blauwe of oranje scherm op de shift toets. Het
+"&xwp; paniek"dialoog venster wordt nu getoond.
+</OL>
+
+Start xfix vanuit het "&xwp; paniek" dialoog venster en volg onderstaande stappen en
+aanwijzingen. Ook wordt de xfix help automatisch gestart met "xfix: Introductie". Lees voordat
+u xfix gaat gebruiken de xfix help bestanden aandachtig door.
+<P>
+<UL>
+<LI>Selecteer <B>Acties->Zoek ongeldige bestanden</B> in de menubalk.
+Dat zal alle ingangen identificeren van bestanden en mappen die zijn verwijderd.
+Het kan even duren voordat dat gereed is. Als dat klaar is, zijn ongeldige ingangen
+gemarkeerd met <IMG SRC="img/xfix_error.gif">.
+<LI>Selecteer <B>Acties -> Auto-beschermen</B>. Dit zal u beveiligen tegen het
+wissen van ingangen die de WPS nodig heeft om correct te kunnen werken. Deze ingangen
+worden gemarkeerd met <IMG SRC="img/xfix_protect.gif"> of <IMG SRC="img/xfix_safe.gif">.
+<LI>Selecteer <B>Sorteer op -> Pictogram</B>. Dat zal alle ongeldige ingangen bovenin de lijst
+plaatsen.
+</UL>
+
+<OL>
+<LI><B>Ongeldige ingangen wissen</B>
+<BR>xfix kan veel problemen identificeren maar kan er maar een paar oplossen.
+Als uw systeem serieus is beschadigd, kunnen veel van deze problemen, ook na het gebruik
+van xfix, nog aanwezig zijn.
+<UL>
+<LI>Kijk in de "Informatie" kolom bij iedere individuele ingang. Als u een getal ziet
+en de woorden <CODE>Abstract objecten</CODE>, heeft u objecten die geen bestand zijn zoals
+reflecties die verloren zijn gegaan. Om ze terug te krijgen, klik met de rechtermuistoets op
+die ingang en selecteer dan <B>Verplaats abstracts naar Werkplek</B>. Als u dit niet
+doet, worden deze objecten gewist wanneer u de ingang wist.
+<LI>Accentueer alle ongeldige ingangen en <B>Wis</B> ze. U kunt de
+<CODE>Delete</CODE> toets gebruiken of <CODE>Wissen</CODE> uit het &popmenu;.
+</UL>
+
+<LI><B>Wissen van niet benodigde ingangen</B>
+<BR>Daar is xfix is op zijn best. U kunt een groot aantal ingangen hebben die de WPS
+nooit zal gebruiken en geen nut hebben en alleen de WPS vertragen.
+Zij verwijzen naar geldige bestanden maar zijn in de meeste gevallen niet noodzakelijk
+en kunnen worden gewist.
+<UL>
+<LI>Selecteer <B>Sorteer op -> Lange naam</B> om de lijst te sorteren op station,
+directory en bestandsnaam.
+<LI>Lokaliseer bestanden en mappen die reflecties hebben op uw Werkplek en
+<B>Beveilig</B> ze dan. Selecteer of <CODE>Beveiligen</CODE> uit het &popmenu; of druk op
+<CODE>Ctrl+P</CODE>.
+<LI>Selecteer <B>Sorteer -> Extensie</B>. Kijk nu naar de "Korte naam" kolom
+en scrol naar beneden totdat u bestanden ziet die op hun extensie zijn gesorteerd.
+<LI>Ieder ingang die niet reeds beveiligd is <IMG SRC="img/xfix_protect.gif">
+kan er een zijn die u wilt wissen. Nogmaals, wis een ingang <B>NIET</B> als u van dat
+bestand of die map een reflectie heeft gemaakt.
+<P>Goede kandidaten om te wissen zijn <CODE><B>.DLL</B></CODE> en
+<CODE><B>.ZIP</B></CODE> bestanden. Programmeurs kunnen waarschijnlijk hun
+<CODE><B>.C</B></CODE>, <CODE><B>.CPP</B></CODE>, en
+<CODE><B>.H</B></CODE> bestanden wissen. Als u een groot aantal, zeg,
+<CODE><B>.JPG</B></CODE> bestanden heeft en niet zeker weet ze wel of niet te wissen,
+wis er dan gewoon ‚‚n of twee. Nadat u xfix heeft afgesloten, kijk dan of dat negatieve
+consequenties heeft -- indien niet, herstart dan xfix en wis ze allemaal.
+<LI>Als u een tactiek heeft om nooit WPS objecten voor bestanden in bepaalde mappen
+te maken (bijv., "DOWNLOADS" of "TEMP"), kunnen de ingangen voor bestanden in deze mappen
+worden gewist. Selecteer opnieuw <B>Sorteer -> Lange naam</B> om de lijst op pad te
+sorteren lokaliseer de map en wis dan de ingangen die er onderstaan.
+</UL>
+
+<LI><B>Opslaan en sluiten</B>
+<UL>
+<LI>De <B>statusbalk</B> onderaan het venster moet "0" geldig en "0" wezen laten zien. Indien
+niet, selecteer dan <B>Sorteer -> Pictogram</B>.
+De ongeldige <IMG SRC="img/xfix_error.gif"> ingangen staan bovenin de lijst -- wis deze <IMG SRC="img/xfix_delete.gif">
+De wezen <IMG SRC="img/xfix_orphan.gif"> zijn de volgende -- beveilig ze <IMG SRC="img/xfix_protect.gif">.
+<LI>Selecteer <B>xfix -> Terug schrijven naar OS2SYS.INI</B>.
+<LI>U wordt gevraagd of u de ingangen, die u voor wissen heeft gemarkeerd, die u wilt
+verwijderen . Als er waarschuwing is over
+wezen, druk dan op <CODE>Annuleren</CODE> en los het probleem op. Zo niet, druk dan op
+<CODE>Ja</CODE>.
+<LI>Vervolgens wordt u gevraagd of u uw werk echt wilt opslaan.
+Lees de waarschuwingen, en als u er van overtuigd bent dat u geen nieuwe problemen heeft
+veroorzaakt, antwoord met <CODE>Ja</CODE>.
+<LI>Sluit het hoofdvenster om xfix te verlaten.
+</UL>
+
+</OL>
+</BODY>
+</HTML>
+

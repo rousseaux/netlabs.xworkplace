@@ -1,0 +1,556 @@
+// xfcls039.txt:
+//     Class description file for "WPS classes" notebook page.
+//     This file is used to get the class descriptions for the
+//     "Information" window.
+//     Each class must be given one line in this file. The first
+//     word must be the class name (case-sensitive!), the second
+//     word must be a flag determining whether the class may be
+//     de-registered by context menu.
+//     Add the following values for this flag (e.g. 1 + 2 = 3):
+//        1     allow deregistering of this class
+//        2     do not allow undoing replacement of another class with this class
+//        4     do not allow creating object of this class
+//     The rest of the line makes up the description which appears in the "Information"
+//     window. Do not add any line breaks in this description, or it will be truncated.
+//     Even though this file is mostly sorted alphabetically, this is not necessary.
+//     (C) 1998-2004 Ulrich Mueller. See the GPL for details.
+
+AdvAccount 1 (OS/2 V3) Classe appartenente all'IBM Advantis Dialer; la si pu• rimuovere se si utilizza un altro Internet Access Provider.
+AdvCust 1 (OS/2 V3) Classe appartenente all'IBM Advantis Dialer; la si pu• rimuovere se si utilizza un altro Internet Access Provider.
+AdvDialer 1 (OS/2 V3) Classe appartenente all'IBM Advantis Dialer; la si pu• rimuovere se si utilizza un altro Internet Access Provider.
+AdvReg 1 (OS/2 V3) Classe appartenente all'IBM Advantis Dialer; la si pu• rimuovere se si utilizza un altro Internet Access Provider.
+AdvUser 1 (OS/2 V3) Classe appartenente all'IBM Advantis Dialer; la si pu• rimuovere se si utilizza un altro Internet Access Provider.
+Ezplay 1 (OS/2 V4) Questa classe fornisce funzionalit… Plug&Play. Sfortunatamente, il programma di installazione di OS/2 registra questa classe anche se la DLL corrispondente non Š installata. Si pu• rimuovere questa classe senza alcun problema.
+FxFile 1 (OS/2 V3 or V4 BonusBak) File di dati di FaxWorks, dal BonusPak di OS/2.
+IBMUmailWPS 1 (OS/2 V3) Classe appartenente ad IBM UltiMail.
+IGSCheckin 1 (OS/2 V4) Questa classe implementa la registrazione utente per la Guida Warp.
+IGSFolder 1 (OS/2 V4) Questa classe Š usata per la cartella della Guida Warp.
+Mindex 0 Questa classe fornisce le funzioni di aiuto "Indice" e "Glossario".
+MMAudio 1 (OS/2 V4) Superclasse per i file audio multimediali.
+MMDataFile 1 (OS/2 V4) Superclasse per tutti i file di dati multimediali. I diversi tipi di file sono sottoclassi di questa classe, eccetto i file grafici che sono implementati utilizzando WPImageFile e le sue sottoclassi.
+MMDevice 1 (OS/2 V4) Gli oggetti di questa classe rappresentano i dispositivi multimediali.
+MMFolder 1 (OS/2 V4; BonusPak V3) Le cartelle di questa classe sono le cartelle "light table", che mostrano automaticamente l'anteprima dei file contenuti.
+MMImage 1 (OS/2 V4) Superclasse per tutti i file di immagini multimediali. Per ragioni storiche (WPBitmap esisteva gi…  in OS/2 V2), MMBitmap Š implementata utilizzando una classe sostitutiva di WPBitmap.
+MMMIDI 1 (OS/2 V4) Classe per i file MIDI.
+MMSound 1 (OS/2 V3) Se si Š installato il Multimedia OS/2 questa classe sostituisce la classe WPSound, permettendo di impostare i diversi suoni di sistema.
+MMVideo 1 (OS/2 V4) Superclasse per i file video multimediali.
+MMVolume 1 Questa classe implementa la regolazione del volume del Multimedia. Deve esserci un solo oggetto di questa classe.
+ODwps 1 (OS/2 V4) Classe che permette l'integrazione di OpenDoc nella WPS.
+Rwx 1 Questa classe straordinaria, sviluppata da Rich Walsh, offre moltissime informazioni sulle classi SOM installate.
+SCShadow 0 (OS/2 V4) Non documentata; probabilmente una classe per i riferimenti di WarpCenter.
+SmartCenter 0 (OS/2 V4) Questa classe implementa WarpCenter. Il suo nome ci ricorda che fu sviluppata in larga parte da Lotus. Ci deve essere un solo oggetto di questa classe.
+WPAnimatedMousePointer 1 Questa classe straordinaria, sviluppata da Christian Langanke, sostituisce l'oggetto  "Mouse", permettendo puntatori del mouse animati.
+WPClock 0 Un oggetto di questa classe si trova nella cartella "Impostazione del sistema".
+WPCnrView 0 Questa classe non Š documentata, ma serve probabilmente a visualizzare gli oggetti nelle cartelle. Apparentemente viene creato un oggetto di questa classe per ogni cartella aperta.
+WPColorPalette 0 Due oggetti di questa classe si trovano nella cartella "Impostazione del sistema".
+WPCommandFile 0 Questa Š la sottoclasse per i file comandi (estensione .CMD).
+WPCountry 0 Impostazioni di OS/2 relative alla nazione. Un oggetto di questa classe si trova nella cartella "Impostazione del sistema".
+WPDataFile 0 Questa Š la classe propria di tutti gli oggetti file dati esistenti fisicamente nel sistema. Se per un certo file dati non esiste una specifica classe, esso viene assegnato a questa classe. Ulteriori informazioni sull'oggetto sono contenute negli Attributi Estesi del file.
+WPDesktop 0 Questa Š la classe della Scrivania, un tipo speciale di cartella. Possono esserci diversi oggetti Scrivania, ma solo una alla volta pu• essere "attiva" .
+WPDevice 0 (OS/2 V4) Superclasse per i diversi oggetti che si trovano in "Hardware Manager",  nella cartella "Impostazione del sistema".
+WPDisk 0 Gli oggetti di questa classe popolano la cartella "Unita". Aprendone uno, viene aperto il corrispondente oggetto della classe WPRootFolder.
+WPDiskCV 0 Simile alla superclasse (WPCnrView), ma apparentemente per gli oggetti disco.
+WPDrives 0 La cartella "Unit…" Š un oggetto di questa classe. Ci pu• essere un solo oggetto di questa classe.
+WPFinder 0 Oggetto di sistema sconosciuto. Forse legato alla funzione "Ricercare oggetto".
+WPFindFolder 0 Un oggetto di questa classe viene creato per contenere i risultati di "Ricercare oggetto" sulla Scrivania.
+WPFolder 0 Questa Š la normale classe cartella. Tutte le cartelle sono oggetti di questa classe, a meno che non siano create da una specifica sottoclasse.
+WPFolderCV 0 Come la superclasse (WPCnrView), ma apparentemente per gli oggetti WPFolder.
+WPFontPalette 0 Un oggetto di questa classe si pu• trovare nella cartella "Impostazione del sistema".
+WPFtpObj 1 (OS/2 V4) Le cartelle FTP contengono oggetti di questa classe.
+WPHost 1 (OS/2 V4) Cartelle di questa classe rappresentano un host FTP remoto. Aprendo una cartella di questo tipo l'host FTP corrispondente viene contattato utilizzando username e password prestabiliti.
+WPHtml 1 (OS/2 V4) Classe per file di dati HTML.
+WPHwManager 0 (OS/2 V4) Un oggetto di questa classe Š lo "Hardware Manager", nella cartella "Impostazione del sistema"; contiene oggetti della classe WPDevice (sottoclasse di WPTransient).
+WPIcon 0 Questa Š la classe dei file icone OS/2 (.ICO). Per ragioni storiche (OS/2 V2.0), non Š una sottoclasse della rispettive classi di immagini.
+WPImageFile 0 (OS/2 V4) Superclasse per le classi riguardanti i file di immagini.
+WPInstall 1 (OS/2 V4) Un oggetto di questa classe si trova nella cartella "\OS2\INSTALL\Funzioni Installate".
+WPJavaRef 1 (OS/2 V4) Supporto WPS Java.
+WPJavaClass 1 (OS/2 V4) Supporto WPS Java.
+WPKeyboard 0 Impostazioni tastiera. Un oggetto di questa classe si trova nella cartella "Impostazione del sistema".
+WPLaunchPad 0 (OS/2 V3) E' la classe del "Pannello di avvio". Ci pu• essere pi— di un oggetto appartenente a questa classe.
+WPMet 0 Classe Metafile.
+WPMinWinViewer 0 Questa Š la cartella speciale che contiene le finestre minimizzate.
+WPMinWindow 0 Oggetti di questa classe rappresentano probabilmente finestre minimizzate nella rispettiva cartella di sistema.
+WPMouse 0 Impostazioni mouse. Un oggetto di questa classe si trova nella cartella "Impostazione del sistema".
+WPNetLink 0 (OS/2 V3) Gli oggetti di questa classe puntano a directory di rete e contengono localmente i dati di quelle directory.
+WPPif 0 Classe per file PIF (Picture Interchange Format).
+WPPointer 0 Questa Š la classe per i file di puntatori di OS/2 (.PTR). Per ragioni storiche (OS/2 V2.0), non Š una sottoclasse delle rispettive classi di immagini.
+WPPower 0 (OS/2 V2.1) Advanced Power Management. Un oggetto di questa classe si pu• trovare nella cartella "Impostazione del sistema".
+WPPrinter 0 Classe comune a tutti gli oggetti stampante. C'Š un oggetto di questa classe per ogni stampante installata nel sistema.
+WPPrinterDriver 0 Classe driver per stampante.
+WPProgram 0 E' la classe cui appartengono tutti gli oggetti programma, diversamente dai file programma "reali" che sono oggetti appartenenti alla classe WPProgramFile.
+WPProgramFile 0 Classe dei file eseguibili (file .EXE e .COM). Si comporta come WPProgram (la sottoclasse WPAbstract), cosicch‚ il programma "reale" e l'oggetto programma relativo si comportano allo stesso modo.
+WPRootFolder 0 Un oggetto di questa classe viene creato ogni volta che si apre un oggetto della classe WPDisk, affinch‚ il disco appaia come una cartella visualizzata ad albero. Oggetti di questa classe non devono essere creati manualmente.
+WPRPrinter 0 Presumibilmente classe per stampanti remote (di rete).
+WPSchemePalette 0 Un oggetto di questa classe pu• essere trovato nella cartella "Impostazione del sistema".
+WPServer 0 (OS/2 V3) Server di rete. Oggetti di questa classe per ogni server accessibile vengono creati nella cartella WPNetgrp.
+WPShadow 0 Questa classe Š usata per tutte le copie collegate; non importa a quale classe puntino. Oggetti di questa classe si comportano come gli oggetti cui sono collegati.
+WPSharedDir 0 (OS/2 V3) Oggetti di questa classe vengono creati per ogni directory di rete condivisa nelle cartelle WPServer.
+WPShredder 0 Questa Š la mediocre classe trinciatrice standard di OS/2.
+WPSound 0 Impostazioni suono. Un oggetto di questa classe si trova nella cartella "Impostazione del sistema".
+WPSpool 0 Questa classe offre un'interfaccia al sottosistema di spool PM. Deve esserci un solo oggetto di questa classe.
+WPStartup 0 Questa Š la normale cartella Avviamento di OS/2. Deve esserci un solo oggetto di questa classe.
+WPSystem 0 Questa classe implementa l'oggetto "Sistema" nella cartella "Impostazione del sistema". Da questa classe, XFolder deriva le sue due nuove classi per le impostazioni. Il vecchio oggetto "Sistema" resta comunque funzionante.
+WPTemplates 0 Implementa la cartella "Maschere". Deve esserci un solo oggetto di questa classe. In questa cartella WPS crea automaticamente maschere per tutte le classi esistenti nel sistema che le supportano.
+WPUrl 1 (OS/2 V4) Classe Uniform Resource Locator (URL, indirizzi Internet). Gli indirizzi fisicamente sono conservati come file dati, ma ci sono dati addizionali negli attributi estesi.
+WPUrlFolder 1 (OS/2 V4) Le cartelle di questa classe mostrano informazioni addizionali per gli oggetti URL.
+WPWinConfig 0 Impostazioni Win-OS/2. Un oggetto di questa classe si trova nella cartella "Impostazione del sistema".
+
+// Items changed with V0.81
+XFldProgram 1 Questa classe Š stata usata solo in XFolder V0.80 e non dovrebbe essere registrata. Si pu• rimuovere.
+
+// Items added with V0.82
+ExAlarm 1 Questa classe Š parte del grande pacchetto IBM EWS ExCal.
+ExPerson 1 Questa classe Š parte del grande pacchetto IBM EWS ExCal.
+ExTransient 1 Questa classe Š parte del grande pacchetto IBM EWS ExCal.
+ExEvent 1 Questa classe Š parte del grande pacchetto IBM EWS ExCal.
+ExPlace 1 Questa classe Š parte del grande pacchetto IBM EWS ExCal.
+ExAddressBook 1 Questa classe Š parte del grande pacchetto IBM EWS ExCal.
+ExCalendar 1 Questa classe Š parte del grande pacchetto IBM EWS ExCal.
+ExTime 1 Questa classe Š parte del grande pacchetto IBM EWS ExCal.
+MMCDDevice 1 (OS/2 V4) Classe dispositivo Multimedia Compact Disc.
+MMLVDDevice 1 (OS/2 V4) Classe dispositivo Multimedia Video Disc.
+Ftp 1 (Os/2 BonusPak V3 o V4) Questa classe implementa l'accesso FTP.
+Telnet 1 (OS/2 BonusPak V3 o V4) Questa classe implementa l'accesso Telnet.
+Wps2Pc2 1 Classe appartenente a Program Commander/2 di Roman Stangl, usata per convertire le impostazioni da WPS a PC/2.
+WPBitmap 1 Classe per file bitmap (.BMP). Questa classe esiste dai tempi di OS/2 V2.0 e viene sostituita se si installa il supporto multimedia di Warp 4.
+WPJob 0 Classe lavoro di stampa. Oggetti di questa classe vengono creati aprendo gli oggetti stampante.
+WPPdr 0 Classe driver stampante. Oggetti di questa classe vengono creati quando si aprono le impostazioni di un oggetto stampante.
+WPPort 0 Classe porta. Oggetti di questa classe vengono creati quando si aprono le impostazioni di un oggetto stampante.
+WPQdr 0 Classe coda driver. Oggetti di questa classe vengono creati quando si aprono le impostazioni di un oggetto stampante.
+MMAIF 1 (OS/2 V4) Classe multimedia per i file audio AIF (.AIF).
+MMAU 1 (OS/2 V4) Classe multimedia per i file audio AU, comuni in Unix e nel software Java.
+MMIFF 1 (OS/2 V4) Classe multimedia per i file audio IFF.
+MMSNDF 1 (OS/2 V4) Classe multimedia per i file audio Unix (NeXT/Sun) (.SND).
+MMVOC 1 (OS/2 V4) Classe multimedia per i file audio Creative Technology Voice (.VOC), un formato file comune con il supporto DOS Soundblaster.
+MMWAV 1 (OS/2 V4) Classe multimedia per i file forma d'onda audio RIFF (.WAV), il formato audio pi— comune. Notare che esistono diversi sottoformati e che OS/2 non li supporta tutti.
+MM_AU 1 (OS/2 V4) Classe multimedia per i file audio IBM Audio Visual Connection (._AU, ._AD).
+MMAVI 1 (OS/2 V4) Classe multimedia per i file video Audio/Video Interleaved (AVI), formato video pi— comune e proveniente dall'ambiente Windows. Notare che esistono diversi sottoformati e che OS/2 non li supporta tutti.
+MMFLI 1 (OS/2 V4) Classe multimedia per i file di animazioni video AutoDesk (.FLI, .FLC).
+MMMPG 1 (OS/2 V4) Classe multimedia per i file video Moving Pictures Experts Group (MPEG), che stanno diventando sempre pi— comuni.
+MMAVC 1 (OS/2 V4) Classe multimedia per i file di immagini IBM Audio Visual Connection (._IM, .!IM, ._ID).
+MMDIB 1 (OS/2 V4) Classe multimedia per i file di immagini Device Independent Bitmap (.DIB).
+MMGIF 1 (OS/2 V4) Classe multimedia per i file di immagini compresse Graphics Interchange Format (GIF), un formato introdotto da CompuServe e ora ampiamente usato in Internet.
+MMJPG 1 (OS/2 V4) Classe multimedia per i file di immagini compresse Joint Photographics Experts Group (JPEG), un formato recente che consente un'eccellente compressione, specialmente per foto, ampiamente usato in Internet.
+MMMMotion 1 (OS/2 V4) Classe multimedia per immagini IBM M-Motion (.VID).
+MMPCX 1 (OS/2 V4) Classe multimedia per immagini compresse ZSoft Paintbrush (PCX).
+MMPhotoCD 1 (OS/2 V4) Classe multimedia per  file di immagini Kodak PhotoCD (.PCD).
+MMTarga 1 (OS/2 V4) Classe multimedia per file di immagini compresse e non compresse TrueVision Targa (.TGA).
+MMTIFF 1 (OS/2 V4) Classe multimedia per file di immagini Tagged Image File Format (TIFF) (.TIF).
+MMBitmap 1 (OS/2 V4) Classe multimedia per i diversi formati Bitmap (.BMP). E' il formato assunto sia per Windows che per OS/2, ma con piccole differenze.
+
+// Items added with V0.84
+BlackHole 1 Classe parte del pacchetto BlackHole, il formidabile cestino in grado di cancellare *tutti* gli oggetti della Scrivania.
+ECAssist 1 Parte del pacchetto Assistant/2, necessario per la sua configurazione.
+ECEDataFile 1 Questa Š la classe sostitutiva di WPDataFile nel pacchetto Assistant/2.
+ECFolder 1 Questa Š la classe sostitutiva di WPFolder nel pacchetto Assistant/2.
+ECEClip 1 Parte del pacchetto Assistant/2. Realizza l'Extended Clipboard.
+ECClip 1 Parte del pacchetto Assistant/2. E' usato per i dati Extended Clipboard.
+ECBmpClip 1 Parte del pacchetto Assistant/2. E' usato per i dati bitmap Extended Clipboard.
+// these items changed with V0.84
+WPSpecialNeeds 1 Impostazione richieste speciali. Un oggetto di questa classe si trova nella cartella "Impostazione del sistema", se nell'oggetto "Tastiera" Š stato abilitato "Richieste speciali".
+
+// Items changed with V0.85
+WPObjData 1 Classe molto utile per memorizzare ed applicare le impostazioni degli oggetti. Richiede una piccola patch; leggere http://www.os2ezine.com/v3n07/hammer.htm per dettagli.
+WPCat 1 (WatchCat di Felix von Normann e Thomas Opheys) E' usato dall'oggetto di configurazione di WatchCat.
+MMMOV 1 (OS/2 V4) Classe multimedia per i file video Apple QuickTime (MOV).
+MMInetMgr 1 (IBM Plug-in-pack) Multimedia Internet Manager di Netscape per OS/2.
+
+// Items added with V0.85
+PapyrusDocument 1 (Papyrus) Classe documento per il word processor Papyrus (German).
+WPLnchCW 7 (BubblePad di Chris Wohlgemuth) Sostituisce il Pannello di avvio di OS/2 V3 o V4.
+WEWPS 1 (WarpEnhancer di Achim Hasenmueller) Contiene varie migliorie alla WPS.
+AApdf 1 (Acrobat Reader) Classe documento per i file .PDF.
+WebExplorer_Url 1 Classe per gli oggetti URL del browser WebExplorer.
+DTFile 1 (DragText di Rich Walsh) file di testo migliorati; Š possibile aggiungervi testo usando il drag'n'drop.
+DTClip 1 (DragText di Rich Walsh) Clipboard avanzata di DragText.
+DTProgram 3 (DragText di Rich Walsh) Classe sostitutiva di WPProgram che ne estende le possibilita (variabili d'ambiente, scheduling ecc.).
+
+DMDaemon 1 (PMView 1.x) Implementa il drag'n'drop tra PMView e la WPS.
+PMVDDrop 1 (PMView 2.0) Implementa il drag'n'drop tra PMView e la WPS.
+
+PracticeImage 1 (PrimFix) Classe sostitutiva che corregge un errore di associazione del multimedia WPS.
+PracticeBitmap 1 (PrimFix) Classe sostitutiva che corregge un errore di associazione del multimedia WPS.
+
+SpeechObject 0 (OS/2 V4) Se si installa VoiceType, classe sostitutiva di WPObject per implementare la navigazione vocale.
+SpeechUserObject 0 (OS/2 V4) Oggetti di questa classe rappresentano gli utilizzatori di VoiceType.
+DictationObject 0 (OS/2 V4) Questa classe implementa le finestre di dettatura con VoiceType.
+SpeechWWProgram 0 (OS/2 V4) Oggetti di questa classe implementano la navigazione vocale mediante VoiceType.
+
+WPFtpDir 0 (OS/2 V4) Le sottodirectory su un server FTP remoto vengono visualizzate utilizzando questa classe.
+WPFtpLink 0 (OS/2 V4) I collegamenti a server FTP remoti sono visualizzati usando questa classe.
+WPUpdr 0 Gli oggetti di questa classe rappresentano i driver di stampanti installabili.
+MMFinder 1 (OS/2 V4) Gli oggetti di questa classe attivano una finestra di dialogo per aprire o creare file multimediali.
+WPPrinterDriverPacked 0 Classe driver stampanti compressi, da usare per installare un driver stampante mediante drag'n'drop.
+WPHostFolder 1 (OS/2 V4) Classe derivata dalla classe WPHost. Usata per accedere a directory remote mediante File Transfer Protocol (FTP).
+JO 0 Classe di sistema non documentata.
+PORT 0 Classe di sistema non documentata.
+
+WPDevAudio 0 (OS/2 V4) Classe per i dispositivi audio in "Hardware Manager", nella cartella "Impostazione del sistema".
+WPDevBus 0 (OS/2 V4) Classe per i dispositivi bus in "Hardware Manager", nella cartella "Impostazione del sistema".
+WPDevCDRom 0 (OS/2 V4) Classe per le unit… CD-ROM in "Hardware Manager", nella cartella "Impostazione del sistema".
+WPDevCPU 0 (OS/2 V4) Classe per il processore in "Hardware Manager", nella cartella "Impostazione del sistema".
+WPDevDiskette 0 (OS/2 V4) Classe per le unit… floppy in "Hardware Manager", nella cartella "Impostazione del sistema".
+WPDevDisplay 0 (OS/2 V4) Classe per i dispositivi video in "Hardware Manager", nella cartella "Impostazione del sistema".
+WPDevHarddrive 0 (OS/2 V4) Classe per le unit… disco rigido in "Hardware Manager", nella cartella "Impostazione del sistema".
+WPDevKeyboard 0 (OS/2 V4) Classe per la tastiera presente in "Hardware Manager", nella cartella "Impostazione del sistema".
+WPDevMemory 0 (OS/2 V4) Classe per i moduli di memoria in "Hardware Manager", nella cartella "Impostazione del sistema".
+WPDevMouse 0 (OS/2 V4) Classe per il mouse in "Hardware Manager", nella cartella "Impostazione del sistema".
+WPDevParallel 0 (OS/2 V4) Classe per le porte parallele in "Hardware Manager", nella cartella "Impostazione del sistema".
+WPDevPeriph 0 (OS/2 V4) Classe per i dispositivi hardware in "Hardware Manager", nella cartella "Impostazione del sistema".
+WPDevSerial 0 (OS/2 V4) Classe per le porte seriali in "Hardware Manager", nella cartella "Impostazione del sistema".
+WPDevTape 0 (OS/2 V4) Classe per i dispositivi a nastro in "Hardware Manager", nella cartella "Impostazione del sistema".
+WPDevTimer 0 (OS/2 V4) Classe per l'orologio di sistema in "Hardware Manager", nella cartella "Impostazione del sistema".
+
+// Items changed with V0.9.0
+
+WPObject 4 Questa Š la classe WPS fondamentale, dalla quale derivano tutte le altre; le sue funzionalit… sono comuni a tutte le altre. Nota: Questa classe Š una superclasse astratta per superclassi. Non ci deve essere nessun oggetto di questa classe, solo superclassi.
+WPAbstract 4 Questa Š la prima delle tre classi base di memorizzazione WPS derivate da WPObject. Tutte le superclassi di questa classe hanno in comune il fatto che i loro oggetti non esistono fisicamente nel file system come file, ma soltanto come dati registrati in OS2.INI. Il che significa che gli oggetti della superclasse di questa classe non sono visibili al di fuori della WPS. Nota: Questa classe Š solo una superclasse astratta per superclassi. Non devono esserci oggetti di questa classe, ma solo delle sue sottoclassi.
+WPFileSystem 4 Questa Š la seconda delle tre classi base di memorizzazione WPS che sono derivate da WPObject. Tutte le sottoclassi di questa classe (WPDataFile and WPFolder) hanno in comune il fatto di risiedere fisicamente nel file system. WPS memorizza i dati di configurazione addizionali di questi oggetti negli attributi estesi del file, principalmente in .CLASSINFO. Nota: Questa classe Š solo una superclasse astratta per superclassi. Non devono esserci oggetti di questa classe, ma solo delle sue sottoclassi.
+WPTransient 4 Questa Š la terza delle tre classi base di memorizzazione WPS che sono derivate da WPObject. Tutte le sottoclassi di questa classe hanno in comune il fatto che i dati non vengono memorizzati: gli oggetti di questa sottoclasse esistono solo in modo temporaneo, per esempio per mostrare informazioni. Nota: Questa classe Š solo una superclasse astratta per superclassi. Non devono esserci oggetti di questa classe, ma solo delle sue sottoclassi.
+WPPalette 4 Superclasse comune per le diverse tavolozze colori nella cartella "Impostazione del sistema". Non devono esserci oggetti di questa classe direttamente.
+
+WPVault 0 Classe per la directory nascosta NOWHERE, usata da WPS per memorizzare oggetti che non dovrebbero essere visibili dall'utente.
+WPFilter 0 Classe per filtrare oggetti, se per una cartella Š specificato il criterio Includere.
+WPProgramGroup 1 Classe per i vecchi gruppi Program Manager di OS/2 1.3. Sono usati solamente se si commuta la Scrivania al modo OS/2 1.3 utilizzando MAKEINI.EXE.
+
+XFldDataFile 1 XWorkplace sostituisce la classe WPDataFile con questa classe, per implementare funzionalit… addizionali ai file dati.
+XFldDesktop 1 XWorkplace sostituisce la classe WPDesktop con questa classe per implementare funzionalit… addizionali, le funzioni XShutdown in particolare.
+XFldDisk 1 XWorkplace sostituisce la classe WPDisk con questa classe, per implementare anche per gli oggetti Unit… le funzionalit… XWP.
+XFldFileSystem 1 XWorkplace sostituisce la classe WPDataFile con questa classe, per implementare le funzionalit… addizionali per le barre di stato.
+XFldObject 1 XWorkplace sostituisce la classe WObject con questa classe, per implementare le funzionalit… addizionali usate da XWP per tutti i tipi di oggetti. Non devono esserci oggetti di questa classe ma solo sottoclassi.
+XWPProgramFile 1 XWorkplace sostituisce la classe WPProgramFile con questa classe, principalmente per implementare le nuove icone di default per gli eseguibili.
+XFldShutdown 1 Un oggetto di questa classe rappresenta la cartella Chiusura avanzata XWorkplace. Dovrebbe esserci un solo oggetto di questa classe.
+XFldStartup 1 Un oggetto di questa classe rappresenta la cartella Avviamento XWorkplace. Dovrebbe esserci un solo oggetto di questa classe.
+XFldSystem 1 Nuove impostazioni di sistema (oggetto "OS/2 Kernel"). Un oggetto di questa classe Š contenuto nella cartella "Impostazione del sistema". Dovrebbe esserci un solo oggetto di questa classe.
+XFldWPS 1 Nuove impostazioni di sistema (oggetto "Workplace Shell"). Un oggetto di questa classe Š contenuto nella cartella "Impostazione del sistema". Dovrebbe esserci un solo oggetto di questa classe.
+XFolder 1 XWorkplace sostituisce la classe WPFolder con questa classe per fornire le nuove caratteristiche di XWorkplace alle cartelle.
+
+MMShadow 1 Classe sostitutiva di WPShadow, non documentata. Viene installata con OS/2 multimedia, apparentemente per supportare le copie collegate dei dispositivi multimediali (a quanto risulta dalla sovrapposizione tra i metodi).
+
+WPNetwork 0 (OS/2 V3) Un oggetto di questa classe Š la cartella "Rete" sulla Scrivania (Warp 4: nella cartella "Collegamenti), che esiste solamente se si Š collegati ad una rete.
+WPNetgrp 0 (OS/2 V3) Cartelle di questa classe vengono create nella cartella "Rete" (WPNetwork) per ogni rete a cui si Š connessi.
+
+// Items added with V0.9.0
+
+WPCmpnp 0 Classe di sistema non documentata per il plug'n'play delle schede PCMCIA.
+DwpDoc 1 (Describe 5.0) Classe per i documenti di Describe.
+DwpMac 1 (Describe 5.0) Classe per le macro di Describe.
+WPRPClock 3 DCF77 (S&T Systemtechnik GmbH) Sostituisce il normale WPClock con un Radio Precision Clock.
+
+BA2BackupDev 1 (BackAgain/2) Viene usato per scegliere la destinazione del backup.
+BA2BackupSet 1 (BackAgain/2) Viene usato per descrivere vari dettagli che definiscono un backup.
+BA2WCatalog" 1 (BackAgain/2) Viene usato per fornire un indice dei file contenuti in un backup.
+
+EBCScheduler 1 La classe EBCScheduler aggiunge una pagina nel blocco appunti impostazioni di ogni oggetto programma, per regolare l'esecuzione del programma.
+
+XWPClassList 1 Questa Š la classe XWorkplace che implementa il nuovo oggetto "Elenco classi WPS".
+XWPSetup 1 Nuove impostazioni di sistema (oggetto "Impostazioni di XWorkplace"). Un oggetto di questa classe Š inserito nella cartella "Impostazione del sistema". Dovrebbe esserci un solo oggetto di questa classe.
+XWPTrashCan 1 Questa classe implementa il nuovo cestino XWorkplace. Malgrado sembri una normale cartella, gli oggetti contenuti nel cestino appartengono sempre alla classe XWPTrashObject (sottoclasse di WPTransient). Vedere la Guida utente XWorkplace per maggiori dettagli.
+XWPTrashObject 1 Oggetti di questa classe sono usati nel cestino XWorkplace (classe XWPTrashCan, sottoclasse di WPFolder) per mostrare i file e gli oggetti spostati nelle directory nascoste "\Trash" presenti su ogni disco. Questi oggetti hanno la stessa icona degli oggetti cancellati. Vedere la Guida utente XWorkplace per maggiori dettagli.
+XWPSound 1 Questa Š la classe sostitutiva di XWorkplace per WPSound che implementa la pagina "Suoni" migliorata; l'estensione di XWorkplace ai suoni di sistema funziona anche senza questa classe.
+XWPKeyboard 1 Questa Š la classe sostitutiva di XWorkplace per WPKeyboard. E' necessaria per inserire le nuove pagine impostazioni di XWorkplace nell'oggetto "Tastiera".
+XWPMouse 1 Questa Š la classe sostitutiva di XWorkplace per WPMouse. E' necessaria per inserire le nuove pagine impostazioni di XWorkplace nell'oggetto "Mouse".
+
+IWFProject 1 Classe "Project" di IBM Workframe/2 (come viene fornito con Visual Age C++ 3.0). Stranamente Š una sottoclasse diretta di WPFileSystem, malgrado sembri essere creata come directory.
+IWFQuickStart 1 Cartella "Project Smarts" nella cartella IBM Visual Age C++ 3.0. Stranamente Š una sottoclasse diretta di WPFileSystem, malgrado sembri essere creata come una directory.
+IWFRouter 1 Classe per IBM Workframe/2 (come fornito con Visual Age C++ 3.0).
+
+// Items changed with V0.9.1
+
+UnknownClass 0 Nessuna informazione disponibile per questa classe. Se sapete qualcosa su di essa, inviatene per favore una descrizione a xworkplace-user@netlabs.org affinch‚ la si possa aggiungere a questo elenco.
+
+LSPeerUser 1 Classe Lan Server non documentata. E' inclusa nelle funzionalit… di rete di Warp 4 e sembra essere collegata al logon di rete e alla gestione risorse.
+LSPeerWorkstation 1 Classe Lan Server non documentata. E' inclusa nelle funzionalit… di rete di Warp 4 e sembra essere collegata al logon di rete e alla gestione risorse.
+PRDisk 1 Classe non documentata per le reti peer. E' inclusa nelle funzionalit… di rete di Warp 4 e sostituisce WPDisk; apparentemente aggiunge le funzionalit… di rete agli oggetti disco.
+LSDisk 1 Classe Lan Server non documentata. E' inclusa nelle funzionalit… di rete di Warp 4 e sembra implementare i drive di rete.
+PRPrinter 1 Classe non documentata per le reti peer. E' inclusa nelle funzionalit… di rete di Warp 4 e sostituisce WPPrinter, apparentemente per aggiungere funzionalit… di rete agli oggetti stampante.
+LSPrinter 1 Classe Lan Server non documentata. E' inclusa nelle funzionalit… di rete di Warp 4 e sembra implementare le stampanti di rete.
+LSDataFile 1 Classe Lan Server non documentata. E' inclusa nelle funzionalit… di rete di Warp 4. Nessun idea della sua funzione.
+PRDirectory 1 Classe non documentata per le reti peer. E' inclusa nelle funzionalit… di rete di Warp 4 e sostituisce WPFolder, apparentemente per aggiungere funzionalit… di rete alle cartelle. Giudicando dalla sovrapposizione dei metodi, sembra che permetta di dare agli altri utenti accesso alle directory locali quando una rete peer Š attiva.
+LSDirectory 1 Classe non documentata del Lan Server. E' inclusa nelle funzionalit… di rete di Warp 4 e sembra implementare le cartelle di rete.
+
+// Items added with V0.9.1
+
+SOMObject 0 Questa Š la classe base di tutte le classi SOM. Al fine di utilizzare le caratteristiche SOM, ogni classe deve derivare da questa. Anche WPObject (e quindi tutte le classi WPS) deriva da SOMObject.
+Contained 0 Si usa per accedere al SOM Interface Repository (quei file ".IR" che ognuno ad un certo punto incontra, ma che non si capisce esattamente cosa siano). IR Š progettata per essere in grado di ottenere in run-time ricavare informazioni sulle classi SOM installate. Tutti gli oggetti in IR sono istanze di classi derivate da questa classe di interfaccia.
+Container 0 Classe contenitore per SOM Interface Repository. Vedi "Contained".
+SOMClass 0 Questa Š la classe radice per tutte le metaclassi SOM. Poich‚, con SOM, tutte le classi sono anche oggetti, devono essere anche istanze di una classe, la cosiddetta "metaclasse". Come valore assunto SOMClass Š la metaclasse di ogni classe SOM, ma la maggior parte delle classi definiscono esse stesse le proprie metaclassi, con i propri metodi.
+SOMClassMgr 0 Un'istanza di questa classe viene creata automaticamente dal runtime SOM per gestire le classi SOM. Questo Š necessario per la manipolazione delle classi in run-time. E' questa classe che permette, ad es. le sostituzioni di classe.
+WPClassManager 0 La WPS sottoclassa la SOMClassMgr per implementare manipolazioni di classe WPS, specialmente sostituzioni di classi WPS.
+SOMMCooperative 0 Parte della struttura delle metaclassi SOM. Vedere SOM Programming Guide per dettagli.
+SOMMCooperativeSistered 0 Parte della struttura delle metaclassi SOM. Vedere SOM Programming Guide per dettagli.
+SOMMCooperativeRedispatched 0 Parte della struttura delle metaclassi SOM. Vedere SOM Programming Guide per dettagli.
+SOMMBeforeAfter 0 Parte della struttura delle metaclassi SOM. Vedere SOM Programming Guide per dettagli.
+SOMMSingleInstance 0 Parte della struttura delle metaclassi SOM. Vedere SOM Programming Guide per dettagli.
+SOMMTraced 0 Parte della struttura delle metaclassi SOM. Vedere SOM Programming Guide per dettagli.
+
+CWProgFolder 1 Classe base del pacchetto CD Creator di Chris Wohlgemuth. E' necessaria alle classi CWAudioFolder e CWDataFolder.
+CWAudioFolder 1 Parte del pacchetto CD Creator di Chris Wohlgemuth. Permette la creazione di CD Audio.
+CWDataFolder 1 Parte del pacchetto CD Creator di Chris Wohlgemuth. Permette la creazione di CD Dati.
+WPTouch 1 Probabilmente questa classe Š responsabile dell'oggetto configurazione del touch screen. Non avendone uno, non ho mai potuto verificare.
+AcsAgent 1 Classe appartenente al pacchetto UniMaint.
+
+NewDisk 1 Una classe di WPDisk per il bloccaggio manuale del drive e per la cache, usata dal pacchetto NEWDASD che aggiunge il supporto per i dischi rimovibili.
+CDWriter 1 Una sottoclasse di WPDisk usata da RSJ CD-Writer, probabilmente per implementare l'oggetto disco per l'IFS di  RSJ.
+PractiseImage 1 Classe per correggere i problemi di associazione delle immagini di Practise Co.
+PractiseBitmap 1 Classe per correggere i problemi di associazione delle immagini di Practise Co.
+
+// Items added or changed with V0.9.4
+
+XWPScreen 1 Nuove impostazioni di sistema (oggetto "Schermo"). Un oggetto appartenente a questa classe si trova nella cartella "Impostazioni del sistema". Ci deve essere un solo oggetto di questa classe.
+
+// All Object Desktop classes (V0.9.4)
+TSArcElem 1 (Object Desktop) Classe visualizzatore archivi per elementi transitori, per visualizzazioni del contenuto dell'archivio.
+TSArcMgr 1 (Object Desktop) Classe visualizzatore archivi per gli oggetti "archivio".
+TSCPad 1 (Object Desktop) Classe Control Center.
+TSClassEdit 1 (Object Desktop) Classe Class Editor.
+TSEnhDataFile 1 (Object Desktop) Classe file dati avanzata. Implementa editore e visualizzatori.
+TSEnhDrives 1 (Object Desktop) Classe Object Navigator.
+TSEnhFolder 1 (Object Desktop) Classe cartella avanzata; aggiunge barre di stato, icone di default configurabili, iperdischi ecc.
+TSFldrParent 1 (Object Desktop) Classe per implementare la navigazione nelle cartelle.
+TSInspect 1 (Object Desktop) Classe Object Inspector.
+TSKeyDefn 1 (Object Desktop) Classe per la definizione della tastiera.
+TSKeyLaunch 1 (Object Desktop) Classe per le macro della tastiera; consente di avviare programmi con combinazioni di tasti.
+TSMasterSetup 1 (Object Desktop) Classe Impostazioni generali ("Master Setup").
+TSPackageElem 1 (Object Desktop) Elemento di  "Object Package", usato per archiviare gli oggetti WPS, incluse le loro impostazioni.
+TSPackageFile 1 (Object Desktop) Classe contenitore Object Package.
+TSPkgFolder 1 (Object Desktop) Classe pacchetti cartelle.
+TSScript 1 (Object Desktop) Superclasse per gli oggetti script (Ricercare, Bloccare, Chiusura).
+TSScriptFind 1 (Object Desktop) Sottoclasse oggetto Ricercare.
+TSScriptLockup 1 (Object Desktop) Sottoclasse oggetto Bloccare.
+TSScriptShutdown 1 (Object Desktop) Sottoclasse oggetto Chiusura.
+TSTabFolder 1 (Object Desktop) Classe Tabbed Launchpad.
+TSTaskMgr 1 (Object Desktop) Classe Taskmanager (sostituisce l'elenco finestre).
+TSTaskManager 1 (Object Desktop 1.x) Classe Taskmanager (sostituisce l'elenco finestre).
+TSKeyDfn 1 (Object Desktop 1.x) Classe definizione tastiera.
+TSArcFileElem 1 (Object Desktop) Sottoclasse per gli oggetti archivio ARC.
+TSArcFileMgr 1 (Object Desktop) Sottoclasse per gli archivi ARC.
+TSTarElem 1 (Object Desktop) Sottoclasse per gli oggetti archivio TAR/GZ.
+TSTarMgr 1 (Object Desktop) Sottoclasse per gli archivi TAR/GZ.
+TSRarElem 1 (Object Desktop) Sottoclasse per gli oggetti archivio RAR.
+TSRarMgr 1 (Object Desktop) Sottoclasse per gli archivi RAR.
+TSLHAElem 1 (Object Desktop) Sottoclasse per gli oggetti archivio LHA.
+TSLHAMgr 1 (Object Desktop) Sottoclasse per gli archivi LHA.
+TSZipElem 1 (Object Desktop) Sottoclasse per gli oggetti archivio Zip.
+TSZipMgr 1 (Object Desktop) Sottoclasse per gli archivi ZIP.
+TSZooElem 1 (Object Desktop) Sottoclasse per gli oggetti archivio ZOO.
+TSZooMgr 1 (Object Desktop) Sottoclasse per gli archivi ZOO.
+
+// Other classes that come with Object Desktop (V0.9.4)
+BA2SchedFold 1 (BackAgain/2, Object Backup) Classe cartella Scheduler.
+WPSecpgm 1 (Object Desktop) Classe oggetto programma sicuro.
+WPSecure 1 (Object Desktop) Classe oggetto cartella sicuro.
+WPSecs01 1 (Object Desktop) Classe oggetto copia collegata sicuro.
+
+// StarOffice 5.0 classes (V0.9.4)
+WPStOfHTML5 1 (StarOffice 5.0) Classe documento per i file HTML.
+WPStOfCalc5 1 (StarOffice 5.0) Classe documento per i fogli di calcolo StarCalc.
+WPStOfChar5 1 (StarOffice 5.0) Classe documento per i diagrammi StarCalc.
+WPStOfDraw5 1 (StarOffice 5.0) Classe documento per i disegni StarDraw.
+WPStOfGlob5 1 (StarOffice 5.0) Classe documento per i documenti globali StarWriter.
+WPStOfImpr5 1 (StarOffice 5.0) Classe documento per le presentazioni StarImpress.
+WPStOfMath5 1 (StarOffice 5.0) Classe documento per le formule StarMath.
+WPStOfWri5 1 (StarOffice 5.0) Classe documento per i testi StarWriter.
+WPStOfExe5 1 (StarOffice 5.0) Classe per l'oggetto programma che avvia StarOffice.
+
+// StarOffice 5.1 classes (V0.9.4)
+StarOfficeAgent 1 (StarOffice 5.1) Probabilmente Š necessario al meccanismo di associazione dei file.
+StarCalcFile 1 (StarOffice 5.1) Classe documento per i fogli di calcolo StarCalc.
+StarChartFile 1 (StarOffice 5.1) Classe documento per i diagrammi StarCalc.
+StarDrawFile 1 (StarOffice 5.1) Classe documento per i disegni StarDraw.
+StarWriterGlobalFile 1 (StarOffice 5.1) Classe documento per i documenti globali StarWriter.
+StarImpressFile 1 (StarOffice 5.1) Classe documento per le presentazioni StarImpress.
+StarMathFile 1 (StarOffice 5.1) Classe documento per le formule StarMath.
+StarWriterFile 1 (StarOffice 5.1) Classe documento per i testi StarWriter.
+
+// Lotus SmartSuite classes (V0.9.4)
+AmiProObject 1 (Lotus AmiPro) Program object for Lotus AmiPro
+Override123DocEx 1 (Lotus SmartSuite per Warp 4) Meccanismo di associazione per i file di dati 1-2-3.
+OverrideApDocEx 1 (Lotus SmartSuite per Warp 4) Meccanismo di associazione per i file di dati Approach.
+OverrideFlDocEx 1 (Lotus SmartSuite per Warp 4) Meccanismo di associazione per i file di dati Freelance.
+OverrideOrDocEx 1 (Lotus SmartSuite per Warp 4) Meccanismo di associazione per i file di dati Organizer.
+WordProDocObj 1 (Lotus SmartSuite per Warp 4) Meccanismo di associazione per i file di dati WordPro.
+WPCDocument 1 (Lotus SmartSuite per Warp 4) Classe documento Lotus.
+
+// Other classes (V0.9.4)
+LanStart 1 Classe per una speciale cartella Avviamento, che lancia gli oggetti contenuti solo dopo il login di rete.
+NewPrinter 1 Classe WPPrinter avanzata, che ha una funzione di blocco/riavvio dei lavori nel menu principale.
+WPSoundPalette 1 Questa classe fa parte delle Graham Utilities v2.1 e sup., di Chris Graham; Š utilizzata per la gestione dei suoni di sistema.
+GUDisk 1 Questa classe fa parte delle Graham Utilities v2.1 e sup., di Chris Graham; Š utilizzata in sostituzione della classe WPDisk per aggiungere funzioni ai menu contestuali delle unit….
+TN3270 5 (OS/2 BonusPak V3 o V4) Classe che implementa l'accesso Telnet 3270.
+FpwDBData 5 (OS/2 BonusPak V3 o V4) Questa classe Š parte di IBMWorks (in origine FootPrint Works) ed Š utilizzata per gli oggetti file database.
+FpwWPData 5 (OS/2 BonusPak V3 o V4) Questa classe Š parte di IBMWorks (in origine FootPrint Works) ed Š utilizzata per gli oggetti file word processor (testo).
+FpwCHData 5 (OS/2 BonusPak V3 o V4) Questa classe Š parte di IBMWorks (in origine FootPrint Works) ed Š utilizzata per gli oggetti file diagramma.
+FpwGRData 5 (OS/2 BonusPak V3 o V4) Questa classe Š parte di IBMWorks (in origine FootPrint Works).
+FpwRWData 5 (OS/2 BonusPak V3 o V4) Questa classe Š parte di IBMWorks (in origine FootPrint Works).
+FpwSSData 5 (OS/2 BonusPak V3 o V4) Questa classe Š parte di IBMWorks (in origine FootPrint Works) ed Š utilizzata per gli oggetti file foglio di calcolo.
+
+// Items added or changed with V0.9.5
+
+XWPMedia 1 Questa classe implementa il nuovo oggetto "Multimedia" XWorkplace.
+XWPString 1 Classe "stringa impostazioni" XWorkplace. Pu• contenere una stringa impostazioni WPS e un oggetto.
+
+BA2Device 1 (BackAgain/2) Implementa gli oggetti Scrivania per i dispositivi di backup.
+MLPlayer 1 (Microlearn Game Pack Volume II) Implementa un oggetto Scrivania per configurare il personaggio giocatore.
+wpTelevision 1 (WarpTV) Programma TV per le schede Hauppage WinTV.
+PCDesk 1 Parte di Process Commander (Stardock).
+SDFolder 1 Parte di Object Desktop (Stardock).
+WPStickMouse 1 Parte del driver IBM per i mouse con rotella. Classe sostitutiva di WPMouse.
+
+// Items added with V0.9.6
+WSFILE 1 Esempio di classe WPS dall'OS/2 Developer's Toolkit.
+WSFOLDER 1 Esempio di classe WPS dall'OS/2 Developer's Toolkit.
+Browse_O_Matic 1 Esempio di classe WPS dall'OS/2 Developer's Toolkit.
+Car 1 Esempio di classe WPS dall'OS/2 Developer's Toolkit.
+Carpp 1 Esempio di classe WPS dall'OS/2 Developer's Toolkit.
+ObjectUtility 1 Esempio di classe WPS dall'OS/2 Developer's Toolkit. Mostra un processo per creare in una determinata posizione oggetti derivati da classi.
+TSObjAdv 1 (Object Desktop) Classe "Object Advisor"
+RWMonitor 4 (OS/2 V3) Classe non documentata, che sembra sia utilizzata dalla WPS per serializzare l'accesso alle risorse delle cartelle. Nota, non deriva da WPObject.
+ClassAssociationManager 4 (OS/2 V4) Classe non documentata, utilizzata dalla WPS per organizzare le classi per la funzione "Nuova classe". Nota, non deriva da WPObject.
+WPDev 4 Classe non documentata, che sembra sia usata dalla WPS per organizzare le stampanti. Nota, non deriva da WPObject.
+WPLm 4 Classe non documentata, che sembra sia usata dalla WPS per organizzare le stampanti. Nota, non deriva da WPObject.
+WPLm 4 Classe non documentata, che sembra sia usata dalla WPS per organizzare le stampanti. Nota, non deriva da WPObject.
+WPQueue 4 Classe non documentata, che sembra sia usata dalla WPS per organizzare le code di  stampa. Nota, non deriva da WPObject.
+
+WPObjectPlus 4 (Workplace Shell TrashCan, Kai Sommerfeld) Questa classe declassa WPObject per permettere di ricreare gli oggetti cancellati conservati nel cestino.
+WPTrashCan 1 (Workplace Shell TrashCan by Kai Sommerfeld) Implementa un oggetto cestino sulla Scrivania.
+WPTrashObject 4 (Workplace Shell TrashCan by Kai Sommerfeld) Implementa gli oggetti cancellati presenti nel cestino.
+
+WarpCenterKey 1 (WarpCenterKey, Samuel Audet) Implementa un tasto rapido per aprire il pulsante "WarpCenter".
+
+StarImpressFile1 (StarOffice/2 5.1a) Classe documento per le presentazioni StarImpress.
+StarMathFile1 (StarOffice/2 5.1a) Classe documento per le formule StarMath.
+StarWriterFile1 (StarOffice/2 5.1a) Classe documento per i testi StarWriter.
+StarWriterGlobalFile1 (StarOffice/2 5.1a) Classe documento per i documenti globali StarWriter.
+
+LTFolder 1 (solo OS/2 Bonus Pak Warp 3) Classe cartella Light Table, che permette di visualizzare differenti tipi di file sia attraverso un visore che come icona grande.
+
+// Items added with V0.9.7
+WPProgramWithEnvironment 1 Sottoclasse di WPProgram (Rich Walsh). A differenza di DTProgram, dispone di una pagina impostazioni BEGINLIBPATH/ENDLIBPATH.
+PracticeMooV 1 Visualizzatore filmati QuickTime (Practice, Inc.).
+WPZORX 1 WPFolder Sottoclasse per l'interfaccia WPS ObjectREXX.
+WPZORXINIT 1 Sottoclasse WPTransient per l'interfaccia WPS ObjectREXX.
+ExtendedDesktop 1 "Desktop Extender", classe sostitutiva di WPDesktop; IBM Employee Written Software di Dan Campbell, un classico (La versione 1.4 Š del 1993!).
+
+WPLineStylePalette 1 (Mesa 2) Parte del foglio di calcolo Mesa2.
+WPLineWidthPalette 1 (Mesa 2) Parte del foglio di calcolo Mesa2.
+WPMarkerPalette 1 (Mesa 2) Parte del foglio di calcolo Mesa2.
+WPPatternPalette 1 (Mesa 2) Parte del foglio di calcolo Mesa2.
+
+WPMesaFile 1 (Mesa 2) Classe di file dati per il foglio di calcolo Mesa2.
+WPMesaTemplateFile 1 (Mesa 2) Classe di file maschera per il foglio di calcolo Mesa2.
+WPMesaBackupFile 1 (Mesa 2) Classe di file backup per il foglio di calcolo Mesa2.
+
+FpwCatalyst 5 (OS/2 V3 or V4 BonusPak) Questa classe Š parte di IBMWorks (in origine FootPrint Works).
+FpwWPSData 5 (OS/2 V3 or V4 BonusPak) Superclasse di IBMWorks (in origine FootPrint Works).
+Shortcut 1 Questa classe permette di usare per le copie collegate nomi differenti rispetto agli oggetti originali.
+WPKlist 1 Classe WPS Class List difettosa, fornita con IBM VAC++ 3.0.
+CmdrunDisk 1 Questa classe permette di aprire sessioni in linea di comando e di lanciare programmi direttamente dal menu contestuale di un oggetto.
+CmdrunFolder 1 Questa classe permette di aprire sessioni in linea di comando e di lanciare programmi direttamente dal menu contestuale di un oggetto.
+WPSysset 1 Questa classe consente l'accesso REXX alle impostazioni degli oggetti classe di altre classi.
+PDR 0 Classe di sistema non documentata.
+QDR 0 Classe di sistema non documentata.
+
+XCenter 1 XCenter di XWorkplace, come Š ovvio. Pu• essere disinstallato senza rischi.
+XWPFontFolder 1 E' la nuova "Cartella tipi di carattere" di XWorkplace. E' necessario che siano installati anche XWPFontObject e XWPFontFile.
+XWPFontObject 1 Rappresenta i tipi di carattere installati nella nuova "Cartella tipi di carattere" di XWorkplace (XWPFontFolder). E' necessario che siano installati anche XWPFontFolder e XWPFontFile.
+XWPFontFile 1 Rappresenta i file di tipi di carattere fisicamente nel sistema. Tutti i file di dati riconosciuti come tipi di carattere sono automaticamente considerati elementi di questa classe. E' necessaria per poter installare i file di tipi di carattere nella "Cartella tipi di carattere" di XWorkplace.
+
+// Items added with V0.9.9
+VPCForm 1 (Vispro C) classe "C Form".
+VPCPForm 1 (Vispro C++ 3.0) classe "C++ Form".
+VPForm 1 (Vispro Rexx 3.01) classe Form.
+
+XWPProgram 1 Classe XWorkplace sostitutiva di WPProgram, con funzionalit… aggiuntive per gli oggetti programma.
+
+// Items added with V0.9.10
+CBFolder 1 (ZipStream) Interfaccia WPS ZipStream. Aggiunge una voce "ZipStream" al menu di tutti gli oggetti file.
+BDView 1 (OS/2 V4.5) Classe visualizzatore lingue.
+
+// Items added with V0.9.12
+CWCreatorSettings 1 Classe per l'oggetto "CD-Creator Settings", parte del programma Audio/DataCDCreator.
+PMMailWP 1 Classe appartenente al client di posta elettronica PMMail/2.
+AdvTcpDialer 1 Classe appartenente all'IBM Advantis Dialer; la si pu• rimuovere se si utilizza un altro Internet Access Provider.
+DDIcon 1 Classe sostitutiva di WPIcon, realizzata da Jens Borch Christiansen, che permette di modificare l'icona di uno o pi— oggetti trascinandoli semplicemente su di un oggetto icona.
+MKeyWPS 1 Fa parte di MKey, di Roger Sennert. Bottoni nelle barre del titolo specifici per le applicazioni, gestione dei tasti rapidi, puntatori mouse animati ed altro ancora.
+mshred 1 Trinciatrice avanzata, di M. Kimes (FM/2); cancella praticamente qualunque cosa.
+
+// Items added with V0.9.13
+AMouse 1 Classe installata con il programma di controllo amouse.sys, per mouse con rotelle, per migliorare l'oggetto impostazioni "Mouse" con nuove pagine.
+
+// Items added with V0.9.16
+VRCore 1 classe di base VX-REXX, la cui funziona esatta non Š documentata.
+VRApplication 1 classe applicazione VX-REXX; tutti gli oggetti programma VX-REXX appartengono a questa classe.
+VRScreen 1 rappresentazione VX-REXX dello schermo PM. Serve per determinare le propriet… dello schermo da VX-REXX.
+VRVisible 1 classe visibile VX-REXX, la cui funziona esatta non Š documentata.
+VRManager 1 classe gestione VX-REXX, la cui funziona esatta non Š documentata.
+VRWindow 1 classe finestra VX-REXX; ogni finestra di programma VX-REXX appartiene a questa classe.
+VRPrimitive 1 classe primitiva VX-REXX, la cui funziona esatta non Š documentata.
+
+// Items added with V0.9.17
+B2KBackupSet 1 file impostazioni backup del programma Back Again/2000. In questi file sono conservate le impostazioni relative ai backup di Back Again/2000, di CDS, Inc.
+BA2KSchedFold 1 oggetto scheduler del programma Back Again/2000. Sottoclasse speciale di cartella WPS che implementa le funzioni di schedulazione, cioŠ quando effettuare il backup automatico di cosa, per Back Again/2000 di CDS, Inc.
+BA2KWCatalog 1 file catalogo del programma Back Again/2000. In questi file Š mantenuta una descrizione dello stato del backup corrente, da dove cioŠ provengono i file salvati e dove vanno ripristinati, per Back Again/2000 di CDS, Inc.
+CWAudio 1 classe genitore del pacchetto CW MM di Chris Wohlgemuth, che permette di integrare nella WPS il programma MMIOProcs di Russel O'Connor.
+CWDataFile 1 parte dello Wizard WPS di Chris Wohlgemuth. Sostituisce la classe WPDataFile, implementando menu contestuali configurabili per i file comprendenti la visualizzazione della dimensione del file.
+// the following updated with V1.0.4
+CWDisk 1 parte di Wizard WPS di Chris Wohlgemuth. Sostituisce la classe WPDisk, implementando la possibilit… di rimuovere la voce "Formattare unit…" dai menu contestuali e di visualizzare barre di utilizzo sugli oggetti unit… disco presenti nella cartella Unit….
+CWFolder 1 parte di Wizard WPS di Chris Wohlgemuth. Sostituisce la classe WPFolder, implementando menu contestuali configurabili per le cartelle.
+CWMediaFolder 1 parte del  pacchetto CW MM di Chris Wohlgemuth. Sottoclasse di CWProgFolder. Implementa un media player per tutti i formati audio supportati da MMOS2 (e sue estensioni); la cartella viene usata per l'elenco dei brani.
+CWMenuFolder 1 parte dello Wizard WPS di Chris Wohlgemuth. Implementa una cartella di configurazione per voci aggiuntive nei menu contestuali che assomiglia molto a quella di XWorkplace.
+CWMP3 1 parte del  pacchetto CW MM di Chris Wohlgemuth. Sottoclasse di CWAudio. Aggiunge ai blocchi appunti impostazioni dei file audio pagine contenenti informazioni aggiuntive, dalle quali si pu• editare il tag ID3, voci di menu correlate al sottomenu "Aprire" ed una icona speciale per i file MP3. Integra nella WPS il programma MMIOProcs per MMOS2 di Russel O'Connor.
+CWOGG 1 parte del  pacchetto CW MM di Chris Wohlgemuth. Sottoclasse di CWAudio. Aggiunge un'icona speciale per Ogg Vorbis. Integra nella WPS il programma MMIOProcs per MMOS2 di Russel O'Connor.
+CWWizzSettings 1 parte dello Wizard WPS di Chris Wohlgemuth. Implementa l'oggetto impostazioni dello Wizard WPS.
+
+// Items added with V0.9.18
+BDview 1 (WSeB/CP/eCS) implementa un oggetto per passare da un'impostazione lingua bidirezionale all'altra.
+WPVideoSystem 1 (Scitech Display Doctor) sostituisce la classe WPSystem per migliorare la pagina impostazioni "Video".
+XWPFileSystem 1 Classe usata da XWorkplace in sostituzione di WPFileSystem; permette di accedere ai vari dati interni WPS e di implementare, tra l'altro, le "cartelle turbo".
+
+// Items added with V0.9.19
+FileState 1 (FILESTAT.DLL) Visualizza statistiche relative agli oggetti trascinativi sopra.
+
+// Items added with V1.0.0
+ClassTree 1 (CLSSTREE.DLL) L'oggetto ClassTree fa parte del programma Object Factory di Synaptec e serve ad elencare tutti gli oggetti SOM e tutti quelli creati dall'utilizzatore di Object Factory. Usato assieme all'oggetto ClassNotebook (e all'oggetto nascosto SomNotebook) fornisce l'interfaccia GUI per creare nuovi oggetti SOM.
+ClassNotebook 1 (CLSSNOTE.DLL) L'oggetto ClassNotebook fa parte del programma Object Factory di Synaptec e serve per definire nuove classi SOM.
+SomNote 1 (SOMNOTE.DLL) L'oggetto SomNote fa parte del programma Object Factory di Synaptec; usato in combinazione con l'oggetto ClassTree fornisce aiuto per le classi SOM.
+
+// Items added with V1.0.1
+XWPVCard 1 Classe XWorkplace che permette di manipolare le informazioni vCard nei file *.vcf.
+
+// Items added with V1.0.4
+CWAudioShadow 1 Parte della classi Multimedia di Chris Wohlgemuth, che sostituiscono le classi multimedia standard di OS/2. Implementa le copie collegate di file audio nelle cartelle Media. Quando si rilascia un file audio in una cartella Media, quello che si Š vede Š un oggetto appartenente a questa classe, che nella visualizzazione dettagli mostra informazioni sul file audio cui Š collegato.
+CWCDFolder 1 Parte della classi Multimedia di Chris Wohlgemuth, che sostituiscono le classi multimedia standard di OS/2. Implementa il lettore CD sotto forma di cartella.
+CWDVDFolder 1 Parte del pacchetto CD Creator di Chris Wohlgemuth, permette la creazione di DVD dati.
+CWM3UFolder 1 Parte della classi Multimedia di Chris Wohlgemuth, che sostituiscono le classi multimedia standard di OS/2. Implementa la play list.
+CWMMDisk 5 Parte della classi Multimedia di Chris Wohlgemuth, che sostituiscono le classi multimedia standard di OS/2. 
+CWMMDataFile 5 Sostituto dei file dati multimediali, parte della classi Multimedia di Chris Wohlgemuth, che sostituiscono le classi multimedia standard di OS/2. 
+CWLaunchArea 5 Parte di WPS Wizard di Chris Wohlgemuth; utilizzabile da altre classi, gestisce il trascinamento degli oggetti.
+CWObject 1 Parte di WPS Wizard di Chris Wohlgemuth; sostituisce la classe WPObject.
+MMAudioStream 5 Parte della classi Multimedia di Chris Wohlgemuth, che sostituiscono le classi multimedia standard di OS/2. Permette il collegamento a flussi audio via Internet. Supporta solo i server IceCast.
+MMCDTrack 5 Parte della classi Multimedia di Chris Wohlgemuth, che sostituiscono le classi multimedia standard di OS/2. Implementa gli oggetti traccia CD nella cartella lettore  CD.
+MMFLAC 5 Parte della classi Multimedia di Chris Wohlgemuth, che sostituiscono le classi multimedia standard di OS/2. Migliora l'integrazione WPS con il proc I/O FLAC di Russel O'Conner.
+MMMP3 5 Parte della classi Multimedia di Chris Wohlgemuth, che sostituiscono le classi multimedia standard di OS/2. Migliora l'integrazione WPS con il proc I/O MP3 di Russel O'Conner.
+MMOGG 5 Parte della classi Multimedia di Chris Wohlgemuth, che sostituiscono le classi multimedia standard di OS/2. Migliora l'integrazione WPS con il proc I/O Ogg Vorbis di Russel O'Conner.
+MMM3U 5 Parte della classi Multimedia di Chris Wohlgemuth, che sostituiscono le classi multimedia standard di OS/2. Implementa l'integrazione WPS integration per le play list MP3.
+MMPNG 5 Classe multimedia che implementa il supporto per i file immagine PNG.
+NWPDisk 5 Parte di Norman Virus Control. Classe sostitutiva per WPDisk. Aggiunge una voce "Check for viruses..." al menu contestuale degli oggetti unit….
+NWPFileSys 5 Parte di Norman Virus Control. Classe sostitutiva per WPDisk. Aggiunge una voce "Check for viruses..." al menu contestuale degli oggetti nel file system.
+NWPDesktop 5 Parte di Norman Virus Control. Classe sostitutiva per WPDesktop. Aggiunge un sottomenu "Norman Virus Control" al menu contestuale della Scrivania.
+NVCTaskFile 1 Parte di Norman Virus Control. Classe per i file di definizione di NVC.
+ODCCFix 1 Fix per l'Object Desktop Control Center realizzata da Rich Walsh.
+RelishBun 1 Parte di Relish della Sundial Systems. La visualizzazione Š personalizzabile ed influenza la prospettazione dei dati Relish.
+RWS06 1 Parte di Remote Workplace Server. Permette a programmi che ne sono all'esterno di interagire con la WPS.
+TextFolder 1 Classe di esempio inclusa in VisualAge C++: si tratta di una cartella che pu• contenere solo file di testo semplice.
+Wipeobj 1 Parte del salva schermo WipeOut.
+WPSSDesktop 1 Parte del salva schermo Doodle's Screen Saver. Implementa un nuovo salvaschermo con plug-in, che sostituisce la pagina 'Bloccare' nel blocco appunti impostazioni della Scrivania.
+WordPerfectObject 1 (WordPerfect 5.x) Classe sostitutiva WPFileSystem installata da WordPerfect for OS/2.  NOTA:  una volta installato WordPerfect, prima di riavviare spostarsi nella cartella WPCOS2 e lanciare il comando 'PATCHWP C:' (dove con 'C:' si intende l'unit… di avvio), altrimenti il supporto WPS di WordPerfect potrebbe non funzionare correttamente.
+WordPerfectFile 1 (WordPerfect 5.x) Classe sostitutiva WPDataFile installata da WordPerfect for OS/2.  NOTA:  una volta installato WordPerfect, prima di riavviare spostarsi nella cartella WPCOS2 e lanciare il comando 'PATCHWP C:' (dove con 'C:' si intende l'unit… di avvio), altrimenti il supporto WPS di WordPerfect potrebbe non funzionare correttamente.
+WordPerfectDocument 1 (WordPerfect 5.x) Classe WPS che rappresenta un file documento WordPerfect, usata per l'integrazione WPS di WordPerfect.
+WordPerfectGraphic 1 (WordPerfect 5.x) Classe WPS che rappresenta un file grafico WordPerfect, usata per l'integrazione WPS di WordPerfect.
+WPStOfExe 0 Parte di StarOffice 3.0 e 3.1. Per gli oggetti programma creati da StarOffice. Implementa l'associazione per questo programmi subentrando alle associazioni file di sistema.
+WPStOfCalc 1 Parte di StarOffice 3.0 e 3.1. File foglio di calcolo per StarCalc.
+WPStOfChar 1 Parte di StarOffice 3.0 e 3.1.  File grafici per StarChart.
+WPStOfDraw 1 Parte di StarOffice 3.0 e 3.1.  File di disegno per StarDraw.
+WPStOfVor 1 Parte di StarOffice 3.0 e 3.1. File modello.
+WPStOfWri 1 Parte di StarOffice 3.0 e 3.1.  Documento di testo per StarWrite. Si noti che nel caso si siano installate sia la versione 3.1 che 5.1 di StarOffice, i file .SDW di StarOffice 5.1 appariranno nella WPS come appartenenti a questa classe e come impostazione predefinita si apriranno con StarOffice 3.1, che per• non supporta il formato 5.1.

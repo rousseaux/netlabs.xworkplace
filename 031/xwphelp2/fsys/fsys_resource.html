@@ -1,0 +1,84 @@
+<HTML RESID=&ID_XSH_SETTINGS_PGMFILE_RESOURCES;>
+<HEAD>
+    <TITLE>
+        &xwp;: Hulpbronnen pagina
+    </TITLE>
+</HEAD>
+<BODY>
+De "Hulpbronnen" pagina komt voor in alle instellingen notitieblokken van alle uitvoerbare
+bestanden om extra informatie te laten zien van de uitvoerbare module.
+
+<P><B>Hulpbronnen</B> zijn alleen-lezen gegevens objecten die dynamisch kunnen worden benaderd
+tijdens uitvoering.
+
+<P>Hulpbron objecten worden in een uitvoerbaar bestand geplaatst door de 'Resource Compiler',
+<CODE>RC.EXE</CODE> die met &os2; wordt meegeleverd.
+Dit kan of het hoofdonderdeel van de applicatie zijn (<CODE>.EXE</CODE> bestand) of ‚‚n of meer
+<A HREF="glossary/gls_dll.html">Dynamic Link Libraries (DLL's)</A>
+zijn.
+
+<P>Een hulpbron kan op ieder moment worden geladen door het gebruik van een "type" en "ID"
+aanduiding.
+Typisch is, in tegenstelling tot de feitelijke applicatie code, dat hulpbronnen alleen worden geladen
+als zij ook werkelijk nodig zijn. Dat maakt het starten van een applicatie sneller en vermindert
+ook het gebruik van geheugen.
+
+<P>Hulpbronnen worden veelvuldig door applicaties gebruikt om hun taal ondersteuning (NLS)
+te scheiden van de feitelijke code. Op deze manier kunnen applicaties worden vertaald
+zonder dat de broncode opnieuw gecompileerd behoeft te worden
+<IFNDEF __EWORKPLACE__>
+(&xwp; doet zijn taal ondersteuning b.v. op deze manier.)
+</IFNDEF>
+
+<P>De volgende typen hulpbronnen bestaan:
+
+<UL><LI><B>Muisaanwijzers</B>: een pictogram of aanwijzer bestand (.ICO/.PTR formaat).
+
+<P><LI><B>Bitmap</B>: een OS/2 bitmap (.BMP)
+
+<P><LI><B>Menu model:</B> een PM menu definitie: of een menu balk of een voorgrond (context) menu.
+
+<P><LI><B>Dialoog model</B>: een PM dialoog definitie.
+
+<P><LI><B>Tekst tabel</B>.
+
+<P><LI><B>Lettertype directory, Lettertype</B>: PM LETTERTYPEN bitmap.
+
+<P><LI><B>Versneller tabel</B>: een PM versneller (sneltoets, VERKORTE toetsenbord aanslag) tabel.
+
+<P><LI><B>Binaire gegevens</B>: binaire gegevens in een ongedefinieerd formaat.
+
+<P><LI><B>Fout berichten tabel</B>: een tabel met fout berichten.
+
+<P><LI><B>Dialoog bestandsnaam invoegen</B>: bestandsnaam van het dialoog bestand invoegen.
+
+<P><LI><B>Hulp tabel, Hulp subtabel</B>: hulp tabellen voor de PM hulp manager. Dit maakt het
+mogelijk om PM dialoog onderdelen en hulppagina's samen te brengen, maar is erg hinderlijk in gebruik.
+
+<P><LI><B>Applicatie specifiek</B>: gegevens in een applicatie-specifiek formaat.
+
+<P>Van de volgende aanwezige hulpbronnen is, door gebrek aan oorspronkelijke informatie, niet precies
+bekend wat zij betekenen
+
+<P><LI><B>Virtuele toets tabel</B>: sleutel naar de VKEY tabellen.
+
+<P><LI><B>Key table</B>: sleutel naar UGL tabellen.
+
+<P><LI><B>Karakter tabel</B>: hi‰roglief naar karakter tabellen. Dit wordt waarschijnlijk bij lettertypen
+gebruikt.
+
+<P><LI><B>Scherm informatie</B>: scherm weergave informatie.
+
+<P><LI><B>Short-form function key area</B>: functietoest gebied, kort vorm.
+
+<P><LI><B>Long-form function key area</B>: functietoets gebied, lange vorm.
+
+<P><LI><B>DBCS uniek/lettertype stuurprogramma directory, DBCS unieke/lettertype stuurprogramma</B>:
+double-byte karakter set (DBCS) lettertype stuurprogramma's.
+
+<P><LI><B>Reeks ID tabel</B>: hulpbronnen naam tabel.
+
+</UL>
+</BODY>
+</HTML>
+

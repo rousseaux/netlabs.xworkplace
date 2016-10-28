@@ -1,0 +1,44 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: Stuurprogramma's
+    </TITLE>
+</HEAD>
+<BODY>
+De "Stuurprogramma's" kolom laat u gedetailleerde gegevens zien over de stuurprogramma's die
+het apparaat implementeren.
+
+<P>Afhankelijk van het type apparaat, kan de volgende informatie getoond worden:
+
+<UL><LI><B>Mediabeheer stuurprogramma:</B> (MCD). De MCD is verantwoordelijk voor het interpreteren
+van multimedia opdrachten die vanuit een applicatie naar een apparaat verstuurd worden. Het is
+aan de MCD om verdere actie te ondernemen afhankelijk van de opdracht die verstuurd is.
+De naam die hier getoond wordt zal overeenkomen met een
+<A HREF="glossary/gls_dll.html">DLL</A>
+in de MMOS2 directory.
+
+<P><LI><B>Leverancier-specifiek stuurprogramma:</B> (VSD). Als dat ge‹nstalleerd is, wordt de VSD
+meestal aangeroepen vanuit de MCD voor het implementeren van functies voor bepaalde apparatuur.
+Deze architectuur biedt MMPM/2 de mogelijkheid om de MCD's behoorlijk algemeen te houden, terwijl
+de apparatuur-specifieke code meestal in de VSD zit.
+
+<P>Bijvoorbeeld, de "waveaudio" apparaten zijn meestal ge‹mplementeerd door een algemene
+MCD, terwijl het echte werk op de geluidskaart gedaan wordt in een VSD (die op zijn beurt
+zal communiceren met een stuurprogramma).
+
+<P><LI><B>Fysiek apparaat stuurprogramma:</B> (PDD). De PDD is verantwoordelijk voor het echte werken
+met de apparatuur. Aangezien dit gedaan moet worden in ring 0, helemaal als er interrupts afgehandeld
+moeten worden, is deze laag noodzakelijk.
+
+<P>Niet alle apparaten hebben een PDD nodig. Dit is typisch het geval voor geluidskaarten omdat die
+interrupts en DMA moeten afhandelen.
+
+<P><LI><B>Parameters:</B> dit zijn aanvullende parameters voor het
+<CODE>MMPM2.INI</CODE> bestand in uw MMOS2 directory die opgegeven zijn voor het apparaat.
+Dit is apparaat specifiek, maar lijkt gerelateerd te zijn aan wat opgegeven is voor een apparaat in
+het "Multimedia Instellingen" object.
+
+</UL>
+</BODY>
+</HTML>
+

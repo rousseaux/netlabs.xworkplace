@@ -1,0 +1,134 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: &xcenter; instellingen reeksen
+    </TITLE>
+</HEAD>
+<BODY>
+Ter aanvulling op de instellingen reeksen die door de
+<A HREF="objects/string_1wpobject.html">WPObject</A>
+class ondersteund worden, ondersteunt de XCenter class de volgende reeksen:
+
+<DL>
+<DT><P><CITE><B>3DBORDERWIDTH=</B><I>waarde</I></CITE>
+<DD>Komt overeen met de "3D randbreedte" instellingen op een XCenter "Stijl" pagina.
+De waarde moet liggen tussen 0 en 10.
+De standaardwaarde is "2".
+
+<DT><P><CITE><B>ALL3DBORDERS=</B>{YES|NO}</CITE>
+<DD>Komt overeen met de "Teken alle randen in 3D" instelling op een XCenter "Stijl" pagina.
+De standaardwaarde is <CODE>NO</CODE>.
+
+<DT><P><CITE><B>ALWAYSONTOP=</B>{YES|NO}</CITE>
+<DD>Komt overeen met de "Altijd op voorgrond" instelling op een XCenter "Weergave" pagina.
+De standaardwaarde is <CODE>NO</CODE>.
+
+<DT><P><CITE><B>ANIMATE=</B>{YES|NO}</CITE>
+<DD>Komt overeen met de "Animatie" instelling op een XCenter "Weergave" pagina.
+De standaardwaarde is <CODE>YES</CODE>.
+
+<DT><P><CITE><B>AUTOHIDE=</B><I>milliseconden</I></CITE>
+<DD>Komt overeen met de "Automatisch verbergen" instelling op een XCenter "Weergave" pagina.
+De waarde is de automatisch verbergen vertraging in milliseconden; bij 0 is automatisch verbergen
+uitgeschakeld.
+De standaardwaarde is "0" om automatisch verbergen uit te schakelen.
+
+<DT><P><CITE><B>BORDERSPACING=</B><I>waarde</I></CITE>
+<DD>Komt overeen met de "Randscheiding" instelling op een XCenter "Stijl" pagina.
+De waarde moet liggen tussen 0 en 10.
+De standaardwaarde is "2".
+
+<DT><P><CITE><B>CLIENTCOLOR=</B><I>rood groen blauw</I></CITE>
+<DD>Specificeert de achtergrondkleur van het XCenter hoofdvenster dat niet bedekt wordt
+door widgets.
+De standaardwaarde is <CODE>244 244 244</CODE> voor "licht grijs".
+
+<DT><P><CITE><B>FLATBUTTONS=</B>{YES|NO}</CITE>
+<DD>Komt overeen met de "Platte knoppen" instelling op een XCenter "Stijl" pagina.
+De standaardwaarde is <CODE>YES</CODE>.
+
+<DT><P><CITE><B>HIDEONCLICK=</B>{YES|NO}</CITE>
+<DD>Komt overeen met de "Verberg onmiddellijk bij een muisklik" instelling op een XCenter
+"Weergave" pagina. Deze instelling wordt alleen gebruikt als de "Automatisch verbergen"
+instelling actief is.
+De standaardwaarde is <CODE>NO</CODE>.
+
+<DT><P><CITE><B>NOHATCHOPENOBJ=</B>{YES|NO}</CITE>
+<DD>Komt overeen met de "Markeer open objecten" instelling op een XCenter "Stijl" pagina;
+let er echter op dat de waarde van deze instelling tegengesteld is aan de staat van het
+aankruisvakje op deze pagina.
+De standaardwaarde is <CODE>NO</CODE>.
+
+<DT><P><CITE><B>POSITION=</B>{TOP|BOTTOM}</CITE>
+<DD>Komt overeen met de "XCenter positie" instelling op een XCenter "Weergave" pagina.
+De standaardwaarde is <CODE>BOTTOM</CODE>.
+
+<DT><P><CITE><B>PRIORITYDELTA=</B><I>verschil</I></CITE>
+<DD>Komt overeen met de "Weergave thread prioriteit" instelling op een XCenter "Weergave" pagina.
+De waarde is het prioriteitsverschil van een XCenter thread, die moet liggen tussen
+de 0 en 31.
+De standaardwaarde is "0".
+
+<DT><P><CITE><B>REDUCEDESKTOP=</B>{YES|NO}</CITE>
+<DD>Komt overeen met de "Verklein Werkplek werkgebied" instelling op een XCenter
+"Weergave" pagina.
+De standaardwaarde is <CODE>NO</CODE>.
+
+<DT><P><CITE><B>SIZINGBARS=</B>{YES|NO}</CITE>
+<DD>Komt overeen met de "Teken aanpassingsschuif" instelling op een XCenter "Stijl" pagina.
+De standaardwaarde is <CODE>YES</CODE>.
+
+<DT><P><CITE><B>SPACINGLINES=</B>{YES|NO}</CITE>
+<DD>Komt overeen met de "Teken schedingslijnen" instelling op een XCenter "Stijl" pagina.
+De standaardwaarde is <CODE>YES</CODE>.
+
+<DT><P><CITE><B>SUNKBORDERS=</B>{YES|NO}</CITE>
+<DD>Komt overeen met de "Rand om statische elementen" instelling op een XCenter "Stijl" pagina.
+De standaardwaarde is <CODE>NO</CODE>.
+
+<DT><P><CITE><B>WIDGETS=</B><I>widget</I>[,<I>widget</I>]...<BR><B>WIDGETS</B>={CLEAR|RESET}</CITE>
+<DD>Een volledige komma gescheiden lijst van de
+<A HREF="xcenter/xc_main_widgets.html">widgets</A>
+die het &xcenter; vormen. het toepassen van deze instellingen reeks zorgt ervoor dat alle
+aanwezige widgets worden verwijderd.
+Elke <CODE><I>widget</I></CODE> reeks moet het volgende formaat hebben:
+<BR><CODE><I>classname</I>(<I>instelling</I>)</CODE>
+<BR>waar <CODE>classname</CODE> de naam van de widget class is (zoals getoond
+op de "Classes" notitieblok pagina in het instellingen notitieblok van het XCenter) en
+<CODE>(<I>instelling</I>)</CODE> specificeert naar keuze de instelling subreeks van de
+widget. Als er geen instellingen reeks is, dient u een leeg setje haakjes in te voeren,
+b.v. "Pulse()". De instelling subreeks wordt gedeeltelijk gecodeerd zodat het geen
+karakters bevat die niet toegestaan zijn in de WPS instellingen reeksen.
+
+<P>Als en alleen als <CODE>classname</CODE> een "Lade" is voor het maken van een
+<A HREF="xcenter/xc_tray.html">lade widget</A>,
+dan dient de instellingen reeks het volgende formaat te hebben:
+<CODE>Lade(<I>instelling</I>){<I>lade naam</I>[<I>widgetlijst</I>]...}</CODE>
+(Let er op dat de haakjes hier letterlijk zijn.)
+
+<P>Als 'CLEAR' is opgegeven inplaats van een widget lijst, worden alle aanwezige widgets
+uit het &xcenter; verwijderd zonder dat er nieuwe worden gemaakt.
+<BR>Als 'RESET' is opgegeven, worden alle widgets uit het &xcenter; verwijderd en worden
+de standaard widgets gemaakt.
+
+<DT><P><CITE><B>ADDWIDGETS</B>=<I>widget</I>[,<I>widget</I>...</CITE>
+<DD>Een comma gescheiden lijst van de:
+<A HREF="xcenter/xc_main_widgets.html">widgets</A>
+om aan de bestaande widgets in het &xcenter; toe te voegen.
+Het formaat van de instellingen reeks is dezelfdeals voor <CITE><B>WIDGETS</B></CITE>.
+
+<DT><P><CITE><B>DELETEWIDGETS</B>=<I>classname</I>[,<I>classname</I>]...</CITE>
+<DD> Een comma gescheiden lijst van de widgets classnames om uit het &xcenter;
+te verwijderen.
+Alle widgets met de opgegeven classnames worden verwijderd.
+<BR>De <CODE>classname</CODE> is hetzelfde als beschreven voor <CITE><B>WIDGETS</B></CITE>.
+
+<DT><P><CITE><B>WIDGETSPACING=</B><I>waarde</I></CITE>
+<DD>Komt overeen met de "Widget scheiding" instelling op een XCenter "Stijl" pagina.
+De waarde moet liggen tussen de 1 en 10.
+De standaardwaarde is "2".
+
+</DL>
+</BODY>
+</HTML>
+

@@ -1,0 +1,62 @@
+<HTML RESID=&ID_XSH_DATAFILE_MAIN;>
+<HEAD>
+    <TITLE>
+        &xwp;: file dati
+    </TITLE>
+</HEAD>
+<BODY>
+I file dati vengono usati dai programmi per conservare su disco le informazioni. Tutti gli 
+oggetti nel file-system che non sono <A HREF="objects/obj_pgmf.html">file programma</A> o
+&link_folders;
+vengono considerati da &os2; come file dati, indipendentemente
+dal fatto che contengano o meno dati immediatamente leggibili dall'utente.
+
+<P>I file dati generalmente sono di un <B>tipo</B> specifico. Si puï impostare in maniera esplicita 
+il tipo di file dalla pagina "Tipo" nel 
+<A HREF="glossary/gls_notebook.html">blocco appunti impostazioni</A> del file.
+
+<IFNDEF __NEVEREXTASSOCS__>
+Se al file non ä associato esplicitamente un tipo, &xwp; ne assegna automaticamente uno
+basandosi sulla estensione, cioä quella parte del nome file che segue l'ultimo punto.
+</IFNDEF>
+
+<P>Generalmente i file dati sono <B>associati</B> a 
+&link_progobjs;. E' cosç
+sufficiente cliccare due volte sul file dati per far sç che si apra il programma
+associato con il file dati giÖ caricato, oppure selezionare un certo programma
+dal sottomenu "Aprire come" nel &popmenu;e del file dati.
+
+<P>Se al file dati non ä stato assegnato (nÇ esplicitamente nÇ automaticamente)
+un tipo &os2; lo associa con
+<IFDEF __EWORKPLACE__>
+l'oggetto "Editor di testo", che di solito si trova nella cartella "UtilitÖ", a sua volta
+nella cartella "Programmi" sulla Scrivania.
+</IFDEF>
+<IFNDEF __EWORKPLACE__>
+l'Editor di sistema.
+</IFNDEF>
+
+<IFNDEF __NEVEREXTASSOCS__>
+<P>Si possono configurare tipi di file ed associazioni di &xwp; dalla pagina "Tipi di file"
+dell'<A HREF="objects/obj_wps.html">oggetto "Workplace Shell".</A>
+<P>Si veda <A HREF="glossary/gls_assocs.html">Tipi di file ed associazioni</A> per una
+introduzione alle associazioni tra file di dati e programmi.
+</IFNDEF>
+<IFDEF __NEVEREXTASSOCS__>
+<P>Si possono modificare le associazioni tra programmi e file usando la
+pagina "Associazioni" presente nel blocco appunti impostazioni di ogni programma.
+</IFDEF>
+
+<P>Per ulteriori informazioni si vedano gli argomenti seguenti:
+
+<UL>
+<LI><A HREF="tasks/tsk_crobjs.html">Creare nuovi oggetti</A>
+<LI><A HREF="tasks/tsk_templates.html">Modelli</A>
+<LI><A HREF="tasks/tsk_crshadow.html">Le copie collegate</A>
+<LI><A HREF="tasks/tsk_copymove.html">Copiare, spostare e creare copie collegate</A>
+<LI><A HREF="tasks/tsk_chicons.html">Modificare le icone associate agli oggetti</A>
+<LI><A HREF="tasks/tsk_rename.html">Cambiare nome agli oggetti</A>
+<LI><A HREF="tasks/tsk_delete.html">Cancellare oggetti</A>
+</UL>
+</BODY>
+</HTML>

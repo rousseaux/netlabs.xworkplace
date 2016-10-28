@@ -1,0 +1,110 @@
+<HTML NOSUBLINKS="xices" NOSUBLINKS="vers_" XPOS=right WIDTH=70%>
+<HEAD>
+    <TITLE>
+        FAQ: domande sulla &xshutdown;
+    </TITLE>
+</HEAD>
+<BODY>
+<OL>
+
+<LI><B>PerchÇ il riavvio automatico non funziona sul mio sistema?</B>
+<P>Non lo so: sul mio Warp 3 con FixPak 35, per esempio, il riavvio
+automatico non funziona, mentre funziona sul mio sistema Warp 4. Non sono
+riuscito a capire la ragione di questo comportamento, che perï anche altri
+utenti hanno riportato e che si presenta anche con la funzione riavvio di
+WarpEnhancer; suppongo quindi che non si tratti di un problema di &xwp;. La
+funzione di riavvio usa una IOCtl non documentata di <CODE>DOS.SYS</CODE>,
+ragion per cui non c'ä garanzia che ne IBM assicuri nel tempo il funzionamento.
+Se la Gestione Avviamento IBM ä installato, si puï ovviare al problema
+specificando di usare <CITE>SETBOOT.EXE</CITE> come opzione di riavvio
+(Impostazioni Scrivania -> "&xshutdown;" -> "Opzioni riavvio...").
+
+<P><LI><B>Ci sono impostazioni che la &xshutdown; non salva correttamente?</B>
+<P>Sç: la &xshutdown; non salva la posizione delle cartelle che sono state spostate immediatamente prima della
+&xshutdown;, dato che la WPS <I>ritarda</I> il salvataggio della posizione delle cartelle affidandolo ad un
+sottoprocesso in background ed il formato delle informazioni sulla posizione delle cartelle
+in OS2.INI non ä documentato, dunque non posso prevenirlo. Lo stesso vale per le cartelle
+chiuse dalla &xshutdown; stessa. Se si vuole salvare la posizione delle cartelle, le si chiuda manualmente
+attendendo alcuni secondi (10-20) prima di attivare la &xshutdown;.
+<P>Per "posizione delle cartelle", intendo la posizione della <I>finestra</I> di una cartella aperta,
+non la posizione delle icone in una cartella, che sono correttamente salvate.
+<P>Inoltre la &xshutdown; non salva i cambiamenti nella finestra Elenco finestre (per esempio, tipi di carattere
+oppure colori trascinati al suo interno). Se si vuole salvare questi cambiamenti, ä necessario usare la
+chiusura normale di &os2; almeno una volta.
+
+<P><LI><B>PerchÇ appaiono degli errori durante il salvataggio dei file INI?</B>
+<P>Questa ä una delle domande pió frequenti ed il problema ä cambiato nelle varie versioni.
+<UL><LI>Con le versioni <B>precedenti XFolder 0.85</B> il fenomeno era sopratutto causato da chiavi
+che non contenevano dati, cosa che non dovrebbe succedere. Questo problema ä stato corretto molto tempo fa.
+<P><LI>Molti perï hanno riportato che questi errori avvengono anche casualmente, con chiavi INI che
+<I>contengono</I> dati. Sono riuscito a rintracciare l'errore, legato a file
+INI molto grandi. Sospetto che il problema risieda nel PM stesso,
+dato che la API <CODE>WinGetLastError</CODE> spesso restituisce un errore
+<CODE>PMERR_MEMORY_ALLOCATION_ERR</CODE>, che viene descritto nella guida di
+riferimento a PM come "Un errore occorso durante la gestione della memoria.".
+Ritengo che, con file INI molto grandi, PM esaurisca la memoria condivisa usata per la gestione
+dei file INI. Il limite oltre cui l'errore si manifesta dipende dalla quantitÖ di memoria
+condivisa usata sulla macchina, ma usualmente ä oltre 1 MB per file INI.
+<P><B>Prima della V0.9.5</B> &xwp; usava PrfOpenProfile per creare un nuovo
+file INI (per i file INI utente e sistema, rispettivamente)
+e scorreva tutte le applicazioni e le chiavi nel profilo per copiarle direttamente.
+Questo causava un discreto stress alla gestione della memoria condivisa di PM.
+<P>Ridurre le dimensioni dei file INI migliorava le cose. Tra l'altro, non era solo la &xshutdown; a fallire
+nell'operare su questi file INI, ma ogni applicazione che copiasse i file di profilo utente e sistema byte per byte
+(ho verificato con WPSBackup, che crasha ugualmente, senza messaggi di errore).
+<P>Per ridurre le dimensioni dei file INI, prima di tutto si lanci CHECKINI (dal pacchetto WPTOOLS di Henk Kelder)
+per rimuovere le voci non valide.
+In pió, si usi un editor di file INI per cancellare le chiavi seguenti, che
+possono crescere molto <I>(fare prima una copia di riserva dei file INI!):</I>
+<UL><LI><CODE>PM_Abstract:Icons</CODE>: contiene le icone degli oggetti astratti.
+Cancellando questa chiave verranno perse le icone definite dall'utente per gli oggetti astratti,
+ma in molti casi i dati in essa sono ridondanti perchÇ, per esempio, i programmi (oggetti programma) usano
+comunque l'icona dell'eseguibile.
+<LI><CODE>PM_Workplace:FolderPos</CODE>: contiene le posizioni delle finestre di tutte le cartelle aperte
+dalla WPS, anche se una cartella ä stata aperta anni fa.
+Cancellando questa chiave le posizioni delle cartelle verranno perse, il che, eccezion fatta per forse una dozzina
+di cartelle, non dovrebbe essere un problema; queste ultime si potranno risistemare in poco tempo.
+</UL>
+<LI>Con la <B>V0.9.5</B> ho riscritto le routine, cosç che le API di PM non sono pió usate per creare
+i nuovi profili: dopo che Carsten Arnold mi ha aiutato a decifrare il formato dei file INI, ho scritto un
+nuovo insieme di routine, a quanto pare ben funzionanti, che salvano i file senza usare la memoria condivisa.
+Questo ä il "nuovo metodo" selezionabile dalla pagina "&xshutdown;" nel blocco appunti impostazioni della Scrivania.
+</UL>
+
+<P><LI><B>Dopo l'uso della &xshutdown;, al riavvio successivo lo schermo ä reimpostato in VGA, e appare
+una finestra di dialogo che dice che non ä stato possibile trovare la Scrivania. Cosa significa?</B>
+
+<P>‘ lo stesso problema descritto nella risposta precedente. Ovviamente, i file INI non
+sono stati salvati correttamente. Come risultato &os2; ritorna ai valori predefiniti per
+lo schermo e non riesce a trovare la scrivania.
+
+<P>Se questo accade, ä possibile trovare una copia di riserva di OS2.INI e OS2SYS.INI nella directory
+\OS2, rinominati come .BAK. Prima che la &xshutdown; salvi i file INI, rinomina i
+vecchi file. Si riavvii in linea di comando (usando Alt-F1 durante l'avvio) e si rinominino i file di
+riserva in *.INI.
+
+<P><LI><B>PerchÇ lo spegnimento APM non funziona sul mio sistema?</B>
+<P>Non lo so. Su alcuni sistemi, semplicemente, non funziona. Sono praticamente sicuro che non sia
+un problema di &xwp;, poichÇ &xwp; non fa altro che chiamare il driver
+<CODE>APM.SYS</CODE>, dopodichÇ non ha controllo sul comportamento del driver stesso.
+<P>IBM ha aggiornato il supporto APM con il Fixpak 6 di Warp 4 (e probabilmente con i successivi).
+La pagina "&xshutdown;" nel blocco appunti impostazioni della Scrivania mostra
+il livello di versione del driver APM installato, numero che dovrebbe
+essere almeno 1.2 per consentire il corretto spegnimento APM.
+<P>Il problema nella maggior parte dei casi sta perï nel fatto che
+molti sistemi non hanno un supporto compatibile al 100% da parte del BIOS!
+
+<P><LI><B>Lo spegnimento APM funziona, ma al riavvio successivo parte CHKDSK.</B>
+
+<P>Anche in questo caso &xwp; non puï fare molto. Io stesso rilevo questo problema sul mio
+portatile, anche se sulla mia macchina desktop non ci sono problemi.
+Apparentemente <CODE>APM.SYS</CODE> non aspetta abbastanza tempo e toglie l'alimentazione
+prima che il disco rigido abbia finito di svuotare la sua cache interna.
+Questo sembra essere un problema comune, che capita anche con Win95, per risolvere il quale
+si dovrÖ probabilmente disabilitare l'APM completamente.
+</OL>
+</BODY>
+</HTML>
+
+
+

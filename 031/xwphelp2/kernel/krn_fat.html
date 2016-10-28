@@ -1,0 +1,90 @@
+<HTML RESID=&ID_XSH_SETTINGS_HPFS;>
+<HEAD>
+    <TITLE>
+        &xwp;: FAT instellingen
+    </TITLE>
+</HEAD>
+<BODY>
+Op de "FAT" pagina van het "&os2; Kernel" object kunt u de <B>CONFIG.SYS</B> instellingen
+aanpassen die het FAT bestandssysteem be‹nvloeden.
+
+<P>Zie voor introductie informatie over bestandssystemen, de volgende lijst:
+<UL><LI><A HREF="glossary/gls_fs.html">Bestandssystemen</A>
+<LI><A HREF="glossary/gls_caches.html">Bestandssysteem buffers</A>
+
+</UL>Deze hulppagina zal de verschillende instellingen alleen verklaren en ze relateren aan
+de parameters van de <CODE>DISKCACHE</CODE> opdracht in het <B>CONFIG.SYS</B> bestand.
+
+<P>Zie de <A HREF="cmdref.inf#diskcache"><B>documentatie</B></A>
+in de <I>Handleiding bij opdrachten</I> voor details.
+
+<P>Druk op <B>"Toepassen"</B> om de door u aangebrachte aanpassingen weg te schrijven in het
+<B>CONFIG.SYS</B> bestand.
+Dit zal de <B>CONFIG.SYS</B> regels aanpassen die overeenkomen met de instellingen op deze
+pagina. De regels die overeenkomen met de andere pagina's in het "&os2; Kernel" object zullen
+niet worden aangepast.
+Let a.u.b. op dat u de computer moet herstarten om de aanpassingen te activeren.
+Een Werkplek herstart is <I>niet</I> voldoende.
+<P>Druk op <B>"Optimaliseer"</B> zodat &xwp; u nieuwe instellingen voorstelt op basis van
+uw systeem karakteristieken.
+<B>CONFIG.SYS</B> zal alleen aangepast worden nadat u op "Toepassen" gedrukt heeft.
+<P>Druk op <B>"Standaard"</B> om de standaard &os2; instellingen op de notitieblok pagina
+getoond te krijgen.
+De <B>CONFIG.SYS</B> zal alleen aangepast worden nadat u op "Toepassen" gedrukt heeft.
+
+<P>Deze pagina biedt u de mogelijkheid om de volgende FAT instellingen aan te passen:
+
+<UL><LI><B>Buffergrootte</B> bepaalt hoeveel KB van het hoofdgeheugen gereserveerd zal worden
+voor de buffer van het betreffende bestandssysteem.
+Dit komt overeen met de <B>DISKCACHE=xxx</B> parameter voor FAT stations in het <B>CONFIG.SYS</B>
+bestand.
+<P>De maximale buffergrootte voor FAT volumes is 14440 KB.
+
+<P>U kunt &os2; verzoeken om <B>automatisch</B> de buffergrootte te bepalen.
+In de meeste gevallen zal dit resulteren in ongeveer 10% van het ge‹nstalleerde
+geheugen, maar in het algemeen is het gebruik van deze instelling niet aan te raden.
+
+<P>Zie:
+<A HREF="glossary/gls_caches.html"><B>"Bestandssysteem buffers"</B></A>
+voor een algemene introductie in bestandssysteem buffers.
+
+<BR><LI>De instelling <B>"Buffer alleen bestanden kleiner dan"</B> bepaalt (in KB) de
+maximale grootte van objecten die opgeslagen worden in de buffers. Dit komt overeen met
+de tweede parameter in <B>DISKCACHE=xxx</B> voor FAT volumes.
+Deze instelling is bedoeld om te voorkomen dat grote bestanden, die normaliter slechts eenmalig
+geladen worden, de gehele buffer opslokken.
+Echter, de standaardwaarde van 4 KB is veel te laag. Het is aan te bevelen om de waarde
+voor beide bestandssystemen te verhogen naar 32 KB (&xwp; zal automatisch in het <B>CONFIG.SYS</B>
+bestand de FAT waarde vertalen naar de sector grootte die verwacht wordt.)
+
+<BR><LI>Het <B>"Automatische controle"</B> invoerveld komt overeen met de
+<B>/AC:xxx</B> parameter in <CITE>DISKCACHE=xxx</CITE> voor FAT volumes.
+Hier kunt u bepalen op welke volumes &os2; automatisch een <B>CHKDSK</B> moet uitvoeren bij
+opstarten van het systeem.
+
+<P>Voer hier simpelweg de respectievelijke stationsletters in (zonder de afsluitende "<B>:</B>").
+&os2; zal, als u uw systeem niet netjes afgesloten heeft, elk station dat u hier opgeeft controleren
+tijdens het opstarten van het systeem. Als u hier een plus teken opgeeft ("<B>+</B>")
+<I>voor</I> een stationsletter, dan zal dat station altijd gecontroleerd worden, wat niet echt
+aan te raden is.
+<P>Bijvoorbeeld: Als u invoert "<B>C+DE</B>", zal station D: altijd gecontroleerd worden, terwijl
+C: en E: alleen gecontroleerd worden indien nodig.
+
+<P>In tegenstelling tot HPFS stations, is automatische controle voor FAT volumes niet noodzakelijk.
+
+<P>Druk op de <B>"Voorstel"</B> knop om al de FAT volumes op uw systeem toegevoegd te krijgen
+aan het invoerveld.
+
+<BR><LI>De <B>"Vertraagd schrijven"</B> instelling bepaalt of &os2; gebruik mag maken van
+vertraagd schrijven naar het station.
+Zie:
+<A HREF="glossary/gls_caches.html"><B>"Bestandssysteem buffers"</B></A>
+voor een verklaring.
+
+<P>Deze instelling komt overeen met <CITE>LW</CITE> in de <CITE>DISKCACHE</CITE> opdracht voor FAT volumes.
+Standaard is vertraagd schrijven geactiveerd.
+
+</UL>
+</BODY>
+</HTML>
+

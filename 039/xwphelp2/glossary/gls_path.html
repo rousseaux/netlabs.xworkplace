@@ -1,0 +1,41 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: percorsi
+    </TITLE>
+</HEAD>
+<BODY>
+Ogni oggetto file-system (file o cartella) ha un <B>percorso</B>
+associato, che indica al sistema dove l'oggetto Š conservato, in 
+modo che le applicazioni vi possano far riferimento.
+
+<P>Il percorso Š formato dall'insieme delle directory che si devono
+aprire per raggiungere quel dato file (le directory rappresentano fisicamente 
+le &link_folders; sul disco).
+
+<P>Con percorso qualificato di un oggetto si intende il nome dell'unit… seguito da due punti
+(<CODE>:</CODE>), un backslash iniziale (<CODE>\</CODE>) per indicare l'indirizzario
+radice e poi l'elenco delle directory da aprire per raggiungere l'oggetto, ciascuna 
+separata da un backslash.
+
+<P>Se il percorso punta ad un file, ad es. un 
+<A HREF="objects/obj_dataf.html">file dati</A> o un 
+<A HREF="objects/obj_pgmf.html">file programma</A>,
+in fondo vi sar… il nome del file. Per esempio, &eexe; &os2; si trova 
+nella directory <CODE>OS2</CODE> sull'unit… di avvio. Il suo percorso completo Š
+
+<PRE>
+    X:\OS2\E.EXE
+</PRE>
+
+dove <CODE>X:</CODE> Š la lettera dell'unit… di avvio.
+
+<P>&os2; prevede diversi <B>percorsi di sistema</B> che specificano dove cercare
+un file se non ne viene specificato il percorso qualificato.
+Si veda <A HREF="glossary/gls_path_sys.html">"Percorsi di sistema"</A> per 
+spiegazioni ulteriori.
+
+<BR>
+</BODY>
+</HTML>
+

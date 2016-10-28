@@ -1,0 +1,102 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: priorit… dei sottoprocessi
+    </TITLE>
+</HEAD>
+<BODY>
+In generale, un sottoprocesso con una priorit… pi— alta ottiene maggior tempo di elaborazione di uno con
+priorita pi— bassa. Per la precisione, &os2; tiene conto della priorit… dei sottoprocessi solo
+se ve n'Š pi— di uno contrassegnato internamente come "pronto". 
+
+Infatti, i sottoprocessi in stato "bloccato" non potrebbero comunque usufruire della CPU, 
+perci• la loro priorit… viene ignorata finch‚ non si sbloccano. Si tenga presente che, in un sistema &os2;
+normale, la maggior parte dei sottoprocessi Š abitualmente in stato "bloccato".
+
+<P>&os2; controlla la priorit… dei sottoprocessi in maniera estremamente raffinata, differenziandola
+in quattro <B>classi di priorit…:</B>
+
+<OL><LI>La <B>priorit… "Idle time" ("momenti di inattivit…")</B> (1) Š la pi— bassa tra le classi 
+di priorit…: un sottoprocesso ottiene accesso al processore solo se nessun altro sottoprocesso con classe 
+di priorit… superiore Š attivo. I sottoprocessi di questa classe sono utili per sbrigare lavori che non 
+vanno svolti con urgenza, per i quali si pu• quindi aspettare che si liberi il processore. 
+
+<!-- V0.9.21 (2002-09-13) [umoeller]: removed this section
+Ne Š un esempio il
+<A HREF="glossary/gls_workerthr.html">sottoprocesso "Worker"</A> di &xwp;, che tiene traccia
+degli oggetti della Scrivania attivi nel sistema: Š un'attivit… che richiede molto tempo ma che non Š critica,
+perci• pu• essere svolta nei momenti di inattivit… del sistema.
+-->
+
+<P><LI>La <B>priorit… "Regular" ("normale")</B> (2) Š la classe cui appartengono la maggior parte 
+dei sottoprocessi. E' anche la classe di priorit… assunta da &os2; se un sottoprocesso non specifica 
+altrimenti la propria classe. &os2; varia dinamicamente il livello di priorit… tra i sottoprocessi appartenenti
+a questa classe (una spiegazione pi— dettagliata segue sotto), per garantire che nessun
+sottoprocesso "muoia di fame", non ricevendo mai tempo di elaborazione.
+
+<P><LI>La <B>priorit… "Foreground server ("server in primo piano")"</B> (4) Š la seconda 
+classe di priorit… pi— alta; vi appartengono sottoprocessi che non devono essere influenzati 
+dalle variazioni di priorit… dinamiche cui sono sottoposti i sottoprocessi "regular". Anche se 
+il valore di questa classe Š 4, i sottoprocessi "time-critical" hanno la priorit… rispetto a 
+quelli di questa classe. &os2; comunque modifica ulteriormente la priorit… di questi 
+sottoprocessi a seconda della loro attivit… effettiva e dell'attivit… del sistema.
+
+<P><LI>La <B>priorit… "Time-critical ("critico")"</B> (3) Š la classe di priorit…
+pi— alta prevista in &os2;. I sottoprocessi appartenenti a questa classe
+ricevono istantaneamente tempo di calcolo del processore e non vengono 
+interrotti finch‚ il loro compito non Š ultimato. La maggior parte dei programmi
+di controllo (driver) usano la CPU attraverso sottoprocessi di questa
+classe, che, proprio perch‚ non possono essere interrotti se non da altri 
+sottoprocessi "time-critical", devono usare la CPU per il minor tempo possibile; 
+in caso contrario potrebbero facilmente bloccare il sistema. 
+Anche se la CPU viene rilasciata con  <CODE>DosSleep(0)</CODE>
+(si vedano le informazioni relative a 
+<A HREF="cpref.inf#DosSleep"><CODE>DosSleep</CODE></A>
+nella documentazione del Toolkit<A HREF="_toolkitlink.html">*</A>),
+gli altri sottoprocessi "non-time-critical" non la possono
+sfruttare. Questa classe di priorit… Š perci• normalmente usata solo per
+per programmi di rete e di comunicazione in genere, o per i masterizzatori CD e
+applicazioni multimediali.
+
+</OL>All'interno di ciascuna classe di priorit…, un sottoprocesso pu• impostare un
+<B>livello di priorit….</B> Si tratta di un valore variabile tra 0 to +31 che 
+determina la precedenza di un sottoprocesso <I>all'interno</I> della classe di priorit… e
+che viene preso in considerazione solo se vi sono due sottoprocessi concorrenti 
+nella stessa classe di priorit….
+
+<P>Alcuni esempi:
+
+<UL><LI>Un sottoprocesso "regular" con livello di priorit… +31 supera un sottoprocesso "regular" 
+con livello di priorit… 0.
+
+<P>All'interno della classe di priorit… "regular", &os2; si assicura che nessun sottoprocesso 
+"muoia di fame" perch‚ non riesce mai ad accedere al processore: a tal fine, passato un certo 
+tempo, &os2; alza temporaneamente ed in maniera automatica il livello di priorit… dei 
+sottoprocessi pi— trascurati. Questo periodo di tempo Š determinato dall'impostazione <CODE>MAXWAIT</CODE>,
+nel file &cfgsys;. Inoltre &os2; aumenta temporaneamente la priorit… di un 
+sottoprocesso se questo deve ricevere immissioni dalla tastiera, se il processo cui il sottoprocesso
+appartiene Š in primo piano, o se il sottoprocesso ha I/E in corso.
+
+<P>Questi aggiustamenti dinamici hanno luogo solo se in &cfgsys; non Š
+presente il comando <CODE>PRIORITY=ABSOLUTE,</CODE> generalmente non
+raccomandato.
+<IFNDEF __NOOS2KERNEL__>
+Questa impostazione non Š presente nell'oggetto "Kernel &os2;" per questo motivo.
+</IFNDEF>
+
+<P><LI>Un sottoprocesso "time-critical" con livello di priorit… 0, appartenendo ad una classe
+di priorit… superiore, supera un 
+sottoprocesso "regular" con livello di priorit… +31. In questo caso non hanno effetto gli aggiustamenti dinamici
+di priorit…, dato che sono riservati ai soli sottoprocessi "regular". Finch‚ Š attivo
+un sottoprocesso critico, tutti i sottoprocessi normali languono.
+
+<P><LI>Lo stesso vale per un sottoprocesso regolare di livello di priorit…
+0 rispetto ad un sottoprocesso "idle-time" con livello di priorit… +31.
+
+<P><LI>Due sottoprocessi che abbiano esattamente la stessa priorit… funzioneranno "l'uno contro
+l'altro": &os2; ruoter… tra i due l'utilizzo della CPU.
+
+</UL>
+</BODY>
+</HTML>
+

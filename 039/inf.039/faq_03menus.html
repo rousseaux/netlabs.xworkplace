@@ -1,0 +1,135 @@
+<HTML NOSUBLINKS="xices" NOSUBLINKS="vers_" XPOS=right WIDTH=70%>
+<HEAD>
+    <TITLE>
+        FAQ: Domande sui menu
+    </TITLE>
+</HEAD>
+<BODY>
+<OL><LI><B>I menu sono troppo affollati. Che posso fare?</B>
+<P>Se i menu contestuali sono <STRONG>troppo affollati</STRONG>, ä possibile fare
+in modo che la WPS non mostri le voci di menu che sono "doppioni" delle operazioni del mouse
+("Copia", "Sposta", etc.).
+<UL>
+<P><LI>Su Warp 3 si puï aggiungere <CITE>SET MENUSTYLE=SHORT</CITE> nel file &cfgsys;.
+<P><LI>Su Warp 4 e superiori, c'ä una nuova impostazione nell'oggetto "Sistema", nella cartella
+"Impostazione del sistema", alla pagina "Menu". Questa impostazione ä presente
+anche nel blocco appunti impostazioni di ogni cartella; infine, ci sono le stringhe impostazioni 
+cartelle che permettono di regolare la visualizzazione individualmente per le singole cartelle. Si consulti 
+<A HREF="xices_30wpsstrings.html">"Stringhe di impostazione WPFolder"</A> per i dettagli.
+</UL><P>Inoltre, ä possibile cancellare molte delle voci di menu standard deselezionandole
+dalla pagina "Voci menu", nell'oggetto <A HREF="sys_2global.html">"Workplace Shell"</A>.
+<P>Le <B>funzioni di contenuto delle cartelle</B> sono utili, ma possono affollare troppo i menu
+contestuali se molte cartelle vengono dichiarate come favorite. Sul mio sistema ho creato 
+una cartella separata chiamata "Pió frequenti", che ho selezionato come mia sola cartella favorita.
+In questa cartella metto copie collegate delle cartelle a cui accedo pió di frequente, cosç ho una sola
+voce di menu contestuale, ma con un sottomenu contenente tutte le mie cartelle favorite.
+
+<P><LI><B>Quando seleziono una voce di menu contestuale, non viene eseguita la funzione di &xwp; 
+ma qualche altra funzione. Come mai?</B>
+<P>Probabilmente c'ä un conflitto tra ID di menu con qualche altra estensione della WPS. ‘ un problema noto
+con i collegamenti di rete. Si vada alla pagina "Paranoia", nell'oggetto "Impostazioni &xwp;",
+e si innalzi il valore di "Offset ID voci di menu in XWorkplace". Per i dettagli si prema il tasto "Aiuto".
+Con la V0.9.0 l'offset predefinito ä stato portato a 700, che dovrebbe essere adeguato nella maggior parte dei casi.
+
+<P><LI><B>Quando seleziono una funzione non compresa in &xwp;, questo comunque esegue una
+delle sue funzioni. Come mai?</B>
+<P>E' sempre il problema appena descritto.
+
+<P><LI><B>Quando apro un menu contestuale il sistema si blocca/impazzisce. Cosa posso fare?</B>
+<P>Le versioni precedenti la V0.82 erano in questo senso un buon test di prova per i driver video ;-)
+Alcuni driver video non supportavano la miscela di sfondo trasparente 
+per le bitmap usata da XFolder. Mentre alcuni driver ignoravano la trasparenza, 
+altri crollavano malamente bloccando l'intero sistema (specialmente i driver per Matrox Millenium).
+Con la V0.82 la funzione di stampa delle icone per i menu contestuali delle cartelle ä stata modificata in modo da usare
+icone regolari anzichÇ bitmap. La stampa delle icone ä ancora disabilitata inizialmente nel caso
+qualcosa dovesse andare male. Per abilitarla ä sufficiente attivare "Mostra icone", dalla pagina
+"Menu" in "Workplace Shell".
+
+<P>Se si incontrano ancora problemi, Ralph Scharpf riporta che ä possibile installare i driver
+IBM GRADD per le schede video MGA, che paiono funzionare. 
+<!-- Levato da me - Sfortunatamente queste schede non supportano 1024x768 a pió di 60 Hz, 
+ma se se ne puï fare a meno e usare solo gli 800x600, questa pare una soluzione valida. -->
+
+<P><LI><B>PerchÇ i menu di contenuto delle cartelle non funzionano con le cartelle sul Pannello di Avvio?</B>
+<P>Il Pannello di Avvio non ä una cartella. &xwp;, per ricevere i messaggi di sistema all'atto dell'apertura dei menu,
+ossia quando le voci variabili di menu vengono inserite nei menu contestuali, agisce sulla procedura di controllo della
+finestra principale. Dato che il Pannello di Avvio non usa la procedura predefinita per le cartelle, il sistema usato
+normalmente da &xwp; non funziona.
+
+<P><LI><B>Ho aggiunto un oggeto nella Cartella di configurazione, che perï non appare nei menu.
+‘ un problema di compatibilitÖ?</B>
+<P>Probabilmente no. Dalla V0.70, &xwp; usa gli attributi estesi <CITE>.ICONPOS</CITE> della cartella
+di configurazione e delle sue sottocartelle per determinare l'ordine degli oggetti da visualizzare.
+Questo attributo ä aggiornato dalla WPS solo dopo la chiusura della cartella, e solo se la
+cartella ä stata aperta in visualizzazione ad icone o in visualizzazione dettagli. 
+Per risolvere il problema basta aprire la cartella in modalitÖ di visualizzazione dettagli e poi richiuderla.
+
+<P><LI><B>Come ottengo nelle voci di menu i caratteri sottolineati per le scorciatoie da tastiera?</B>
+<P>Basta porre un carattere tilde (<CITE>"~"</CITE>) davanti alla lettera desiderata nel nome dell'oggetto programma:
+verrÖ sottolineato il carattere successivo nella voce di menu, permettendo di usarlo
+come scorciatoia da tastiera quando il menu contestuale viene mostrato.
+<P>(Questo ä differente dai
+<A HREF="fldr_5xelerators.html">tasti rapidi cartella</A> che &xwp; aggiunge alle cartelle aperte.)
+<P>Esempio: <CITE>~finestra comandi &os2;</CITE> renderÖ la "f" una scorciatoia
+nel menu contestuale.
+<P>Ci si accerti di aver selezionato "Eliminare ''~'' dai titoli delle finestre", nell'oggetto
+<A HREF="sys_2global.html">"Workplace Shell"</A> alla pagina "Voci cartella configurazione".
+
+<P><LI><B>Ho aggiunto un oggetto programma alla cartella di configurazione, ma quando dal menu
+lo seleziono, appare un messaggio d'errore del programma. Cosa sto sbagliando?</B>
+<P>Probabilmente ä necessario porre un carattere <CITE>"%"</CITE> nel campo "Parametri"
+dell'oggetto programma, per evitare che &xwp; passi il nome della cartella come parametro.
+Si consulti (premendo F1) l'aiuto contestuale della Cartella di configurazione di &xwp; per i dettagli.
+
+<P><LI><B>Ho aggiunto una copia collegata alle cartelle di configurazione, ma non funziona come
+con gli altri oggetti. Cosa sto sbagliando?</B>
+<P>&xwp; apre le copie collegate degli oggetti programma 
+nella cartella di configurazione, ma non ne cambia le directory nÇ i parametri.
+Non ä un difetto ma una limitazione intenzionale posta per sicurezza.
+Nelle cartelle di configurazione ä meglio creare una copia dell'oggetto piuttosto che una copia
+collegata.
+Consultare l'aiuto in linea della Cartella di configurazione di &xwp; per dettagli.
+
+<P><LI><B>Come posso eseguire un comando dell'interprete comandi CMD.EXE?</B>
+<P>Per i comandi di CMD.EXE (come <CITE>REN</CITE>, <CITE>COPY</CITE>,
+<CITE>DEL</CITE>, <CITE>CD</CITE>) si crei un oggetto programma nella Cartella di
+configurazione di &xwp;, con
+<CITE>CMD.EXE</CITE> in "Percorso e nome programma" e 
+<CITE>/C &lt;comando&gt;</CITE> nel campo "Parametri".
+<P>Esempio, per cancellare il contenuto di una cartella:
+porre <CITE>CMD.EXE</CITE> nel campo "Percorso" e
+<CITE>/C DEL *</CITE> nel campo "Parametri"
+(esempio da NON usare in pratica!).
+
+<P><LI><B>Come posso usare il REXX per la manipolazione della WPS?</B>
+<P>Ho incluso in appendice delle informazioni aggiuntive che penso possano
+risultare utili:
+<UL>
+<P><LI>una lista completa di tutte le <A HREF="xices_30wpsstrings.html">stringhe impostazione WPS</A>;
+<P><LI>un insieme di <A HREF="xices_2wpsobjids.html">ID Oggetto</A> predefinite in &os2;;
+<P><LI>un diagramma della <A HREF="xices_1wpsclasses.html">gerarchia delle classi WPS</A>.
+</UL><P>Se non si ä familiari con il REXX, si puï copiare e modificare il file
+<CITE>ALWSSORT.CMD</CITE> nella cartella di installazione di
+&xwp; per provare alcune impostazioni delle cartelle. Si consulti la pagina
+<A HREF="080related.html">"File correlati"</A> per altre informazioni.
+<P>In aggiunta, raccomando fortemente il testo in linea "Rexx Tips&amp;Tricks" di Bernd Schemmer,
+scaricabile come "rxtt30.zip" (o superiore) da Hobbes.
+
+<P><LI><B>PerchÇ non posso aprire pió istanze di un oggetto dalla cartella di configurazione?</B>
+<P>Se si creano oggetti programma che si vogliono poi aprire pió volte da cartelle differenti
+(per es., oggetti linea di comando), ci si assicuri di aver selezionato
+l'opzione "Crea nuova finestra" nella pagina "Finestra" del blocco impostazioni dell'oggetto.
+In caso contrario &os2; non aprirÖ una nuova finestra ma semplicemente riproporrÖ
+quella giÖ aperta.
+
+<P><LI><B>Ho cancellato la Cartella di configurazione di &xwp;. Come la posso ricreare?</B>
+<P>E' sufficiente aprire l'oggetto <A HREF="sys_2global.html">"Impostazioni &xwp;"</A> alla pagina
+"Oggetti" e premere il tasto relativo.
+
+</OL>
+<BR>
+</BODY>
+</HTML>
+
+
+

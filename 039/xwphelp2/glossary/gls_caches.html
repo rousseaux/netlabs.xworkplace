@@ -1,0 +1,63 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: cache dei file system
+    </TITLE>
+</HEAD>
+<BODY>
+Le memorie cache nei file system sono un meccanismo utilizzato ormai dalla gran parte dei
+sistemi operativi per limitare la necessit… di accesso alle unit… disco. A questo scopo, una 
+parte della memoria fisica del computer (RAM) viene utilizzata per immagazzinare dati letti dal
+e scritti sul disco. Questa area di memoria Š chiamata "cache".
+
+<P>Si veda <A HREF="glossary/gls_fs.html">"I file system"</A> per un'introduzione sui vari file system.
+
+<P>Non bisogna confondere la cache del file system con altri tipi di cache presenti nel sistema,
+come le memorie cache del processore o altri tipi ancora di cache hardware che possono essere integrate
+nelle unit… disco. Il concetto alla base di tutte queste memorie Š lo stesso (ridurre gli accessi lenti sostituendoli
+con l'uso di memoria rapida), ma di queste ultime non si parla in questa pagina.
+
+<P>Se un'applicazione richiede dati del disco che sono ancora presenti nella  cache
+del file system, &os2; non va a leggere sul disco, ma si basa sui dati nella memoria, il
+che Š molto pi— veloce.
+
+<P>Analogamente, se un'applicazione deve scrivere dati sul disco, &os2; innanzitutto copia
+questi dati nella cache e ritarda la scrittura sul disco finch‚ il disco non Š libero o il sistema
+non ha altro da fare. Questo accorgimento Š chiamato <B>"lazy writing"</B> (scrittura ritardata) e 
+permette di migliorare sensibilmente il rendimento del sistema. 
+D'altro canto, in questa maniera si aumenta la possibilit… di perdere dati in casi di interruzione
+dell'alimentazione o di blocchi del sistema, dato che in casi del genere i dati nella cache si perdono
+istantaneamente. E' comunque senz'altro opportuno abilitare la scrittura ritardata se si ha un sistema
+&os2; ragionevolmente stabile e i CHKDSK all'avvio sono rari.
+
+<P>&os2; prevede memorie cache separate per ciascun file system installato. Il che significa che,
+per es., tutti i volumi FAT condividono una loro cache, mentre i volumi HPFS ne hanno un'altra.
+Tali cache si configurano separatamente con differenti impostazioni nel file
+&cfgsys;.
+<IFNDEF __NOOS2KERNEL__>
+Per modificare tali impostazioni si pu• usare
+l'oggetto <A HREF="objects/obj_krnl.html">"Kernel &os2;"</A>.
+In questo oggetto, le impostazioni relative ad HPFS si trovano nella 
+pagina "Programmi di controllo", assieme a quelle degli altri file system installabili (IFS). 
+Dato invece che la FAT Š integrata nel kernel di &os2; Š presente una pagina dedicata alla sola FAT.
+</IFNDEF>
+
+<P>Si tenga ben presente che la memoria riservata alla cache per i file system non
+Š utilizzabile per altri scopi: se si riserva una quantit… eccessiva di memoria cache, si avr…
+un impatto negativo sulle prestazioni generali del sistema, dato che &os2; dovr… spendere molto
+tempo scrivendo e leggendo sul file di appoggio. E' quindi opportuno considerare con attenzione
+quali impostazioni specificare.
+
+<P>In linea di massima, maggiore Š la quantit… di memoria presente nel sistema, maggiore Š
+la quantit… da riservare alla cache. Si consideri inoltre quali sono i file system pi— comunemente
+utilizzati: Š inutile riservare molto spazio alla cache per i volumi FAT se si lavora
+per lo pi— su volumi HPFS.
+
+<P>Questo oggi non Š pi— un grosso problema, considerando la quantit… di memoria di cui
+dispongono i computer moderni. Tuttavia, se si hanno solo 16 MB di RAM o meno, 
+non si riservino complessivamente pi— di 1024 KB per la cache dei vari file system.
+
+<BR>
+</BODY>
+</HTML>
+

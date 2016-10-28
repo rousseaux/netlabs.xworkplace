@@ -1,0 +1,96 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: Thread prioriteiten
+    </TITLE>
+</HEAD>
+<BODY>
+In het algemeen krijgt een thread met een hogere prioriteit meer processortijd
+dan ‚‚n met een lagere prioriteit. Om preciezer te zijn, &os2; kijkt naar thread
+prioriteiten als meer dan ‚‚n thread intern gemerkt is met "klaar".
+
+<P>Daar tegenover staat dat threads die nu geblokkeerd zijn in het geheel geen CPU tijd
+nodig hebben. Prioriteiten doen er dan niet toe totdat de blokkering wordt opgeheven. Merk op dat
+op uw &os2; systeem het grootste gedeelte van de threads, in tijd gezien, ieder moment
+in "geblokkeerde" status staan.
+
+<P>&os2; is in staat om de thread prioriteiten op een zeer verfijnde wijze te beheren.
+Het onderscheidt vier <B>prioritietsklassen:</B>
+
+<OL><LI><B>"Idle time priority"</B> (1) is de laagste prioriteitsklasse. Dit betekent
+dat een thread alleen maar processortijd krijgt als er geen threads lopen met een hogere
+prioriteitsklasse. Zulke threads zijn nuttig voor het weghalen van werk dat moet worden
+gedaan, maar dat kan worden uitgesteld totdat de computer er tijd voor heeft.
+
+<P><LI><B>"Regular priority"</B> (2) is de prioriteitsklasse die door de meeste threads
+wordt gebruikt. Het is tevens de standaard &os2; prioriteitsklasse voor een thread als deze
+zijn prioriteit niet expliciet wijzigt. &os2; varieert dynamisch prioriteitsniveaus tussen
+threads van deze klasse (meer daarover hieronder) om er zeker van te zijn dat geen enkele
+thread met deze klasse "gebrek lijdt" d.w.z. geen processortijd krijgt.
+
+<P><LI><B>"Foreground server priority"</B> (4) is de tweede hoogste prioriteitsklasse
+voor threads die niet willen worden be‹nvloed door de dynamische prioriteitsvariaties die
+op "vaste" klasse typen worden uitgevoerd.
+Merk op dat zelfs, al heeft deze klasse de waarde 4, tijdkritische threads de prioriteit
+overnemen van threads uit deze klasse. &os2; doet toch enige prioriteitsvariaties met
+deze klasse gebaseerd op de activiteit van de thread en het systeem.
+
+<P><LI><B>"Time-critical priority"</B> (3) is de hoogste prioriteitsklasse in &os2;.
+Een thread met een tijdkritische prioriteit zal onmiddellijk processortijd krijgen en
+zal niet worden onderbroken totdat zijn werk klaar is.
+Veel apparatuur stuurprogramma's zullen de CPU alleen maar afstaan aan threads met deze
+prioriteitsklasse.
+
+<P>Zo'n thread moet alleen maar de kortst mogelijke CPU tijd gebruiken omdat hij niet
+onderbroken kan worden (behoudens door andere tijdkritische threads) en kan eenvoudig
+het systeem laten 'hangen'.
+Zelfs als het de CPU afstaat via <CODE>DosSleep(0)</CODE> (zie de documentatie voor
+<A HREF="cpref.inf#DosSleep"><CODE>DosSleep</CODE></A>
+in de Toolkit documentatie
+<A HREF="_toolkitlink.html">*</A>),
+zullen andere niet tijdkritische threads niet lopen.
+Deze klasse wordt daarom normaliter alleen maar gebruikt voor netwerk- en andere
+communicatie- of CD-writer- en andere multimedia programmatuur.
+
+</OL>Binnen iedere prioriteitsklasse kan een thread een <B>prioriteitsniveau</B> instellen.
+Dit is een waarde tussen 0 en +31 die de voorrang aangeeft van een thread <I>binnen</I> een
+prioriteitsklasse en waar alleen maar rekening mee gehouden wordt als twee threads van dezelfde
+prioriteitsklasse met elkaar wedijveren.
+
+<P>Een paar voorbeelden:
+
+<UL><LI>een "vaste" thread met een prioriteitswaarde van +31 overtreft een "vaste"
+thread met prioriteitswaarde 0.
+
+<P>Binnen de "regular priority" klasse echter zorgt &os2; ervoor dat geen thread
+"gebrek lijdt", d.w.z. nooit processortijd krijgt, door dynamisch de prioriteit van
+threads automatisch na verloop van tijd te verhogen. Deze tijdsperiode wordt ingesteld
+door de <CODE>MAXWAIT</CODE> instelling in de &cfgsys;.
+Bovendien verhoogt &os2; de prioriteit van een thread tijdelijk als het invoer van het
+toetsenbord moet ontvangen, als het proces of de thread op de voorgrond loopt of als
+de thread op dit moment I/O aan het uitvoeren is.
+
+<P>Deze dynamische afregelingen worden alleen dan uitgevoerd als de &cfgsys; niet de opdracht
+<CODE>PRIORITY=ABSOLUTE</CODE> bevat, die niet wordt aanbevolen.
+<IFNDEF __NOOS2KERNEL__>
+(Daarom zult u deze instelling niet in het
+<A HREF="objects/obj_krnl.html">"&os2; Kernel"</A>
+object vinden.)
+</IFNDEF>
+
+<P><LI> Een "tijdkritische" thread met prioriteitswaarde 0 overtreft nog steeds een
+"vaste" thread met prioriteitswaarde +31 omdat die behoort tot een hogere prioriteits
+klasse. In dit geval hebben de dynamische prioriteitsaanpassingen geen invloed, omdat zij
+alleen betrekking hebben op de uitvoer van "vaste" threads. Terwijl de tijdkritische
+thread loopt, lijden alle "vaste" threads gebrek.
+
+<P><LI>Hetzelfde geldt, b.v., voor een "vaste thread" met prioriteitswaarde 0 en een
+"wachttijd" thread met prioriteitswaarde +31.
+
+<P><LI>Twee threads echter met precies dezelfde prioriteit lopen "tegen" elkaar,
+d.w.z. &os2; bewaakt een alternatief CPU eigendom tussen hen.
+
+</UL>
+</BODY>
+</HTML>
+

@@ -1,0 +1,48 @@
+<HTML RESID=&ID_XSH_SETTINGS_ERRORS;>
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: errori
+    </TITLE>
+</HEAD>
+<BODY>
+Da questa pagina Š possibile modificare alcune delle impostazioni del file &cfgsys; che determinano la gestione degli 
+errori da parte di &os2;.
+<P>Se le informazioni riguardanti &cfgsys; in questa pagina dovessero essere insufficienti, fare riferimento a
+<I>&os2; - Riferimento per i comandi</I>.
+
+<P>Premere <B>"Applica"</B> per salvare 
+ nel file &cfgsys; le modifiche effettuate.
+Quest'azione influenza solo le linee di &cfgsys; corrispondenti alle impostazioni modificate da questa 
+pagina. Le linee corrispondenti alle altre pagine dell'oggetto "Kernel &os2;" non
+verranno cambiate.
+Il bottone Š attivo solo se si sono effettuati dei cambiamenti nella pagina. Nota bene: Š necessario riavviare il sistema perch‚ i cambiamenti apportati 
+abbiano effetto. Il solo riavvio della Scrivania <I>non</I> Š sufficiente.
+<P>Premere <B>"Ottimizza"</B> perch‚ sia &xwp; a proporre le impostazioni migliori in accordo con le 
+caratteristiche del sistema.
+Anche in questo caso &cfgsys; verr… modificato solo selezionando "Applica".
+<P>Premere <B>"Valore assunto"</B> perch‚ vengono caricate nella pagina le impostazioni predefinite di &os2;.
+Anche in questo caso &cfgsys; verr… modificato solo selezionando "Applica".
+
+<P>Abilitando <B>"Elimina segnalazione errori hardware"</B> spariranno i noiosi messaggi di errore &os2; 
+riguardanti unit… disco non pronte e altri errori hardware.
+Con quest'opzione abilitata, &os2; riporta automaticamente l'errore all'applicazione,
+come accadrebbe selezionando "Restituisci il codice d'errore all'applicazione" nella 
+finestra bianca d'errore che appare in questi casi. Corrisponde all'impostazione 
+<CITE>AUTOFAIL=YES</CITE>.
+
+<P>Abilitare l'opzione <B>"Elimina segnalazione incongruenze"</B> impedisce la comparsa di finestre 
+con messaggi d'eccezione, che verranno soltanto scritti nel file 
+<CITE>POPUPLOG.OS2</CITE> nell'indirizzario radice del disco specificato.
+Questa impostazione corrisponde a 
+<CITE>SUPPRESSPOPUPS=x</CITE>. Notare che da &warp; 3 fixpak 29
+questo file Š comunque scritto sul disco di avvio, anche se l'impostazione non Š abilitata.
+
+<P>Se viene abilitata l'opzione <B>"Riavvio automatico in caso di errore TRAP"</B>, &os2; riavvier…
+automaticamente il sistema in caso di messaggio di errore irrecuperabile del tipo
+"Il sistema si Š fermato". Questa impostazione Š utile per macchine che debbono restare in servizio senza
+interruzioni, ad es. i server di rete.
+<BR>
+</BODY>
+</HTML>
+

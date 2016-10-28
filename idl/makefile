@@ -1,0 +1,220 @@
+#
+# makefile:
+#       makefile for IDL directory.
+#       For use with IBM NMAKE, which comes with the IBM compilers,
+#       the Developer's Toolkit, and the DDK.
+#
+#       Called from:    main makefile
+#
+#       Input:          ./*.IDL
+#
+#       Output:         ../include/classes/*.h
+#                       ../include/classes/*.ih
+#                       ../src/classes/*.c
+#
+
+# Say hello to yourself.
+!if [@echo +++++ Entering $(MAKEDIR)]
+!endif
+
+!include ..\config.in
+!include ..\make\setup.in
+
+# Define the suffixes for files which NMAKE will work on.
+# .SUFFIXES is a reserved NMAKE keyword ("pseudotarget") for
+# defining file extensions that NMAKE will recognize in inference
+# rules.
+.SUFFIXES: .idl .h .ih .def
+
+# OUTPUTDIR specifies the directory where we will put the
+# files created by this makefile.
+OUTPUTDIR = $(PROJECT_BASE_DIR)\include\classes
+
+# Some SOM variables. You won't have to change these.
+SOMTEMP = $(TEMP)
+!if [set SOMTMP=$(TEMP)] || \
+    [set SMTMP=$(SOMTEMP)] || \
+    [set SMEMIT=ih;h;c] || \
+    [set SMADDSTAR=1] || \
+    [set SMNOTC=1] || \
+#   hacked up SMINCLUDE to make sure idl\wps is before toolkit idl\
+#   V0.9.20 (2002-07-25) [umoeller]
+# @@changed V1.0.9 (2011-09-05) [rwalsh]: added support for SMBASE
+    [set SMINCLUDE=$(PROJECT_BASE_DIR)\idl\wps;$(SMINCLUDE);$(TKBASE)\idl;$(SMBASE)\include;.]
+!endif
+
+!if [@echo    SMINCLUDE is $(SMINCLUDE)]
+!endif
+
+# SMTMP=$(SOMTEMP)
+# SMEMIT=ih;h;c
+# SMADDSTAR=1
+# SMNOTC=1
+
+# Specify the main target.
+
+all: \
+# added all the following from wps\ to avoid problems with warp 4 toolkit
+# V0.9.20 (2002-07-31) [umoeller]
+    $(OUTPUTDIR)\wps\wpdataf.h \
+    $(OUTPUTDIR)\wps\wpdesk.h \
+    $(OUTPUTDIR)\wps\wpdisk.h \
+    $(OUTPUTDIR)\wps\wpfolder.h \
+    $(OUTPUTDIR)\wps\wpfsys.h \
+    $(OUTPUTDIR)\wps\wpkeybd.h \
+    $(OUTPUTDIR)\wps\wpmouse.h \
+    $(OUTPUTDIR)\wps\wpobject.h \
+    $(OUTPUTDIR)\wps\wppgm.h \
+    $(OUTPUTDIR)\wps\wppgmf.h \
+    $(OUTPUTDIR)\wps\wpshadow.h \
+    $(OUTPUTDIR)\wps\wpsound.h \
+    $(OUTPUTDIR)\wps\wpsystem.h \
+    $(OUTPUTDIR)\xcenter.h \
+    $(OUTPUTDIR)\xclslist.h \
+!ifdef XWP_DEBUG_CLASSES    #changed V1.0.9 (2011-10-21) [rwalsh]: added XWP_DEBUG_CLASSES
+    $(OUTPUTDIR)\xdebug.h \
+    $(OUTPUTDIR)\xdebug_folder.h \
+!endif
+    $(OUTPUTDIR)\xfdataf.h \
+    $(OUTPUTDIR)\xfdesk.h \
+    $(OUTPUTDIR)\xfdisk.h \
+    $(OUTPUTDIR)\xfldr.h \
+    $(OUTPUTDIR)\xfobj.h \
+    $(OUTPUTDIR)\xfont.h \
+    $(OUTPUTDIR)\xfontfile.h \
+    $(OUTPUTDIR)\xfontobj.h \
+    $(OUTPUTDIR)\xwppgmf.h \
+    $(OUTPUTDIR)\xfstart.h \
+    $(OUTPUTDIR)\xfshut.h \
+    $(OUTPUTDIR)\xfsys.h \
+    $(OUTPUTDIR)\xfwps.h \
+    $(OUTPUTDIR)\xtrash.h \
+    $(OUTPUTDIR)\xtrashobj.h \
+    $(OUTPUTDIR)\xmmcdplay.h \
+    $(OUTPUTDIR)\xmmvolume.h \
+    $(OUTPUTDIR)\xwpadmin.h \
+    $(OUTPUTDIR)\xwpfsys.h \
+    $(OUTPUTDIR)\xwpkeybd.h \
+    $(OUTPUTDIR)\xwpmedia.h \
+    $(OUTPUTDIR)\xwpmouse.h \
+    $(OUTPUTDIR)\xwpnetwork.h \
+    $(OUTPUTDIR)\xwpnetsrv.h \
+    $(OUTPUTDIR)\xwppgm.h \
+    $(OUTPUTDIR)\xwpsetup.h \
+    $(OUTPUTDIR)\xwpscreen.h \
+    $(OUTPUTDIR)\xwpshadow.h \
+    $(OUTPUTDIR)\xwpsound.h \
+    $(OUTPUTDIR)\xwpstring.h \
+    $(OUTPUTDIR)\xwpvcard.h
+    @echo ----- Leaving $(MAKEDIR)
+
+# Now define inference rules for what to do with certain file
+# types, based on their file extension.
+# The syntax we need here is ".fromext.toext".
+# So whenever NMAKE encounters a .toext file, it
+# executes what we specify here.
+# The ugly {} brackets are some awkward syntax for specifying
+# files in other directories.
+
+RUNSC = sc -p -v -r -maddstar -mnoint -S128000 -C128000
+
+# 1) inference rule for hacked-up IBM WPS classes
+
+# -- emit .IH, .DEF files when .IDL has changed
+{wps}.idl{$(OUTPUTDIR)\wps}.h:
+# emit H, IH (include\classes):
+        $(RUNSC) -d$(OUTPUTDIR)\wps -sh;ih wps\$(@B).idl
+# cleanup IH: this removes the ugly #pragma's for VAC++ 3.0
+        $(RUN_STRRPL) $(OUTPUTDIR)\wps\$(@B).ih "#pragma checkout(suspend)" " "
+        $(RUN_STRRPL) $(OUTPUTDIR)\wps\$(@B).ih "#pragma checkout(resume)" " "
+
+# 2) inference rule for XWP classes
+
+# -- emit .IH, .DEF files when .IDL has changed
+.idl{$(OUTPUTDIR)}.h:
+# emit H, IH (include\classes):
+        $(RUNSC) -d$(OUTPUTDIR) -sh;ih $(@B).idl
+# emit C (src\classes):
+        $(RUNSC) -d$(PROJECT_BASE_DIR)\src\classes -sc $(@B).idl
+# emit DEF (this dir):
+        $(RUNSC) -sdef $(@B).idl
+# cleanup IH: this removes the ugly #pragma's for VAC++ 3.0
+        $(RUN_STRRPL) $(OUTPUTDIR)\$(@B).ih "#pragma checkout(suspend)" " "
+        $(RUN_STRRPL) $(OUTPUTDIR)\$(@B).ih "#pragma checkout(resume)" " "
+
+# Now define dependencies to recreate the .H, .IH etc. files
+# using the SOM inference rule above.
+
+# Special macros used here: $(@B) is the current target w/out ext.
+
+$(OUTPUTDIR)\xcenter.h:          $(@B).idl
+
+$(OUTPUTDIR)\xclslist.h:         $(@B).idl
+
+$(OUTPUTDIR)\xdebug.h:           $(@B).idl
+
+$(OUTPUTDIR)\xdebug_folder.h:    $(@B).idl
+
+$(OUTPUTDIR)\xfdataf.h:          $(@B).idl wps\wpdataf.idl
+
+$(OUTPUTDIR)\xfdesk.h:           $(@B).idl wps\wpdesk.idl
+
+$(OUTPUTDIR)\xfdisk.h:           $(@B).idl wps\wpdisk.idl
+
+$(OUTPUTDIR)\xfldr.h:            $(@B).idl wps\wpfolder.idl
+
+$(OUTPUTDIR)\xfobj.h:            $(@B).idl wps\wpobject.idl
+
+$(OUTPUTDIR)\xfont.h:            $(@B).idl wps\wpfolder.idl
+
+$(OUTPUTDIR)\xfontfile.h:        $(@B).idl wps\wpdataf.idl
+
+$(OUTPUTDIR)\xfontobj.h:         $(@B).idl
+
+$(OUTPUTDIR)\xfstart.h:          $(@B).idl xfldr.idl
+
+$(OUTPUTDIR)\xfshut.h:           $(@B).idl xfldr.idl
+
+$(OUTPUTDIR)\xfsys.h:            $(@B).idl wps\wpsystem.idl
+
+$(OUTPUTDIR)\xfwps.h:            $(@B).idl wps\wpsystem.idl
+
+$(OUTPUTDIR)\xtrash.h:           $(@B).idl wps\wpfolder.idl
+
+$(OUTPUTDIR)\xtrashobj.h:        $(@B).idl
+
+$(OUTPUTDIR)\xmmcdplay.h:        $(@B).idl
+
+$(OUTPUTDIR)\xmmvolume.h:        $(@B).idl
+
+$(OUTPUTDIR)\xwpfsys.h:          $(@B).idl wps\wpfsys.idl
+
+$(OUTPUTDIR)\xwpadmin.h:         $(@B).idl
+
+$(OUTPUTDIR)\xwpkeybd.h:         $(@B).idl wps\wpkeybd.idl
+
+$(OUTPUTDIR)\xwpmedia.h:         $(@B).idl
+
+$(OUTPUTDIR)\xwpmouse.h:         $(@B).idl wps\wpmouse.idl
+
+$(OUTPUTDIR)\xwpnetwork.h:       $(@B).idl
+
+$(OUTPUTDIR)\xwpnetsrv.h:        $(@B).idl
+
+$(OUTPUTDIR)\xwppgm.h:           $(@B).idl wps\wppgm.idl
+
+$(OUTPUTDIR)\xwppgmf.h:          $(@B).idl wps\wppgmf.idl
+
+$(OUTPUTDIR)\xwpscreen.h:        $(@B).idl
+
+$(OUTPUTDIR)\xwpsetup.h:         $(@B).idl
+
+$(OUTPUTDIR)\xwpshadow.h:        $(@B).idl wps\wpshadow.idl
+
+$(OUTPUTDIR)\xwpsound.h:         $(@B).idl wps\wpsound.idl
+
+$(OUTPUTDIR)\xwpstring.h:        $(@B).idl
+
+$(OUTPUTDIR)\xwpvcard.h:         $(@B).idl
+
+

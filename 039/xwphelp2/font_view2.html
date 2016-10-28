@@ -1,0 +1,57 @@
+<HTML RESID=&ID_XSH_FONTSAMPLEHINTS;>
+<HEAD>
+    <TITLE>
+        &xwp;: geometrie dei font
+    </TITLE>
+</HEAD>
+<BODY>
+Nella <A HREF="font_view.html">vista di esempio</A> dell'oggetto tipo di carattere sono
+visualizzabili quattro diverse geometrie di riferimento, attivabili o disattivabili a piacere dal
+<A HREF="glossary/gls_popmenu.html">&popmenu;e</A>.
+Se tutte e quattro le impostazioni sono abilitate, questo sar… l'aspetto delle linee di testo nell'esempio
+tipo di carattere:
+
+<BR><IMG SRC="img/fonthint.gif">
+
+<P>Le differenti geometri hanno il significato seguente:
+
+<OL><LI>La linea rossa subito sotto i caratteri "72" nell'esempio Š la
+<B>linea di base,</B> su cui "poggia" il carattere. La maggior parte dei caratteri stanno al
+di sopra di questa linea, eccezion fatta per quelli che hanno delle parti discendenti (come i
+caratteri <CODE>g</CODE> e <CODE>y</CODE>). Tutte le altre geometrie sono in relazione alla
+linea di base (per i programmatori: la linea di base rappresenta la coordinata y
+a tutte le chiamate <CODE>GpiCharString*</CODE>).
+
+<P><LI>Il rettangolo in grigio chiaro alla sinistra di ogni linea (contrassegnato con <B>A</B>
+nell'immagine di esempio) rappresenta l'<B>ascendente massimo</B> del carattere (ma Š in realt… di pi—
+-- si veda <B>C</B> qui sotto). E' la quantit… di spazio necessaria al font
+al di sopra della linea di base (per i programmatori, Š contenuto nel campo <CODE>lMaxAscender</CODE>
+della struttura
+<A HREF="pmref.inf#fontmetrics"><CODE>FONTMETRICS</CODE></A> &os2;).<A HREF="_toolkitlink.html">*</A>
+
+<P>All'opposto, il rettangolo in grigio scuro (contrassegnato da <B>B</B>) rappresenta il
+<B>discendente massimo</B> del carattere (<CODE>FONTMETRICS.lMaxDescender</CODE>).
+E' l'ammontare di spazio massimo necessario per un carattere come <CODE>g</CODE> o <CODE>y</CODE>
+al di sotto della linea di base (in realt… Š di pi— -- si veda <B>2</B> qui sotto).
+
+<P><LI>Le linee verticali in grigio scuro (contrassegnate da <B>C</B>) rappresentano il
+<B>margine interno</B> (<CODE>FONTMETRICS.lInternalLeading</CODE>). E' quella parte di
+"ascendente massimo" (A) che il font riserva per la spaziatura.
+Dato che, nella maggior parte dei font, il valore dell'ascendente massimo (A) Š superiore allo
+spazio realmente usato verso l'alto dal carattere, tale valore si pu• sottrarre all'ascendente
+massimo per ottenere l'estensione "reale" dei caratteri al di sopra della linea di base.
+
+<P><LI>I due rettangoli rossi con righe diagonali (contrassegnati da <B>1</B> e <B>2</B>)
+rappresentano <B>ascendente e discendente per i caratteri minuscoli</B>. Nella <I>PM Programming Reference</I>
+si specifica che questa Š l'estensione massima occupata al di sopra della linea di base dal
+carattere minuscolo pi— alto. Dato che spesso vi sono caratteri in cui alcune minuscole, come la <CODE>d</CODE>,
+sono pi— alte delle rispettive maiuscole (per es. in Times New Roman), questo valore dovrebbe
+rappresentare lo spazio massimo effettivamente usato dal font al di sopra della linea di base.
+
+<P>Purtroppo questo valore Š sbagliato nella maggior parte dei tipi di carattere TrueType,
+a causa di un difetto del motore FreeType/2 o di un errore nel disegno del carattere stesso.
+
+</OL>
+</BODY>
+</HTML>
+

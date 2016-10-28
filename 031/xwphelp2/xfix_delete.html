@@ -1,0 +1,100 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        xfix: De basis idee‰n
+    </TITLE>
+</HEAD>
+<!-- this page is all new with V0.9.7 -->
+<!-- rewritten and renamed V1.0.9 -->
+<BODY>
+Deze pagina beschrijft in detail het mechanisme van het gebruik van xfix. Zie de
+<A HREF="xfix_howto.html">Stap voor stap handleiding</A> voor een korte zelfstudie en
+beschrijving voor het veilig opstarten van xfix.
+<P><B>Beveiligen van belangrijke ingangen </B>
+<P>Laat xfix, voordat u ook maar iets wist, de ingangen beveiligen die uw systeem
+nodig heeft om juist te kunnen functioneren. Als zij eenmaal beveiligd zijn, zal xfix
+iedere poging om ze te wissen, negeren.
+<P>Start met het selecteren van "<B>Acties -> Auto-beschermen</B>" in de menubalk.
+Dat beveiligd ieder bestand dat kan worden gebruikt door een programma
+object, iedere map die abstract (geen-map) objecten bevat zoals reflecties, en
+ieder bestand of map dat een Object ID heeft. Ingangen die reeds met
+<IMG SRC="img/xfix_error.gif"> als ongeldig zijn gemarkeerd, zullen worden genegeerd.
+
+<P>Volgende stap, controleer de lijst op elk bestand of map dat een reflectie heeft op
+uw Werkplek (sorteren op "naam" kan dat eenvoudiger maken). Als het niet reeds
+beveiligd is, klik dan rechts en selecteer dan <B>Beveiligen</B> uit het
+&popmenu; (u kunt ook <CODE><B>Ctrl+P</B></CODE> gebruiken). U bent niet instaat ingangen
+te beveiligen die ongeldig zijn.
+
+<P>Iedere beveiligde ingang zal in de Pictogram kolom <IMG SRC="img/xfix_protect.gif">
+te zien geven. Iedere map dat zich in het pad bevindt naar een beveiligd object zal
+<IMG SRC="img/xfix_safe.gif"> laten zien ten teken dat hij ook beschermd is tegen wissen.
+<P>Als u de beveiliging van een ingang wilt verwijderen selecteer dan <b>Verwijder beveiligen</b>
+vanuit het &popmenu; of druk op <CODE><b>Ctrl+P</B></CODE>. Merk op dat u alleen van ingangen
+de beveiliging kan verwijderen die gemerkt zijn met <IMG SRC="img/xfix_protect.gif">. Van
+iedere ingang die gemerkt is met <IMG SRC="img/xfix_safe.gif"> wordt automatisch de
+beveiliging verwijderd als er geen beveiligde ingangen meer zijn die het nodig hebben.
+<P><B>Ingangen wissen</B>
+
+<P>U kunt van ingangen de beveiliging verwijderen door het selecteren van
+<B>Wissen</B> uit het &popmenu; of door het indrukken van of de <B><CODE>Delete</CODE>
+toets</B> of <CODE><B>Ctrl+D</B></CODE>.
+De ingang zal gemarkeerd worden met <IMG SRC="img/xfix_delete.gif"> maar zal niet
+direct worden gewist.
+Hij zal niet uit het geheugen worden verwijderd totdat u Acties -> Nu wissen...
+selecteert, en hij zal niet permanent worden gewist totdat u xfix ->Terug schrijven
+terug naar OS2SYS.INI selecteert.
+<P>Als het wissen van een map ingang het ongeldig worden van andere ingangen
+veroorzaakt, worden de betrokken ingangen gemarkeerd met <IMG SRC="img/xfix_orphan.gif">
+om aan te geven dat zij "wezen" geworden zijn (d.w.z. dat zij geen ouder meer hebben).
+Tenzij u van plan bent deze ook te wissen, wis dan de ingang die het probleem
+veroorzaakt niet. U kunt of <B>Wissen verwijderen</B> uit het &popmenu; gebruiken of
+de <CODE><B>Delete</B></CODE> toets om de markering van de gewiste ingang op te heffen.
+<P>Wanneer u klaar bent met het voor wissen markeren van de ingangen (of u wilt ze uit de
+weg ruimen), selecteer <B>Acties -> Nu wissen...</B>.
+Deze stap is optioneel maar wordt geadviseerd omdat het u laat zien of u problemen
+heeft gecre‰erd. U wordt gevraagd om het wissen te bevestigen en gewaarschuwd als deze
+actie wezen tot gevolg heeft. Als dat zo is, kunt u op <CODE>Nee</CODE> klikken en het
+probleem oplossen.
+<P>Als uw antwoord <CODE>Ja</CODE> is, gebeurd het volgende. Geen van deze
+wijzigingen wordt definitief totdat u uw werk opslaat door het selecteren van
+xfix -> Terugschrijven naar OS2SYS.INI.
+<UL><LI>Iedere ingang's toegang in de interne kopie van de ingangentabel van xfix wordt
+verwijderd tezamen met de ingang in de lijst.
+
+<LI>Alle abstract objecten die gekoppeld zijn aan deze ingang (gemarkeerd met
+<CODE>Abstract objecten</CODE>) zullen worden ingepland om te wissen wanneer u uw
+werk opslaat. Dit is noodzakelijk omdat zij anders opnieuw te voorschijn komen in een
+nieuwe map wanneer de WPS deze mapingang opnieuw gebruikt.
+<LI>Iedere map positie gekoppeld aan deze ingang (gemarkeerd met <CODE>Map
+positie</CODE>) zal worden ingepland om te wissen.
+<LI>Als er aan de ingang een Object-Id is toegewezen, wordt het Id gewist als u uw werk
+opslaat.
+</UL>
+<B>Waarschuwing:</B> Terwijl de auto-beveiliging mogelijkheid van xfix u kan helpen bij het
+beschermen tegen het maken van een catastrofale fout, kunt u toch de nodige schade
+aan uw systeem veroorzaken. Juist omdat een bestand of map niet beveiligd is, betekent
+nog niet dat zijn ingang niet benodigd is. U moet alleen maar een ingang wissen als u
+zeker weet dat hij niet gebruikt wordt.
+<P><B>Uw werk opslaan</B>
+<P>Als u ingangen heeft gewist die ongeldig zijn of niet nodig kunt u uw wijzigingen
+opslaan met gebruik van <B>xfix -> Terugschrijven naar OS2SYS.INI...</B>.
+<P>Als u niet geheel zeker bent dat u geen nieuwe problemen heeft veroorzaakt, probeer
+dan dit: gebruik Acties -> Nu wissen... om de ingangen te wissen die voor
+wissen gemarkeerd zijn, selecteer dan xfix -> Buffer opnieuw ontleden. Als het
+bijgewerkte scherm fouten laat zien die niet eerder bestonden sla uw werk <B>dan niet</B>
+op. Verlaat gewoon xfix, start opnieuw, en probeer het opnieuw. Anders bent u gereed om door
+te gaan.
+Wees er, voor dat u "Terug schrijven..." gebruikt, zeker van dat het volgende waar is:
+<UL><LI>U heeft een WPS back-up die werkt in het geval er iets mis gaat.
+In het bijzonder, zorg voor back-up kopie‰n van <CODE>OS2.INI</CODE> en
+<CODE>OS2SYS.INI</CODE>.
+<LI>De WPS loopt op dit moment niet. Alles is veilig als u
+<CODE>RUNWORKPLACE</CODE> in uw &cfgsys; bestand heeft gewijzigd of als u xfix heeft
+gestart vanuit de "Paniek" dialoog van &xwp; gedurende het starten van de Werkplek.
+</UL>
+Nadat u uw wijzigingen heeft opgeslagen, kunt u het hoofdvenster van xfix sluiten,
+om af te sluiten.
+<P>
+</BODY>
+</HTML>

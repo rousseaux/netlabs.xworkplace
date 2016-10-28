@@ -1,0 +1,63 @@
+<HTML RESID=&ID_XSH_SETTINGS_DRIVERS;>
+<HEAD>
+    <TITLE>
+        &xwp;: pagina "Programmi controllo"
+    </TITLE>
+</HEAD>
+<BODY>
+La pagina "Programmi controllo" consente di visualizzare i driver che sono attualmente
+caricati dal file &cfgsys; e fornisce una comoda interfaccia per visualizzare e
+modificare i relativi parametri.
+
+<P>I programmi di controllo sono ordinati in <B>categorie</B>. Espandenre un elemento
+dell'albero per vederli tutti. <B>Sceltone uno</B> dall'albero a sinistra, sulla destra
+vengono mostrate le informazioni relative.
+
+<UL><LI>Le informazioni sulla <B>"Versione"</B> e sul <B>"Fornitore"</B> sono lette
+direttamente all'interno del file, analogamente a quanto fa il programma BLDLEVEL.
+
+<P><LI>Il campo <B>"Parametri"</B> riporta i parametri impostati per questo driver nel
+file &cfgsys;.
+
+</UL>Cliccando con il tasto destro del mouse nella finestra di sinistra, sul nome di un
+driver se ne apre il relativo <B>&popmenu;e</B>, dal quale si pu• ottenere un aiuto
+supplementare:
+
+<UL><LI>Se il driver fa parte della installazione standard di &os2;, selezionando
+<B>"Mostra aiuto in Riferimento per i comandi OS/2"</B> si visualizza la pagina
+relativa al driver nel <I>Riferimento per i comandi &os2;</I> (<CODE>CMDREF.INF</CODE>).
+
+<P><LI>Il <I>database ConfigTool</I>, pacchetto gratuito disponibile separatamente,
+fornisce informazioni pi— approfondite per numerosi driver. Selezionando <B>"Mostra aiuto
+dal database ConfigTool"</B> viene visualizzato l'appropriato pannello di aiuto. Questa
+voce di menu Š abilitata solo se il file .INF di ConfigTool, <CODE>CFGDAT.INF</CODE>,
+si trova lungo il <a href="glossary/gls_path_sys.html">percorso di sistema</a>
+specificato dalla <a href="glossary/gls_env.html">variabile ambiente</a>
+<CODE>BOOKSHELF</CODE> nel file &cfgsys;.
+
+<P><LI>Alcuni driver dispongono di un proprio file di aiuto e spesso si possono trovare
+informazioni utili anche in file di aiuto non immediatamente riconducibili ad uno
+specifico driver. Selezionando <B>"Cerca in tutti i file di aiuto"</B> si avvia una
+ricerca per quel dato nome di driver in tutti i file di aiuto presenti nei percorsi
+<CODE>BOOKSHELF</CODE> e <CODE>HELP</CODE>. Al termine della ricerca, sar… possibile
+scegliere tra i file trovati quello che pi— interessa. Questa voce di menu Š abilitata
+solo se il visualizzatore di file di aiuto <I>NewView</I> Š installato nel sistema, o
+in sostituzione di <CODE>VIEW.EXE</CODE> o come utilit… indipendente ma con eseguibile e
+DLL rispettivamente nei percorsi <CODE>PATH</CODE> e <CODE>LIBPATH</CODE>.
+
+</UL>Per la maggior parte dei programmi di controllo Š possibile <B>modificare i
+parametri</B> riportati nel campo parametri, purch‚ il driver ne preveda la possibilit….
+
+<P>Per alcuni di essi, poi, sono state aggiunte delle semplici finestre di dialogo. Se il
+tasto <B>"Configura"</B> Š attivo, premendolo si apre una finestra di dialogo che
+permette di configurare i parametri del driver selezionato.
+
+<P>Sar… pero' necessario premere il tasto <B>"Applica"</B> perch‚ la riga relativa nel
+file &cfgsys; venga aggiornata con i nuovi parametri - sia che questi siano stati
+modificati direttamente nel campo "Parametri", sia che si sia usata la finestra di
+dialogo. Se prima di premere <B>"Applica"</B> si seleziona un altro programma di
+controllo, la configurazione appena impostata viene persa.
+
+<BR>
+</BODY>
+</HTML>

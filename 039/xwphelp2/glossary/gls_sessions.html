@@ -1,0 +1,86 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: tipi di sessione
+    </TITLE>
+</HEAD>
+<BODY>
+In &os2; ogni programma lavora all'interno di una <B>sessione.</B>
+Una sessione consiste di uno o pi— <A HREF="glossary/gls_scheduler.html">processi</A>
+e pu• funzionare in una finestra o in modalit… a schermo intero. Inoltre, ogni sessione
+Š caratterizzata da uno speciale tipo, a seconda del sistema operativo per il quale
+il programma Š stato scritto.
+
+<P>Infatti, anche se ogni programma Š scritto per funzionare su di uno 
+specifico sistema operativo, &os2; integra il supporto necessario per eseguire
+anche i programmi realizzati per altri sistemi operativi.
+I <B>tipi di sessione</B> supportati da &os2; sono i seguenti:
+
+<UL><LI>Sessione <B>Presentation Manager (PM)</B>: Š il sottosistema grafico 
+di &os2;, responsabile per la gestione delle finestre sullo schermo, in grado 
+di supportare output grafico come icone ed immagini, input dal mouse e dalla
+tastiera e controlli standard, come i menu e le barre del titolo.
+Per es., la finestra d'aiuto all'interno della quale si sta leggendo questo
+testo Š una finestra PM. Anche la Workplace Shell di &os2;, che gestisce
+la Scrivania, Š un programma PM.
+
+<P>I programmi PM funzionano tutti all'interno di una unica sessione PM,
+creata all'avvio del sistema. Non Š possibile avviare una seconda sessione
+PM, anche se si pu• estendere lo schermo a disposizione grazie ad
+<A HREF="hook/pager_intro.html">&pgr;</A>, che permette di utilizzare pi—
+schermi virtuali contemporaneamente.
+
+<P><LI>Molti programmi OS/2 per• non usano PM e funzionano in modalit…
+testo. Tutti i programmi <B>in modo testo OS/2</B>, compresi i 
+<A HREF="objects/obj_pgmf_batch.html">file comandi</A>
+(con estensione <CODE>.CMD</CODE>), vengono avviati in sessioni separate,
+che possono essere sia in finestra che a schermo pieno.
+
+<BR><P><B>Le richieste comandi in finestra</B> <IMG SRC="img/os2_os2win.gif">
+sono visibili sulla Scrivania proprio come se facessero parte della sessione
+PM; in questo modo si pu• continuare a vedere anche le altre finestre aperte.
+
+<BR>Al contrario, una <B>sessione a schermo pieno</B> <IMG SRC="img/os2_os2full.gif">
+occupa tutto lo schermo. Le altre finestre sono ancora aperte e gli altri programmi
+continuano a funzionare, ma per vederli bisogna ritornare alla sessione PM usando
+i tasti di sistema <CODE>Alt+Esc</CODE> oppure <CODE>Ctrl+Esc</CODE>.
+
+<P><LI>&os2; Š in grado di eseguire anche la maggior parte dei <B>programmi DOS</B>.
+DOS Š stato il primo sistema operativo realizzato per i personal computer, installato
+sul primo PC di IBM. I programmi DOS, compresi i 
+<A HREF="objects/obj_pgmf_batch.html">file batch</A>, 
+(con estensione <CODE>.BAT</CODE>),
+di solito funzionano in modalit… testo e possono essere lanciati sia in finestra
+che a schermo intero.
+
+<BR><B>Le sessioni DOS in finestra</B> <IMG SRC="img/os2_doswin.gif"> sono 
+visibili sulla Scrivania.
+
+<BR><B>Le sessioni DOS a schermo intero </B> <IMG SRC="img/os2_dosfull.gif">
+occupano invece l'intero schermo, analogamente alle altre sessioni a
+schermo intero.
+
+<P><LI>&os2; permette poi di eseguire nativamente la maggior parte delle 
+applicazioni Windows 16-bit scritte per Microsoft Windows 3.x.
+
+<BR>Esse funzionano nelle cosiddette <B>sessioni &winos2;</B>
+<IMG SRC="img/os2_win16.gif"> che, ancora una volta, possono essere
+in finestra o a schermo intero. Se un programma
+&winos2; viene avviato in finestra, esso si integra completamente con la
+Scrivania &os2;, proprio come se fosse un programma PM, eccezion fatta
+per una leggera differenza d'aspetto. Si pu• comunque decidere di lanciare
+il programma &winos2; in una sessione a schermo pieno separata.
+
+</UL>
+Per ulteriori informazioni fare riferimento all'elenco di argomenti seguente:
+
+<UL>
+<LI><A HREF="glossary/gls_sessions_win16.html">Sessioni &winos2;</A>
+<LI><A HREF="glossary/gls_sessions_win.html">Sessioni in finestra</A>
+<LI><A HREF="glossary/gls_sessions_fs.html">Sessioni a schermo intero</A>
+<LI><A HREF="glossary/gls_scheduler.html">Processi e sottoprocessi</A>
+<LI><A HREF="glossary/gls_cmd.html">Richieste comandi</A>
+<LI><A HREF="objects/obj_pgmf_batch.html">File batch e file comandi</A>
+</UL>
+</BODY>
+</HTML>

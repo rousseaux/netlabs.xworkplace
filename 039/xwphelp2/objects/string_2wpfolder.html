@@ -1,0 +1,276 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: stringhe WPFolder 
+    </TITLE>
+</HEAD>
+<BODY>
+<CODE>WPFolder</CODE> Š la classe WPS per le cartelle
+(si veda <A HREF="glossary/gls_wpsclasses.html">Classi WPS</A> per i dettagli).
+Oltre alle stringhe impostazioni proprie della classe
+<CODE><A HREF="objects/string_1wpobject.html">WPObject</A></CODE>,
+<CODE>WPFolder</CODE> riconosce le stringhe seguenti:
+
+<DL>
+
+<DT><CODE><B>ACCELERATORS</B>={YES|NO|DEFAULT}</CODE> (solo &xwp;)
+<DD>Specifica se una singola cartella risponde o meno ai tasti rapidi cartella e 
+corrisponde all'impostazione presente nella pagina "Visualizzazione"
+del blocco appunti impostazioni della cartella.
+YES o NO determinano il comportamento della cartella indipendentemente da quanto specificato
+nelle impostazioni globali, mentre DEFAULT segue il valore globale.
+
+<P><DT><CODE><B>ALWAYSSORT</B>={YES|NO|DEFAULT}</CODE>
+<DD>Specifica se la singola cartella deve o meno seguire sempre il suo criterio di
+ordinamento. Aprire la cartella ed aggiungervi un oggetto pu• richiedere pi— tempo se
+va rispettato un criterio di ordinamento.
+L'opzione <CODE>DEFAULT</CODE> Š disponibile solo con &xwp;, che resetta
+l'impostazione al valore specificato nella pagina "Ordinare" dell'oggetto
+"Workplace Shell".
+
+<P><DT><CODE><B>BACKGROUND</B>=<I>nome</I>,<I>modo</I>,<I>fattore</I>,<I>tipobg</I>,<I>colbg</I></CODE>
+<DD>Imposta lo sfondo della cartella, dove:
+
+<P><CODE><I>nome</I></CODE> = Nome del file immagine, che deve essere il 
+<A HREF="glossary/gls_path.html">percorso</A>
+completo per il file immagine. "?:\" Š permesso e sta ad indicare il volume di avvio.
+
+<P><CODE><I>modo</I></CODE> = Modalit… per l'immagine. Pu• essere uno dei modi seguenti:
+<BR><CODE>N</CODE> = Normale
+<BR><CODE>T</CODE> = Affiancata
+<BR><CODE>S</CODE> = Ridotta
+
+<P><CODE><I>fattore</I></CODE> = Fattore riduzione.
+
+<P><CODE><I>tipobg</I></CODE> = Tipo di sfondo. Pu• essere:
+<BR><CODE>I</CODE> = Immagine
+<BR><CODE>C</CODE> = Solo colore
+
+<P><CODE><I>colbg</I></CODE> = Colore dello sfondo. Tre numeri
+che rappresentano i valori RGB, separati da spazi 
+(<CODE>r g b</CODE>, per rosso, verde e blu).
+<P>Esempio:
+<CODE>BACKGROUND=C:\OS2\BITMAP\OS2LOGO.BMP,S,3,I
+</CODE>o
+<CODE>BACKGROUND=(none),,,C,0 128 128</CODE>
+
+<P><DT><CODE><B>DEFAULTSORT</B>=<I>crit</I></CODE> (solo &xwp;)
+<DD>Imposta il criterio di ordinamento assunto per una data cartella, con valore 
+differente rispetto al criterio di ordinamento globale.
+<CODE><I>crit</I></CODE> pu• essere:
+<BR><CODE>  -1   </CODE>ordinare per tipo
+<BR><CODE>  -2   </CODE>ordinare per nome
+<BR><CODE>  -3   </CODE>ordinare per classe oggetto
+<BR><CODE>  -4   </CODE>ordinare per estensione del nome file
+<BR><CODE>  255  </CODE>reimpostare al criterio di ordinamento globale assunto
+<P>Si noti che, a seconda della classe ordinamento cartella, possono essere supportati
+anche valori tra 0 e 100. Tali valori corrispondono agli indici nelle colonne dettagli oggetti
+della Visualizzazione dettagli e sono specifici per classe. Si possono fare esperimenti con i valori delle 
+stringhe impostazioni riportati nel blocco appunti impostazioni delle cartelle.
+
+<P><DT><CODE><B>DEFAULTVIEW</B>=DEFAULT</CODE>
+<DD>Imposta il valore assunto per la visualizzazione a quanto specificato
+nell'oggetto "Workplace Shell". E' il valore assunto.
+<P>Si noti che, pur essendo <CODE>DEFAULTVIEW</CODE> una 
+<A HREF="objects/string_1wpobject.html">stringa impostazioni WPObject</A>, questa impostazione ha
+senso solo per le sottoclassi di WPObject, come, appunto, 
+WPFolder.
+
+<P><DT><CODE>DEFAULTVIEW={SETTINGS|ICON|TREE|DETAILS}</CODE>
+<DD>Imposta la visualizzazione aperta assunta sul valore specificato.
+
+<P>Si noti che, pur essendo <CODE>DEFAULTVIEW</CODE> una 
+<A HREF="objects/string_1wpobject.html">stringa impostazioni WPObject</A>, questa impostazione ha
+senso solo per le sottoclassi di WPObject, come, appunto, WPFolder.
+
+<P><DT><CODE><B>DETAILSCLASS</B>=<I>nomeclasse</I></CODE>
+<DD>Imposta la classe oggetto per la quale sono visualizzati i dettagli nella
+Visualizzazione dettagli. La classe oggetto assunta Š
+WPFileSystem ed Š meglio non modificare questo valore.
+
+<P><DT><CODE><B>DETAILSFONT</B>=<I>size</I>.<I>nomefont</I></CODE>
+<DD>Modifica il tipo di carattere utilizzato nella Visualizzazione dettagli.
+Per esempio:
+<CODE>9.WarpSans Bold</CODE>.
+Il valore assunto Š <CODE>8.Helv</CODE> (su Warp 3)
+
+<P><DT><CODE><B>DETAILSSHADOWCOLOR</B>=<I>colore</I></CODE> (solo &warp4; e superiori)
+<DD>Colore del testo per un oggetto copia collegata nella Visualizzazione
+Dettagli. <CODE><I>colore</I></CODE> pu• essere il nome standard del colore o una serie 
+di numeri 
+<CODE><I>r g b</I></CODE> (per rosso, verde e blu).
+
+<P><DT><CODE><B>DETAILSTEXTCOLOR</B>=<I>colore</I></CODE> (solo &warp4; e superiori)
+<DD>Colore del testo per gli oggetti nella Visualizzazione
+Dettagli. <CODE><I>colore</I></CODE> pu• essere il nome standard del colore o una serie 
+di numeri 
+<CODE><I>r g b</I></CODE> (per rosso, verde e blu).
+
+<P><DT><CODE><B>DETAILSVIEW</B>=<I>stile</I></CODE>
+<DD>Imposta la Visualizzazione dettagli nelo stile specificato: Pu• essere:
+<BR><CODE>MINI</CODE> icone piccole; Š il valore assunto.
+<BR><CODE>NORMAL</CODE> icone di dimensione normale.
+
+<IFNDEF __NOFOLDERCONTENTS__>
+<P><DT><CODE><B>FAVORITEFOLDER</B>={YES|NO}</CODE> (solo &xwp;)
+<DD>Specifica se il contenuto della singola cartella deve o meno essere visibile nel
+&popmenu;e di ogni oggetto e corrisponde al valore presente nella pagina
+"Visualizzazione" del blocco appunti impostazioni della cartella. Il valore assunto Š
+NO e non c'Š un valore globale relativo a questa impostazione.
+</IFNDEF>
+
+<P><DT><CODE><B>FULLPATH</B>={YES|NO|DEFAULT}</CODE> (solo &xwp;)
+<DD>Specifica se il percorso completo della singola cartella deve essere mostrato o meno nel titolo della finestra.
+Corrisponde all'impostazione presente nella pagina
+"Visualizzazione" del blocco appunti impostazioni della cartella.
+YES o NO determinano il comportamento della cartella indipendentemente da quanto specificato
+nelle impostazioni globali, mentre DEFAULT segue il valore globale.
+
+<P><DT><CODE><B>ICONFONT</B>=<I>dimensione</I>.<I>nomefont</I></CODE>
+<DD>Stringa impostazioni per modificare il tipo di  carattere usati nella Visualizzazione icone.
+Per esempio: <CODE>10.Helv</CODE>
+
+<P><DT><CODE><B>ICONNFILE</B>=<I>indice</I>,<I>nomefile</I></CODE>
+<DD>Imposta il nome file dell'icona animata (cartella aperta).
+Il valore <CODE><I>indice</I></CODE> deve essere impostato ad 1.
+Il file specificato (".ICO") contiene l'icona cartella aperta per la cartella.
+
+<P><DT><CODE><B>ICONNRESOURCE</B>=<I>indice</I>,<I>id</I>,<I>filedll</I></CODE>
+<DD>Specifica che l'icona animata (cartella aperta) si trova in un file risorse.
+Il valore <CODE><I>indice</I></CODE> deve essere uguale ad 1. Il valore
+<CODE><I>id</I></CODE> Š l'identit… della risorsa icona all'interno della
+<A HREF="glossary/gls_dll.html">DLL</A>
+<CODE><I>filedll</I></CODE>. La risorsa specificata Š l'icona cartella aperta per la cartella.
+
+<P><DT><CODE><B>ICONSHADOWCOLOR</B>=<I>colore</I></CODE> (solo &warp4; e superiori)
+<DD>Colore del testo per le icone copie collegate nella Visualizzazione icone.
+<CODE><I>colore</I></CODE> pu• essere il nome standard del colore o una serie 
+di numeri 
+<CODE><I>r g b</I></CODE> (per rosso, verde e blu).
+
+<P><DT><CODE><B>ICONTEXTBACKGROUNDCOLOR</B>=<I>color</I></CODE> (solo &warp4; e superiori)
+<DD>Colore dello sfondo per il testo normale nella Visualizzazione icone, ad albero e dettagli.
+<CODE><I>colore</I></CODE> pu• essere il nome standard del colore o una serie 
+di numeri 
+<CODE><I>r g b</I></CODE> (per rosso, verde e blu).
+
+<P><DT><CODE><B>ICONTEXTCOLOR</B>=<I>colore</I></CODE> (solo &warp4; e superiori)
+<DD>Colore testo per le icone normali nella Visualizzazione icone.
+<CODE><I>colore</I></CODE> pu• essere il nome standard del colore o una serie 
+di numeri 
+<CODE><I>r g b</I></CODE> (per rosso, verde e blu).
+
+
+<P><DT><CODE><B>ICONTEXTVISIBLE</B>={YES|NO}</CODE>
+<DD>Il nome degli oggetti contenuti nella cartella Š visualizzato oppure
+no nella Visualizzazione icone.
+
+<P><DT><CODE><B>ICONVIEW</B>=<I>stile1</I>[,<I>stile2</I>...]</CODE>
+<DD>Imposta la Visualizzazione icone su uno degli stili specificati.
+I valori possibili sono:
+<CODE>FLOWED NOGRID INVISIBLE NONFLOWED MINI NORMAL</CODE>
+<BR>Il valore assunto Š: <CODE>NOGRID,NORMAL</CODE>
+<BR>Queste impostazioni corrispondono alla pagina "Visualizzazione icone" nel blocco
+impostazioni della cartella.
+
+<P><DT><CODE><B>ICONVIEWPOS</B>=<I>x</I>,<I>y</I>,<I>cx</I>,<I>cy</I></CODE>
+<DD>Imposta la posizione iniziale della Visualizzazione icone e la dimensione della cartella. 
+I valori sono percentuali (0-100) delle dimensioni dello schermo.
+
+<P><DT><CODE><B>MENUBAR</B>={YES|NO}</CODE> (solo &warp4; e superiori)
+<DD>La barra menu della cartella Š visualizzata o meno.
+
+<IFNDEF __NOQUICKOPEN__>
+<P><DT><CODE><B>QUICKOPEN</B>={YES|NO|IMMEDIATE}</CODE> (solo &xwp;)
+<DD>Specifica se la singola cartella deve o meno essere pre-popolata durante l'avvio della Scrivania.
+Corrisponde all'impostazione presente nella pagina "Visualizzazione" del blocco appunti impostazioni
+della cartella.
+YES o NO impostano il valore per la singola cartella; il valore assunto Š NO
+e non c'Š un valore globale relativo a questa impostazione.
+<P>Come comando speciale <CODE>QUICKOPEN=IMMEDIATE</CODE> popola immediatamente la cartella.
+Pu• essere usato in uno script 
+<A HREF="glossary/gls_cmd_rexx.html">REXX</A>
+per forzare il popolamento di una cartella senza doverla aprire; 
+<CODE>QUICKOPEN=IMMEDIATE</CODE> quindi non Š un'impostazione, ma un comando da eseguire sulla
+cartella.
+</IFNDEF>
+
+<P><DT><CODE><B>REMOVEFONTS</B>={YES|NO}</CODE>
+<DD>Rimuove tutti i caratteri che si sono specificati per una data cartella, o 
+con le apposite stringhe impostazioni o attraverso il blocco appunti impostazioni della cartella.
+Il valore assunto Š <CODE>NO</CODE>.
+<BR>Non si tratta di una vera "impostazione", ma piuttosto di un comando eseguito sulla cartella.
+
+<P><DT><CODE><B>SHOWALLINTREEVIEW</B>={YES|NO}</CODE> (solo &warp4; e superiori)
+<DD>Nella Visualizzazione ad albero mostra tutti gli oggetti oppure solo le cartelle.
+
+<IFNDEF __NOSNAPTOGRID__>
+<P><DT><CODE><B>SNAPTOGRID</B>={YES|NO|DEFAULT|EXEC}</CODE> (solo &xwp;)
+<DD>Determina se la voce "Disporre a griglia" appare o meno nel &popmenu;e di una specifica
+cartella. Corrisponde all'impostazione presente nella pagina
+"Visualizzazione" del blocco appunti impostazioni della cartella.
+YES o NO determinano il comportamento della cartella indipendentemente da quanto specificato
+nelle impostazioni globali, mentre DEFAULT segue il valore globale.
+EXEC esegue subito la funzione "Disporre a griglia", proprio come si fosse selezionata la voce relativa dal menu
+contestuale della cartella. EXEC quindi non Š un'impostazione, ma piuttosto un comando da eseguire sulla
+cartella.
+</IFNDEF>
+
+<P><DT><CODE><B>SORTCLASS</B>=<I>nomeclasse</I></CODE>
+<DD>Imposta la classe oggetti su cui basarsi per l'ordinamento.
+La classe oggetto assunta Š WPFileSystem.
+
+<P><DT><CODE><B>SORTFOLDERSFIRST</B>={YES|NO|DEFAULT}</CODE> (solo &xwp;)
+<DD>Specifica se, in caso di riordino del contenuto di una specifica cartella, le sottocartelle vanno 
+al primo posto o meno.
+Corrisponde all'impostazione presente nella pagina "Ordinare" del blocco appunti impostazioni.
+YES o NO determinano il comportamento della cartella indipendentemente da quanto specificato
+nelle impostazioni globali, mentre DEFAULT segue il valore globale.
+
+<P><DT><CODE><B>SORTNOW</B>=<I>crit</I></CODE> (solo &xwp;)
+<DD>Ordina tutte le visualizzazioni aperte di una data cartella, senza per•
+cambiare le impostazioni della cartella (a differenza di <CODE>DEFAULTSORT</CODE>). 
+Non Š effettivamente un'impostazione, ma piuttosto un comando da eseguire sulla cartella.
+<CODE><I>crit</I></CODE> ha lo stesso significato che in <CODE>DEFAULTSORT</CODE>.
+
+<P><DT><CODE><B>STATUSBAR</B>={YES|NO|DEFAULT}</CODE> (solo &xwp;)
+<DD>Specifica se la barra di stato Š visibile o meno in una data cartella.
+Corrisponde all'impostazione presente nella pagina
+"Visualizzazione" del blocco appunti impostazioni.
+YES o NO determinano il comportamento della cartella indipendentemente da quanto specificato
+nelle impostazioni globali, mentre DEFAULT segue il valore globale.
+
+<P><DT><CODE><B>TREEFONT</B>=<I>size</I>.<I>nomefont</I></CODE>
+<DD>Stringa impostazioni per modificare il carattere usato nella Visualizzazione ad
+albero. Per esempio: <CODE>10.Helv</CODE>
+
+<P><DT><CODE><B>TREESHADOWCOLOR</B>=<I>colore</I></CODE> (solo &warp4; e superiori)
+<DD>Colore testo per le icone di copie collegate nella Visualizzazione ad albero.
+<CODE><I>colore</I></CODE> pu• essere il nome standard del colore o una serie 
+di numeri 
+<CODE><I>r g b</I></CODE> (per rosso, verde e blu).
+
+<P><DT><CODE><B>TREETEXTCOLOR</B>=<I>colore</I></CODE> (solo &warp4; e superiori)
+<DD>Colore testo per le icone normali nella Visualizzazione ad albero.
+<CODE><I>colore</I></CODE> pu• essere il nome standard del colore o una serie 
+di numeri 
+<CODE><I>r g b</I></CODE> (per rosso, verde e blu).
+
+<P><DT><CODE><B>TREETEXTVISIBLE</B>={YES|NO}</CODE> (solo &warp4; e superiori)
+<DD>Imposta se mostrare o meno nella Visualizzazione ad albero i nomi degli oggetti contenuti nella cartella.
+
+<P><DT><CODE><B>TREEVIEW</B>=<I>stile1</I>[,<I>stile2</I>...]</CODE>
+<DD>Imposta la visualizzazione ad albero sullo stile specificato.
+I valori possibili sono:
+<CODE>INVISIBLE LINES MINI NOLINES NORMAL</CODE>
+<BR>Il valore assunto Š<CODE>LINES, NORMAL</CODE>
+<BR>Queste impostazioni corrispondono a quelle nella pagina "Visualizzazione ad albero" nel blocco
+appunti impostazioni della cartella.
+
+<P><DT><CODE><B>WORKAREA</B>={YES|NO}</CODE>
+<DD>Imposta se la cartella Š o meno un'area di lavoro.
+Il valore assunto Š <CODE>NO</CODE>.
+</DL>
+</BODY>
+</HTML>
+

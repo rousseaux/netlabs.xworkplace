@@ -1,0 +1,123 @@
+<HTML RESID=&ID_XSH_DRIVER_S506;>
+<HEAD>
+    <TITLE>
+        Kernel &os2;: IBM1S506.ADD / DANIS506.ADD
+    </TITLE>
+</HEAD>
+<BODY>
+Usare questa finestra di dialogo per la configurazione dei due programmi di controllo per dischi EIDE:
+
+<OL><LI><CODE>IBM1S506.ADD</CODE> ä il driver IBM contenuto nel pacchetto &os2;;
+IBM ha aggiornato diverse volte questo prodotto. E' necessario procurarsi una versione recente
+se si desidera utilizzare dischi fissi di dimensione superiore a 8 GB.
+
+<P>Usando questo driver molti degli elementi della finestra di dialogo sono disabilitati in quanto  
+utilizzati solo da <CODE>DANIS506.ADD</CODE> (vedi sotto).
+
+<P><LI><CODE>DANIS506.ADD</CODE> ä un programma di controllo alternativo scritto da Daniela Engert.
+E' compatibile al 99% con i parametri di comando del driver IBM, ma contiene molte migliorie.
+Infatti anche i pió recenti driver IBM non sono in grado di abilitare il supporto busmastering
+con diversi dei pió moderni chipset; l'uso di questo driver migliorato ä vivamente consigliato.
+Questo driver ha enormemente migliorato le prestazioni del mio disco e consente anche di configurare
+il proprio controller del disco fisso con un maggiore dettaglio, risolvndo spesso
+problemi con l'impostazione del sistema.
+
+</OL>Informazioni dettagliate per ciascun'impostazione sono disponibili sotto forma di 
+<b>suggerimenti al volo</b>.
+Posizionare il puntatore del mouse sopra l'elemento della finestra di dialogo e attendere
+qualche secondo per far apparire il testo di aiuto.
+
+<P>E' tuttavia necessario capire che, in generale, entrambi i programmi di controllo dispongono di 
+<B>tre tipologie di opzioni</B> distinte:
+
+<OL><LI>Le <B>opzioni globali</B> influenzano l'operativitÖ in generale. Esse sono 
+poste in alto a sinistra della finestra di dialogo e comprendono impostazioni quali i messaggi visualizzati
+durante l'inizializzazione
+e (con <CODE>DANIS506.ADD</CODE>) come avviene la ricerca dell'hardware all'avvio.
+
+<P><LI>Le <B>impostazioni adattatore</B> influenzano solo il singolo adattatore (controller).
+Nei dischi IDE e EIDE ä presente un adattatore per due unitÖ disco.
+I computer generalmente hanno due controller, corrispondenti  ad un totale di quattro
+unitÖ collegate. Nella finestra di dialogo, le opzioni dell'adattatore sono in basso a sinistra.
+
+<P>Con entrambi i driver <CODE>IBM1S506.ADD</CODE> e <CODE>DANIS506.ADD</CODE>
+le impostazioni devono essere specificate solamente dopo l'opzione <CODE>/A:x</CODE>,
+dove <CODE>x</CODE> (0 o 1) specifica quale adattatore configurare con i parametri 
+che seguono.
+La finestra di dialogo aggiungerÖ questa opzione in automatico se si modica un qualsiasi 
+parametro. Tutte le impostazioni nel gruppo <B>"Impostazioni adattatore (controller)"</B> 
+influenzano, quindi, solo l'adattatore attualmente selezionato nel gruppo <B>"Adattatore corrente"</B>.
+
+<P>Ogni adattatore necessita di risorse di sistema: un interrupt (IRQ), un 
+canale Direct Memory Access (DMA) ed un indirizzo porta (indirizzo base) 
+per l'interscambio di dati tra l'adattatore e il computer. 
+Se queste impostazioni non vengono specificate il driver usa un valore assunto adatto
+alla maggior parte dei sistemi.
+
+<P>Si vedano i commenti successivi per approfondimenti sul supporto busmastering (DMA).
+
+<P><LI>Le <B>impostazioni unitÖ</B> hanno effetto su una solo unitÖ (disco fisso).
+Ogni adattatore puï avere due unitÖ, comunemente chiamate 
+"Master" e "Slave" (o anche "Primario" e "Secondario"). Nella finestra di dialogo le opzioni sulle unitÖ
+sono ubicate a metÖ altezza sulla destra.
+
+<P>Con entrambi i driver <CODE>IBM1S506.ADD</CODE> e <CODE>DANIS506.ADD</CODE>
+le impostazioni delle unitÖ devono essere sempre <B>precedute</B> prima dal parametro 
+<CODE>/A:x</CODE> (che specifica l'adattatore) e poi dal parametro <CODE>/U:x</CODE> 
+(che specifica quale unitÖ dell'adattatore), dove <CODE>x</CODE> puï assumere i valori 
+0 or 1.
+La finestra di dialogo aggiungerÖ automaticamente queste opzioni qualora venga modificato 
+un qualunque parametro unitÖ. Tutte le impostazioni nel gruppo
+<B>"Impostazioni (disco) unitÖ"</B> hanno perciï effetto solo sull'unitÖ 
+correntemente selezionata nel gruppo <B>"UnitÖ corrente"</B>.
+
+</OL><B>Busmastering, Direct Memory Access (DMA).</B> Hardware moderni
+consentono ai controller EIDE di leggere e scrivere i dati direttamente dalla memoria 
+principale senza caricare il microprocessore centrale, migliorando cosç notevolmente 
+le prestazioni del disco, dato che mentre i dati vengono
+scambiati con il disco il processore puï svolgere altre funzioni.
+
+<P>Mentre le precedenti modalitÖ I/O (Ingresso/Uscita) Programmate, PIO 3 e 4. richiedevano ancora 
+il controllo del microprocessore centrale, gli standard EIDE introducono diverse modalitÖ DMA
+multi-word. In queste modalitÖ il disco prende il controllo del bus (busmastering)
+ed inserisce i dati direttamente nella memoria principale (DMA).
+Il driver <CODE>IBM1S506.ADD</CODE> fallisce nel riconoscimento di molti chipset e perciï 
+in molti casi non puï abilitare il busmastering.
+<CODE>DANIS506.ADD</CODE> funziona in maniera nettamente migliore e consente di
+raffinare ulteriormente il processo di riconoscimento.
+
+<P><B>Ultra-DMA</B> ä un altra estensione del protocollo DMA originale. 
+In precedenza il trasferimento dati avveniva durante il fronte di risalita di un segnale 
+di sincronismo.
+Ultra-DMA modifica il protocollo per consentire il flusso di dati anche
+durante il fronte di discesa del segnale, raddoppiando cosç il tasso di trasferimento.
+Inoltre, a causa dell'aumentata possibilitÖ di corruzione dei dati, ä stato introdotto
+il riconoscimento di errori.
+In definitiva, Ultra-DMA ä sia pió veloce che pió sicuro
+del DMA semplice o PIO.
+
+<P>L'accesso diretto in memoria (DMA) da parte del disco fisso puï causare
+problemi con qualche hardware, dovuti sia a 
+controller obsoleti che non sono affatto in grado di gestire questa funzione che all'uso 
+di cavi di bassa qualitÖ che generano troppo rumore sul bus corrompendo i dati trasmessi.
+Inoltre molti vecchi dischi non sono in grado di gestire bene la DMA, oppure possono 
+gestirla ma solo alle velocitÖ pió basse.
+Per questa ragione il busmastering puï essere disabilitato totalmente
+oppure (con <CODE>DANIS506.ADD</CODE>) limitato ad una certa velocitÖ di trasferimento.
+
+<P>Il parametro<B><CODE>/BM</CODE> dell'adattatore</B> abilita o disabilita il busmastering per 
+l'intero adatttore  (cioä entrambe le unitÖ connesse con il controller). Quest'opzione
+ä sempre stata disponibile in tutte le versioni dell'<CODE>IBM1S506.ADD</CODE> ed ä
+anche supportato dal <CODE>DANIS506.ADD</CODE>.
+
+<P>Il parametro <B><CODE>/BM</CODE> dell'unitÖ</B> abilitÖ o disabilitÖ il 
+busmastering solo per una unitÖ. 
+Questa opzione ä disponibile solo nelle pió recenti versioni dell'<CODE>IBM1S506.ADD</CODE>
+ed ä anche applicabile al <CODE>DANIS506.ADD</CODE>.
+
+<P>Con <CODE>DANIS506.ADD</CODE>, ä anche possibile fissare la velocitÖ di trasferimento
+dati per una certa unitÖ, specificando esplicitamente il protocollo da usare.
+
+<BR>
+</BODY>
+</HTML>

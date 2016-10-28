@@ -1,0 +1,78 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: funzionalit… aggiuntive per gli oggetti programma
+    </TITLE>
+</HEAD>
+<BODY>
+Quando &xwp; avvia un oggetto programma dalla &cfgfdr;
+(quando cioŠ si avvia un programma usando la voce nel 
+<A HREF="glossary/gls_popmenu.html">&popmenu;e</A>)
+di una cartella)
+Š possibile mettere in atto alcuni trucchi.
+
+<P>Ecco un elenco di questi trucchi:
+
+<OL><LI>Se il campo per la <B>cartella di avvio</B> dell'oggetto programma Š vuoto, &xwp;
+lo imposta temporaneamente prima di avviare il programma, usando l'indirizzario della 
+cartella dal cui &popmenu;e si sta avviando l'oggetto.
+Il che significa che si pu• avviare lo stesso programma dal &popmenu;e di tutte le cartelle
+cambiando per• ogni volta la cartella di avvio, utilizzando di volta in volta l'indirizzario della cartella il
+cui &popmenu;e si Š usato per avviarlo.
+
+<P>Per esempio, nella configurazione di default gli oggetti linea comando non hanno una 
+cartella di avvio definita. In questa maniera si possono avviare le sessioni linea di comando "all'interno"
+della cartella il cui &popmenu;e si Š usato.
+
+<P>Se si desidera modificare questo comportamento Š sufficiente specificare una cartella di avvio
+per l'oggetto programma (per es. <CITE>"C:\"</CITE>) ed &xwp; user… sempre l'indirizzario che
+si Š specificato.
+
+<BR><LI>Se la <B>lista parametri</B> dell'oggetto programma non contiene il simbolo
+<CITE>"%"</CITE> all'inizio, l'indirizzario della cartella utilizzata viene passato al
+programma come parametro.
+
+<P>Questo permette di fornire al programma un percorso completo come argomento.
+Si pu• disabilitare completamente questa funzionalit… dalle pagine "Menu"  
+nell'<A HREF="objects/obj_wps.html">oggetto "Workplace Shell".</A>
+
+<P>Nel caso invece si voglia disabilitare tale funzione per una singola voce di menu
+(dato che non tutti i programmi accettano gli indirizzari come parametro),
+basta aggiungere il simbolo <CITE>"%"</CITE> alla "Lista parametri" del rispettivo oggetto programma ed
+&xwp; ometter… il parametro addizionale. E' il caso, ad esempio, degli oggetti linea comando della
+configurazione standard.
+
+<BR><LI>Si pu• inserire il <B>contenuto corrente degli 
+<A HREF="glossary/gls_clipboard.html">Appunti</A></B> specificando 
+la stringa  <CITE>"%**C"</CITE> nella lista parametri. Questa stringa pu• essere inserita 
+a qualunque altezza della lista parametri ed Š sensibile al maiuscolo e minuscolo:
+<CITE>"%**c"</CITE> (in lettere minuscole) <I>non</I> funziona.
+
+<P>Per esempio: percorso e nome file = <CITE>"e.exe"</CITE>;
+parametri = <CITE>"%**C"</CITE> avvia l'editor di sistema, interpretando il contenuto degli
+Appunti come nome file.
+
+<P>Si noti che il contenuto degli Appunti viene troncato in modo da non superare
+la lunghezza massima consentita per la lista parametri. In &os2; tale lunghezza massima Š pari a 260
+caratteri.
+
+<BR><LI>Se il <B>nome del programma</B> contiene un carattere <CITE>"~"</CITE>
+&xwp; lo rimuover… temporaneamente prima di avviare il programma. Questo comportamento
+pu• essere disabilitato dall'
+<A HREF="objects/obj_wps.html">oggetto "Workplace Shell".</A>
+
+<BR><LI>E' infine possibile inserire un <B>separatore</B> nel menu specificando
+<CITE>"---"</CITE> (tre trattini) come nome dell'oggetto programma
+(un separatore Š una linea orizzontale per separare visivamente diversi gruppi di voci di menu).
+In questo caso &xwp; ignora le impostazioni dell'oggetto programma (eseguibile, parametri ecc.)
+e si limita ad inserire un separatore nel menu. Questo trucco funziona sia nel &popmenu;e 
+principale che nei sottomenu.
+
+</OL>&xwp; implementa le funzioni 1.-4. cambiando per una frazione di secondo le impostazioni dell'oggetto programma:
+le impostazioni vengono modificate, si avvia il programma e le 
+impostazioni sono riportate ai valori iniziali.
+
+<BR>
+</BODY>
+</HTML>
+

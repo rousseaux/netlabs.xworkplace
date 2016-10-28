@@ -1,0 +1,62 @@
+<HTML RESID=&ID_XSH_XCENTER_CLASSES;>
+<HEAD>
+    <TITLE>
+        &xcenter;: Classes
+    </TITLE>
+</HEAD>
+<BODY>
+In de "Classes" pagina in het instellingen notitieblok van het
+<A HREF="xcenter/xc_main.html">&xcenter;</A>
+ziet u de
+<A HREF="xcenter/xc_main_widgets.html">widget</A>
+classes die op dit moment beschikbaar zijn.
+
+<P>Let op dat widget classes geen echte WPS classes zijn. Het &xcenter; gebruikt alleen de class
+namen om de widgets intern te organiseren. Beschouw een widget class als een model waarvan widgets
+gemaakt kunnen worden. Een widget class is ofwel ingebouwd in het &xcenter; zelf ofwel geladen
+vanuit een plug-in
+<A HREF="glossary/gls_dll.html">DLL</A>
+uit de
+<IFDEF __EWORKPLACE__>
+<CODE>ecs\system\ewps\plugins\ecenter</CODE>
+</IFDEF>
+<IFNDEF __EWORKPLACE__>
+<CODE>WPS\XWorkplace\plugins\xcenter</CODE>
+</IFNDEF>
+directory. Zo'n plug-in DLL kan een of meer widget classes bevatten.
+
+<P>In tegenstelling tot de "Widgets" pagina, welke de huidige widgets laat zien van een enkel &xcenter;,
+laat de "Classes" pagina dezelfde widget classes zien voor elke &xcenter;.
+De classes die hier worden getoond, zijn ook te vinden in het "Voeg widget toe" submenu
+van het &popmenu; van een open &xcenter;.
+
+<P>De volgende velden worden getoond:
+
+<UL><LI>Het <B>"DLL"</B> veld toont de naam van de
+<A HREF="glossary/gls_dll.html">Dynamic Link Library (DLL)</A>
+welke de widget implementeerde. Dit is ofwel ‚‚n van de DLL's uit de
+<IFNDEF __EWORKPLACE__>
+<CODE>WPS\XWorkplace\plugins\xcenter</CODE>
+</IFNDEF>
+<IFDEF __EWORKPLACE>
+<CODE>ecs\system\ewps\plugins\ecenter</CODE>
+</IFDEF>
+directory ofwel zal het de tekst "Ingebouwde" laten zien als het widget opgenomen is in &xwp; zelf.
+
+<P><LI>De <B>"Widget class"</B> laat de interne naam van de class zien die gebruikt wordt
+door het &xcenter; om de class, waar een widget bij hoort, te identificeren. Deze naam is kritisch
+voor de werking van een widget en zal nooit veranderen, tenzij de DLL niet langer beschikbaar is.
+
+<P><LI>Het <B>"Class naam"</B> veld heeft dezelfde inhoud als het "Voeg widget aan lade toe" menu en
+is een beschrijvende naam van de class. Dit is alleen voor informatieve doeleinden en niet
+kritisch voor het werken van de widget.
+
+<P><LI>Het <B>"Versie"</B> veld toont de minimale &xcenter; versie die de widget
+nodig heeft om te functioneren. Het &xcenter; controleert dit versienummer om er zeker van te zijn
+dat het de plug-in DLL kan laden. Dit veld is niet van betekenis voor ingebouwde widgets en is daarom,
+voor die widgets, leeg.
+
+</UL>
+</BODY>
+</HTML>
+

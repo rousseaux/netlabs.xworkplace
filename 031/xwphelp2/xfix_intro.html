@@ -1,0 +1,72 @@
+<HTML RESID=&ID_XSH_XFIX_INTRO;>
+<HEAD>
+    <TITLE>
+        xfix: Introductie
+    </TITLE>
+</HEAD>
+<!-- this page is all new with V0.9.7 -->
+<!-- revised V1.0.9 -->
+<BODY>
+Dit is <B>xfix</B>, de &xwp; bestandsingangen oplosser
+<P><B>Overzicht</B>
+<P>xfix maakt het u mogelijk om:
+<UL><LI>de inhoud van de bestandsingang gegevensblokken van de WPS in de
+<CODE>OS2SYS.INI</CODE> bestanden te bekijken in een PM venster.
+<LI>ingangen te verwijderen die niet langer nodig zijn omdat het bestand of de map niet
+langer bestaat.
+<LI>verwijderen van ingangen van bestaande bestanden en mappen die niet nodig zijn
+omdat de WPS deze niet gebruikt (bijv. ingangen voor DLL's of ZIP bestanden).
+<LI>verwijderen van map positie toegangen die niet nodig zijn.
+<LI>verplaatsen van abstract objecten zoals programma objecten en reflecties naar de
+Werkplek.
+</UL>
+
+Vergeleken met het formidabele programma CHECKINI van Henk Kelder*, geeft xfix u meer
+controle, maar vereist ook meer attentie en kennis. Dank gaat weer uit naar Henk Kelder
+voor het uitzoeken van hoe in de eerste plaats de ingangen werken. xfix is gedeeltelijk
+op zijn werk gebaseerd.
+.br
+* CHECKINI is onderdeel van wptool32.zip dat kan worden gedownload van:
+.br
+http://www.os2site.com/sw/util/wps/wptool32.zip
+<P><B>Waarschuwing</B>
+<P>Dit programma maakt het mogelijk om bestandsingangen waar de WPS
+gebruik van maakt te verwijderen, zoals de ingang voor de Werkplek. xfix bevat mogelijkheden zoals
+automatisch beveiligen om te voorkomen dat u catastrofale fouten maakt, maar het is
+toch mogelijk wijzigingen aan te brengen die niet zouden moeten worden gemaakt.
+<P>Uw systeem wordt niet gewijzigd totdat u uw werk opslaat door het selecteren
+van "xfix-&gt;Terug schrijven naar OS2SYS.INI" vanuit het hoofdmenu.
+Probeer gerust de informatie en opties van xfix uit maar <B>maar sla niets op totdat u
+precies weet wat u doet.</B> Lees de volgende hoofdstukken door voor dat u xfix gaat
+gebruiken.
+<UL><LI><A HREF="xfix_handles.html">Over WPS bestandsingangen</A>
+<P><LI><A HREF="xfix_delete.html">De basis</A>
+<P><LI><A HREF="xfix_howto.html">Stap voor stap handleiding</A>
+<P><LI><A HREF="xfix_list.html">De ingangen lijst</A>
+<P><LI><A HREF="xfix_menus.html">Menubalk opdrachten</A>
+<P><LI><A HREF="xfix_menu2.html">Voorgrondmenu en sneltoetsen</A>
+</UL>
+
+<P><B>Opdrachtregel opties</B>
+<P>Standaard gebruikt xfix kopie‰n van <CODE>OS2.INI</CODE> en
+<CODE>OS2SYS.INI</CODE> die op dit moment door uw systeem worden gebruikt.
+U kunt echter ook opgeven dat in plaats daarvan andere kopie‰n van deze bestanden te
+gebruiken.
+Omdat te doen, gebruik de <CODE><B>-U</B></CODE> en <CODE><B>-S</B></CODE>
+opties. Het moet met hoofdletters en de bestandsnaam moet direct op de letter volgen
+(zonder spatie). In bijna alle gevallen moet u beide opties gebruiken:
+<UL>
+<BR><LI><CODE><B>-Ubestandnaam</B></CODE> -- dit is de "gebruikers" INI,
+gewoonlijk <CODE>OS2.INI</CODE>
+<BR>bijv.: <CODE>-Uc:\os2\myos2,ini</CODE>
+<BR><LI><CODE><B>-Sbestandsnaam</B></CODE> -- dit is de "systeem" INI,
+gewoonlijk <CODE>OS2SYS.INI</CODE>
+<BR>bijv.: <CODE>-Uc:\os2\myos2sys,ini</CODE>
+</UL>
+
+Hier een compleet voorbeeld:
+<BR><CODE>xfix -Uc:\os2\os2.ini-test -Sc:\os2\os2sys.ini-test</CODE>
+<P>
+</BODY>
+</HTML>
+

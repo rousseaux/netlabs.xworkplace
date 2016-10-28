@@ -1,0 +1,117 @@
+<HTML RESID=&ID_XSH_WIDGET_SENTINEL_MAIN;>
+<HEAD>
+    <TITLE>
+        &xcenter;: Bewakings widget
+    </TITLE>
+</HEAD>
+<BODY>
+De
+<A HREF="xcenter/xc_main.html">&xcenter;</A>
+<B>"Bewakings" widget</B> toont u een grafiek van de huidige geheugen consumptie in uw systeem.
+
+<P>Deze "Bewakings widget" vergt enige gewenning, maar is, na een tijdje, erg handig.
+Net als de
+<A HREF="xcenter/xc_pulse.html">"Hartslag" widget</A>,
+toont het een grafiek van hoe het geheugengebruik zich, over de tijd, ontwikkeld heeft op
+uw systeem.
+Deze grafiek wordt elke twee seconden bijgewerkt.
+
+<P>De "Bewakings widget" echter, laat u verschillende grafieken tegelijkertijd zien, in
+verschillende kleuren, met de huidige meetwaarden, getoond in MB in dezelfde kleuren,
+aan de linkerkant:
+
+<BR>
+<BR><IMG SRC="img/xc_sentinel1.gif">
+<BR>
+<P>De grafieken geven het volgende weer:
+
+<OL><LI>De <B>bovenste waarde</B> (in het groen) is het <B>huidige vrije fysieke RAM.</B>
+Dit is dezelfde waarde als in de
+<A HREF="xcenter/xc_mem.html">"Geheugen" widget</A>.
+Dus als u 128 MB RAM in uw systeem heeft, zal dit nooit boven die waarde komen
+(en dat, natuurlijk, naar alle waarschijnlijkheid ook nooit halen).
+
+<P><LI>De <B>middelste waarde (in het blauw)</B> is het <B>momenteel in gebruik zijnde fysieke RAM.</B>
+Als u deze waarde optelt bij de bovenste waarde, zou u uw totale hoeveelheid RAM moeten hebben.
+
+<P><LI>Als u een recent <CODE>win32k.sys</CODE> stuurprogramma van Odin heeft (maart 2001 of nieuwer)
+ge‹nstalleerd, wordt de omvang van uw swapbestand vertegenwoordigd door nog twee kleuren, zoals
+in bovenstaande schermafdruk. De <B>derde waarde (in het paars)</B> laat u vervolgens de hoeveelheid
+ruimte van uw swapbestand zien dat in gebruik is. De <B>onderste waarde (in het rood)</B> geeft dan
+de vrije ruimte in het swapbestand weer.
+Het optellen van deze twee waarden geeft de omvang van uw swapbestand weer.
+
+<P>Zoals u in bovenstaande schermafdruk kunt zien, werd er meer en meer geheugen toegewezen totdat
+het vrije geheugen (in het groen) opgebruikt was. &os2; begon toen met het gebruik van vrije ruimte
+in het swapbestand (in het rood) totdat ook dat op was. Toen liet &os2; het swapbestand groeien,
+wat weergegeven wordt door de groeiende paarse grafiek. Uiteindelijk werd het geheugen
+geleidelijk aan vrijgegeven, wat weergegeven wordt door de weer dalende blauwe en paarse grafieken.
+Tenslotte liet &os2; de omvang van het swapbestand weer afnemen omdat er weer genoeg vrije ruimte
+aanwezig was.
+
+<P>Als u geen recent <CODE>win32k.sys</CODE> stuurprogramma ge‹nstalleerd heeft, zult u alleen een
+paarse kleur zien, wat simpelweg de omvang van uw swapbestand toont.
+
+</OL>Het grijze gebied boven de gekleurde grafieken heeft geen enkele betekenis. Het is alleen
+maar het resultaat van de schaling die de bewaker op het scherm uitvoert. Na verloop van tijd
+zult u zien dat zodra de "piek" in het midden van het scherm verdwijnt, het scherm opnieuw wordt
+geschaald en het grijze gebied ook gebruikt wortd voor het weergeven.
+
+<P>Let op dat u op het bewakings widget ook het
+<A HREF="glossary/gls_dropfonts.html">slepen en loslaten van kleuren en lettertypen</A>
+kunt toepassen.
+<!-- V1.0.4: changeed the following to account for the new settings dialog -->
+Op dit moment kunt u alleen de achtergrondkleur op deze wijze wijzigen.
+De kleuren van de grafiek kunnen worden gewijzigd via de widget instellingen dialoog.
+Selecteer "Instellingen" vanuit het voorgrond menu van de widget om deze te openen.
+
+Daarnaast is het ook in grootte aanpasbaar zie:
+<A HREF="xcenter/xc_main_sizbar.html">Aanpassingsschuif</A>.
+
+<P><B>Implementatie details:</B>
+
+<P>De bron van informatie die getoond wordt via het bewakings widget is afhankelijk van of er wel
+of geen recente versie van Odin zijn <B>win32k.sys</B> stuurprogramma ge‹nstalleerd is.
+
+<UL><LI>Als <CODE>win32k.sys</CODE> gevonden is, wordt alle geheugen informatie direct vanuit dat
+stuurprogramma opgehaald, wat in het &os2; kernel geheugenmanagement kijkt om die waarden te
+achterhalen. Dit is extreem effici‰nt en ook gedetailleerder dan de alternatieve methode die
+hieronder beschreven wordt.
+
+<P>Om dit te laten werken, heeft u een <CODE>win32k.sys</CODE> versie nodig van maart 2001 of nieuwer.
+Knut Stange Osmundsen was zo vriendelijk deze functionaliteit aan het <B>win32k.sys</B>
+stuurprogramma toe te voegen voor &xwp;.
+
+<P><LI>Als dat stuurprogramma niet ge‹nstalleerd is of te oud is, zal de bewakings widget
+terugvallen op een standaard methode om geheugen informatie te achterhalen.
+
+<IFNDEF __EWORKPLACE__>
+Alle berekeningen van het bewakings widget zijn dan gebaseerd op twee simpele bronnen:
+<CODE>Dos16MemAvail</CODE> (zoals beschreven op de
+<A HREF="xcenter/xc_mem.html">"Geheugen" widget</A> pagina)
+en de omvang van het swapper bestand, wat periodiek bepaald wordt door middel van een simpele
+bestandssysteem aanroep direct op het swapper bestand. Deze waarden worden direct weergegeven door
+de bovenste en onderste grafieken.
+
+<P>De totale hoeveelheid virtueel geheugen (alle drie grafieken bij elkaar) wordt simpelweg berekend
+door de hoeveelheid van het totaal fysiek RAM geheugen (dat teruggekregen wordt van de
+<A HREF="cpref.inf#DosQuerySysInfo"><CODE>DosQuerySysInfo</CODE></A> API<A HREF="_toolkitlink.html">*</A>
+en nooit zal wijzigen) op te tellen bij de omvang van het swapper bestand.
+
+<P>De middelste grafiek (het fysieke RAM dat momenteel in gebruik is) is simpelweg het verschil
+tussen het totale fysieke RAM en het momenteel vrije fysieke RAM.
+</IFNDEF>
+<P>Let op dat deze implementatie u geen weergave kan geven van de vrije ruimte in het swapper bestand.
+
+<!-- V1.0.4: added the following -->
+<IFNDEF __EWORKPLACE__>
+<P>De Hook van &xwp; moet worden ingeschakeld (in "Muis en toetsenbord" op de "Kenmerken" pagina
+van het
+<A HREF="objects/obj_xwpsetup.html">&xwp;: Instellingen object van &xwp;</A>)
+object) zodat deze widget werkt.
+</IFNDEF>
+
+</UL>
+</BODY>
+</HTML>
+

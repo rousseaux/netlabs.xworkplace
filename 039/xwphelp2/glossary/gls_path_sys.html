@@ -1,0 +1,72 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: percorsi di sistema
+    </TITLE>
+</HEAD>
+<BODY>
+&os2; prevede diversi <B>percorsi di sistema</B>, che servono a specificare
+dove il sistema va a cercare i file se non viene definito esplicitamente il
+<A HREF="glossary/gls_path.html">percorso</A> per raggiungerli.
+
+<P>Se, per esempio, un certo file eseguibile si trova in una delle directory
+specificate nel percorso di sistema <CODE>PATH</CODE>, tale eseguibile verr… trovato
+anche se non si definisce il percorso da seguire per raggiungerlo. E' per questo
+motivo che per avviare  l'&eexe; &os2;
+Š sufficiente digitare <CODE>e</CODE> da una richiesta comandi &os2;:
+<CODE>E.EXE</CODE> si trova nella directory <CODE>OS2</CODE> dell'unit…
+di avvio, che Š compresa nel <CODE>PATH</CODE>.
+
+<P>Eccezion fatta per <CODE>LIBPATH</CODE>, si tratta di
+<A HREF="glossary/gls_env.html">variabili ambiente</A> che sono definite
+all'avvio del sistema attraverso il file  &cfgsys; e che possono poi essere
+modificate per ogni sessione.
+
+<IFNDEF __NOOS2KERNEL__>
+<P>Si pu• modificare il percorso di sistema corrente dalla pagina "Percorsi di sistema"
+nell'oggetto <A HREF="objects/obj_krnl.html">"Kernel &os2;"</A>.
+</IFNDEF>
+
+<P>Sono disponibili i seguenti percorsi di sistema:
+
+<UL><LI><CODE>LIBPATH</CODE>: il percorso delle librerie, che viene utilizzato quando
+&os2; cerca di caricare una <I>libreria a collegamento dinamico</I> (DLL). E' opportuno che
+questo percorso contenga le
+directory di sistema di &os2;, insieme ad un punto ("."), che indica la directory corrente.
+
+<P>Si veda la <A HREF="cmdref.inf#libpath">documentazione</A> in
+<I>&os2; - Riferimento per i comandi</I> per i dettagli.
+
+<P>Si noti che questo Š il solo percorso di sistema che <I>non</I> viene definito tramite una variabile
+d'ambiente, e pertanto non pu• essere cambiato dalla linea di comando. Si usino le variabili <CODE>BEGINLIBPATH</CODE>
+e <CODE>ENDLIBPATH</CODE> per cambiamenti temporanei (non supportati tramite questa pagina).
+
+<P><LI><CODE>SET PATH</CODE>: il percorso di ricerca per gli eseguibili
+(file .EXE, .COM, .BAT, .CMD).
+
+<P>Si veda la <A HREF="cmdref.inf#path">documentazione</A> in
+<I>&warp; - Riferimento per i comandi</I> per i dettagli.
+
+<P><LI><CODE>SET DPATH</CODE>: il percorso di ricerca per i file dati. L'uso di questo percorso dipende dalle applicazioni;
+alcune lo usano, altre no.
+
+<P>Si veda la <A HREF="cmdref.inf#dpath">documentazione</A> in
+<I>&os2; - Riferimento per i comandi</I> per i dettagli.
+
+<P><LI><CODE>SET BOOKSHELF</CODE>: questo percorso viene utilizzato da <CODE>VIEW.EXE</CODE> per trovare le guide
+in linea (.INF). Anche se un file .INF pu• essere visualizzato senza essere compreso in
+questo percorso, il comando "Ricercare..." di <CODE>VIEW.EXE</CODE> esaminer… solo gli argomenti dei file
+presenti in questo percorso.
+<!-- cmdref.inf#bookshelf doesn't work -->
+
+<P><LI><CODE>SET HELP</CODE>: questo percorso viene usato dalla funzione di aiuto di PM per mostrare
+i pannelli di aiuto (file .HLP). Alcune applicazioni non specificano il percorso completo dei file di aiuto, e in questo
+caso Š necessario che il file si trovi in
+questo percorso. &xwp; non ha necessit… che si specifichi qui la sua directory.
+<!-- cmdref.inf#help doesn't work -->
+
+</UL>
+
+</BODY>
+</HTML>
+

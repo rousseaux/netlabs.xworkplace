@@ -1,0 +1,43 @@
+<HTML NOSUBLINKS="config"  WIDTH=70% XPOS=right>
+<HEAD>
+    <TITLE>
+        Sostituzione della cancellazione effettiva
+    </TITLE>
+</HEAD>
+<BODY>
+<B>Classi: XFldObject</B><HR>
+
+A partire dalla V0.9.3 &xwp; permette di sostituire il meccanismo regolare di cancellazione della
+Workplace Shell. Chiamiamo questo meccanismo "cancellazione effettiva", in contrasto con lo spostamento
+di oggetti nel cestino: la "cancellazione effettiva" distrugge immediatamente gli oggetti, senza
+offrire possibilit… di recupero.
+
+<P>La "cancellazione effettiva" sostituisce quella normale abilitando la relativa impostazione,
+dalla pagina "Funzioni" dell'oggetto <A HREF="sys_2global.html">"Impostazioni &xwp;".</A>
+Anche quest'impostazione Š inizialmente disabilitata.
+
+<P>Paragonata alla normale procedura di cancellazione WPS, la "cancellazione effettiva" di &xwp; ha diversi
+vantaggi. Prima di tutto, Š presente una barra indicatrice che mostra il reale andamento dell'operazione
+di cancellazione. Inoltre, quando si cancella una cartella con molti oggetti al suo interno
+si ha finalmente la possibilit… di annullare l'operazione, cosa impossibile con la procedura WPS.
+Personalmente mi Š successo pi— di una volta di premere il tasto "Canc" avendo selezionato per errore una cartella:
+100 MB di file cancellati senza possibilit… di interruzione. Non un buon sistema, decisamente.
+
+<P>Sostituendo la cancellazione effettiva &xwp; si prende carico delle seguenti operazioni:
+
+<UL><LI>Se il cestino di &xwp; Š abilitato, tutte le operazioni di cancellazione normale
+passano attraverso il Cestino (come descritto nella
+<A HREF="file_2trashcan.html">pagina precedente</A>), restando quindi non toccate dalla cancellazione effettiva.
+
+<P>E' per• modificato il comportamento in caso di cancellazione effettiva da un menu contestuale
+(cioŠ tenendo premuto il tasto "Maiusc" mentre si seleziona "Cancella" dal menu) come pure il 
+funzionamento dei comandi "Elimina oggetto" e "Svuota cestino" nel cestino stesso.
+
+<P><LI>Se il cestino di &xwp; non Š abilitato vengono influenzate tutte le operazioni di
+cancellazione WPS (tutti i comandi "Cancella" nei menu contestuali pi— il tasto "Canc" della tastiera).
+
+</UL>
+</BODY>
+</HTML>
+
+

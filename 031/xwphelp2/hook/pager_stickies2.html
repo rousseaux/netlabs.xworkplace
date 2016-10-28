@@ -1,0 +1,55 @@
+<HTML RESID=&ID_XSH_SETTINGS_PAGER_STICKY2;>
+<HEAD>
+    <TITLE>
+        &pgr;: Criteria voor klevende vensters
+    </TITLE>
+</HEAD>
+
+<BODY>Een invoer bestaat uit vier velden: <B>Criteria</B>, <B>Kenmerk</B>,
+<B>Operator</B> en <B>Waarde</B>.
+
+<P><B>Criteria;</B> definieert of een met de invoer overeenkomend venster wordt opgenomen
+(<B>"O"</B>) of een met de invoer overeenkomend venster niet wordt opgenomen (<B>"N"</B>).
+Opgenomen vensters zijn klevend en niet opgenomen venster zijn niet klevend.
+
+<P><B>Kenmerk;</B> definieert op welk element de ingang betrekking heeft.
+
+<P><B>Operator;</B> definieert de aard van de te gebruiken vergelijking om te bepalen of
+een venster overeenkomt met de ingang of niet. Er zijn vijf mogelijke operatoren voor
+het "Naam" kenmerk:
+
+<UL>
+<LI><B>inhoud</B>: zal testen of de naam de opgeven tekst op iedere positie bevat.
+
+<LI><B>begint met</B>: zal testen of de naam begint met de opgegeven tekst.
+
+<LI><B>eindigt met</B>: zal testen of de naam eindigt met de opgegeven tekst.
+
+<LI><B>gelijk</B>; zal testen of de naam exact gelijk is aan de opgegeven tekst.
+
+<LI><B>overeenkomend</B>: zal testen of de naam overeenkomt met de opgegeven tekst, die wordt
+beschouwd als een
+<A HREF="glossary/gls_regexps.html">vaste uitdrukking</A>.
+
+</UL>Alle vergelijkingen zijn hoofdletter gevoelig.
+
+<P><B>Waarde</B>: definieert de waarde waartegen vergeleken zal worden. Het vervolg menu bevat
+gelijke waarden, maar de waarde hoeft niet ‚‚n van deze te zijn.
+
+<P>Van een venster wordt gezegd dat het met een ingang overeenkomt als het opgegeven vensterkenmerk
+overeenkomt met de waarde die de opgegeven vergelijkingsoperator gebruikt.
+
+<P>&pgr; zal een venster behandelen als klevend (of niet klevend) als het overeenkomt met
+een ingang in de lijst op deze pagina, beginnend vanaf de bovenzijde van de lijst.
+Het venster wordt als klevend beschouwd als het criteria <B>"I"</B> is. Het venster wordt als
+niet klevend beschouwd als het criteria <B>"E"</B> is. Als geen ingangsovereenkomsten worden
+gevonden, wordt het venster als niet klevend beschouwd.
+
+<P><B>Opmerking:</B> de schakellijst toont regelmatig beide, de vensternaam en de schakellijst
+naam, gescheiden door een streepje (-). Als beide voorkomen, zal &pgr; de naam gebruiken die
+voorkomt na het streepje.
+
+<BR>
+</BODY>
+</HTML>
+

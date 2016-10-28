@@ -1,0 +1,58 @@
+<HTML RESID=&ID_XSH_SETTINGS_XC_THREADS;>
+<HEAD>
+    <TITLE>
+        &xwp;: Instellingen - Threads
+    </TITLE>
+</HEAD>
+
+<BODY>
+De "Threads" pagina laat u informatie zien over de aanvullende threads die &xwp; momenteel heeft
+draaien in het WPS proces. Dit kan interessant zijn voor debugging doeleinden en foutrapportage.
+
+<P>Elke regel in deze lijst laat u de interne <B>thread naam</B> zien, die alleen gebruikt wordt
+door &xwp; om threads te identificeren anders dan met een arbitrair nummer.
+De <B>"TID"</B> waarde is een "thread ID" van de respectievelijke thread (die uniek is binnen het
+WPS proces). De <B>"Prioriteit"</B> waarde is de respectievelijke thread prioriteit:
+de hoge byte kan een waarde van 1 tot 4 hebben (waarmee wordt aangeven dat de class prioriteit: aan
+het wachten, normaal, tijdkritisch of voorgrond server is), terwijl de lage byte het "verschil"
+in prioriteit laat zien binnen een prioriteitsclass.
+(Zie:
+<A HREF="glossary/gls_scheduler.html">"Processen en threads"</A>
+voor details.)
+
+<P>&xwp; kan de volgende threads op uw systeem starten:
+
+<UL><LI><B>NotifySentinel, RefreshFindFolder, RefreshNotificationPump:</B>
+deze draaien als u op de "Kenmerken" pagina in "Map" "Vervang automatisch map verversen" geactiveerd
+heeft, deze zijn verantwoordelijk voor het op de achtergrond in de gaten houden van het bestandssysteem.
+
+<P><LI><B>Party:</B> De "Party" thread van &xwp; is verantwoordelijk voor multimedia, zoals het laten
+horen van systeemgeluiden.
+
+<P><LI><B>Worker:</B> De "Worker" thread van &xwp; is verantwoordelijk voor enige achtergrond
+onderhoudswerkzaamheden die niet tijdkritisch zijn.
+
+<P><LI><B>Bush:</B> De "Bush" thread van &xwp; is meestal slapende, maar ontwaakt spontaan voor enkele
+cosmetische, maar hoge prioriteit taken die onmiddellijke aandacht nodig hebben, zoals het laten
+zien van het &xwp; opstart logo.
+
+<P><LI><B>Wimp:</B> nog een slapende thread die slechts elke paar minuten ontwaakt om wat geheugen
+en dat soort zaken op te ruimen.
+
+<P><LI><B>File:</B> De "File" thread van &xwp; wordt actief als &xwp; bestandsoperaties uitvoert,
+zoals bestanden verplaatsen naar de prullenbak of het verwijderen van bestanden.
+
+<P><LI><B>&xcenter;:</B> Omdat elk
+<A HREF="xcenter/xc_main.html">&xcenter;</A>
+draait op zijn eigen thread, zult u voor elk actief &xcenter; zo'n thread zien.
+
+<P><LI><B>PulseWidgetCollect:</B> deze is alleen zichtbaar als u de
+<A HREF="xcenter/xc_pulse.html">"Hartslag" widget</A>
+actief heeft in een open &xcenter;. De hartslag widget start een tweede thread op om informatie te
+verzamelen over het CPU gebruik door de &os2; kernel om er voor te zorgen dat hij niet geblokkeerd
+wordt als een programma de PM 'single input queue' monopoliseert.
+
+</UL>
+</BODY>
+</HTML>
+

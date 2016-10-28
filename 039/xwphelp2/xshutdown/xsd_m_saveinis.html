@@ -1,0 +1,49 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: salvare i file INI
+    </TITLE>
+</HEAD>
+<BODY>
+Dalla finestra a cascata "Salva file INI" Š possibile scegliere il metodo utilizzato da &xwp; 
+per salvare i profili utente e di sistema (nei file <CODE>OS2.INI</CODE> e
+<CODE>OS2SYS.INI</CODE> come valore assunto) durante la chiusura. 
+Questa funzione non Š utilizzata durante il riavvio della Scrivania.
+
+<P>Questa impostazione Š stata aggiunta a partire dalla V0.9.5 per risolvere i problemi, segnalati
+da numerosi utenti, che si verificavano quando la &xshutdown; si trovava a gestire file INI di
+grandi dimensioni (parecchi Mb). Le funzioni relative ai profili (INI) di &os2;, sfortunatamente, hanno
+serie difficolt… a lavorare con file di dimensioni davvero grandi; sembra infatti
+che queste API esauriscano rapidamente la memoria condivisa.
+
+<P>Per questo motivo &xwp; dispone di un sistema alternativo per salvare i file INI sul disco. Qui si pu•
+scegliere che sistema utilizzare:
+
+<UL><LI><B>"Nuovo metodo":</B> Utilizza per il salvataggio dei file INI le nuove funzioni profilo 
+introdotte con &xwp; V0.9.5 che non utilizzano memoria condivisa; Š perci• meno probabile che possano 
+verificarsi errori durante
+il salvataggio dei file INI. E' l'impostazione consigliata.
+
+<P><LI><B>"Metodo tradizionale":</B> Utilizza le funzioni profilo di &os2;. E' il sistema usato 
+da XFolder e dalle versioni di &xwp; precedenti la V0.9.5 e
+notoriamente pu• provocare problemi in presenza di file INI di grandi dimensioni.
+Si veda la sezione "FAQ" della 
+<I>Guida ad &xwp;</I> per dettagli.
+
+<P><LI><B>"Non salvare i file INI":</B> Alla chiusura del sistema i file INI non vengono salvati:
+si perderanno perci• le modifiche pi— recenti. E' l'impostazione da usare solo se nessuno degli altri due
+metodi funziona come si deve.
+
+<P>&os2; salva automaticamente i file INI sul disco ogni pochi minuti, perci• si perderanno tutte le impostazioni
+successive all'ultimo salvataggio automatico. E' sostanzialmente equivalente all'utilizzo dei tasti
+Ctrl-Alt-Canc, ed influenza tutte le informazioni conservate da &os2; nei file INI (oggetti della Scrivania, 
+tipi di catattere, colori,
+impostazioni relative alle applicazioni). E' insomma un'impostazione da usare come estrema risorsa.
+<P>La posizione delle icone e le altre informazioni conservate negli 
+<A HREF="glossary/gls_eas.html">attributi estesi</A>
+degli oggetti verranno comunque salvate correttamente.
+
+</UL>
+</BODY>
+</HTML>
+

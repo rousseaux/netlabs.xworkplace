@@ -1,0 +1,59 @@
+<HTML RESID=&ID_XSH_SETTINGS_XC_THREADS;>
+<HEAD>
+    <TITLE>
+        Impostazioni &xwp;: sottoprocessi
+    </TITLE>
+</HEAD>
+<BODY>
+La pagina "Sottoprocessi" mostra informazioni aggiuntive sui sottoprocessi che &xwp; attiva
+all'interno del processo WPS. Sono informazioni che possono risultare utili per individuare e 
+correggere i difetti del programma.
+
+<P> Ogni linea nella finestra riporta il <B>nome interno</B> 
+assegnato al sottoprocesso, 
+permettendo cosç di non doverlo identificare solo attraverso il suo numero TID. Questo nome
+ä utilizzato solo da &xwp;.
+Il valore <B>"TID"</B> ä la "IDentitÖ" del sottoprocesso (unica all'interno del 
+processo WPS). Il valore <B>"PrioritÖ"</B> rappresenta la prioritÖ del sottoprocesso:
+il byte superiore puï essere un valore da  1 a 4 (corrispondente alla classe: idle,
+regular, time-critical, o foreground server),
+mentre il byte inferiore rappresenta il "delta" prioritÖ all'interno di una classe di prioritÖ.
+(Si veda <A HREF="glossary/gls_scheduler.html">"Processi e sottoprocessi"</A> per i dettagli.)
+
+<P>Questi sono i sottoprocessi che dipendono da&xwp;:
+
+<UL><LI><B>NotifySentinel, RefreshFindFolder, RefreshNotificationPump:</B>
+vengono attivati se si abilita "Sostituire autoaggiornamento cartelle" dalla pagina
+"Funzioni" e controllano il file system in background.
+
+<P><LI><B>Party:</B> il sottoprocesso "Party" di &xwp; gestisce le funzioni multimediali,
+come ad es. la riproduzione dei suoni di sistema.
+
+<P><LI><B>Worker:</B> il sottoprocesso "Worker" di  &xwp; si occupa di alcune funzioni di 
+manutenzione che vengono svolte in secondo piano dato che non sono "time-critical".
+
+<P><LI><B>Bush:</B> Il sottoprocesso "Bush" di &xwp; resta quiescente per la maggior parte del tempo;
+viene risvegliato solo per certe funzioni che, seppure in un certo senso solo cosmetiche, richiedono un'alta
+prioritÖ di funzionamento, come ad es. la visualizzazione del logo di avvio di &xwp;.
+
+<P><LI><B>Wimp:</B> un altro sottoprocesso secondario che si attiva di quando in quando per
+eseguire operazioni di pulizia della memoria e simili.
+
+<P><LI><B>File:</B> il sottoprocesso  "File" si attiva quando &xwp; 
+gestisce operazioni sui file, come ad es. spostare file nel cestino o cancellarli.
+
+<P><LI><B>&xcenter;:</B> dato che ogni 
+<A HREF="xcenter/xc_main.html">&xcenter;</A>
+ä gestito da un proprio sottoprocesso si avrÖ una linea
+per ogni &xcenter; attivo.
+
+<P><LI><B>PulseWidgetCollect:</B> ä visibile solo se 
+<A HREF="xcenter/xc_pulse.html">l'elemento "Pulse (carico CPU)"</A>
+ä attivo in uno degli &xcenter;. "Pulse" infatti avvia un proprio sottoprocesso che 
+legge il carico della CPU direttamente dal kernel &os2;, evitando cosç di essere bloccato
+da applicazioni che dovessero monopolizzare la coda input PM.
+
+</UL>
+</BODY>
+</HTML>
+

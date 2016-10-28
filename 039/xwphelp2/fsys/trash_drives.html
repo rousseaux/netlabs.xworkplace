@@ -1,0 +1,47 @@
+<HTML RESID=&ID_XSH_SETTINGS_TRASHCAN_DRIVES;>
+<HEAD>
+    <TITLE>
+        Impostazione unit… disco per il cestino
+    </TITLE>
+</HEAD>
+<BODY>
+E' qui possibile scegliere quali unit… disco il cestino deve supportare.
+
+<P>Premere <B>"Annulla"</B> per ripristinare le impostazioni in uso 
+prima dell'apertura di questa pagina di impostazioni.
+<P>Premere <B>"Valore assunto"</B> per ripristinare le impostazioni abilitate all'installazione.
+Quest'ultima azione provocher… una nuova scansione delle unit… disco (vedere la nota in fondo).
+
+<P>Un'unit… Š <B>"supportata"</B> dal cestino se appare nel campo di destra:
+il cestino accetta gli oggetti provenienti dalle unit… supportate.
+
+<P>Un'unit… Š <B>"non supportata"</B> dal cestino se appare nel campo di sinistra:
+il cestino rifiuta gli oggetti provenienti dalle unit… non supportate e permette solo di 
+cancellarli "realmente" (il che significa che questi oggetti non si potranno recuperare in seguito).
+
+<P>Anche se non sono elencate in questa pagina, le unit… A: e B: sono sempre non supportate.
+
+<P>Il funzionamento del cestino Š stato accuratamente collaudato con i 
+<A HREF="glossary/gls_fs.html">file system</A>
+FAT, HPFS e JFS,
+supportati nativamente da &os2;. Prestare attenzione nell'usare il cestino con altri file 
+system, soprattutto se non supportano directory nascoste o
+<A HREF="glossary/gls_eas.html">attributi estesi.</A>
+Se sono stati installati i driver specifici, molta attenzione sar… necessaria nell'usare i
+file system EXT2FS (Linux) e VFAT (Windows 95).
+
+<P><B>Nota:</B> Sono stati riportati problemi nell'uso del driver <CODE>VFAT.IFS</CODE>
+di Daniel Steiner, causati forse dalla cattiva gestione delle directory nascoste da parte del driver.
+E' opportuno disabilitare il supporto per questo tipo di volumi.
+
+<P>Per <B>attivare o meno</B> il supporto di una certa unit… da parte del cestino, selezionarla dal campo
+di sinistra o di destra e premere il pulsante "Aggiungi" o "Rimuovi".
+
+<P><B>Nota:</B> questa pagina non identifica automaticamente cambiamenti
+delle lettere identificative delle unit… disco avvenuti dopo l'installazione del cestino.
+Per ricontrollare tutte le unit… premere il pulsante "Valore assunto" e riconfigurare il supporto alle unit….
+
+<BR>
+</BODY>
+</HTML>
+

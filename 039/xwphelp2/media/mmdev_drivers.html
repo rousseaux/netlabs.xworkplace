@@ -1,0 +1,42 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: dispositivi multimediali
+    </TITLE>
+</HEAD>
+<BODY>
+La colonna "Programmi di controllo" mostra informazioni dettagliate riguardanti i driver che implementano 
+il dispositivo.
+
+<P>A seconda del tipo di dispositivo possono essere visualizzate le seguenti informazioni:
+
+<UL><LI><B>Media control driver:</B> L'MCD Š responsabile per l'interpretazione dei 
+comandi multimediali inviati dall'applicazione al dispositivo. In base al tipo di comando
+inviato, l'MCD decide quali altre azioni eseguire.
+Il nome qui elencato corrisponde ad una <A HREF="glossary/gls_dll.html">DLL</A>
+nella directory MMOS2.
+
+<P><LI><B>Vendor-specific driver:</B> se installato, il VSD viene solitamente richiamato
+dall'MCD per implementare funzioni di un certo tipo di hardware. Questa architettura
+consente a MMPM/2 di mantenere MCD abbastanza generici, mentre le funzioni specifiche dell'hardware
+vengono codificate nel VSD.
+
+<P>Per esempio, i dispositivi "waveaudio" sono di solito implementati dall'MCD generico,
+mentre il lavoro reale sulla scheda audio viene fatto nel VSD (che comunica con 
+il programma di controllo fisico del dispositivo).
+
+<P><LI><B>Physical device driver:</B> il PDD Š responsabile del lavoro svolto direttamente con 
+l'hardware. Dato che queste istruzioni devono essere date a ring 0, in particolar modo
+se vi sono degli interrupt da processare, questo livello Š indispensabile.
+
+<P>Non tutti i dispositivi necessitano di un PDD: serve generalmente per le schede audio,
+che debbono gestire interrupt e DMA.
+
+<P><LI><B>Parametri:</B> sono i parametri aggiuntivi specificati per il 
+dispositivo nel file ASCII
+<CODE>MMPM2.INI</CODE>, presente nella directory MMOS2. Sono specifici per il dispositivo 
+ma sembrano essere legati a quanto specificato nell'oggetto "Impostazioni multimediali".
+</UL>
+</BODY>
+</HTML>
+

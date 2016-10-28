@@ -1,0 +1,34 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &os2;: Automatische controle JFS.IFS
+    </TITLE>
+</HEAD>
+<BODY>
+De <B>"Automatische controle"</B> parameter bepaalt voor welke
+volumes JFS automatisch een <CITE>CHKDSK</CITE> zal uitvoeren bij het opstarten van het systeem.
+
+<P>Voer hier simpelweg de respectievelijke stationsletters in (zonder de opvolgende "<CITE>:</CITE>").
+
+<P>Let echter op dat de betekenis van deze parameter hier enigszins anders is in vergelijking met de
+overeenkomstige parameter van <CODE>HPFS.IFS</CODE>:
+
+<UL><LI>Als u alleen een <CODE>*</CODE> (wat standaard is) opgeeft, zullen alle JFS
+volumes automatisch gecontroleerd worden bij het 'afspelen' van de journal log. Let op dat JFS
+niet alleen volumes controleert die "vies" gemarkeerd zijn (oftewel niet netjes afgesloten),
+maar de journal log <I>altijd</I> 'afspeelt' bij het opstarten.
+
+<LI>Als u hier, <I>voor</I> een stationsletter, een plus teken (<CITE>+</CITE>) opgeeft
+zal JFS niet alleen een journal log afspelen voor dat station, maar ook een volledige
+integriteitscontrole uitvoeren.
+
+<LI>Als de lijst eindigt met <CODE>+*</CODE>, zal JFS een volledige integriteitscontrole
+uitvoeren op alle volumes die niet opgegeven zijn in de lijst.
+
+</UL>Voorbeeld: Als u <CITE>C+DE</CITE> opgeeft, zal station D: een volledige controle krijgen,
+terwijl C: en E: alleen hun journal logs afgespeeld krijgen.
+
+<BR>
+</BODY>
+</HTML>
+

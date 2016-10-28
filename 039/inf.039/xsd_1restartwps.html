@@ -1,0 +1,90 @@
+<HTML NOSUBLINKS="config"  WIDTH=70% XPOS=right>
+<HEAD>
+    <TITLE>
+        Riavviare la scrivania
+    </TITLE>
+</HEAD>
+<BODY>
+<B>Classi: XFldObject, XFldDesktop</B><HR>
+&xwp; pu• aggiungere una voce "Riavvio scrivania" al menu contestuale della Scrivania.
+
+<P>Selezionando "Riavvio scrivania", si apre una finestra di dialogo simile a quella della 
+<A HREF="xsd_2xshutdown.html">Chiusura avanzata</A>. La differenza sta nel fatto che,
+dopo aver chiuso tutte le finestre, non viene riavviato l'intero computer, ma solo
+la Workplace Shell (PMSHELL.EXE).
+
+<P>Per comprendere la differenza bisogna sapere che l'interfaccia utente di &os2;
+si compone  di tre "piani", ognuno basato su quello inferiore:
+<PRE>
+   ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+   ³  Workplace Shell (WPS)      ³
+   ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+   ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+   ³  Presentation Manager (PM)  ³
+   ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+   ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+   ³  Kernel di OS/2             ³
+   ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+</PRE>
+<BR>Il <STRONG>Kernel di OS/2</STRONG> fornisce le funzioni base del sistema operativo,
+come l'accesso ai dispositivi ed il multitasking. Senza di esso, nulla funzionerebbe.
+
+<P>Il <STRONG>Presentation Manager (PM)</STRONG> Š responsabile della grafica del sistema,
+come finestre, icone menu, immagini e altre cose, come i file INI.
+&os2; pu• lanciare applicazioni in modo testo (per es. la linea di comando di &os2;, CMD.EXE) 
+senza PM, ma tutte le altre applicazioni richiedono l'attivit… di PM.
+
+<P>Anche la <STRONG>Workplace Shell (WPS)</STRONG> Š un'applicazione PM, seppure molto
+complessa. E' responsabile della visualizzazione di cartelle, del lancio dei programmi quando
+si esegue il doppio click sulle loro icone, dell'associazione di file a programmi, in breve: tutto 
+ci• che si vede dopo la fine dell'avviamento di &os2;. E' anche il contesto in cui &xwp; lavora.
+
+<P>La voce di menu <STRONG>"Riavvio scrivania"</STRONG> fa ripartire il livello pi— alto dei tre 
+qui elencati, la Workplace Shell. Ci• richiede molto meno tempo del riavvio dell'intero sistema, 
+dato che PM e il kernel non devono essere caricati n‚ inizializzati.
+
+<P>Riavviare la WPS pu• essere utile quando il sistema diventa molto lento (per qualche motivo,
+a giudicare dalla mia esperienza personale, WPS consuma molta memoria lavorando parecchio con 
+i file) o se si Š installato del software che cambia le classi di WPS.
+
+<P><STRONG>Note importanti:</STRONG>
+
+<UL><LI>Si tenga conto che questo modo di riavviare la scrivania non era previsto dai progettisti IBM.
+"Riavvio Scrivania" obbliga la WPS a ripartire semplicemente terminandola. Dato che &xwp;
+Š parte del processo di WPS, anch'esso termina. A quel punto &os2; riavvia automaticamente l'intero 
+processo. Il risultato Š praticamente lo stesso di un crash e riavvio della WPS, colla differenza che 
+i dati della WPS vengono salvati prima del riavvio.
+
+<BR><LI>Sul mio sistema, le icone degli eseguibili nelle cartelle vengono rovinate da un riavvio della Scrivania.
+Questo vale per tutti gli oggetti programma e i file eseguibili a cui non viene assegnata una icona
+individuale (tramite il loro blocco impostazioni). Le icone vengono perse oppure sostituite con altre.
+Questo Š un difetto del Presentation Manager su cui non posso intervenire. Dopo un riavvio completo,
+le icone vengono ripristinate correttamente.
+
+<BR><LI>N‚ le impostazioni del Presentation Manager n‚ quelle di &cfgsys; vengono lette nel riavvio di WPS.
+Se queste impostazioni sono state cambiate, un riavvio della scrivania non riconoscer… questi cambiamenti.
+Si esegua un riavvio del sistema.
+
+<BR><LI>Come regola generale, pi— classi WPS sono installate pi— problemi possono
+capitare nel riavvio di WPS. Questo pu• essere dovuto a molte ragioni, che non comprendo 
+appieno; di sicuro alcune classi di WPS prodotte da terzi sembrano non ripulire le risorse
+allocate quando la WPS viene terminata.
+Inoltre, il kernel del SOM sembra alle volte andare in confusione con classi sostitutive di
+WPS.
+<P>In questi casi si ottengono crash casuali in certe DLL, che sono sintomi di qualche
+problema interno. Se questo accade, Š necessario riavviare il sistema.
+Candidati di questi crash casuali di DLL sono INSTALL.DLL (contiene WPInstall), 
+WPPRINT.DLL (classi della stampante e dello spooler) ed anche il
+WorkFrame proveniente con i compilatori IBM.
+
+<BR><LI>A seconda del sistema, il numero di riavvii della scrivania eseguiti con successo
+sar… limitato. Alcuni utenti hanno riportato che il riavvio funziona correttamente solo una volta;
+sul mio sistema ho riavviato la WPS molte volte (anche 30) prima che il sistema crollasse
+(sembra essere un numero alto, ma nel programmare &xwp; la WPS va riavviata spesso).
+
+</UL>Questa voce di menu si pu• disattivatare dal blocco impostazioni della Scrivania.
+<BR>
+</BODY>
+</HTML>
+
+

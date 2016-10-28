@@ -1,0 +1,107 @@
+<HTML WIDTH=70% XPOS=right>
+<HEAD>
+    <TITLE>
+        Come funziona lo Hook PM di &xwp;?
+    </TITLE>
+</HEAD>
+<BODY>
+Uno hook ["gancio; amo da pesca"] Presentation Manager (PM) ä, in generale, del codice
+che si registra con il PM per poter ricevere tutti i messaggi che viaggiano attraverso
+il sistema. In questo modo ä come se tale codice diventasse parte effettiva di ogni
+processo del sistema che riceve o invia messaggi.
+
+<P>All'interno del PM (come anche in Windows) le finestre comunicano tra loro
+attraverso <B>messaggi</B>. Il sistema invia automaticamente messaggi alle finestre
+per ogni genere di evento. Anche le finestre comunicano tra loro attraverso
+l'invio di messaggi. Ci sono centinaia di differenti messaggi di sistema, ai quali vanno
+aggiunti quelli definiti dalle singole applicazioni.
+
+<P>Per esempio: cliccando su una finestra con il tasto sinistro del mouse, il sistema
+invia a quella finestra il messaggio <CODE>WM_BUTTON1CLICK</CODE>. Ciï che succede
+poi dipende dal tipo di finestra (in PM: dalla classe): una finestra di controllo
+con contenitori verificherÖ se sotto al puntatore del mouse c'ä un campo e, se sç,
+lo attiverÖ. Una finestra di Netscape controllerÖ se sotto al mouse c'ä un collegamento
+e se sç lo seguirÖ, caricando una nuova pagina HTML.
+
+<P>I messaggi di sistema "importanti" sono numerosi, ad esempio <CODE>WM_CHAR</CODE>
+(per l'input da tastiera), <CODE>WM_SIZE</CODE> (quando si ridimensiona una finestra),
+<CODE>WM_PAINT</CODE> (quando ä necessario che la finestra sia aggiornata) e
+<CODE>WM_DESTROY</CODE> (quando la finestra dev'essere distrutta). E' questo che
+all'apparenza rende la programmazione PM tanto complicata: programmare per il PM
+significa in gran parte preoccuparsi di reagire a messaggi, il che ä molto differente
+dalla programmazione "normale", dove il programma ha solo da eseguire dei compiti in
+sequenza. Con il PM, se alla finestra non viene accodato nessun messaggio il programma
+generalmente non fa nulla. I suoi sottoprocessi resteranno bloccati in attesa di un
+messaggio.
+
+<P>Quando si registra nel sistema una <B>funzione hook globale per i messaggi</B>,
+tutti i messaggi passano attraverso tale funzione hook <I>prima</I> di arrivare alla
+finestra cui sono destinati. In questo modo la funzione hook puï modificare il messaggio,
+ridirezionarlo verso un'altra finestra, fare qualcosa di completamente diverso o anche
+"ingoiarsi" il messaggio, impedendo di fatto alla finestra cui era destinato di riceverlo.
+
+<P>E' in questa maniera che funzionano tutte le note utilitÖ PM hook (NPS WPS,
+FeelX, ProgramCommander/2, X-it, Styler/2 e naturalmente anche lo hook PM di
+&xwp;): esse intercettano determinati messaggi e li manipolano.
+
+<P>Facciamo un esempio: ogni volta che lo hook PM di &xwp; incontra un messaggio
+<CODE>WM_CHAR</CODE> (quando cioä un tasto della tastiera viene premuto o
+rilasciato) viene effettuato un controllo per verificare se il tasto ä o meno nell'elenco
+delle scorciatoie da tastiera. Se lo ä, il messaggio viene annullato (in modo che la finestra
+cui sarebbe stato destinato non lo possa ricevere) e viene attivata invece l'opportuna parte del
+codice WPS &xwp;, che provvede ad aprire l'oggetto specificato dall'utente per quel
+dato tasto rapido.
+
+<P>La maniera in cui ä implementato lo &xwp; differisce dall'implementazione abituale
+di questo genere di utilitÖ: la maggior parte di questi programmi registrano la propria
+funzione hook quando vengono avviati e la deregistrano alla chiusura (quando, per
+es., si sceglie "chiusura" dall'elenco finestre).
+
+<P>Lo hook PM di &xwp;, invece, viene registrato da uno speciale programma che non
+appare nell'elenco finestre -- il <B>demone &xwp;,</B> <CODE>XWPDAEMN.EXE</CODE>.
+E' possibile vederlo solo usando WatchCat o un analogo gestore di task. Chiudendo tale
+programma si perdono subito tutte le funzionalitÖ garantite dallo hook.
+
+<P><CODE>XWPDAEMN.EXE</CODE> viene lanciato da &xwp; quando la WPS si avvia la
+prima volta, dopodichÇ continua a funzionare finchÇ il sistema non viene chiuso. Il demone,
+quindi, sopravvive anche ai riavvii della Scrivania.
+
+<P>Anche se il demone ä un programma PM, esso non crea nessuna finestra (eccetto
+quella dell'&pgr;; vedi pió sotto).
+
+<P>Nel dettaglio questo meccanismo ä in realtÖ molto complesso, perchÇ ä necessario l'uso
+di memoria condivisa e attente tecniche di serializzazione, come semafori mutex condivisi
+e messaggi ad elaborazione incrociata, specie quando lo hook ä controllato da pagine
+impostazioni WPS che girano all'interno del processo WPS. Spero comunque di avere
+almeno reso l'idea dell'insieme.
+
+<P>Ci sono diverse ragioni che mi hanno portato a scegliere questo approccio:
+
+<OL><LI>Avviare hook dal processo <CODE>PMSHELL.EXE</CODE> non ä generalmente una
+buona idea, dato che tutte le classi WPS girano al suo interno. Se la WPS crolla, diventa molto
+pió complicato eliminare gli hook installati, proprio a causa della complessitÖ della
+WPS stessa.
+
+<P><LI>Dato che il demone continua a funzionare durante il riavvio della Scrivania,
+esso ä in grado di conservare dati importanti ai fini del riavvio stesso. Per esempio,
+la cartella avvio &xwp; non viene nuovamente riprocessata al riavvio della WPS, a
+meno che l'utente non l'abbia richiesto esplicitamente. Provare ä semplice: se si
+uccide il demone e poi si riavvia la Scrivania, la cartella avvio &xwp; verrÖ processata
+nuovamente, perchÇ le classi WPS &xwp;, non rilevando la presenza del demone,
+riterranno che la WPS stia venendo avviata per la prima volta.
+
+<P><LI>&pgr; ä parte del demone ed ä perciï anch'esso indipendente dalla WPS.
+&pgr; richiede che sia controllata una gran quantitÖ di messaggi e ha bisogno di
+essere informato sulla creazione o distruzione di finestre. In qualsiasi momento
+&pgr; deve conoscere lo stato di ogni finestra nel sistema. Funzionando
+come processo separato, per &pgr; ä pió facile tenere le proprie finestre distinte dal
+resto del sistema.
+
+<P>Ulteriori dettagli su &pgr; si possono trovare alla pagina
+<A HREF="pgmg_8howwork.html">"Funzionamento"</A> nella
+<A HREF="06342intro_pagemage.html">sezione dedicata a &pgr;.</A>
+</OL>
+</BODY>
+</HTML>
+
+

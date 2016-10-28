@@ -1,0 +1,53 @@
+<HTML RESID=&ID_XSH_WIDGET_MEMORY_MAIN;>
+<HEAD>
+    <TITLE>
+        &xcenter;: elemento Memoria libera
+    </TITLE>
+</HEAD>
+<BODY>
+L'elemento 
+<A HREF="xcenter/xc_main.html">&xcenter;</A>
+<B>Memoria libera</B> visualizza approssimativamente la quantit… di memoria RAM fisica disponibile
+per le applicazioni. Il valore Š mostrato in kilobyte (KB) ed Š aggiornato una volta al secondo.
+
+<BR><IMG SRC="img/xc_mem.gif">
+
+<P>Il valore visualizzato Š inferiore rispetto al totale della memoria effettivamente
+utilizzabile dalle applicazioni. Se il valore riportato tende verso zero, questo non significa che le applicazioni
+non hanno pi— memoria disponibile. Questo elemento infatti visualizza la quantit… di memoria fisica che pu•
+venire assegnata senza che il sistema debba scaricare altri dati nel file di appoggio per far posto alla nuova
+richiesta. Se quindi questo valore scende al di sotto di una certa soglia, questo significa soltanto che il
+file di appoggio sta per essere allargato.
+
+<P>E' possibile 
+<A HREF="glossary/gls_dropfonts.html">trascinare tipi di carattere e colori</A>
+sull'elemento memoria per personalizzarne l'aspetto.
+
+<IFNDEF __NOOS2KERNEL__>
+<P>E' inoltre possibile, cliccando due volte sull'elemento, aprire comodamente l'oggetto
+<A HREF="objects/obj_krnl.html">"Kernel &os2;"</A>, che, tra le altre cose, 
+permette di modificare le impostazioni relative alla memoria del sistema.
+</IFNDEF>
+
+<IFNDEF __EWORKPLACE__>
+<P><B>Dettagli sul funzionamento</B>
+
+<P>Questo elemento usa al suo interno l'API <CODE>Dos16MemAvail</CODE>, una vecchia
+API 16-bit non pi— documentata da IBM.
+
+<P>Secondo la documentazione per &os2; 1.3 questa API riporta
+"la dimensione del blocco pi— largo di memoria disponibile". Questo evidentemente
+non Š pi— vero, dato che tutte le versioni a 32-bit di &os2; (a partire cioŠ dalla 2.0) non assegnano pi— la memoria
+per blocchi, ma per pagine di 4 KB ciascuna.
+
+<P>Secondo l'esperienza dell'autore questa API oggi mostra la quantit… di memoria fisica libera
+nel sistema, cioŠ il totale della memoria RAM non utilizzata da &os2;, o perch‚ non Š ancora stata assegnata,
+o perch‚ il contenuto Š stato scaricato nel file di appoggio, o perch‚ Š stata rilasciata dal processo che la 
+stava utilizzando in precedenza (da test effettuati, questa API mostra, per la RAM libera, un valore analogo a quello riportato da Theseus).
+Questa memoria RAM libera Š immediatamente disponibile per le applicazioni, senza che
+&os2; debba fare spazio scaricando altre pagine di memoria nel file di appoggio.
+</IFNDEF>
+<BR>
+</BODY>
+</HTML>
+

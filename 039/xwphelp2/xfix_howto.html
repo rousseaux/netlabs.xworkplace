@@ -1,0 +1,112 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        xfix: Step by Step Guide
+    </TITLE>
+</HEAD>
+<!-- this page is new with V1.0.9 -->
+<BODY>
+
+If you haven't made a <B>backup</B> of <CODE>OS2.INI</CODE> and
+<CODE>OS2SYS.INI</CODE>, exit xfix and do it now, then restart.
+
+<OL>
+<BR><LI><B>Getting Started</B>
+
+<UL>
+<BR><LI>Select <B>Actions-&gt;Find invalid files</B> on the menubar.
+This will identify handles for files and folders that have been deleted.
+It may take a few moments to complete. When done, invalid handles will be
+marked <IMG SRC="img/xfix_error.gif">.
+
+<BR><LI>Select <B>Actions-&gt;Auto-Protect</B>. This will protect you from
+deleting handles the WPS needs to operate correctly. These handles will be
+marked <IMG SRC="img/xfix_protect.gif"> or <IMG SRC="img/xfix_safe.gif">.
+
+<BR><LI>Select <B>Sort-&gt;Icon</B>. This will move all of the invalid
+handles to the top of the list.
+</UL>
+
+<LI><B>Delete Invalid Handles</B>
+
+<P>xfix can identify many problems but can only fix a few of them.
+If your system is seriously corrupted, many of these problems may
+still be present after using xfix,
+
+<UL>
+<BR><LI>Look in the "References" column for each invalid handle. If you
+see a number and the words <CODE>Abstract objects</CODE>, you have non-file
+objects such as shadows that have gotten lost.  To recover them, click
+MB2 on that handle then select <B>Move abstracts to Desktop</B>. If you
+don't do this, these objects will be deleted when you delete this handle.
+
+<BR><LI>Highlight all of the invalid handles, then <B>Delete</B> them. You
+can use the <CODE>Delete</CODE> key or select <CODE>Delete</CODE> from
+the &popmenu;.
+</UL>
+
+<LI><B>Delete Unneeded Handles</B>
+
+<P>This is where xfix is at its best.  You may have a huge number of
+handles that the WPS will never use and do nothing except slow it down.
+They point to valid files but are unnecessary in most cases and can
+be deleted.
+
+<UL>
+<BR><LI>Select <B>Sort-&gt;Long Name</B> to sort the list by drive,
+directory, and filename.
+
+<BR><LI>Locate files and folders that have shadows on your Desktop, then
+<B>Protect</B> them.  Either select <CODE>Protect</CODE> from the
+&popmenu; or press <CODE>Ctrl+P</CODE>.
+
+<BR><LI>Select <B>Sort-&gt;Extension</B>. Now, look at the "Short name"
+column and scroll down until you see files sorted by their extension.
+
+<BR><LI>Any handle that isn't already <IMG SRC="img/xfix_protect.gif">
+protected may be one that you want to delete.  Again, <B>do not</B>
+delete a handle if you have made a shadow for that file or folder.
+
+<P>Good candidates for deletion are <CODE><B>.DLL</B></CODE> and
+<CODE><B>.ZIP</B></CODE>.  Programmers can probably delete their
+<CODE><B>.C</B></CODE>, <CODE><B>.CPP</B></CODE>, and
+<CODE><B>.H</B></CODE> files.  If you have a large number of, say,
+<CODE><B>.JPG</B></CODE> files and aren't sure whether to delete them,
+just delete one or two of them.  After you close xfix, see if this
+had any negative consequences -- if not, restart xfix and delete all
+of them.
+
+<BR><LI>If you have a policy of never creating WPS objects for files
+in certain folders (for example, "DOWNLOADS" or "TEMP"),
+then the handles for files in these folders can be deleted. Select
+<B>Sort-&gt;Long Name</B> again to sort the list by path, locate
+the folder, then delete the handles below it.
+</UL>
+
+<LI><B>Save and Exit</B>
+
+<UL>
+<BR><LI>The <B>status bar</B> at the bottom of the window should show
+"0 invalid" and "0 orphans".  If not, select <B>Sort-&gt;Icon</B>.
+The invalid <IMG SRC="img/xfix_error.gif"> handles will be at the
+top of the list -- delete <IMG SRC="img/xfix_delete.gif"> them.
+The orphans <IMG SRC="img/xfix_orphan.gif"> will be next -- protect
+<IMG SRC="img/xfix_protect.gif"> them.
+
+<BR><LI>Select <B>xfix-&gt;Write back to OS2SYS.INI</B>
+
+<BR><LI>You will be prompted whether you want to remove the handles you
+marked for deletion.  If there is a warning about orphans, press
+<CODE>Cancel</CODE> and fix the problem.  If not, press <CODE>Yes</CODE>.
+
+<BR><LI>Next, you will be asked if you really want to save your work.
+Read the warnings, and if you are confident you haven't created any
+new problems, answer <CODE>Yes</CODE>.
+
+<BR><LI>Close the main window to exit xfix.
+</UL>
+
+</OL>
+</BODY>
+</HTML>
+

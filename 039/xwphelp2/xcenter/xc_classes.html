@@ -1,0 +1,58 @@
+<HTML RESID=&ID_XSH_XCENTER_CLASSES;>
+<HEAD>
+    <TITLE>
+        &xcenter;: classi
+    </TITLE>
+</HEAD>
+<BODY>
+La pagina "Classi" nel blocco appunti impostazioni degli <A HREF="xcenter/xc_main.html">&xcenter;</A>
+elenca le classi <A HREF="xcenter/xc_main_widgets.html">elemento</A> disponibili nel sistema.
+
+<P>Si noti che le classi elemento non sono vere classi WPS. I nomi di classi sono usati
+solo dallo &xcenter;, per organizzare internamente gli elementi. Si pu• immaginare la
+classe elemento come il modello da cui viene creato l'elemento. La classe dell'elemento
+pu• essere contenuta all'interno dello &xcenter; stesso, oppure caricata da una
+<A HREF="glossary/gls_dll.html">DLL</A> plug-in nella cartella
+<IFNDEF __EWORKPLACE__>
+<CODE>plugins\xcenter</CODE>.
+</IFNDEF>
+<IFDEF __EWORKPLACE__>
+<CODE>ecs\system\ewps\plugins\ecenter</CODE>.
+</IFDEF>
+Una DLL plug-in pu• contenere una o pi— classi elementi.
+
+<P>Diversamente dalla pagina "Elementi", in cui sono elencati gli elementi attivati nel
+singolo &xcenter;, la pagina "Classi" riporta il medesimo elenco di classi per ogni
+&xcenter;. Le classi qui elencate sono le stesse presenti nel sottomenu "Aggiungi
+elemento", nel menu contestuale di uno &xcenter; attivo.
+
+<P>Sono visualizzati i seguenti campi:
+
+<UL><LI>Nel campo <B>"DLL"</B> Š riportato il nome della
+<A HREF="glossary/gls_dll.html">libreria a collegamento dinamico (DLL)</A>
+che implementa l'elemento. Pu• essere una delle DLL nella cartella
+<IFNDEF __EWORKPLACE__>
+<CODE>plugins\xcenter</CODE>
+</IFNDEF>
+<IFDEF __EWORKPLACE__>
+<CODE>ecs\system\ewps\plugins\ecenter</CODE>
+</IFDEF>
+o essere integrata in &xwp;, nel qual caso viene indicata con "built-in".
+
+<P><LI>La colonna <B>"Classe elemento"</B> riporta il nome interno della classe
+utilizzato dallo &xcenter; per identificare la classe di appartenenza dell'elemento.
+Tale nome Š indispensabile per il corretto funzionamento dell'elemento e non cambia
+mai, a meno che la DLL non sia pi— disponibile.
+
+<P><LI>Il campo <B>"Titolo classe"</B> elenca i nomi descrittivi delle classi, come
+riportati nel menu "Aggiungere elemento". Tali nomi hanno solo funzione informativa e
+non sono critici per il funzionamento dell'elemento.
+
+<P><LI>Nel campo <B>"Versione"</B> Š riportato il livello minimo di versione dello
+&xcenter; necessario all'elemento per funzionare. Lo &xcenter; verifica questo valore
+per assicurarsi di poter caricare la DLL plug-in. Questo campo non ha evidentemente
+senso per gli elementi integrati, per i quali Š infatti vuoto.
+</UL>
+</BODY>
+</HTML>
+

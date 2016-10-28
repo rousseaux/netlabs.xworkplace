@@ -1,0 +1,101 @@
+<HTML WIDTH=70% XPOS=right>
+<HEAD>
+    <TITLE>
+        WIDGETSETTINGSDLGDATA
+    </TITLE>
+</HEAD>
+<BODY>
+<B>Nota:</B> Questo ä un estratto da <CODE>center.h</CODE>. Queste
+definizioni non sono necessariamente aggiornate. Per il proprio codice si
+faccia sempre riferimento ad <CODE>center.h</CODE> e non a queste definizioni.
+
+<PRE>
+  /*
+   *@@ WIDGETSETTINGSDLGDATA:
+   *      blocco di dati passato a una funzione "mostra
+   *      dialog di impostazioni" (WGTSHOWSETTINGSDLG), se
+   *      l'elemento ha specificato una tal cosa.
+   *
+   *      le dialog di impostazioni dello &xcenter; basilarmente
+   *      lavorano come di seguito:
+   *
+   *      1.  ‘ necessaria una funzione che mostri una dialog
+   *          modal. Tale funzione deve avere il seguente
+   *          prototipo:
+   *
+   +              VOID EXPENTRY ShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
+   *
+   *      2.  Si memorizzi la funzione nel campo
+   *          XCENTERWIDGETCLASS.pShowSettingsDlg per la
+   *          propria classe elemento.
+   *
+   *          Ciï abiliterÖ la voce di menu "Properties"
+   *          per l'elemento.
+   *
+   *      3.  La funzione viene chiamata quando l'utente seleziona
+   *          "Properties". Non importa cosa questa funzione
+   *          faccia... In ogni caso dovrebbe mostrare una dialog
+   *          modal e modificare la stringa di impostazioni dell'elemento,
+   *          e chiamare ctrSetSetupString con lo handle "hSettings"
+   *          che le era stato passato nella struttura
+   *          WIDGETSETTINGSDLGDATA. Ciï fornirÖ all'elemento
+   *          le nuove impostazioni.
+   *
+   *          L'indirizzo dell'helper ctrSetSetupString viene fornito
+   *          in questa struttura, cosç che non ä necessario
+   *          importarlo da XFLDR.DLL.
+   *
+   *      Se una classe elemento supporta le dialog di impostazioni,
+   *      deve specificarlo nella sua XCENTERWIDGETCLASS.
+   *
+   *@@added V0.9.7 (2000-12-07) [umoeller]
+   *@@changed V0.9.9 (2001-02-06) [umoeller]: added pctrSetSetupString
+   */
+
+  typedef struct _WIDGETSETTINGSDLGDATA
+  {
+      HWND                    hwndOwner;
+                  // titolare proposto per la dialog di impostazioni
+
+      const char              *pcszSetupString;
+                  // stringa di impostazioni corrente (non cambiare)
+
+      const LHANDLE           hSettings;
+                  // handle alle impostazioni dell'elemento; deve
+                  // essere passato a ctrSetSetupString;
+                  // NON MODIFICARE
+
+      PXCENTERGLOBALS         pGlobals;
+                  // se != NULL, ä lo &xcenter; attualmente aperto
+                  // per il cui elemento i dati vengono cambiati.
+                  // Se NULL, lo &xcenter; non ä correntemente
+                  // aperto.
+
+      PXCENTERWIDGET          pView;
+                  // se != NULL, ä la vista attualmente aperta
+                  // dell'elemento. Se NULL, l'elemento
+                  // attualmente non ä aperto.
+
+      PVOID                   pUser;
+                  // spazio per dati addizionali che
+                  // potrebbero servire alla dialog
+
+      PCTRSETSETUPSTRING      pctrSetSetupString;
+                  // puntatore alla funzione ctrSetSetupString in
+                  // src\shared\center.c; deve essere chiamata
+                  // dalla dialog di impostazioni per cambiare
+                  // la stringa di impostazioni dell'elemento.
+                  // Tale puntatore ä stato aggiunto dalla V0.9.9
+                  // per poter usare le dialog di impostazioni senza
+                  // dover importare la funzione da XFLDR.DLL.
+
+  } WIDGETSETTINGSDLGDATA, *PWIDGETSETTINGSDLGDATA;
+
+</PRE>
+
+
+<BR>
+</BODY>
+</HTML>
+
+

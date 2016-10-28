@@ -1,0 +1,53 @@
+<HTML RESID=&ID_XSH_PROGRAMFILE_BATCH;>
+<HEAD>
+    <TITLE>
+        &xwp;: file comandi e file batch
+    </TITLE>
+</HEAD>
+<BODY>
+<IMG SRC="img/os2_os2win.gif">
+<IMG SRC="img/os2_doswin.gif">
+
+<P>I file batch ed i file comandi, detti anche <B>"script",</B> sono file di testo semplice
+contenenti una serie di 
+<A HREF="glossary/gls_cmd.html">comandi per un processore comandi</A>,
+che vengono processati in sequenza quando il file viene eseguito.
+
+<P>File batch e file comandi sono eseguiti da uno dei processori comandi; quale
+verr… usato dipende dall'estensione del file:
+
+<UL><LI>Se l'estensione Š <CODE>.CMD</CODE> <B>(command file),</B> viene richiamato
+il processore comandi &os2;, <CODE>CMD.EXE</CODE>.
+Il file dovr… essere una sequenza di comandi, a meno che non inizi con un commento REXX
+(<CODE>/* ... */</CODE>), nel qual caso sar… interpretato come uno 
+script <A HREF="glossary/gls_cmd_rexx.html">REXX</A>.
+
+<P><LI>I file con estensione <CODE>.BAT</CODE> <B>(batch file)</B> sono eseguiti
+in <A HREF="glossary/gls_sessions.html">sessioni DOS</A> attraverso il processore
+comandi DOS, <CODE>COMMAND.COM</CODE>.
+Si noti che il processore comandi &os2; (<CODE>CMD.EXE</CODE>) riconosce anche l'estensione
+<CODE>.BAT</CODE>. Se da una richiesta comandi si avvia un file 
+<CODE>.BAT</CODE>, questo verr… automaticamente lanciato in una sessione DOS.
+
+</UL>I file batch ed i file comandi sono utili per automatizzare certe funzioni. Se, per
+esempio, ci si trova spesso ad inserire la medesima serie di istruzioni
+dalla richiesta comandi, si pu• decidere di creare un file batch o comandi con questa sequenza
+ed usare poi questo script invece di digitare manualmente le varie istruzioni.
+File di questo tipo si possono comodamente realizzare con l'&eexe; di &os2;.
+
+<P>Se si Š creato un file batch o un file comandi, Š possibile anche
+lanciarlo dalla Workplace Shell: baster… creare un 
+&link_progobjs; che punti allo script.
+
+<P>Per ulteriori informazioni si vedano gli argomenti seguenti:
+
+<UL>
+<LI><A HREF="glossary/gls_cmd.html">Richieste comandi</A>
+<LI><A HREF="glossary/gls_cmdopers.html">Operatori comando e redirezione</A>
+<LI><A HREF="glossary/gls_cmdsubvars.html">Variabili sostitutive</A>
+<LI><A HREF="objects/obj_pgmf_batch_expl.html">Esempi di file batch</A>
+<LI><A HREF="objects/obj_pgmf_autoexec.html">AUTOEXEC.BAT</A>
+<LI><A HREF="glossary/gls_sessions.html">Tipi di sessione</A>
+</UL>
+</BODY>
+</HTML>

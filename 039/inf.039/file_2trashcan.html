@@ -1,0 +1,59 @@
+<HTML NOSUBLINKS="config"  WIDTH=70% XPOS=right>
+<HEAD>
+    <TITLE>
+        Il cestino di &xwp;
+    </TITLE>
+</HEAD>
+<BODY>
+<B>Classi: XFldObject, XWPTrashCan, XWPTrashObject</B><HR>
+A partire dalla V0.9.0, &xwp; introduce anche un cestino.
+<IMG SRC="file_2trashcan.gif" ALIGN=RIGHT>
+
+<P>La maggior parte degli utenti sarÖ probabilmente abituata a questa funzione, offerta da MacOS, Windows 95 e
+KDE (su Linux). In sostanza il cestino immagazzina temporaneamente gli oggetti cancellati dal sistema, cosç 
+da poterli recuperare, nel caso li si siano cancellati erroneamente, semplicemente aprendo il cestino 
+(che funziona come una normale cartella) e ripristinandoli.
+
+<P>Con &xwp;, il cestino intercetta tutte le operazioni di cancellazione WPS (<I>non</I> 
+intercetta perï le operazioni da linea di comando nÇ l'impostazione <CODE>DELDIR</CODE> di &os2;.).
+
+<P><B>Nota:</B> il cestino non viene creato automaticamente durante l'installazione,
+e il supporto alla cancellazione del cestino ä inizialmente disabilitato per evitare confusione.
+PerchÇ il cestino venga attivato lo si deve abilitare dalla
+pagina "Funzioni", nell'oggetto <A HREF="sys_2global.html">"Impostazione di &xwp;".</A>
+
+<P>Per <B>cancellare</B> un oggetto spostandolo nel cestino vi sono due maniere:
+
+<OL><LI><B>Trascinare</B> uno o pió oggetti sull'icona del cestino oppure all'interno della
+finestra del cestino aperto.
+
+<P><LI>&xwp; puï anche intercettare il comando <B>"Cancella" della WPS.</B>
+Questo vale tanto per la voce presente nel menu contestuale di ogni oggetto come per il 
+tasto "Canc", quando viene premuto dopo aver selezionato uno o pió oggetti in una cartella. 
+Entrambe le azioni spostano
+gli oggetti selezionati nel cestino invece di cancellarli effettivamente.
+
+<P>‘ sempre possibile effettuare una cancellazione reale (effettiva cancellazione dell'oggetto
+invece di suo spostamento nel cestino) tenendo premuto il tasto "Maiusc" mentre si seleziona
+la voce "Cancella" dal menu contestuale dell'oggetto.
+
+</OL>Una volta che gli oggetti sono nel cestino ä possibile <B>distruggerli</B>
+(quindi cancellarli definitivamente) o <B>ripristinarli</B> (riportando gli oggetti
+nella locazione da cui sono stati cancellati).
+<P><IMG SRC="trashcan.gif">
+
+<P>Inoltre, quando nel cestino vi ä qualcosa, nel menu contestuale del cestino appare una 
+voce aggiuntiva <B>"Svuota cestino"</B>, che serve a cancellare <I>tutti</I>
+gli oggetti presenti nel cestino.
+
+<P>Il cestino ha una nuova pagina di impostazioni nel suo blocco impostazioni, contenente funzioni
+aggiuntive. Selezionare <B>"Aiuto"</B> da quella pagina per maggiori informazioni.
+
+<P>Per maggiori dettagli sul funzionamento interno del cestino consultare
+la <A HREF="further_2howxtrash.html">relativa pagina</A> nella sezione
+"Caratteristiche interne di &xwp;".
+<BR>
+</BODY>
+</HTML>
+
+

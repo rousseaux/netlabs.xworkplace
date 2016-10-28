@@ -1,0 +1,126 @@
+<HTML XPOS=right WIDTH=70%>
+<HEAD>
+    <TITLE>
+        ID di menu WPS
+    </TITLE>
+</HEAD>
+<BODY>
+Nell'usare la stringa di impostazione di WPObject <CITE>MENUITEMSELECTED</CITE>,
+i seguenti ID di menu possono tornare utili.
+Si ricordi che non tutti questi ID sono pensati per qualsiasi oggetto:
+per esempio, "Formattare disco" non ha senso nelle cartelle, e non so cosa succeda
+se si prova a usarlo. Nulla, se si ha fortuna.
+<P>Si noti che le nuove voci di menu introdotte con &xwp; non hanno Id di menu <I>fissi</I>,
+per cui non sono elencati qui. Invece, i menu di &xwp; hanno menu id <I>variabili</I>,
+la cui base Š specificata nell'impostazione globale "&xwp; menu item ID offset".
+Questa base viene sommata a <CITE>WPMENUID_USER</CITE>, che vale 0x6500 (25856 decimale),
+e gli id di menu di &xwp; sono sommati a tale base per permettere la compatibilit… con
+altri arricchimenti di WPS. Per cui, se si vuole usare una voce di menu di &xwp; con
+<CITE>MENUITEMSELECTED</CITE>, serve un'utilit… come <CITE>XRAY</CITE> per trovare
+l'id "effettivo" di menu. Tale ID cambier… se viene cambiato l'offset.
+
+<P>Gli Id seguenti sono presi dalla documentazione del Toolkit di Warp 3
+(ho escluso quelli che non hanno senso se chiamati da REXX):
+<P><DL>
+<DT><CITE>WPMENUID_OPEN                        1</CITE>
+<DT><CITE>WPMENUID_HELP                        2</CITE>
+<DT><CITE>WPMENUID_PRINT                       3</CITE>
+<DT><CITE>WPMENUID_SELECT                      4</CITE>
+<DT><CITE>WPMENUID_SORT                        5</CITE>
+<DT><CITE>WPMENUID_FIND                        8</CITE>
+<DT><CITE>WPMENUID_CREATEANOTHER             101</CITE>
+<DT><CITE>WPMENUID_MOVE                      107</CITE>
+<DT><CITE>WPMENUID_COPY                      108</CITE>
+<DT><CITE>WPMENUID_CREATESHADOW              316</CITE>
+<DT><CITE>WPMENUID_DELETE                    109</CITE>
+<DT><CITE>WPMENUID_PROPERTIES                112</CITE>
+<DT><CITE>WPMENUID_PALETTE                   317</CITE> ("Open" -> "Palette")
+<DT><CITE>WPMENUID_REFRESH                   503</CITE>
+<DT><CITE>WPMENUID_HELP_FOR_HELP             601</CITE>
+<DT><CITE>WPMENUID_HOWTOGETHELP              601</CITE>
+<DT><CITE>WPMENUID_EXTENDEDHELP              602</CITE>
+<DT><CITE>WPMENUID_HELPKEYS                  603</CITE>
+<DT><CITE>WPMENUID_HELPINDEX                 604</CITE>
+
+<BR><DT>Le seguenti voci di menu sono riservate alla funzione "Catturare" ("lazy drag"):
+<DT><CITE>WPMENUID_PICKUP                    188</CITE>
+<DT><CITE>WPMENUID_PUTDOWN                   189</CITE>
+<DT><CITE>WPMENUID_PUTDOWN_COPY              190</CITE>
+<DT><CITE>WPMENUID_PUTDOWN_MOVE              191</CITE>
+<DT><CITE>WPMENUID_PUTDOWN_LINK              192</CITE>
+<DT><CITE>WPMENUID_PUTDOWN_CANCEL            193</CITE>
+<DT><CITE>WPMENUID_PUTDOWN_CREATE            194</CITE>
+
+<BR><DT><STRONG>Elementi WPFolder:</STRONG>
+<DT><CITE>WPMENUID_SELALL                    114</CITE>
+<DD>(selezionare tutti gli elementi della cartella)
+<DT><CITE>WPMENUID_DESELALL                  115</CITE>
+<DD>(deselezionare tutti gli elementi della cartella)
+<DT><CITE>WPMENUID_CLOSE                     120</CITE>
+<DT><CITE>WPMENUID_TREE                      123</CITE>
+<DD>("Aprire" -> "Visualizzazione ad albero")
+<DT><CITE>WPMENUID_ICON                      303</CITE>
+<DD>("Aprire" -> "Visualizzazione icone")
+<DT><CITE>WPMENUID_DETAILS                   304</CITE>
+<DD>("Aprire" -> "Visualizzazione dettagli")
+<DT><CITE>WPMENUID_ARRANGE                   309</CITE>
+<DD>(su &warp4; e superiori, Š la voce Arrange predefinita)
+<BR>
+<DT><STRONG>Elementi WPDesktop:</STRONG>
+<DT><CITE>WPMENUID_SHUTDOWN                  704</CITE> (WPDesktop items)
+<DT><CITE>WPMENUID_LOCKUP                    705</CITE>
+<DT><CITE>WPMENUID_LOGIN                     708</CITE>
+<DT><CITE>WPMENUID_LOGOUT                    709</CITE>
+<DT><CITE>WPMENUID_ASSIGN                    710</CITE>
+<DT><CITE>WPMENUID_UNASSIGN                  711</CITE>
+<DT><CITE>WPMENUID_ACCESSNEW                 712</CITE>
+<DT><CITE>WPMENUID_SYSTEMSETUP               713</CITE>
+<BR>
+<DT><CITE>WPMENUID_FORMAT                    124</CITE> (WPDisk items)
+<DT><CITE>WPMENUID_CHKDSK                    128</CITE>
+<DT><CITE>WPMENUID_FIXDSK                    129</CITE>
+<DT><CITE>WPMENUID_PROGRAM                   132</CITE>
+<DT><CITE>WPMENUID_COPYDSK                   182</CITE>
+<DT><CITE>WPMENUID_LOCKDISK                  184</CITE>
+<DT><CITE>WPMENUID_EJECTDISK                 185</CITE>
+<DT><CITE>WPMENUID_UNLOCKDISK                186</CITE>
+</DL>
+<BR>Gli ID seguenti non sono documentati ufficialmente da IBM, per cui i simboli relativi
+non sono ufficiali (li ho inventati io). La maggior parte di essi Š disponibile solo su &warp4;
+e superiori.
+Gli ID di menu ora sono in esadecimale
+(si usi la funzione REXX X2D per convertirli in decimale):
+<P><DL>
+<DT><CITE>WPMENUID_PASTE                   0x2CB</CITE>
+<DT><CITE>WPMENUID_VIEW_ICON               0x2CC</CITE>
+<DD>("Vista" -> "Visualizzazione icone", al posto di "Aprire"; &warp4; e superiori)
+<DT><CITE>WPMENUID_VIEW_TREE               0x2CD</CITE>
+<DD>("Vista" -> "Visualizzazione ad albero", al posto di "Aprire"; &warp4; e superiori)
+<DT><CITE>WPMENUID_VIEW_DETAILS            0x2CE</CITE>
+<DD>("Vista" -> "Visualizzazione dettagli", al posto di "Aprire"; &warp4; e superiori)
+<DT>
+<DT><CITE>WPMENUID_SORTBYNAME             0x1770</CITE>
+<DT><CITE>WPMENUID_SORTBYTYPE             0x1771</CITE>
+<DT><CITE>WPMENUID_SORTBYREALNAME         0x1777</CITE>
+<DT><CITE>WPMENUID_SORTBYSIZE             0x1778</CITE>
+<DT><CITE>WPMENUID_SORTBYWRITEDATE        0x1779</CITE>
+<DT><CITE>WPMENUID_SORTBYACCESSDATE       0x177B</CITE>
+<DT><CITE>WPMENUID_SORTBYCREATIONDATE     0x177D</CITE>
+<BR>
+<DT><CITE>WPMENUID_ARRANGEFROMTOP          0x2DE</CITE>
+<DT><CITE>WPMENUID_ARRANGEFROMLEFT         0x2DF</CITE>
+<DT><CITE>WPMENUID_ARRANGEFROMRIGHT        0x2E0</CITE>
+<DT><CITE>WPMENUID_ARRANGEFROMBOTTOM       0x2E1</CITE>
+<DT><CITE>WPMENUID_ARRANGEPERIMETER        0x2E3</CITE>
+<DT><CITE>WPMENUID_ARRANGEHORIZONTALLY     0x2E4</CITE>
+<DT><CITE>WPMENUID_ARRANGEVERTICALLY       0x2E5</CITE>
+<BR>
+<DT><CITE>WPMENUID_LOCKINPLACE             0x2DA</CITE>
+<DT><CITE>WPMENUID_VIEW                     0x68</CITE>
+<BR>
+<DT><CITE>WPMENUID_REFRESH                 0x1F7</CITE>
+</DL>
+<BR>
+</BODY>
+</HTML>
+

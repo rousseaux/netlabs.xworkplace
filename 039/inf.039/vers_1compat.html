@@ -1,0 +1,140 @@
+<HTML NOSUBLINKS="config"  WIDTH=70% XPOS=right>
+<HEAD>
+    <TITLE>
+        Compatibilit… con altri programmi
+    </TITLE>
+</HEAD>
+<BODY>
+
+Ô esperienza comune il fatto che parecchie estensioni WPS non vanno d'accordo
+l'una con l'altra. Se anche non sembrano interferire tra loro, dopo un po'
+smettono di funzionare assieme.
+
+<P>Nel corso del tempo ho provato numerose utilit… di sistema con &xwp; (sia su
+Warp 3 e 4) ed inoltre diversi utenti mi hanno riferito le loro esperienze. I
+programmi seguenti non risultano dare problemi di compatibilit…:
+
+<UL>
+<LI>CandyBarZ 1.01 / 1.10
+<LI>CommandFolder 1.50
+<LI>Desktop Wizard 1.41 (ma vedi le note sotto)
+<LI>DragText 2.5
+<LI>Extended Desktop 1.4
+<LI>FeelX (installa una classe WPS)
+<LI>Hot Scroll 0.80 / 1.00 / 1.10
+<LI>NPS WPS 1.81 / 1.82 (ma vedi le note sotto)
+<LI>Object Desktop Professional 1.5.2 / 2.0 (ma vedi le note sotto)
+<LI>WatchCat 2.1 (installa una classe WPS)
+<LI>WPAnimatedMousePointer 1.01
+<LI>X.file 1.1 / 1.2
+<LI>X.it 2.4 / 2.5
+
+</UL><B>Nota generale.</B> Dato che &xwp; include in ogni versione nuove
+funzioni, aumentano le probabilit… che queste vadano ad interferire con
+classi sostitutive WPS realizzate da altri. A seconda di quale software Š stato
+installato per primo (e che perci• appare per primo nell'elenco di sostituzioni
+di classi WPS), &xwp; o l'altro prodotto potrebbero non riuscire a cambiare
+correttamente il comportamento della WPS.
+
+<P>Inoltre, dato che alcune delle funzioni offerte da &xwp; sono contenute
+anche in altri pacchetti per potenziare la WPS (principalmente hook PM),
+bisogna assicurarsi che tali funzioni non siano abilitate in pi— pacchetti
+contemporaneamente. Per esempio, si dovrebbero disabilitare le barre di stato
+in &xwp; e Object Desktop, che se funzionanti assieme sono garanzia di
+problemi, o disattivare il cestino di &xwp; se un altro software che garantisce
+tale funzione Š attivo.
+
+<P><B>Nota bene:</B> Il seguente elenco di incompatibilit… Š basato sui
+rapporti inviati da utenti di &xwp;. Non ho potuto verificare tutte queste
+segnalazioni e le includo soltanto per evitare ad altri possibili problemi.
+
+<UL><LI><B>Object Desktop.</B> OD manipola la WPS intensivamente tanto quanto
+&xwp; se non di pi—, per cui Š naturale che la maggior parte dei conflitti si
+presentino con questo software.
+<P><B>Nota:</B> non posseggo Object Desktop. Quanto segue Š tutto quel che so.
+Se scoprite altro, comunicatemelo e lo aggiunger• in questa sezione.
+Ma non scrivetemi per dirmi che OD non coopera con &xwp;.
+<I>Lo so</I> e posso farci ben poco.
+<P>Per tutte le versioni, valgono le seguenti regole: se si hanno problemi, &xwp;
+Š probabilmente in conflitto con la classe sostitutiva delle cartelle di OD, TSEnhFolder.
+Se non funziona nulla, si pu• sempre deregistrare tale classe (usando l'oggetto
+di &xwp; "Elenco classi WPS") e &xwp; dovrebbe prendere a funzionare.
+<P>Prima di ogni altra cosa, si tenga a mente quanto segue:
+
+<P><B>Tutte le versioni di Object Desktop.</B>
+<P>Ho saputo che &xwp; non coopera con la funzione <B>"Browse mode"</B> di Object
+Desktop. Sar… necessario disattivarla.
+
+<P>Inoltre, ci si deve assicurare di avere disabilitato la funzione <B>"Folder status bars"</B>
+in Object Desktop prima di abilitare la rispettiva funzione in &xwp;, altrimenti potranno
+accadere le cose pi— strane.
+
+<P>Infine, sono stato informato del fatto che &xwp; continua ad aggiungere barre di stato ai
+<B>"Launchpad"</B> di Object Desktop, anche dove non dovrebbero apparire. Apparentemente, anche
+questi oggetti derivano dalla classe WPFolder; questo significa per• che hanno nei loro blocchi
+appunti impostazioni una pagina "Visualizzare", dalla quale Š possibile disattivare le barre di
+stato di &xwp;. Se l'oggetto non dovesse avere una pagina "Visualizzate" si pu• provare a
+usare manualmente la stringa di impostazioni <CODE>STATUSBAR=NO</CODE> della classe XFolder.
+
+<P><B>Object Desktop 2.0.</B>
+<A HREF="mailto:e9425324@student.tuwien.ac.at">Stefan Zechmeister</A>
+mi informa che Š riuscito a far funzionare OD 2.0 con &xwp; nel modo seguente:
+<OL><LI>Installare OD 2.0.
+<LI>Installare l'OD fixkit #1.
+<LI>Installare &xwp;.
+<LI>Andare all'oggetto "Impostazioni &xwp;", pagina "Paranoia", e innalzare il valore di
+"Offset ID voci di menu XWorkplace" a 700 o superiore. A partire dalla V0.9.0, il valore
+predefinito Š appunto 700.
+</OL>Se si sposta la cartella di installazione di &xwp; in un'altra cartella, ci si
+assicuri che la cartella destinazione abbia disattivate le funzioni extra di OD,
+altrimenti &xwp; segnaler… che la sua Cartella di configurazione non esiste.
+
+<BR><LI>Se si sta usando <B>NPS WPS,</B> ci si assicuri di aver disabilitato le sue
+funzioni "Select by name" e "Sort by extension", poich‚ &xwp; offre le stesse
+funzioni e risulta confuso se tali funzioni sono fornite anche da NPS WPS.
+
+<P>&xwp; <I>non</I> funziona con la selezione automatica dei menu di NPS WPS, almeno
+non se si sta usando la funzione "Contenuto cartella". Potrebbero verificarsi blocchi
+nel PM. Si usi invece la funzione di &xwp; "Menu scorrevoli".
+
+<BR><LI>Mi Š stato riferito che &xwp; pare avere problemi nel cooperare con
+<B>Program Commander/2.</B> Apparentemente, ci• si risolve disattivando la funzione
+"SmartIcons" per le barre del titolo.
+
+<BR><LI>&xwp; sembrava anche avere problemi con <B>DragText</B> su alcuni sistemi.
+Dev'esserci un'impostazione che permette a DragText di avviarsi in ritardo, che
+dovrebbe risolvere il problema.
+
+<BR><LI>Hauke Laging mi informa che <B>Extended Clipboard (EClip)</B> di Hinnerk Becker
+non coopera con &xwp;.
+Sul sistema Warp 4 di Hauke la WPS si bloccava all'avvio e non rispondeva ad alcun
+segnale. Hauke mi disse che il problema si risolveva rimuovendo EClip dalla cartella
+di avviamento (non sono riuscito a riprodurre il problema, ma lo riporto comunque).
+
+<BR><LI>Parecchi utenti hanno anche segnalato malfunzionamenti della funzione
+"Disporre a griglia". Ho provato su Warp 3 e 4 senza incontrare problemi; questi utenti
+avevano sempre qualche versione di Object Desktop installata, pertanto sospetto che in
+quei casi &xwp; e Object Desktop collidessero in qualche modo.
+
+<BR><LI>Bernd Schemmer ha riportato che &xwp; sembra usare lo stesso ID di menu di <B>LAN
+Server GUI</B>. Se si sta usando LAN Server (o altri software che abbiano tale problema),
+gli ID delle voci di menu di &xwp; possono essere cambiati dall'oggetto
+<A HREF="sys_2global.html">"Impostazioni &xwp;"</A>. L'offset ID predefinito Š stato (V0.51)
+innalzato da 100 a 300 per evitare tali conflitti.
+
+<BR><LI>Michael Holzapfel ha riportato che installare i driver GRADD per la
+scheda video <B>ELSA Winner 2000FC</B> gli impediva di installare &xwp; V0.71,
+causando un CHKDSK al successivo riavvio, il che poi danneggiava i driver
+appena installati, impedendo al sistema di partire. Disinstallare &xwp; lo ha aiutato.
+
+<BR><LI>Dirk Schulz ha riportato che Desktop Wizard e &xwp; non funzionano bene assieme.
+Sul suo sistema, ha aumentato la stabilit… della WPS disinstallando Desktop Wizard.
+Fortunatamente ha scelto di non disinstallare &xwp; ;-)
+
+<P>Mi hanno anche segnalato che Prompt ver. 1.12 di Gary L. Robinson, che pare
+implementi un sottoinsieme delle funzioni di Desktop Wizard, funziona invece correttamente.
+
+</UL>
+</BODY>
+</HTML>
+

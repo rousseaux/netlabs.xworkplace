@@ -1,0 +1,130 @@
+<HTML>
+  <HEAD>
+    <TITLE>
+      xfix: Popup Men&uuml; und Tastaturk&uuml;rzel
+    </TITLE>
+  </HEAD>
+  <!-- this page is new with V1.0.9 --> <body>
+    Dieser Abschnitt beschreibt die Kommandos des xfix <b>Popup
+      Men&uuml;</b> und die Tastaturk&uuml;rzel (sie <a
+      href="xfix_menus.html">Men&uuml;leiste Kommands</a> f&uuml;r eine
+    Beschreibung der zur Verf&uuml;gung stehenden Optionen des
+    Hauptmen&uuml;s).
+    <p><b>Popup Men&uuml;</b> </p>
+    <ul>
+      <li><b>Abstrakte Objekte auf Arbeitsoberfl&auml;che verschieben</b>
+        verschiebt "Nicht-Dateisystem" Objekte die in diesem Ordner
+        liegen auf die &amp;link_desktop;. sie tauchen dort nach WPS
+        Neustart auf. Dieser Men&uuml;eintrag ist nur w&auml;hlbar wenn
+        nur ein einzelnes Handles ausgew&auml;hlt ist -- sie k&ouml;nnen
+        nicht mehrere Objekte von verschiedenen Ordnern auf einmal
+        verschieben.
+        <p>Benutzen sie diese Option bevor sie ein Handle l&ouml;schen
+          welches <code>Abstrakte Objekte</code> in seiner "Referenzen"
+          Spalte anzeigt. Ansonsten werden diese Objekte gel&ouml;scht
+          wenn das Handle gel&ouml;scht wird. </p>
+      </li>
+      <li><b>Ordnerpositionen entfernen</b> l&ouml;scht den <code>OS2.INI</code>
+        Eintrag der Gr&ouml;&szlig;e und Position von Ordnerfenstern
+        oder Eigenschaften Dialogen enth&auml;lt. Diese Eintr&auml;ge
+        lassen sich immer gefahrlos l&ouml;schen weil sie f&uuml;r den
+        Betrieb des Systems nicht kritisch sind. Schlimmstenfalls
+        m&uuml;ssen sie Position und Gr&ouml;&szlig;e von Ordnerfenstern
+        und Eigenschaften Dialogen neu festlegen wenn sie sie das
+        n&auml;chste Mal &ouml;ffnen. </li>
+      <li><b>Objekt-IDs entfernen</b> entfernt den (hoffentlich)
+        systemweit g&uuml;ltigen Klartext Identifizierer der dem Objekt
+        auf das dieses Handle verweist zugeordnet ist. Objekt-IDs werden
+        von Programmen und REXX Skripten genutzt um Objekte zu finden
+        und anzusprechen deren genaue Position bzw. Name bzw. Pfadangabe
+        man nicht kennt. Diese Eintr&auml;ge sollten sie besser nicht
+        l&ouml;schen es sei denn sie sind sicher das sie nirgendwo
+        gebraucht werden. </li>
+      <li><b>L&ouml;schen</b> w&auml;hlt ein Handle <img
+          src="img/xfix_delete.gif"> zum L&ouml;schen aus. Das
+        L&ouml;schen findet erst statt wenn sie "Jetzt l&ouml;schen..."
+        aus dem Aktionen Men&uuml; ausw&auml;hlen bzw. "Zur&uuml;ck in
+        OS2SYS.INI schreiben..." aus dem xfix Hauptmen&uuml;.
+        <p>Wenn das L&ouml;schen eines Handles zu <b>verwaisten</b>
+          Objekten f&uuml;hren w&uuml;rde (und damit ung&uuml;ltigen
+          Objekten da sie keine Zuordnung zu ihrem Elternhandle mehr
+          haben) werden die betroffenen Handles mit diesem <img
+            src="img/xfix_orphan.gif"> Status dargestellt und die Status
+          Spalte zeigt <b>"Wom&ouml;glich verwaistes Kind"</b> an. Wenn
+          sie nicht ohnehin vorhaben auch die verwaisten Handles zu
+          l&ouml;schen sollten sie definitiv das L&ouml;schen des
+          Handles r&uuml;ckg&auml;ngig machen welches diese Warnung
+          ausgel&ouml;st hat.</p>
+        <p>Hinweis: wenn ein ung&uuml;ltiges <img
+            src="img/xfix_error.gif"> oder verwaistes <img
+            src="img/xfix_orphan.gif"> Handle gel&ouml;scht wird
+          verringert sich die Gesamtanzahl an ung&uuml;ltigen und
+          verwaisten Objekten wie sie in der Statuszeile angezeigt
+          werden entsprechend. F&uuml;r verwaiste Objekte wird
+          au&szlig;erdem der Eintrag in der Status Spalte entfernt. </p>
+      </li>
+      <li><b>L&ouml;schen r&uuml;ckg&auml;ngig</b> entfernt die
+        L&ouml;schmarkierung <img src="img/xfix_delete.gif"> von einem
+        Handle so da&szlig; es nicht mehr zum L&ouml;schen vorgesehen
+        ist. Wenn das Handle vorher als ung&uuml;ltig <img
+          src="img/xfix_error.gif"> oder verwaist <img
+          src="img/xfix_orphan.gif"> angezeigt wurde werden die Bilder
+        entsprechend wieder hergestellt und die Fehlerbeschreibung wird
+        wieder in der Statuszeile angezeigt. </li>
+      <li><b>Schutz</b> markiert ein Handle <img
+          src="img/xfix_protect.gif"> so da&szlig; es nicht
+        versehentlich gel&ouml;scht werden kann. Die Handles alle Ordner
+        die Teil des Dateipfades des Objekts sind werden als <img
+          src="img/xfix_safe.gif"> markiert so da&szlig; auch sie gegen
+        ein L&ouml;schen gesch&uuml;tzt sind. Ein Versuch gesch&uuml;tze
+        Handles zu l&ouml;schen wird ignoriert. Wenn Handles als <img
+          src="img/xfix_delete.gif"> zum L&ouml;schen markiert waren
+        wird das L&ouml;schen aufgehoben/r&uuml;ckg&auml;ngig gemacht.
+        Handles die als ung&uuml;ltig <img src="img/xfix_error.gif">
+        markiert sind k&ouml;nnen nicht gegen L&ouml;schen
+        gesch&uuml;tzt werden.
+        <p>Hinweis: sie k&ouml;nnen "Auto-Schutz" aus dem "Aktionen"
+          Men&uuml; ausw&auml;hlen um automatisch die wichtigsten und
+          systemkritischen Handles vor dem L&ouml;schen zu
+          sch&uuml;tzen. Dies verhindert versehentliches L&ouml;schen
+          welches andererseits zur Zerst&ouml;rung der
+          Arbeitsoberfl&auml;che f&uuml;hren w&uuml;rde. Siehe <a
+            href="xfix_menus.html">Menuleiste Kommandos</a> f&uuml;r
+          weitere Details.</p>
+      </li>
+      <li><b>Schutz aufheben</b> entfernt <img
+          src="img/xfix_protect.gif"> von einem gesch&uuml;tzten Handle.
+        Das <img src="img/xfix_safe.gif"> welches allen Ordnern
+        zugeordnet wurde die im Dateipfad des zu l&ouml;schenden
+        Objektes liegen wird ebenso entfernt es sei denn andere vor dem
+        L&ouml;schen gesch&uuml;tzte Objekte w&uuml;rden hierdurch
+        beeinflu&szlig;t werden (also Objekte die auf dem gleichen
+        Dateipfad oder Teilen desselben liegen).
+        <p>Hinweis: f&uuml;r Handles die als <img
+            src="img/xfix_safe.gif"> markiert sind kann der
+          L&ouml;schschutz nicht direkt aufgehoben werden. Sie
+          m&uuml;ssen zun&auml;chst den L&ouml;schschutz f&uuml;r
+          diejenigen Objekte aufheben die dazu f&uuml;hrten da&szlig;
+          auch dieses Objekt einen L&ouml;schschutz erhielt (also solche
+          die als <img src="img/xfix_protect.gif"> markiert sind). Da
+          mehr als ein Objekt (bzw. dessen zugeordnetes Handle) im
+          gleichen Pfad oder Teilen des gleichen Pfades liegen kann
+          m&uuml;ssten sie f&uuml;r all diese Objekte den
+          L&ouml;schschutz aufheben damit sich auch den L&ouml;schschutz
+          f&uuml;r das Obekt ihrer Wahl aufheben k&ouml;nnen. Sie
+          k&ouml;nnen "Schutz aufheben (alle)" aus dem "Aktionen"
+          Men&uuml; ausw&auml;hlen um den L&ouml;schschutz f&uuml;r alle
+          Handles auf ein Mal aufzuheben.</p>
+      </li>
+    </ul>
+    <p><b>Tastaturk&uuml;rzel</b> </p>
+    <p>Im Gegensatz zu den entsprechenden Eintr&auml;gen in den
+      Men&uuml;s schalten die Tastaturk&uuml;rzel die entsprechende
+      Einstellung um: von aus nach an, von an nach aus. </p>
+    <ul>
+      <li><b>L&ouml;schen</b> - <code>Entf</code> Taste oder <code>Ctrl+L</code>
+      </li>
+      <li><b>Sch&uuml;tzen</b> - <code>Ctrl+S</code> </li>
+    </ul>
+  </body>
+</html>

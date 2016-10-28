@@ -1,0 +1,42 @@
+<HTML RESID=&ID_XSH_SETTINGS_PGMFILE_MODULE2;>
+<HEAD>
+    <TITLE>
+        &xwp;: "Funzioni esportate"
+    </TITLE>
+</HEAD>
+<BODY>
+La pagina "Moduli" Š presente nel blocco appunti impostazioni di tutti i 
+file eseguibile e mostra informazioni aggiuntive relative al modulo.
+
+<P>Sono elencate in questa pagina le funzioni esportate dal modulo che possono essere
+importate da altri moduli (sia al momento del caricamento iniziale sia 
+esplicitamente durante l'esecuzione).
+
+<P>Per ciascuna funzione sono visualizzati i seguenti campi:
+
+<UL><LI>La funzione esportata deve avere un <B>valore ordinale</B>, unico 
+all'interno del modulo. Il primo valore possibile Š 1 mentre l'ultimo Š 65535.  
+Non tutti i valori ordinali corrispondono a funzioni esportate.
+
+<P><LI>La funzione esportata pu• essere di un <B>tipo</B> tra i seguenti:
+
+<UL><LI><B>Entry16:</B> funzione 16-bit.
+<LI><B>Entry32:</B> funzione 32-bit.
+<LI><B>286 Call Gate:</B> funzione 16-bit che provoca un passaggio ring 2.
+<LI><B>Forwarder:</B> un inoltratore; chiamare questa "entry point" provoca la
+chiamata di un'altra funzione esportata (o in questo modulo o in un modulo importato).
+
+</UL><LI>Infine, le funzioni esportate possono anche avere 
+un <B>nome</B> che, se definito, Š sensibile alla differenza maiuscolo-minuscolo.
+
+</UL>Le funzioni possono essere importate sia richiamando il numero ordinale (un sistema
+che funziona sempre), sia usando il nome (soltanto se Š stato definito un nome per la
+funzione da importare).
+Si veda la documentazione relativa a
+<A HREF="cpref.inf#DosQueryProcAddr"><CODE>DosQueryProcAddr</CODE></A>
+nella documentazione del Toolkit<A HREF="_toolkitlink.html">*</A>.
+
+<BR>
+</BODY>
+</HTML>
+

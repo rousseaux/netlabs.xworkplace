@@ -1,0 +1,586 @@
+;
+; This file contains additions to XFLDR031.TMF (see remarks there).
+; Many definitions have been moved here because they are presently
+; not needed for eComStation and should thus be separated.
+;
+; This applies to the following messages (V0.9.16, IIRC):
+;
+;   --  FEATURES_*
+;
+;   --  XWPCLS_*
+;
+; With V0.9.20, more items were moved into this file (without
+; changing the actual messages):
+;
+;   --  S506DLG_*
+;
+;       Copyright (C) 1997-2015 Ulrich M”ller.
+;       This file is part of the XWorkplace source package.
+;       XWorkplace is free software. You can redistribute it and/or modify
+;       it under the terms of the GNU General Public License as published
+;       by the Free Software Foundation, in version 2 as it comes in the
+;       "COPYING" file of the XWorkplace main distribution.
+;       This program is distributed in the hope that it will be useful,
+;       but WITHOUT ANY WARRANTY, without even the implied warranty of
+;       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;       GNU General Public License for more details.
+;
+
+;
+; this item added with V0.9.20 (2002-08-10) [umoeller]
+;
+
+<--PRODUCTINFO-->: XWorkplace
+Versie &version;
+Gemaakt &date;
+
+;
+; the following item has changed V0.9.20 (2002-08-10) [umoeller]
+; and V1.0.1 (2003-02-02) [umoeller]
+;
+
+<--XFL0140-->: &copy;&nbsp;1997-2005 Ulrich M”ller.
+<BR>English National Language Support: &copy;&nbsp;1998-2003 Ulrich M”ller.
+<P>
+Bevat werk van &copy;&nbsp;2000-2015 Martin Lafaix, Paul Ratcliffe, en anderen.
+<BR>Bevat werk uit de Standard Function Library &copy;&nbsp;1991-99 van iMatix corporation.
+<BR>Bevat gedeeltes uit expat 1.95.1 &copy;&nbsp;1998-2000 van het Thai Open Source Software Center Ltd.
+<P>
+De 'home site' van &xwp; op het Internet is <AHREF="http://www.xworkplace.org">http://www.xworkplace.org</A>.
+<BR>Gebruik, om bugs te rapporteren, de offici‰le bugtracker op <a href="http://xtracker.netlabs.org">http://xtracker.netlabs.org</a>.
+<P>
+Neem contact op met &contact-user; voor algemene discussie over &xwp;.
+<BR>Neem contact op met &contact-dev; als u bekend bent met (of bekend wilt worden) met de broncode van &xwp;.
+<P>
+&xwp; is vrije software gelicenseerd onder de GNU General Public Licence (GPL), die te vinden is in de
+<A HREF="copying">COPYING file</A> in de &xwp; installatie directory. &xwp; wordt zonder <B>enige garantie</B> geleverd.
+<P>De volledige broncode is verkrijgbaar bij Netlabs CVS. Zie <A HREF="http://www.xworkplace.org/cvs.html">http://www.xworkplace.org/cvs.html</A> voor details.
+U bent uitgenodigd om &xwp; te verspreiden en/of aan te passen volgens de voorwaarden van de GPL.
+<P>
+Voor meer informatie, kijk in de "Notices" sectie van de <A HREF="inf">&xwp; User Guide</A> (EN).
+
+; ---------------------------------------------------------------------------------
+;
+; V0.9.0:
+;
+; Here follow the toolinfos (fly-over help) for the new IBM1S506/DANIS506.ADD dialog
+; in "OS/2 Kernel".
+; Each item starts with "S506DLG_", followed by the dialog ID from include\dlgids.h.
+; NOTE: The internal string buffer for these messages is limited to 3000 characters,
+;       so no string may exceed this value. XWP will crash with longer strings.
+;
+; ---------------------------------------------------------------------------------
+
+<--S506DLG_1621-->: "Quiet" wil zeggen dat het stuurprogramma in het geheel geen uitvoer produceert gedurende de systeem start. Dit is de standaard instelling.
+
+<--S506DLG_1622-->: "Verbose" (/V) zal stuurprogramma-, adapter-, en systeeminformatie laten zien gedurende de systeem start.
+
+<--S506DLG_1623-->: "Wait" (/W) toont dezelfde informatie als "/V", maar zal niet alles in ‚‚n keer laten zien (wat meestal uit het scherm lopen inhoud), maar vraagt u om op een toets te drukken na elk stukje informatie.
+Beschikbaarheid: DANIS506.ADD en nieuwere IBM1S506.ADD versies.
+
+<--S506DLG_1624-->: Dit aankruisvakje bepaalt wanneer DMA Scatter/Gather is geactiveerd.
+Overeenkomstig met de &os2; Handleiding bij opdrachten, is deze standaard "ingeschakeld"
+
+<--S506DLG_1625-->: Dit selecteert adapter0 (het "primaire" programma") voor de onderstaande adapter instellingen.
+Merk op dat //A:0" alleen aan de parameterlijst wordt toegevoegd als er een niet standaardwaarde is ingesteld voor deze adapter of ‚‚n van zijn onderdelen (stations).
+
+<--S506DLG_1626-->: Hiermee wordt adapter1 (het "tweede" programma) voor de adapter hieronder geselecteerd.
+Merk op: dat "/A:1" alleen wordt toegevoegd aan de parameterlijst als er geen standaard instellingen zijn ingesteld voor deze adapter of ‚‚n van zijn onderdelen (stations).
+
+<--S506DLG_1627-->: Het aankruisen van dit vakje vertelt het programma om alleen de adapter mee te nemen die is geselecteerd. Alle apparaten die aan deze adapter gekoppeld zijn, zullen door het stuurprogramma worden overgeslagen.
+Dit is waarschijnlijk alleen noodzakelijk als er meer dan twee adapters in het systeem zitten en het IDE stuurprogramma meer dan ‚‚n keer geladen moet worden.
+
+<--S506DLG_1628-->:Deze instelling bepaalt of het stuurprogramma wordt toegestaan een adapter te resetten indien er een hardware fout optreedt.
+In overeenstemming met de &os2; Handleiding bij opdrachten, kan het resetten van de adapter helpen bij interrupts die verloren zijn gegaan, opdracht timeouts en niet geldige opdrachten. Sommige adapters, met niet standaard opdrachten, kunnen echter gegevens kwijt raken tijdens het resetten.
+Schakel dit aankruisvakje uit om adapter resets te voorkomen voor de huidige adapter.
+Schakel dit aankruisvakje in om expliciet adapter resets toe te staan.
+Als dit aankruisvakje grijs is (onbepaalde status), zal geen parameter worden toegevoegd.
+
+<--S506DLG_1629-->: Schakel dit vakje in om het standaard basis poort adres uitdrukkelijk voor deze adapter te overschrijven.
+Dit is waarschijnlijk alleen nodig als er meer dan twee adapters in het systeem aanwezig zijn en het IDE stuurprogramma meer dan ‚‚n maal moet worden geladen.
+
+<--S506DLG_1630-->: Als het aankruisvakje aan de linkerzijde is ingeschakeld, kan het basis poortadres voor de huidige adapter hier worden ingevuld.
+Dit is een hexadecimale waarde.
+De standaardwaarde is 1F0 voor adapter 0 en 170 voor adapter 1.
+
+<--S506DLG_1631-->:  Schakel dit vakje in om het standaard basis poortadres uitdrukkelijk voor deze adapter te overschrijven.
+
+<--S506DLG_1632-->: Als het aankruisvakje aan de linkerzijde is ingeschakeld, kan het basis poortadres voor de huidige adapter hier worden ingevuld.
+De standaardwaarde is IRQ 14 voor adapter 0 en IRQ 15 voor adapter 1.
+
+<--S506DLG_1634-->: Schakel dit vakje in om het standaard basis poortadres uitdrukkelijk voor deze adapter te overschrijven.
+Dit is waarschijnlijk alleen nodig als er meer dan twee adapters in het systeem aanwezig zijn en het IDE stuurprogramma meer dan ‚‚n maal moet worden geladen.
+
+<--S506DLG_1635-->: Als het aankruisvakje aan de linkerzijde is ingeschakeld, kan het basis poortadres voor de huidige adapter hier worden ingevuld.
+In de documentatie zijn hiervoor geen standaardwaarden te vinden.
+
+<--S506DLG_1636-->:  Schakel dit vakje in om het standaard DMA Scatter/Gather poortadres uitdrukkelijk voor deze adapter te overschrijven.
+Dit is waarschijnlijk alleen nodig als er meer dan twee adapters in het systeem aanwezig zijn en het IDE stuurprogramma meer dan ‚‚n maal moet worden geladen.
+
+<--S506DLG_1637-->: Als het aankruisvakje aan de linkerzijde is ingeschakeld, kan het DMA poortadres voor de huidige adapter hier worden ingevuld.
+Dit is een hexadecimale waarde.
+Overeenkomstig met de  &os2; Handleiding bij opdrachten, is de standaardwaarde altijd 400.
+
+<--S506DLG_1638-->: Dit selecteert of 'busmastering' (directe geheugen toegang, DMA) moet worden ingeschakeld voor de huidige adapter (/BM of /!BM met de adapter parameter).
+DANIS506.ADD en nieuwere versies van IBM1S506.ADD ondersteunen deze parameter ook per eenheid (zie de rechterzijde van deze dialoog).
+Druk op de 'Help' knop voor algemene opmerkingen over 'busmastering'.
+Vink dit vakje aan om expliciet busmastering in te schakelen voor alle eenheden die met de huidige adapter verbonden zijn (/BM).
+Verwijder het vinkje om expliciet busmastering uit te schakelen voor alle eenheden die met de huidige adapter verbonden zijn (/BM).
+Als dit aankruisvakje grijs is (onbepaalde status), zal het stuurprogramma zelf bepalen of 'busmastering' kan worden ingeschakeld.
+Merk op dat de standaard IBM1S506.ADD stuurprogramma's die met Warp 3 en 4 worden mee geleverd dit standaard hebben uitgeschakeld, terwijl de stuurprogramma's van nieuwere Fixpaks dit hebben ingeschakeld.
+In tegenstelling daarmee is DANIS06.ADD slim genoeg om enkele controles uit te voeren voordat 'busmastering' zal worden ingeschakeld. Druk op de "Help" knop voor details.
+
+<--S506DLG_1639-->: Dit selecteert adapter 0, eenheid 0 (de "primaire master" eenheid) voor de onderstaande eenheidsinstellingen.
+Merk op dat /A:0 /U:0" alleen aan de parameter lijst wordt toegevoegd als er niet standaardwaarden zijn ingesteld voor deze eenheid.
+
+<--S506DLG_1640-->: Dit selecteert adapter 0, eenheid 1 (de "primaire slave" eenheid) voor de onderstaande eenheidsinstellingen.
+Merk op dat /A:0 /U:1" alleen aan de parameter lijst wordt toegevoegd als er niet standaardwaarden zijn ingesteld voor deze eenheid.
+
+<--S506DLG_1641-->: Dit selecteert adapter 1, eenheid 0 (de "secondaire master" eenheid) voor de onderstaande eenheidsinstellingen.
+Merk op dat A:1 /U:0" alleen aan de parameter lijst wordt toegevoegd als er enige niet standaardwaarden zijn ingesteld voor deze eenheid.
+
+<--S506DLG_1642-->: Dit selecteert adapter 1, eenheid 1 (de "secondaire slave" eenheid) voor de onderstaande eenheidsinstellingen.
+Merk op dat A:1 /U:1" alleen aan de parameter lijst wordt toegevoegd als er enige niet standaardwaarden zijn ingesteld voor deze eenheid.
+
+<--S506DLG_1643-->: Dit selecteert of 'busmastering' (directe geheugen toegang, DMA) moet worden ingeschakeld voor de huidige eenheid (/BM of /!BM met de parameter van de eenheid).
+Het specificeren hiervan wordt alleen ondersteund door de DANIS506.ADD en nieuwere versies van IBM1S506.ADD.
+Anders moet dat voor de gehele adapter worden gespecificeerd daarvoor is links een aankruisvakje beschikbaar. Zie de opmerkingen daarbij.
+Druk op de 'Help' knop voor algemene opmerkingen over 'busmastering'
+
+<--S506DLG_1644-->:  Schakel dit vakje in om de standaard fouthersteltijd uitdrukkelijk voor deze eenheid te overschrijven (/T:xx).
+
+<--S506DLG_1645-->: Als het aankruisvakje hierboven is ingeschakeld, wordt het te niet doen van de standaard fout hersteltijd (in seconden) toegestaan, voor de huidige geselecteerde eenheid.
+Overeenkomstig met de  &os2; Handleiding bij opdrachten, is de standaardwaarde altijd 30 seconden. Lagere waarden kunnen wenselijk zijn voor fout-tolerante applicaties. Waarden onder de 5 seconden kunnen met het stuurprogramma niet worden opgegeven.
+
+<--S506DLG_1647-->: Schakel dit vakje in om de standaard stations geometrie voor de huidige geselecteerde eenheid op te geven. Anders bepaalt het stuurprogramma aan de hand van de instellingen in de BIOS de geometrie, wat in de meeste gevallen goed is.
+Deze parameter is waarschijnlijk niet meer zo bruikbaar omdat tegenwoordig alle BIOS-en een ingebouwde IDE automatische-detectie voor LBA support hebben.
+
+<--S506DLG_1648-->: Als het aankruisvakje is geactiveerd, kan hier de stations geometrie worden opgegeven.
+Het was niet mogelijk om enige heldere informatie te vinden over de syntax van de /GEO:xxx parameter, dus moet hier "xxx" met de hand worden ingegeven.
+Overeenkomstig de "Storage Device Driver Reference" van de "IBM Device Driver Development Kit" (DDK), kan dit of een enkel decimaal getal zijn (0-47) om aan ‚‚n van de standaard BIOS stationstypes door te geven, dit was waarschijnlijk bruikbaar met stations gemaakt voor 1985, of een waarde in het formaat "(c,h,s)", in drie decimalen die het aantal cylinders, koppen en sectoren aangeven van het station.
+Wees er op bedacht dat dit niet is getest.
+
+<--S506DLG_1652-->: Dit bepaalt of de 'Set Multiple Support' (SMS, block mode) wordt ingeschakeld voor de huidige eenheid .
+SMS betekent dat meer dan ‚‚n blok met gegevens (een station sector) in ‚‚n keer kan worden overgebracht, wat de prestatie verbetert.
+Als dit aankruisvakje grijs is (onbepaalde status), zal het stuurprogramma automatisch bepalen of een schijf SMS ondersteunt.
+Kruis dit vakje aan om SMS expliciet voor een eenheid (/SMS) in te schakelen, als het stuurprogramma SMS ondersteuning niet automatisch detecteert.
+Haal het vinkje weg om SMS expliciet voor een eenheid uit te schakelen (/!SMS). Merk op dat nieuwere versies van de IBM1S506.ADD altijd SMS zullen inschakelen als het stuurprogramma denkt dat dit geschikt is en /!SMS zal dan altijd worden overgeslagen, wat soms problemen veroorzaakt. Gebruik DANIS506.ADD om expliciet SMS uit te schakelen.
+Volgens DANIS506.DOC heeft iedere harde schijf een maximum SMS looptijd die door de fabrikant specifiek voor een model wordt bepaald, deze wordt door het stuurprogramma opgevraagd.
+
+<--S506DLG_1653-->Kruis dit vakje aan om 'Logical Block Addressing' (LBA) expliciet voor de huidige eenheid (/SMS) in te schakelen, als het stuurprogramma dit niet juist detecteert.
+LBA is een BIOS kenmerk dat een aantal jaren geleden is ge‹ntroduceerd om toegang tot grote harde schijven (boven de 540 MB) mogelijk te maken door de schijf geometrie opnieuw logisch in te delen. Moderne harde schijven moeten dit altijd ingeschakeld hebben via de BIOS instellingen en meestal wordt dit door &os2; juist gedetecteerd.
+
+<--S506DLG_1654-->: Deze instelling bepaald of een eenheid wordt doorgegeven aan &os2; opslag beheer (storage device manager, OS2DASD.DMD).
+Deze beheerder is de schakel tussen de diverse adapter stuurprogramma's (*.ADD) en het bestandssysteem van &os2; (FAT, HPFS, ...). Het is dit stuurprogramma dat, tijdens het opstarten, logische stations aan de &os2; Kernel doorgeeft zodat aan de stations letters kunnen worden toegekend.
+Haal het vinkje weg om expliciet &os2; ondersteuning voor het huidige station uit te schakelen (zo dat geen stationsletter zal worden toegekend.
+Vink dit vakje aan om expliciet &os2; ondersteuning voor het huidige station in te schakelen.
+Als dit aankruisvakje grijs is (onbepaalde status), zal het IDE stuurprogramma zelf bepalen of het station door &os zal worden ondersteund, wat meestal het geval zal zijn.
+
+<--S506DLG_1655-->: Vink dit vakje aan om beschikbaarheid van de huidige eenheid te forceren, zelfs als het stuurprogramma vaststelt dat de eenheid niet is ge‹nstalleerd.
+Dit is bruikbaar voor externe apparatuur die onafhankelijk kan worden uitgeschakeld b.v. externe Cd-rom stations. Vink in deze ook het "ATAPI" aankruisvakje aan.
+
+<--S506DLG_1656-->: Als dit vakje is aangekruist zal de huidige eenheid altijd als een ATAPI Cd-rom station worden beschouwd.
+Als dit vakje niet is aangekruist zal de huidige eenheid nooit als een ATAPI Cd-rom station worden beschouwd.
+Als dit aankruisvakje grijs is (onbepaalde status), zal het stuurprogramma automatisch bepalen of de eenheid een ATAPI Cd-rom station is.
+Dit is handig voor externe Cd-roms die onafhankelijk kunnen worden uitgeschakeld. Vink in deze ook het "Forceer" aankruisvakje aan.
+
+<--S506DLG_1657-->: Dit is een 'alleen lezen' veld en laat alleen zien hoe de parameters van het IDE station er in de CONFIG.SYS uit zullen zien.
+Dit veld wordt dynamisch aangepast als u ‚‚n van de instellingen in deze dialoog wijzigt.
+Als u op de "OK" knop drukt worden deze parameters gekopieerd naar de "Stations"  pagina in het "&os2; Kernel" instellingen notitieblok.
+
+<--S506DLG_1660-->: Schakel dit aankruisvakje in om de kloksnelheid van de PCI bus in uw systeem expliciet op te geven.
+Alleen beschikbaar voor DANIS506.ADD.
+
+<--S506DLG_1661-->: Als het aankruisvakje aan de linkerzijde is geactiveerd kunt u de PCI kloksnelheid opgeven.
+Uit  DANIS506.DOC: "Sommige gebruikers worden gedwongen (of voelen zichzelf gedwongen) om de PCI bus op hun moederborden met snelheden te laten lopen anders dan het optimum van 33MHz. Bijvoorbeeld, veel Cyrix processors hebben zeer ongewone voorgrond bussnelheden die niet eenvoudig in 33MHz kunnen worden verdeeld. Dit leidt of tot langzame EIDE tijden of tot snellere.  Het voorgaande geval zal teleurstellend zijn maar de laatstgenoemde voert de EIDE koppeling op en kan gegevensverlies veroorzaken.
+Als u de actuele PCI kloksnelheid van het moederbord weet, kunt een extra stuurprogramma optie /PCLK:x toevoegen (x is de PCI kloksnelheid in MHz). Als u de kloksnelheid niet weet, stel dan x in op nul '0' en het stuurprogramma zal dan proberen de kloksnelheid te bepalen. De PCI klok, of afgeleid of door de gebruiker geleverd, wordt dan gesorteerd in vier snelheidsklassen (25MHz, 33MHz, 37MHz, en 41MHz) wat tijdens het opstarten wordt gemeld. Voor elk van deze snelheidsklassen *probeert* het stuurprogramma optimale tijdsinstellingen voor de chip te bepalen maar door beperkingen in de chipsets is dit niet in alle gevallen mogelijk.
+Omdat de meeste moederborden tegenwoordig de PCI bus hebben die lopen op de optimale snelheid van 33MHz, moet u deze schakelaar alleen gebruiken als het echt nodig is!
+Zie voor meer details en technische achtergrond zie: DANIS506.DOC.
+Alleen beschikbaar voor DANIS506.ADD.
+
+<--S506DLG_1663-->: Vink dit vakje aan om algemene busmastering ondersteuning voor niet "algemeen bekende" chips te activeren.
+Druk op de "Help" knop voor meer informatie over 'busmastering'.
+Alleen beschikbaar voor DANIS506.ADD.
+
+<--S506DLG_1664-->: Vink dit vakje aan om alle EIDE chips als "niet algemeen bekend" te behandelen.
+Druk op de "Help" knop voor meer informatie over 'busmastering'.
+Alleen beschikbaar voor DANIS506.ADD.
+
+<--S506DLG_1665-->: Vink dit vakje aan om de DANIS506.ADD "Matrox fix" in te schakelen.
+Uit het DANIS506.DOC: "Als er een PCI EIDE controller in uw systeem zit en u heeft misschien een Matrox beeldschermkaart, kan het opstart proces op een bepaald moment stoppen of vastlopen met een trap 8. Dit komt door zeer slecht gedrag van het Matrox stuurprogramma dat alle poorten met de adressen Cx0yh (x = 0..F, y = 0..3) naloopt tijdens de initialisatie van de basis beeldschermafhandelaar, zelfs als deze adressen niet aan het beeldschermkaart zijn toegewezen. Het wordt spelen met de regels en dan maar hopen dat MGA hier uitkomt.
+Als enig ander PCI apparaat toegewezen adressen krijgt die overeenkomen met het patroon hierboven kan er van *alles* gebeuren. Om dit probleem te omzeilen, is er een nieuwe optie toegevoegd /MGAFIX, die de EIDE apparatuur detecteert met adressen die daardoor worden be‹nvloed en probeert ze een beetje te verplaatsen door de adres decodeerders te her-programmeren zodat ze geen potenti‰le scan doelen meer zijn.
+Pas op: dit is een laatste noodmaatregel optie. Gebruik hem alleen indien noodzakelijk!"
+Alleen beschikbaar voor DANIS506.ADD.
+
+<--S506DLG_1666-->: Vink dit vakje aan om expliciet een inactieve onderbreking op te geven voor de huidige eenheid waarna het station zal stoppen.
+Alleen beschikbaar voor DANIS506.ADD.
+
+<--S506DLG_1667-->: Als het vakje aan de linkerzijde is ingeschakeld specificeert dit de onderbreking in minuten. Specificeren van 0 schakelt het stoppen compleet uit.
+Alleen beschikbaar voor DANIS506.ADD.
+
+<--S506DLG_1668-->: Vink dit vakje aan om de gegevenssnelheid, die is toegestaan voor DMA busmastering, fijn af te stellen.
+Uit DANIS506.DOC: "Veel EIDE controllers hebben niet de mogelijkheid om de PIO modes en multiword DMA modes onafhankelijk van elkaar te selecteren, omdat deze modes dezelfde tijdregisters delen. Dit vanwege historische redenen en de gelijkheid van cyclustijd. Dit wordt toegepast op alle ondersteunde besturingschips die verwacht worden voor Promise Ultra en Cyrix MediaGX.
+Om met deze situatie om te gaan, selecteert het stuurprogramma de langzamere cyclustijd van de voorgestelde PIO en MW-DMA modes."
+Alleen beschikbaar voor DANIS506.ADD.
+
+<--S506DLG_1670-->: Als het aankruisvakje hierboven is ingeschakeld maakt dit het mogelijk om de Ultra-DMA mode expliciet te specificeren dat voor de huidige eenheid is toegestaan.
+Overeenkomstig met DANIS506.DOC, zijn de geldige waarden:
+     0  -  schakel Ultra DMA uit
+     1  -  beperkt tot Ultra DMA mode 0
+     2  -  beperkt tot Ultra DMA mode 1
+     3  -  beperkt tot Ultra DMA mode 2
+     4  -  beperkt tot Ultra DMA mode 3 (44MB/s)
+     5  -  beperkt tot Ultra DMA mode 4 (66MB/s)
+     Als u UDMA=0 instelt en MWDMA=0, zal dit effectief busmastering uitschakelen voor de huidige eenheid omdat geen DMA mode over is om te gebruiken.
+Alleen beschikbaar voor DANIS506.ADD.
+
+<--S506DLG_1672-->: Als het aankruisvakje hierboven is ingeschakeld maakt dit het mogelijk om de Multiword-DMA mode expliciet te specificeren die voor de huidige eenheid is toegestaan.
+Overeenkomstig met DANIS506.DOC, zijn de geldige waarden:
+     0  -  schakelt MW DMA uit
+     1  -  beperkt tot MW DMA mode 0 (in S506.ADD eigenlijk hetzelfde als 0)
+     2  -  beperkt tot MW DMA mode 1
+     3  -  beperkt tot MW DMA mode 2
+Als u UDMA=0 instelt en MWDMA=0, schakelt dit eigenlijk busmastering uit voor de huidige eenheid omdat geen DMA mode over is om te gebruiken.
+Alleen beschikbaar voor DANIS506.ADD.
+
+<--S506DLG_1674-->: Als het aankruisvakje hierboven is ingeschakeld maakt dit het mogelijk om de Programmed I/O (P10) mode expliciet te specificeren, dat voor de huidige eenheid is toegestaan.
+Overeenkomstig met DANIS506.DOC, zijn de geldige waarden:
+     0  -  beperkt tot PIO mode 0
+     1  -  beperkt tot P1O mode 1 (in S506.ADD eigenlijk PIO 0)
+     2  -  beperkt tot PIO mode 2 (in S506.ADD eigenlijk PIO 0)
+     3  -  beperkt tot PIO mode 3 (met flow control)
+     4  -  beperkt tot PIO mode 4 (met flow control)
+Alleen beschikbaar voor: DANIS506.ADD.
+
+<--S506DLG_1675-->: Deze instelling bepaald of een station wordt behandeld als een verwisselbaar station.
+Uit DANIS506.DOC: "Als u een verwisselbaar station heeft en daarvan wilt opstarten zal dit niet lukken. Om van zo'n eenheid op te starten, moet hij behandelt worden als een vast station. Dit kan worden gedaan met de optie /!RMV toegevoegd aan de juiste eenheid.
+Er is ook gerapporteerd dat sommige Syquest stations foutieve firmware bevatten die de ondersteuning van de verwisselbare zaken niet juist aangeeft. Om deze stations aan &os2; kenbaar te maken voegt een verwisselbaar station de /RMV optie toe aan de bestemde eenheid."
+Alleen beschikbaar voor DANIS506.ADD.
+
+<--S506DLG_0001-->: Op "OK" drukken zal de dialoog sluiten en de huidige parameter lijst, getoond in het "Nieuwe parameters" veld, naar de "Stations" pagina kopi‰ren in het "&os2; Kernel" instellingen notitieblok.
+
+<--S506DLG_0002-->: Op "Annuleren" drukken zal de dialoog sluiten, maar niet de "Stations" pagina in het "&os2; Kernel" Instellingen notitieblok wijzigen.
+
+<--S506DLG_0095-->: Drukken op "Alle standaardwaarden" zal de dialoog herstellen naar een standaard instelling, alsof er geen stations parameters in de CONFIG.SYS zijn gespecificeerd.
+
+; ---------------------------------------------------------------------------------
+;
+; V0.9.0:
+;
+; Here follow the toolinfos (fly-over help) for the new "Features" page (XWPSetup).
+; Each item starts with "FEATURES_", followed by the dialog ID from include\dlgids.h.
+; NOTE: The internal string buffer for these messages is limited to 3000 characters,
+;       so no string may exceed this value. XWP will crash with longer strings.
+;
+; ---------------------------------------------------------------------------------
+
+<--FEATURES_6000-->: Als "Vervang pictogrammen" is geactiveerd zal &xwp; de standaard WPS pictogrammen door mooiere vervangen. Deze pictogrammen zijn aan te passen.
+; Dit is nieuw met XFolder 0.84.
+Zie de &xwp; Gebruikershandleiding voor details.
+
+<--FEATURES_6002-->: Als "Vervang Pictogram pagina..." is geactiveerd zal &xwp de "Pictogram" pagina, in de instellingen notitieblokken van ieder object, vervangen door een nieuwe uitgebreidere versie.
+Op die pagina is het wijzigen van het pictogram iets eenvoudiger. Als toevoeging, u kunt de interne zaken van een object bekijken en een algemene sneltoets voor een object instellen als de &xwp; Hook ook is geactiveerd (zie "Muis en toetsenbord" hieronder).
+; Dit is met &xwp; 0.9.16 toegevoegd en vervangt de "Object" pagina die aanwezig was in eerdere versies van &xwp;.
+
+<--FEATURES_6003-->: Als dit is geactiveerd, combineert &xwp; de drie standaard "Bestand" pagina's in de map en gegevensbestand instellingen notitieblokken tot ‚‚n enkele meer handzame "Bestand" pagina.
+Ook wordt een tweede pagina toegevoegd om de uitgebreide kenmerken te kunnen bekijken.
+Ook vervangt dit de "Details" pagina in de stations objecten door een grafisch cirkeldiagram.
+; Dit werd toegevoegd met &xwp; 0.9.0.
+
+<--FEATURES_6004-->: "Uitgebreide systeemgeluiden" maakt het mogelijk dat u meer geluiden definieert dan de WPS normaliter aanbiedt.
+U krijgt extra geluiden voor voorgrondmenu's, object selecties, en meer.
+U kunt, zoals gewoonlijk, deze nieuwe geluiden instellen in het normale "Geluid" object.
+; Dit is nieuw met XFolder 0.70.
+
+; FEATURES_6001 added with V0.9.4
+
+<--FEATURES_6001-->: Indien "Aanpassen instellingen pagina's..." is aangekruist, kan &xwp; de afmetingen van bepaalde instellingen pagina's aanpassen als van het gehele notitieblok de afmetingen worden aangepast. Dit kan handig zijn voor sommige van de meer complexe &xwp; pagina's, om in staat te zijn meer gegevens in ‚‚n keer te laten zien.
+Merk op dat dit alleen effect heeft op sommige van de nieuwe &xwp; pagina's, maar niet op de standaard WPS pagina's.
+; Dit werd toegevoegd met &xwp; 0.9.4.
+
+; FEATURES_6005 added with V0.9.12
+
+<--FEATURES_6005-->: Als "Herstel class titels" is aangekruist zal &xwp; de class titels van de map, bestand en station classes vervangen.
+De class titels worden in de derde kolom in het Details overzicht (en ook in statusbalken, als u dat heeft ingeschakeld) getoond.
+Helaas zijn, als de WPS netwerk classes worden ge‹nstalleerd, deze titels niet langer meer erg duidelijk, dus &xwp; kan ze weer terugzetten naar "Map", "Gegevensbestand" en "Station".
+
+; FEATURES_6006 added with V0.9.20 (2002-07-19) [umoeller]
+
+<--FEATURES_6006-->: Als "Vervang standaard helpschermen" is aangekruist, zal &xwp; veel standaard WPS helpschermen vervangen door nieuwe die meer informatie bevatten. Zij zijn op z'n minst niet zo uit de tijd.
+Dit is meestal van toepassing op helpschermen die aan veel standaard WPS objecten zijn toegewezen, dat gebeurt wanneer u een object selecteert in een map en op F1 drukt.
+;Dit werd toegevoegd met &xwp; 0.9.20.
+
+<--FEATURES_6011-->: Als "Gebruik statusbalken" is aangekruist, kunt u de mappen configureren om statusbalken te laten zien met gedetailleerde informatie over de, in een map, geselecteerde objecten.
+Als dit is geactiveerd, krijgt u twee extra instellingen pagina's in het "Workplace Shell" object van &xwp;, wat het mogelijk maakt de statusbalken in detail te configureren.
+Ook kunt u defini‰ren of de statusbalken getoond moeten worden in elke individuele map.
+Dus na het activeren hiervan gaat u naar het "Workplace Shell" object en dan naar de "Statusbalk" pagina's.
+Zie de &xwp; Gebruikershandleiding voor details, speciaal hoe de statusbalken fijn zijn in te stellen naar uw wensen.
+; Dit is nieuw met XFolder 0.70.
+
+<--FEATURES_6012-->: Kruis "Gebruik "Op raster uitlijnen" aan om in staat te zijn een "Op raster uitlijnen" onderdeel aan de map voorgrondmenu's toe te voegen.
+Dit onderdeel laat u alle objecten in de map uitlijnen op een raster van onzichtbare lijnen, wat het uitlijnen van objecten eenvoudiger maakt.
+Het activeren hiervan voegt ook een "Op raster uitlijnen" pagina toe aan het "Workplace Shell" object, waar u het raster dat moet worden gebruikt kunt defini‰ren. Zie de &xwp; Gebruikershandleiding voor een introductie op wat dit betekent.
+; Dit is nieuw met XFolder 0.50.
+
+<--FEATURES_6013-->: Als "Gebruik map sneltoetsen" is geactiveerd, bent u in staat om, in het "Workplace Shell" object van  &xwp; nieuwe sneltoetsen te defini‰ren voor meer dan 30 veel gebruikte map functies (zoals "Alles selecteren").
+; Dit is nieuw met XFolder 0.50.
+Zie de &xwp; Gebruikershandleiding voor details en standaard sneltoets instellingen.
+
+<--FEATURES_6014-->: "Uitgebreide map sortering" vervangt de standaard WPS sorteer functies van mappen. Als dit is geactiveerd, kunt u de algemene sorteer opties in het "Workplace Shell" object van &xwp; defini‰ren, maar u kunt nog steeds de standaard instellingen in iedere map vervangen. Hiermede worden ook nieuwe sorteer criteria ge‹ntroduceerd zoals "Sorteren op uitbreiding" of "Sorteer mappen eerst".
+; Dit is nieuw met XFolder 0.70.
+Zie de &xwp; Gebruikershandleiding voor details.
+
+;
+; FEATURES_6015 added with V0.9.16
+; rewritten with V1.0.1 (2002-12-15) [umoeller]
+;
+
+<--FEATURES_6015-->: Het "Turbo mappen" kenmerk vervangt het interne geheugen van 'wakker worden' van objecten voor alle mappen op het systeem. Als extra, het vervangt het mechanisme voor het koppelen van gegevensbestanden met programma's. &xwp; implementeert hoge snelheidsalgorithmes om in staat te zijn om objecten in mappen veel sneller te vinden dan de standaard WPS.
+Met deze instelling geactiveerd, zult u ontdekken dat uw mappen veel sneller openen. Ook worden de programma koppelingen veel flexibeler omdat zij alleen maar meer op types zijn gebaseerd.
+Dit vereist dat vervanging voor de  XWPFileSystem class is ge‹nstalleerd. Het wijzigen van deze instelling vereist het opnieuw starten van de WPS.
+Zie de &xwp; Gebruikershandleiding voor details.
+
+;
+; FEATURES_6016 added with V1.0.0 (2002-09-09) [umoeller]
+;
+
+<--FEATURES_6016-->: De "Gedeelde weergave" instelling bepaalt of &xwp; een nieuwe standaard map weergave toevoegt aan het "Open" submenu van alle voorgrondmenu's.
+Een gedeelde weergave bestaat uit een dubbele map weergave, een 'Boom' weergave aan de linkerzijde en een tweede weergave aan de rechterzijde die de objecten in de map laat zien die momenteel in de 'Boom' is geselecteerd.
+U bent misschien bekend met deze eigenschap vanuit Windows.
+
+<--FEATURES_6051-->: De "&xwp; Hook" is een algemene PM Hook die enige kenmerken toevoegt die aanwezig zijn in NPS WPS en WarpEnhancer.
+Activeer deze instellingen als u zaken wilt gebruiken als: glijdende focus, schuiven van vensters met muisknop 3, objecten in de schermhoeken en nog meer muis mogelijkheden.
+Ook is de &xwp; Hook benodigd om de algemene object sneltoetsen te laten werken.
+Als dit is geactiveerd, krijgt u extra instellingen pagina's bij de "Toetsenbord" en "Muis" objecten in uw "Configuratie" map.
+; Dit werd toegevoegd met &xwp; 0.9.0.
+Zie de &xwp; Gebruikershandleiding voor details.
+
+<--FEATURES_6052-->: "Bewegende muisaanwijzers" vervangt de "Aanwijzers" pagina in het "Muis" object (in uw "Configuratie" map) door een nieuwe pagina die het u mogelijk maakt om bewegende muisaanwijzers te defini‰ren in plaats van de statische van &os2;.
+Dit kenmerk zit gewoonlijk in het afzonderlijke "Bewegende muisaanwijzers" programma voor &os2;", maar is nu een onderdeel van &xwp; 0.9.0.
+Zie de &xwp; Gebruikershandleiding voor details.
+
+<--FEATURES_6053-->: Als dit is geactiveerd, kunt u een algemene sneltoets aan ieder WPS object toekennen. Iedere keer wanneer u die sneltoets indrukt, wordt het object in zijn standaard weergave geopend.
+U kunt de objectsneltoets instellen in de "Object" pagina in het instellingen notitieblok van ieder object.
+Ook is er een "Sneltoetsen" pagina toegevoegd aan het "Toetsenbord" instellingen object in de "Configuratie" map waar u alle sneltoetsen in ‚‚n keer kunt zien.
+Dit onderdeel is niet beschikbaar als &xwp; Hook niet is ge‹nstalleerd.
+Wees er zeker van dat ook de "Object pagina" instelling in de "Algemene kenmerken" groep is geactiveerd, anders bent u niet in staat de sneltoetsen te configureren.
+; Dit werd toegevoegd met &xwp; V0.9.1.
+
+<--FEATURES_6054-->: "&pgr;" biedt u virtuele werkplekken. Dit betekent dat &xwp; uw huidige werkplek er ‚‚n van vele maakt en dat u tussen deze kunt schakelen.
+Dit activeren zal een instellingen pagina toevoegen aan het nieuwe "Scherm" instellingen object waar u &pgr; fijn kunt afstellen.
+Dit onderdeel is niet beschikbaar als &xwp; Hook niet is ge‹nstalleerd.
+; Dit werd toegevoegd met &xwp; V0.9.2.
+
+<--FEATURES_6021-->: Dit vervangt de "Reservekopie" pagina in het instellingen notitieblok van de Werkplek. Als dit is geactiveerd, kunt u de juiste voorwaarden opgeven waaronder er automatisch een reservekopie van de Werkplek moet worden gemaakt -- inplaats van, om alleen maar het maken van een reservekopie in of uit te schakelen.
+Deze functie zit gewoonlijk in het afzonderlijke "WPSArc0" programma, maar is nu een onderdeel van &xwp; en kan eenvoudiger worden geconfigureerd.
+Zie de &xwp; Gebruikershandleiding voor details.
+
+<--FEATURES_6022-->: " &xwp; Herstart WPS" is een nieuw menu onderdeel van het instellingen notitieblok van de Werkplek dat alleen maar de Workplace Shell opnieuw zal starten, in plaats van het gehele systeem.
+In tegenstelling tot andere hulpprogramma's, slaat &xwp; de WPS status op voor hem opnieuw te starten.
+Dit zal een "&xsd;" pagina aan het instellingen notitieblok van de Werkplek toevoegen die het mogelijk maakt deze mogelijkheid te configureren.
+; Dit is nieuw met XFolder 0.60.
+Zie de &xwp; Gebruikershandleiding voor details.
+
+<--FEATURES_6023-->: "&xsd;" is een compleet herschreven volgorde voor het afsluiten van &os2;.
+Als u deze instelling activeert, zal &xsd; worden uitgevoerd in plaats van het standaard uitschakelen van &os2; als u "Afsluiten" kiest uit het voorgrond menu van de Werkplek.
+Dit maakt het mogelijk om het afsluiten te annuleren terwijl het loopt, hangende programma's over te slaan en meer.
+Dit zal een "&xsd;" pagina aan het instellingen notitieblok van de Werkplek toevoegen die het mogelijk maakt deze mogelijkheid te configureren.
+; Dit is nieuw in XFolder 0.60.
+Zie de &xwp; Gebruikers handleiding voor details.
+
+;
+; the following two were added with V0.9.18
+;
+
+<--FEATURES_6024-->: Als "Controleer Werkplek integriteit" is geactiveerd, zal &xwp; de integriteit van de Werkplek controleren bij iedere start voordat de WPS de vreemde "Kan de Werkplek niet vinden" dialoog zal tonen, wat weinig zeggend is.
+Als &xwp; problemen vindt in de integriteit van uw Werkplek (zoals een kapot bestandssysteem, ingangen tabel of een verloren gegaan <WP_DESKTOP> object ID), zal het proberen deze problemen op te lossen.
+U kunt proberen deze instelling uit te schakelen als &xwp; tijdens het opstarten problemen blijft rapporteren en uw Werkplek goed lijkt te werken.
+
+<--FEATURES_6025-->: Als "Werkplek van te voren vullen" is geactiveerd, zal, terwijl de WPS aan het opstarten is, &xwp; de Werkplek geheel vullen voordat deze is geopend.
+Dit kan het hangen van de Werkplek oplossen, dat veel mensen opvalt als de Werkplek veel objecten bevat en de WPS een beetje in de war raakt om deze in de juiste volgorde te initialiseren.
+
+;
+; FEATURES_6041 removed with V1.0.1 (2002-12-15) [umoeller]
+;
+;<--FEATURES_6041-->: "Uitgebreide bestandskoppelingen" zorgt er voor dat de WPS alleen maar bestandstypen gebruikt voor het koppelen van programma's met gegevensbestanden.
+;Schrik niet, de bestandsfilters bestaan nog steeds. Het verschil is dat bestanden automatisch bestandstypes krijgen gebaseerd op bestandsfilters, in plaats van het direct koppelen van programma's gebaseerd op filters.
+;U kunt ook hi‰rarchisch bestandstypes bepalen, zodanig dat alle bestanden van het type "C Code" ook automatisch worden herkend als "Plain text" (Platte tekst).
+;Als dit is geactiveerd, krijgt u een nieuwe instellingen pagina voor bestandstypen in het "Workplace Shell" object van &xwp;.
+; Dit werd toegevoegd met &xwp; 0.9.0.
+;Zie de &xwp; Gebruikershandleiding voor details.
+
+;
+; FEATURES_6042 was changed with V0.9.20
+;
+
+<--FEATURES_6042-->: Indien geactiveerd, zal deze instelling de "Plakken" dialoog vervangen die verschijnt als u "Plakken" selecteert uit het voorgrond menu van een map (of het "Bewerken" afrolmenu uit de menubalk van een map).
+In tegenstelling tot de WPS versie, houdt de vervangingsdialoog een historie bij van de objectnamen en herinnert zich het laatste formaat en WPS class van het plakken.
+Als toevoeging, het fungeert als een beperkte klembord bekijker en is slim genoeg om op te merken dat klembordgegevens kunnen wijzigen terwijl de dialoog open staat.
+; Dit werd toegevoegd met &xwp; V0.9.20.
+
+<--FEATURES_6043-->: Dit vervangt de  "Bestand bestaat" dialoog die verschijnt als u bestanden verplaatst of kopieert naar een map met een ander object met dezelfde naam.
+Deze vervangingsdialoog is gemakkelijker en toont meer informatie dan de standaard dialoog van &os2;.
+; Dit is nieuw met XFolder 0.80.
+
+<--FEATURES_6044-->: Dit vervangt het slechte 'harde fout' voorgrond menu dat verschijnt als u een station, dat nog niet gereed is, opent.
+Als dit geactiveerd is, krijgt u een normaal dialoog venster met daarin ook een 'probeer opnieuw' knop.
+; Dit is nieuw met XFolder 0.85.
+
+;
+; the following was changed with V0.9.5
+;
+
+<--FEATURES_6047-->: Dit zal het bestandssysteem ingangen beheer van de Workplace Shell in de OS2SYS.INI vervangen, om te proberen het aantal niet noodzakelijke ingangen, die worden gemaakt, te verminderen.
+Zie de &xwp; Gebruikershandleiding voor een introductie van deze mogelijkheid.
+; Dit werd toegevoegd met &xwp; 0.9.5.
+
+;
+; the following was added with V0.9.9
+;
+
+<--FEATURES_6048-->: Als "Map automatisch vernieuwen vervangen" is geactiveerd, zal &xwp; de interne WPS threads, die de bestandssysteem activiteit bijhouden, uitschakelen om automatisch mappen te vernieuwen. In plaats daarvan zal het zijn eigen threads starten voor deze taak.
+De implementatie van &xwp; heeft het voordeel dat het geen overdaad aan bestandsingangen cre‰ert.
+Het activeren of uitschakelen van deze instelling vereist het opnieuw starten van de WPS. Echter, als de vervanging van &xwp; is geactiveerd, kunt u dynamisch de automatische map vervanging activeren of uitschakelen op de "Weergave" pagina van het "Workplace Shell" object.
+Zie de &xwp; Gebruikershandleiding voor een introductie van deze mogelijkheid.
+; Dit werd toegevoegd met &xwp; 0.9.9.
+
+;
+; the following was added with V0.9.16
+;
+
+<--FEATURES_6049-->: Als "Vervangen van bestandsdialoog" is geactiveerd zal &xwp; zijn eigen vervanging gebruiken voor de standaard OS/2 bestandsdialoog.
+Merk op dat dit alleen maar effect heeft op bestandsdialogen in de WPS processen. Op dit moment kan &xwp; niet alle bestandsdialogen in uw systeem vervangen.
+
+;
+; the following was changed with V0.9.19
+;
+
+<--FEATURES_6045-->: Als dit is geactiveerd, worden alle "Wissen" functies uit de Workplace Shell overgenomen door &xwp;.
+Dit houdt in dat het indrukken van de "Del(ete)" toets en het selecteren van "Wissen" in de voorgrondmenu onderdelen van alle objecten op uw systeem.
+&xwp; kan dan of de objecten verplaatsen naar de nieuwe prullenbak van &xwp; (die dan wordt gemaakt als u deze mogelijkheid kiest) of ze onmiddellijk verwijderen als u de 'Shift' toets ingedrukt houdt bij het starten van het verwijderen.
+Als u wilt dat &xwp; altijd onmiddellijk objecten verwijderd zonder ze eerst naar de prullenbak te verplaatsen, zit daarvoor een instelling in het instellingen notitieblok van de prullenbak.
+Zie de &xwp; Gebruikershandleiding voor details.
+; Dit werd toegevoegd met &xwp; 0.9.1.
+
+; the following was removed with V0.9.19
+;
+; <--FEATURES_6046-->: replace true delete
+
+; ---------------------------------------------------------------------------------
+;
+; V0.9.0:
+;
+; Here follow the toolinfos (fly-over help) for the new "&xwp; Classes" dialog
+; (XWPSetup).
+; Each item starts with "XWPCLS_", followed by the dialog ID from include\dlgids.h.
+; NOTE: The internal string buffer for these messages is limited to 3000 characters,
+;       so no string may exceed this value.
+;
+; ---------------------------------------------------------------------------------
+
+<--XWPCLS_1251-->: "XFldObject" is de &xwp; vervanging voor de WPObject class en is nodig voor het functioneren van &xwp;. Deze selectie kan niet ongedaan worden gemaakt.
+
+<--XWPCLS_1252-->: "XFolder" is de vervanging door &xwp; van de WPFolder class.
+Dit introduceert alle mapuitbreidingen die &xwp; aanbiedt, zoals uitgebreide voorgrondmenu's, uitgebreid sorteren, statusbalken voor mappen en veel meer.
+
+<--XWPCLS_1253-->: "XFldDisk" is de vervanging door &xwp; voor de WPDisk class, die wordt gebruikt door de WPS voor "stations" objecten zoals die worden gevonden in de "Stations" map.
+Deze vervanging introduceert een aantal verbeteringen voor station verwerking en stuurt ook de map verbeteringen naar de stationsobjecten.
+Als deze class wordt ge‹nstalleerd, moet XFolder ook zijn ge‹nstalleerd.
+
+<--XWPCLS_1254-->: "XFldDesktop" is de vervanging door &xwp; van de WPDesktop class die de Werkplek implementeert.
+Deze vervanging biedt verbeteringen voor de Werkplek zoals uitgebreid opstarten (opstart logo's, reservekopie maken) en uitgebreid afsluiten.
+
+<--XWPCLS_1255-->: "XFldDataFile" is de vervanging door &xwp; van de WPDataFile class, die door alle fysieke bestanden op uw systeem wordt gebruikt.
+Deze vervanging biedt verbeteringen voor het WPS koppellingsmechanisme, vervangt de standaardpictogrammen en de "Kopieer bestandsnaam naar Klembord" mogelijkheid.
+
+; V0.9.16: wijzigde de volgende
+
+<--XWPCLS_1256-->: "XWPProgramFile" is de vervanging door &xwp; van de WPProgramFile class, die door alle fysieke uitvoerbare bestanden (.EXE, .COM, enz.) op uw systeem wordt gebruikt.
+Deze class voegt een nieuwe "Module" pagina toe aan de instellingen notitieblokken van de uitvoerbare bestanden en biedt vervanging van de standaard pictogrammen.
+
+<--XWPCLS_1257-->: "XWPSound" is de vervanging door &xwp; van de WPSound class, die het "Geluid" object implementeert in uw "Configuratie" map.
+Deze vervanging biedt een betere versie voor de "Geluid" pagina in het Instellingen notitieblok van dat object, wat u nu de mogelijkheid geeft om geluidsschema's te bewerken.
+Dit werd toegevoegd met &xwp; 0.9.0.
+
+;
+; V1.0.0: replaced this silly description
+;
+
+<--XWPCLS_1258-->: "XWPMouse" is de vervanging door &xwp; van de WPMouse class, die het "Muis" object implementeert dat gevonden wordt in de "Configuratie" map.
+Deze vervanging voegt nieuwe pagina's toe aan het object om de &xwp; Hook muis mogelijkheden te configureren, zoals glijdende focus en schermhoek objecten.
+
+<--XWPCLS_1259-->: "XWPKeyboard" is de vervanging door&xwp; van de WPKeyboard class, die het "Toetsenbord" object implementeert dat gevonden wordt in de "Configuratie" map.
+Deze vervanging voegt instellingen pagina's toe om de &xwp; Hook keyboard mogelijkheden te configureren, zoals algemene object sneltoetsen.
+
+<--XWPCLS_1260-->: "XWPSetup" implementeert het "&xwp; Setup" instellingen object en is nodig voor de werking van &xwp;. Deze selectie kan niet ongedaan worden gemaakt.
+; Dit werd toegevoegd met &xwp; 0.9.0.
+
+<--XWPCLS_1261-->: "XFldSystem" implementeert het "&os2; Kernel" instellingen object, die het mogelijk maakt op eenvoudige wijze diverse CONFIG.SYS instellingen te configureren.
+
+<--XWPCLS_1262-->: "XFldWPS" implementeert het "Workplace Shell" object, dat al de WPS instellingen pagina's bevat van het standaard "Systeem" object plus een aantal nieuwe instellingen pagina's voor &xwp;.
+Het installeren van deze class wordt sterk aangeraden, omdat zonder het niet mogelijk is om veel aan &xwp; te configureren.
+
+<--XWPCLS_1263-->: "XFldStartup" is de speciale class voor mappen in de nieuwe &xwp; Opstarten map, die u veel uitbreidingen biedt ten opzichte van de standaard WPS Opstarten map.
+De oude Opstarten map blijft gewoon werken dus u kunt beide tegelijk gebruiken.
+Als deze class wordt ge‹nstalleerd, moet XFolder ook zijn ge‹nstalleerd.
+
+<--XWPCLS_1264-->: "XFldShutdown" is de speciale class voor de nieuwe &xwp; "Afsluiten" map, die wordt uitgevoerd tijdens het afsluiten door &xwp;.
+Als deze class wordt ge‹nstalleerd, moeten XFolder en XFldDesktop ook zijn ge‹nstalleerd.
+
+<--XWPCLS_1265-->: De "XWPClassList" implementeert een geheel nieuw abstract object om de WPS class lijst te kunnen bewerken.
+; Dit werd toegevoegd met &xwp; 0.9.0.
+;In voorgaande versies van XFolder was deze functionaliteit opgenomen in het "Workplace Shell" object, maar het is verplaatst en uitgebreid in dit nieuwe object dat een compleet nieuwe weergave heeft.
+Dit objecttype kan nu zelfs WPS method informatie laten zien, dat voor WPS programmeurs handig kan zijn.
+
+<--XWPCLS_1266-->: "XWPTrashCan" is nieuw in &xwp; 0.9.0 en implementeert uiteindelijk een speciaal "prullenbak" map object, hetzelfde als die aanwezig is in de Macintosh, KDE en Win95 systemen.
+Het "XWPTrashObject" implementeert de "afval objecten" die in die map aanwezig zijn en worden automatisch ge‹nstalleerd met XWPTrashCan.
+; Dit werd toegevoegd met &xwp; 0.9.0.
+
+<--XWPCLS_1267-->: "XWPScreen" implementeert het "Scherm" instellingen object, dat al de scherm gerelateerde pagina's van het oude "Systeem" in zich heeft plus nieuwe &xwp; scherm instellingen zoals de configuratie van &pgr;.
+; Dit werd toegevoegd met &xwp; 0.9.2.
+
+;
+; the following was added with V0.9.3
+;
+
+<--XWPCLS_1268-->: "XWPString" is een handige class voor het op ieder object aanroepen van WPS instellingen reeksen.
+Door een object van deze class te maken en het invoeren van iedere instellingen reeks, kunt u later deze instellingen reeks uitvoeren op ieder object.
+; Dit werd toegevoegd met &xwp; 0.9.3.
+
+;
+; the following was added with V0.9.5
+;
+
+<--XWPCLS_1269-->: "XWPMedia" implementeert een nieuw instellingen object "Multimedia" genaamd, dat het mogelijk maakt om bepaalde interne zaken van het &os2; multimedia subsysteem te zien.
+; Dit werd toegevoegd met &xwp; 0.9.4.
+
+<--XWPCLS_0001-->: Klikken op "OK" zal classes registreren, deregistreren, vervangen en classes niet vervangen overeenkomstig met de wijzigingen die u heeft gemaakt in de &xwp; class instellingen.
+
+<--XWPCLS_0002-->: Drukken op "Annuleren" zal deze dialoog sluiten zonder dat er wijzigingen worden aangebracht in de &xwp; class instellingen.
+
+;
+; the following was added with V0.9.7
+;
+
+<--XWPCLS_1270-->: "XCenter" implementeert een nieuwe systeembalk boven- of onderaan uw Werkplek. Dit kan worden gebruikt als een &warpcenter; vervanging of zelfs samen met het &warpcenter;.
+
+;
+; the following was added with V0.9.10
+;
+
+<--XWPCLS_1271-->: "XWPFontFolder" implementeert een nieuwe map die alle lettertypen bevat.
+Het "XWPFontObject" implementeert de "lettertype objecten" die in die map aanwezig zijn en zal automatisch worden ge‹nstalleerd met de XWPFontFolder.
+"XWPFontFile" is een nieuwe subclass van de WPDataFile en zal ook automatisch worden ge‹nstalleerd met de XWPFontFolder. Alle bestanden die echte lettertype bestanden zijn zullen automatisch omgezet worden naar instances van deze class.
+
+;
+; the following was added with V0.9.16
+;
+
+<--XWPCLS_1272-->: "XWPFileSystem" kan de WPFileSystem class vervangen om de snelheid te verhogen van enige interne WPS functies, speciaal het vullen van mappen.
+Deze class moet worden ge‹nstalleerd om de "Turbo mappen" instelling te laten werken.
+
+<--XWPCLS_1273-->: "XWPProgram" kan de WPProgram class vervangen om een aantal problemen met de WPProgram class op te lossen en voor enige interne modificaties.
+
+<--XWPCLS_1274-->: "XWPVCard" is een speciale WPDataFile subclass voor vCard (*.vcf) bestanden die het bekijken en instellen van vCard informatie mogelijk maakt.
+
+<--DUMMY_END_MARKER-->:

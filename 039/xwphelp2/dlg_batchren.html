@@ -1,0 +1,66 @@
+<HTML RESID=&ID_XFH_BATCHRENAME;>
+<HEAD>
+    <TITLE>
+        &xwp;: rinominare gli oggetti
+    </TITLE>
+</HEAD>
+<BODY>
+La voce di menu "Rinomina oggetti" permette di rinominare pi— oggetti in una volta
+sfruttando le <A HREF="glossary/gls_regexps.html">espressioni regolari estese</A>
+("batch renaming").
+Le espressioni con <A HREF="glossary/gls_wildcards.html">caratteri jolly</A>
+non possono essere utilizzate.
+
+<P>Questa procedura risulta di grande utilit… per cambiare il nome di pi—
+oggetti secondo uno stesso criterio; Š possibile, per esempio, rinominare
+come <CODE>.jpg</CODE> tutti i file che hanno estensione <CODE>.JPEG</CODE>.
+
+<P>Per rinominare pi— oggetti contemporaneamente si seguano le istruzioni seguenti:
+
+<OL><LI>Digitare nel campo in alto l'<B>espressione regolare "trova"</B> desiderata.
+Si tratta della stringa che verr… usata per selezionare gli oggetti, secondo i
+criteri descritti per le
+<A HREF="glossary/gls_regexps.html">espressioni regolari estese</A>.
+
+<P>Se, per esempio, si digita <CODE>(.*)\.JPEG</CODE>, tutti i file che terminano
+con <CODE>.JPEG</CODE> saranno considerati da rinominare.
+
+<P>E' importante assicurarsi che ogni parte di stringa che si desidera sostituire con una stringa
+differente sia specificata tra parentesi, altrimenti non si potr… farvi riferimento
+dall'espressione "rinomina come".
+
+<P><LI>Specificare nel secondo campo l'<B>espressione "rinomina come"</B>
+desiderata, che definisce come gli oggetti verranno rinominati.
+
+<P>Questa seconda stringa non Š una espressione regolare completa, dato
+che non Š serve per selezionare oggetti. Per questo motivo non Š necessario
+preoccuparsi dei caratteri speciali, come ad es. i punti. Si noti per• che
+il backslash seguito da un numero decimale all'interno dell'espressione
+tra parentesi viene considerato come riferimento alla stringa precedente.
+
+<P>Continuando nell'esempio precedente, per rinominare in <CODE>.jpg</CODE>
+i file con estensione <CODE>.JPEG</CODE>, si dovr… specificare
+<CODE>\1.jpg</CODE>. Immaginando di avere un oggetto con nome <CODE>FILE.JPEG</CODE>,
+verificato dalla stringa di ricerca <CODE>(.*)\.JPEG</CODE>, <CODE>\1</CODE>
+nel titolo del file risulter… essere <CODE>FILE</CODE> e l'oggetto sar…
+rinominato come <CODE>FILE.jpg</CODE>.
+
+<P><LI>Selezionare o meno la casella <B>"Sensibile al maiuscolo/minuscolo"</B>
+se si desidera che la stringa di ricerca tenga conto o no di tale differenza tra i caratteri.
+
+<P><LI>Selezionando <B>"Solo gli oggetti selezionati"</B> la ricerca Š
+limitata agli oggetti selezionati all'interno della cartella. In caso contrario
+vengono presi in considerazione tutti gli oggetti presenti nella cartella.
+
+<P><LI>Premere il pulsante <B>"Inizia a rinominare"</B> per avviare il
+processo: viene presentato il nuovo nome e viene chiesta conferma per ogni
+oggetto che corrisponde alla stringa di ricerca; in questo modo Š possibile
+verificare la correttezza delle stringhe che si sono impostate.
+
+</OL>La finestra di dialogo memorizza le ultime dieci espressioni regolari
+valide per la stringa di ricerca ed altrettante per quella di rinomina.
+L'elenco Š facilmente accessibile utilizzando i menu a cascata dei
+due campi di immissione.
+</BODY>
+</HTML>
+

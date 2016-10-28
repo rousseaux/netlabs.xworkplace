@@ -1,0 +1,105 @@
+<HTML SUBLINKS="wps" WIDTH=70% XPOS=right>
+<HEAD>
+    <TITLE>
+        Cosa sono le classi WPS?
+    </TITLE>
+</HEAD>
+<BODY>
+
+<P>In generale, nella programmazione orientata agli oggetti, una <B>classe</B> ä una definizione
+astratta dei (1.) tipi di dati e delle (2.) azioni che su quei dati possono essere eseguite. Queste ultime
+sono comunemente definite come i <STRONG>metodi</STRONG> relativi all'oggetto.
+<P>Mentre le classi descrivono i vari tipi di oggetti solo a livello astratto, gli oggetti realmente
+esistenti in un programma sono chiamati <STRONG>istanze</STRONG> di una data classe.
+<P>Prendiamo per esempio un oggetto programma WPS: ogni oggetto programma ä una
+istanza della classe WPProgram, definita attraverso la WPS.
+I (1.) dati propri dell'oggetto programma sono, tra gli altri, l'eseguibile ad esso associato (per es.
+"CMD.EXE"), mentre i (2.) metodi (che possono essere eseguiti su questi dati) sono l'avvio
+dell'eseguibile (cliccando su di esso due volte  o scegliendo "Apri" dal menu contestuale) o la
+modifica dell'eseguibile nel blocco appunti impostazioni.
+Anche se i metodi non sono "visibili" attraverso l'interfaccia utente, essi sono utilizzati continuamente,
+ogni volta che si fa qualcosa con la WPS. Volendoli descrivere con un altro termine, che forse ä
+pió familiare, i metodi si possono pió o meno considerare come l'Interfaccia Programmatore Applicazione
+(API) verso l'oggetto. Per fare un altro esempio, relativo alla programmazione REXX: ogni volta che
+si usa uno degli oggetti <A HREF="xices_30wpsstrings.html">stringa impostazione</A> per modificare
+i dati di un oggetto, si sta richiamando un certo metodo per usarlo sull'oggetto.
+<P>Dato che sono definiti metodi specifici per ogni classe, i metodi che si possono richiamare su di
+un certo oggetto dipendono dalla sua classe di appartenenza. Non li ho mai contati tutti, ma
+per la sola classe WPObject, la pió elementare delle classi WPS, sono definiti pió di 100 metodi.
+<P>Quel che rende cosç flessibile (e popolare) la programmazione orientata agli oggetti ä il fatto che
+si possono definire relazioni tra le classi. Per comprendere questo aspetto ä importante chiarire i
+seguenti due concetti:
+<UL>
+<LI><STRONG>EreditarietÖ:</STRONG> ä possibile definire un nuovo oggetto che riceve tutti i tipi di dati ed
+i metodi ad esso associati da una differente classe oggetto, senza che il programmatore debba sapere
+come materialmente ä programmata la classe di origine. In questo modo ä possibile "recuperare" tutte
+le funzioni di una classe esistente, dovendo programmare solo le funzionalitÖ aggiuntive che si desiderano
+implementare. La classe originale ä chiamata classe "antenato" o "genitore" della classe "derivata".
+<P>Prendiamo un esempio dalla Workplace Shell: la classe Desktop ("WPDesktop") deriva dalla normale
+classe cartella ("WPFolder"); la Scrivania ä cosç solo un tipo particolare di cartella.
+<P>Questo fa sç che la Scrivania abbia, di base, tutte le proprietÖ cartteristiche di una cartella: vi si
+possono mettere all'interno degli oggetti, ordinarne il contenuto, visualizzarla per dettagli o ad albero
+e cosç via. La classe Desktop fornisce perï anche delle funzioni aggiuntive: il menu contestuale contiene pió voci
+(come "Chiusura" e "Impostazione del sistema"), il blocco appunti impostazioni ha pió pagine e cosç via.
+Quindi, la Scrivania eredita le caratteristiche delle cartelle, ad esse ne aggiunge di proprie, mentre alcune
+altre vengono eliminate: per es., la Scrivania attiva non si puï chiudere e non ha una barra del titolo.
+<P>La WPS implementa una struttura ad albero per cui tutti gli oggetti sono raggruppati logicamente ed
+interdipendenti. Ad un livello di astrazione pió alto, tutti le classi oggetti della WPS discendono da UNA
+SINGOLA CLASSE ("WPObject"), che fornisce le funzioni di base proprie di tutti gli oggetti della Scrivania:
+tra le altre, la possibilitÖ di aprire menu contestuali e blocchi appunti impostazioni. Una organizzazione
+del genere ä tipica della programmazione orientata agli oggetti: la classe antenato delle altre ä
+normalmente chiamata "classe radice" di una "gerarchia di classi".
+<P>La WPS, partendo da WPObject, costruisce un albero completo di classi che va sotto il nome
+di <A HREF="xices_1wpsclasses.html">gerarchia classi WPS</A>. La sezione "Classi WPS"
+nell'oggetto <A HREF="sys_1intro.html">Elenco classi WPS</A> di &xwp; dÖ un quadro di
+insieme di questo albero di classi.
+<P>Una gerarchia cosç concepita ha il vantaggio di permettere di modificare tutte le classi semplicemente
+modificando la classe di origine (lo svantaggio, dal punto di vista di chi programma, sta nel fatto che
+costruire una tale gerarchia richiede in anticipo un'enorme pianificazione dei dati e dei metodi da assegnare
+alle singole classi, che in seguito puï anche dimostrarsi non abbastanza lungimirante. Perï, una volta
+realizzata la gerarchia con sufficiente criterio - come ä il caso, grazie ad IBM, della WPS - i vantaggi
+sono innumerevoli).
+<BR><LI><STRONG>Polimorfismo:</STRONG> mentre si usa l'ereditarietÖ ä possibile RIMPIAZZARE
+caratteristiche della classe originale con altre programmate ex novo. Si possono quindi
+ridefinire ("superare") le funzioni della classe oggetto "antenato": richiamando un dato metodo
+sulla classe discendente, verrÖ utilizzato il nuovo metodo definito ex novo anzichÇ quello definito
+dalla classe "antenato".
+<P>Uno dei molti possibili esempi di questo meccanismo ci ä dato dalla voce di menu
+"Aiuto", presente nel menu contestuale di tutti gli oggetti WPS. Selezionando la voce "Aiuto
+generico" viene utilizzato il metodo <CITE>wpDisplayHelp</CITE>, introdotto dalla classe radice
+WPS, WPObject, e che permette a tutti gli oggetti della Scrivania di mostrare l'aiuto in linea; viene
+inizializzato il gestore dell'aiuto &os2;, si apre la finestra dell'aiuto, ecc.
+Ogni classe WPS perï, grazie al polimorfismo, puï sostituire le proprie pagine di aiuto a quelle
+definite da WPObject. Cosç, scegliendo "Aiuto" nel menu contestuale di una cartella, si avrÖ un aiuto
+differente da quello che si otterrebbe dal menu contestuale di un oggetto programma.
+
+</UL>
+Mentre ereditarietÖ e polimorfismo sono caratteristiche proprie di ogni
+ambiente di programmazione orientato agli oggetti (come pure dei linguaggi
+orientati agli oggetti, come il C++), la Workplace Shell estende i suoi
+vantaggi fino a toccare le altre applicazioni La WPS ä fatta di numerose DLL
+che sono in certa misura indipendenti le une dalle altre: un programmatore
+esterno ad IBM puï sfruttare questo vantaggio per estendere le capacitÖ della
+WPS senza neanche bisogno di conoscere il codice sorgente WPS, il che non ä
+possibile con i "normali" linguaggi orientati agli oggetti.
+
+<P>Questo ä possibile perchÇ la WPS utilizza il <B>System Object Model (SOM) di IBM,</B>
+un complesso sistema che fornisce interfacce per la programmazione "object-oriented"
+anche tra moduli di codice differenti, persino indipendentemente dal linguaggio di
+programmazione. Il SOM ä tanto potente perchÇ le classi sono rese disponibili e
+mantenute a livello di esecuzione e non di compilazione.
+<P>E' cosç, per inciso, che viene creato l'elenco delle classi WPS: all'avvio
+della Scrivania vengono generate tutte le classi (che, nel SOM, sono anch'esse degli oggetti,
+ma questa ä un'altra questione...) e solo dopo di ciï si stabiliscono le relazioni che le legano
+tra loro. In questa maniera ä possibile realizzare modifiche senza bisogno dell'intervento di IBM,
+autrice delle classi originali.
+<P>Aggiungo ora un'opinione personale: tutto questo rende tuttora &os2; un unicum nel mondo
+dei computer. Mentre altre delle sue prerogative, come ad es. l'efficiente multitasking,
+non sono pió sua esclusiva (anche Linux, per restare nell'esempio, ha un buon multitasking),
+l'interfaccia utente di &os2; ä ancora insuperata da ogni altro sistema operativo di
+mia conoscenza, Windows 9x in particolare.
+<BR>
+</BODY>
+</HTML>
+
+

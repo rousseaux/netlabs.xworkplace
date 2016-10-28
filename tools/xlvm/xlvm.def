@@ -1,0 +1,12 @@
+NAME XLVM WINDOWAPI
+
+Description '@#Ulrich M”ller:0.9.20#@ XWorkplace LVM utility'
+
+CODE  MOVEABLE
+DATA  MOVEABLE MULTIPLE
+
+STACKSIZE   327680
+
+PROTMODE
+
+

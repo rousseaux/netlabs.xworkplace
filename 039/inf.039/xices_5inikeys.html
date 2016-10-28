@@ -1,0 +1,113 @@
+<HTML XPOS=right WIDTH=70%>
+<HEAD>
+    <TITLE>
+        Chiavi INI di &xwp;
+    </TITLE>
+</HEAD>
+<BODY>
+&xwp; immagazzina tutte le impostazioni globali nel file OS2.INI (invece
+le impostazioni per gli oggetti della scrivania sono memorizzate dalla WPS
+principalmente nell'attributo esteso <CODE>.CLASSINFO</CODE>).
+<P>Questa sezione tenta di spiegare le chiavi presenti nella sezione "&xwp;"
+di OS2.INI. Se precedentemente era stato installato XFolder, &xwp; avrÖ copiato questi dati
+dalla sezione "XFolder", che resta in OS2.INI in modo che sia possibile ritornare a
+XFolder se si sceglie di disinstallare &xwp;.
+<P>Nota: &xwp; non fa affidamento sulle chiavi INI. In caso di errori, si puï semplicemente
+cancellare con un editor di file INI una certa chiave, o anche l'intera sezione.
+Al successivo riavvio della Scrivania, &xwp; si reinizializzerÖ con valori sicuri.
+<P>Dunque:
+
+<DL>
+<DT><CODE>Accelerators</CODE>
+<DD>‘ la lista delle scorciatoie delle cartelle. Sono dati binari, per cui ä bene
+non tentare di cambiarli a mano.
+‘ un array di strutture <CODE>XFLDHOTKEY</CODE>,
+come definito in <CODE>\shared\common.h</CODE> nei sorgenti di &xwp;.
+<B>Valori assunti:</B> come descritti nella pagina
+<A HREF="fldr_5xelerators.html">"Tasti rapidi cartelle"</A>.
+
+<DT><CODE>AutoClose</CODE>
+<DD>Lista degli elementi da chiudere automaticamente nella &xshutdown;. Ogni elemento della lista
+ä una stringa terminata con zero, seguita da un ULONG che specifica cosa fare con questo elemento.
+Viene poi l'elemento successivo; se ä 0, la lista ä terminata.
+
+<DT><CODE>BootLogoFile</CODE>
+<DD>Nome di file completo del file
+OS/2 V1.3 .BMP da usare come logo di avvio della Scrivania, come impostato dalla pagina
+"Avviamento" del blocco impostazioni della Scrivania. ‘ una stringa terminata da zero.
+
+<DT><CODE>DialogFont</CODE>
+<DD>Il font da usare per le message box di &xwp;. Viene impostato quando si trascina un font
+su una di queste message box.
+<B>Valore assunto:</B> probabilmente 9.WarpSans.
+
+<DT><CODE>FavoriteFolders</CODE>
+<DD>‘ l'elenco delle <A HREF="menu_6favorite.html">cartelle favorite</A>, come
+handle di oggetti in esadecimale separati da spazi.
+
+<DT><CODE>GlobalSettings</CODE>
+<DD>E' un grande array di ULONG con tutti i tipi di settaggi, principalmente dall'oggetto
+"Workplace Shell". Corrisponde alla struttura <CODE>GLOBALSETTINGS</CODE>
+come definita in <CODE>\shared\common.h</CODE> nei sorgenti di &xwp;. E' bene non cambiare
+questi valori manualmente, ma ä possibile cancellare l'intera chiave cosç che &xwp;
+ripristini i valori predefiniti.
+Viene riscritto ogni volta che qualche impostazione globale viene cambiata.
+
+<DT><CODE>JustInstalled</CODE>
+<DD>Questa chiave esiste solo immediatamente dopo l'installazione di &xwp; e porta alle informazioni
+ "Benvenuto" di &xwp; e alla creazione della cartella di configurazione.
+La chiave viene successivamente cancellata.
+
+<DT><CODE>Language</CODE>
+<DD>Codice a tre cifre di lingua per &xwp;, da cui viene determinato il NLS da caricare.
+Puï essere impostato nella "Impostazione di &xwp;" e il suo valore
+<B>predefinito</B> ä "001", se non trovato.
+
+<DT><CODE>NameClashLastFocus</CODE>
+<DD>ID dell'elemento che per ultimo ha avuto il focus nella finestra di dialogo "L'oggetto esiste".
+
+<DT><CODE>QuickOpenFolders</CODE>
+<DD>Elenco delle cartelle <A HREF="fldr_5quickopen.html">con apertura rapida</A>,
+come handle esadecimali di oggetto, separati da spazi.
+
+<DT><CODE>RebootTo</CODE>
+<DD>Elenco degli elementi di riavvio (che appaiono nel menu "Riavvio" ,
+nella finestra di conferma della &xshutdown;). ‘ una lista di coppie di stringhe terminate
+da zeri: la prima descrive l'elemento, la seconda specifica il comando da eseguire.
+L'elenco ä terminato da due byte posti a zero.
+
+<DT><CODE>SB_*</CODE>
+<DD>Impostazioni delle barre di stato. I nomi direi che si spiegano da soli.
+Se una chiave non viene trovata, una chiave <B>predefinita</B> viene caricata dalla DLL NLS.
+
+<DT><CODE>SelectSome</CODE>
+<DD>Gli ultimi dieci filtri di file inseriti nella finestra "Selezionare per nome", ognuno dei quali ä
+terminato con un byte zero.
+
+<DT><CODE>TrashCan::Drives</CODE>
+<DD>Array binario di byte che specificano il supporto dei dischi da parte del cestino di &xwp;.
+
+<DT><CODE>Version</CODE>
+<DD>La versione di &xwp; in esecuzione. ‘ presente solo per scopi informativi
+(p.es. per applicazioni interessate), ma non viene letto da &xwp;.
+
+<DT><CODE>WndPos*</CODE>
+<DD>Posizioni di finestre, usate per farle apparire nel posto in cui erano state chiuse. Queste
+voci usano una struttura SWP (non WinStoreWindowPos).
+
+<DT><CODE>XFolderPath</CODE>
+<DD>Directory principale dell'installazione di &xwp;.
+Viene impostata dallo script di installazione ed ä richiesta da TREESIZE.EXE per trovare la
+DLL NLS. Il nucleo di &xwp; comunque non usa tale chiave.
+
+<DT><CODE>XWPSound:LastDir</CODE>
+<DD>L'oggetto "Suono" sostitutivo memorizza qui l'ultima directory usata con il pulsante
+"Trova".
+
+<DT><CODE>XWPSound:Scheme</CODE>
+<DD>L'oggetto "Suono" sostitutivo ricorda qui il nome dello schema sonoro corrente.
+</DL>
+<BR>
+</BODY>
+</HTML>
+

@@ -1,0 +1,41 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: attributi estesi standard
+    </TITLE>
+</HEAD>
+<BODY>
+&os2; utilizza per il proprio funzionamento diversi 
+<A HREF="glossary/gls_eas.html">attributi estesi (EA)</A>. Si tratta dei
+cosiddetti "EA standard". Qui elencati vi sono quelli di uso pi— frequente:
+
+<UL><LI><CODE>.CLASSINFO</CODE> serve alla Workplace Shell per 
+immagazzinare nel file-system dati specifici relativi agli oggetti.
+Si tratta di dati binari contenenti informazioni come la classe dell'oggetto
+e parte delle impostazioni eventualmente modificate, rispetto ai valori 
+assunti, dal <A HREF="glossary/gls_notebook.html">blocco appunti impostazioni</A>
+dell'oggetto.
+
+<P><LI><CODE>.COMMENTS</CODE>, <CODE>.KEYWORDS</CODE> e <CODE>.SUBJECT</CODE>
+servono per conservare informazioni addizionali relative all'oggetto e 
+corrispondono ai campi presenti nella pagina "File" del blocco appunti impostazioni
+dell'oggetto.
+
+<P><LI><CODE>.ICON</CODE> viene usato quando si assegna all'oggetto file-system 
+una icona diversa da quella assunta, che sar… poi quella visualizzata dalla
+Workplace Shell. Se dalla pagina "Icona" di un un oggetto file-system si cambia 
+la sua icona, essa viene salvata in questo EA (nel caso delle cartelle esiste anche
+<CODE>.ICON1</CODE>, in cui si salva la icona da usare per la cartella "aperta").
+
+<P><LI><CODE>.LONGNAME</CODE> serve alla Workplace Shell per immagazzinare il nome
+dell'oggetto quando questo non sia conforme alle regole relative ai nomi imposte dal
+<A HREF="glossary/gls_fs.html">file system</A> su cui l'oggetto risiede. Si veda
+<A HREF="glossary/gls_realnames.html">"nomi reali"</A> per i dettagli.
+
+<P><LI><CODE>.TYPE</CODE> contiene il tipo di file dell'oggetto, nel caso sia stato 
+modificato rispetto al valore assunto.
+
+</UL>
+</BODY>
+</HTML>
+

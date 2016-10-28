@@ -1,0 +1,74 @@
+<HTML RESID=&ID_XMH_VARIABLE;>
+<HEAD>
+    <TITLE>
+        &xwp;: voci di menu variabili
+    </TITLE>
+</HEAD>
+<BODY>
+&xwp; consente l'aggiunta globale di voci di menu nei &popmenu;i di tutte le
+&link_folders; del sistema. Quella che si Š appena incontrata Š una di
+queste voci di menu variabili.
+
+<P>Si veda <A HREF="menus/menu_3config.html">Configurare i &popmenu;i</A> per le
+istruzioni relative a come modificare l'impostazione standard utilizzando la
+speciale &cfgfdr;.
+
+<IFNDEF __EWORKPLACE__>
+<P>Se la configurazione dei menu Š ancora quella immediatamente successiva
+all'installazione di &xwp; saranno disponibili le seguenti nuove voci di menu:
+</IFNDEF>
+<IFDEF __EWORKPLACE__>
+Il &popmenu;e standard della Scrivania prevede le seguenti voci di menu:
+</IFDEF>
+
+<UL>
+<LI>Il sottomenu <B>"Richieste comandi"</B>, che permette di aprire
+<A HREF="glossary/gls_cmd.html">sessioni linea di comando</A>.
+Selezionando una delle voci nel sottomenu si aprir… una richiesta
+comandi, gi… posizionata nella directory corrispondente alla cartella
+corrente.
+
+<P><LI>Il sottomenu <B>"Creare nuovo"</B>, che permette di creare nuovi oggetti
+all'interno della cartella il cui &popmenu;e si sta usando.
+<P>Si veda per ulteriori informazioni
+<A HREF="menus/menu_2template.html">Creare oggetti con la funzione "Creare nuovo"</A>.
+
+<IFDEF __EWORKPLACE__>
+<P><LI>Il <B>sottomenu "Azioni cartella"</B>, che contiene diverse voci utili per
+gestire le cartelle.
+
+<P><B>"Dimensione totale cartella"</B> avvia il programma
+<A HREF="treesize.html">Dimensione totale cartella</A>, che permette di calcolare lo
+spazio disco totale occupato dalla cartella e dalle sue sottocartelle.
+
+<P><B>"Archivia cartella (zip)"</B> comprime in un file ZIP la cartella e tutti i file
+e le sottocartelle in essa contenuti. Il file zip viene creato nella cartella di
+livello superiore alla cartella corrente e porta il nome della cartella con estensione
+<CODE>.ZIP</CODE>. Se, per es., si seleziona "Archivia cartella (zip)" sulla cartella
+<CODE>C:\CARTELLA\SOTTOCARTELLA</CODE>, verr… creato il file
+<CODE>C:\CARTELLA\SOTTOCARTELLA.ZIP</CODE>. </IFDEF>
+
+<IFNDEF __EWORKPLACE__>
+<P><LI>Il sottomenu <B>"Impostazioni veloci"</B> contiene voci che consentono di
+impostare velocemente alcune propriet… delle cartelle senza dover aprire il relativo
+<A HREF="glossary/gls_notebook.html">blocco impostazioni</A>.
+
+<BR><LI>Il sottomenu <B>"&xwp;"</B> contiene voci per l'apertura della <I>Guida ad
+&xwp;</I> e della &cfgfdr;. Infine, sono disponibili "scorciatoie" per il nuovo
+&link_wpsobj;, che contiene molte impostazioni globali di &xwp;, e il nuovo oggetto
+"Kernel &os2;".
+
+<BR><LI>La voce di menu <B>"Dimensione totale cartella"</B> avvia il programma esterno
+<CITE>TREESIZE.EXE</CITE>, incluso in &xwp; dalla V0.81, che calcola lo spazio disco
+totale usato da questa cartella e dalle sue sottocartelle. Si veda
+<A HREF="treesize.html">Dimensione totale cartella</A> per ulteriori spiegazioni.
+
+<BR><LI>Il menu <B>"Netscape"</B> avvia Netscape, visualizzando il contenuto
+della cartella da cui Š stato selezionato.
+Questa voce sar… installata solo se Netscape Š presente nel percorso PATH del sistema.
+</IFNDEF>
+
+</UL>
+
+</BODY>
+</HTML>

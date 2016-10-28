@@ -1,0 +1,62 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp; il paging
+    </TITLE>
+</HEAD>
+<BODY>
+Grazie al paging ("paginazione") &os2; puï assegnare memoria alle applicazioni
+anche quando non vi ä pió memoria fisica disponibile; ci si riferisce spesso a questa
+possibilitÖ usando l'espressione "memoria virtuale" ("virtual memory", da non confondersi
+con il "virtual address space", "spazio di indirizzamento virtuale"
+-- per maggiori informazioni su quest'ultimo si veda
+<A HREF="glossary/gls_mem_himem.html">Il Virtual Address Space in &os2;</A>).
+
+<P>Se il paging ä attivo, &os2; puï spostare temporaneamente dati dalla memoria
+fisica RAM ad uno speciale file di appoggio sull'unitÖ disco. In &os2; tale file di
+appoggio si chiama sempre <CODE>SWAPPER.DAT</CODE>, e, se non si ä
+cambiata l'impostazione relativa in &cfgsys;, risiede
+nel sottoindirizzario <CODE>\OS2\SYSTEM</CODE>.
+
+<P>Questo ä in dettaglio il meccanismo di funzionamento:
+
+<OL><LI>Se un'applicazione alloca memoria ma non ve n'ä abbastanza
+disponibile di fisica, &os2; sceglie un blocco memoria principale
+(RAM) per cui non ci sono state di recente richieste di accesso e lo scrive
+nel file <CODE>SWAPPER.DAT</CODE>. Cosç facendo, libera quella
+parte di memoria e la dÖ all'applicazione che ha fatto la richiesta. In questa maniera le
+applicazioni hanno a disposizione molta pió memoria di quanta non sia fisicamente 
+installata nel sistema.
+
+<P><LI>Se poi un'altra applicazione richiede di accedere al blocco
+di memoria che ä stato salvato nel file di appoggio, &os2; intercetta
+la richiesta e (dato che quella "memoria" si trova adesso sul disco fisso)
+ricarica quel blocco in memoria; solo a questo punto l'applicazione puï accedervi.
+(Se necessario, per far posto ai dati ricaricati dal disco &os2; puï dover salvare nel
+file di appoggio un'altra regione della memoria poco utilizzata).
+
+</OL>E' ovvio che il disco rigido sarÖ di accesso pió lento della memoria RAM,
+tipicamente in un rapporto di 1:100, a seconda della velocitÖ del processore e
+della presenza o meno dell'area di memoria interessata nella memoria cache 
+del processore.
+
+<P>E' questo il motivo per cui l'abbondanza di memoria RAM ä il requisito
+pió importante per avere un sistema ragionevolmente veloce. Anche se ä possibile installare
+&os2; con soli 8 MB di RAM (per &warp; 3, secondo le specifiche, ne bastavano
+4), si passerÖ poi il tempo a sentir girare il disco rigido, dato che il 
+sistema sarÖ obbligato a scrivere e leggere continuamente dal file di appoggio.
+
+<P>&os2; puï incominciare ad utilizzare il file di appoggio all'improvviso,
+anche se il sistema dispone di molta memoria (ad es. 128 MB e pió).
+Dato che ingrandire il file di appoggio ä un'operazione che richiede tempo,
+le impostazioni relative a <CODE>SWAPPATH</CODE> vanno scelte con lungimiranza.
+
+<P>Se si sta usando lo 
+<A HREF="xcenter/xc_main.html">&xcenter;</A>,
+<A HREF="xcenter/xc_sentinel.html">l'elemento "Sentinel"</A>
+risulta molto pratico per controllare la gestione della memoria da parte del sistema.
+
+<BR>
+</BODY>
+</HTML>
+

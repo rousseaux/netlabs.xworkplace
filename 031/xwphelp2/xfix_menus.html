@@ -1,0 +1,114 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        xfix: Menubalk opdrachten
+    </TITLE>
+</HEAD>
+<!-- this page is all new with V0.9.7 -->
+<!-- revised V1.0.9 -->
+<BODY>
+De xfix <B>menubalk</B> zorgt voor opdrachten die werken op de meeste of alle vermelde
+ingangen.
+Zie <A HREF="xfix_menu2.html">Voorgrond menu en sneltoetsen</A> voor details
+van de opdrachten die u kunt gebruiken voor de individuele ingangen.
+<UL><LI><B>xfix</B> menu
+
+<UL><BR><LI><B>Buffer opnieuw ontleden</B> zal de ingangen buffer opnieuw ontleden <B>zoals
+deze nu is</B> en zal de ingangen lijst geheel verversen. Het zal de ingangen uit de
+<CODE>OS2SYS.INI</CODE> niet opnieuw laden. Het is bruikbaar als u bepaalde ingangen heeft
+verwijderd en het resultaat wilt zien. Als een ingang die eerst OK was nu gemarkeerd
+wordt als ongeldig moet u uw wijzigingen niet opslaan!
+<BR><LI><B>Terugschrijven naar OS2SYS.INI</B> schrijft de ingangen tabel terug naar
+het <CODE>OS2SYS.INI</CODE> bestand. Alle wijzigingen die u maakt op de ingangen lijst
+worden niet opgeslagen totdat dit menu onderdeel selecteert. Als er ingangen zijn
+gemarkeerd om te worden gewist, wordt u gevraagd of u ze wilt wissen voordat u uw werk
+opslaat.
+<P>Merk op dat dit waarschijnlijk geen effect heeft als de WPS op dit moment loopt
+omdat de WPS een interne kopie van de ingangen tabel heeft en waarschijnlijk uw
+wijzigingen spoedig zal overschrijven. Daarom moet de WPS niet draaien terwijl u de
+ingangen terugschrijft.
+Zie ook: <A HREF="xfix_delete.html">De basis ide‰en</A> pagina.
+
+<!-- V0.9.20: rewrote this -->
+<BR><LI><B>Afsluiten</B> zal het programma stoppen.
+</UL>
+
+<!-- V1.0.4: added View menu -->
+<LI><B>Weergave</B> menu
+<UL><BR><LI><B>Object Id's</B> toont een nieuw venster met een lijst van alle WPS
+objecten met een object Id. Voor ieder object wordt informatie over het Id, de ingang en
+lange bestandsnaam getoond. De lijst kan op alle velden worden gesorteerd. Dit is een
+puur informatief venster en er kunnen geen acties op de objecten mee worden uitgevoerd.
+</UL>
+
+<LI><B>Sorteren</B> menu
+<P>Dit stelt u instaat om de ingangen list te sorteren op de waarden in de verschillende
+kolommen. (Zie <A HREF="xfix_list.html">De ingangen lijst</A> voor een beschrijving van de
+kolommen.) Als u sorteert op Index, toont het beeldscherm de exacte volgorde waarin de
+ingang toegangen voorkomen in de <CODE>OS2SYS.INI</CODE> tabel (tevens met oplopende
+node verschuivingen). "Sorteren op Index" is de standaard sorteer volgorde nadat xfix is
+opgestart.
+<P>
+
+<LI><B>Acties</B> menu
+<UL><BR><LI><B>Zoek ongeldige bestanden</B> zal alle ingangen in de tabel controleren om
+te zien of zij naar geldige bestanden verwijzen. Elk onderdeel waarvan de data verlopen
+is, wordt gemarkeerd met ongeldig <IMG SRC="img/xfix_error.gif"> en krijgt de
+"Bestand niet gevonden" status.
+Dit wordt niet automatisch gedaan omdat dit proces enige tijd kan duren.
+Zie <A HREF="xfix_howto.html">Stap voor stap handleiding</A> voor een specifiek
+gebruik van dit menuonderdeel.
+<BR><LI><B>Auto-beveiligen</B> voorkomt dat u per ongeluk alle bestanden en
+mappen wist die u waarschijnlijk helemaal niet wilt wissen. Het verschaft beveiliging
+tegen:
+<UL><LI>Bestanden met de extensies: <CODE>.EXE .COM .CMD .BAT</CODE>
+<LI>Mappen die abstracte objecten bevatten zoals programma objecten of reflecties
+<LI>Bestanden of mappen die een Object-Id toegewezen hebben gekregen,
+<LI>Ingangen voor <CODE>Stations</CODE> en voor <CODE>Root</CODE> mappen.
+</UL>
+Iedere beveiligde ingang wordt gemarkeerd met <IMG SRC="img/xfix_protect.gif">. Iedere
+map die ligt in het pad naar een beveiligde ingang zal worden gemarkeerd met <IMG SRC="img/xfix_safe.gif"> en
+zal ook worden beveiligd.
+<BR><LI><B>Verwijder alle beveiligingen</B> verwijdert de beveiliging van iedere
+ingang.
+<BR><LI><B>Nu wissen...</B> toont een dialoog die u zal vragen of u alle ingangen wilt
+verwijderen die u voor wissen gemarkeerd hebt met <IMG SRC="img/xfix_delete.gif">
+. Als het antwoord <CODE>Ja</CODE> is, worden zij verwijderd uit het venster en
+het geheugen. Zij worden <B>niet</B> gewist uit <CODE>OS2SYS.INI</CODE> totdat u
+<B>Terugschrijven naar OS2SYS.INI</B> selecteert vanuit het <B>xfix</B> submenu.
+<P>Als het wissen van een ingang die u heeft gemarkeerd er voor zorgt dat andere ingangen
+<IMG SRC="img/xfix_orphan.gif"> wezen worden (en dus, permanent ongeldig), zal de dialoog
+u waarschuwen. U zult dan waarschijnlijk <CODE>Nee</CODE> antwoorden, hef dan de
+markering op van de ingangen die de problemen veroorzaken.
+</UL>
+
+<LI><B>Selectie</B> menu
+<!-- V1.0.4: made this an unordered list -->
+<UL><BR><LI><B>Selecteer alle ongeldige</B> zal alle ingangen selecteren waarvan de
+toegang om een bepaalde reden is gemarkeerd met ongeldig <IMG SRC="img/xfix_error.gif">.
+U kunt rechtsklikken op ieder van de geselecteerde onderdelen en dan "Wissen" selecteren
+uit het &popmenu;.
+<!-- V1.0.4: added Select by name item -->
+<BR><LI><B>Selecteren op naam...</B> toont een nieuwe dialoog die u in staat stelt om
+meerdere ingangen tegelijk te selecteren of te de-selecteren. U kunt alle ingangen selecteren of
+de-selecteren of een masker defini‰ren gelijk aan dat wat gebruikt wordt op de
+OS/2 opdrachtregel, d.w.z. <a href="glossary/gls_wildcards.html">Jokertekens</a>
+<CODE>?</CODE>
+en <CODE>*</CODE> kunnne worden gebruikt om ‚‚n of meerdere tekens te vervangen.
+Het masker <CODE>"*.txt"</CODE> zal bijv. alle ingangen (de-)selecteren met naam die
+eindigt op <CODE>".txt"</CODE>. De dialoog blijft geopend totdat u op de <B>"Afsluiten"</B>
+klikt of op de <B>Esc</B> toets gebruikt. Op die manier kunnen selecties met
+verschillende maskers succesvol kunnen worden toegepast.
+<P>Merk op dat het masker met de <B>korte naam</B> wordt vergeleken. Dus is het niet
+mogelijk om de dialoog te gebruiken om gemakkelijk alle ingangen van objecten te selecteren
+die zich in een bepaalde directory bevinden.
+</UL>
+
+<LI><B>Help</B> menu
+<!-- V1.0.4: changed "info" to "information" -->
+<P>Toont de xfix help, deze bestanden, en de xfix product informatie met de huidige
+versie en build datum. </UL>
+
+</BODY>
+</HTML>
+

@@ -1,0 +1,60 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: unit…, volumi, partizioni
+    </TITLE>
+</HEAD>
+<BODY>
+In &os2; si applica la seguente terminologia in riferimento
+ai dispositivi di memoria di massa:
+
+<OL><LI>L'<B>unit…</B> Š l'entit… logica cui il kernel di &os2; ha
+assegnato una lettera. Si possono avere fino a 26 unit…, dalla
+<CODE>A:</CODE> fino alla <CODE>Z:</CODE>.
+
+<P>La &link_drivesfdr; mostra tutte le unit… definite al momento nel sistema.
+Le unit… <CODE>A:</CODE> e <CODE>B:</CODE> sono sempre, per definizione, 
+le unit… floppy. Le altre lettere possono essere 
+volumi disco rigido (vedi sotto), lettori CD-ROM o DVD, risorse di rete cui Š stata
+assegnata una lettera o altri dispositivi ancora.
+
+<P><LI>Il <B>volume</B> Š specifico per i dischi rigidi e consiste di 
+una o pi— partizioni (vedi sotto). Per poter conservare dati un volume deve essere formattato 
+per un <A HREF="glossary/gls_fs.html">file system</A> specifico.
+
+<P><LI>La <B>partizione</B> Š un segmento fisico del disco rigido. Tutti i 
+dischi rigidi, per poter essere usati nei personal computer, devono disporre di
+almeno una partizione; possono per• anche contenerne diverse, se per esempio
+si vogliono usare pi— sistemi operativi o pi— file system differenti.
+
+</OL><B>Gestione Volumi Logici (LVM)</B> di &os2; permette di creare, cancellare
+e modificare volumi e partizioni, nonch‚ di assegnare o meno lettere di unit…
+ai vari volumi, rendendoli in questa maniera visibili o nascosti ad &os2;.
+<IFDEF __EWORKPLACE__>
+Si veda <A HREF="lvmhelp.inf"><I>"Introduzione ad LVM"</I></A> per i dettagli.
+</IFDEF>
+<IFNDEF __EWORKPLACE__>
+Si veda <A HREF="usinglvm.inf"><I>"Usare LVM"</I></A> per i dettagli.
+</IFNDEF>
+
+<P>LVM pu• essere avviato in pi— modi:
+
+<UL><LI>dalla &link_drivesfdr; selezionando "Gestione volumi" nel
+<A HREF="glossary/gls_popmenu.html">&popmenu;e</A>;
+
+<P><LI>dalla  &link_syssetupfdr; avviando l'oggetto "Logical Volume Manger";
+
+<P><LI>aprendo una <A HREF="glossary/gls_cmd.html">richiesta comandi</A> e 
+digitando <CODE>LVM</CODE>. A differenza delle due maniere precedenti,
+quest'ultima avvia la versione in modo testo di LVM.
+
+</UL>Per informazioni aggiuntive selezionare un argomento tra i seguenti:
+
+<UL>
+<LI>&link_syssetupfdr;
+<LI><A HREF="tasks/tsk_format.html">Formattazione dei supporti</A>
+<LI><A HREF="glossary/gls_cmd.html">Richieste comandi</A>
+</UL>
+</BODY>
+</HTML>
+

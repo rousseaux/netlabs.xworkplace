@@ -1,0 +1,56 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: criteri di ordinamento
+    </TITLE>
+</HEAD>
+<BODY>
+I quattro criteri di ordinamento seguenti sono <I>sempre</I> disponibili in tutte le 
+&link_folders;:
+
+<UL><LI><B>Ordina per nome:</B> si ordina una cartella alfabeticamente usando i nomi degli oggetti.
+
+<P><LI><B>Ordina per tipo:</B> si ordina una cartella usando i tipi degli oggetti, per esempio
+l'attributo esteso .TYPE, che pu• essere settato nel blocco appunti mpostazioni degli oggetti. Si noti che
+quanto detto nell'esempio si applica agli oggetti file di dati; tutti gli altri oggetti (e oggetti file di dati senza
+tipo definito) saranno ordinati per primi.
+
+<P><LI><B>Ordina per classe:</B> si ordina una cartella usando le classi degli oggetti, 
+visibili nella terza colonna della modalit… visualizzazione dettagli delle cartelle.
+
+<P><LI><B>Ordina per estensione nome file:</B> si ordina una cartella usando i caratteri
+dopo l'ultimo punto nel nome di un oggetto, che normalmente Š l'estensione del nome del file
+(come <CODE>.TXT</CODE>, <CODE>.EXE</CODE> ecc.). 
+Gli oggetti senza estensione sono messi per primi.
+
+</UL>Sono poi disponibili anche i seguenti criteri, purch‚ la cartella non abbia modificato la propria classe 
+di ordinamento in qualcosa diverso da WPFileSystem (il che di solito accade solo con cartelle speciali, 
+come il cestino e  la cartella "Tipi di carattere"):
+
+<UL><LI><B>Ordina per nome effettivo:</B> si ordina una cartella alfabeticamente secondo il nome fisico nel
+file-system. PoichŠ solo gli oggetti file hanno nomi reali, gli oggetti astratti non vengono ordinati
+correttamente.
+
+<P><LI><B>Ordina per dimensione:</B> si ordina una cartella usando le dimensioni dei file. PoichŠ gli oggetti astratti
+non hanno dimensione (occupano infatti solo spazio nel file OS2.INI) si considera che la loro dimensione
+sia zero byte.
+
+<P><LI><B>Ordina per data ultima scrittura / data ultimo accesso / data creazione:</B>
+si ordina una cartella secondo questa informazione 
+del file-system, che non Š disponibile per gli oggetti astratti. Notare che il file system 
+<A HREF="glossary/gls_fs.html">FAT</A>
+non conserva tutte queste informazioni, perci• questi tre criteri in questo caso non
+fanno differenza.
+
+
+</UL>Se l'impostazione <B>"Cartelle davanti"</B> Š abilitata, le cartelle saranno disposte comunque 
+prima degli altri oggetti.
+
+<P> All'interno di un gruppo con cartelle e oggetti diversi dalle cartelle, l'ordinamento segue il criterio
+relativo. Per esempio, se Š selezionato "Ordina per data ultima scrittura" e si Š abilitato anche 
+"Cartelle davanti", verranno messe per prime tutte le sottocartelle, ordinate per data di ultima scrittura, 
+e poi tutti gli altri oggetti, anch'essi ordinati per data di ultima scrittura.
+
+</BODY>
+</HTML>
+

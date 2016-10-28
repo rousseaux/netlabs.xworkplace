@@ -1,0 +1,129 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: file system
+    </TITLE>
+</HEAD>
+<BODY>
+Il "file system" determina la maniera in cui
+&link_datafiles;
+e
+&link_folders;
+sono fisicamente organizzati sul supporto di registrazione.
+
+<P>Nel caso dei dischi rigidi ciascun volume puï utilizzare un file system diverso, che
+viene determinato al momento della formattazione del volume e che non viene generalmente
+pió cambiato fino alla formattazione successiva.
+
+<P>Per i sistemi operativi moderni sono numerosi i file system disponibili,
+ciascuno con vantaggi e difetti. &os2; riconosce i 
+file system seguenti:
+
+<OL><LI>Storicamente il file system <B>FAT</B> (che sta per "File Allocation Table")
+ä il pió vecchio tra quelli usati su personal computer. Introdotto con le 
+prime versioni  MS-DOS, non ä nÇ potente nÇ veloce nÇ efficente. La lunghezza dei nomi dei file
+ä limitata a 8+3 caratteri e, in caso di volumi di grandi dimensioni, una grande quantitÖ di spazio 
+va sprecata  a causa del meccanismo interno di allocazione. Inoltre, fatto anche
+pió grave, i volumi FAT sono rapidamente soggetti a frammentazione.
+
+<P>Oggi l'unico vantaggio del FAT sta nell'essere leggibile da quasi tutti i sistemi operativi.
+Nel caso si abbiano pió sistemi operativi installati puï essere utile un volume FAT
+per l'interscambio dei dati. In ogni modo, se ci si preoccupa anche della velocitÖ, ä meglio evitare
+di collocare su un volume FAT dati usati frequentemente.
+
+<P>&os2; supporta il FAT direttamente dal kernel: per questo non ä necessaria un'istruzione IFS
+specifica in &cfgsys;.
+
+<P>Con Windows 95 Microsoft ha esteso il file system FAT in modo da permettere
+l'uso dei nomi lunghi ma non ne ha risolto le altre limitazioni. Usando
+&os2; si continueranno a vedere solo nomi 8+3.
+
+<P>In seguito, con Windows 98, Microsoft ha introdotto un nuovo file system
+chiamato "FAT32". Nonostante il nome esso non ä affatto compatibile con FAT.
+Ci sono software realizzati da terzi che permettono ad &os2; di vedere volumi 
+FAT32 attraverso un driver IFS da aggiungere al file &cfgsys;.
+
+<P><LI><B>HPFS</B> sta per "High Performance File System". E' l'unico
+file system specificamente progettato per &os2; ed ha numerosissimi vantaggi rispetto 
+a FAT. I nomi di file possono essere lunghi fino a 254 caratteri, supporta nativamente gli 
+<A HREF="glossary/gls_eas.html">attributi estesi</A>,
+ä molto pió veloce (da qui il nome), non spreca spazio ed 
+ä molto resistente alla frammentazione.
+
+<P>Tuttavia, rispetto ai file system pió recenti, anche HPFS ha i suoi limiti.
+Il pió evidente ä che HPFS standard consente
+una <A HREF="glossary/gls_caches.html">dimensione della cache</A> di soli 2 MB. Se si considera 
+la quantitÖ di memoria disponibile nei computer di oggi, ci si rende conto che si tratta di un valore 
+davvero limitato.
+
+<P>Per il supporto HPFS ä necessario caricare il driver 
+<A HREF="cmdref.inf#hpfs.ifs"><CODE>HPFS.IFS</CODE></A>, 
+il che avviene attraverso un'instruzione IFS nel file &cfgsys;.
+
+<P><LI><B>HPFS386,</B> una versione altamente ottimizzata di HPFS, non ha la limitazione 
+relativa alla cache. E' infatti una versione speciale per servizi server, che tra l'altro 
+ha la possibilitÖ di trasferire dati direttamente dal file system ai driver di rete, 
+senza dover passare attraverso il passaggio a ring 3. Supporta inoltre la sicurezza 
+locale, le quote e un limitato supporto software di protezione dai guasti hardware.
+
+<P>Questo file system ha perï un costo aggiuntivo significativo. Quando installato, 
+HPFS386 sostituisce lo HPFS standard. Viene caricato attraverso il driver 
+<CODE>HPFS386.IFS</CODE> in &cfgsys;, ma non funziona se non si sono
+installati i componenti server.
+
+<IFNDEF __EWORKPLACE__>
+<P><LI>Per OS/2 Warp Server for e-Business (WSeB) IBM ha realizzato una versione OS/2 di <B>JFS,</B>
+il Journaling File System di AIX. Oggi esiste anche una versione Linux di JFS. La versione &os2; ä
+disponibile con eComStation e con i Convenience Pack IBM OS/2.
+</IFNDEF>
+<IFDEF __EWORKPLACE__>
+<P><LI>Per superare le limitazioni precedenti eComStation supporta anche il <B>Journaling 
+File System (JFS),</B> file system moderno e dalle elevatissime prestazioni, supportato da AIX e
+Linux.
+</IFDEF>
+
+<P>JFS presenta i seguenti vantaggi rispetto ad HPFS:
+
+<BR><OL><LI>Tutte le operazioni di scrittura sul disco sono annotate in un apposito
+registro, il "journal" del nome. Se il sistema crolla, JFS non ha bisogno di effettuare un
+<CODE>CHKDSK</CODE> completo per ristabilire l'integritÖ del file-system e si limita a 
+rimpiazzare il vecchio registro. Questo fa sç che il <CODE>CHKDSK</CODE> dei volumi 
+JFS richieda normalmente secondi anzichÇ minuti, o ore, come puï capitare con volumi 
+HPFS di grandi dimensioni.
+
+<BR><LI>JFS non ha il limite dei 2 MB massimi di cache che ha invece lo HPFS standard.
+
+<BR><LI>Grazie ad LVM, i volumi JFS possono essere ingranditi senza dover riavviare il sistema.
+
+<BR><LI>JFS si avvantaggia del nuovo codice 32-bit presente nel kernel &os2;
+(KEE32 e IFS32) e non deve perciï passare attraverso livelli
+di compatibilitÖ 16-bit, il che velocizza il trasferimento dei pacchetti di dati superiori a
+64 KB e permette a JFS di scalare in maniera eccellente nel caso di sistemi multiprocessore.
+
+<BR><LI>Tutte le strutture interne JFS sono a 64 bit. JFS non ha quindi il limite di
+2 GB per i file singoli (nÇ quello di 64 GB per i singoli volumi) che ha invece HPFS.
+
+</OL>Uno svantaggio di JFS sta nel fatto di non essere avviabile. La partizione
+di avvio &os2; dovrÖ essere quindi risiedere su un volume HPFS o FAT.
+
+<P>Il supporto si abilita aggiungendo il driver
+<A HREF="cmdref.inf#jfs.ifs"><CODE>JFS.IFS</CODE></A>
+al file &cfgsys;.
+
+<P><LI>Infine, <B>CDFS</B> ä il file utilizzato sui CD-ROM di dati.
+I CD-ROM usano infatti un proprio formato speciale per organizzare i dati sul disco, diverso da
+FAT o HPFS, ed ä perciï necessario un driver file system specifico, che ä implementato
+dal driver <A HREF="cmdref.inf#cdfs.jfs"><CODE>CDFS.IFS</CODE></A> e che viene 
+utilizzato solo per l'accesso ai 
+CD-ROM di dati. Il driver CDFS &os2; supporta i nomi lunghi nel formato Microsoft Joliet.
+
+</OL>
+Per ulteriori informazioni scegliere uno degli argomenti seguenti:
+
+<UL>
+<LI><A HREF="glossary/gls_volume.html">UnitÖ, volumi, partizioni</A>
+<LI><A HREF="tasks/tsk_format.html">Formattazione dei media</A>
+</UL>
+</BODY>
+</HTML>
+

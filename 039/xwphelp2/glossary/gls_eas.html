@@ -1,0 +1,63 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: attributi estesi
+    </TITLE>
+</HEAD>
+<BODY>
+Gli <B>attributi estesi (EA)</B> sono una funzione speciale di &os2;,
+che permette di immagazzinare informazioni aggiuntive negli oggetti 
+file-system (siano essi file o cartelle). Queste informazioni aggiuntive
+non vengono salvate nei dati dell'oggetto ma vengono conservate assieme ad esso
+nel <A HREF="glossary/gls_fs.html">file system</A>.
+
+<P>Differentemente dai vecchi
+<A HREF="glossary/gls_fattrs.html">bit attributi file</A>, gli
+attributi <I>estesi</I> sono una lista di parole chiave con un valore collegato,
+in formato testo o binario.
+
+<P>Le applicazioni possono definire e poi utilizzare proprie parole chiave.
+Talune parole chiave sono definite dal sistema ed usate, per es., dalla
+Workplace Shell. Sono i cosiddetti
+<B>"attributi estesi standard"</B>, caratterizzati dal fatto che il nome della 
+parola chiave che li indica inizia con un punto. Si veda 
+<A HREF="glossary/gls_eas_std.html">"Attributi estesi standard"</A>
+per ulteriori informazioni.
+
+<IFNDEF __NOFILEPAGE2__>
+<P>Per <B>visualizzare</B> gli attributi estesi correntemente definiti per un certo oggetto
+nel file-system si apra il suo 
+<A HREF="glossary/gls_notebook.html">blocco appunti impostazioni</A> e
+si selezioni la seconda pagina "File".
+</IFNDEF>
+
+<P>Note:
+
+<OL><LI>La dimensione massima per gli EA di un oggetto file-system Š limitata a 
+64 KB.
+
+<P><LI>Tutti i <A HREF="glossary/gls_fs.html">file system</A> in dotazione ad 
+&os2; (HPFS, JFS e FAT) supportano gli attributi estesi, il che potrebbe non 
+essere vero nel caso di file system forniti da terzi o di unit… di rete su server
+remoti. Gli EA vanno persi se si copiano file su file system che non li supportano.
+
+<P><LI>Se si condivide un volume tra &os2; ed un sistema operativo che non riconosce
+gli attributi estesi, pu• darsi che l'altro sistema operativo, nell'effettuare operazioni
+sui file, rovini gli EA salvati da &os2;. E' un'eventualit… estremamente probabile con
+il file system FAT, che Š letto praticamente da ogni sistema operativo.
+
+<P><LI>Per sapere quanto spazio Š complessivamente utilizzato per gli EA su un dato 
+volume, selezionare "Controllare disco" dal suo 
+<A HREF="glossary/gls_popmenu.html">menu contestuale</A>.
+
+</OL>Per ulteriori informazioni si vedano gli argomenti seguenti:
+
+<UL>
+<LI>&link_drivesfdr;
+<LI><A HREF="glossary/gls_volume.html">Unit…, volumi e partizioni</A>
+<LI><A HREF="glossary/gls_fs.html">I file system</A>
+<LI><A HREF="tasks/tsk_copymovefs.html">Limitazioni nella copia e nello spostamento dei file</A>
+</UL>
+</BODY>
+</HTML>
+

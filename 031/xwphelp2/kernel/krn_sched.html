@@ -1,0 +1,126 @@
+<HTML RESID=&ID_XSH_SETTINGS_KERNEL1;>
+<HEAD>
+    <TITLE>
+        &os2;: Planner
+    </TITLE>
+</HEAD>
+<BODY>
+Op deze pagina kunt u de &cfgsys; instellingen aanpassen die de planner van &os2;
+be‹nvloeden.
+
+<P>Zie:
+<A HREF="glossary/gls_scheduler.html">"Processen en threads"</A>
+voor een inleidende verklaring van wat de planner doet.
+
+<P>Deze hulppagina zal alleen de verschillende instellingen verklaren en ze relateren naar
+de betreffende <B>CONFIG.SYS</B> opdrachten.
+Als de informatie op deze pagina, over de verschillende <B>CONFIG.SYS</B> instellingen, voor u
+niet voldoende is, kunt u aanvullende informatie vinden in de respectievelijke hoofdstukken
+in <I>Handleiding bij Opdrachten.</I>
+
+<P>Druk op <B>"Toepassen"</B> om de door u gemaakte aanpassingen weg te schrijven naar het
+<B>CONFIG.SYS</B> bestand.
+Dit zal alleen de regels aanpassen die overeenkomen met de instellingen op deze pagina.
+De regels overeenkomend met de andere pagina's in het "&os2; kernel" object zullen niet
+aangepast worden.
+Let a.u.b. op dat u de computer moet herstarten om de aanpassingen te laten werken. Een
+Werkplek herstart is <I>niet</I> voldoende.
+
+<P>Druk op <B>"Optimaliseren"</B> om u door &xwp; nieuwe instellingen voor te laten stellen op
+basis van de karakteristieken van uw systeem.
+De <B>CONFIG.SYS</B> zal dan ook alleen aangepast worden nadat u op "Toepassen" heeft gedrukt.
+
+<P>Druk op <B>"Standaard"</B> om de standaard &os2; instellingen op de notitieblok pagina
+getoond te krijgen.
+De <B>CONFIG.SYS</B> zal ook nu alleen aangepast worden nadat u op "Toepassen" heeft gedrukt.
+
+<P>De volgende velden zijn beschikbaar:
+
+<UL><LI>De <B>"Huidige aantal processen"</B> afbeelding toont het aantal momenteel lopende
+processen op uw systeem. Deze afbeeldeing wordt continu bijgewerkt: als u een nieuw programma
+start, ziet u dat het processen aantal toeneemt.
+
+<P><LI>De <B>"Maximun aantal processen"</B> instelling vertegenwoordigt de <CITE>PROCESSES</CITE>
+instelling in de &cfgsys;. Hier kunt u bepalen hoeveel processen &os2; instaat is tegelijk te
+verwerken. Het maximum aantal hangt af van de hoeveelheid geheugen in uw systeem. U kunt de belasting
+van de planner verminderen door dit aantal te verlagen. Dit kan ook helpen om gedeeld geheugen
+problemen te voorkomen.
+
+<P>Merk echter op dat u systeem zonder enige waarschuwing kan vastlopen als u dit getal te laag
+instelt! Als vuistregel, gebruik het "Huidige aantal processen" hierboven afgebeeld en verhoog het
+met 50%.
+
+<P>Maak eerst, om de beste resultaten te bereiken met het optimalisatie hulpmiddel, uw eigen
+werkomgeving. Start dan achtereenvolgens alle applicaties waar u normaal mee werkt en druk
+dan op "Optimaliseer".
+
+<P>Deze instelling is beschikbaar in OS/2 Warp4 met Fixpak 13 en latere versies.
+
+<P><LI>Het <B>"Huidige thread aantal"</B> scherm toont u het totaal aantal momenteel
+draaiende threads. Dit scherm wordt continue bijgewerkt: als u een nieuw
+programma start zult u zien dat het thread aantal zal toenemen.
+
+<P><LI>De <B>"Maximum thread aantal"</B> instelling vertegenwoordigt de <CITE>THREADS</CITE>
+instelling in de <B>CONFIG.SYS</B>. Hier kunt u opgeven hoeveel threads &os2; in totaal moet kunnen
+afhandelen. De maximum waarde is 4096. Door het verkleinen van dit getal kunt u de belasting van de
+planner en zijn geheugenverbruik verlagen.
+&os2; gebruikt tenminste ‚‚n geheugen pagina (4 KB) voor elke thread. Dat wil zeggen
+dat als u 1024 threads opgeeft u al 4 MB geheugen gebruikt heeft.
+Als u helemaal geen netwerk functionaliteit gebruikt, zou een waarde van 256 threads genoeg moeten zijn.
+
+<P>Let er echter op dat uw systeem, zonder enige waarschuwing, zou kunnen vastlopen als u deze
+waarde te laag instelt. Als vuistregel kunt u de "Huidige thread aantal" hierboven getoond
+nemen en daar 50% bij optellen.
+Dat moet u genoeg veiligheid bieden, want het merendeel van de threads wordt gestart door het systeem
+bij het opstarten en de meeste aanvullende processen gebruiken elk ‚‚n of twee threads.
+
+<P>Zie de <A HREF="cmdref.inf#threads">documentatie</A> in de
+<I>Handleiding bij opdrachten</I> voor details.
+
+<P>Maak eerst, om de beste resultaten te bereiken met het optimalisatie hulpmiddel, uw eigen
+werkomgeving. Start dan achtereenvolgens alle applicaties waar u normaal mee werkt en druk
+dan op "Optimaliseer".
+
+<P><LI>De <B>"Sta prioriteits verhoging toe elke:"</B> instelling vertegenwoordigt de <CITE>MAXWAIT</CITE>
+instelling in de<B>CONFIG.SYS</B>. Deze instelling bepaalt hoeveel seconden processortijd een thread
+krijgt die klaar staat om uitgevoerd te worden ondanks het feit dat andere threads een hoger
+prioriteitsniveau hebben.
+Deze instelling heeft alleen invloed op threads met een "gewone" threads prioriteitsclass.
+De standaardwaarde is drie seconden.
+Bij het verlagen van deze waarde zullen "achtergrond" threads meer processortijd krijgen, maar
+dat gaat ten koste van "voorgrond" threads, die dan vaker onderbroken zullen worden. Experimenteer
+met deze instelling om er achter te komen welke waarde het beste bij uw systeem past. U dient echter
+geen hogere waarde op te geven dan 3 seconden.
+IBM heeft aanbevolen om deze instelling te verlagen als u veel DOS/Windows applicaties gebruikt,
+maar u zou hem NIET moeten verlagen als u niet veel geheugen in uw systeem heeft waardoor
+&os2; veel met het swapbestand werkt.
+
+<P>Zie de
+<A HREF="cmdref.inf#maxwait">documentatie</A>
+in de
+<I>Handleiding bij opdrachten</I>
+voor details.
+
+<P><LI>De <B>"Voorgrondtaken hebben voorrang op schijf I/O"</B> instelling vertegenwoordigt de
+<CITE>PRIORITY_DISK_IO</CITE> instelling in de <B>CONFIG.SYS</B>.
+Als deze instelling geactiveerd is, (wat de standaard is),
+zal de huidige voorgrond applicatie een prioriteitsverhoging krijgen als zijn schijfactiviteit
+klaar is. Dit geldt voor het eerste tijdsvak dat aan de thread gegeven wordt nadat de schijf
+activiteit klaar is. Na dit tijdsvak wordt de status van de thread teruggezet en wordt de
+prioriteitsverhoging verwijderd.
+Als gevolg hiervan zal de voorgrond sessie een betere reactie snelheid hebben, tenminste wanneer
+het de stations in uw systeem benadert.
+
+<P>U zou deze instelling kunnen deactiveren als u vaak programmatuur in de achtergrond
+draait met veel schijftoegang, zoals compilers.
+
+<P>Zie de
+<A HREF="cmdref.inf#priority_disk_io">documentatie</A>
+in de
+<I>Handleiding bij opdrachten</I>
+voor details.
+
+</UL>
+</BODY>
+</HTML>
+

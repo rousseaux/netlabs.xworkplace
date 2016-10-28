@@ -1,0 +1,46 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: dispositivi multimediali
+    </TITLE>
+</HEAD>
+<BODY>
+La colonna "Tipo" mostra il tipo di ciascun dispositivo.
+
+<P>E' importante ricordare che, con MMPM/2, un "dispositivo" potrebbe anche non corrispondere
+ad un componente hardware effettivamente nel sistema. Per motivi di praticit…
+MMPM/2 crea anche dei dispositivi "logici" per coordinare le applicazioni multimediali.
+
+<P>MMPM/2 in teoria prevede diciannove tipi di dispositivi multimediali, ma per ora
+esistono driver solo per un piccolo sottoinsieme di categorie. Di conseguenza, 
+in un tipico computer con dispositivi multimediali, si troveranno i seguenti componenti:
+
+<UL><LI><B>CD audio:</B> il lettore di CD-ROM riconosciuto da MMPM/2, in grado di leggere
+CD audio.
+
+<P><LI><B>Wave audio:</B> la scheda audio riconosciuta da MMPM/2, in grado di riprodurre
+file audio (es. .WAV).
+<P>Per decodificare questi file e inviarli alla scheda audio MMPM/2 usa IOProcs e Codecs 
+(vedere le pagine "IOProcs" e "Codecs").
+
+<P><LI><B>Sequencer:</B> Š il nome attribuito da MMPM/2 al sottosistema MIDI. Viene 
+implementato sempre attraverso la scheda audio.
+
+<P><LI><B>Ampmix:</B> acronimo che sta per "amplificatore/mixer". E' un 
+dispositivo logico di MMPM/2 che miscela i vari canali audio e controlla il volume dell'uscita
+audio. Tutte le uscite audio attraversano questo dispositivo logico. MMPM/2 necessita della 
+scheda audio per implementare implementare questa funzione.
+
+<P><LI><B>Video digitale:</B> un altro dispositivo logico, per la riproduzione di video digitali. Pu•
+rappresentare un dispositivo hardware, nel caso in cui questo sia presente.
+Nella maggior parte dei sistemi, per•, questo dispositivo viene implementato solo via software.
+<P>MMPM/2 usa IOProcs e codecs per decodificare file video e visualizzarli sullo schermo.
+(vedere le pagine "IOProcs" e "Codecs").
+
+<P>Se si Š installato il Netscape Plug-in Pack, saranno presenti due di questi dispositivi, il secondo dei 
+quali Š responsabile della riproduzione dei file MPEG (per qualche motivo IBM
+ha deciso di creare un secondo dispositivo MPEG).
+
+</UL>
+</BODY>
+</HTML>

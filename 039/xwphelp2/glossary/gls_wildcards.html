@@ -1,0 +1,36 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: caratteri jolly
+    </TITLE>
+</HEAD>
+<BODY>
+I caratteri jolly sono una variante estremamente semplificata delle 
+<A HREF="glossary/gls_regexps.html">espressioni regolari</A> di tipo Unix.
+Permettono di indicare pi— nomi di file con una sola stringa di caratteri e sono usati per lo 
+pi— dalla linea di comando, DOS o &os2;.
+
+<P>&os2; accetta due caratteri jolly:
+
+<OL><LI>Il carattere <B>asterisco</B> (<CODE>*</CODE>) sta a rappresentare una qualunque
+sequenza di caratteri (nessuno, uno o pi— caratteri).
+
+<P>Per esempio: alla stringa <CODE>m*a</CODE> pu• equivalere tanto <CODE>mamma</CODE> come
+<CODE>ma</CODE> e <CODE>minestra</CODE>.
+
+<P><LI>Il carattere <B>punto di domanda</B> (<CODE>?</CODE>) rappresenta invece un solo carattere.
+
+<P>Nell'esempio precedente: a <CODE>m???a</CODE> pu• corrispondere solo <CODE>mamma</CODE>, e 
+non <CODE>ma</CODE> n‚ <CODE>minestra</CODE>.
+
+</OL>I caratteri jolly possono naturalmente essere anche usati in combinazione: a <CODE>m*a.?x?</CODE>
+pu• corrispondere tanto <CODE>mamma.txt</CODE> quanto <CODE>minestra.exe</CODE>.
+
+<P>Nota bene: diversamente rispetto al DOS, in &os2; il punto (<CODE>.</CODE>) nei nomi file Š
+un carattere speciale solo per i file che si trovano sul file system 
+<A HREF="glossary/gls_fs.html">FAT</A>.
+
+<BR>
+</BODY>
+</HTML>
+

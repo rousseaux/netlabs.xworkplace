@@ -1,0 +1,54 @@
+<HTML NOSUBLINKS="config"  WIDTH=70% XPOS=right>
+<HEAD>
+    <TITLE>
+        Introduzione
+    </TITLE>
+</HEAD>
+<BODY>
+A partire dalla V0.9.7 &xwp; comprende un sostituto per il &warpcenter; di &warp4;:
+lo "&xcenter;".
+
+<P>Tecnicamente, non si tratta di un sostituto del &warpcenter;, dato che non sostituisce la 
+classe WPS "SmartCenter", peraltro del tutto non documentata.
+&xcenter; si basa su una implementazione completamente nuova. Non ä compatibile con
+il &warpcenter; e non ne copia le impostazioni, ma puï fare tutto quel che fa il &warpcenter;
+e molto altro!
+
+<P>Rispetto al &warpcenter;, &xcenter; offre i seguenti vantaggi:
+
+<UL><LI>E' <B>completamente configurabile.</B> Tutti gli elementi dello &xcenter; si possono 
+aggiungere o togliere liberamente,
+mentre il &warpcenter; contiene sempre degli elementi obbligati in posizioni fisse.
+
+<P>Qualunque elemento dello &xcenter; puï essere inserito in 
+qualunque posizione.
+
+<P>Consultare <A HREF="ctr_2addwgt.html">"Aggiungere e togliere elementi"</A> per dettagli.
+
+<P><LI>Si puï usare <B>pió di uno &xcenter;</B> contemporaneamente.
+Ogni &xcenter; memorizza separatamente elementi ed impostazioni relative, cosç da evitare conflitti.
+
+<P><LI>Lo &xcenter; offre <B>pió stili di presentazione</B> rispetto allo &warpcenter;. E' possibile trascinare 
+tipi di carattere e colori sugli elementi, che manterranno tali impostazioni personalizzate.
+Inoltre lo &xcenter; ha un'opzione "Nascondere automaticamente" che lo riduce ad una barra sottile al fondo dello schermo, 
+come la barra delle applicazioni di
+Windows 95. Queste opzioni di presentazione si regolano dal blocco impostazioni degli &xcenter;.
+
+<P><LI>Lo &xcenter; supporta <B>DLL plug-in.</B> Ogni programmatore puï aggiungere nuovi elementi
+allo &xcenter; semplicemente scrivendo una DLL e copiandola nella cartella <CODE>plugins\xcenter</CODE>
+all'interno della directory di installazione di &xwp;.
+
+<P>Si veda <A HREF="ctr_9plugin.html">"Le DLL plug-in"</A> per i dettagli.
+
+<P><LI>Lo &xcenter; gira in un <B>sottoprocesso separato</B> dentro la WPS, perciï puï 
+avere prioritÖ maggiore rispetto agli altri programmi.
+Tale prioritÖ ä regolabile nel blocco impostazioni dello &xcenter;.
+
+<P>Anche se questo non elimina il problema della coda singola dei messaggi di PM (SIQ), ä comunque possibile accedere 
+allo &xcenter; anche se un programma sta monopolizzando la CPU.
+
+</UL>
+</BODY>
+</HTML>
+
+

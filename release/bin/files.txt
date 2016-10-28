@@ -1,0 +1,80 @@
+
+ This is a short overview of the files in this directory.
+
+ ALWSSORT.CMD
+    gets called by the corresponding folder context menu item;
+    a program object for this exists in the Configuration folder.
+ BOOTMGR.CMD
+    this script modifies the XWorkplace settings in OS2.INI so that
+    XShutdown knows all your bootable partitions for the "Reboot
+    to" feature. Doesn't work with Aurora's LVM.
+ DEFDETLS.CMD
+    gets called by the corresponding folder context menu item;
+    a program object for this exists in the Configuration folder.
+ DEFICON.CMD
+    gets called by the corresponding folder context menu item;
+    a program object for this exists in the Configuration folder.
+ DEFTREE.CMD
+    gets called by the corresponding folder context menu item;
+    a program object for this exists in the Configuration folder.
+ ICONORM.CMD
+    gets called by the corresponding folder context menu item;
+    a program object for this exists in the Configuration folder.
+ ICONS.DLL
+    this DLL contains the replacements for the most commonly used
+    WPS default icons. This can be recreated from the "ICONS.CMD"
+    script in the /ICONS subdirectory. Note: Do not delete this
+    file. If you don't want to replace icons, disable replacements
+    in the "XWorkplace Setup" object.
+ ICOSMALL.CMD
+    gets called by the corresponding folder context menu item;
+    a program object for this exists in the Configuration folder.
+ NETSCDDE.EXE
+    the Netscape DDE interface. See the XWorkplace User Guide.
+ NEWOBJ.CMD
+    no longer used.
+ PACKTREE.CMD
+    gets called by the corresponding folder context menu item;
+    a program object for this exists in the Configuration folder.
+ REPCLASS.EXE
+    was used by the XFolder install script to replace WPS classes.
+    Explains itself on the command line.
+ SHOWALL.CMD
+    gets called by the corresponding folder context menu item;
+    a program object for this exists in the Configuration folder.
+ SOUND.DLL
+    XWorkplace sound access DLL. If this file is not found, the new
+    system sounds will not work. Delete this file if you have
+    problems with the new system sounds.
+ SOUND.SYM
+    symbol file in case SOUND.DLL crashes (for exception handlers).
+    This is new with V0.84. If this is not found, the trap logs
+    contain less meaningful information.
+ TREESIZE.EXE
+    gets called by the corresponding folder context menu item;
+    a program object for this exists in the Configuration folder.
+ WPSRESET.EXE
+    was used by the XFolder install script to restart the WPS.
+ XFLDR.DLL
+    the main XWorkplace DLL. This has all the "intelligence".
+ XFLDR.SYM
+    symbol file in case XFLDR.DLL crashes (for exception handlers).
+    This is new with V0.84. If this is not found, the trap logs
+    contain less meaningful information.
+ XFLDRxxx.DLL
+    (with "xxx" being your three-digit language code): National
+    Language support DLL for XWorkplace.
+ XHELP.CMD
+    used by the install script only to display messages.
+ XSHUTDWN.CMD
+    external XShutdown interface. See the XWorkplace User Guide,
+    "Extended Shutdown".
+ XWPDAEMN.EXE
+    XWorkplace PM daemon. This gets started while the WPS is starting
+    up and is required for the XWorkplace PM hook to work.
+ XWPHOOK.DLL
+    XWorkplace PM hook DLL. This implements all the hook features and
+    becomes part of every process once the hook is installed from
+    "XWorkplace Setup".
+
+

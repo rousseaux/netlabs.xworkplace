@@ -1,0 +1,43 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xcenter;: prioritÖ thread visualizzazione
+    </TITLE>
+</HEAD>
+<BODY>
+<B>"PrioritÖ thread visualizzazione"</B> permette di specificare il delta prioritÖ
+del sottoprocesso avviato all'apertura dello &xcenter;.
+Si veda <A HREF="glossary/gls_scheduler.html">"Processi e sottoprocessi"</A> per 
+ulteriori informazioni sulla prioritÖ dei sottoprocessi.
+
+<P>Lo &xcenter; non lavora nello stesso sottoprocesso delle altre finestre,
+che ä generalmente il sottoprocesso 1 nel processo WPS. Al contrario, all'avvio dello &xcenter;
+viene creato un nuovo sottoprocesso: ä cosç possibile controllare la prioritÖ di visualizzazione
+dello &xcenter; indipendentemente dal resto della WPS.
+
+<P>Come valore assunto lo &xcenter; lavora con un delta prioritÖ pari a zero, che ä
+il delta standard (lo stesso delle altre finestre WPS).
+E' perï possibile alzare questo delta fino a 31 (il massimo possibile in OS/2), dando allo &xcenter;
+precedenza rispetto ad altri compiti del sistema. Tra le altre cose questo rende pió scorrevoli le animazioni.
+
+<P>Note:
+
+<UL><LI>Lo &xcenter; usa sempre la classe di prioritÖ "regular" per evitare il rischio
+di blocchi del sistema ed effetti imprevisti con altri programmi. E' solo all'interno
+di questa classe che il delta prioritÖ ä modificabile, tra 0 e  31 (detto altrimenti,
+lo &xcenter; non permette di usare una prioritÖ "time-critical" o
+"foreground server").
+
+<P><LI>Alcuni <A HREF="xcenter/xc_main_widgets.html">elementi</A> possono avviare
+sottoprocessi accessori che non sono influenzati da questa impostazione.
+Per esempio, l'<A HREF="xcenter/xc_pulse.html">elemento Pulse (carico CPU)</A> avvia un 
+secondo sottoprocesso per monitorare il carico della CPU dal kernel &os2;, in modo
+da assicurare dati precisi anche in caso di carico intenso del sistema.
+
+<P><LI>Se dei processi stanno bloccando il sistema, per esempio non elaborando la propria
+coda messaggi, questa impostazione non ä di aiuto per risolvere il problema.
+
+</UL>
+</BODY>
+</HTML>
+

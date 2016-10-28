@@ -1,0 +1,82 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: indirizzi IP 
+    </TITLE>
+</HEAD>
+<BODY>
+Nelle reti &link_tcpip; gli <B>indirizzi IP</B> servono per identificare in maniera
+univoca i computer. Un indirizzo IP Š un numero 32 bit, di solito formato
+da quattro numeri da 0 a 255, come <CODE>123.123.123.123</CODE>.
+
+<P>All'interno di una rete isolata gli indirizzi IP possono essere assegnati 
+liberamente, facendo solo attenzione che ogni indirizzo sia unico all'interno della
+rete. Se per• la rete Š connessa ad &link_internet; Š necessario utilizzare
+indirizzi IP registrati in modo da evitare duplicazioni.
+
+<P>Il TCP/IP, per ogni pacchetto che transita per la rete, immagazzina 
+sia l'indirizzo IP di provenienza che quello di destinazione;
+quando il pacchetto arriva a destinazione, il destinatario vede l'indirizzo IP
+del mittente e pu• rispondergli rispedendogli indietro altri dati con una nuova
+connessione.
+
+<P>Ogni indirizzo IP ha due parti: l'<B>identificatore di rete</B> e 
+l'identificatore della macchina specifica all'interno della rete, o
+l'<B>identificatore host.</B>
+
+<UL><LI>Per &link_internet; l'identificatore di rete viene assegnato 
+su scala mondiale dal Network Information Center (NIC). Dato che Internet in 
+realt… Š un insieme di pi— reti singole, ci• che conta Š che ogni rete sia
+a conoscenza del proprio indirizzo e di quello delle reti adiacenti con cui Š 
+direttamente connessa. Mentre i pacchetti viaggiano per Internet, l'unica 
+informazione presa in considerazione dalle macchine attraverso le quali
+transitano i pacchetti Š quella relativa all'identificatore di rete.
+
+<P><LI>L'<B>identificatore host</B> identifica il computer singolo all'interno
+della rete. Quando il pacchetto raggiunge la rete di destinazione viene inoltrato
+al computer cui Š destinato.
+
+</UL>Poich‚ le reti variano molto di dimensione, vi sono quattro differenti 
+<B>classi di indirizzi IP</B>.
+I primi bit di ogni indirizzo IP identificano il formato della classe di indirizzi
+che si sta usando.
+
+<UL><LI>Gli indirizzi di <B>classe A</B> sono riservati ai network di grandi dimensioni con
+moltissime macchine. Questi indirizzi hanno un bit iniziale uguale a 
+<CODE>0</CODE>, poi 7 bit per l'indirizzo di rete e 24 bit per l'indirizzo host.
+Ci sono quindi solo 127 reti di classe A in Internet.
+
+<P>Questi indirizzi hanno la struttura seguente:
+<CODE>rete.locale.locale.locale</CODE>.
+
+<P><LI>Gli indirizzi di <B>classe B</B> sono riservati alle reti di medie dimensioni.
+I primi 2 bit equivalgono a <CODE>10</CODE>, seguono 14 bit per l'indirizzo di rete
+e 16 per quello host.
+
+<P>Questi indirizzi hanno dunque la struttura seguente:
+<CODE>rete.rete.locale.locale</CODE>.
+
+<P><LI>Gli indirizzi di <B>classe C</B> sono per le piccole reti con al massimo 255
+macchine. I primi 3 bit equivalgono a <CODE>110</CODE>, seguono 
+21 bit per l'indirizzo di rete e solo 8 bit per l'host.
+
+<P>Questi indirizzi hanno la struttura seguente:
+<CODE>rete.rete.rete.locale</CODE>.
+
+</UL>Come si pu• vedere, anche se un indirizzo IP a 32 bit consentirebbe in teoria
+una gigantesca quantit… di numeri di identificazione, lo schema appena descritto 
+limita il numero di indirizzi che in pratica possono essere assegnati.
+La maggior parte delle reti appartiene alla classe C e soffre perci• del limite
+dei "255 host". Per questo motivo molte reti utilizzano tecniche che permettono
+di economizzare il numero di indirizzi IP effettivamente visibili su Internet. Queste
+tecniche comprendono l'uso di sottoreti, l'IP forwarding ed il Classless Inter-Domain Routing.
+
+<P>In particolare, i fornitori di servizi internet (ISP) assegnano 
+<B>IP dinamici</B> all'utente che si connette ad Internet. In questa maniera hanno la 
+possibilit… di riutilizzare gli indirizzi anzich‚ dover assegnare ad ogni utente sempre lo
+stesso IP. In questo caso l'indirizzo IP del proprio computer varia ogni volta 
+che ci si connette ad Internet.
+
+<BR>
+</BODY>
+</HTML>

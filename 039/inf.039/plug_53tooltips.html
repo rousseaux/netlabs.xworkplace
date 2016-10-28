@@ -1,0 +1,26 @@
+<HTML WIDTH=70% XPOS=right>
+<HEAD>
+    <TITLE>
+        Passo 3: aggiungere i suggerimenti
+    </TITLE>
+</HEAD>
+<BODY>
+Per permettere al proprio elemento di supportare i tooltips (suggerimenti),
+si imposti il flag <CODE>WGTF_TOOLTIP</CODE> nel campo <CODE>ulClassFlags</CODE>
+di <A HREF="plug_9xcenterwidgetclass.html"><CODE>XCENTERWIDGETCLASS</CODE></A>.
+
+<P>Solo se tale bit Š settato, l'elemento ricever… un messaggio <CODE>WM_CONTROL</CODE>
+con notifica <CODE>TTN_NEEDTEXT</CODE> e <CODE>XCENTER_TOOLTIP</CODE> come ID
+del control.
+
+<P>Sar… necessario includere <CODE>include\helpers\comctl.h</CODE> dagli
+helper di &xwp; per le definizioni del control tooltip di &xwp;.
+
+<P>Ancora una volta: scaricando il codice sorgente completo di &xwp; si possono
+studiare gli esempi in <CODE>src\widgets</CODE> per capire come fare.
+
+<BR>
+</BODY>
+</HTML>
+
+

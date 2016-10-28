@@ -1,0 +1,30 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        Kernel &os2;: JFS.IFS
+    </TITLE>
+</HEAD>
+<BODY>
+Selezionando la casella <B>"Lazy write"</B> JFS delega la scrittura dei dati su disco
+ad un processo in secondo piano.
+<P>Si veda <A HREF="glossary/gls_caches.html">"La cache dei file system"</A> per una 
+spiegazione pi— ampia.
+
+<P>Se si Š attivata la scrittura ritardata Š possibile poi regolarne il funzionamento con precisione
+attraverso le tre impostazioni sotto (tutti i valori sono espressi in secondi):
+
+<OL><LI><B>"Synch time"</B> rappresenta l'intervallo di funzionamento del sottoprocesso 
+che, all'interno del JFS, cura la sincronizzazione. Il valore assunto Š 64.
+
+<P><LI><B>"Max age"</B> rappresenta il tempo massimo consentito per conservare i dati 
+nella cache. Il valore assunto Š 256.
+
+<P><LI><B>"Buffer idle"</B> determina la quantit… di tempo all'interno della quale JFS
+considera "recente" una modifica. Modifiche avvenute da un tempo inferiore a questo valore non vengono 
+salvate, a meno che l'ultima operazione di scrittura non abbia superato la soglia "max age." 
+Il valore assunto Š 8.
+
+</OL>
+</BODY>
+</HTML>
+

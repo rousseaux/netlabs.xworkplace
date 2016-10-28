@@ -1,0 +1,247 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: espressioni regolari
+    </TITLE>
+</HEAD>
+<BODY>
+Le espressioni regolari (RE) sono usate comunemente per determinare
+se una stringa di caratteri corrisponde in qualche punto ad un
+insieme di stringhe. Esse permettono di specificare criteri di corrispondenza
+complessi, e per questo sono molto pió flessibili rispetto alle
+stringhe di ricerca classiche.
+
+<P>&xwp; usa una combinazione di molti standard per la sintassi delle RE.
+Il livello di funzionalitÖ ä modellato per la massima parte vicino alle espressioni
+regolari estese (ERE) supportate dai programmi UNIX
+<CODE>egrep</CODE> e <CODE>awk</CODE>.
+Sono supportati inoltre alcuni miglioramenti introdotti dal POSIX, tipicamente presenti
+nei programmi UNIX <CODE>ex</CODE> e <CODE>vi</CODE>.
+
+<P>Vengono applicate le seguenti regole (si consulti
+<A HREF="glossary/gls_regexps_bnf.html">Definizione BNF</A> per una definizione formale):
+
+<P><B>Caratteri base</B>
+
+<UL>
+<LI>Per la maggior parte, i caratteri in una ERE possono essere specificati semplicemente scrivendoli.
+Per esempio, <CODE>abc</CODE> corrisponde ad <CODE>a</CODE>, quindi <CODE>b</CODE>,
+quindi <CODE>c</CODE>.
+
+<P><LI>Alcuni caratteri hanno significati speciali, e devono essere preceduti da
+un simbolo di backslash (escape).
+Questo vale per i seguenti caratteri:
+
+<PRE>
+    ~ . ^ $ ( ) { } [ ] ? + * |
+</PRE>
+Per esempio, <CODE>1\*2</CODE> corrisponde a <CODE>1</CODE>, quindi <CODE>*</CODE>,
+quindi <CODE>2</CODE>.
+
+<P><LI>Il carattere backslash stesso deve essere preceduto da un backslash. Per esempio
+<CODE>c:\\config\.sys</CODE> corrisponde a <CODE>c:\config.sys</CODE>.
+
+<P><LI>Il backslash puï essere usato per descrivere caratteri
+difficili da digitare:
+
+<PRE>
+  \n    nuova linea           ASCII 10
+  \t    tabulazione           ASCII  9
+  \r    ritorno carrello      ASCII 13
+  \b    backspace             ASCII  8
+  \f    nuova pagina
+  \e    escape                ASCII 27
+  \x07  campanello            ASCII  7
+</PRE>
+
+I programmatori C e C++ sono familiari a questa notazione.
+Strettamente parlando, in accordo al POSIX, se <CODE>\x2e</CODE> venisse messo in una ERE
+dovrebbe significare "qualsiasi carattere" (Il carattere ASCII 0x2e ä il punto, che significa appunto
+qualsiasi carattere; si veda oltre), ma questa implementazione lo tratta come
+"corrispondere a un punto".
+
+<P><LI>Alle volte il backslash ä usato per introdurre una funzione speciale delle ERE.
+Per esempio <CODE>\&lt;</CODE> significa 'inizio di parola' (si veda oltre).
+Il carattere dopo il backslash viene scelto generalmente come qualcosa che non ha bisogno di
+escape, cosç questa sintassi non dovrebbe causare
+alcun problema.
+
+</UL><B>Insiemi di caratteri</B>
+
+<P>Gli insiemi di caratteri sono specificati in parentesi angolari e
+definiscono un insieme di caratteri accettabili, o se possibile un insieme di caratteri
+non accettabili.
+
+<PRE>
+  [abc]   corrisponde con a, b, o c
+  [^abc]  corrisponde con tutto ciï che non sia a, b, nÇ c
+  [a-z]   ä l'insieme di caratteri tra 'a' e 'z'
+  [a-j-t] ä l'insieme di caratteri tra 'a' e 't'
+</PRE>
+
+Per corrispondere con un carattere <CODE>-</CODE>, <CODE>^</CODE>, <CODE>]</CODE> in un elemento
+in parentesi, lo si preceda con un escape (backslash). Per esempio,
+  <CODE>[\])}]</CODE> corrisponde a <CODE>]</CODE>, o <CODE>)</CODE>, o <CODE>}</CODE>.
+
+‘ anche possibile specificare una classe di caratteri POSIX completa in parentesi <I>addizionali</I>
+accoppiate a "due punti". In questo contesto,
+
+<PRE>
+  [:alnum:]   significa tutti i caratteri alfanumerici
+              (in ASCII, ä come dire A-Za-z0-9)
+  [:lower:]   significa tutti i caratteri alfabetici minuscoli
+  ... etc.
+</PRE>
+
+Per esempio, specificando <CODE>[[:alnum:] \t]</CODE> verranno
+cercati tutti i caratteri alfanumerici pió la tabulazione.
+
+<P><B>Tutti i caratteri</B>
+
+<P>Il carattere "punto" (<CODE>.</CODE>) corrisponde a qualsiasi singolo carattere, senza
+curarsi di cosa questo sia. Per esempio, <CODE>t.e</CODE> corrisponde a
+<CODE>the</CODE>, ma non a <CODE>tree</CODE>.
+
+<P><B>Caratteri costitutivi di parole</B>
+
+<P>Le ERE GNU definiscono il termine "carattere costitutivo di parole" per includere
+qualsiasi carattere alfanumerico, oppure il simbolo di sottolineatura <CODE>_</CODE>
+per risparmiare un po' di digitazione.
+
+<P><CODE>\w</CODE> ä una scorciatoia per tutti i caratteri costitutivi di parole
+ed equivale a <CODE>[[:alnum:]_]</CODE> o <CODE>[A-Za-z0-9_]</CODE>.
+<CODE>\W</CODE> vale per ogni carattere non costitutivo di parole ed
+equivale a <CODE>[^[:alnum:]_]</CODE> o <CODE>[^A-Za-z0-9_]</CODE>.
+
+<P>Queste scorciatoie non sono valide all'interno di insiemi di caratteri tra parentesi quadre.
+
+<P><B>Non-carattere</B>
+
+<P>Una estensione Microsoft alle ERE permette di dire
+"qualsiasi carattere tranne questo" precedendo il carattere scelto con una tilde
+<CODE>~</CODE>.
+Questa ä una via breve equivalente alla specifica del carattere
+in parentesi quadre
+(<CODE>~a</CODE> ä pió breve di <CODE>[^a]</CODE>).
+Per esempio, <CODE>t~he</CODE> corrisponde a
+<CODE>tie</CODE>, ma non a <CODE>the</CODE>.
+
+<P><B>Ancore</B>
+
+<P>Le ancore specificano condizioni in cui potrebbe occorrere un'espressione:
+
+<PRE>
+  ^       corrisponde se si ä in inizio stringa
+  $       corrisponde se si ä in fine stringa
+  \`      alternativa GNU per ^
+  \'      alternativa GNU per $
+  \&lt;      corrisponde all'inizio di una parola (o di una stringa)
+  \&gt;      corrisponde alla fine della parola (o della stringa)
+  \B      corrisponde all'interno di una parola
+  \y      corrisponde all'inizio o alla fine di una parola (o di una stringa)
+</PRE>
+
+Qui si intende per "parola" la definizione data sopra secondo il GNU.
+
+<P>Per esempio, <CODE>^xyz</CODE> corrisponde con <CODE>xyz</CODE> solo se si trova all'inizio
+della linea. <CODE>\&lt;fred</CODE> corrisponde a <CODE>fred</CODE>,
+<CODE>freddy</CODE>, ma non ad <CODE>alfred</CODE>.
+
+<P><B>Ripetizioni</B>
+
+<P>Usando <CODE>?</CODE>, <CODE>+</CODE>, <CODE>{M}</CODE>, o <CODE>{M,N}</CODE>
+ä possibile ricercare ripetizioni:
+
+<PRE>
+  ab?c      corrisponde con a, quindi con nessuna o un'occorrenza di b, quindi c
+  ab+c      corrisponde con a, quindi con una o pió occorrenze di b, quindi c
+  ab*c      corrisponde con a, quindi con nessuna o pió occorrenze di b, quindi c
+  ab{M}c    corrisponde con a, quindi con M occorrenze di b, quindi con c
+  ab{M,}c   corrisponde con a, quindi con M o pió occorrenze di b, quindi con c
+  ab{M,N}c  corrisponde con a, quindi con un numero di occorrenze di b tra M ed N, quindi con c
+</PRE>
+
+<P>Nella lista sopra, M ed N sono numeri decimali, e se vengono dati entrambi,
+M dev'essere maggiore o uguale a N.
+
+<P>Per esempio, <CODE>[A-Za-z_][A-Za-z0-9_]*</CODE>
+corrisponde con ogni identificatore C o C++ lecito. <CODE>\w{10,}</CODE> corrisponde con almeno
+10 caratteri costitutivi di parole. <CODE>\&lt;[0-9]{5}\&gt;</CODE> corrisponde con un
+numero a 5 cifre.
+
+<P><B>Alternanza</B>
+
+<P>‘ possibile cercare una cosa o un'altra usando il simbolo <CODE>|</CODE>.
+Per esempio, <CODE>fred|bill</CODE> corrisponde a <CODE>fred</CODE> o <CODE>bill</CODE>.
+<CODE>fred|bill|rob</CODE> corrisponde con uno qualsiasi dei tre.
+
+<P><B>ERE annidate</B>
+
+<P>Si possono usare parentesi per raggruppare ERE in sub-ERE, cosç che gli operatori come
+quelli di ripetizione o di alternanza possano esservi applicati.
+Per esempio, <CODE>(frog|toad)+</CODE> corrisponde con una o pió occorrenze di
+<CODE>frog</CODE> o <CODE>toad</CODE>.
+
+<P>L'annidamento puï essere portato per molti livelli.
+
+<P><B>Retro-riferimenti</B>
+
+<P>Ogni volta che viene trovata una ERE annidata, quello che viene trovato viene immagazzinato.
+‘ possibile fare un retro-riferimento (riferirsi a questo risultato) pió avanti nella ERE principale
+(ossia, qualunque cosa sia stata incontrata prima dev'essere incontrato ancora) specificando un
+backslash con una cifra decimale.
+Si possono retro-riferire fino a 9 ERE annidate.
+
+<P>Per esempio, <CODE>\2</CODE> significa che la seconda ERE annidata dev'essere
+incontrata un'altra volta. Come risultato,
+<CODE>(a|b)(c|d)\2\1</CODE> corrisponderÖ ad <CODE>acca</CODE>,
+o <CODE>adda</CODE>, o <CODE>bcca</CODE>, o <CODE>bddb</CODE>.
+
+<P>Notare che l'esempio dato sopra <I>non ä</I> una scorciatoia per
+scrivere <CODE>(a|b)(c|d)(c|d)(a|b)</CODE>. I retro-riferimenti non si
+riferiscono alle ERE, ma a ciï che a esse viene fatto corrispondere.
+
+<P>I retro-riferimenti possono essere fatti all'interno di ERE annidate per retro-riferire
+ERE annidate. Per esempio, <CODE>frog|((a|bc)d\1)</CODE> corrisponde a
+<CODE>frog</CODE>, o <CODE>ada</CODE>, o <CODE>bcdbc</CODE>,
+ma non a <CODE>adbc</CODE>.
+
+<!--
+<P><B>Substitutions</B>
+
+<P>Sometimes EREs are used to find or match information, and sometimes they
+are used as the 'find' part of a 'find and replace' operation.
+Programs providing 'find and replace' are provided with the extent of
+each match, and also the extents of the top level sub-EREs within them.
+So a replacement pattern can easily refer to these, (typically by using the
+backreference <CODE>\N</CODE> notation in the replacement string).
+
+<PRE>
+  eg: find                   ([0-9]+),"(~"*)"
+      replace-with           set \2 = \1
+      given-input            23,"Age"
+      gives-output           set Age = 23
+</PRE>
+
+<P>Consider using the ERE <CODE>(.+)(.+)</CODE> against the string
+<CODE>abcd</CODE>.
+Clearly there will be a match of length 4 characters, as an ERE matches
+the longest string it can.
+What isn't clear is what <CODE>\1</CODE> and <CODE>\2</CODE> are in the
+substitution, afterwards.
+eg: We could have any one of :-
+
+<P>
+<PRE>
+  \1 = a    \2 = bcd
+  \1 = ab   \2 = cd
+  \1 = abc  \2 = d
+</PRE>
+
+<P>Which you get is <I>undefined</I> in this implementation of EREs.
+-->
+
+<BR>
+</BODY>
+</HTML>
+

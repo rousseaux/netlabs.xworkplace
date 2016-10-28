@@ -1,0 +1,39 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        Barra di stato: codici comuni a tutti e tre i modi
+    </TITLE>
+</HEAD>
+<BODY>
+I codici seguenti sono validi per <B>tutti e tre i modi:</B>
+<BR><DL>
+<DT><CITE>  $c      </CITE><DD>totale degli oggetti selezionati
+<DT><CITE>  $C      </CITE><DD>totale complessivo degli oggetti nella cartella
+
+<BR><DT><CITE>  $s<I>X</I>     </CITE><DD>dimensione totale degli oggetti selezionati
+<DT><CITE>  $S<I>X</I>     </CITE><DD>dimensione totale del contenuto della cartella
+<DT><CITE>  $f<I>X</I>     </CITE><DD>spazio libero sull'unit… della cartella
+<DT><CITE>  $z<I>X</I>     </CITE><DD>dimensione totale dell'unit… della cartella
+
+<P>Nei quattro esempi precedenti, <CODE><I>X</I></CODE> Š un carattere 
+speciale <A HREF="fsys/stat_99format.html">specificatore di formato</A>.
+
+<BR><DT><CITE>  $x(xxx) </CITE><DD>tabulazione a sinistra:
+posiziona l'informazione seguente alla posizione X "xxx" (rispetto al margine sinistro della
+barra di stato).
+<BR>Esempio: <CITE>$x(300)$sK</CITE> presenta sempre la dimensione totale degli oggetti selezionati
+alla posizione X 300.
+<DT><CITE>  $x(-xxx) </CITE><DD>come il precedente, ma rispetto al margine destro
+della barra di stato.
+<BR>Esempio: <CITE>$x(-150)$sK</CITE> presenta la dimensione totale degli oggetti selezionati
+alla posizione X 100, con una barra di stato larga 250 pixel.
+<DT><CITE>  $x(xx%) </CITE><DD>come il precedente, ma la posizione X Š determinata da
+"xx", percentuale relativa alla larghezza della barra di stato.
+<BR>Esempio: <CITE>$x(50%)$sK</CITE> posiziona sempre nel mezzo della barra di stato la dimensione totale degli oggetti
+selezionati.
+</DL>
+<BR>
+</BODY>
+</HTML>
+
+

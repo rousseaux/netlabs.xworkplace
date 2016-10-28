@@ -1,0 +1,51 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: stringhe impostazioni XWPString 
+    </TITLE>
+</HEAD>
+<BODY>
+XWPString implementa gli <A HREF="objects/obj_string.html">oggetti stringa impostazioni.</A>
+Anche se la classe XWPString Š concepita proprio per conservare stringhe impostazioni, si possono
+comunque richiamare stringhe impostazioni su di un oggetto XWPString, come si farebbe 
+con qualunque altro oggetto.
+
+<P>Oltre alle stringhe impostazioni supportate dalla classe
+<CODE><A HREF="objects/string_1wpobject.html">WPObject</A></CODE>,
+la classe XWPString supporta anche le stringhe seguenti:
+
+<DL>
+<DT><P><CITE><B>SETUPSTRING</B>=<I>string</I></CITE>
+<DD>La stringa impostazioni da memorizzare nell'oggetto stringa.
+<CODE><I>string</I></CODE> deve essere codificato
+in modo da non contenere caratteri vietati
+nelle stringhe impostazioni WPS. Il valore assunto Š una
+stringa vuota.
+
+<DT><P><CITE><B>DEFAULTOBJECT</B>={<I>objectid</I>|<I>filename</I>|*<I>handle</I>|NONE}</CITE>
+<DD>Imposta o cancella l'oggetto assunto immagazzinato nell'oggetto stringa. I valori ammessi sono:
+<UL><LI>un identificatore oggetto, racchiuso tra parentesi ad angolo
+(per es. <CODE>DEFAULTOBJECT=&lt;WP_DESKTOP&gt;;</CODE>);
+<LI>un nome file, completo di indicazione di percorso
+(per es. <CODE>DEFAULTOBJECT=C:\miofile\qualcosa.txt;</CODE>);
+<LI>un marcatore decimale oggetto, preceduto da asterisco
+(per es. <CODE>DEFAULTOBJECT=*1432;</CODE>);
+<LI>la parola <CODE>NONE</CODE>, che cancella l'oggetto assunto corrente, se ce n'Š uno.
+</UL>Il valore assunto per un oggetto stringa Š non avere oggetto assunto (<CODE>NONE</CODE>).
+
+<DT><P><CITE><B>CONFIRMINVOCATION</B>={YES|NO}</CITE>
+<DD>Corrisponde all'impostazione "Conferma richiesta" nella pagina "Stringa" del blocco
+appunti impostazioni.
+Il valore assunto Š <CODE>YES</CODE>.
+
+<DT><P><CITE><B>NOSTRINGPAGE</B>={YES|NO}</CITE>
+<DD>Se <CODE>YES</CODE>, il blocco appunti impostazioni dell'oggetto stringa
+non contiene la pagina "Stringa": utile se si creano oggetti stringa per le proprie applicazioni
+e non si vuole rischiare che l'utente modifichi accidentalmente una stringa accuratamente
+codificata.
+Il valore assunto Š <CODE>NO</CODE>.
+
+</DL>
+</BODY>
+</HTML>
+

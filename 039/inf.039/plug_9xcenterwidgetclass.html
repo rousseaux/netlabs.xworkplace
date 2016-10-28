@@ -1,0 +1,82 @@
+<HTML WIDTH=70% XPOS=right>
+<HEAD>
+    <TITLE>
+        XCENTERWIDGETCLASS
+    </TITLE>
+</HEAD>
+<BODY>
+<B>Nota:</B> Questo ä un estratto da <CODE>center.h</CODE>. Questa
+definizione non ä necessariamente aggiornata. Si usi sempre <CODE>center.h</CODE>
+nel proprio codice sorgente invece di questa definizione.
+
+<PRE>
+    /*
+     *@@ XCENTERWIDGETCLASS:
+     *      descrive una classe elemento utilizzabile
+     *      in uno &xcenter;; puï essere
+     *      interna o in una DLL plug-in.
+     */
+
+    typedef struct _XCENTERWIDGETCLASS
+    {
+        const char      *pcszPMClass;
+                // nome della classe di finestre di PM di questa classe elemento (puï
+                // essere condiviso da molte classi elemento). Una DLL plug-in ä responsabile
+                // della registrazione di questa classe all'atto del caricamento.
+
+        ULONG           ulExtra;
+                // identificatori addizionali che potrebbero servire alla classe se
+                // la stessa classe di finestre di PM ä usata da molte classi elemento.
+                // Non ä usato dallo &xcenter;, ma ä possibile accessarlo durante
+                // WM_CREATE cosç da differenziare tra parecchie classi elemento
+                // nella stessa window procedure. ‘ necessario pertanto copiarlo nei
+                // dati privati del proprio elemento.
+
+        const char      *pcszWidgetClass;
+                // nome della classe interno all'elemento; ä usato per identificare
+                // la classe. Dev'essere univoco nel sistema.
+
+        const char      *pcszClassTitle;
+                // titolo della classe dell'elemento (mostrato all'utente
+                // nel menu popup "Aggiungere elemento").
+
+        ULONG           ulClassFlags;
+                //    flag WGTF_*; una combinazione dei seguenti:
+                // -- WGTF_SIZEABLE: la finestra dell'elemento ä ridimensionaible
+                //    dall'utente con il mouse.
+                // -- WGTF_NOUSERCREATE: non mostra questa classe nel menu
+                //    "aggiungere elemento", e non permette di crearne istanze
+                //    nel blocco impostazioni dello &xcenter;.
+                // -- WGTF_UNIQUEPERXCENTER: solo un elemento di questa classe
+                //    viene creato per ogni &xcenter;.
+                // -- WGTF_UNIQUEGLOBAL: solo un elemento di questa classe
+                //    viene creato per tutti gli &xcenter; sul sistema.
+                //    Questo flag include WGTF_UNIQUEPERXCENTER.
+                // -- WGTF_TOOLTIP: se impostato, l'elemento ha un tooltip e
+                //    intercetterÖ messaggi WM_CONTROL con il codice di
+                //    notifica TTN_NEEDTEXT (helpers\comctl.h).
+                //    L'ID di finestra del "control" tooltip ä ID_XCENTER_TOOLTIP.
+                // -- WGTF_TOOLTIP_AT_MOUSE: come WGTF_TOOPTIP, ma il tooltip
+                //    non ä centrato sopra l'elemento; ä posto alla posizione
+                //    del mouse.
+                //    Questo include WGTF_TOOLTIP.
+
+        PWGTSHOWSETTINGSDLG pShowSettingsDlg;
+                // se l'elemento supporta una dialog di impostazioni,
+                // deve impostare questo puntatore a funzione a una funzione
+                // che mostri tale dialog. Se ä != NULL, la voce di menu
+                // "Properties" e il bottone nell'elenco di elementi del
+                // blocco impostazioni dello &xcenter;
+                // verranno abilitati. Vedere WIDGETSETTINGSDLGDATA per
+                // dettagli sull'implementazione delle dialog di impostazioni.
+
+    } XCENTERWIDGETCLASS, *PXCENTERWIDGETCLASS;
+
+</PRE>
+
+
+<BR>
+</BODY>
+</HTML>
+
+

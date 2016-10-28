@@ -1,0 +1,77 @@
+<HTML NOSUBLINKS="config"  WIDTH=70% XPOS=right>
+<HEAD>
+    <TITLE>
+        Primo piano automatico
+    </TITLE>
+</HEAD>
+<BODY>
+<B>Classi: XWPSetup, XWPMouse</B>
+<HR>
+La funzione "Primo piano automatico" di &xwp; ä molto simile a quella offerta
+da altri hook PM.
+
+<P>In sostanza, questa funzione fa sç che l'input della tastiera segua sempre
+il puntatore del mouse. Quindi, spostando il mouse, la finestra sotto il
+puntatore guadagnerÖ immediatamente l'input (la sua barra del titolo sarÖ
+cioä resa attiva, senza perï essere portata davanti alle altre finestre).
+
+<P>Questo comportamento ä comune a molti del vari window manager per il sistema
+X-Window, usato da molte varianti di UNIX ed ereditato anche da Linux. Dato che
+molte persone (me compreso) gradiscono questo comportamento anche in &os2;,
+l'ho incluso in &xwp;.
+
+<P>Questa funzione puï essere <B>configurata</B> dall'oggetto "Mouse", che
+solitamente ä presente nella cartella "Impostazione del sistema". Sulla
+pagina "Movimento" in quest'oggetto, ci sono molte impostazioni. Premerne il
+tasto "Aiuto" per ottenere ulteriori informazioni.
+
+<P><B>Nota:</B> la pagina ä visibile solo se ä stata installata la classe
+XWPMouse e lo hook di &xwp; ä stato attivato in
+<A HREF="sys_1intro.html">"Impostazioni &xwp;".</A>
+
+<P>Il principale vantaggio di questa funzione ä che, anzitutto, non ä
+necessario fare clic su una finestra per poterle dare un input. Inoltre, se
+l'impostazione "Portare finestre in primo piano" ä stata disabilitata nella
+pagina "Movimento", ä possibile anche usare la tastiera con una finestra che
+non ä quella davanti a tutte le altre, cosa impossibile senza la funzione
+"primo piano automatico". Per apprezzare appieno questa funzione ä necessario
+abituarvisi, ma quando diverse finestre sono aperte e si vuole vedere cosa
+succede in una finestra mentre si scrive in un'altra, essa risulta molto
+comoda.
+
+<P><B>Note</B>
+
+<OL><LI>Non ä possibile usare questa funzione correttamente in una <B>finestra
+&winos2;.</B> Il motore grafico a 16-bit di Windows (Graphical Device
+Interface, GDI) non ä in grado di distinguere tra finestra "in primo piano" e
+finestra "attiva"; semplicemente, esso assume che la finestra superiore sia
+sempre quella attiva. Questa limitazione vale anche per le sessioni &winos2; in
+finestra ("seamless"), che usano internamente il motore grafico 16-bit di
+Windows.
+
+<P>Per questo motivo, ä presente un'impostazione speciale sulla pagina
+"Movimento" nel blocco impostazioni "Mouse" per le sessioni &winos2; in
+finestra. ‘ possibile decidere di portare sempre le finestra &winos2; in
+primo piano, o ignorarle completamente. Comunque, non ä possibile renderle
+attive senza portarle in primo piano. In altro modo, si otterrebbero strani
+errori nel ritracciamento dello schermo, poichÇ la GDI ritraccerebbe
+completamente una finestra &winos2; attiva, anche se altre finestre si
+trovano sopra di essa (dato che suppone che la finestra attiva sia quella in
+primo piano).
+
+<P>Ovviamente, le sessioni &winos2; a schermo intero non sono trattate da
+&xwp; in alcun modo, dato che lo hook a PM di &xwp; non gestisce le sessioni di
+&winos2; a schermo intero.
+
+<P><LI>La funzione di primo piano automatico ä temporaneamente disabilitata
+se ä visualizzato l'<B>Elenco finestre PM</B>. Ciï ä necessario, poichÇ la
+finestra dell'Elenco finestre scompare automaticamente quando perde l'input
+focus. Se il fuoco automatico non fosse disabilitato in questa condizione,
+sarebbe difficile utilizzare l'Elenco finestre, che sparirebbe non appena si
+spostasse il mouse al di fuori della sua finestra.
+
+</OL>
+</BODY>
+</HTML>
+
+

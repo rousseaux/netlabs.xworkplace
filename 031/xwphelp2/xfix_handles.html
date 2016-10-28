@@ -1,0 +1,63 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        xfix: xfix en WPS Bestandsingangen
+    </TITLE>
+</HEAD>
+<!-- this page is all new with V0.9.7
+<!-- Changed V0.9.20: changed title, moved most stuff to glossary/gls_objhandle.html -->
+<!-- revised V1.0.9 -->
+
+<BODY>
+De Workplace Shell gebruikt de bestandsingangen om het spoor te volgen van de bestanden
+die benodigd zijn voor de programma objecten en reflecties onafhankelijk van waar zij zich
+bevinden.
+Deze objecten blijven bruikbaar zelfs als de bestanden die zij nodig hebben zijn
+verplaatst.
+<P>Dit werkt omdat programma objecten en reflecties nooit het fysieke
+<A HREF="glossary/gls_path.html">pad</A> opslaan van een bestand of map, maar alleen
+zijn ingang. Wanneer de WPS het volledige pad nodig heeft, wordt het stukje bij beetje
+opgebouwd uit de ingangen van ieder deel van het pad.
+<P>De WPS start door te kijken in de tabel naar de bestandsingang dat het van het
+programma object of reflectie krijgt. De toegang tot die ingang levert de
+bestandsnaam (zoals weergegeven in de "Korte naam" kolom van xfix), tezamen met de ingang
+van de ouder map die dat bestand bevat. De WPS kijkt dan naar de naam van
+de ingang van de ouder-map, haalt zijn naam op, en voegt die (tezamen met een backslash)
+toe aan het begin van het pad. Dan gaat hij naar de ouder van de ouder... enz., totdat de
+root-map van het station is bereik.
+
+<P>Dit heeft verschillende voordelen:
+<UL><LI>Alleen de korte naam moet in de <CODE>OS2SYS.INI</CODE> worden opgeslagen, wat
+ruimte bespaard.
+<LI>Veel belangrijker, dit is een zeer effici‰nt wanneer bestanden of mappen worden
+verplaatst omdat alleen de ouder ingang van het object dat is verplaatst moet worden
+bijgewerkt. Omdat alle sub-objecten van het verplaatste onderwerp alleen een ouderingang
+bevatten, is de volgende keer de volledige naam nodig, het kan op de juiste wijze met het
+nieuwe pad worden gebouwd.
+</UL>
+Voor meer details over object ingangen, zie:
+<A HREF="glossary/gls_objhandle.html">Object ingangen.</A>
+
+<P>Helaas, heeft dit ook enige nadelen:
+<UL><LI>De WPS zelf wist nooit ingangen, zelfs als de bestanden of mappen waar ze naar
+verwijzen gewist zijn.
+<LI>De WPS maakt ingangen voor bestanden die nooit zullen worden gebruikt door programma
+objecten of reflecties (zoals DLL's of ZIP bestanden).
+<LI>Fouten en/of crashes in de WPS kunnen de ingangen tabel beschadigen, daarbij u
+achterlatend met duplicaat toegangen voor een ingang, toegangen die verwijzen naar een
+fout bestand of map, enz.
+</UL>
+
+xfix kan uiteindelijk helpen met de eerste twee problemen en kan nuttig zijn voor het
+werken met bepaalde type beschadigingen. Opm.: xfix werkt meestal met
+bestandssysteem ingangen. Om abstract objecten te herstellen, moet u het CHECKINI*
+programma van Henk Kelder gebruiken.
+<BR>
+* CHECKINI is onderdeel van wptool33.zip dat kan worden gedownload van:
+<BR>
+<A HREF="http://www.os2site.com/sw/util/wps/wptools33.zip"></A>  het WPTOOLS pakket
+dat meerdere hulpprogramma's bevat.
+
+</BODY>
+</HTML>
+

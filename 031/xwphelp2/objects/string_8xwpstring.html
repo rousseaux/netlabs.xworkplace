@@ -1,0 +1,53 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: XWPString instellingen reeksen
+    </TITLE>
+</HEAD>
+<BODY>
+XWPString verzorgt
+<A HREF="objects/obj_string.html">object instellingen reeksen</A>.
+Ook al is de XWPString class ontworpen om instellingen reeksen op te slaan,
+u kunt ook instellingen reeksen op een XWPString object zelf toepassen, evenals
+op elk ander object.
+
+<P>In aanvulling op de instellingen reeksen die ondersteund worden door de
+<B><A HREF="objects/string_1wpobject.html">WPObject</A></B>
+class, ondersteunt de XWPString class de volgende reeksen:
+
+<DL>
+<DT><P><CITE>><B>SETUPSTRING</b>=<I>reeks</I></CITE>
+<DD>De instellingen reeks die in het reeks object opgeslagen moet worden.
+De <CODE><I>reeks</I></CODE>
+mag niet opgebouwd zijn uit karakters die niet toegestaan zijn in Desktop
+instellingen reeks waarden.
+De standaard is een lege reeks.
+
+<DT><P><CITE><B>DEFAULTOBJECT</B>={<I>objectid</I>|<I>bestandsnaam</I>|*<I>ingang</I>|NONE}</CITE>
+<DD>Zet of verwijdert het standaard object dat opgeslagen is in de reeks van het object.
+De waarde moet een van de volgende zijn:
+<UL><LI>een object ID, omsloten door kleiner dan/groter dan teken
+(b.v. <CODE>DEFAULTOBJECT=&lt;WP_DESKTOP&gt;;</CODE>);
+<LI>een volledig opgegeven bestandsnaam
+(b.v. <CODE>DEFAULTOBJECT=C:\mijnbestanden\iets.txt;</CODE>);
+<LI>een decimale object ingang, voorafgegaan door een sterretje
+(b.v. <CODE>DEFAULTOBJECT=*1432;</CODE>);
+<LI>de <CODE>NONE</CODE> code om het huidige standaard object te verwijderen, als die er is.
+</UL>De standaard voor een reeks van een object is om geen standaard object te hebben(<CODE>NONE</CODE>).
+
+<DT><P><CITE><B>CONFIRMINVOCATION</B>={YES|NO}</CITE>
+<DD>Komt overeen met de "Bevestig implementatie" instelling op de "reeks" instellingen notitieblok
+pagina.
+De standaard is <CODE>YES</CODE>.
+
+<DT><P><CITE><B>NOSTRINGPAGE</B>={YES|NO}</CITE>
+<DD>Bij <B>YES</B>, zal de reeks van het object instellingen notitieblok
+de "reeks" pagina niet tonen. Dit kan handig zijn als u de reeks van objecten
+in uw eigen programma maakt en u wilt voorkomen dat de gebruiker per ongeluk
+een zorgvuldig ontworpen instellingen reeks verandert.
+De standaard is <B>NO</B>.
+
+</DL>
+</BODY>
+</HTML>
+

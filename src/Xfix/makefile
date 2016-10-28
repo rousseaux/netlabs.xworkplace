@@ -1,0 +1,120 @@
+#
+# makefile:
+#       makefile for TOOLS\xfix directory.
+#       For use with IBM NMAKE, which comes with the IBM compilers,
+#       the Developer's Toolkit, and the DDK.
+#
+#       All the makefiles have been restructured with V0.9.0.
+#
+#       Called from:    main makefile
+#
+#       Input:          files in this directory
+#
+#       Output:         xfix.exe, copied to parent directory (TOOLS\).
+#
+#       Edit "setup.in" to set up the make process.
+#
+
+# Say hello to yourself.
+!if [@echo +++++ Entering $(MAKEDIR)]
+!endif
+
+# include setup (compiler options etc.)
+!include ..\..\config.in
+!include ..\..\make\setup.in
+
+# FIXED MACROS
+# ------------
+#
+# You probably need not change the following.
+#
+
+# Define the suffixes for files which NMAKE will work on.
+# .SUFFIXES is a reserved NMAKE keyword ("pseudotarget") for
+# defining file extensions that NMAKE will recognize.
+.SUFFIXES: .cpp .obj .h
+
+# OUTPUTDIR specifies the directory where all the output .OBJ
+# files will be created in. $(XWP_OUTPUT_ROOT) is set by
+# setup.in to point to \bin from the XWorkplace sources root,
+# but this can be modified by setting an external environment
+# variable. This approach has the advantage that
+# 1) all build files are in a common dir tree and the entire
+#    tree can be removed completely;
+# 2) the build tree can be on a different physical drive for
+#    speed.
+OUTPUTDIR = $(XWP_OUTPUT_ROOT)\exe_mt
+MODULESDIR = $(XWP_OUTPUT_ROOT)\modules
+
+!if [@md $(OUTPUTDIR) 2> NUL]
+!endif
+
+APPNAME = xfix
+
+# The OBJS macro contains all the .OBJ files which need to be
+# created from the files in this directory.
+# These will be put into BIN\.
+OBJS = $(OUTPUTDIR)\$(APPNAME).obj $(OUTPUTDIR)\helpers.lib $(HELPERS_BASE)\src\helpers\pmprintf.lib
+
+# The main target:
+# If we're called from the main makefile, MAINMAKERUNNING is defined,
+# and we'll set $(OBJS) as our targets (which will go on).
+# Otherwise, we call the main makefile, which will again call ourselves later.
+all: \
+    $(XWPRUNNING)\bin\$(APPNAME).exe
+    @echo ----- Leaving $(MAKEDIR)
+
+# The "dep" target: run fastdep on the sources.
+# "nmake dep" gets called from src\makefile if nmake dep
+# is running on the main makefile.
+dep:
+    $(RUN_FASTDEP) *.cpp
+    @echo ----- Leaving $(MAKEDIR)
+
+# V1.0.0: Use the inference rule in \make\comp_standalone.in now,
+# which is shared for all makefiles that generate code for standalone
+# executables.
+# This sets up the compiler rule to compile .c files to .obj files
+# in the $(OUTPUTDIR).
+!include $(PROJECT_BASE_DIR)\make\comp_standalone.in
+
+# build targets
+$(APPNAME).def: ..\..\include\bldlevel.h
+          $(RUN_BLDLEVEL) $@ $? "WPS handles fixer"
+
+$(OUTPUTDIR)\$(APPNAME).res: $(@B).rc *.ico
+          $(RC) -r $(@B).rc $(OUTPUTDIR)\$(@B).res
+
+$(MODULESDIR)\$(APPNAME).exe: $(OBJS) $(@B).def $(OUTPUTDIR)\$(@B).res makefile
+          $(LINK) @<<
+/out:$(MODULESDIR)\$(@B).exe /PM:PM $(OBJS) $(@B).def
+<<
+          $(RC) $(OUTPUTDIR)\$(@B).res $(MODULESDIR)\$(@B).exe
+!ifdef XWP_OUTPUT_ROOT_DRIVE
+        @$(XWP_OUTPUT_ROOT_DRIVE)
+!endif
+          cd $(MODULESDIR)
+          mapsym $(@B).map > NUL
+          $(COPY) $(@B).sym $(XWPRUNNING)\bin
+!ifdef CVS_WORK_ROOT_DRIVE
+        @$(CVS_WORK_ROOT_DRIVE)
+!endif
+          cd $(MAKEDIR)
+
+# main target
+$(XWPRUNNING)\bin\$(APPNAME).exe: $(MODULESDIR)\$(@B).exe
+          $(RUN_UNLOCK) $(XWPRUNNING)\bin\$(@B).exe
+          $(COPY) $(MODULESDIR)\$(@B).exe $(XWPRUNNING)\bin
+          $(COPY) $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\bin
+#          $(COPY) $(MODULESDIR)\$(@B).exe E:\os2
+
+# The .OBJ-from-sources dependencies are now automatically
+# created by "nmake dep" into the .depend include file.
+# V0.9.12 (2001-05-22) [umoeller]
+
+!ifndef NOINCLUDEDEPEND
+!include .depend
+!endif
+
+
+

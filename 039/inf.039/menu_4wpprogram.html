@@ -1,0 +1,87 @@
+<HTML WIDTH=70% XPOS=right>
+<HEAD>
+    <TITLE>
+        Funzioni speciali degli oggetti programma
+    </TITLE>
+</HEAD>
+<BODY>
+<B>Classe: XFolder</B><HR>
+Mentre qualsiasi oggetto puï essere posto nella cartella di configurazione, l'uso degli oggetti programma ä
+raccomandato per lanciare programmi da menu contestuali. Si intende qui "veri" oggetti programma, in contrasto
+con le copie collegate dei programmi esistenti.
+<P>La ragione ä la seguente: mentre XFolder lancia un oggetto programma dalle
+cartelle di configurazione (selezionato dalla corrispondente voce di un menu contestuale),
+puï eseguire su di esso alcuni utili trucchi.
+<P>Eccone l'elenco:
+<OL>
+<LI>Se la <STRONG>directory di avvio</STRONG> dell'oggetto programma ä vuota, XFolder avvierÖ il programma 
+all'interno della cartella il cui menu contestuale si ä usato.
+E' cosç possibile lanciare lo stesso programma da tutti i menu contestuali delle cartelle, ogni volta con una
+diversa directory di avvio (di volta in volta la directory della cartella il cui menu contestuale ä stato usato).
+<P>Consideriamo ancora la configurazione predefinita: i quattro oggetti "linee di comando" hanno directory
+di avvio vuote. Questo ä il motivo per cui ä possibile lanciare delle richieste comandi "nella" cartella della
+quale si ä usato il menu contestuale.
+<P>Se si desidera cambiare questo comportamento basta specificare una directory di avvio nell'oggetto programma
+(per es. <CITE>"C:\"</CITE>), e XFolder lascerÖ le cose come stanno.
+
+<BR><LI>Se la <STRONG>lista dei parametri</STRONG> dell'oggetto programma non contiene il segno
+<CITE>"%"</CITE>, la directory della cartella usata verrÖ passata al programma come parametro.
+<P>Questo trucco ä sfruttato dalla voce di menu "Netscape (DDE)" della configurazione di default: ä in questo modo 
+che Netscape puï mostrare il contenuto della cartella da cui ä stato chiamato.
+<P>La funzione ä interamente disabilitabile dall'oggetto
+<A HREF="sys_2global.html">Impostazioni &xwp;</A>.
+<P>Volendo invece disabilitare questa funzione per una sola voce di menu
+(non tutti i programmi possono gestire una directory come parametro),
+si aggiunga un segno <CITE>"%"</CITE> alla lista "Parametri" dell'oggetto programma relativo ed
+XFolder non passerÖ il parametro addizionale.
+Questo ä per esempio il caso delle richieste comandi presenti nella configurazione predefinita.
+<P>Esempi: ponendo soltanto <CITE>"%"</CITE> nella lista dei parametri, nessun parametro verrÖ passato;
+mettendo <CITE>"text.txt %"</CITE> nella medesima lista, il nome
+<CITE>"text.txt"</CITE> verrÖ passato, senza il nome della cartella.
+<P>Mi rendo conto di come questo meccanismo di configurazione non sia intuitivo, ma ä stato implementato
+per compatibilitÖ con il comportamento della WPS in caso di chiamata dei menu contestuali aggiunti dalla 
+pagina "Menu" del blocco appunti impostazioni. Ho poi scoperto che il meccanismo funziona anche con 
+Netscape, del che non mi sono certo dispiaciuto.
+
+<BR><LI>E' anche possibile aggiungere il <STRONG>contenuto degli Appunti</STRONG> all'elenco dei parametri,
+semplicemente specificando <CITE>"%**C"</CITE>. Questa stringa funziona in qualunque punto del campo 
+parametri ma ä sensibile a maiuscolo e minuscolo: <CITE>"%**c"</CITE> (in caratteri minuscoli) NON funziona.
+<P>Esempio: Percorso e nome file = <CITE>"e.exe"</CITE>,
+parametri = <CITE>"%**C"</CITE>, avvia l'editor di sistema interpretando il contenuto degli Appunti
+come nome file.
+<P>Nota: il contenuto degli Appunti viene troncato in modo da non superare la lunghezza massima 
+consentita per l'elenco parametri. In &os2; il percorso massimo consentito ä lungo 260 caratteri.
+Questa limitazione evita di passare erroneamente al programma, nel peggiore dei casi, 64 K.
+
+<BR><LI>Se il <STRONG>nome del programma</STRONG> contiene un carattere <CITE>"~"</CITE>
+(probabilmente inserito per aggiungere una scorciatoia da tastiera, come descritto nella
+<A HREF="menu_3config.html">pagina precedente</A>), XFolder lo eliminerÖ durante l'avvio del programma.
+Tale comportamento ä modificabile dalle
+<A HREF="sys_2global.html">Impostazioni &xwp;</A>, dove sono anche riportate ulteriori informazioni 
+sull'argomento.
+
+<BR><LI>A partire dalla ver. 0.51 si puï inserire nei menu dei <STRONG>separatori</STRONG> specificando 
+<CITE>"---"</CITE> (esattamente tre trattini) come nome dell'oggetto programma
+(un separatore ä una linea orizzontale per separare otticamente gruppi diversi di voci di menu).
+XFolder ignorerÖ quanto contenuto nelle impostazioni dell'oggetto (nome dell'eseguibile, 
+parametri ecc.) e si limiterÖ ad inserire nel menu un separatore. Questo meccanismo funziona tanto
+nel menu contestuale principale quanto nei sottomenu.
+<P><B>Suggerimento</B> se si usa l'ottimo programma WPTOOLS di Henk Kelder, si inserisca il nome
+di un qualunque eseguibile valido anche in questi oggetti separatori, altrimenti CHECKINI segnalerÖ
+l'oggetto come non valido. Qualunque eseguibile si indichi, XFolder si limiterÖ ad inserire il separatore di menu.
+
+</OL>XFolder implementa le funzioni dalla 1 alla 4 cambiando realmente le impostazioni dell'oggetto programma
+per una frazione di secondo: le impostazioni vengono modificate, l'oggetto programma viene aperto, quindi le 
+impostazioni sono ripristinate al loro valore originario. 
+<P>Si tenga presente che XFolder esegue quanto descritto sopra solo sui "veri" oggetti programmi nelle
+cartelle di configurazione, <I>non</I> su copie collegate che puntano ad altri oggetti. Non intendo implementare
+questo comportamento anche per le copie collegate dato che non voglio modificare oggetti che si trovano
+nella scrivania dell'utente, al di fuori della cartella di configurazione.
+<P>E' perciï necessario mettere nelle cartelle configurazione delle <I>copie</I> degli oggetti programma; 
+non si possono usare copie collegate, che sono sç aperte, ma senza che le loro impostazioni siano cambiate.
+<P>Si vedano le <A HREF="070faq.html">"Domande pió comuni"</A> per alcuni consigli su come creare 
+oggetti programma.
+<BR>
+</BODY>
+</HTML>
+

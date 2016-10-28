@@ -1,0 +1,148 @@
+Installazione
+=============
+
+Questo pacchetto contiene il supporto in lingua italiana (NLS) per la
+versione 1.0.11 di XWorkplace.
+Ultimo aggiornamento: 9 giugno 2008
+
+Alla pagina "System Configuration", lasciando selezionata l'impostazione
+"Create WPS objects" WarpIN provveder… a tradurre automaticamente in
+italiano i nomi degli oggetti WPS di XWorkplace. Leggete in proposito
+il punto 2 in "Problemi noti e limitazioni". Si pu• ottenere in un secondo
+tempo lo stesso effetto dell'opzione "Create WPS objects" lanciando lo
+script REXX "instl039.cmd", nella sottocartella "install" del percorso di
+installazione di XWorkplace.
+
+All'inizio dell'installazione potrebbe presentarsi una finestra di errore dal
+titolo "File locked": selezionate "Unlock" per procedere.
+
+Al termine dell'installazione il supporto per la lingua italiana viene attivato
+automaticamente ed entra in uso al primo riavvio della WPS.
+
+
+Problemi noti e limitazioni
+===========================
+
+1. Per motivi di consistenza, la stringa identificativa del pacchetto per
+   la lingua italiana Š cambiata. Nel caso si fosse gi… installata una
+   precedente versione di questo pacchetto, la voce relativa nel database
+   di WarpIN non verr… sovrascritta dalla presente versione e, se lo si
+   desidera, andr… rimossa manualmente.
+
+2. Nella conversione in italiano dei nomi degli oggetti WPS relativi ad
+   XWorkplace andranno perdute tutte le personalizzazioni, ad es. le voci
+   di menu addizionali o i cambiamenti apportati alle stringhe di testo
+   visualizzate nelle barre di stato (oggetto "Workplace Shell", pagina
+   "Barre di stato - 2").
+
+3. Se si sceglie una lingua differente dall'oggetto "Impostazioni
+   XWorkplace", Š possibile che l'XCenter resti impostato sulla lingua
+   precedente. Per risolvere il problema Š sufficiente chiudere e
+   riaprire l'XCenter.
+
+4. Nell'oggetto "Kernel OS/2", la schermata di configurazione delle
+   impostazioni per il file system JFS Š in inglese
+   (http://xtracker.netlabs.org/index.php?bug=690).
+
+5. Il file .INF ("Guida ad XWorkplace") Š, a differenza dell'aiuto in
+   linea, scarsamente aggiornato. Pu• capitare di trovare riferimenti
+   a tab, pagine impostazioni ed oggetti che non esistono pi—. In questi
+   casi fate riferimento all'aiuto in linea, molto pi— esteso e sempre
+   aggiornato. Restano valide ed utilissime tutte le pagine della Guida
+   in cui si spiegano i meccanismi interni di XWorkplace e della WPS.
+
+
+Contatti
+========
+
+Per suggerimenti, correzioni, o anche solo per far sapere che avete
+apprezzato questo lavoro, scrivete all'indirizzo ggamba@tiscali.it!
+
+Esiste una mailing list in lingua inglese dedicata ad XWorkplace e
+comodamente leggibile con il proprio browser all'indirizzo:
+
+http://news.gmane.org/gmane.org.netlabs.xworkplace.general/
+
+Per chi preferisse l'italiano, c'e' un gruppo di discussione dedicato
+ad OS/2:
+
+http://groups.google.it/group/it.comp.os.os2?hl=it
+
+
+Download
+========
+
+La versione pi— aggiornata del supporto in lingua italiana Š sempre
+disponibile su Hobbes:
+
+http://hobbes.nmsu.edu/cgi-bin/h-search?sh=1&button=Search&key=xworkplace+italian
+
+Le versioni precedenti oltre che da Hobbes sono scaricabili dall'indirizzo:
+
+ftp://ftp.netlabs.org/pub/xworkplace/nls/
+
+Il codice sorgente Š disponibile come parte del sorgente di XWorkplace
+sul server CVS di Netlabs (sottocartella 039). Per informazioni su come
+accedere al codice sorgente, visitate la pagina
+
+http://www.xworkplace.org/cvs.html.
+
+Questa versione Š identificata dal tag: ggamba_0004_1-0-8
+
+
+I nomi
+======
+
+Di seguito sono elencati i nomi di tutti coloro che hanno contribuito
+a questo lavoro, o traducendo una parte delle risorse dall'inglese o
+segnalandoci errori e refusi. Se ci fossimo dimenticati di voi,
+scriveteci!
+
+Carlo <carlo_warp@yahoo.it>
+Gabriele Gamba <ggamba@tiscali.it>
+Loris Rinaldo <xloris@yahoo.com>
+Mentore Siesto <mentore.siesto@libero.it>
+Obelix <nbrion@box.seven.it>
+
+
+Come sostenere lo sviluppo di XWorkplace
+========================================
+
+XWorkplace e le sue traduzioni sono frutto di lavoro volontario. Per
+sostenerne l'ulteriore sviluppo:
+
+- collaborate al progetto: oltre al lavoro di programmazione vero e
+  proprio, si pu• aiutare verificando ed ampliando la documentazione,
+  contribuendo alle definizioni per i driver e le classi WPS come pure
+  aiutando gli altri utenti in difficolt….
+
+- fate una donazione a Netlabs.org: tramite Mensys B.V. Š possibile
+  acquistare online delle "sponsor unit" all'indirizzo:
+
+  http://shop.mensys.nl/cgi-bin/db2www/mns_art2.d2w/report?catname=NETLABS
+
+Le donazioni aiutano a coprire le spese relative ai vari servizi (server
+CVS, pagine wiki, liste di discussione) che rendono possibile il lavoro di
+gruppo su questo progetto.
+
+
+Licenza e copyright
+===================
+
+Copyright (C) 2002-2008 Gabriele Gamba,
+                        Mentore Siesto
+                        e altri.
+
+Questo programma Š software libero; Š  lecito redistribuirlo o modificarlo
+secondo i termini della Licenza Pubblica Generica GNU, come riportata nel
+file COPYING presente nella cartella di installazione del programma.
+
+Il codice sorgente Š interamente disponibile. Si veda il file XFLDR039.INF
+per i dettagli.
+
+Questo programma Š distribuito nella speranza che sia utile, ma SENZA  ALCUNA
+GARANZIA; senza neppure la garanzia implicita  di NEGOZIABILITA' o di
+APPLICABILITA' PER  UN PARTICOLARE  SCOPO.
+
+Si veda il file XFLDR039.INF per i dettagli.
+

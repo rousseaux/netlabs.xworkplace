@@ -1,0 +1,86 @@
+<HTML RESID=&ID_XFH_REBOOTEXT;>
+<HEAD>
+    <TITLE>
+        &xshutdown;: Herstart opties
+    </TITLE>
+</HEAD>
+<BODY>
+In de "Herstart opties" dialoog kunt u &xshutdown; laten weten om niet zijn interne herstart
+routine te gebruiken, maar een ander programma dat u kunt opgeven.
+De onderdelen die u hier opgeeft zullen tevoorschijn komen in het &xshutdown; bevestigingsvenster.
+Als u  in dat venster iets anders opgeeft dan "Standaard herstart", wordt de opdracht die u
+geconfigureerd heeft uitgevoerd in plaats van de standaard &xshutdown; herstart functie.
+
+<P>Dit is vooral handig als u de IBM Boot Manager ge‹nstalleerd heeft, die met &os2; mee komt.
+De Boot Manager kan geactiveerd worden door vanaf een opdrachtregel gebruik te maken van
+de <CITE>SETBOOT</CITE> opdracht.
+
+<P>Zie de:
+<A HREF="cmdref.inf#setboot">documentatie</A>
+in de <I>Handleiding bij opdrachten</I> voor details.
+
+<P>In de context van &xshutdown;, kan de "Herstart naar" functie van deze opdracht handig zijn. Deze
+functie wordt aangeroepen met de <CITE>"/iba:&lt;os&gt;"</CITE> optie van <CITE>SETBOOT</CITE>,
+met "&lt;os&gt;" als zijnde de exacte naam van het besturingssysteem zoals het verschijnt in het
+Boot Manager menu nadat het systeem opstart. Door deze optie te gebruiken, zal het systeem herstarten
+zonder het Boot Manager menu te laten zien, maar rechtstreeks vanaf de opgegeven partitie.
+
+<P>Bijvoorbeeld, als u rechtstreeks op wilt starten met PC-DOS 7, wat de naam "PC-DOS 7" heeft
+in het Boot Manager menu, type dan het volgende op de opdrachtregel in:
+
+<P><CITE>    setboot /iba:"PC-DOS 7" </CITE>
+
+
+
+<P>Als voorbeeld, als u nu wilt dat PC-DOS 7 een gebruikers herstart optie
+van &xshutdown; moet worden, doet u het volgende:
+
+<OL><LI>Druk op de "Nieuw" knop.
+<BR><LI>Voer in het "Actie beschrijving" veld, datgene in wat u wilt zien in de &xshutdown;
+bevestigingsdialoog (b.v. "PC-DOS 7").
+<BR><LI>Vul in het "Actie opdrachtregel" veld de uit te voeren opdracht in, in dit geval:
+<BR><CITE>   setboot /iba:"PC-DOS 7"</CITE>
+<BR><LI>Druk op "OK". De volgende keer dat u probeert uw systeem af te sluiten zal dit onderwerp
+getoond worden in de &xshutdown; bevestigingsdialoog
+
+</OL>
+Beginnend met V0.9.0 is er een <B>"Partities" knop</B> toegevoegd aan deze dialoog.
+Deze knop wordt alleen geactiveerd als, van de selectielijst bovenin, een herstart optie geselecteerd is.
+Het kan zijn dat u op de "Nieuw" knop moet drukken voordat de "Partities" knop geactiveerd wordt.
+Na het indrukken van die knop krijgt u een menu waarin alle opstartbare partities van uw systeem getoond
+worden.
+Let op: dit werkt alleen als u de Boot Manager ge‹nstalleerd heeft, omdat deze rechtstreeks vanuit de
+partitie tabellen leest en zal zoeken naar Boot Manager onderdelen.
+Als u nu een onderdeel van dat menu selecteert, wordt de momenteel gekozen herstart optie
+bijgewerkt met de correcte naam en opdracht voor <CODE>SETBOOT.EXE</CODE>.
+<P>
+<B>Belangrijke opmerkingen:</B>
+<UL><LI>Er is geen fout controle, niet in de "Herstart opties" dialoog en ook niet op het
+moment van afsluiten. Als u de uit te voeren opdracht verkeerd typt of <CITE>SETBOOT</CITE>
+gebruikt terwijl de Boot Manager niet is ge‹nstalleerd, loopt het systeem gewoon vast nadat alle
+vensters gesloten zijn.
+
+<BR><LI>Als u de exacte namen van de Boot Manager partities op uw systeem niet weet en de "Partities"
+knop werkt niet, kunt u vanaf een opdrachtregel <CITE>FDISK</CITE> opstarten (of <CODE>LVM</CODE> voor
+WSeB en eCS) en ze van daaruit handmatig overnemen.
+
+<BR><LI>De opdracht die u hier invoert wordt gestart nadat alle vensters zijn afgesloten en de
+INI bestanden zijn weggeschreven. Echter, bestandssystemen worden niet vrijgegeven bij &xshutdown; als
+u een gebruikers herstart kiest. &xshutdown; veronderstelt dat het programma dat u hier opgegeven heeft,
+zelf de bestandssystemen zal vrijgeven (b.v. het roept de <CITE>DosShutdown</CITE> API aan).
+<CITE>SETBOOT</CITE> doet dit, bijvoorbeeld.
+
+<BR><LI>De opdracht die u hier opgeeft, wordt gestart via een CMD.EXE met de <CITE>/C</CITE>
+parameter. Dit betekent dat u hier zelfs een
+<A HREF="glossary/gls_cmd_rexx.html">REXX</A>
+script kunt laten uitvoeren, als u echt van risico's houdt.
+
+<BR><LI>Zoals altijd, als u een opdracht wilt laten uitvoeren die zich niet bevindt in een directory
+die onderdeel is van de <CITE>PATH</CITE> variabele, dient u het volledige
+<A HREF="glossary/gls_path.html">pad</A>
+op te geven.
+Voor <CITE>SETBOOT</CITE> is dat niet noodzakelijk, omdat die zich in de <CITE>OS2</CITE> directory bevindt.
+</UL>
+</BODY>
+</HTML>
+

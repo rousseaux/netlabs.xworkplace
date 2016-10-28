@@ -1,0 +1,111 @@
+<HTML NOSUBLINKS="config" WIDTH=70% XPOS=right>
+<HEAD>
+    <TITLE>
+        Cartelle turbo
+    </TITLE>
+</HEAD>
+<BODY>
+<B>Classi: XFolder, XWPFileSystem, XFldDataFile, XWPProgram, XWPProgramFile</B><HR>
+Con "Cartelle turbo" intendiamo l'insieme di un gran numero di miglioramenti nella gestione interna del
+contenuto delle cartelle nella Workplace Shell. In breve, aprire cartelle contenenti
+molti file diventa ora <I>sensibilmente</I> pió veloce.
+
+<P>Per sicurezza la funzione turbo ä inizialmente disabilitata. ‘ possibile attivarla dall'oggetto
+<A HREF="sys_2global.html">"Impostazioni &xwp;"</A>.
+
+<P>I miglioramenti nella velocitÖ dell'apertura delle cartelle sono descritti in questa 
+pagina. A partire dalla versione  V1.0.1, attivando le cartelle turbo si abilita anche il 
+meccanismo delle associazioni avanzate (non farlo rendeva instabile la WPS). Si veda 
+<a href="file_1extassocs.html">Associazioni per tipo di file avanzate</a> per una 
+descrizione dettagliata di questa funzione.
+
+<P><B>Descrizione breve</B>
+
+<P>Quando una cartella viene aperta nella WPS per la prima volta, essa viene "popolata" - ovverosia,
+i file vengono recuperati dalla directory rappresentata da quella cartella.
+Come forse sarÖ noto, la WPS non gestisce bene grandi quantitÖ di file.
+Aprire cartelle con molti oggetti (mille file o pió) puï bloccare il sistema per minuti interi.
+
+<P>Le "Cartelle turbo" correggono, almeno in parte, il problema. Qui sotto ä riportato un confronto
+relativo ad alcune cartelle "patologiche", in cui mostro il tempo in secondi richiesto sul mio 
+sistema per popolarle. Questo confronto considera solo il tempo necessario ad 
+invocare la stringa di impostazione <CODE>QUICKOPEN=IMMEDIATE</CODE>.
+Naturalmente, i risultati su altre macchine possono variare, dipendendo dalla velocitÖ delle unitÖ 
+disco e del processore/processori.
+
+<PRE>
+                        turbo off       turbo on
+
+    Cartella JFS          160 s           53 s
+    con 10000 file
+
+    Cartella JFS          211 s           60 s
+    con 13000 file
+
+    Cartella HPFS                         56 s
+    con 10000 file
+</PRE>
+
+Apparentemente il tempo impiegato normalmente dalla WPS per popolare le cartelle
+cresce esponenzialmente con il numero di file nella cartella.
+
+<P><B>Descrizione in dettaglio</B>
+
+<P>Essenzialmente, la funzione "Cartelle turbo" ä la completa riscrittura del codice che popola
+le cartelle. &xwp; usa le seguenti tecniche per velocizzare l'operazione:
+
+<UL><LI>Ogni cartella ha ora un albero binario bilanciato, contenente tutti gli oggetti che sono stati aggiunti
+alla lista dei contenuti interni della cartella fino al momento corrente. Per gli oggetti del file-system
+quest'albero ä ordinato tramite i nomi reali degli oggetti. Questo rende molto efficiente verificare
+se l'oggetto ä giÖ nell'albero o deve esservi aggiunto. Suppongo che il codice di verifica originale della WPS
+sia responsabile dei ritardi dovuti con grandi numeri di file.
+
+<P><LI>Invece di un solo sottoprocesso extra, le "Cartelle turbo" lanciano due thread extra per 
+popolare una cartella. Uno ä responsabile dell'elencazione dei file da disco
+(tramite le API di sistema
+<CODE>DosFindFirst</CODE> e
+<CODE>DosFindNext</CODE>), e l'altro controlla la situazione dell'oggetto e
+crea un nuovo oggetto, se necessario (se l'oggetto non ä giÖ "sveglio").
+
+<P>A seconda del tipo di file system le due API citate possono essere molto lente se bisogna raccogliere
+gli attrbuti estesi (come nel caso della WPS). Mentre questo accade il thread chiamante
+ä bloccato, e non fa altro che aspettare che i dati arrivino dal disco rigido.
+Questo tempo sprecato puï essere usato dal secondo thread per creare l'oggetto in memoria,
+altro compito che puï consumare tempo.
+
+<P>In aggiunta, usare due thread dÖ maggiore scalabilitÖ su sistemi multi-processore (SMP).
+
+<P>Questi due accorgimenti rendono molto pió veloce la popolazione delle cartelle. Il
+tempo necessario a popolare una cartella ä pressochÇ uguale a quello speso 
+nel chiamare le API di sistema
+<CODE>DosFindFirst</CODE> e
+<CODE>DosFindNext</CODE>, quindi non credo sia possibile diminuirlo ulteriormente di molto
+(a meno che qualcuno riesca a rendere pió efficenti queste due API).
+
+<P><LI>La funzione "Cartelle turbo" sostituisce completamente il meccanismo di caricamento delle 
+icone per i file eseguibili. Aprendo una cartella contenente file .EXE la WPS, come ä noto,
+ne cerca l'icona nell'eseguibile e, trovatala, la usa per identificare l'oggetto.
+Oggetti programma e dati caricano le icone dai file eseguibili.
+
+<P>Il codice di WPS per caricare le icone ha perï parecchie limitazioni. Pió importante, risulta
+essere lento. Anche questo codice ä stato totalmente rimpiazzato in 
+&xwp;.
+
+<P>In aggiunta, la WPS non sembra tentare di condividere icone tra gli oggetti.
+&xwp; tenta invece di riutilizzare le icone per gli oggetti, cosç da evitare di
+doverle ricaricare dagli eseguibili tutte le volte.
+
+<P>Essenzialmente, non permetto pió alla WPS di cercare le icone nei file eseguibili
+ma uso solo il mio codice. Questo funziona per gli eseguibili di tipo
+LX e Win16, e per gli eseguibili OS/2 NE. Le risorse Win32 PE (usate dalla maggior parte dei programmi per 
+Windows 95 o superiori) sono attualmente non accettate; i file PE vengono identificati
+da un'icona predefinita, il che garantisce per lo meno che la
+WPS non si blocchi pió durante la ricerca dell'icona.
+
+<P>Come effetto collaterale, questo cambia il comportamento per le icone Win16 se le dimensioni delle icone di
+sistema sono 40x40; invece che scalarle, &xwp; le centrerÖ a 32x32.
+
+</UL>
+</BODY>
+</HTML>
+

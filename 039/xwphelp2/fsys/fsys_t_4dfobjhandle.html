@@ -1,0 +1,51 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: passare nell'ambiente il marcatore file dell'oggetto 
+    </TITLE>
+</HEAD>
+<BODY>
+L'impostazione <B>"Passa nell'ambiente il marcatore file dell'oggetto"</B> 
+determina la maniera in cui &xwp; imposta la variabile <CODE>WP_OBJHANDLE</CODE> 
+nell'ambiente del programma avviato attraverso l'associazione con un file dati.
+Disabilitare questa impostazione permette di ridurre il numero totale dei 
+<A HREF="glossary/gls_objhandle.html">marcatori oggetti</A> file system 
+nel sistema.
+
+<UL><LI>Se l'impostazione ä <B>attiva</B>, richiamare un programma attraverso
+la sua associazione con un certo tipo di file dati fa sç che nell'ambiente del 
+programma sia compreso il <A HREF="glossary/gls_objhandle.html">marcatore oggetto</A> 
+del file dati. <CODE>WP_OBJHANDLE</CODE> avrÖ cioä il valore seguente:
+
+<P><CODE>WP_OBJHANDLE=<I>programma</I>,<I>filedati</I></CODE>
+
+<P>dove <CODE><I>programma</I></CODE> ä il marcatore oggetto dell'oggetto programma
+o del file eseguibile avviato, mentre <CODE><I>filedati</I></CODE> ä il marcatore oggetto
+del file dati attraverso la cui associazione ä stato avviato il programma.
+
+<P>Questo ä il comportamento assunto della Workplace Shell.
+
+<P><LI><B>Deselezionando</B> questa impostazione, <CODE>WP_OBJHANDLE</CODE> verrÖ
+impostato cosç:
+
+<P><CODE>WP_OBJHANDLE=<I>programma</I></CODE>
+
+<P>Detto altrimenti, il marcatore del file dati <I>non</I> viene passato.
+
+</UL>Il funzionamento normale prevede che, ogni volta che si lancia un file dati,
+facendo ad es. doppio clic su di esso, il sistema crei un marcatore oggetto per
+quel file, destinato a restare per sempre nel file <CODE>OS2SYS.INI</CODE>; nel tempo
+questo meccanismo genera una gran quantitÖ di marcatori. Si puï perciï decidere di 
+disabilitare questo meccanismo, riducendo di molto la velocitÖ con cui il file
+<CODE>OS2SYS.INI</CODE> cresce di dimensioni.
+
+<P>Vi sono perï alcune applicazioni che si appoggiano al meccanismo standard 
+della Workplace Shell: se, disabilitando l'impostazione, l'applicazione non viene pió
+caricata, sarÖ necessario riattivarla.
+
+<P>La modifica di questa impostazione ha effetto immediato.
+
+<BR>
+</BODY>
+</HTML>
+

@@ -1,0 +1,93 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: Stringhe WPProgram
+    </TITLE>
+</HEAD>
+<BODY>
+<CODE>WPProgram</CODE> Š la classe WPS per gli &link_progobjs;.
+(si veda <A HREF="glossary/gls_wpsclasses.html">Classi WPS</A> per i dettagli).
+Oltre alle stringhe impostazioni proprie della classe               
+<CODE><A HREF="objects/string_1wpobject.html">WPObject</A></CODE>,
+la classe <CODE>WPProgram</CODE> supporta le stringhe seguenti:
+
+<DL>
+<DT><P><CITE><B>ASSOCFILTER</B>=<I>filtri</I></CITE>
+<DD>Imposta i <I>filtri</I> per i file dati da associare all'oggetto programma.
+Filtri multipli vanno separati con virgole.
+
+<IFNDEF __NEVEREXTASSOCS__>
+<P>Nota: se si abilitano le associazioni estese di &xwp; il filtro viene registrato nei
+file INI, ma la modifica non ha effetto finch‚ le associazioni estese non vengono disabilitate.
+&xwp; infatti ignora completamente le associazioni WPS attraverso i filtri.
+</IFNDEF>
+
+<DT><P><CITE><B>ASSOCTYPE</B>=<I>tipi</I></CITE>
+<DD>Imposta i <I>tipi</I> per i file dati associati all'oggetto programma.
+Tipi multipli vanno separati con virgole.
+
+<DT><P><CITE><B>EXENAME</B>=<I>nomefile</I></CITE>
+<DD>Imposta l'eseguibile cui punta l'oggetto programma.
+Deve essere un eseguibile ben qualificato (cioŠ per cui si Š specificato l'intero 
+<A HREF="glossary/gls_path.html">percorso</A>)
+o presente nel percorso <CODE>PATH</CODE> di sistema, altrimenti l'avvio del programma 
+fallir….
+
+<DT><P><CITE><B>MAXIMIZED</B>={YES|NO}</CITE>
+<DD>Determina se l'eseguibile cui punta l'oggetto programma deve essere avviato
+alla dimensione massima o no. Questa impostazione generalmente non ha
+effetto sui programmi PM.
+
+<DT><P><CITE><B>MINIMIZED</B>={YES|NO}</CITE>
+<DD>Determina se l'eseguibile cui punta l'oggetto programma deve essere avviato
+minimizzato o no. Questa impostazione generalmente non ha
+effetto sui programmi PM.
+
+<DT><P><CITE><B>PROGTYPE</B>=<I>tipo</I></CITE>
+<DD>Imposta esplicitamente il tipo di sessione per l'eseguibile cui punta
+l'oggetto programma. <CODE><I>tipo</I></CODE> deve essere uno dei seguenti:
+
+<UL><LI><CODE>DOSMODE</CODE>: modalit… DOS stand-alone.
+<LI><CODE>FULLSCREEN</CODE>: modalit… &os2; a schermo pieno.
+<LI><CODE>PM</CODE>: Presentation Manager (PM).
+<LI><CODE>PROG_30_STD</CODE>: modalit… &winos2;,  compatibilit… standard e schermo pieno.
+<LI><CODE>PROG_31_ENH</CODE>: modalit… &winos2;, compatibilit… avanzata e schermo pieno.
+<LI><CODE>PROG_31_ENHSEAMLESSCOMMON</CODE>: finestra  &winos2; in sessione comune &winos2;,
+compatibilit… avanzata.
+<LI><CODE>PROG_31_ENHSEAMLESSVDM</CODE>: finestra &winos2; in sessione separata, 
+modalit… compatibilit… avanzata.
+<LI><CODE>PROG_31_STD</CODE>: &winos2;, modalit… schermo pieno, compatibilit… standard.
+<LI><CODE>PROG_31_STDSEAMLESSCOMMON</CODE>: finestra &winos2; in sessione comune &winos2;, 
+compatibilit… standard.
+<LI><CODE>PROG_31_STDSEAMLESSVDM</CODE>: finestra &winos2; in sessione separata, modalit…
+compatibilit… standard.
+<LI><CODE>SEPARATEWIN</CODE>: finestra &winos2; in VDM separata.
+<LI><CODE>VDM</CODE>: DOS schermo pieno.
+<LI><CODE>WIN</CODE>: &winos2; schermo pieno.
+<LI><CODE>WINDOWABLEVIO</CODE>: &os2; in finestra.
+<LI><CODE>WINDOWEDVDM</CODE>: DOS in finestra.
+<LI><CODE>WINDOWEDWIN</CODE>: finestra &winos2;.
+</UL>
+
+<DT><P><CITE><B>NOAUTOCLOSE</B>={YES|NO}</CITE>
+<DD>Determina se la sessione rester… aperta al termine del programma.
+Questa impostazione non influenza i programmi PM. Il valore assunto Š <CODE>NO</CODE>.
+
+<DT><P><CITE><B>PARAMETERS</B>=<I>parametri</I></CITE>
+<DD>Imposta i parametri per l'eseguibile cui punta
+l'oggetto programma. Pu• contenere le macro sostitutive standard per gli oggetti programma.
+
+<DT><P><CITE><B>SET </B> <I>variabile</I>=<I>valore</I></CITE>
+<DD>Imposta la <A HREF="glossary/gls_env.html">variabile ambiente</A>
+per la sessione dell'eseguibile.
+
+<P>Si noti che &os2; usa le variabili ambiente anche per impostare certi valori DOS
+nelle sessioni DOS e &winos2;.
+
+<DT><P><CITE><B>STARTUPDIR</B>=<I>percorso</I></CITE>
+<DD>Imposta la cartella di lavoro in cui avviare la sessione.
+
+</DL>
+</BODY>
+</HTML>
+

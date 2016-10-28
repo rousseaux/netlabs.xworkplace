@@ -1,0 +1,101 @@
+<HTML RESID=&ID_XSH_WIDGET_SENTINEL_MAIN;>
+<HEAD>
+    <TITLE>
+        &xcenter;: elemento Sentinel
+    </TITLE>
+</HEAD>
+<BODY>
+L'elemento <B>Sentinel</B> di <A HREF="xcenter/xc_main.html">&xcenter;</A> visualizza
+un grafico che rappresenta lo stato corrente di utilizzo della memoria.
+
+<P>Per comprendere come quest'elemento visualizza le informazioni sarÖ necessario
+prenderci confidenza, ma alla fine l'uso risulterÖ molto pratico. Analogamente
+all'elemento <A HREF="xcenter/xc_pulse.html">"Pulse (carico CPU)"</A>, viene visualizzato
+un grafico che mostra l'utilizzo della memoria nel tempo da parte del sistema e che viene
+aggiornato ogni due secondi.
+
+<P>L'elemento "Sentinel" visualizza perï pió grafici contemporaneamente, in colori
+differenti, con i valori correnti (in MB) riportati sulla sinistra:
+
+<BR><IMG SRC="img/xc_sentinel1.gif">
+
+<P>I grafici rappresentano quanto segue:
+
+<OL><LI>Il <B>valore superiore (in verde)</B> rappresenta la <B>memoria RAM fisica libera
+al momento.</B> E' lo stesso valore riportato dall'elemento <A
+HREF="xcenter/xc_mem.html">"Memoria libera"</A>. Se si hanno 128 MB di memoria RAM nel
+sistema, non verrÖ mai superato tale valore (nÇ probabilmente lo si raggiungerÖ mai,
+ovviamente).
+
+<P><LI>Il <B>valore centrale (in blu)</B> rappresenta la <B>memoria RAM fisica occupata
+al momento.</B> Se lo si somma al valore superiore, si ottiene il totale della memoria
+RAM disponibile.
+
+<P><LI>Se si ä installato un driver <CODE>win32k.sys</CODE> recente dal pacchetto Odin
+(marzo 2001 o successivo), la dimensione del file di appoggio viene rappresentata con due
+colori, come si vede nell'immagine sopra. Il <B>terzo valore (in viola)</B> mostra la
+quantitÖ di spazio effettivamente in uso nel file di appoggio. Il <B>grafico in basso (in
+rosso)</B> mostra invece lo spazio libero all'interno del file di appoggio. I due
+valori sommati danno la dimensione totale del file di appoggio.
+
+<P>Come si puï vedere, ä stata allocata sempre pió memoria, fino all'esaurimento della
+memoria libera (in verde). &os2; a questo punto ha iniziato ad utilizzare lo spazio
+libero nel file di appoggio (in rosso), esaurendolo. Ha allora provveduto ad ampliare
+tale file, il che ä rappresentato dall'aumento dell'area in viola. Alla fine la memoria ä
+stata liberata, come si vede dal ridursi dei valori blu e viola. Infine, anche il file di
+appoggio, ormai pieno di spazio inutilizzato,  ä stato ridotto di dimensioni.
+
+<P>Se non si ä installato un driver <CODE>win32k.sys</CODE> recente, si vedrÖ solo il
+colore viola, che rappresenta semplicemente la dimensione del file di appoggio
+
+</OL>Lo spazio grigio al di sopra dei grafici colorati non ha nessun significato; ä
+solo il risultato del variare dei grafici: col passare del tempo, all'uscita dallo
+schermo del "picco" nel mezzo, il grafico cambia scala e lo spazio grigio viene
+nuovamente occupato dalle aree colorate.
+
+<P>E' possibile <A HREF="glossary/gls_dropfonts.html">trascinare colori e tipi di
+carattere</A> sull'elemento "Sentinel". In questa maniera si puï perï al momento cambiare
+solo il colore di sfondo. I colori del grafico si possono modificare dal blocco
+impostazioni dell'elemento: per aprirlo, selezionare "Impostazioni" dal suo menu
+contestuale. L'elemento Sentinel ä, inoltre, <A
+HREF="xcenter/xc_main_sizbar.html">ridimensionabile</A>.
+
+<P><B>Dettagli di funzionamento</B>
+
+<P>L'origine delle informazioni visualizzate dipende dalla presenza o meno nel sistema di
+una versione recente del driver Odin <CODE>win32k.sys</CODE>.
+
+<UL><LI>Se ä presente <CODE>win32k.sys</CODE>, tutte le informazioni sono ricavate
+direttamente dal driver, che a sua volta le ricava esaminando la gestione memoria del
+kernel &os2;. E' un sistema estremamente efficente e pió preciso del metodo alternativo
+descritto sotto.
+
+<P>E' perï necessario avere installato un driver <CODE>win32k.sys</CODE> successivo al
+marzo 2001. Knut Stange Osmundsen ä stato cosç gentile da aggiungere questa
+funzionalitÖ a <CODE>win32k.sys</CODE> apposta per &xwp;.
+
+<P><LI>Se il driver non ä installato o ä una versione troppo vecchia, l'elemento
+"Sentinel" ricava le informazioni sulla memoria attraverso il metodo standard.
+
+<IFNDEF __EWORKPLACE__>
+I calcoli si basano sui dati ricavati da due fonti molto semplici:
+<CODE>Dos16MemAvail</CODE> (giÖ descritto per l'<A HREF="xcenter/xc_mem.html">elemento
+"Memoria libera"</A>) e la dimensione del file di appoggio, determinata periodicamente da
+una semplice chiamata di sistema sul file stesso. Questi valori sono quelli riportati dai
+grafici superiore ed inferiore.
+
+<P>L'ammontare totale della memoria virtuale (i tre grafici insieme) ä calcolata sommando
+il totale della memoria RAM fisica (ricavato attraverso l'API
+<A HREF="cpref.inf#DosQuerySysInfo"><CODE>DosQuerySysInfo</CODE></A><A HREF="_toolkitlink.html">*</A>
+e che non cambia mai) alla dimensione del file di appoggio.
+
+<P>Il grafico intermedio (memoria RAM fisica in uso) ä semplicemente la differenza
+tra la memoria RAM fisica totale e quella libera.
+</IFNDEF>
+<P>Con questa implementazione non ä possibile sapere la quantitÖ di spazio inutilizzato
+nel file di appoggio.
+
+</UL>
+</BODY>
+</HTML>
+

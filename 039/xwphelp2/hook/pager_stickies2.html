@@ -1,0 +1,56 @@
+<HTML RESID=&ID_XSH_SETTINGS_PAGER_STICKY2;>
+<HEAD>
+    <TITLE>
+        &pgr;: finestre fisse
+    </TITLE>
+</HEAD>
+<BODY>
+Ogni voce Š composta di quattro campi: <B>Criteri</B>, <B>Attributo</B>, <B>Operatore</B>,
+e <B>Valore</B>.
+
+<P><B>Criteri</B> definisce se la finestra che corrisponde alla voce Š da includere
+(<B>"I"</B>) o da escludere (<B>"E"</B>).  Le finestre incluse sono fisse, quelle
+escluse non lo sono.
+
+<P><B>Attributo</B> specifica su quale elemento basarsi per definire la voce. In questa versione
+il solo attributo utilizzabile Š il titolo della finestra.
+
+<P><B>Operatore</B> definisce il tipo di comparazione usata per decidere se
+la finestra corrisponde o no alla voce.  Gli operatori possibili per l'attributo "Titolo"
+sono cinque:
+
+<UL>
+<LI><B>contiene</B> verifica se il titolo contiene o no la stringa data, in qualunque 
+posizione.
+
+<LI><B>inizia con</B> verifica se il titolo inizia con la stringa data.
+
+<LI><B>finisce con</B> verifica se il titolo termina con la stringa data.
+
+<LI><B>Š uguale a </B> verifica se il titolo Š uguale o no la stringa data.
+
+<LI><B>soddisfa</B> verifica se il titolo corrisponde alla stringa data, che
+viene trattata come  una <A HREF="glossary/gls_regexps.html">espressione regolare</A>.
+
+</UL>In tutti i confronti valgono maiuscole e minuscole.
+
+<P><B>Valore</B> specifica il valore da confrontare. L'elenco a tendina riporta
+alcuni possibili valori, ma non Š indispensabile scegliere uno di quello proposti.
+
+<P>Si considera che la finestra corrisponda alla voce nella lista quando l'attributo 
+per la finestra, usando l'operatore di confronto specificato, Š equivalente al valore.
+
+<P>&pgr; considera fissa (o meno) una finestra quando trova che soddisfa una voce
+tra quelle nella lista di questa pagina, iniziando dalla parte alta dell'elenco.
+La finestra Š fissa se il criterio Š  <B>"I"</B>; non Š fissa se
+il criterio Š <B>"E"</B>.  Se la finestra non ha corrispondenze nell'elenco viene 
+trattata come non fissa.
+
+<P><B>Nota:</B> La Lista di scambio mostra spesso sia il titolo della finestra che
+il titolo della Lista di scambio, separati da un trattino. Se appaiono entrambi &pgr; user… 
+il titolo che appare dopo il trattino.
+<BR>
+</BODY>
+</HTML>
+
+

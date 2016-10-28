@@ -1,0 +1,30 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        "Spegnimento PC"
+    </TITLE>
+</HEAD>
+<BODY>
+Abilitare questa impostazione per far sç che la &xshutdown; tenti automaticamente di
+spegnere il computer una volta completata la chiusura del sistema anzichÇ limitarsi
+a visualizzare il consueto messaggio ("E' ora possibile spegnere il computer...").
+
+<P>E' necessario che il computer supporti questa funzione: sia il Bios
+che &os2; debbono supportare
+l'<A HREF="glossary/gls_apm.html">APM V1.1</A>,
+oppure si deve aver installato il supporto ACPI.
+I livelli APM ACPI del sistema sono per
+comoditÖ visualizzati nella pagina impostazioni della &xshutdown;.
+
+<P>Selezionando la casella <B>"Ritardo"</B>, la &xshutdown; attende tre secondi
+prima di ordinare effettivamente lo spegnimento al driver <CODE>APM.SYS</CODE>
+o al sottosistema ACPI.
+Questa opzione puï essere d'aiuto su quelle macchine in cui altrimenti l'alimentazione
+viene rimossa prima che siano state completamente svuotate le memorie cache.
+Se dopo lo spegnimento al riavvio si verifica un CHKDSK, si provi a
+selezionare questa casella.
+
+<BR>
+</BODY>
+</HTML>
+

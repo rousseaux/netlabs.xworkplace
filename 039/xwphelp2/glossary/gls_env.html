@@ -1,0 +1,53 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: variabili ambiente
+    </TITLE>
+</HEAD>
+<BODY>
+Praticamente tutti i sistemi operativi prevedono che i programmi lavorino
+all'interno di un <B>ambiente,</B>, definito attraverso una 
+serie di <B>variabili ambiente</B>, che si presentano 
+nella forma <CODE>CHIAVE=VALORE</CODE>.
+
+<P>Definire l'ambiente ha diverse funzioni:
+
+<UL><LI>In molti casi definisce come il sistema operativo deve agire rispetto
+al programma che sta facendo funzionare. Per esempio, i 
+<A HREF="glossary/gls_path_sys.html">percorsi di sistema</A> sono 
+definiti attraverso variabili ambiente. Se si modificano queste variabili 
+prima di avviare il programma, si modifica il percorso che il sistema operativo
+segue per trovare i file richiesti dal programma.
+
+<P>Le variabili ambiente sono riportate in 
+<I>&os2; - Riferimento per i comandi</I>
+(<A HREF="cmdref.inf"><CODE>CMDREF.INF</CODE></A>) e
+sono generalmente definite all'avvio del sistema attraverso il 
+file &cfgsys;.
+
+<P><LI>Si pu• poi anche progettare un programma perch‚ reagisca a 
+certe variabili ambiente sue proprie. Per sapere se vi sono variabili 
+definite per un dato programma, e nel caso quali sono, bisogna far riferimento
+alla documentazione dell'applicazione. &os2; non sa nulla di queste variabili:
+si limita a fornire la struttura necessaria per impostarle.
+
+</UL>Per leggere o impostare una variabile ambiente dalla riga di comando
+usare l'istruzione <A HREF="cmdref.inf#SET"><CODE>SET</CODE></A>.
+
+<P>E' possibile specificare una variabile ambiente delimitandone a destra e a sinistra
+il nome con un segno di percentuale (<CODE>%</CODE>). Tale espressione verr… rimpiazzata
+dinamicamente con il valore della variabile.
+
+<P>Per esempio, per aggiungere la directoru C:\NUOVADIR all'elenco corrente delle directory
+nel percorso <A HREF="cmdref.inf#PATH"><CODE>PATH</CODE></A> si digiti
+il comando <PRE>SET PATH=%PATH%;C:\NUOVADIR</PRE>
+
+<P>Usando il comando <A HREF="cmdref.inf#SETLOCAL">SETLOCAL</A> si crea una copia 
+locale dello spazio ambiente, della directory e dell'unit… corrente, che permette
+di apportare modifiche temporanee.
+Le impostazioni si possono poi ripristinare con il comando 
+<A HREF="cmdref.inf#ENDLOCAL"><CODE>ENDLOCAL</CODE></A>.
+<BR>
+
+</BODY>
+</HTML>

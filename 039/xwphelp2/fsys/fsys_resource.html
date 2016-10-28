@@ -1,0 +1,79 @@
+<HTML RESID=&ID_XSH_SETTINGS_PGMFILE_RESOURCES;>
+<HEAD>
+    <TITLE>
+        &xwp;: pagina "Risorse"
+    </TITLE>
+</HEAD>
+<BODY>
+La pagina "Risorse" Š presente nell'oggetto impostazioni di tutti i file 
+eseguibili e mostra informazioni aggiuntive relative al modulo dell'eseguibile.
+
+<P>Le <B>risorse</B> sono oggetti dati di sola lettura accessibili 
+dinamicamente al momento dell'esecuzione.
+
+<P>Gli oggetti risorse sono inseriti nel file eseguibile dal compilatore di 
+risorse (<CODE>RC.EXE</CODE>), fornito con &os2;.
+L'eseguibile pu• essere sia il modulo principale dell'applicazione (file <CODE>.EXE</CODE>)
+sia una <A HREF="glossary/gls_dll.html">libreria a collegamento dinamico(DLL)</A>.
+
+<P>Le risorse possono essere caricate in qualsiasi momento utilizzando la coppia "tipo" e "ID".
+In genere, a differenza del codice applicazione principale, le risorse vengono caricate solo 
+quando effettivamente necessarie. Questo rende pi— rapido l'avvio iniziale dell'applicazione
+ed inoltre riduce il consumo di memoria.
+
+<P>Sono usate comunemente per separare il supporto lingue nazionali
+(NLS) dal codice effettivo dell'eseguibile. In questa maniera, le applicazioni possono essere tradotte
+senza che sia necessario ricompilare il codice sorgente 
+<IFNDEF __EWORKPLACE__>
+(il supporto lingue in &xwp;, per esempio,
+funziona appunto in questa maniera).
+</IFNDEF>
+
+<P>Esistono i seguenti tipi di risorse:
+
+<UL><LI><B>Mouse pointer shape:</B> file icona o puntatore (formato .ICO/.PTR).
+
+<P><LI><B>Bitmap:</B> bitmap &os2; (.BMP).
+
+<P><LI><B>Menu template:</B> definizione menu PM; pu• essere sia una barra menu che un &popmenu;e.
+
+<P><LI><B>Dialog template:</B> definizione per finestre di dialogo PM.
+
+<P><LI><B>String table:</B> tabella stringhe.
+
+<P><LI><B>Font directory, Font:</B> tipo di carattere bitmap PM.
+
+<P><LI><B>Accelerator table:</B> tabella acceleratori PM (tasti rapidi, scorciatoie da tastiera).
+
+<P><LI><B>Binary data:</B> dati binari in formato non definito.
+
+<P><LI><B>Error message table:</B> tabella di messaggi errori.
+
+<P><LI><B>Dialog include-file name:</B> nome file del file "include" della finestra di dialogo.
+
+<P><LI><B>Virtual key table:</B> chiave per tabelle VKEY. Non mi Š chiaro a che serva.
+
+<P><LI><B>Key table:</B> chiave per tabelle UGL. Non mi Š chiaro a cosa serva.
+
+<P><LI><B>Character table:</B> tabella glifo-carattere. E' usata probabilmente per i tipi di carattere.
+
+<P><LI><B>Display information:</B> informazioni visualizzazione schermo. Mai incontrato.
+
+<P><LI><B>Short-form function key area:</B> area chiavi funzione, forma breve. Non mi Š chiaro a che serva.
+
+<P><LI><B>Long-form function key area:</B> area chiavi funzione, forma lunga. Non mi Š chiaro a che serva.
+
+<P><LI><B>Help table, Help subtable:</B> tabelle aiuto per il gestore aiuto PM. Permette al
+PM di collegare le voci dei dialoghi alle pagine di aiuto; purtroppo, terribilmente difficile da usare.
+
+<P><LI><B>DBCS uniq/font driver directory, DBCS uniq/font driver:</B> programmi di controllo per tipi di carattere double-byte
+character set (DBCS). Non mi Š chiaro a che serva.
+
+<P><LI><B>String ID table:</B> tabella risorse dei nomi. Non mi Š chiaro a che serva.
+
+<P><LI><B>Application specific:</B> dati in un formato specifico di applicazione.
+
+</UL>
+</BODY>
+</HTML>
+

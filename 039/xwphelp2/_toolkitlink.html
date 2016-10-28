@@ -1,0 +1,36 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        Note riguardo i riferimenti alla documentazione del Toolkit
+    </TITLE>
+</HEAD>
+<BODY>
+I collegamenti che da questa documentazione fanno riferimento alla
+documentazione del Toolkit funzionano solo se si verificano tutte le condizioni seguenti:
+
+<OL><LI>Il Toolkit deve essere installato nel sistema; esso comprende le utilitÖ
+necessarie, la documentazione, gli header e le librerie di programmazione per
+i sistemi operativi OS/2 ed eComStation.
+<IFDEF __EWORKPLACE__>
+Il Toolkit si trova sui CD di installazione di eComStation.
+</IFDEF>
+<IFNDEF __EWORKPLACE__>
+Il Toolkit si puï trovare sui CD di installazione degli IBM Convenience
+Pack o di eComStation.
+</IFNDEF>
+
+<P><LI>Le variabili ambiente relative alla documentazione del Toolkit devono
+essere definite nel file &cfgsys;. Per esempio, <CODE>SET CPREF=CP1.INF+CP2.INF+CP3.INF</CODE>
+fa sç che il comando <CODE>view cpref</CODE> permetta di aprire l'intera
+<I>Control Program Programming Guide and Reference</I>, anche se essa consiste
+in realtÖ di tre file INF.
+
+<P><LI>I file INF del Toolkit devono risiedere tutti in una directory compresa nel percorso
+<CODE>BOOKSHELF</CODE> (si veda <A HREF="glossary/gls_path_sys.html">Percorsi di sistema</A>).
+
+</OL>Tutte queste condizioni dovrebbero essere giÖ soddisfatte se si ä lasciato che il programma di 
+installazione del Toolkit modificasse il file &cfgsys;.
+<BR>
+</BODY>
+</HTML>
+

@@ -1,0 +1,69 @@
+<HTML RESID=&ID_XSH_SETTINGS_DISKDETAILS;>
+<HEAD>
+    <TITLE>
+        &xwp;: dettagli unit…
+    </TITLE>
+</HEAD>
+<BODY>
+La pagina "Dettagli" nel blocco appunti impostazioni degli oggetti unit… disco mostra
+informazioni aggiuntive relative al file system dell'oggetto disco.
+<IFNDEF __NOXWPSETUP__>
+&xwp; sostituisce la pagina "Dettagli" originale con una nuova pagina migliorata.
+Per riottenere la pagina "Dettagli" originale, disabilitare l'opzione relativa, che si trova nell'oggetto
+<A HREF="objects/obj_xwpsetup.html">"Impostazioni &xwp;"</A>.
+</IFNDEF>
+<P>Fatta eccezione per il campo "Etichetta unit…", nessuna delle informazioni presenti pu•
+essere modificata da questa pagina.
+
+<OL><LI>In <B>"Dettagli unit…"</B> sono riunite le informazioni seguenti:
+
+<BR><OL><LI><B>Etichetta unit…:</B> Š l'etichetta di volume inserita a livello di file system,
+modificabile con il comando <CODE>LABEL</CODE> dalla riga comandi
+<IFNDEF __EWORKPLACE__>
+&os2;
+</IFNDEF>.
+&xwp; permette di modificare l'etichetta direttamente dal blocco appunti impostazioni Unit…,
+senza dover ricorrere alla linea comando. L'etichetta Š utile dato che molte finestre "Aprire file" mostrano solo
+l'etichetta volume, non potendo visualizzare il nome WPS dell'oggetto unit….
+<P>
+L'etichetta volume ha una lunghezza massima di 11 caratteri e viene automaticamente convertita in maiuscolo.
+
+<P><LI><B>File system:</B> il tipo di file system del disco. Sar… probabilmente
+"FAT", "HPFS", or "CDFS" (per unit… CD-ROM). Possono esserci anche altri tipi di strutture di registrazione
+se si sono installati File system Installabili (IFS) aggiuntivi.
+
+<P>Si veda <A HREF="glossary/gls_fs.html">"File system"</A> per un'introduzione ai file system.
+
+<P><LI><B>Dimensione blocchi:</B> mostra la dimensione dell'unit… di assegnazione (settore) minima sul disco.
+Se cio‚ si crea un file delle dimensioni di 1 byte, questa Š la quantit…
+minima di byte che viene occupata sul disco.
+<P>
+Per volumi <B>HPFS</B> questo numero Š sempre pari a 512.
+
+<P>Per volumi <B>JFS</B> questo numero dipende da quanto si Š specificato al momento della
+formattazione. I volumi JFS permettono blocchi di 512, 1024, 2048, e 4096 byte (4096 Š il valore assunto).
+
+<P>
+Per volumi <B>FAT</B> il valore varia con le dimensioni del disco. Dato che sui volumi FAT la tabella di allocazione file
+pu• gestire solo un numero limitato di settori, nel caso di dischi di maggiori dimensioni Š necessario utilizzare
+pi— byte per settore. Perci•, al crescere delle dimensioni del volume FAT vanno sprecati un maggior numero di byte:
+<PRE>
+Dimensioni volume     Dimensioni unit… di assegnazione
+&lt;   16 MB               4 KB
+&lt;   32 MB               2 KB
+&lt;   64 MB               2 KB
+&lt;  128 MB               2 KB
+&lt;  256 MB               4 KB
+&lt;  512 MB               8 KB
+&lt; 1024 MB              16 KB
+&lt; 2048 MB              32 KB</PRE>
+</OL><LI>In <B>"Assegnazione"</B> si trovano le informazioni riguardanti l'utilizzo
+del disco. Dimensioni totali, spazio utilizzato e spazio libero sono mostrati come byte e come unit… di assegnazione.
+Il valore "Byte" Š ottenuto moltiplicando il valore "Settore" per il valore "Byte per settore".
+<P>
+E' infine visualizzato un grafico che rappresenta lo spazio libero presente sul disco (in verde).
+</OL>
+<BR>
+</BODY>
+</HTML>
+

@@ -1,0 +1,64 @@
+<HTML RESID=&ID_XFH_AUTOCLOSEDETAILS;>
+<HEAD>
+    <TITLE>
+        Chiusura automatica sessioni non-PM
+    </TITLE>
+</HEAD>
+<BODY>
+Questa finestra permette di scegliere quali <A HREF="glossary/gls_sessions.html">sessioni</A> 
+non-PM verranno chiuse automaticamente al momento del riavvio della WPS o della &xshutdown;
+ed in che maniera.
+
+<P>Qualunque scelta si riferisce esclusivamente
+alla chiusura di  sessioni non-PM; i programmi PM non vengono chiusi da nessuna delle opzioni in questa 
+finestra.
+
+<P>Con "sessioni non-PM" si intendono tutte quelle non controllate dal Presentation Manager,
+per es. le sessioni &os2; o DOS, in finestra VIO o a schermo intero, come pure le sessioni &winos2;.
+Si veda <A HREF="glossary/gls_sessions.html">Tipi di sessione</A> per ulteriori informazioni.
+
+<P>Le impostazioni qui specificate superano quelle della finestra "Chiusura automatica sessioni non-PM" 
+nel blocco appunti impostazioni della Scrivania.
+
+<P>Per scegliere il modo di chiusura per una specifica sessione:
+
+<OL><LI>premere il tasto <B>"Nuovo"</B> per creare una nuova voce (inizialmente indicata 
+come "???");
+
+<BR><LI>indicare nella casella specifica il <B>titolo</B> che si desidera configurare.
+Il nome della sessione deve essere identico a quello che appare nell'Elenco Finestre di &os2; 
+(o sulla finestra VIO); 
+il sistema pi— pratico Š aprire la sessione e copiarne nella casella il titolo.
+
+<P>In ogni caso: il nome pu• essere abbreviato ed al momento della chiusura o riavvio della WPS 
+il confronto tra i nomi delle 
+sessioni non Š sensibile alla differenza tra maiuscole e minuscole.
+
+<P>Un esempio: si voglia chiudere la sessione chiamata
+<CITE>"finestra &os2; (CMD.EXE)"</CITE>; sono opzioni valide sia
+<CITE>"finestra"</CITE>, che <CITE>"finestra &os2; (cmd.exe)"</CITE>, che
+<CITE>"FiNeStrA &os2;"</CITE>. E' bene usare nomi di lunghezza sufficiente, per evitare
+che &xshutdown; possa confondersi tra sessioni diverse ma con nomi simili.
+<BR><LI>Questo Š il significato delle diverse opzioni di chiusura:
+
+<UL><BR><LI><B>"Ignora sessione"</B> <I>non chiude</I> la sessione, ma la ignora; Š equivalente
+al tasto "Ignora" nella finestra di controllo di &xshutdown;.
+
+<BR><LI><B>"Invia WM CLOSE a finestra PM"</B> simula la voce "Chiudere" del menu di sistema
+della sessione. Questa opzione dovrebbe funzionare tanto con le finestre VIO che con le sessioni a
+schermo pieno
+(anche queste ultime sono rappresentate sulla Scrivania da un'icona minimizzata). Con questo sistema 
+pu• per• darsi che &os2; presenti una finestra di conferma chiusura.
+
+<BR><LI><B>"Termina sessione"</B> termina la sessione senza ulteriori richieste usando
+l'API <A HREF="cpref.inf#DosKillProcess"><CODE>DosKillProcess</CODE></A>
+sul processo che la gestisce.<A HREF="_toolkitlink.html">*</A>
+
+</UL>Nota bene: nessuno di questi metodi salva il contenuto della sessione. Se si desidera salvare il 
+contenuto della sessione non inserirne il nome in questa finestra e disabilitare 
+"Chiusura automatica sessioni non-PM" nel blocco appunti impostazioni della Scrivania.
+</OL><BR>
+
+</BODY>
+</HTML>
+

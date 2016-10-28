@@ -1,0 +1,134 @@
+<HTML WIDTH=70% XPOS=right>
+<HEAD>
+    <TITLE>
+        Il meccanismo di funzionamento della &xshutdown;
+    </TITLE>
+</HEAD>
+<BODY>
+La funzione &xshutdown; mi ha richiesto molto lavoro, dato che da nessuna parte
+si trova documentato cosa effettivamente avviene durante il normale processo
+di chiusura.
+
+<P>&os2; per default riconosce due differenti API di chiusura:
+<UL><LI><CITE>DosShutdown</CITE> chiude i file aperti, svuota i buffer dei
+file-system e li smonta; ä la procedura normalmente richiamata premendo
+Ctrl-Alt-Canc. Le applicazioni non vengono chiuse nella maniera appropriata e lo stato
+della WPS non viene salvato.
+<BR><LI><CITE>WinShutdownSystem</CITE> invece ä un'API Presentation Manager che
+chiude tutte le finestre aperte, salva la WPS e solo alla fine richiama
+<CITE>DosShutdown</CITE>.
+E' la procedura di chiusura cui siamo abituati, che viene attivata selezionando "Chiusura"
+dal menu contestuale della Scrivania o dalle apposite icone sul Pannello di avvio o sul
+&warpcenter;.
+
+</UL>Il problema ä che non c'ä una "via di mezzo" tra queste due API. Se si richiama
+<CITE>DosShutdown</CITE> la WPS non viene salvata. Se si richiama <CITE>WinShutdownSystem</CITE>
+si ha la normale chiusura del sistema, senza possibilitÖ alcuna di intervento. E' stato
+quindi sostanzialmente necessario scrivere uno <CITE>WinShutdownSystem</CITE>
+completamente nuovo che adesso spiegheremo nel dettaglio. E' stato un lavoro
+difficile dato che IBM non dice praticamente nulla di quanto avviene durante
+<CITE>WinShutdownSystem</CITE>.
+
+<P>Nota: in &xwp; le routine "Chiusura avanzata" e "Riavvio Scrivania" condividono lo
+stesso codice; la differenza sta in quello che succede quando tutte le finestre sono state
+chiuse. Di qui in avanti userï il termine "&xshutdown;" riferendomi ad entrambe le routine,
+eccetto dove esplicitamente indicato.
+
+<P>&xshutdown; ä <STRONG>integrato nella WPS</STRONG> e si basa strettamente
+sulle classi sostitutive &xwp;. Ho intenzionalmente evitato di mettere il codice
+&xshutdown; in un file .EXE separato per due ragioni: in primo luogo, &xshutdown;
+deve poter accedere ai dati interni della WPS, che sono disponibili solo nel contesto
+SOM; secondo, ho voluto evitare che qualcuno potesse cercare di usare &xshutdown;
+separatamente, senza aver installato le classi &xwp;; una cosa del genere potrebbe
+danneggiare gravemente la Workplace Shell!
+In dettaglio, &xshutdown; si basa sulla classe sostitutiva XFldObject e sul
+sottoprocesso Worker di &xwp;, che assieme tengono traccia dei
+dati interni alla WPS.
+
+<P>Per capire come funziona la &xshutdown; bisogna comprendere come la <STRONG>WPS
+gestisce internamente i suoi oggetti</STRONG>. Ogni oggetto "incontrato" dalla WPS durante
+il popolamento di una cartella o con la lettura delle sue impostazioni o all'avvio di un
+programma od altro ancora, per il sistema ä "svegliato" ("awakened", nella terminologia
+WPS): esiste cioä nella memoria del sistema come oggetto SOM.
+<P>Solo di rado la WPS rilascia gli oggetti "svegliati", liberando la memoria ad essi
+associata e salvando i dati relativi agli oggetti sul disco.
+Questo ha due conseguenze:
+<OL><LI>Nel sistema ci sono sempre molti pió oggetti "svegli" di quanto non si pensi, dato
+che la maggior parte di essi in quel dato momento non ä visibile. Anche dopo che si ä chiusa
+una cartella, gli oggetti al suo interno restano "svegli" (questo per poter popolare pió rapidamente
+la cartella quando la si apre una seconda volta). La WPS quindi consuma sempre pió memoria ad
+ogni nuova cartella che si apre.
+(Se si ä attivato il file log per la &xshutdown; si puï vedere quanti sono gli oggetti "svegliati" che
+&xshutdown; deve salvare; saranno generalmente parecchie centinaia di oggetti, e questo anche se
+la &xshutdown; non salva tutti gli oggetti "svegliati" ma solo i discendenti delle classi WPFolder e
+WPAbstract. Dalla pagina "Stato XWorkplace" nell'oggetto "Impostazioni XWorkplace" si puï
+vedere quanti sono gli oggetti "svegli" in un dato momento).
+<BR><LI>Puï capitare che un cambiamento nei dati di un oggetto abbia effetto solo sull'oggetto
+SOM nella memoria, ma non sempre sia salvato sul disco o nei file OS2.INI / OS2SYS.INI.
+E' per questo motivo che si possono avere problemi con la WPS se, per esempio, si sposta
+una cartella contenente molti oggetti astratti e poi non si chiude correttamente il sistema:
+i dati fisici relativi al file sul disco e quelli nella WPS differiscono.
+
+</OL>E' a questo che serve alla &xshutdown; la classe <B>XFldObject</B>,
+che sostituisce quella WPObject. Ogni volta che un oggetto viene svegliato, la WPS richiama
+diversi metodi (tra gli altri <CITE>wpInitData</CITE> e <CITE>wpObjectReady</CITE>).
+XFldObject subentra a questi metodi segnalando l'indirizzo dell'oggetto in memoria al
+sottoprocesso Worker, che provvede a tenere opportunamente aggiornata
+una lista interna ad &xwp; di tutti gli oggetti "svegli" nel sistema. Per quanto ne so, non c'ä
+un'altra maniera per sapere quali oggetti sono "svegli" in un dato momento; per lo meno,
+non c'ä nessuna API documentata per conteggiarli.
+
+<P>Ora, quando <STRONG>si avvia la &xshutdown;</STRONG> per prima cosa vengono
+avviati due nuovi sottoprocessi, funzionanti parallelamente ai normali sottoprocessi WPS e specifici per
+le procedure di chiusura: il principale ä il sottoprocesso <STRONG>"Shutdown"</STRONG>, con la
+coda messaggi per la finestra di stato, mentre l'altro ä il sottoprocesso <STRONG>"Update",</STRONG> che
+controlla l'Elenco Finestre &os2; ed invia messaggi al sottoprocesso di chiusura principale per aggiornare
+la finestra di stato.
+Chiudere tutte le finestre aperte ä quindi una complessa interazione tra questi due sottoprocessi:
+"Shutdown" chiude una finestra e poi si mette in attesa finchÇ "Update" non rileva un cambiamento nell'Elenco
+Finestre (che sta a significare la corretta chiusura della finestra) ed invia un messaggio di conferma a
+"Shutdown", che passa a chiudere la finestra successiva e cosç via finchÇ non sono state chiuse tutte le finestre.
+
+<P>Una volta chiuse tutte le finestre, il sottoprocesso "Update" termina mentre "Shutdown" passa
+a scorrere la lista (di cui si ä detto prima) di tutti gli oggetti "svegli" in quel dato momento e forza
+il salvataggio dei dati su disco o nei file INI, richiamando per ciascun oggetto il metodo
+<CITE>wpSaveImmediate</CITE>. Quest'ultimo punto ä eseguito solo per gli oggetti derivati di WPAbstract
+e WPFolder, dato che secondo la mia esperienza le altre classi salvano comunque i loro dati in maniera
+sincronizzata (ho provato una volta a salvare tutti gli oggetti discendenti di WPFileSystem, ma questo
+ha causato la creazione di una quantitÖ di attributi estesi per ogni singolo file svegliato dalla WPS. E, a
+parte questo, la chiusura richiedeva un tempo infinito).
+
+<P>Infine, a seconda dell'azione scelta all'inizio, il sottoprocesso "Shutdown" segue una delle due
+strade seguenti:
+
+<UL><LI>Se si ä scelto <STRONG>"Riavvia Scrivania",</STRONG> "Shutdown" deve solo
+eseguire <CITE>DosExit(EXIT_PROCESS, 0)</CITE>. Dato che &xwp; ä parte del processo
+Workplace, e tutte le parti della WPS funzionano in un solo processo (la seconda istanza di
+<CITE>PMSHELL.EXE</CITE>), quest'azione chiude l'intera Workplace Shell. Al che il
+processo Shell (la prima istanza di <CITE>PMSHELL.EXE</CITE>) provvederÖ a riavviarla
+automaticamente.
+
+<BR><LI>Se si ä selezionato "Chiusura" e poi <STRONG>"Riavvio"</STRONG>,
+&xshutdown; provvede anche a salvare i file INI sul disco. Questo ä necessario
+perchÇ <CITE>DosShutdown,</CITE> che viene chiamato subito dopo, da solo
+non li salva (probabilmente perchÇ l'API relativa ai file INI appartiene al
+Presentation Manager).
+Dato che l'API PM per i file INI non consente semplicemente di chiudere i profili
+utente e sistema, &xwp; provvede a copiarli in due profili temporanei, cancella gli
+originali e mette poi al loro posto i profili temporanei opportunamente rinominati.
+Dopo <CITE>DosShutdown</CITE> ("Chiusura dei file system...") il sistema viene
+riavviato con una chiamata al device driver DOS.SYS.
+Questa funzione ä documentata in <A HREF="http://www.edm2.com/">EDM/2</A>
+volume 5, numero 9.
+
+<BR><LI>Se si ä selezionato "Chiusura" ma <STRONG>NON "Riavvio",</STRONG>
+&xshutdown; dopo <CITE>DosShutdown</CITE> disabilita l'Elenco finestre e poi
+blocca il sistema richiamando <CITE>DosEnterCritSec</CITE> e andando in un "loop"
+infinito. Dato che i file system sono giÖ stati tutti chiusi, non deve
+essere possibile nessun'altra azione al di fuori dello spegnimento del computer
+o del riavvio con Ctrl-Alt-Canc.
+</UL>
+</BODY>
+</HTML>
+
+

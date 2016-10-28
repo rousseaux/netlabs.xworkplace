@@ -1,0 +1,91 @@
+<HTML WIDTH=70% XPOS=right>
+<HEAD>
+    <TITLE>
+        Passo 1: un solo header
+    </TITLE>
+</HEAD>
+<BODY>
+&xwp; contiene attualmente un piccolo elemento di esempio (<CODE>toolkit\miniwdgt.c</CODE>)
+che contiene un elemento minimale, senza alcuna funzionalitÖ particolare.
+Tutto quel che questo elemento fa ä mostrare un punto interrogativo.
+
+<P>Questo mini elemento ä stato aggiunto per mostrare qualcosa con cui cominciare. Puï decisamente
+essere migliorato. Esso <I>non</I>
+
+<UL><LI>immagazzina alcuna impostazione (nemmeno i parametri di presentazione di colori o font --
+si veda il <A HREF="plug_52strings.html">passo 2</A> per questo);
+
+<P><LI>mostra suggerimenti (aiuto volante -- si consulti il <A HREF="plug_53tooltips.html">passo 3</A>;
+
+<P><LI>implementa una dialog di impostazioni (consultare il <A HREF="plug_55dialog.html">passo 4</A> per questo);
+
+</UL>In definitiva, una DLL plug-in deve fare le seguenti cose:
+
+<OL><LI>Deve <B>esportare tre procedure</B> per numero ordinale.
+
+<P><B>a)</B> La funzione esportata <B>"init"</B> (ordinale 1) viene chiamata
+una sola volta dallo &xcenter;, al momento del caricamento della DLL, che
+puï perï essere anche caricata in situazioni diverse dalla creazione di
+elementi, per cui non ä detto che questo sia l'unico caso. All'atto
+dell'inizializzazione, la DLL deve registrare la classe di finestre PM
+dell'elemento (tramite una chiamata a <CODE>WinRegisterClass</CODE>). In
+aggiunta, essa puï importare funzioni da <CODE>XFLDR.DLL</CODE>, il cui
+handle al modulo le ä stato dato (in via opzionale). Comunque, essa deve
+ritornare sempre un puntatore all'array delle strutture
+<A HREF="plug_9xcenterwidgetclass.html"><CODE>XCENTERWIDGETCLASS</CODE></A>
+contenute nella DLL, cosç che lo &xcenter; conosca quali sono le classi
+contenute.
+
+<P>Consultare <CODE>toolkit\miniwdgt.c</CODE> per sapere come si fa.
+
+<P><B>b)</B> La funzione esportata <B>"uninit"</B> (ordinale 2) viene chiamata quando la DLL ä scaricata
+dallo &xcenter;. Questa funzione puï eseguire operazioni di pulizia, se necessario.
+
+<P><B>c)</B> La funzione esportata <B>"query version"</B> (ordinale 3) viene chiamata anche prima della
+funzione "init" per controllare il numero di versione di &xwp; richiesto dall'elemento.
+
+<P><LI>La DLL plug-in deve poi contenere una <B>window procedure PM</B> per la classe dell'elemento.
+Nel nostro piccolo esempio, questa ä la funzione
+<CODE>fnwpSampleWidget</CODE>. La funzione "Init" ä responsabile della chiamata a
+<CODE>WinRegisterClass</CODE> su questa window procedure per creare una classe di finestre di PM da essa.
+
+<P>Questa funzione ha la classica struttura switch/case usata con ogni window procedure
+di PM. Ci sono perï alcune considerazioni da fare, spiegate pió sotto.
+
+<P><LI>In presenza di <CODE>WM_CREATE</CODE>, l'elemento <I>deve</I> immagazzinare il puntatore a
+<A HREF="plug_9xcenterwidget.html"><CODE>XCENTERWIDGET</CODE></A>
+che riceve con <CODE>mp1</CODE> nella sua window word
+<CODE>QWL_USER</CODE>. Ecco perchÇ l'esempio chiama
+<CODE>WinSetWindowPtr(hwnd, QWL_USER, mp1);</CODE> su WM_CREATE.
+
+<P><LI>All'apparire di <CODE>WM_CONTROL</CODE>, l'elemento deve gestire le notifiche dallo
+&xcenter;. Lo &xcenter; spedirÖ messaggi <CODE>WM_CONTROL</CODE> all'elemento quando
+vuole, per esempio, conoscerne le dimensioni.
+
+<P>I codici di notifica che lo &xcenter; usa con <CODE>WM_CONTROL</CODE>
+sono elencati in <CODE>toolkit\center.h</CODE>. Probabilmente non ne saranno aggiunti
+altri in futuro.
+
+<P><LI>Normalmente, in PM, tutti i messaggi non elaborati sono mandati a
+<CODE>WinDefWindowProc</CODE>. La cosa cambia con gli elementi: ä necessario passare sempre
+i messaggi non elaborati alla procedura predefinita dello &xcenter;,
+il cui indirizzo ä passato all'elemento nella struttura
+<A HREF="plug_9xcenterwidget.html"><CODE>XCENTERWIDGET</CODE></A>
+su <CODE>WM_CREATE</CODE>, nel campo <CODE>pfnwpDefWidgetProc</CODE>.
+(Proprio per questo ä necessario immagazzinare quella struttura nelle window words.)
+
+<P>Se non vengono passati i messaggi non gestiti, la funzionalitÖ dell'elemento
+sarÖ compromessa. Peggio ancora, cosç facendo si causeranno perdite di memoria, poichÇ
+la procedura di default degli elementi ä responsabile della ripulitura
+delle risorse e di notifiche importanti allo &xcenter;.
+
+<P><LI>Anche se viene fatta un'elaborazione personalizzata di <CODE>WM_DESTROY</CODE>, ä comunque
+necessario passare <I>sempre</I> <CODE>WM_DESTROY</CODE> a
+<CODE>pfnwpDefWidgetProc</CODE>. In caso contrario lo &xcenter; non puï ripulire correttamente le
+risorse dell'elemento.
+
+</OL>
+</BODY>
+</HTML>
+
+

@@ -1,0 +1,490 @@
+;
+; This file contains additions to XFLDR001.TMF (see remarks there).
+; Many definitions have been moved here because they are presently
+; not needed for eComStation and should thus be separated.
+;
+; This applies to the following messages (V0.9.16, IIRC):
+;
+;   --  FEATURES_*
+;
+;   --  XWPCLS_*
+;
+; With V0.9.20, more items were moved into this file (without
+; changing the actual messages):
+;
+;   --  S506DLG_*
+;
+;       Copyright (C) 1997-2015 Ulrich Mîller.
+;       This file is part of the XWorkplace source package.
+;       XWorkplace is free software. You can redistribute it and/or modify
+;       it under the terms of the GNU General Public License as published
+;       by the Free Software Foundation, in version 2 as it comes in the
+;       "COPYING" file of the XWorkplace main distribution.
+;       This program is distributed in the hope that it will be useful,
+;       but WITHOUT ANY WARRANTY, without even the implied warranty of
+;       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;       GNU General Public License for more details.
+;
+
+;
+; this item added with V0.9.20 (2002-08-10) [umoeller]
+;
+
+<--PRODUCTINFO-->: XWorkplace
+Versione &version;
+Built &date;
+
+;
+; the following item has changed V0.9.20 (2002-08-10) [umoeller]
+; and V1.0.1 (2003-02-02) [umoeller]
+;
+
+<--XFL0140-->: &copy;&nbsp;1997-2005 Ulrich Mîller.
+<BR>Supporto NLS italiano: &copy;&nbsp;2002-2006 Gabriele Gamba, Mentore Siesto.
+<P>
+Contiene codice &copy;&nbsp;2000-2015 Martin Lafaix, Paul Ratcliffe ed altri.
+<BR>Contiene codice derivato dalla Standard Function Library &copy;&nbsp;1991-99 iMatix corporation.
+<BR>Contiene codice derivato da expat 1.95.1 &copy;&nbsp;1998-2000 Thai Open Source Software Center Ltd.
+<P>
+La homepage Internet di &xwp; ä <A HREF="http://www.xworkplace.org">http://www.xworkplace.org</A>.
+<BR>Per segnalare i difetti riscontrati, usate il "bugtracker" ufficiale, in linea all'indirizzo <a href="http://xtracker.netlabs.org">http://xtracker.netlabs.org</a>.
+<P>
+Contattate &contact-user; per una discussione generale su &xwp;.
+<BR>Contattate &contact-dev; se siete (o desiderate diventare) pratici dei sorgenti di &xwp;.
+<P>
+&xwp; ä software gratuito, licenziato sotto la GNU General Public Licence (GPL), come riportato nel
+<A HREF="copying">file COPYING</A>, nella cartella di installazione. &xwp; non ä perciï coperto da <B>alcuna garanzia.</B>
+
+<P>Il codice sorgente completo ä disponibile sul CVS Netlabs. Si veda <A HREF="http://www.xworkplace.org/cvs.html">http://www.xworkplace.org/cvs.html</A> per i dettagli.
+Ogni redistribuzione e/o modifica di &xwp; secondo le condizioni GPL ä benvenuta.
+<P>
+Per dettagli fare riferimento alla sezione "Note", nella <A HREF="inf">Guida ad &xwp;</A>.
+
+; ---------------------------------------------------------------------------------
+;
+; V0.9.0:
+;
+; Here follow the toolinfos (fly-over help) for the new IBM1S506/DANIS506.ADD dialog
+; in "&os2; Kernel".
+; Each item starts with "S506DLG_", followed by the dialog ID from include\dlgids.h.
+; NOTE: The internal string buffer for these messages is limited to 3000 characters,
+;       so no string may exceed this value.
+;
+; ---------------------------------------------------------------------------------
+
+<--S506DLG_1621-->: "Quiet" fa sç che il driver non mostri informazioni durante l'avvio del sistema. E' l'impostazione assunta.
+
+<--S506DLG_1622-->: "Verbose" (/V) mostra informazioni su driver, adattatore e unitÖ durante l'avvio del sistema.
+
+<--S506DLG_1623-->: "Wait" (/W) mostra le stesse informazioni di "/V", ma una schermata per volta (ä necessario premere un tasto per visualizzare la schermata successiva).
+Valido per DANIS506.ADD e per le versioni pió recenti di IBM1S506.ADD.
+
+<--S506DLG_1624-->: Questa impostazione determina se il DMA Scatter/Gather ä abilitato.
+Secondo il Riferimento per i comandi di &os2; l'impostazione assunta ä "abilitato".
+
+<--S506DLG_1625-->: Seleziona l'adattatore 0 (controller "primario") per le impostazioni mostrate sotto.
+Si noti che "/A:0" viene aggiunto alla lista dei parametri solo se si imposta un settaggio non-default per questo adattatore o per una qualsiasi delle sue unitÖ.
+
+<--S506DLG_1626-->: Seleziona l'adattatore 1 (controller "secondario") per le impostazioni mostrate sotto.
+Si noti che "/A:1" viene aggiunto alla lista dei parametri solo se si imposta un settaggio non-default per questo adattatore o per una qualsiasi delle sue unitÖ.
+
+<--S506DLG_1627-->: Selezionando questa casella il driver ignora l'adattatore selezionato e tutte le unitÖ ad esso connesse.
+Puï essere necessario se si hanno pió di due adattatori nel sistema ed ä necessario caricare il driver IDE pió di una volta.
+
+<--S506DLG_1628-->: Questa impostazione consente al driver di resettare l'adattatore in caso ci sia un errore hardware.
+Nel Riferimento per i Comandi di &os2; si afferma che in caso di errori hardware (interrupt persi, timeout, comandi non validi) resettare l'adattatore puï aiutare; ma alcuni adattatori con comandi non-default potrebbero perdere dati in seguito a un reset.
+Disabilitare questo casella per proibire il reset dell'adattatore corrente.
+Abilitare questa casella per permettere esplicitamente il reset dell'adattatore corrente.
+Se la casella ä in grigio (stato indeterminato), non viene aggiunto alcun parametro.
+
+<--S506DLG_1629-->: Selezionare questa casella per scavalcare esplicitamente l'indirizzo di base della porta selezionato come default per questo adattatore.
+Puï essere necessario se ci sono pió di due adattatori nel sistema ed ä necessario caricare il driver IDE pió di una volta.
+
+<--S506DLG_1630-->: Se la casella a sinistra ä attiva, ä possibile specificare qui l'indirizzo di base della porta per l'adattatore corrente.
+Questo valore ä esadecimale.
+Il valore assunto ä 1F0 per l'adattatore 0 e 170 per l'adattatore 1.
+
+<--S506DLG_1631-->: Selezionare questa casella per scavalcare esplicitamente l'interrupt di default (IRQ) per questo adattatore.
+Puï essere necessario se ci sono pió di due adattatori nel sistema, ed ä necessario caricare il driver IDE pió di una volta.
+
+<--S506DLG_1632-->: Se la casella a sinistra ä attiva, ä possibile specificare qui l'interrupt (IRQ) per l'adattatore corrente.
+Il valore assunto ä IRQ 14 per l'adattatore 0 e IRQ 15 per l'adattatore 1.
+
+<--S506DLG_1634-->: Selezionare questa casella per scavalcare esplicitamente il canale DMA che viene usato per l'adattatore corrente.
+Puï essere necessario se ci sono pió di due adattatori nel sistema ed ä necessario caricare il driver IDE pió di una volta.
+
+<--S506DLG_1635-->: Se la casella a sinistra ä attiva, ä possibile specificare qui il canale DMA per l'adattatore corrente.
+Non ä stato possibile trovare nella documentazione i valori di default.
+
+<--S506DLG_1636-->: Selezionare questa casella per scavalcare esplicitamente l'indirizzo della porta DMA Scatter/Gather per l'adattatore corrente.
+Puï essere necessario se ci sono pió di due adattatori nel sistema, ed ä necessario caricare il driver IDE pió di una volta.
+
+<--S506DLG_1637-->: Se la casella a sinistra ä attiva, ä possibile specificare qui l'indirizzo di porta DMA scatter/gather per l'adattatore corrente.
+Questo ä un valore esadecimale.
+Secondo il Riferimento ai Comandi &os2; il valore assunto ä sempre 400.
+
+<--S506DLG_1638-->: Seleziona se il bus-mastering (DMA) verrÖ abilitato per l'adattatore corrente (/BM o /!BM pió il parametro dell'adattatore).
+DANIS506.ADD e le nuove versioni di IBM1S506.ADD supportano questo parametro anche per le unitÖ (vedi a destra in questa finestra).
+Per ulteriori notizie sul bus-mastering premere il tasto "Aiuto".
+Selezionare questa casella per abilitare esplicitamente il bus-mastering su tutte le unitÖ collegate all'adattatore corrente (/BM).
+Deselezionare la casella per disabilitare esplicitamente il bus-mastering sulle unitÖ connesse all'adattatore corrente (/!BM). Necessario per i vecchi dischi rigidi che non supportano il bus-mastering.
+Se la casella ä grigia (stato indeterminato), il driver deciderÖ da solo se abilitare il bus-mastering o meno.
+Notare che il driver IBM1S506.ADD fornito con Warp 3 e 4 ha il bus-mastering disabilitato per default, mentre i driver nei fixpack hanno l'opzione abilitata.
+DANIS506.ADD, al contrario, effettua delle prove per verificare se ä possibile abilitare il bus-mastering. Premere il tasto "Aiuto" per ulteriori dettagli.
+
+<--S506DLG_1639-->: Seleziona l'adattatore 0, unitÖ 0 ("primary master") per le impostazioni mostrate sotto.
+Si noti che "/A:0 /U:0" ä aggiunto alla lista dei parametri solo se per l'unitÖ vengono settati parametri non default.
+
+<--S506DLG_1640-->: Seleziona l'adattatore 0, unitÖ 1 ("primary slave") per le impostazioni mostrate sotto.
+Si noti che "/A:0 /U:1" ä aggiunto alla lista dei parametri solo se per l'unitÖ vengono settati parametri non default.
+
+<--S506DLG_1641-->: Seleziona l'adattatore 1, unitÖ 0 ("secondary master") per le impostazioni mostrate sotto.
+Si noti che "/A:1 /U:0" ä aggiunto alla lista dei parametri solo se per l'unitÖ vengono settati parametri non default.
+
+<--S506DLG_1642-->: Seleziona l'adattatore 1, unitÖ 1 ("secondary slave") per le impostazioni mostrate sotto.
+Si noti che "/A:1 /U:1" ä aggiunto alla lista dei parametri solo se vengono settati parametri non default per l'unitÖ.
+
+<--S506DLG_1643-->: Seleziona se il bus-mastering (DMA) verrÖ abilitato o disabilitato per l'unitÖ attuale (/BM o /!BM con il parametro dell'unitÖ).
+Questo parametro ä valido per le singole unitÖ solo se si usa DANIS506.ADD o le versioni pió recenti di IBM1S506.ADD.
+Altrimenti l'opzione vale per tutto l'adattatore (casella a sinistra). Vedere le note relative.
+Per note generali sul bus-mastering premere il tasto "Aiuto".
+
+<--S506DLG_1644-->: Selezionare questa casella per scavalcare esplicitamente il tempo di ripristino da errore per l'unitÖ corrente (/T:xxx).
+
+<--S506DLG_1645-->: Se la casella qui sopra ä abilitata, ä possibile impostare esplicitamente il tempo di ripristino di errore per l'unitÖ scelta (in secondi).
+Secondo il Riferimento Comandi &os2; il valore assunto ä 30 secondi. Si potrebbero desiderare valori inferiori se si usano applicazioni fault-tolerant. Non possono essere specificati valori sotto i cinque secondi.
+
+<--S506DLG_1647-->: Selezionare questa casella per specificare esplicitamente la geometria dell'unitÖ corrente. Altrimenti il driver determinerÖ da sÇ la geometria in accordo con il setup del BIOS (opzione valida nella maggior parte dei casi).
+Questo parametro ä ormai poco utile, dato che tutti i BIOS moderni hanno l'autorilevazione IDE e il supporto LBA incorporati.
+
+<--S506DLG_1648-->: Se la casella qui sopra ä abilitata, ä possibile specificare qui la geometria del drive.
+Non ä stato possibile trovare informazioni utili sulla sintassi del parametro /GEO:xxx, per cui ä necessario inserire a mano la parte "xxx".
+Secondo la "Storage Device Driver Reference" nell'IBM Device Driver Development Kit (DDK), questo puï essere un numero decimale (0-47) per indicare uno dei tipi di driver default del BIOS, cosa utile probabilmente con dischi costruiti prima del 1985 circa, oppure un valore nella forma "(c,h,s)", con i tre numeri decimali che specificano i cilindri, le testine, e i settori del drive.
+Nota bene: questa funzione non ä mai stata verificata.
+
+<--S506DLG_1652-->: Determina se il Set Multiple Support (SMS, block mode) ä abilitato per l'unitÖ corrente.
+SMS significa che pió di un blocco di dati (settore di disco) puï essere trasferito in un solo passaggio, il che incrementa le prestazioni.
+Se la casella ä grigia (stato indeterminato), il driver determinerÖ automaticamente se il disco supporta l'SMS.
+Selezionare questa casella per abilitare esplicitamente l'SMS per l'unitÖ (/SMS), se il driver non rileva il supporto SMS automaticamente.
+Deselezionare questa casella per disabilitare esplicitamente l'SMS per l'unitÖ (/!SMS). Notare che, con le nuove versioni di IBM1S506.ADD, /!SMS viene ignorato se il driver ritiene appropriato abilitare l'SMS, il che puï causare problemi. Usare DANIS506.ADD per disabilitare l'SMS esplicitamente.
+Secondo quanto riportato in DANIS506.DOC, ogni disco rigido ha una dimensione di SMS massima, definita dal produttore e specifica per ogni modello, che il driver provvede a rilevare.
+
+<--S506DLG_1653-->: Selezionare questa casella per abilitare esplicitamente il Logical Block Addressing (LBA) per l'unitÖ corrente, se il driver non lo rileva correttamente.
+L'LBA ä una funzionalitÖ del BIOS introdotta alcuni anni fa, per poter accedere a dischi rigidi di grande capacitÖ (oltre i 504 MB) rimappando in modo logico la geometria del disco. Se si usano dischi rigidi recenti abilitare questa impostazione nelle impostazioni del BIOS; &os2; la rileverÖ automaticamente.
+
+<--S506DLG_1654-->: Determina se l'unitÖ ä gestita o no dallo Storage Device Manager (OS2DASD.DMD) di &os2;, che ä l'interfaccia tra i driver adattatore (*.ADD) e i file system di &os2; (FAT, HPFS, JFS...).
+Questo driver durante l'avvio del sistema segnala le unitÖ logiche al kernel di &os2;, cosç da consentire l'assegnazione delle lettere di unitÖ.
+Deselezionare questa casella per disabilitare esplicitamente il supporto di &os2; al disco corrente (non verrÖ assegnata nessuna lettera identificativa di unitÖ).
+Selezionare questa casella per abilitare il supporto &os2; per il disco corrente.
+Se la casella ä grigia (stato indeterminato), il driver IDE deciderÖ da solo se &os2; dovrÖ supportare o meno il disco, il che ä la cosa pió appropriata nella maggior parte dei casi.
+
+<--S506DLG_1655-->: Selezionare questa casella per forzare la disponibilitÖ dell'unitÖ corrente, anche se il driver determina che il disco non ä installato.
+Impostazione utile per dispositivi esterni che possono essere accesi separatamente, per es. lettori CD-ROM (per i quali ä necessario abilitare anche la casella "ATAPI").
+
+<--S506DLG_1656-->: Se questa casella ä selezionata, l'unitÖ corrente viene sempre considerata un lettore CD-ROM ATAPI.
+Se la casella non ä selezionata, l'unitÖ corrente non viene considerata mai come un lettore ATAPI CD-ROM.
+Se la casella ä grigia (stato indeterminato), il programma di controllo determina automaticamente se l'unitÖ ä o meno un lettore CD-ROM ATAPI.
+Questa impostazione ä utile per CD-ROM esterni che possono essere spenti/accesi separatamente: per questi, bisogna selezionare anche la casella "Forzare disponibilitÖ".
+
+<--S506DLG_1657-->: Questo campo ä di sola lettura e mostra i parametri che verranno passati al driver IDE nel file CONFIG.SYS; viene aggiornato dinamicamente ogni volta che si cambiano i settaggi nella finestra.
+Premendo il tasto "OK" i parametri impostati vengono copiati nella pagina "Programmi controllo" dell'oggetto "Kernel &os2;".
+
+<--S506DLG_1660-->: Selezionare questa casella per specificare esplicitamente la velocitÖ del clock del bus PCI.
+Disponibile solo per DANIS506.ADD.
+
+<--S506DLG_1661-->: Se la casella a sinistra ä stato abilitata ä possibile specificare la velocitÖ di clock del bus PCI.
+Dalla documentazione di DANIS506.ADD: "Alcuni utenti sono costretti (o si sentono costretti ;-) a far andare il bus PCI delle loro schede madri a frequenze superiori ai 33MHz ottimali (molti processori Cyrix, ad esempio, hanno bisogno di velocitÖ inconsuete del front side bus, difficilmente ottenibili con 33MHz). Questa operazione causa temporizzazioni EIDE troppo lente o troppo veloci: se il primo caso puï dare fastidio, nel secondo si superano le capacitÖ dell'interfaccia EIDE, col rischio di  distorsioni nei dati.
+Se la frequenza di clock del bus PCI della scheda madre ä nota, si puï aggiungere il parametro /PCLK:x (x ä la frequenza di clock del PCI in MHz). Se non si conosce la frequenza di clock, settare x a zero, cosç da far cercare al driver la frequenza di clock corretta. Il clock PCI (ricavato o fornito dall'utente) viene ordinato in quattro classi di velocitÖ (25MHz, 33MHz, 37MHz, e 41MHz) e riportato al tempo di boot. Per ognuna di queste classi il driver *tenta* di scegliere le temporizzazioni ottimali, ma a causa dei limiti dei vari chipset questo non ä sempre possibile.
+La maggior parte delle schede madri comunque regolano il bus PCI alla frequenza di 33MHz: utilizzare questo parametro solo se ä davvero necessario!"
+Per dettagli ed informazioni tecniche, fare riferimento al file DANIS506.DOC.
+Disponibile solo per DANIS506.ADD.
+
+<--S506DLG_1663-->: Selezionare questa casella per abilitare il supporto generico al busmastering per chipset sconosciuti.
+Premere il tasto "Aiuto" per altre informazioni sul busmastering.
+Disponibile solo su DANIS506.ADD.
+
+<--S506DLG_1664-->: Selezionare questa casella per trattare tutti i chip EIDE come "sconosciuti".
+Premere il tasto "Aiuto" per altre informazioni sul busmastering.
+Disponibile solo su DANIS506.ADD.
+
+<--S506DLG_1665-->: Selezionare questa casella per abilitare il "Fix Matrox" per DANIS506.ADD.
+Dal file DANIS506.DOC: "Se nel sistema vi sono un controller PCI EIDE e una scheda video Matrox, l'avvio del sistema potrebbe interrompersi con un trap 8. Ciï ä possibile a causa del pessimo funzionamento del driver Matrox, che durante l'inizializzazione interroga tutte le porte con indirizzo Cx0yh (x = 0..F, y = 0..3), anche se questi indirizzi non sono assegnati alla scheda video (non ä una buona pratica menare colpi a caso per vedere se da qualche parte esce un "MGA"...).
+Se un altro dispositivo PCI ha assegnati degli indirizzi che si accordano con lo schema qui sopra, puï succedere *qualsiasi cosa*. Per eliminare il problema ho aggiunto l'opzione /MGAFIX, che rileva l'hardware EIDE con indirizzi a rischio e tenta di modificarli riprogrammando i decoder di indirizzo cosç da non renderli pió soggetti a scansione.
+Nota bene: da usarsi solo in casi disperati!"
+Disponibile solo su DANIS506.ADD.
+
+<--S506DLG_1666-->: Selezionare questa casella per specificare, per l'unitÖ corrente, il tempo di inattivitÖ passato il quale l'unitÖ rallenterÖ la velocitÖ di rotazione dei dischi.
+Disponibile solo su DANIS506.ADD.
+
+<--S506DLG_1667-->: Se la casella a sinistra ä attivata, specificare qui il tempo di inattivitÖ in minuti. Specificare 0 disattiva la funzione di spin-down.
+Disponibile solo su DANIS506.ADD.
+
+<--S506DLG_1668-->: Utilizzare questa casella per regolare in maniera fine la velocitÖ del flusso di dati permessa per il bus-mastering DMA.
+Dal file DANIS506.DOC: "molti controller EIDE non possono selezionare modalitÖ PIO e multiword DMA indipendentemente l'uno dall'altro, perchÇ queste modalitÖ condividono i registri di temporizzazione. Ciï ä dovuto a motivi storici e alla similaritÖ del cicli di temporizzazione, e vale per tutti i controller supportati, Promise Ultra e Cyrix MediaGX esclusi.
+Per trattare questa situazione il driver sceglie il ciclo pió lento tra i modi PIO e MW-DMA proposti."
+Disponibile solo su DANIS506.ADD.
+
+<--S506DLG_1670-->: Se la casella qui sopra ä attivata, questa opzione permette di specificare la modalitÖ Ultra DMA permessa per l'unitÖ corrente.
+Secondo il file DANIS506.DOC, i valori validi sono:
+    0  -  disabilita l'Ultra DMA
+    1  -  limita all'Ultra DMA mode 0
+    2  -  limita all'Ultra DMA mode 1
+    3  -  limita all'Ultra DMA mode 2
+    4  -  limita all'Ultra DMA mode 3 (44MB/s)
+    5  -  limita all'Ultra DMA mode 4 (66MB/s)
+Impostando UDMA=0 e MWDMA=0 si disattiva il bus-mastering per l'unitÖ corrente, dato che non resta disponibile alcun modo DMA.
+Disponibile solo su DANIS506.ADD.
+
+<--S506DLG_1672-->: Se la casella qui sopra ä attivata, questa opzione permette di specificare il modo Multiword-DMA permesso per l'unitÖ corrente.
+Secondo il file DANIS506.DOC, i valori validi sono:
+    0  -  disabilita MW DMA
+    1  -  limita al  MW DMA mode 0 (in S506.ADD effettivamente lo stesso di 0)
+    2  -  limita al  MW DMA mode 1
+    3  -  limita al  MW DMA mode 2
+Impostando UDMA=0 e MWDMA = 0 si disattiva il bus-mastering per l'unitÖ corrente, dato che non resta disponibile alcun modo DMA.
+Disponibile solo su DANIS506.ADD.
+
+<--S506DLG_1674-->: Se la casella qui sopra ä attivata, questa opzione permette di specificare il modo Programmed I/O (PIO) disponibile per l'unitÖ corrente.
+Secondo il file DANIS506.DOC, i valori validi sono:
+    0  -  limita al PIO mode 0
+    1  -  limita al PIO mode 1 (in S506.ADD effettivamente PIO 0)
+    2  -  limita al PIO mode 2 (in S506.ADD effettivamente PIO 0)
+    3  -  limita al PIO mode 3 (con controllo di flusso)
+    4  -  limita al PIO mode 4 (con controllo di flusso)
+Disponibile solo su DANIS506.ADD.
+
+<--S506DLG_1675-->: Questa impostazione determina se l'unitÖ verrÖ considerata rimovibile o meno.
+Dal file DANIS506.DOC: "Se si cerca di effettuare il boot da un disco rimovibile, si resterÖ delusi. Per poter effettuare il boot da questo tipo di unitÖ, ä necessario che venga considerata come un'unitÖ fissa. Il che ä possibile utilizzando il parametro /!RMV.
+Risulta poi che alcuni dischi Syquest abbiano firmware malfatti, che non riportano correttamente il supporto della caratteristica di disco rimovibile. Per segnalare ad &os2; che si tratta di dischi rimovibili, aggiungere l'opzione /RMV all'unitÖ appropriata."
+Disponibile solo su DANIS506.ADD.
+
+<--S506DLG_0001-->: Premendo "OK" la finestra di dialogo viene chiusa ed i parametri nel campo "Nuovi parametri" della pagina "Programmi controllo" nel blocco appunti "Kernel &os2;" vengono salvati.
+
+<--S506DLG_0002-->: Premendo "Annullare" la finestra viene chiusa senza che la pagina "Programmi controllo" nel blocco appunti "Kernel &os2;" sia modificata.
+
+<--S506DLG_0095-->: Premendo "Valori assunti" la finestra viene riportata allo stato di default (nessun parametro specificato in CONFIG.SYS).
+
+; ---------------------------------------------------------------------------------
+;
+; V0.9.0:
+;
+; Here follow the toolinfos (fly-over help) for the new "Features" page (XWPSetup).
+; Each item starts with "FEATURES_", followed by the dialog ID from include\dlgids.h.
+; NOTE: The internal string buffer for these messages is limited to 3000 characters,
+;       so no string may exceed this value. XWP will crash with longer strings.
+;
+; ---------------------------------------------------------------------------------
+
+<--FEATURES_6000-->: Abilitando "Sostituisci icone" &xwp; rimpiazza le icone standard WPS con altre pió gradevoli e comodamente configurabili.
+Funzione introdotta con XFolder 0.84.
+Consultare la "Guida ad &xwp;" per dettagli ulteriori.
+
+<--FEATURES_6002-->: Abilitando "Sostituisci la pagina "Icona..." la pagina "Icona" in tutti gli oggetti impostazioni viene sostituita con una nuova versione migliorata, che consente modifiche pió agevoli, permette di visualizzare le proprietÖ interne dell'oggetto e di impostare comodamente un tasto rapido globale (se lo Hook &xwp; ä attivato; si veda "Funzioni relative a mouse e tastiera", pió sotto).
+Funzione introdotta con &xwp; 0.9.16; sostituisce la pagina "Oggetto" presente nelle versioni precedenti di &xwp;.
+
+<--FEATURES_6003-->: Abilitando questa funzione &xwp; riunisce in una sola pagina le tre pagine "File" normalmente presenti nel blocco appunti impostazioni di cartelle e file dati.
+Viene inoltre aggiunta una pagina per visualizzare gli attributi estesi nonchÇ un grafico a torta nella pagina "Dettagli" degli oggetti UnitÖ.
+Funzione introdotta con &xwp; 0.9.0.
+
+<--FEATURES_6004-->: "Suoni di sistema avanzati" permette di definire altri suoni di sistema oltre a quelli offerti dalla WPS: sono disponibili suoni aggiuntivi per i menu contestuali, la selezione di oggetti ed altro.
+Come di consueto, anche i nuovi suoni si impostano dall'oggetto "Suono".
+Funzione introdotta con XFolder 0.70.
+
+<--FEATURES_6001-->: Abilitando "Ridimensiona le pagine del blocco..." &xwp; provvede a ridimensionare automaticamete alcune delle pagine del blocco appunti impostazioni se questo viene ridimensionato.
+Utile per alcune delle pagine impostazioni pió complesse di &xwp;, dato che permette di visualizzare pió dati; questa funzione ha effetto solo su alcune delle nuove pagine impostazioni di &xwp; e non influenza le pagine standard WPS.
+Funzione introdotta con &xwp; 0.9.4.
+
+<--FEATURES_6005-->: Abilitando "Correggi titoli classi" &xwp; sostituisce i titoli classi di cartelle, file e unitÖ.
+I titoli delle classi sono visibili nella terza colonna della "Visualizzazione dettagli" (nonchÇ nelle barre di stato, se si ä abilitata l'opzione relativa). Se perï si sono installate le classi WPS di rete, questi titoli risultano molto poco significativi.
+&xwp; permette di reimpostarli nuovamente su "Cartella", "File" e "UnitÖ".
+
+<--FEATURES_6006-->: Abilitando "Sostituisci le pagine di aiuto standard" &xwp; sostituisce diverse delle pagine di aiuto WPS con nuove versioni, pió ricche di informazioni e pió aggiornate.
+La sostituzione ha effetto sulle pagine relative a molti degli oggetti standard WPS, quelle cioä che si aprono premendo F1 dopo aver selezionato uno degli oggetti sulla Scrivania.
+Funzione introdotta con &xwp; 0.9.20.
+
+<--FEATURES_6011-->: Selezionando "Abilita barre di stato" viene aggiunta in tutte le cartelle una barra contenente informazioni dettagliate sugli oggetti selezionati.
+Vengono inoltre aggiunte due nuove pagine di impostazioni nell'oggetto "Workplace Shell", che permettono di configurare le barre di stato in dettaglio; ä comunque possibile definire per ogni cartella se visualizzare o meno la barra di stato.
+Per personalizzare questa funzione, dopo averla abilitata aprire l'oggetto "Workplace Shell" alle pagine "Barra di stato".
+Fare riferimento alla "Guida ad &xwp;" per tutti i dettagli; funzione introdotta con XFolder 0.70.
+
+<--FEATURES_6012-->: Selezionando "Abilita la funzione "Disporre a griglia"" viene aggiunta una voce "Disporre a griglia" nel menu contestuale delle cartelle, che pemette di riordinare gli oggetti contenuti su una griglia invisibile, facilitandone l'allineamento.
+Viene inoltre aggiunta una pagina "Griglia" nell'oggetto "Workplace Shell", che permette di definire la dimensione della griglia da usare.
+Fare riferimento alla "Guida ad &xwp;" per i dettagli su questa funzione, introdotta con XFolder 0.50.
+
+<--FEATURES_6013-->: Selezionando "Abilita tasti rapidi" diventa possibile definire dall'oggetto "Workplace Shell" nuovi tasti scorciatoia per pió di 30 funzioni specifiche per le cartelle (ad es. "Seleziona tutto").
+Funzione introdotta con XFolder 0.50; fare riferimento alla "Guida ad &xwp;" per i dettagli e per le impostazioni assunte dei tasti rapidi.
+
+<--FEATURES_6014-->: "Abilita ordinamento avanzato" rimpiazza la funzione di ordinamento standard WPS per le cartelle; se abilitato, dall'oggetto "Workplace Shell" si possono definire opzioni globali di ordinamento, pur restando possibile mantenere le impostazioni assunte per le singole cartelle.
+Vengono inoltre aggiunti nuovi criteri di ordinamento, come "Ordinare per estensione" o "Ordinare, cartelle davanti".
+Funzione introdotta con XFolder 0.70; fare riferimento alla "Guida ad &xwp;" per i dettagli.
+
+<--FEATURES_6015-->: La funzione "Cartelle turbo" sostituisce la procedura interna di memorizzazione degli oggetti "risvegliati" nelle cartelle, come pure il meccanismo di associazione file dati - programmi.
+&xwp; implementa nuovi algoritmi per la localizzazione degli oggetti nelle cartelle, nettamente pió veloci rispetto a quelli della WPS.
+Abilitando questa funzione, il popolamento delle cartelle risulterÖ perciï pió veloce, mentre il meccanismo di associazione dei file diventerÖ pió flessibile, non essendo pió basato soltanto sul tipo file.
+E' necessario che la classe sostitutiva XWPFileSystem sia installata. La modifica di questa impostazione richiede il riavvio della WPS.
+Si veda la "Guida ad &xwp;" per i dettagli.
+
+<--FEATURES_6016-->: Abilitando questa impostazione &xwp; aggiunge la nuova modalitÖ "visualizzazione ad elenco" al sottomenu "Aprire come", presente nel menu contestuale di tutte le cartelle.
+La modalitÖ visualizzazione ad elenco consiste di due finestre di visualizzazione unite ma distinte: la finestra a sinistra ä una visualizzazione ad albero della cartella che si ä aperta, mentre nella finestra di destra sono visualizzati gli oggetti presenti nella cartella selezionata a sinistra.
+Una funzionalitÖ simile ä presente in Windows.
+
+<--FEATURES_6051-->: Lo Hook &xwp; ä uno "hook" PM globale, che permette di implementare alcune delle funzioni caratteristiche di NPS WPS e WarpEnhancer: primo piano automatico, scorrimento delle finestre con il terzo tasto del mouse, oggetti sugli angoli dello schermo ed altre funzioni simili.
+E' inoltre indispensabile per il funzionamento dei tasti rapidi globali e dell'elemento Elenco finestre dello &xcenter;.
+Abilitandolo vengono create pagine di impostazioni addizionali negli oggetti "Tastiera" e "Mouse", nella cartella Impostazione del sistema.
+Funzione introdotta con &xwp; 0.9.0; fare riferimento alla Guida ad &xwp; per i dettagli.
+
+<--FEATURES_6052-->: "Puntatori animati" sostituisce la pagina "Puntatori" nell'oggetto "Mouse" (cartella Impostazione del sistema) con una nuova, che permette di definire puntatori animati per il mouse, al posto di quelli statici di &os2;.
+Questa funzione era disponibile nel programma "Animated Mouse Pointers for &os2;", ma ä ora parte integrante di &xwp; 0.9.0.
+Fare riferimento alla Guida ad &xwp; per i dettagli.
+
+<--FEATURES_6053-->: Abilitando questa funzione diventa possibile assegnare un "tasto rapido" ad ogni oggetto WPS: premendo una combinazione di tasti, l'oggetto si apre nella sua modalitÖ di visualizzazione assunta.
+Il tasto rapido desiderato si sceglie dalla pagina "Icona", presente nel blocco appunti impostazioni di tutti gli oggetti; nell'oggetto "Tastiera" viene aggiunta una pagina "Tasti rapidi", che riporta l'elenco dei tasti rapidi assegnati.
+Per utilizzare questa opzione assicurarsi che siano attivi sia lo Hook &xwp; che la funzione "Sostituisci pagina "Icona"", in "Funzioni generali", senza la quale non ä possibile configurare i tasti rapidi.
+Funzione introdotta con &xwp; V0.9.1.
+
+<--FEATURES_6054-->: "&pgr;" abilita le scrivanie virtuali: &xwp; permette infatti di utilizzare contemporaneamente pió scrivanie, passando comodamente dall'una all'altra.
+Abilitando questa opzione vengono inserite alcune pagine di configurazione aggiuntive nell'oggetto "Schermo" (nuovo con &xwp;).
+Quest'opzione non ä disponibile se lo Hook &xwp; non ä attivo.
+
+<--FEATURES_6021-->: Questa funzione rimpiazza la pagina "Archivio" standard nel blocco appunti impostazioni della Scrivania e permette di definire condizioni precise per attivare l'archiviazione della Workplace Shell.
+Questa funzionalitÖ, presente nel programma "WPSArcO", ä stata integrata in &xwp; a partire dalla versione 0.9.0, per permettere una pió facile configurazione.
+Fare riferimento alla "Guida ad &xwp;" per ulteriori dettagli.
+
+<--FEATURES_6022-->: "Riavvio WPS" aggiunge una nuova voce nel menu contestuale della Scrivania, che permette di riavviare la sola WPS invece dell'intero sistema. Al contrario di altre utilitÖ analoghe, &xwp; salva lo stato della WPS prima di riavviarla.
+Viene aggiunta anche una pagina "&xsd;" nel blocco appunti impostazioni della Scrivania, che permette di configurare questa funzione, introdotta con XFolder 0.60.
+Fare riferimento alla Guida ad &xwp; per ulteriori dettagli.
+
+<--FEATURES_6023-->: "Abilita chiusura avanzata" sostituisce la &xsd; alla sequenza di chiusura standard &os2;; questa nuova funzione permette di interrompere la chiusura in corso, ignorare i programmi bloccati ed altro ancora.
+Viene aggiunta anche una pagina di configurazione "&xsd;" al blocco appunti impostazioni della Scrivania.
+Funzione introdotta con XFolder 0.60; fare riferimento alla "Guida ad &xwp;" per ulteriori dettagli.
+
+<--FEATURES_6024-->:  Attivando la funzione "Verifica Scrivania all'avvio" &xwp; verifica la validitÖ della Scrivania ad ogni avvio del sistema, evitando l'inutile messaggio di errore WPS "Impossibile trovare la Scrivania".
+Se vengono rilevati dei problemi (per es. la corruzione della tabella dei marcatori file-system o lo smarrimento dell'ID <WP_DESKTOP>) &xwp; cerca di porvi rimedio.
+Questa funzione puï essere disabilitata nel caso vengano rilevati errori cui non corrisponde un reale malfunzionamento della Scrivania.
+
+<--FEATURES_6025-->: Attivando "Popola Scrivania" &xwp; popola la cartella Scrivania durante l'avvio della WPS, prima dell'effettiva apertura della Scrivania.
+Questa funzione dovrebbe servire ad eliminare i blocchi all'avvio, riscontrati da numerosi utenti, che si verificano quando la Scrivania contiene molti oggetti e la WPS non riesce ad inizializzarli nel giusto ordine.
+;
+; FEATURES_6041 removed with V1.0.1 (2002-12-15) [umoeller]
+;
+;<--FEATURES_6041-->: Attivando "Associazioni per tipo di file avanzate", per associare file e programmi la WPS usa solo i tipi di file e non pió le estensioni dei nomi; queste ultime sono ancora utilizzate solo quando bisogna assegnare un tipo ai file che non ne hanno uno.
+;Diventa cosç possibile definire dei tipi gerarchici, in modo che, per es., tutti i file del tipo "codice C" appartengano anche al tipo pió generale "Testo piano".
+;Abilitando questa opzione viene creata una nuova pagina di impostazioni nell'oggetto "Workplace Shell", specifica per i tipi di file.
+;Funzione introdotta con &xwp; 0.9.0; fare riferimento alla "Guida ad &xwp;" per i dettagli.
+
+<--FEATURES_6042-->: Sostituisce la finestra di dialogo "Inserire" che viene richiamata selezionando "Inserire" dal menu contestuale delle cartelle (o dal menu a caduta "Editare" nella barra menu delle cartelle).
+La nuova finestra di dialogo sostitutiva mantiene un elenco degli ultimi nomi oggetto nonchÇ dell'ultimo formato e classe WPS usati per l'inserimento.
+Svolge inoltre in una certa misura la funzione di visualizzatore Appunti e si aggiorna automaticamente quando il contenuto degli appunti cambia.
+Funzione introdotta con &xwp; V0.9.20.
+
+<--FEATURES_6043-->: Sostituisce la finestra di dialogo "Il file esiste" che viene visualizzata quando si sposta un file in una cartella che contiene giÖ un oggetto con lo stesso nome; questa finestra sostitutiva ä pió pratica e mostra pió informazioni di quella standard &os2;.
+Funzione introdotta con XFolder 0.80.
+
+<--FEATURES_6044-->: Rimpiazza la finestra modale di sistema che appare quando si tenta di accedere a un'unitÖ disco non pronta.
+Attivando questa funzione si avrÖ una finestra di dialogo normale, comprendente anche l'opzione "Riprova".
+Funzione introdotta con XFolder 0.85.
+
+<--FEATURES_6047-->: Questa funzione sostituisce la gestione WPS dei "file handle" in OS2SYS.INI, nel tentativo di ridurre il numero di marcatori file inutili.
+Vedere la "Guida ad &xwp;" per ulteriori informazioni su questa funzione, introdotta con &xwp; 0.9.5.
+
+<--FEATURES_6048-->: Abilitando "Sostituire autoaggiornamento cartelle" &xwp; disabilita il sottoprocesso WPS che controlla il file-system per aggiornare automaticamente le cartelle, sostituendolo con sottoprocessi propri; l'implementazione di questa funzione in &xwp; ha il vantaggio di ridurre il numero dei marcatori file creati.
+Abilitare o disabilitare questa funzione richiede un riavvio della WPS; una volta sostituito il meccanismo standard WPS sarÖ possibile attivare o disattivare in tempo reale l'autoaggiornamento dalla pagina "Visualizzare" dell'oggetto "Workplace Shell".
+Si veda la "Guida ad &xwp;" per ulteriori informazioni su questa funzione, introdotta con &xwp; 0.9.9.
+
+<--FEATURES_6049-->: Abilitando "Sostituisci finestra di dialogo file" &xwp; sostituisce la finestra di dialogo file standard WPS con una nuova versione.
+Tale sostituzione influenza perï solo le finestre di dialogo appartenenti ai processi WPS. Per &xwp; ä per il momento ancora impossibile sostituire tutte le finestre di dialogo file del sistema.
+
+<--FEATURES_6045-->: Attivando questa funzione tutte le operazioni di cancellazione effettuate via Workplace Shell vengono controllate da &xwp;.
+E' compreso sia l'uso del tasto "Canc" che la voce di menu "Cancellare", nel menu contestuale di tutti gli oggetti del sistema.
+&xwp; puï spostare gli oggetti nel nuovo cestino di &xwp; (creato non appena si attiva questa funzione) oppure cancellarli immediatamente, se durante la cancellazione si tiene premuto il tasto "Maiusc" della tastiera.
+Se si preferisce che &xwp; distrugga sempre gli oggetti cancellati, senza prima spostarli nel cestino, selezionare l'impostazione apposita nel blocco appunti impostazioni del cestino.
+Si veda la "Guida ad &xwp;" per i dettagli; funzione introdotta con &xwp; 0.9.1.
+
+; ---------------------------------------------------------------------------------
+;
+; V0.9.0:
+;
+; Here follow the toolinfos (fly-over help) for the new "&xwp; Classes" dialog
+; (XWPSetup).
+; Each item starts with "XWPCLS_", followed by the dialog ID from include\dlgids.h.
+; NOTE: The internal string buffer for these messages is limited to 3000 characters,
+;       so no string may exceed this value.
+;
+; ---------------------------------------------------------------------------------
+
+<--XWPCLS_1251-->: "XFldObject" sostituisce la classe "WPObject" ed ä necessaria per il funzionamento di &xwp;. Non puï essere deselezionata.
+
+<--XWPCLS_1252-->: "XFolder" sostituisce la classe "WPFolder"; ä la classe che permette molti dei miglioramenti offerti da &xwp;, come i menu contestuali estesi, l'ordinamento esteso, le barre di stato nelle cartelle e molto altro.
+
+<--XWPCLS_1253-->: "XFldDisk" sostituisce la classe "WPDisk", usata dalla WPS per gli oggetti disco che si trovano nella cartella "UnitÖ".
+Introduce una serie di miglioramenti nella gestione dei dischi; per usarla ä necessario che sia installata anche la classe "XFolder".
+
+<--XWPCLS_1254-->: "XFldDesktop" sostituisce la classe "WPDesktop", che implementa la Scrivania, e permette di implementare l'avvio avanzato (logo al boot, controllo della funzione di archiviazione) e la &xsd;.
+
+<--XWPCLS_1255-->: "XFldDataFile" sostituisce la classe "WPDataFile", usata per tutti i file fisici del sistema.
+Permette di implementare il meccanismo di associazione avanzato della WPS, le icone sostitutive e l'opzione "Copiare nome file".
+
+<--XWPCLS_1256-->: "XWPProgramFile" sostituisce la classe "WPProgramFile", usata per i file eseguibili (.EXE, .COM, ecc.).
+Aggiunge una pagina "Modulo" nel blocco appunti impostazioni degli eseguibili e permette l'implementazione delle icone sostitutive.
+
+<--XWPCLS_1257-->: "XWPSound" sostituisce la classe "WPSound", che implementa l'oggetto "Suono" nella cartella Impostazione del sistema.
+Permette di migliorarne la pagina "Suono", da cui si modificano gli schemi sonori.
+
+<--XWPCLS_1258-->: "XWPMouse" sostituisce la classe "WPMouse", che implementa l'oggetto "Mouse" nella cartella Impostazione del sistema.
+Aggiunge nuove pagine di configurazione per le funzioni supportate dallo Hook &xwp; del mouse, come il primo piano automatico e gli oggetti assegnati agli angoli dello schermo.
+
+<--XWPCLS_1259-->: "XWPKeyboard" sostituisce la classe "WPKeyboard", che implementa l'oggetto "Tastiera" nella cartella Impostazione del sistema.
+Aggiunge nuove pagine di configurazione per le funzioni di tastiera dello Hook &xwp; (ad es. i tasti rapidi globali).
+
+<--XWPCLS_1260-->: "XWPSetup" implementa l'oggetto "Impostazioni di &xwp;" ed ä richiesta il suo corretto funzionamento. Non puï essere deselezionata.
+Questa classe ä stata introdotta con &xwp; 0.9.0.
+
+<--XWPCLS_1261-->: "XFldSystem" implementa l'oggetto "Kernel &os2;", che permette di configurare facilmente varie impostazioni del file CONFIG.SYS.
+
+<--XWPCLS_1262-->: "XFldWPS" implementa l'oggetto "Workplace Shell", che riunisce le pagine di configurazione dell'oggetto "Sistema" WPS e le nuove pagine di impostazioni specifiche di &xwp;.
+L'installazione di questa classe ä fortemente raccomandata: senza di essa ä possibile configurare &xwp; solo in maniera molto limitata.
+
+<--XWPCLS_1263-->: "XFldStartup" ä la classe speciale per la nuova cartella Avviamento &xwp;, che offre molti miglioramenti rispetto alla cartella Avviamento della WPS.
+La cartella Avviamento originale rimane, per cui ä possibile adoperarle entrambe.
+Per sfruttare questa classe ä necessario che sia installata anche la classe "XFolder".
+
+<--XWPCLS_1264-->: "XFldShutdown" ä la classe cartella speciale per la nuova cartella Chiusura &xwp;, utilizzata durante la chiusura avanzata di &xwp;.
+Per sfruttare questa classe ä necessario che siano installate anche "XFolder" e "XFldDesktop".
+
+<--XWPCLS_1265-->: "XWPClassList" implementa l'oggetto "Elenco classi WPS", che permette di visualizzare e modificare le classi WPS installate.
+Quest'oggetto ä stato aggiunto a partire da  &xwp; 0.9.0; nelle versioni precedenti una funzionalitÖ simile era integrata nell'oggetto "Workplace Shell", ma ä stata ora spostata qui, ampliata e con un aspetto completamente rinnovato.
+E' possibile anche visualizzare le informazioni relative ai metodi WPS, il che ä utile per i programmatori WPS.
+
+<--XWPCLS_1266-->: "XWPTrashCan" implementa un oggetto cartella "Cestino" analogo a quelli dei sistemi Macintosh, KDE e Winxx.
+"XWPTrashObject" implementa gli "oggetti cancellati" che vengono visualizzati nella cartella Cestino e viene installata automaticamente con "XWPTrashCan".
+Questa classe ä stata introdotta con &xwp; 0.9.0.
+
+<--XWPCLS_1267-->: "XWPScreen" implementa l'oggetto impostazioni "Schermo", che raccoglie le vecchie pagine relative allo schermo dell'oggetto "Sistema" e le nuove pagine introdotte con &xwp; (ad esempio quelle per configurare &pgr;).
+Questa classe ä stata introdotta con &xwp; 0.9.2.
+
+<--XWPCLS_1268-->: "XWPString" ä la classe che permette di utilizzare stringhe di impostazioni WPS su di un oggetto.
+Creando un oggetto di questa classe ed inserendo una stringa di impostazioni, ä poi possibile utilizzare questa stringa di impostazioni su un oggetto qualsiasi.
+Questa classe ä stata introdotta con &xwp; 0.9.3.
+
+<--XWPCLS_1269-->: "XWPMedia" implementa il nuovo oggetto impostazioni "Multimedia", che permette di visualizzare alcune delle proprietÖ interne del sottosistema multimediale &os2;.
+Questa classe ä stata introdotta con &xwp; 0.9.4.
+
+<--XWPCLS_0001-->: Premere il tasto "OK" per registrare, deregistrare, sostituire e annullare la sostituzione delle classi, in accordo con i cambiamenti effettuati.
+
+<--XWPCLS_0002-->: Premere il tasto "Annullare" per chiudere la finestra senza salvare i cambiamenti effettuati.
+
+<--XWPCLS_1270-->: "XCenter;" implementa una nuova barra di sistema sul bordo superiore o inferiore dello schermo. Si puï usare per sostituire il &warpcenter;, o in combinazione con esso.
+
+<--XWPCLS_1271-->: "XWPFontFolder" implementa una nuova cartella contenente tutti i tipi di carattere installati nel sistema.
+"XWPFontObject" implementa l'"oggetto tipo di carattere" che si trova all'interno della cartella Tipi di carattere e viene installato automaticamente assieme ad "XWPFontFolder".
+"XWPFontFile" ä una nuova sottoclasse di "WPDataFile", anch'essa installata automaticamente con "XWPFontFolder". Tutti i file che sono effettivamente file tipi di carattere appartengono a questa classe.
+
+<--XWPCLS_1272-->: "XWPFileSystem" sostituisce la classe "WPFileSystem", permettendo di accelerare alcune delle funzioni WPS interne (in particolare quelle relative al popolamento delle cartelle).
+Per utilizzare la funzione "Cartelle turbo" questa classe deve essere installata.
+
+<--XWPCLS_1273-->: "XWPProgram" sostituisce la classe "WPProgram", correggendone i numerosi problemi ed implementando alcune modifiche interne.
+
+<--XWPCLS_1274-->: "XWPVCard" ä la sottoclasse speciale "WPDataFile" utilizzata per i file vCard (*.vcf) che permette di visualizzare e modificare le informazioni vCard.
+
+<--DUMMY_END_MARKER-->:
+

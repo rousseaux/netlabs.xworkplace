@@ -1,0 +1,131 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: stringhe impostazioni XCenter
+    </TITLE>
+</HEAD>
+<BODY>
+Oltre alle stringhe impostazioni proprie della classe
+<CODE><A HREF="objects/string_1wpobject.html">WPObject</A></CODE>,
+la classe XCenter supporta le stringhe seguenti:
+
+<DL>
+<DT><P><CITE><B>3DBORDERWIDTH</B>=<I>valore</I></CITE>
+<DD>Corrisponde all'impostazione "Larghezza cornice 3D" nella pagina "Stile" delle impostazioni dello XCenter.
+Dev'essere un valore tra 0 e 10.
+Il valore assunto Š "2".
+
+<DT><P><CITE><B>ALL3DBORDERS</B>={YES|NO}</CITE>
+<DD>Corrisponde all'impostazione "Disegnare la cornice 3D completa" nella pagina "Stile" delle impostazioni dello XCenter.
+Il valore assunto Š <CODE>NO</CODE>.
+
+<DT><P><CITE><B>ALWAYSONTOP</B>={YES|NO}</CITE>
+<DD>Corrisponde all'impostazione "Sempre in primo piano" nella pagina "Visualizzare" delle impostazioni dello XCenter.
+Il valore assunto Š <CODE>NO</CODE>.
+
+<DT><P><CITE><B>ANIMATE</B>={YES|NO}</CITE>
+<DD>Corrisponde all'impostazione "Animare" nella pagina "Visualizzare" delle impostazioni dello XCenter.
+Il valore assunto Š <CODE>YES</CODE>.
+
+<DT><P><CITE><B>AUTOHIDE</B>=<I>millisecondi</I></CITE>
+<DD>Corrisponde all'impostazione "Nascondere automaticamente" nella pagina "Visualizzare" delle impostazioni dello XCenter.
+Il valore rappresenta il ritardo in millisecondi prima della scomparsa automatica; se si imposta 0 la scomparsa Š
+disabilitata.
+Il valore assunto Š "0", che disabilita la scomparsa automatica.
+
+<DT><P><CITE><B>BORDERSPACING</B>=<I>valore</I></CITE>
+<DD>Corrisponde all'impostazione "Spaziatura bordo" nella pagina "Stile" delle impostazioni dello XCenter.
+Dev'essere un valore tra 0 e 10.
+Il valore assunto Š "2".
+
+<DT><P><CITE><B>CLIENTCOLOR</B>=<I>rosso verde blu</I></CITE>
+<DD>Specifica il colore di sfondo per la parte di finestra XCenter che non Š utilizzata
+da elementi.
+Il valore assunto Š <CODE>244 244 244</CODE>, "grigio chiaro".
+
+<DT><P><CITE><B>FLATBUTTONS</B>={YES|NO}</CITE>
+<DD>Corrisponde all'impostazione "Pulsanti piatti" nella pagina "Stile" delle impostazioni dello XCenter.
+Il valore assunto Š <CODE>YES</CODE>.
+
+<DT><P><CITE><B>HIDEONCLICK</B>={YES|NO}</CITE>
+<DD>Corrisponde all'impostazione "Nascondere subito dopo il clic del mouse" nella pagina "Visualizzare" delle impostazioni dello XCenter.
+L'impostazione Š attiva solo se Š attiva anche la funzione "Nascondere automaticamente".
+Il valore assunto Š <CODE>NO</CODE>.
+
+<DT><P><CITE><B>NOHATCHOPENOBJ</B>={YES|NO}</CITE>
+<DD>Corrisponde all'impostazione "Evidenziare oggetti aperti" nella pagina "Stile" delle impostazioni dello XCenter.
+si noti per• che il valore della stringa impostazioni Š il contrario rispetto allo stato
+della casella impostazioni nella pagina.
+Il valore assunto Š <CODE>NO</CODE>.
+
+<DT><P><CITE><B>POSITION</B>={TOP|BOTTOM}</CITE>
+<DD>Corrisponde all'impostazione "Posizione" nella pagina "Visualizzare" delle impostazioni dello XCenter.
+Il valore assunto Š <CODE>BOTTOM</CODE>.
+
+<DT><P><CITE><B>PRIORITYDELTA</B>=<I>delta</I></CITE>
+<DD>Corrisponde all'impostazione "Priorit… sottoprocesso visualizzazione" nella pagina "Visualizzare" delle impostazioni dello XCenter.
+Il valore rappresenta il delta priorit… del sottoprocesso XCenter e deve essere
+compreso tra 0 e 31.
+Il valore assunto Š "0".
+
+<DT><P><CITE><B>REDUCEDESKTOP</B>={YES|NO}</CITE>
+<DD>Corrisponde all'impostazione "Ridimensionare Area di lavoro" nella pagina "Visualizzare" delle impostazioni dello XCenter.
+Il valore assunto Š <CODE>NO</CODE>.
+
+<DT><P><CITE><B>SIZINGBARS</B>={YES|NO}</CITE>
+<DD>Corrisponde all'impostazione "Disegnare barre ridimensionamento" nella pagina "Stile" delle impostazioni dello XCenter.
+Il valore assunto Š <CODE>YES</CODE>.
+
+<DT><P><CITE><B>SPACINGLINES</B>={YES|NO}</CITE>
+<DD>Corrisponde all'impostazione "Disegnare linee di spaziatura" nella pagina "Stile" delle impostazioni dello XCenter.
+Il valore assunto Š <CODE>YES</CODE>.
+
+<DT><P><CITE><B>SUNKBORDERS</B>={YES|NO}</CITE>
+<DD>Corrisponde all'impostazione "Cornice intorno agli elementi statici" nella pagina "Stile" delle impostazioni dello XCenter.
+Il valore assunto Š <CODE>NO</CODE>.
+
+<DT><P><CITE><B>WIDGETS</B>=<I>elemento</I>[,<I>elemento</I>]...<BR><B>WIDGETS</B>={CLEAR|RESET}</CITE>
+<DD>La lista completa, separata da virgole, degli
+<A HREF="xcenter/xc_main_widgets.html">elementi</A>
+che formano lo &xcenter;. L'applicazione di questa stringa impostazioni causa la cancellazione
+di tutti gli elementi gi… presenti.
+Ciascuna stringa <CODE><I>elemento</I></CODE> dev'essere nel formato seguente:
+<BR><CODE><I>nome_classe</I>(<I>impostazione</I>)</CODE>
+<BR>dove <CODE>nome_classe</CODE> Š il nome della classe elemento (come appare
+nella pagina "Classi" del blocco appunti impostazioni dello XCenter) e
+<CODE>(<I>impostazione</I>)</CODE> specifica in via opzionale la sottostringa di impostazione
+dell'elemento. Se questa stringa impostazione manca, bisogna comunque aggiungere un paio di parentesi tonde,
+per es. "Pulse()". La sottostringa di impostazione Š parzialmente codificata, perci•
+non pu• contenere caratteri proibiti nelle stringhe impostazione WPS.
+
+<P>Se, e solo se, <CODE>nome_classe</CODE> Š "Tray", per creare un
+<A HREF="xcenter/xc_tray.html">elemento contenitore</A>, la stringa impostazione deve essere nel
+formato seguente: <CODE>Tray(<I>impostazione</I>){<I>nome_contenitore</I>[<I>widgetlist</I>]...}</CODE>
+(le parentesi qui hanno valore letterale).
+
+<P>Se anzich‚ una lista di elementi si specifica CLEAR, tutti gli elementi esistenti sono
+cancellati dallo &xcenter; senza che ne vengano creati di nuovi.
+<BR>Se si specifica RESET, tutti gli elementi esistenti sono rimossi dallo &xcenter; e
+sostituiti da quelli di default.
+
+<DT><P><CITE><B>ADDWIDGETS</B>=<I>elemento</I>[,<I>elemento</I>]...</CITE>
+<DD>Una lista, separata da virgole, di
+<A HREF="xcenter/xc_main_widgets.html">elementi</A>
+da aggiungere a quelli gi… presenti sullo &xcenter;.
+Il formato della stringa impostazione Š lo stesso di <CITE><B>WIDGETS</B></CITE>.
+
+<DT><P><CITE><B>DELETEWIDGETS</B>=<I>nome_classe</I>[,<I>nome_classe</I>]...</CITE>
+<DD>Una lista, separata da virgole, dei nomi classe degli elementi da rimuovere
+dallo &xcenter;.
+Tutti gli elementi con il nome classe specificato vengono rimossi.
+<BR>Il <CODE>nome classe</CODE> Š lo stesso usato per <CITE><B>WIDGETS</B></CITE>.
+
+<DT><P><CITE><B>WIDGETSPACING</B>=<I>valore</I></CITE>
+<DD>Corrisponde all'impostazione "Spaziatura elemento", nella pagina "Stile" delle impostazioni dello XCenter.
+Dev'essere un valore compreso tra 1 e 10.
+Il valore assunto Š "2".
+
+</DL>
+</BODY>
+</HTML>
+

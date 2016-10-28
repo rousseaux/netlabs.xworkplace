@@ -1,0 +1,70 @@
+<HTML RESID=&ID_XSH_SETTINGS_SB2;>
+<HEAD>
+    <TITLE>
+        &xwp;: barra di stato, pagina 2
+    </TITLE>
+</HEAD>
+<BODY>
+I campi presenti nella pagina <B>"Barra di stato"</B> permettono di
+scegliere cosa visualizzare nelle barre di stato.
+
+<P>Le barre di stato di &xwp; funzionano in <B>tre modi differenti,</B> a seconda che nella 
+cartella siano selezionati in quel momento un solo oggetto, pi— oggetti o nessun oggetto.
+E' possibile determinare il testo desiderato per ognuno dei tre diversi modi, specificandolo nel
+campo relativo.
+
+<UL><LI>Le stringhe nel campo <B>"Nessun oggetto selezionato"</B> determinano cosa 
+viene visualizzato nella barra di stato se nella cartella non vi Š nessun oggetto selezionato.
+
+<P><LI>Basandosi sui codici nel campo <B>"Un solo oggetto selezionato",</B> &xwp; presenta 
+informazioni specifiche sull'oggetto selezionato, che variano a seconda 
+della <A HREF="glossary/gls_wpsclasses.html">classe</A>
+cui l'oggetto appartiene. Se, per esempio, si seleziona un oggetto programma, le informazioni visualizzate
+saranno diverse rispetto a quelle presentate selezionando un file dati.
+
+<P>Premendo <B>"Seleziona classe..."</B> si pu• selezionare per quale classe WPS si stanno
+impostando in quel momento le informazioni nella barra di stato. I codici nel campo valgono solo per gli
+oggetti appartenenti a quella classe.
+
+<P>Se l'impostazione <B>"Non prendere in considerazione le copie collegate"</B> Š attiva e 
+si seleziona un oggetto copia collegata, &xwp; non mostra le informazione relative all'oggetto 
+copia collegata (di ben poca utilit…) ma quelle relative all'oggetto cui la copia fa riferimento.
+
+<P><LI>I codici nel campo <B>"Pi— oggetti selezionati"</B> determinano le informazioni che 
+vengono visualizzate se si seleziona pi— di un oggetto nella cartella.
+
+<P>Se l'impostazione <B>"Non prendere in considerazione le copie collegate"</B> Š attiva e si selezionano pi— oggetti,
+tra i quali vi sono anche copie collegate, &xwp; utilizza le informazioni relative agli oggetti cui le copie
+collegate fanno riferimento per calcolare la dimensione totale degli "oggetti selezionati". E' ovvio che in questa maniera
+la dimensione degli oggetti selezionati sar… superiore rispetto alla dimensione complessiva degli oggetti effettivamente
+nella cartella. 
+
+</UL>I cambiamenti hanno effetto immediato. In questa maniera, tenendo una cartella aperta Š 
+possibile vedere subito il risultato dei differenti codici sulla barra di stato.
+
+<P>&xwp; prevede <B>codici</B> specifici per visualizzare le diverse informazioni relative agli oggetti nella Scrivania.
+Tutti questi codici iniziano con il carattere <CODE>"$"</CODE>. Se il testo inserito nel campo
+non Š riconosciuto come codice, &xwp; si limita a copiarlo tal quale nella barra di stato; in 
+questa maniera Š possibile aggiungere del testo informativo.
+
+<P>I codici utilizzabili nella barra di stato dipendono dal modo in cui la barra di stato si trova ad operare
+in quel momento. Per una descrizione dettagliata dei vari codici, selezionare una voce delle seguenti:
+
+<UL><LI><A HREF="fsys/stat_4common.html">Codici comuni a tutti e tre i modi</A>
+<LI><A HREF="fsys/stat_5wpobject.html">Codici comuni al solo modo oggetto singolo</A>
+<LI><A HREF="fsys/stat_61wpfsys.html">Codici per gli oggetti WPFileSystem in modo oggetto singolo</A>
+<LI><A HREF="fsys/stat_62wpdisk.html">Codici per gli oggetti WPDisk in modo oggetto singolo</A>
+<LI><A HREF="fsys/stat_63wppgm.html">Codici per gli oggetti WPProgram in modo oggetto singolo</A>
+<LI><A HREF="fsys/stat_64wpurl.html">Codici per gli oggetti WPUrl in modo oggetto singolo</A>
+</UL>
+
+Selezionare <B>"Regredire"</B> per riportare le impostazioni ai 
+valori che erano attivi prima che questa finestra fosse visualizzata. 
+
+<P>Selezionare <B>"Valore assunto"</B> per riportare le impostazioni ai valori attivi
+al momento dell'installazione del sistema.
+
+<BR>
+</BODY>
+</HTML>
+

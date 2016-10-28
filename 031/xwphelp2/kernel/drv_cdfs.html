@@ -1,0 +1,53 @@
+<HTML RESID=&ID_XSH_DRIVER_CDFS;>
+<HEAD>
+    <TITLE>
+        &os2;: Kernel: CDFS.IFS
+    </TITLE>
+</HEAD>
+<BODY>
+Deze dialoog wordt gebruikt voor het configureren van <CODE>CDFS.IFS</CODE>.
+
+<P>Kijk voor een introductie over bestandssystemen, in de volgende onderwerpen:
+<UL><LI><A HREF="glossary/gls_fs.html">Bestandssystemen</A>
+en
+<LI><A HREF="glossary/gls_caches.html">Bestandssysteem buffers</A>
+
+</UL>Druk op <B>"Optimaliseer"</B> zodat &xwp; u nieuwe instellingen voorstelt op basis van
+uw systeem karakteristieken.
+<P>Druk op <B>"Standaard"</B> om de standaard &os2; instellingen op de notitieblok pagina
+getoond te krijgen.
+
+<P>Door het indrukken van <B>"OK"</B> zullen de door u gemaakte selecties vertaald worden naar
+het "Parameters" veld op de "Stuurprogramma's" pagina in het
+<A HREF="objects/obj_krnl.html">"&os2; Kernel"</A>
+instellingen notitieblok.
+Dit verandert nog niet uw &cfgsys;. Om dat te doen drukt u op "Toepassen" in de
+"Stuurprogramma's" pagina nadat u op "OK" gedrukt heeft in deze dialoog.
+
+<p>Het wordt sterk aangeraden om <B>Joliet</B> ondersteuning te activeren. Dit is de uitbreiding
+van Microsoft op het standaard ISO CD-ROM bestandssysteem om, alleen op CD-ROM's, lange
+bestandsnamen te ondersteunen (tot 64 karakters). Veel nieuwe
+CD-ROM's zijn onleesbaar in &os2; als deze instelling niet geactiveerd is.
+
+<P><B>Kanji</B> voegt aanvullende ondersteuning toe voor de Japanse taal.
+
+<P>De <B>"buffergrootte"</B> schuifbalk bepaalt de grootte van de CD-ROM bestandssysteem buffer. De
+standaard van 128 KB is niet erg groot, dus wordt het aanbevolen om dit aan te passen naar 512 KB of
+hoger. Omdat de leeskop van een CD-ROM station veel trager is dan die van een harde schijf kan een
+grotere buffer het lezen van CD-ROM erg versnellen.
+
+<P>Om dezelfde reden zou u de <B>"Bestandsectoren per leesactie (/M:n)"</B>
+ook op de maximale waarde moeten zetten. Deze instelling bepaalt hoeveel sectoren er gelezen
+worden als er om een enkele sector gevraagd wordt door het bestandssysteem stuurprogramma. Want het
+is te verwachten dat niet alleen die ene sector, maar ook de daarop volgende sectoren gelezen moeten
+worden als een CD-ROM gebruikt wordt en dan staan die alvast in de buffer, wat de fysieke toegang tot
+de CD-ROM speler ook versnelt.
+<BR>
+Tenslotte, de instellingen in de <B>"Initialisatie"</B> groep bepalen wat de
+IFS stuurprogramma's laten zien bij het opstarten. Met <B>Default</B> geeft het een kort bericht
+dat het geladen is. <B>"Stil (/Q)"</B> zal het dwingen niets te laten zien, terwijl
+<B>"Uitgebreid (/V)"</B> de huidige IFS instellingen zal laten zien, zoals hierboven gespecificeerd.
+<BR>
+</BODY>
+</HTML>
+

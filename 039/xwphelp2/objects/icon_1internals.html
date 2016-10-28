@@ -1,0 +1,57 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: dettagli oggetto
+    </TITLE>
+</HEAD>
+<BODY>
+La finestra "Dettagli oggetto" mostra numerose informazioni interne relative
+all'oggetto, la maggior parte delle quali interessanti soprattutto per i programmatori.
+
+<P>Le informazioni sono organizzate in una vista ad albero, analogamente alla
+visualizzazione ad albero delle cartelle. La maggior parte di queste informazioni
+sono di <I>sola lettura</I>, cioŠ non Š possibile modificarle (ad eccezione della
+voce "Object ID").
+
+<P>Lo <B>"Object handle"</B> Š un numero esadecimale di cinque cifre che identifica
+l'oggetto all'interno del sistema. Tutti gli oggetti astratti hanno uno "object
+handle", cosa che non avviene necessariamente per gli oggetti file-system.
+
+Si noti che questi numeri variano da un sistema all'altro: Š sbagliato, per esempio,
+pensare che la cartella "Informazioni" del computer del vostro vicino abbia lo stesso
+numero identificativo di quella sul vostro sistema. Gli "object handle" si
+riferiscono esclusivamente agli oggetti sul <I>vostro</I> computer.
+
+<P>Si veda <a href="glossary/gls_objhandle.html">Marcatori oggetti</a> per
+un'introduzione sull'argomento.
+
+<P>La <B>"Object ID"</B>, al contrario, pu• essere comune su pi— computer. Le ID
+degli oggetti sono sempre nel formato <CODE>&lt;OBJECTID&gt;</CODE>  e sono
+utilizzate per riferirsi agli oggetti senza conoscerne la effettiva collocazione. Si
+veda <A HREF="glossary/gls_objids.html">Gli identificativi degli oggetti WPS</A> per
+un'introduzione a questi argomenti.
+
+<P>Il campo "Object ID" pu• essere <B>modificato</B> cliccandoci sopra mentre si
+preme il tasto "Alt". Si presti per• la massima attenzione nel modificare le ID degli
+oggetti, dato che alcuni programmi fanno affidamento su di esse.
+
+<P>L'albero <B>"Object style"</B> mostra le impostazioni WPS interne, che determinano
+alcune propriet… specifiche della WPS. Per esempio, l'impostazione "no copy" disabilita
+la copia del file con il trascinamento. Si tratta di impostazioni che generalmente
+non hanno nulla a che fare con gli <A HREF="glossary/gls_fattrs.html">attributi del
+file</A> a livello di file system: un oggetto pu• avere attiva l'impostazione "no
+delete" pur continuando ad essere cancellabile normalmente dalla linea di comando.
+
+<P>L'albero <B>"Object usage"</B> mostra altre informazioni interne dell'oggetto, utili
+soprattutto per i programmatori; sono le informazioni ricavate utilizzando il metodo
+<A HREF="wpsref.inf#wpFindUseItem"><CITE>wpFindUseItem</CITE></a>
+<A HREF="_toolkitlink.html">*</A>.
+
+<P>Per le cartelle, l'albero <B>"Folder data"</B> contiene le informazioni ottenute dal
+metodo <a href="wpsref.inf#wpQueryFldrFlags"><CITE>wpQueryFldrFlags</CITE></a>
+<A HREF="_toolkitlink.html">*</A>; ad esempio, se la cartella Š stata gi… popolata o
+meno.
+<BR>
+</BODY>
+</HTML>
+

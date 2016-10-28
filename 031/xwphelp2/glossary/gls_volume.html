@@ -1,0 +1,62 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: Stations, volumes en partities
+    </TITLE>
+</HEAD>
+<BODY>
+In &os2;, wordt de volgende terminologie gebruikt wanneer het gaat over
+opslagapparatuur:
+
+<OL><LI>Een <B>station</B> is een logische entiteit die een stationsletter door de &os2;
+kernel toegewezen heeft gekregen. U kunt daarom tot 26 stations gaan, die van
+<CODE>A:</CODE> t/m <CODE>Z:</CODE> worden aangeduid.
+
+<P>De &link_drivesfdr; toont alle stations die op dit moment aanwezig zijn in uw systeem.
+Stations <CODE>A:</CODE> en <CODE>B:</CODE> zullen per definitie altijd de diskette
+stations zijn. Andere stationsletters zullen of harde schijf volumes zijn (zie hieronder),
+CD-ROM of DVD stations, netwerk bronnen die een stationsletter toegewezen hebben gekregen
+en andere opslagapparatuur.
+
+<P><LI>Een <B>volume</B> is een concept specifiek voor harde schijven en bestaat uit ‚‚n
+of meer partities (zie hieronder). Een volume moet geformatteerd zijn met een specifiek
+<A HREF="glossary/gls_fs.html">bestandssysteem</A>
+om in staat te zijn om er gegevens op vast te leggen.
+
+<P>Een <B>partitie</B> is een fysiek segment op een harde schijf. Om te kunnen worden
+gebruikt in personal computers moet iedere harde schijf tenminste ‚‚n partitie bevatten,
+maar kan ook in meerdere partities worden verdeeld, b.v. als u in meer dan ‚‚n besturingssysteem of
+verschillende bestandssystemen wilt gebruikenm, applicaties en gegevens apart wilt opslaan.
+
+</OL>De <B>Logical Volume Manager (LVM)</B> (Volume Beheer) van &os2; staat u toe om volumes en partities
+te maken, te verwijderen en te bewerken. Gebruik LVM ook om een stationsletter toe te
+kennen aan een volume en er dus zo een station van te maken of om een volume voor &os2; te
+verbergen.
+Zie:
+<A HREF="usinglvm.inf"><I>"LVM Gebruiken"</I></A>
+voor details.
+
+<P>Er zijn verschillende opties om LVM te starten:
+
+<UL><LI>Vanuit het
+<A HREF="glossary/gls_popmenu.html">&popmenu;</A>
+van de &link_drivesfdr;, selecteert u "Volumes beheren...".
+
+<P><LI>Start het "Volume beheer" object in de &link_syssetupfdr;.
+
+<P><LI>Open een "opdrachtaanwijzing", zie:
+<A HREF="glossary/gls_cmd.html">&xwp; Opdrachtaanwijzingen</A>,
+en tik <CODE>LVM</CODE> in. In tegenstelling tot de voorgaande twee opties start dit de
+tekstmode versie van LVM op.
+
+</UL>Kijk voor meer informatie in de onderstaande onderwerpen:
+
+<UL>
+<LI>&link_syssetupfdr;
+<LI><A HREF="tasks/tsk_format.html">Formatteren</A>
+<LI><A HREF="glossary/gls_cmd.html">&xwp; Opdrachtaanwijzingen</A>
+
+</UL>
+</BODY>
+</HTML>
+
