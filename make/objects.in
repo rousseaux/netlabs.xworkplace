@@ -116,7 +116,8 @@ $(OUTPUTDIR)\program.obj \
 $(OUTPUTDIR)\refresh.obj \
 $(OUTPUTDIR)\statbars.obj \
 $(OUTPUTDIR)\trash.obj \
-$(OUTPUTDIR)\xthreads.obj
+$(OUTPUTDIR)\xthreads.obj \
+$(OUTPUTDIR)\xview.obj
 
 # code from media\
 XFLDR_OBJS_MEDIA = \

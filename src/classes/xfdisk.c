@@ -99,6 +99,7 @@
 #include "filesys\fdrsplit.h"           // folder split views
 // #include "filesys\object.h"             // XFldObject implementation
 #include "filesys\statbars.h"           // status bar translation logic
+#include "filesys\xview.h"              // file viewer based on splitview
 
 // other SOM headers
 #pragma hdrstop
@@ -888,9 +889,9 @@ SOM_Scope HWND  SOMLINK xfdisk_wpOpen(XFldDisk *somSelf,
             if (ulView == *G_pulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW)
             {
                 if (pRootFolder = dskCheckDriveReady(somSelf))
-                    hwndNewFrame = fdrCreateSplitView(somSelf,
-                                                      pRootFolder,
-                                                      ulView);
+                    hwndNewFrame = xvwCreateXview(somSelf,
+                                                  pRootFolder,
+                                                  ulView);
             }
             else
                 hwndNewFrame = XFldDisk_parent_WPDisk_wpOpen(somSelf,

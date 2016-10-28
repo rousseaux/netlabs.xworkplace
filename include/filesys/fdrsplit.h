@@ -453,10 +453,6 @@
     BOOL fdrSplitInsertObject(WPFolder *pFolder,
                               WPObject *pObject);
 
-    HWND fdrCreateSplitView(WPObject *pRootObject,
-                            WPFolder *pRootsFolder,
-                            ULONG ulView);
-
 #endif
 
 

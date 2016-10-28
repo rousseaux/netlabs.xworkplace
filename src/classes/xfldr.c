@@ -151,6 +151,7 @@
 #include "filesys\refresh.h"            // folder auto-refresh
 #include "filesys\statbars.h"           // status bar translation logic
 #include "filesys\xthreads.h"           // extra XWorkplace threads
+#include "filesys\xview.h"              // file viewer based on splitview
 
 // other SOM headers
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
@@ -2633,9 +2634,9 @@ SOM_Scope HWND  SOMLINK xf_wpOpen(XFolder *somSelf,
              && (ulView == *G_pulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW)
            )
         {
-            hwndNewFrame = fdrCreateSplitView(somSelf,
-                                              somSelf,
-                                              ulView);
+            hwndNewFrame = xvwCreateXview(somSelf,
+                                          somSelf,
+                                          ulView);
         }
         else
         {
