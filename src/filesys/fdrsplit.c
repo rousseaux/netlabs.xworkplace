@@ -2441,24 +2441,27 @@ STATIC MRESULT FilesFrameControl(HWND hwndFrame,
                 // returns TRUE, that means "processed", and
                 // we do nothing (file dlg processes this itself).
                 // Otherwise we try to be smart and do something.
+                // changed V1.0.11 (2016-09-28) [rwalsh] -
+                // dblclicking on a folder failed to display that folder
                 if (!SplitSendWMControl(psv,
                                         SN_OBJECTENTER,
                                         (MPARAM)prec))
                 {
                     WPObject *pobj;
-                    if (    (pobj = fdrvGetFSFromRecord(prec,
-                                                        TRUE))       // folders only:
+                    WPFolder *pFolder;
+                    if (    (pobj = fdrvGetFSFromRecord(prec, TRUE))    // folders only:
                          && (psv->precFilesShowing)
+                         && (pFolder = fdrvGetFSFromRecord(psv->precFilesShowing, TRUE))
                        )
                     {
                         // double click on folder:
                         // if this is a _direct_ subfolder of the folder
                         // that we are currently displaying, that's easy
-                        if (_wpQueryFolder(pobj) == OBJECT_FROM_PREC(psv->precFilesShowing))
+                        if (_wpQueryFolder(pobj) == pFolder)
                         {
                             WinPostMsg(psv->hwndTreeCnr,
                                        CM_EXPANDTREE,
-                                       (MPARAM)prec,
+                                       (MPARAM)psv->precFilesShowing,
                                        MPNULL);
                             WinPostMsg(psv->hwndTreeCnr,
                                        CM_SETRECORDEMPHASIS,
