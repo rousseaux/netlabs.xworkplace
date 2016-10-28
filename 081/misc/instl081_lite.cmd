@@ -1,5 +1,5 @@
 /*
-    Create eWorkplace installation objects
+    Create XWorkplace-lite installation objects
     Japanese version (081)
     (C) 1998-2005 Ulrich Moeller.
  */
@@ -13,8 +13,8 @@ LanguageCode = "081";
 /* Here come the titles of the objects to be created.
    Translate these to your language. */
 
-XWorkplace          = "eCS";
-OS2                 = "eCS"
+XWorkplace          = "XWorkplace";
+OS2                 = "OS/2"
 
 WorkplaceShell      = "ワークプレース・シェル";
 OS2Kernel           = OS2||" カーネル";
@@ -26,7 +26,7 @@ TrashCan            = "ゴミ入れ";
 Lockup              = "すぐにロック";
 FindObjects         = "オブジェクトの検索";
 Shutdown            = "終了";
-XCenter             = "eCenter";
+XCenter             = "XCenter";
 
 /*********************************************
  *

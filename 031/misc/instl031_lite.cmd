@@ -1,17 +1,17 @@
 /*
-    Create eWorkplace installation objects
+    Create XWorkplace-lite installation objects
     Dutch version (031)
     (C) 1998-2002 Ulrich M”ller.
  */
 
 /* change the following language code to your language. */
-LanguageCode = "001";
+LanguageCode = "031";
 
 /* Here come the titles of the objects to be created.
    Translate these to your language. */
 
-XWorkplace          = "eCS";
-OS2                 = "eCS"
+XWorkplace          = "XWorkplace";
+OS2                 = "OS/2"
 
 WorkplaceShell      = "Workplace Shell";
 Screen              = "Beeldscherm";
@@ -22,7 +22,7 @@ TrashCan            = "Prullebak";
 Lockup              = "Nu vergrendelen";
 FindObjects         = "Objecten zoeken";
 Shutdown            = "Afsluiten";
-XCenter             = "eCenter";
+XCenter             = "XCenter";
 
 /*********************************************
  *

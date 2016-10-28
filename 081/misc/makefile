@@ -65,11 +65,11 @@ $(XWPRUNNING)\help\xfldr$(LANGUAGE).tmf: $(MODULESDIR)\$(@B).tmf
 
 # compose tmf file in modulesdir from several source tmf files
 !ifdef XWPLITE
-$(MODULESDIR)\xfldr$(LANGUAGE).tmf: xfldr$(LANGUAGE).tmf xwplite$(LANGUAGE).tmf
-    $(COPY) /b $(@B).tmf+xwplite$(LANGUAGE).tmf $@
+$(MODULESDIR)\xfldr$(LANGUAGE).tmf: xfldr$(LANGUAGE).tmf $(NLS_MISC_PATH)\xwplite$(LANGUAGE).tmf
+    $(COPY) /b $(@B).tmf+$(NLS_MISC_PATH)\xwplite$(LANGUAGE).tmf $@
 !else
-$(MODULESDIR)\xfldr$(LANGUAGE).tmf: xfldr$(LANGUAGE).tmf xwpfull$(LANGUAGE).tmf
-    $(COPY) /b $(@B).tmf+xwpfull$(LANGUAGE).tmf $@
+$(MODULESDIR)\xfldr$(LANGUAGE).tmf: xfldr$(LANGUAGE).tmf $(NLS_MISC_PATH)\xwpfull$(LANGUAGE).tmf
+    $(COPY) /b $(@B).tmf+$(NLS_MISC_PATH)\xwpfull$(LANGUAGE).tmf $@
 !endif
 
 $(XWPRUNNING)\install\sound$(LANGUAGE).cmd: $(@B).cmd

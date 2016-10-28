@@ -1,16 +1,27 @@
-<--PRODUCTINFO-->: eComStation Desktop
-Version 2.1
+<--PRODUCTINFO-->: XWorkplace
+Version &version;
+Built &date;
 
-<--XFL0140-->: &copy;&nbsp;1992, 1996 IBM Corporation.
-<BR>&copy;&nbsp;2001-2008 Serenity Systems International.
+<--XFL0140-->: &copy;&nbsp;1997-2005 Ulrich M”ller.
+<BR>English National Language Support: &copy;&nbsp;1998-2005 Ulrich M”ller.
 <P>
-Desktop enhancements &copy;&nbsp;1997-2005&nbsp;Ulrich M”ller (built &date;).
-Based on XWorkplace &version;.
-<BR>Contains portions &copy;&nbsp;2000-2015&nbsp;Martin&nbsp;Lafaix and Paul&nbsp;Ratcliffe.
+Contains portions &copy;&nbsp;2000-2015 Martin Lafaix, Paul Ratcliffe, and others.
+<BR>Contains portions from the Standard Function Library &copy;&nbsp;1991-99 iMatix corporation.
+<BR>Contains portions from expat 1.95.1 &copy;&nbsp;1998-2000 Thai Open Source Software Center Ltd.
+<P>
+&xwp;'s home on the Internet is <A HREF="http://www.xworkplace.org">http://www.xworkplace.org</A>.
+<BR>To report bugs, use the official bugtracker at <a href="http://xtracker.netlabs.org">http://xtracker.netlabs.org</a>.
+<P>
+Contact &contact-user; for general discussion about &xwp;.
+<BR>Contact &contact-dev; if you are (or want to become) familiar with the &xwp; source code.
+<P>
+&xwp; is free software under the GNU General Public Licence (GPL), which is contained in the
+<A HREF="copying">COPYING file</A> in the &xwp; installation directory. &xwp; therefore comes with absolutely <B>no warranty.</B>
 
-<BR>Licensed to Serenity&nbsp;Systems&nbsp;International.
-
-<P>Check <A HREF="http://www.ecomstation.com">http://www.ecomstation.com</A> for updates.
+<P>The full source code is available from Netlabs CVS. See <A HREF="http://www.xworkplace.org/cvs.html">http://www.xworkplace.org/cvs.html</A> for details.
+You are welcome to redistribute and/or modify &xwp; under the conditions of the GPL.
+<P>
+For more information, refer to the "Notices" section of the <A HREF="inf">&xwp; User Guide</A>.
 
 <--DUMMY_END_MARKER-->:
 

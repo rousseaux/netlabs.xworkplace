@@ -39,6 +39,7 @@
 #define syssetup "Systemkonfiguration"
 #define cfgfdr "Konfigurationsordner"
 #define popmenu "KontextmenÅ"
+#define styler "Styler"
  
  
 // V0.9.20: added the following

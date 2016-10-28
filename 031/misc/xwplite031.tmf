@@ -1,16 +1,26 @@
-<--PRODUCTINFO-->: eComStation Werkplek
-Versie 2.1
+<--PRODUCTINFO-->: XWorkplace
+Versie &version;
+Gemaakt &date;
 
-<--XFL0140-->: &copy;&nbsp;1992, 1996 IBM Corporation.
-<BR>&copy;&nbsp;2001-2008 Serenity Systems International.
+<--XFL0140-->: &copy;&nbsp;1997-2005 Ulrich M”ller.
+<BR>English National Language Support: &copy;&nbsp;1998-2003 Ulrich M”ller.
 <P>
-Werkplek uitbredingen &copy;&nbsp;1997-2005&nbsp;Ulrich M”ller (built &date;).
-Gebaseerd op XWorkplace &versie;.
-<BR>Bevat delen van &copy;&nbsp;2000-2015&nbsp;Martin&nbsp;Lafaix and Paul&nbsp;Ratcliffe.
-
-<BR>Gelicentieerd aan Serenity&nbsp;Systems&nbsp;International.
-
-<P>Controleer <A HREF="http://www.ecomstation.com">http://www.ecomstation.com</A> voor verbeteringen.
+Bevat werk van &copy;&nbsp;2000-2015 Martin Lafaix, Paul Ratcliffe, en anderen.
+<BR>Bevat werk uit de Standard Function Library &copy;&nbsp;1991-99 van iMatix corporation.
+<BR>Bevat gedeeltes uit expat 1.95.1 &copy;&nbsp;1998-2000 van het Thai Open Source Software Center Ltd.
+<P>
+De 'home site' van &xwp; op het Internet is <AHREF="http://www.xworkplace.org">http://www.xworkplace.org</A>.
+<BR>Gebruik, om bugs te rapporteren, de offici‰le bugtracker op <a href="http://xtracker.netlabs.org">http://xtracker.netlabs.org</a>.
+<P>
+Neem contact op met &contact-user; voor algemene discussie over &xwp;.
+<BR>Neem contact op met &contact-dev; als u bekend bent met (of bekend wilt worden) met de broncode van &xwp;.
+<P>
+&xwp; is vrije software gelicenseerd onder de GNU General Public Licence (GPL), die te vinden is in de
+<A HREF="copying">COPYING file</A> in de &xwp; installatie directory. &xwp; wordt zonder <B>enige garantie</B> geleverd.
+<P>De volledige broncode is verkrijgbaar bij Netlabs CVS. Zie <A HREF="http://www.xworkplace.org/cvs.html">http://www.xworkplace.org/cvs.html</A> voor details.
+U bent uitgenodigd om &xwp; te verspreiden en/of aan te passen volgens de voorwaarden van de GPL.
+<P>
+Voor meer informatie, kijk in de "Notices" sectie van de <A HREF="inf">&xwp; User Guide</A> (EN).
 
 <--DUMMY_END_MARKER-->:
 

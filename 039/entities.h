@@ -26,6 +26,7 @@
 #define syssetup "Impostazione del sistema"
 #define cfgfdr "Cartella configurazione"
 #define popmenu "menu contestual"
+#define styler "Styler"
 
 // V0.9.20: added the following
 #define eexe "Editor di sistema"

@@ -31,6 +31,7 @@
 #define syssetup "Configuratie"
 #define cfgfdr "Configuratie map"
 #define popmenu "voorgrond menu"
+#define styler "Styler"
 
 // V0.9.20: added the following
 #define eexe "OS/2 Systeem Editor"

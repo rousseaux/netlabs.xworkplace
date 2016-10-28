@@ -1,16 +1,27 @@
-<--PRODUCTINFO-->: eComStation - Scrivania
-Versione 2.1
+<--PRODUCTINFO-->: XWorkplace
+Versione &version;
+Built &date;
 
-<--XFL0140-->: &copy;&nbsp;1992, 1996 IBM Corporation.
-<BR>&copy;&nbsp;2001-2008 Serenity Systems International.
+<--XFL0140-->: &copy;&nbsp;1997-2005 Ulrich M”ller.
+<BR>Supporto NLS italiano: &copy;&nbsp;2002-2006 Gabriele Gamba, Mentore Siesto.
 <P>
-Miglioramenti Scrivania &copy;&nbsp;1997-2005&nbsp;Ulrich M”ller (built &date;).
-Il codice Š basato su XWorkplace &version;.
-<BR>Contiene parti &copy;&nbsp;2000-2015&nbsp;Martin&nbsp;Lafaix e Paul&nbsp;Ratcliffe.
+Contiene codice &copy;&nbsp;2000-2015 Martin Lafaix, Paul Ratcliffe ed altri.
+<BR>Contiene codice derivato dalla Standard Function Library &copy;&nbsp;1991-99 iMatix corporation.
+<BR>Contiene codice derivato da expat 1.95.1 &copy;&nbsp;1998-2000 Thai Open Source Software Center Ltd.
+<P>
+La homepage Internet di &xwp; Š <A HREF="http://www.xworkplace.org">http://www.xworkplace.org</A>.
+<BR>Per segnalare i difetti riscontrati, usate il "bugtracker" ufficiale, in linea all'indirizzo <a href="http://xtracker.netlabs.org">http://xtracker.netlabs.org</a>.
+<P>
+Contattate &contact-user; per una discussione generale su &xwp;.
+<BR>Contattate &contact-dev; se siete (o desiderate diventare) pratici dei sorgenti di &xwp;.
+<P>
+&xwp; Š software gratuito, licenziato sotto la GNU General Public Licence (GPL), come riportato nel
+<A HREF="copying">file COPYING</A>, nella cartella di installazione. &xwp; non Š perci• coperto da <B>alcuna garanzia.</B>
 
-<BR>Concesso in licenza a Serenity&nbsp;Systems&nbsp;International.
-
-<P>Visitate il sito <A HREF="http://www.ecomstation.com">http://www.ecomstation.com</A> per gli aggiornamenti.
+<P>Il codice sorgente completo Š disponibile sul CVS Netlabs. Si veda <A HREF="http://www.xworkplace.org/cvs.html">http://www.xworkplace.org/cvs.html</A> per i dettagli.
+Ogni redistribuzione e/o modifica di &xwp; secondo le condizioni GPL Š benvenuta.
+<P>
+Per dettagli fare riferimento alla sezione "Note", nella <A HREF="inf">Guida ad &xwp;</A>.
 
 <--DUMMY_END_MARKER-->:
 

@@ -26,6 +26,7 @@
 #define syssetup "System Setup"
 #define cfgfdr "Configuration Folder"
 #define popmenu "pop-up menu"
+#define styler "Styler"
 
 // V0.9.20: added the following
 #define eexe "System Editor"

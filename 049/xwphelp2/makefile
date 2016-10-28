@@ -44,15 +44,10 @@ OUTPUTDIR = $(XWP_OUTPUT_ROOT)\modules
 # the makefile will support your langauge.
 LANGUAGE = 049
 
-FEATURES_STRING =
-!ifdef XWPLITE
-FEATURES_STRING = -i..\..\include\_features_lite.h
-!endif
-
 # Change this to the full path of the HTML2IPF utility.
 # THIS HAS CHANGED WITH V0.84.
 # now using h2i V0.9.13 (2001-06-23) [umoeller]
-HTML2IPF = $(RUN_H2I) -s -i$(PROJECT_BASE_DIR)\include\shared\helppanels.h -i..\$(ENTITYDEFS) $(FEATURES_STRING)
+HTML2IPF = $(RUN_H2I) -s -i$(PROJECT_BASE_DIR)\include\shared\helppanels.h -i$(ENTITYDEFS) $(FEATURES_STRING)
 
 # Change this to the directory where the output file (HLP)
 # should be copied to.
@@ -198,7 +193,7 @@ $(COPYTO)\xfldr$(LANGUAGE).hlp: $(OUTPUTDIR)\xfldr$(LANGUAGE).hlp
     $(CVS_WORK_ROOT)\$(XWPDIR)\tools\unlockhelp.cmd
     $(COPY) $(OUTPUTDIR)\$(@B).hlp $(COPYTO)
 
-$(IPFFILE): $(SRCHTML) makefile ..\$(ENTITYDEFS)
+$(IPFFILE): $(SRCHTML) makefile $(ENTITYDEFS)
     $(HTML2IPF) xfldr$(LANGUAGE).html
     $(COPY) xfldr$(LANGUAGE).ipf $(IPFFILE)
 

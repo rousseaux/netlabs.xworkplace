@@ -1,5 +1,5 @@
 /*
-    Create default eWorkplace configuration folder
+    Create default XWorkplace-lite configuration folder
     Italian version (039)
     (C) 1998-2005 Ulrich M”ller.
 */
@@ -10,8 +10,8 @@
    Configuration Folder which will then be underlined
    in the respective menu items. */
 
-XWorkplace          = "eCS";
-OS2                 = "eCS"
+XWorkplace          = "XWorkplace";
+OS2                 = "OS/2"
 
 /* Config Folder title */
 ConfigFolder        = "Cartella configurazione menu";

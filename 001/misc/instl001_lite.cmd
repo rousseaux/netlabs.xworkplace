@@ -1,5 +1,5 @@
 /*
-    Create eWorkplace installation objects
+    Create XWorkplace-lite installation objects
     English version (001)
     (C) 1998-2005 Ulrich M”ller.
  */
@@ -10,8 +10,8 @@ LanguageCode = "001";
 /* Here come the titles of the objects to be created.
    Translate these to your language. */
 
-XWorkplace          = "eCS";
-OS2                 = "eCS"
+XWorkplace          = "XWorkplace";
+OS2                 = "OS/2"
 
 WorkplaceShell      = "Workplace Shell";
 Screen              = "Screen";
@@ -22,7 +22,7 @@ TrashCan            = "Trash Can";
 Lockup              = "Lockup now";
 FindObjects         = "Find objects";
 Shutdown            = "Shut down";
-XCenter             = "eCenter";
+XCenter             = "XCenter";
 
 /*********************************************
  *

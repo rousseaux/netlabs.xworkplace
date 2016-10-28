@@ -1,5 +1,5 @@
 /*
-    Create default eWorkplace configuration folder
+    Create default XWorkplace-lite configuration folder
     Japanese version (001)
     (C) 1998-2007 Ulrich Moeller.
  */
@@ -13,8 +13,8 @@ options "EXMODE"
    Configuration Folder which will then be underlined
    in the respective menu items. */
 
-XWorkplace          = "eCS"
-OS2                 = "eCS"
+XWorkplace          = "XWorkplace";
+OS2                 = "OS/2"
 
 /* Config Folder title */
 ConfigFolder        = "メニュー構成フォルダー";

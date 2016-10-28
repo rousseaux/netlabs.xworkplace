@@ -1,16 +1,27 @@
-<--PRODUCTINFO-->: eComStation Desktop
-Version 2.1
+<--PRODUCTINFO-->: XWorkplace
+Version &version;
+Built &date;
 
-<--XFL0140-->: &copy;&nbsp;1992, 1996 IBM Corporation.
-<BR>&copy;&nbsp;2001-2008 Serenity Systems International.
+<--XFL0140-->: &copy;&nbsp;1997-2003 Ulrich Moeller.
+<BR>Japanese National Language Support: &copy;&nbsp;2002-2003 Jun Mikami (with additions &copy;&nbsp;2008 Alex Taylor).
 <P>
-Desktop enhancements &copy;&nbsp;1997-2005&nbsp;Ulrich Moeller (built &date;).
-Based on XWorkplace &version;.
-<BR>Contains portions &copy;&nbsp;2000-2015&nbsp;Martin&nbsp;Lafaix and Paul&nbsp;Ratcliffe.
+Contains portions &copy;&nbsp;2000-2015 Martin Lafaix, Paul Ratcliffe, and others.
+<BR>Contains portions from the Standard Function Library &copy;&nbsp;1991-99 iMatix corporation.
+<BR>Contains portions from expat 1.95.1 &copy;&nbsp;1998-2000 Thai Open Source Software Center Ltd.
+<P>
+&xwp; ホームページ: <A HREF="http://www.xworkplace.org">http://www.xworkplace.org</A>
+<BR>不具合追跡の公式ページ: <a href="http://xtracker.netlabs.org">http://xtracker.netlabs.org</a>
+<P>
+&xwp; の一般的な話題: &contact-user;
+<BR>&xwp; の開発 (または開発を学びたい場合) の連絡先: &contact-dev;
+<P>
+&xwp; は、GNU General Public Licence (GPL) に基づいたフリー・ ソフトウェアです。GPL は、&xwp; インストール・ディレク トリー内の
+<A HREF="copying">COPYING ファイル</A>に明記されています。したがって、 &xwp; には何の保証もありません<B></B>。
 
-<BR>Licensed to Serenity&nbsp;Systems&nbsp;International.
-
-<P>Check <A HREF="http://www.ecomstation.com">http://www.ecomstation.com</A> for updates.
+<P>Netlabs の CVS からすべてのソース・コードを入手できます。 詳細は、<A HREF="http://www.xworkplace.org/cvs.html">http://www.xworkplace.org/cvs.html</A> を参照してください。
+GPL の条件に従って、&xwp; を自由に再配布したり変更した りすることができます。
+<P>
+詳細については、<A HREF="inf">&xwp; ユーザーの手引き</A>にある "Notices" の項を参照してください。
 
 <--DUMMY_END_MARKER-->:
 
