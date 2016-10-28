@@ -116,6 +116,7 @@ rc = Destroy("<XWP_FONTFOLDER>");
 
 /*  XCenter (V0.9.7) */
 rc = Destroy("<XWP_XCENTER>");
+rc = Destroy("<XWP_XCENTERSHADOW>");
 
 /*  "XWorkplace Setup" (added V0.9.0) */
 rc = Destroy("<XWP_SETUPMAINSHADOW>");
@@ -123,6 +124,10 @@ rc = Destroy("<XWORKPLACE_SETUP>");
 
 /* "Readme" shadow (added V0.9.2) */
 rc = Destroy("<XWP_READMEMAINSHADOW>");
+rc = Destroy("<XWP_READMENLSMAINSHADOW>");
+
+/* folder created by Xview in <WP_NOWHERE> (added V1.0.11) */
+rc = Destroy("<XWP_SVDETAILS>");
 
 /* User Guide */
 rc = Destroy("<XWP_REF>");
