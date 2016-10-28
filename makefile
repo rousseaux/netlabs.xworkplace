@@ -223,9 +223,9 @@ running:
     $(COPY) release\install\deinst.cmd $(XWPRUNNING)\install
     $(COPY) release\install\delobjs.cmd $(XWPRUNNING)\install
 !ifdef XWPLITE
-    $(COPY) release\install\freshini_lite.cmd $(XWPRUNNING)\install\freshini.cmd
+    $(COPY) $(REL_INST_PATH)\freshini_lite.cmd $(XWPRUNNING)\install\freshini.cmd
 !else
-    $(COPY) release\install\freshini.cmd $(XWPRUNNING)\install
+    $(COPY) $(REL_INST_PATH)\freshini.cmd $(XWPRUNNING)\install
     $(COPY) release\install\od.cmd $(XWPRUNNING)\install
     $(COPY) release\install\soundoff.cmd $(XWPRUNNING)\install
     $(COPY) release\install\xwp.ico $(XWPRUNNING)\install
@@ -404,13 +404,6 @@ $(XWPRUNNING)\bin\xfldr.dll: $(MODULESDIR)\$(@B).dll
         del $(@B).tdf
         $(COPY) TRC00FF.TFF $(DYNAMIC_TRACE):\OS2\SYSTEM\TRACE
         del TRC00FF.TFF
-!endif
-
-MODDEFFILE = \
-!ifdef XWPLITE
-src\shared\xwp_lite.def
-!else
-src\shared\xwp.def
 !endif
 
 $(MODULESDIR)\xfldr.dll: $(OBJS) $(HLPOBJS) $(MODDEFFILE) make\objects.in
@@ -853,9 +846,9 @@ release: really_all
     $(COPY) release\install\deinst.cmd $(XWPRELEASE_MAIN)\install
     $(COPY) release\install\delobjs.cmd $(XWPRELEASE_MAIN)\install
 !ifdef XWPLITE
-    $(COPY) release\install\freshini_lite.cmd $(XWPRELEASE_MAIN)\install\freshini.cmd
+    $(COPY) $(REL_INST_PATH)\freshini_lite.cmd $(XWPRELEASE_MAIN)\install\freshini.cmd
 !else
-    $(COPY) release\install\freshini.cmd $(XWPRELEASE_MAIN)\install
+    $(COPY) $(REL_INST_PATH)\freshini.cmd $(XWPRELEASE_MAIN)\install
     $(COPY) release\install\od.cmd $(XWPRELEASE_MAIN)\install
     $(COPY) release\install\soundoff.cmd $(XWPRELEASE_MAIN)\install
     $(COPY) release\install\xwp.ico $(XWPRELEASE_MAIN)\install
@@ -863,14 +856,14 @@ release: really_all
 !endif
 #    $(COPY) release\install\xwpusers.xml $(XWPRELEASE_MAIN)\install
 !ifndef XWPLITE
-    $(COPY) $(XWP_LANG_CODE)\misc\crobj$(XWP_LANG_CODE).cmd $(XWPRELEASE_NLS)\install\crobj$(XWP_LANG_CODE).cmd
+    $(COPY) $(NLS_MISC_PATH)\crobj$(XWP_LANG_CODE).cmd $(XWPRELEASE_NLS)\install\crobj$(XWP_LANG_CODE).cmd
 !else
-    $(COPY) $(XWP_LANG_CODE)\misc\crobj$(XWP_LANG_CODE)_lite.cmd $(XWPRELEASE_NLS)\install\crobj$(XWP_LANG_CODE).cmd
+    $(COPY) $(NLS_MISC_PATH)\crobj$(XWP_LANG_CODE)_lite.cmd $(XWPRELEASE_NLS)\install\crobj$(XWP_LANG_CODE).cmd
 !endif
 !ifndef XWPLITE
-    $(COPY) $(XWP_LANG_CODE)\misc\instl$(XWP_LANG_CODE).cmd $(XWPRELEASE_NLS)\install\instl$(XWP_LANG_CODE).cmd
+    $(COPY) $(NLS_MISC_PATH)\instl$(XWP_LANG_CODE).cmd $(XWPRELEASE_NLS)\install\instl$(XWP_LANG_CODE).cmd
 !else
-    $(COPY) $(XWP_LANG_CODE)\misc\instl$(XWP_LANG_CODE)_lite.cmd $(XWPRELEASE_NLS)\install\instl$(XWP_LANG_CODE).cmd
+    $(COPY) $(NLS_MISC_PATH)\instl$(XWP_LANG_CODE)_lite.cmd $(XWPRELEASE_NLS)\install\instl$(XWP_LANG_CODE).cmd
 !endif
 !ifndef XWPLITE
     $(COPY) $(XWP_LANG_CODE)\misc\sound$(XWP_LANG_CODE).cmd $(XWPRELEASE_NLS)\install
@@ -922,6 +915,10 @@ release: really_all
 !ifndef XWPLITE
     $(COPY) include\config\drivdlgs.h $(XWPRELEASE_MAIN)\toolkit\config
 !endif
+!ifdef CUSTOM_SCRIPT
+    $(CUSTOM_SCRIPT) $(CUSTBASE) $(XWPRELEASE)\$(BLD_TYP)
+!endif
+#
     @echo $(MAKEDIR)\makefile [$@]: Done copying files.
 # now go shrink executables V0.9.13 (2001-06-17) [umoeller]
 !ifndef XWP_DEBUG
@@ -964,12 +961,12 @@ release_nls: nls
 !if [@md $(XWPRELEASE_NLS)\install 2> NUL]
 !endif
 !ifndef XWPLITE
-    $(COPY) $(XWP_LANG_CODE)\misc\crobj$(XWP_LANG_CODE).cmd $(XWPRELEASE_NLS)\install\crobj$(XWP_LANG_CODE).cmd
-    $(COPY) $(XWP_LANG_CODE)\misc\instl$(XWP_LANG_CODE).cmd $(XWPRELEASE_NLS)\install\instl$(XWP_LANG_CODE).cmd
+    $(COPY) $(NLS_MISC_PATH)\crobj$(XWP_LANG_CODE).cmd $(XWPRELEASE_NLS)\install\crobj$(XWP_LANG_CODE).cmd
+    $(COPY) $(NLS_MISC_PATH)\instl$(XWP_LANG_CODE).cmd $(XWPRELEASE_NLS)\install\instl$(XWP_LANG_CODE).cmd
     $(COPY) $(XWP_LANG_CODE)\misc\sound$(XWP_LANG_CODE).cmd $(XWPRELEASE_NLS)\install
 !else
-    $(COPY) $(XWP_LANG_CODE)\misc\crobj$(XWP_LANG_CODE)_lite.cmd $(XWPRELEASE_NLS)\install\crobj$(XWP_LANG_CODE).cmd
-    $(COPY) $(XWP_LANG_CODE)\misc\instl$(XWP_LANG_CODE)_lite.cmd $(XWPRELEASE_NLS)\install\instl$(XWP_LANG_CODE).cmd
+    $(COPY) $(NLS_MISC_PATH)\crobj$(XWP_LANG_CODE)_lite.cmd $(XWPRELEASE_NLS)\install\crobj$(XWP_LANG_CODE).cmd
+    $(COPY) $(NLS_MISC_PATH)\instl$(XWP_LANG_CODE)_lite.cmd $(XWPRELEASE_NLS)\install\instl$(XWP_LANG_CODE).cmd
 !endif
     @echo $(MAKEDIR)\makefile [$@]: Done copying files.
 !ifdef LXLITEPATH

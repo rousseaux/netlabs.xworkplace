@@ -25,6 +25,7 @@
  *@@include #include "helpers\xstring.h"    // only for setup sets and cmnDescribeError
  *@@include #include <wpfolder.h>           // only for some features
  *@@include #include "shared\common.h"
+ *@@include #include "custom.h"             // strings that may vary in custom builds
  */
 
 /*
@@ -51,21 +52,6 @@
 
     // moved these here from various other locations
     // V1.0.0 (2002-08-26) [umoeller]
-
-    // Toolkit 4 declarations
-
-    #ifndef OBJSTYLE_LOCKEDINPLACE
-        #define OBJSTYLE_LOCKEDINPLACE  0x00020000
-    #endif
-
-    // found these two in the DDK headers
-    #ifndef WM_QUERYOBJECTPTR
-        #define WM_QUERYOBJECTPTR       0x0407
-    #endif
-
-    #ifndef WM_SETOBJECTPTR
-        #define WM_SETOBJECTPTR         0x0408
-    #endif
 
     /*
      *  All these constants are declared as "extern" in
@@ -94,6 +80,26 @@
         #define DECLARE_CMN_STRING(str, def) PCSZ str = def
     #else
         #define DECLARE_CMN_STRING(str, def) extern PCSZ str
+    #endif
+
+    // custom.h uses the DECLARE_CMN_STRING() macro so
+    // it must be included after the macro is defined
+    // added V1.0.11 (2016-09-29) [rwalsh]
+    #include "custom.h"
+
+    // Toolkit 4 declarations
+
+    #ifndef OBJSTYLE_LOCKEDINPLACE
+        #define OBJSTYLE_LOCKEDINPLACE  0x00020000
+    #endif
+
+    // found these two in the DDK headers
+    #ifndef WM_QUERYOBJECTPTR
+        #define WM_QUERYOBJECTPTR       0x0407
+    #endif
+
+    #ifndef WM_SETOBJECTPTR
+        #define WM_SETOBJECTPTR         0x0408
     #endif
 
     /********************************************************************
@@ -417,26 +423,6 @@
      *   Other string constants
      *
      ********************************************************************/
-
-    #ifndef __XWPLITE__
-        #define XWORKPLACE_STRING "XWorkplace"
-        DECLARE_CMN_STRING(ENTITY_OS2, "OS/2");
-        DECLARE_CMN_STRING(ENTITY_WINOS2, "Win-OS/2");
-        DECLARE_CMN_STRING(ENTITY_WARPCENTER, "WarpCenter");
-        DECLARE_CMN_STRING(ENTITY_XCENTER, "XCenter");
-        DECLARE_CMN_STRING(ENTITY_XBUTTON, "X-Button");
-        DECLARE_CMN_STRING(ENTITY_XSHUTDOWN, "XShutdown");
-        DECLARE_CMN_STRING(ENTITY_PAGER, "XPager");
-    #else
-        #define XWORKPLACE_STRING "eComStation"
-        DECLARE_CMN_STRING(ENTITY_OS2, "eComStation");
-        DECLARE_CMN_STRING(ENTITY_WINOS2, "Win16");
-        DECLARE_CMN_STRING(ENTITY_WARPCENTER, "eComCenter");
-        DECLARE_CMN_STRING(ENTITY_XCENTER, "eCenter");
-        DECLARE_CMN_STRING(ENTITY_XBUTTON, "eButton");
-        DECLARE_CMN_STRING(ENTITY_XSHUTDOWN, "eShutdown");
-        DECLARE_CMN_STRING(ENTITY_PAGER, "ePager");
-    #endif
 
     #define STARTUPLOG      "wpstart.log"
 

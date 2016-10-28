@@ -90,12 +90,6 @@ dep:
 # in the $(OUTPUTDIR).
 !include $(PROJECT_BASE_DIR)\make\comp_classcode.in
 
-!ifdef XWPLITE
-GRAFXDIR = grafx_lite
-!else
-GRAFXDIR = grafx
-!endif
-
 # in addition, compile the resources:
 $(OUTPUTDIR)\xwpres.res: $(GRAFXDIR)\*.ico $(GRAFXDIR)\*.bmp $(@B).rc
         $(RC) -r $(@B).rc $(OUTPUTDIR)\$(@B).res

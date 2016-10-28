@@ -31,19 +31,19 @@ LANGUAGE = 039
 all:
     @echo $(MAKEDIR)\makefile [$@]: Going for subdir $(LANGUAGE)\dll
     @cd dll
-    @$(MAKE) -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
+    @$(MAKE) -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING) "XWP_LANG_CODE=$(LANGUAGE)"
     @cd ..
     @echo $(MAKEDIR)\makefile [$@]: Going for subdir $(LANGUAGE)\inf.$(LANGUAGE)
     @cd inf.$(LANGUAGE)
-    @$(MAKE) -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
+    @$(MAKE) -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING) "XWP_LANG_CODE=$(LANGUAGE)"
     @cd ..
     @echo $(MAKEDIR)\makefile [$@]: Going for subdir $(LANGUAGE)\misc
     @cd misc
-    @$(MAKE) -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
+    @$(MAKE) -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING) "XWP_LANG_CODE=$(LANGUAGE)"
     @cd ..
     @echo $(MAKEDIR)\makefile [$@]: Going for subdir $(LANGUAGE)\xwphelp2
     @cd xwphelp2
-    @$(MAKE) -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING)
+    @$(MAKE) -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING) "XWP_LANG_CODE=$(LANGUAGE)"
     @cd ..\..
     @echo ----- Leaving $(MAKEDIR)
 

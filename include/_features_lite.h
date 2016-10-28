@@ -1,10 +1,9 @@
 // general
-#define __EWORKPLACE__                          1
-
 #define __NOEXCEPTIONBEEPS__                    1
 #define __NOPARANOIA__                          1
-
-#define __ECSPRODUCTINFO__                      1
+#define __NOXWPPRODUCTINFO__                    1
+#define __NOBUGREPORT__                         1
+// #define __HAVELOGFILES__                        1
 
 // classes
 // #define __NOOS2KERNEL__                         1

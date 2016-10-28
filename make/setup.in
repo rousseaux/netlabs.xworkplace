@@ -52,6 +52,43 @@
 PROJECT_BASE_DIR = $(CVS_WORK_ROOT)\$(XWPDIR)
 # this should give us something like K:\cvs\xworkplace
 
+# CUSTOMIZATION
+# -------------
+# This enables the builder to create a customized version of
+# XWP (e.g. eComStation's eWorkplace). Both CUSTOM_BUILD and
+# CUSTBASE must be specified in config.in. $(CUSTBASE)\custom.in
+# must define the following macros which are used here and in
+# various makefiles - failure to do so will produce undefined
+# results (see ecs\custom.in for descriptions of each):
+#   XWPNAME, ENTITYDEFS, GRAFXDIR, NLS_MISC_PATH, REL_INST_PATH,
+#   RCDEFS, MODDEFFILE, FEATURES_STRING, CUSTOM_INCLUDES, CUSTOM_SCRIPT
+#
+# @@added V1.0.11 (2016-09-29) [rwalsh]
+
+!if $(CUSTOM_BUILD) == 1
+!include $(CUSTBASE)\custom.in
+#
+!else
+XWPNAME = XWorkplace
+ENTITYDEFS = ..\entities.h
+GRAFXDIR = grafx
+NLS_MISC_PATH = $(PROJECT_BASE_DIR)\$(XWP_LANG_CODE)\misc
+REL_INST_PATH = $(PROJECT_BASE_DIR)\release\install
+#
+!ifdef XWPLITE
+MODDEFFILE = $(PROJECT_BASE_DIR)\src\shared\xwp_lite.def
+RCDEFS = -d __XWPLITE__
+FEATURES_STRING = -i$(PROJECT_BASE_DIR)\include\_features_lite.h
+!else
+MODDEFFILE = $(PROJECT_BASE_DIR)\src\shared\xwp.def
+!undef RCDEFS
+!undef FEATURES_STRING
+!endif
+#
+!undef CUSTOM_INCLUDES
+!undef CUSTOM_SCRIPT
+!endif
+
 # Set the build type used by the rest of the process
 
 !ifdef XWPLITE
@@ -262,7 +299,7 @@ PROJECT_INCLUDE = $(PROJECT_BASE_DIR)\include\classes\wps;$(TKBASE)\h;$(SMBASE)\
 # TOOLS SETUP
 # -----------
 
-RUN_FASTDEP = $(HELPERS_BASE)\fastdep.exe -i .;$(PROJECT_INCLUDE) -o $(OUTPUTDIR)
+RUN_FASTDEP = $(HELPERS_BASE)\fastdep.exe -i .;$(CUSTOM_INCLUDES);$(PROJECT_INCLUDE) -o $(OUTPUTDIR)
 
 RUN_BLDLEVEL = cmd.exe /c $(CVS_WORK_ROOT)\$(XWPDIR)\tools\BuildLevel.cmd
 
@@ -273,20 +310,6 @@ RUN_STRRPL = $(HELPERS_BASE)\strrpl.exe
 RUN_DCD = $(CVS_WORK_ROOT)\$(XWPDIR)\tools\dcd.cmd
 
 RUN_MAPSYM = mapsym
-
-!ifndef ENTITYDEFS
-!ifdef XWPLITE
-ENTITYDEFS = entities_lite.h
-!else
-ENTITYDEFS = entities.h
-!endif
-!endif
-
-!ifdef XWPLITE
-XWPNAME = eWorkplace
-!else
-XWPNAME = XWorkplace
-!endif
 
 !ifndef RUN_H2I
 RUN_H2I = $(HELPERS_BASE)\h2i.exe
@@ -335,10 +358,15 @@ CC = error_in_makefile_do_not_use_CC_directly
 CC_WARNINGS  = /w3 /Wcmp+ /Wcnd- /Wcns+ /Wcnv+ /Wgen /Wcns /Wcpy /Wobs /Word- /Wpro /Wrea /Wret /Wtru
 # /Wuse+ /Wuni+
 
+!ifdef CUSTOM_INCLUDES
+CUSTOM_INCLUDES2 = /I$(CUSTOM_INCLUDES)
+!endif
+
 # compiler options which are the same with debug and release code
 CC_SHARED    = icc $(ANIMATED_MOUSE_POINTERS_STRING) \
 $(REPLHANDLES_STRING) \
 $(XWPLITE_STRING) \
+$(CUSTOM_INCLUDES2) \
 /I$(PROJECT_INCLUDE) /c /gd- /gi+ /q+ /se /ss /g5 \
 # /DTCPV40HDRS
 # V0.9.9 (2001-01-29) [umoeller]: added /g5, finally
@@ -487,12 +515,7 @@ LINK_ALWAYSPACK = $(LINK) /optfunc
 # RESOURCE COMPILER
 # -----------------
 
-RCDEFS =
-!ifdef XWPLITE
-RCDEFS = -d __XWPLITE__
-!endif
-
-RC      = rc -p -x2 -n -i $(TKBASE)\h -i $(PROJECT_BASE_DIR)\include $(RCDEFS)
+RC      = rc -p -x2 -n $(RCDEFS) -i $(TKBASE)\h -i $(PROJECT_BASE_DIR)\include
 # -x2
 # RC options:
 # -p       pack (64K boundaries)

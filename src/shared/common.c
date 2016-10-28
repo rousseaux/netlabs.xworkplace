@@ -23,6 +23,7 @@
  *      to helpers\syssound.c (V0.9.0).
  *
  *@@header "shared\common.h"
+ *@@header "custom.h"
  */
 
 /*
@@ -148,6 +149,8 @@
 // other SOM headers
 
 #pragma hdrstop
+
+#include "custom.h"                     // strings that may vary in custom builds
 
 /* ******************************************************************
  *
@@ -5048,7 +5051,7 @@ VOID cmnBugReport(PXSTRING pstr)
  *
  ********************************************************************/
 
-#ifndef __EWORKPLACE__
+#ifndef __NOXWPPRODUCTINFO__
 
 /*
  *@@ cmnAddProductInfoMenuItem:
@@ -5093,7 +5096,7 @@ BOOL cmnAddProductInfoMenuItem(WPFolder *somSelf,
 
 #endif
 
-#ifdef __ECSPRODUCTINFO__
+#ifdef __NOXWPPRODUCTINFO__
 #define INFO_WIDTH  150
 #else
 #define INFO_WIDTH  250
@@ -5208,7 +5211,7 @@ static const DLGHITEM dlgProductInfo[] =
                 START_TABLE,
                     START_ROW(0),
                         CONTROL_DEF(&G_OKButton),
-#ifndef __EWORKPLACE__
+#ifndef __NOBUGREPORT__
                         CONTROL_DEF(&BugReportButton),
 #endif
                 END_TABLE,
@@ -7089,11 +7092,7 @@ VOID cmnDescribeError(PXSTRING pstr,        // in/out: string buffer (must be in
     }
     else if (IS_IN_RANGE(arc, ERROR_XWP_FIRST, ERROR_XWP_LAST))
     {
-        #ifndef __XWPLITE__
-            pcszErrorClass = "XWorkplace error";
-        #else
-            pcszErrorClass = "eComStation Workplace Shell error";
-        #endif
+        pcszErrorClass = XWORKPLACE_ERROR;
 
         switch (arc)
         {

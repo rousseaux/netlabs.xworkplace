@@ -12,6 +12,7 @@
  *@@include #include <wpobject.h>       // or any other WPS header, for KERNELGLOBALS
  *@@include #include "shared\common.h"
  *@@include #include "shared\kernel.h"
+ *@@include #include "custom.h"         // strings that may vary in custom builds
  */
 
 /*
@@ -29,21 +30,11 @@
 #ifndef KERNEL_HEADER_INCLUDED
     #define KERNEL_HEADER_INCLUDED
 
+    // contains log file names
+    #include "custom.h"
+
     #ifndef INCL_DOSSEMAPHORES
         #error kernel.h requires INCL_DOSSEMAPHORES to be defined.
-    #endif
-
-    // log file names
-    #ifndef __XWPLITE__
-        #define XFOLDER_CRASHLOG        "xwptrap.log"
-        #define XFOLDER_SHUTDOWNLOG     "xshutdwn.log"
-        #define XFOLDER_LOGLOG          "xwplog.log"
-        #define XFOLDER_DMNCRASHLOG     "xdmntrap.log"
-    #else
-        #define XFOLDER_CRASHLOG        "ewptrap.log"
-        #define XFOLDER_SHUTDOWNLOG     "eshutdwn.log"
-        #define XFOLDER_LOGLOG          "ewplog.log"
-        #define XFOLDER_DMNCRASHLOG     "edmntrap.log"
     #endif
 
     /* ******************************************************************

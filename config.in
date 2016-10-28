@@ -159,3 +159,14 @@ XWP_UNLOCK_MODULES = YES
 !ifndef XWP_LANG_CODE
 XWP_LANG_CODE = 001
 !endif
+
+# CUSTOM_BUILD: when set to 1, builds a customized version of
+# XWP (either full or lite) using text, graphics, and install
+# scripts found in the CUSTBASE directory specified below;
+# any value other than 1 builds a generic XWP-branded version
+CUSTOM_BUILD = 0
+
+# CUSTBASE: the base directory of the tree containing your
+# customized values (see the 'ecs' directory for an example).
+# This is ignored if CUSTOM_BUILD is not set to 1.
+CUSTBASE = $(CVS_WORK_ROOT)\$(XWPDIR)\ecs

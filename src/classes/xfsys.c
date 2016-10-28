@@ -93,6 +93,8 @@
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
 // #include "xfobj.h"
 
+#include "custom.h"                     // strings that may vary in custom builds
+
 /* ******************************************************************
  *
  *   here come the XFldSystem instance methods
@@ -395,11 +397,7 @@ SOM_Scope PSZ  SOMLINK xfsysM_wpclsQueryTitle(M_XFldSystem *somSelf)
     // M_XFldSystemData *somThis = M_XFldSystemGetData(somSelf);
     M_XFldSystemMethodDebug("M_XFldSystem","xfsysM_wpclsQueryTitle");
 
-#ifdef __XWPLITE__
-    return("eComStation Kernel");       // @@todo localize
-#else
-    return("OS/2 Kernel");
-#endif
+    return(XWORKPLACE_KERNEL);
 }
 
 /*

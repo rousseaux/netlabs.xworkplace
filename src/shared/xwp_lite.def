@@ -24,8 +24,7 @@
 ;      SOM Emitter emitdef: 2.41
 
 LIBRARY xfldr INITGLOBAL TERMGLOBAL
-
-Description '@#Ulrich M”ller:1.0.11#@ eWorkplace main module'
+Description '@#Ulrich M”ller:1.0.11#@ XWorkplace-lite main module'
 
 PROTMODE
 DATA SINGLE SHARED LOADONCALL
@@ -67,6 +66,7 @@ EXPORTS
     csysQuerySwapperSize
     cmnGetString
     cmnLoadDlg
+    cmnMessageBox
     cmnQueryActiveDesktopHWND
     cmnQueryDefaultFont
     cmnQueryHelpLibrary
@@ -212,12 +212,12 @@ EXPORTS
     M_XFldObjectClassData
     M_XFldObjectNewClass
 
-;    XFldSystemCClassData
-;    XFldSystemClassData
-;    XFldSystemNewClass
-;    M_XFldSystemCClassData
-;    M_XFldSystemClassData
-;    M_XFldSystemNewClass
+    XFldSystemCClassData
+    XFldSystemClassData
+    XFldSystemNewClass
+    M_XFldSystemCClassData
+    M_XFldSystemClassData
+    M_XFldSystemNewClass
 
     XFldWPSCClassData
     XFldWPSClassData
@@ -386,10 +386,3 @@ EXPORTS
     M_XWPVCardCClassData
     M_XWPVCardClassData
     M_XWPVCardNewClass
-
-    XFldSystemCClassData
-    XFldSystemClassData
-    XFldSystemNewClass
-    M_XFldSystemCClassData
-    M_XFldSystemClassData
-    M_XFldSystemNewClass

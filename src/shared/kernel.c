@@ -476,7 +476,7 @@ BOOL krnMakeLogFilename(PSZ pszBuf,             // out: fully qualified filename
                    &pszLogDir))
     {
         // variable not set:
-#ifdef __EWORKPLACE__
+#ifdef __HAVELOGFILES__
         return FALSE;
 #else
         szBoot[0] = doshQueryBootDrive();

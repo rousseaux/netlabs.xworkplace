@@ -1,6 +1,6 @@
 /*  freshini_lite.cmd
 
-    Registers the eWorkplace classes (and class replacements)
+    Registers the XWorkplace-lite classes (and class replacements)
     in the specified user INI file. The WPS will pick up the
     changes after the next WPS startup with that INI file.
 
@@ -13,7 +13,7 @@ call SysLoadFuncs
 parse arg inifile
 if inifile == "" then do
     Say "freshini.cmd (C) 2001-2002 Ulrich M”ller"
-    Say "Sets up the INI file for a new eWorkplace installation."
+    Say "Sets up the INI file for a new XWorkplace-lite installation."
 
     Say "Usage: freshini <inifile>";
     Say "with <inifile> being the full path specification of an INI file."
