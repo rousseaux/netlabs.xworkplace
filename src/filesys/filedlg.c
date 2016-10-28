@@ -1126,6 +1126,8 @@ STATIC VOID FrameRepositionControls(PFILEDLGDATA pWinData)
  *      fnwpFileDlgFrame.
  *
  *@@added V1.0.0 (2002-11-24) [umoeller]
+ *@@changed V1.0.11 (2016-09-29) [rwalsh] - changed mp2 for SN_FOLDERCHANG* to PMIMIRECORDCORE
+ *
  */
 
 STATIC MRESULT FrameClientControl(HWND hwndFrame, PFILEDLGDATA pWinData, MPARAM mp1, MPARAM mp2)
@@ -1138,7 +1140,11 @@ STATIC MRESULT FrameClientControl(HWND hwndFrame, PFILEDLGDATA pWinData, MPARAM 
     switch (SHORT2FROMMP(mp1))
     {
         case SN_FOLDERCHANGING:
-            if (mp2)
+        {
+            WPFolder *pFolder;
+
+            if (   mp2
+                && (pFolder = fdrvGetFSFromRecord((PMINIRECORDCORE)mp2, TRUE)))
             {
                 // say "populating"
                 PMPF_POPULATESPLITVIEW(("SN_FOLDERCHANGING"));
@@ -1146,7 +1152,7 @@ STATIC MRESULT FrameClientControl(HWND hwndFrame, PFILEDLGDATA pWinData, MPARAM 
                                  cmnGetString(ID_XFSI_FDLG_WORKING));
 
                 // update our file path etc.
-                if (_wpQueryFilename((WPFolder*)mp2,
+                if (_wpQueryFilename(pFolder,
                                      szTemp,
                                      TRUE))
                 {
@@ -1157,7 +1163,7 @@ STATIC MRESULT FrameClientControl(HWND hwndFrame, PFILEDLGDATA pWinData, MPARAM 
             else
                 // populate failed:
                 WinSetWindowText(pWinData->hwndDirValue, "");
-
+        }
         break;
 
         case SN_FOLDERCHANGED:

@@ -15,7 +15,7 @@
  */
 
 /*
- *      Copyright (C) 2001-2012 Ulrich M”ller.
+ *      Copyright (C) 2001-2016 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -120,12 +120,14 @@
      *      This one gets sent when a new folder is
      *      populated and the files cnr is to be filled
      *      (that is, FFL_FOLDERSONLY is _not_ set);
-     *      mp2 is the WPFolder that is now populating. If
-     *      a disk is being populated, this is the root folder.
+     *      mp2 is the PMINIRECORDCORE for the WPFolder
+     *      or WPDisk that is now populating. The client
+     *      should resolve this accordingly.
      *
      *      The return code is ignored.
      *
      *@@added V1.0.0 (2002-09-13) [umoeller]
+     *@@changed V1.0.11 (2016-09-29) [rwalsh] - changed mp2 from object* to minirecordcore*
      */
 
     #define SN_FOLDERCHANGING       0x1000
@@ -390,6 +392,28 @@
             ULONG           cThreadsRunning;
                     // if > 0, STPR_WAIT is used for the pointer
 
+                    // added V1.0.11 (2016-08-12) [rwalsh]: fIsViewer...pCnrSplitCol
+
+            BOOL            fIsViewer;
+                    // is this instance a file viewer (TRUE)
+                    // or file dialog (FALSE)?
+
+            ULONG           flState;
+                    // holds flags for both persistent state (e.g. default view)
+                    // and current state (e.g. currently open view)
+
+            ULONG           flIconAttr;
+                    // CNRINFO.flWindowAttr for Icon view
+
+            ULONG           flColumns;
+                    // bitmap of columns to show in Details view
+
+            LONG            lCnrSplitPos;
+                    // position of the container's splitbar in Details view
+
+            PFIELDINFO      pCnrSplitCol;
+                    // last column before the container's splitbar
+
             // populate thread
             THREADINFO      tiSplitPopulate;
             volatile TID    tidSplitPopulate;
@@ -454,5 +478,4 @@
                               WPObject *pObject);
 
 #endif
-
 

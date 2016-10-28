@@ -43,6 +43,8 @@
 
     BOOL fdrvMakeCnrPaint(HWND hwndCnr);
 
+    BOOL fdrvDisableBkgndPainting(HWND hwndCnr, BOOL fDisable);
+
     VOID fdrvSetCnrLayout(HWND hwndCnr,
                           WPFolder *pFolder,
                           ULONG ulView);

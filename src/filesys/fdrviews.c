@@ -127,6 +127,9 @@ typedef struct _SUBCLCNR
     HWND    hwndCnr;
     PFNWP   pfnwpOrig;
 
+    BOOL    fDisabled;      // ignore CM_PAINTBACKGROUND
+                            // added V1.0.11 (2016-08-12) [rwalsh]
+
     SIZEL   szlCnr;         // container dimensions, updated with
                             // every WM_WINDOWPOSCHANGED
 
@@ -563,6 +566,7 @@ MRESULT PaintCnrBackground(HWND hwndCnr,
     ULONG         ulFlags = 0;
 
     if (    !(pSubCnr = (PSUBCLCNR)WinQueryWindowPtr(hwndCnr, QWL_USER))
+         ||  (pSubCnr->fDisabled)
          || !(pSubCnr->pBackground)
          || !(pBkgndStore = &pSubCnr->pBackground->BkgndStore)
        )
@@ -914,6 +918,29 @@ BOOL fdrvMakeCnrPaint(HWND hwndCnr)
         }
     }
 
+    return FALSE;
+}
+
+/*
+ *@@ fdrvDisableBkgndPainting:
+ *      If TRUE, causes the cnr subproc to ignore
+ *      CM_PAINTBACKGROUND so the cnr does the painting
+ *
+ *      Used by Xview when the cnr has been subclassed
+ *      but the user has turned off SPLIT_FDRSTYLES.
+ *
+ *@@added V1.0.11 (2016-08-12) [rwalsh]
+ */
+
+BOOL fdrvDisableBkgndPainting(HWND hwndCnr, BOOL fDisable)
+{
+    PSUBCLCNR     pSubCnr;
+
+    if (pSubCnr = (PSUBCLCNR)WinQueryWindowPtr(hwndCnr, QWL_USER))
+    {
+        pSubCnr->fDisabled = fDisable;
+        return TRUE;
+    }
     return FALSE;
 }
 

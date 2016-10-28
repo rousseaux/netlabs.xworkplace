@@ -95,6 +95,7 @@
 #include "filesys\fdrviews.h"           // common code for folder views
 #include "filesys\object.h"             // XFldObject implementation
 #include "filesys\statbars.h"           // status bar translation logic
+#include "filesys\xview.h"              // file viewer based on splitview
 
 // other SOM headers
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
@@ -1068,6 +1069,7 @@ HWND fdrCreateFrameWithCnr(ULONG ulFrameID,
  *      which stops window creation if != 0 is returned.
  *
  *@@changed V1.0.9 (2011-10-16) [rwalsh]: added CA_MIXEDTARGETEMPH for files container
+ *@@changed V1.0.11 (2016-08-12) [rwalsh]: added support for details view
  */
 
 MPARAM fdrSetupSplitView(HWND hwnd,
@@ -1077,11 +1079,6 @@ MPARAM fdrSetupSplitView(HWND hwnd,
 
     SPLITBARCDATA sbcd;
     HAB hab = WinQueryAnchorBlock(hwnd);
-
-    // set the window font for the main client...
-    // all controls will inherit this
-    winhSetWindowFont(hwnd,
-                      cmnQueryDefaultFont());
 
     /*
      *  split window with two containers
@@ -1110,20 +1107,31 @@ MPARAM fdrSetupSplitView(HWND hwnd,
                                                    ? CCS_MINIICONS | CCS_EXTENDSEL
                                                    : CCS_MINIICONS | CCS_SINGLESEL,
                                                 &psv->hwndFilesCnr);
-    BEGIN_CNRINFO()
-    {
-        // changed V1.0.9 (2011-10-16) [rwalsh]: added CA_MIXEDTARGETEMPH
-        cnrhSetView(   CV_NAME | CV_FLOW
-                     | CV_MINI | CA_MIXEDTARGETEMPH);
-        cnrhSetTreeIndent(30);
-        cnrhSetSortFunc(fnCompareNameFoldersFirst);     // shared/cnrsort.c
-    } END_CNRINFO(psv->hwndFilesCnr);
 
-    // 3) fonts
-    winhSetWindowFont(psv->hwndTreeCnr,
-                      cmnQueryDefaultFont());
-    winhSetWindowFont(psv->hwndFilesCnr,
-                      cmnQueryDefaultFont());
+    if (psv->fIsViewer)
+    {
+        // init viewer settings and enable the selected view
+        // added V1.0.11 (2018-08-01) [rwalsh]
+        xvwInitXview(psv);
+    }
+    else
+    {
+        BEGIN_CNRINFO()
+        {
+            // changed V1.0.9 (2011-10-16) [rwalsh]: added CA_MIXEDTARGETEMPH
+            cnrhSetView(   CV_NAME | CV_FLOW
+                         | CV_MINI | CA_MIXEDTARGETEMPH);
+            cnrhSetTreeIndent(30);
+            cnrhSetSortFunc(fnCompareNameFoldersFirst);     // shared/cnrsort.c
+        } END_CNRINFO(psv->hwndFilesCnr);
+
+        winhSetWindowFont(psv->hwndTreeCnr, cmnQueryDefaultFont());
+        winhSetWindowFont(psv->hwndFilesCnr, cmnQueryDefaultFont());
+
+        // set the window font for the main client...
+        // all controls will inherit this
+        winhSetWindowFont(hwnd, cmnQueryDefaultFont());
+    }
 
     // create split window
     sbcd.ulSplitWindowID = 1;
@@ -1351,9 +1359,6 @@ MRESULT EXPENTRY fnwpSplitController(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
                         // not folders-only: then we need to
                         // refresh the files list
 
-                        WPFolder    *pFolder = fdrvGetFSFromRecord(prec,
-                                                                   TRUE); // folders only
-
                         PMPF_POPULATESPLITVIEW(("  calling fdrvClearContainer"));
 
                         // disable the whitespace context menu and
@@ -1362,9 +1367,11 @@ MRESULT EXPENTRY fnwpSplitController(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
                         psv->precFilesShowing = NULL;
 
                         // notify frame that we're busy
+                        // changed V1.0.11 (2016-09-29) [rwalsh] -
+                        // send prec, not the folder it resolves to
                         SplitSendWMControl(psv,
                                            SN_FOLDERCHANGING,
-                                           pFolder);        // can be NULL
+                                           prec);
 
                         fdrvClearContainer(psv->hwndFilesCnr,
                                            (psv->fUnlockOnClear)
@@ -1407,6 +1414,12 @@ MRESULT EXPENTRY fnwpSplitController(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
                                                &psv->uiDisplaying);
 
                             if ((ULONG)mp2 & FFL_SETBACKGROUND)
+                            {
+                                // changed V1.0.11 (2016-09-29) [rwalsh] -
+                                // don't resolve prec until it's actually needed
+                                WPFolder *pFolder =
+                                    fdrvGetFSFromRecord(prec, TRUE); // folders only
+
                                 // change files container background NOW
                                 // to give user immediate feedback
                                 // V1.0.0 (2002-09-24) [umoeller]: use
@@ -1416,6 +1429,7 @@ MRESULT EXPENTRY fnwpSplitController(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
                                            FM_SETCNRLAYOUT,
                                            pFolder,
                                            0);
+                            }
                         }
                     }
 
@@ -1644,9 +1658,11 @@ MRESULT EXPENTRY fnwpSplitController(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
                         psv->psfvFiles->pRealObject = OBJECT_FROM_PREC((PMINIRECORDCORE)mp1);
 
                         // notify frame that we're done being busy
+                        // changed V1.0.11 (2016-09-29) [rwalsh] -
+                        // send prec, not the folder it resolves to
                         SplitSendWMControl(psv,
                                            SN_FOLDERCHANGED,
-                                           pFolder);
+                                           mp1);
                     }
                 }
 
@@ -2830,9 +2846,10 @@ STATIC MRESULT EXPENTRY fnwpFilesFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MP
  *      creates a WC_FRAME with the split view controller
  *      (fnwpSplitController) as its FID_CLIENT.
  *
- *      The caller is responsible for allocating a FDRSPLITVIEW
- *      structure and passing it in. The struct is zeroed here
- *      and then filled with meaningful data.
+ *      The caller is responsible for allocating a
+ *      FDRSPLITVIEW structure, zeroing it out, and
+ *      passing it in - possibly with some members
+ *      initialized.
  *
  *      The caller must also subclass the frame that is
  *      returned and free that structure on WM_DESTROY.
@@ -2876,6 +2893,7 @@ STATIC MRESULT EXPENTRY fnwpFilesFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MP
  *          subtree on startup.)
  *
  *@@added V1.0.0 (2002-08-28) [umoeller]
+ *@@changed V1.0.11 (2016-08-12) [rwalsh]: don't zero-out *psv
  */
 
 BOOL fdrSplitCreateFrame(WPObject *pRootObject,
@@ -2900,8 +2918,6 @@ BOOL fdrSplitCreateFrame(WPObject *pRootObject,
                          CS_SIZEREDRAW,
                          sizeof(PVOID));
     }
-
-    ZERO(psv);
 
     psv->cbStruct = sizeof(*psv);
     psv->lSplitBarPos = lSplitBarPos;

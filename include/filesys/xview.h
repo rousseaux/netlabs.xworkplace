@@ -28,6 +28,9 @@
                         WPFolder *pRootsFolder,
                         ULONG ulView);
 
+    // pv is actually a PFDRSPLITVIEW
+    void xvwInitXview(void* pv);
+
 #ifdef XVIEW_SRC
 
     /*
@@ -49,6 +52,11 @@
         PSUBCLFOLDERVIEW    psfvBar;    // SUBCLFOLDERVIEW of either the tree
                                         // or the files frame for menu bar support
     
+        SIZEF               szfCharBox; // an unfortunate hack needed to ensure menu
+                                        // text isn't mis-sized after drawing the
+                                        // Options submenu's blank separators
+                                        // (it's here rather than in FDRSPLITVIEW
+                                        // to avoid modifying filedlg.c)
     } XVIEWDATA, *PXVIEWDATA;
     
     /*
@@ -62,9 +70,17 @@
                     y,
                     cx,
                     cy;
-    
+
         LONG        lSplitBarPos;
-    
+
+        ULONG       flState;
+
+        ULONG       flIconAttr;
+
+        ULONG       flColumns;
+
+        LONG        lCnrSplitPos;
+
     } XVIEWPOS, *PXVIEWPOS;
 
     MRESULT EXPENTRY fnwpXviewFrame(HWND hwndFrame, ULONG msg,
