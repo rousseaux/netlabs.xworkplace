@@ -1100,6 +1100,7 @@ STATIC BOOL CreateDefaultWidgets(XCenter *somSelf)
  *@@changed V0.9.16 (2001-10-15) [umoeller]: fixed widget clearing which caused a log entry for empty XCenter
  *@@changed V0.9.19 (2002-04-25) [umoeller]: added exception handling; rewrote WIDGETS= setup string to handle trays
  *@@changed V1.0.7 (2006-12-31) [pr]: added ADDWIDGETS and DELETEWIDGETS setup strings @@fixes 906
+ *@@changed V1.0.1 (2016-10-20) [rwalsh]: move DELETEWIDGETS before ADDWIDGETS so widgets can be rearranged
  */
 
 BOOL ctrpSetup(XCenter *somSelf,
@@ -1207,32 +1208,6 @@ BOOL ctrpSetup(XCenter *somSelf,
         // V1.0.7 (2006-12-31) [pr]
         if (brc)
         {
-            _Pmpf(("   brc still TRUE; scanning ADDWIDGETS string"));
-            if (_wpScanSetupString(somSelf,
-                                   pszSetupString,
-                                   "ADDWIDGETS",
-                                   NULL,
-                                   &cb))
-            {
-                _Pmpf(("got ADDWIDGETS string, %d bytes", cb));
-                if (    cb
-                     && (pszWidgets = malloc(cb))
-                   )
-                {
-                    if (_wpScanSetupString(somSelf,
-                                           pszSetupString,
-                                           "ADDWIDGETS",
-                                           pszWidgets,
-                                           &cb))
-                        brc = ParseWidgetsString(somSelf, pszWidgets, -1, -1);
-
-                    free(pszWidgets);
-                }
-            }
-        }
-
-        if (brc)
-        {
             _Pmpf(("   brc still TRUE; scanning DELETEWIDGETS string"));
             if (_wpScanSetupString(somSelf,
                                    pszSetupString,
@@ -1270,6 +1245,32 @@ BOOL ctrpSetup(XCenter *somSelf,
                                     break;
                             }
                     }
+
+                    free(pszWidgets);
+                }
+            }
+        }
+
+        if (brc)
+        {
+            _Pmpf(("   brc still TRUE; scanning ADDWIDGETS string"));
+            if (_wpScanSetupString(somSelf,
+                                   pszSetupString,
+                                   "ADDWIDGETS",
+                                   NULL,
+                                   &cb))
+            {
+                _Pmpf(("got ADDWIDGETS string, %d bytes", cb));
+                if (    cb
+                     && (pszWidgets = malloc(cb))
+                   )
+                {
+                    if (_wpScanSetupString(somSelf,
+                                           pszSetupString,
+                                           "ADDWIDGETS",
+                                           pszWidgets,
+                                           &cb))
+                        brc = ParseWidgetsString(somSelf, pszWidgets, -1, -1);
 
                     free(pszWidgets);
                 }
