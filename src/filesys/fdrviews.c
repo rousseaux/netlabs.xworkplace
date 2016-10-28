@@ -1446,6 +1446,7 @@ WPFileSystem* fdrvGetFSFromRecord(PMINIRECORDCORE precc,
  *      the above, but the object has the "hidden" attribute on.
  *
  *@@changed V1.0.9 (2011-09-24) [rwalsh]: restructured to improve efficiency
+ *@@changed V1.0.11 (2016-09-29) [rwalsh]: use filter flag not hidden attribute to filter
  */
 
 BOOL fdrvIsInsertable(WPObject *pObject,
@@ -1462,27 +1463,36 @@ BOOL fdrvIsInsertable(WPObject *pObject,
     {
         // folders only:
         WPObject *pobj2;
+        BOOL rc = FALSE;
 
         if (_wpQueryStyle(pObject) & OBJSTYLE_TEMPLATE)
             return FALSE;
 
         if (_somIsA(pObject, _WPFolder))
-            return ((_wpQueryAttr(pObject) & FILE_HIDDEN) == 0);
-
-        // allow disks with INSERT_FOLDERSANDDISKS only
-        if (    (ulFoldersOnly == INSERT_FOLDERSANDDISKS)
-             && (    (_somIsA(pObject, _WPDisk))
-                  || (    (pobj2 = objResolveIfShadow(pObject))
-                       && (ctsIsSharedDir(pobj2))
-                     )
-                )
-           )
-        {
-            // always insert, even if drive not ready
-            return TRUE;
+            rc = TRUE;
+        else {
+            // allow disks with INSERT_FOLDERSANDDISKS only
+            if (    (ulFoldersOnly == INSERT_FOLDERSANDDISKS)
+                 && (    (_somIsA(pObject, _WPDisk))
+                      || (    (pobj2 = objResolveIfShadow(pObject))
+                           && (ctsIsSharedDir(pobj2))
+                         )
+                    )
+               )
+            {
+                // always insert, even if drive not ready
+                rc = TRUE;
+            }
         }
 
-        return FALSE;
+        // if the record is filtered (hidden), don't insert it
+        // added V1.0.11 (2016-09-29) [rwalsh]
+        if (rc) {
+            PMINIRECORDCORE prc = _wpQueryCoreRecord(pObject);
+            rc = (prc && !(prc->flRecordAttr & CRA_FILTERED));
+        }
+
+        return rc;
     }
 
     // INSERT_FILESYSTEMS:
