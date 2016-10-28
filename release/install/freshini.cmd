@@ -4,7 +4,7 @@
     in the specified user INI file. The WPS will pick up the
     changes after the next WPS startup with that INI file.
 
-    (C) 2001 Ulrich M”ller
+    (C) 2001-2002 Ulrich M”ller
  */
 
 call RxFuncAdd 'SysLoadFuncs', 'REXXUTIL', 'SysLoadFuncs'
@@ -12,7 +12,7 @@ call SysLoadFuncs
 
 parse arg inifile
 if inifile == "" then do
-    Say "freshini.cmd (C) 2001 Ulrich M”ller"
+    Say "freshini.cmd (C) 2001-2002 Ulrich M”ller"
     Say "Sets up the INI file for a new XWorkplace installation."
 
     Say "Usage: freshini <inifile>";
@@ -25,13 +25,11 @@ end
 parse source mydir;
 parse var mydir x1 x2 mydir;
 
-say mydir
-
 mydir = filespec("D", mydir)||filespec("P", mydir);
 if (right(mydir, 1) = "\") then
     mydir = left(mydir, length(mydir)-1);
 
-say mydir
+say 'freshini.cmd: install subdirectory is "'mydir'"'
 
 /* mydir now has the install subdir of the xwp dir...
         note that this works even if we are started from
@@ -54,6 +52,9 @@ if (rc == 0) then do
     exit;
 end
 
+/* set base path */
+
+say 'Setting base path "'basedir'"';
 rc = SysINI(inifile, "XWorkplace", "XFolderPath", basedir || '00'x);
 
 rc = RegisterClass("XWPFileSystem");        /* V0.9.16 */

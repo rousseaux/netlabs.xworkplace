@@ -1,10 +1,10 @@
-/*  freshini.cmd
+/*  freshini_lite.cmd
 
     Registers the eWorkplace classes (and class replacements)
     in the specified user INI file. The WPS will pick up the
     changes after the next WPS startup with that INI file.
 
-    (C) 2002 Ulrich M”ller
+    (C) 2001-2002 Ulrich M”ller
  */
 
 call RxFuncAdd 'SysLoadFuncs', 'REXXUTIL', 'SysLoadFuncs'
@@ -51,32 +51,6 @@ if (rc == 0) then do
     Say "Error writing to "inifile". Terminating.";
     exit;
 end
-
-nlscode = 001;
-
-/* check if xfldr049.dll exists in bin */
-
-say 'Searching for NLS DLLs in "'bindir'"...';
-
-rc = SysFileTree(bindir||"\xfldr???.dll", nlsdlls, "FO");
-do i = 1 to nlsdlls.0
-    p2 = lastpos("\", nlsdlls.i);
-    thisdll = substr(nlsdlls.i, p2 + 1);
-    thisdll = left(thisdll, pos(".", thisdll) - 1);
-    /* rule out xfldr.dll which is still found by the above mask */
-    if (length(thisdll) == 8) then do
-        say '  Found NLS DLL "'thisdll'"';
-        nlsthis = substr(thisdll, 6, 3);
-        if (nlsthis > nlscode) then do
-            nlscode = nlsthis;
-        end
-    end
-end
-
-/* set language code */
-
-say 'Setting language code "'nlscode'"';
-rc = SysINI(inifile, "XWorkplace", "Language", nlscode || '00'x);
 
 /* set base path */
 
