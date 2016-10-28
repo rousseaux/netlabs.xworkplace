@@ -44,6 +44,7 @@ FontFolder          = "Tipi di carattere";
 Lockup              = "Bloccare";
 FindObjects         = "Cercare";
 Shutdown            = "Chiusura del sistema";
+XCenter             = "XCenter";
 
 /*********************************************
  *
@@ -235,7 +236,7 @@ call CreateObject;
    moved this down V0.9.19 (2002-04-25) [umoeller]
    */
 class = "XCenter";
-title = "XCenter";
+title = XCenter;
 setup = "";
 id = "<XWP_XCENTER>"
 target = "<XWP_MAINFLDR>";

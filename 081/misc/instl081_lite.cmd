@@ -26,6 +26,7 @@ TrashCan            = "ゴミ入れ";
 Lockup              = "すぐにロック";
 FindObjects         = "オブジェクトの検索";
 Shutdown            = "終了";
+XCenter             = "eCenter";
 
 /*********************************************
  *
@@ -121,7 +122,7 @@ call CreateObject;
 
 /* create eCenter in eCS "Utilities" folder */
 class = "XCenter";
-title = "eCenter";
+title = XCenter;
 setup = "";
 id = "<XWP_XCENTER>"
 target = "<WP_TOOLS>";

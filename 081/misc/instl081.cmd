@@ -51,6 +51,7 @@ FontFolder          = "フォント";
 Lockup              = "すぐにロック";
 FindObjects         = "オブジェクトの検索";
 Shutdown            = "終了";
+XCenter             = "XCenter";
 
 /*********************************************
  *
@@ -242,7 +243,7 @@ call CreateObject;
    moved this down V0.9.19 (2002-04-25) [umoeller]
    */
 class = "XCenter";
-title = "XCenter";
+title = XCenter;
 setup = "";
 id = "<XWP_XCENTER>"
 target = "<XWP_MAINFLDR>";
