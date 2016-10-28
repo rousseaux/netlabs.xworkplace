@@ -33,7 +33,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2012 Ulrich M”ller.
+ *      Copyright (C) 1997-2016 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -591,6 +591,7 @@
 #define ID_XSDI_FDRVIEW_DETAILS         664
 #define ID_XSDI_FDRVIEW_LAZYICONS       665     // added V0.9.20 (2002-08-04) [umoeller]
 #define ID_XSDI_FDRVIEW_SHADOWOVERLAY   666     // added V0.9.20 (2002-08-04) [umoeller]
+#define ID_XSDI_FDRVIEW_XVIEW           667     // added v1.0.11 (2016-09-29) [rwalsh]
 
 // "Add/Edit hotkey" dialog (added V1.0.0) [lafaix]
 #define ID_XSDI_HOTKEY_ADDTITLE         670
@@ -1865,6 +1866,17 @@
 #define ID_XSSI_DRIVERS                 5820    // new with V0.9.0
 #define ID_XSSI_DRIVERCATEGORIES        5821    // new with V0.9.0
 
+// Xview Options submenu
+// added V1.0.11 (2016-08-12) [rwalsh]
+#define ID_XFSI_OPTIONS                 5823
+#define ID_XFSI_DETAILSHDR              5824
+#define ID_XFSI_CNRSPLITBAR             5825
+#define ID_XFSI_ICONHDR                 5826
+#define ID_XFSI_THISFOLDER              5827
+#define ID_XFSI_CNRBACKGROUNDS          5828
+#define ID_XFSI_ALLFOLDERS              5829
+#define ID_XFSI_USETHESESETTINGS        5830
+
 // settings submenu strings
 #define ID_XFSI_SETTINGS                5831
 #define ID_XFSI_SETTINGSNOTEBOOK        5832
@@ -2097,7 +2109,7 @@
 #ifndef __NOTURBOFOLDERS__
 #define ID_XCSI_TURBOFOLDERS            6015        // V0.9.16 (2001-10-25) [umoeller]
 #endif
-#define ID_XCSI_FDRSPLITVIEWS           6016        // V1.0.0 (2002-09-09) [umoeller]
+#define ID_XCSI_FDRXVIEWS               6016        // V1.0.0 (2002-09-09) [umoeller]
 
 #define ID_XCSI_STARTSHUTFEATURES       6020
 #ifndef __ALWAYSREPLACEARCHIVING__
@@ -2390,7 +2402,7 @@
 #define ID_CRSI_DISKFREECONDTOOLTIP     6297        // V1.0.0 (2002-08-21) [umoeller]
 #define ID_CRMI_IPWIDGET_SOURCE         6298        // V1.0.0 (2002-08-21) [umoeller]
 
-#define ID_XFSI_FDR_SPLITVIEW           6299        // V1.0.0 (2002-08-21) [umoeller]
+#define ID_XFSI_FDR_XVIEW               6299        // V1.0.0 (2002-08-21) [umoeller]
 
 #define ID_XFSI_XWPSTARTUPFDR           6300        // V1.0.0 (2002-08-31) [umoeller]
 #define ID_XFSI_XWPSHUTDOWNFDR          6301        // V1.0.0 (2002-08-31) [umoeller]
@@ -2948,12 +2960,36 @@
 #define ID_XFMI_OFS_COPYFILENAME_SHORTNL (WPMENUID_USER+58)      // short name with newlines, added V1.0.0 (2002-11-09) [umoeller]
 #define ID_XFMI_OFS_COPYFILENAME_FULLNL  (WPMENUID_USER+59)      // full name with newlines, added V1.0.0 (2002-11-09) [umoeller]
 
+// Xview's View->Options submenu
+#define ID_XFM_OFS_OPTIONS              (WPMENUID_USER+60)
+#define ID_XFMI_OFS_BLANKSEPARATOR      (WPMENUID_USER+61)
+#define ID_XFMI_OFS_DEFAULTICON         (WPMENUID_USER+62)
+#define ID_XFMI_OFS_DEFAULTDETAILS      (WPMENUID_USER+63)
+#define ID_XFMI_OFS_CNRBACKGROUNDS      (WPMENUID_USER+64)
+#define ID_XFMI_OFS_SETSYSDEFAULT       (WPMENUID_USER+65)
+#define ID_XFMI_OFS_CNRSPLITBAR         (WPMENUID_USER+66)
+
+// IDs to select which columns to display when Xview
+// is in details-view mode - they must be sequential
+#define ID_XFMI_OFS_ICON_COLUMN         (WPMENUID_USER+67)
+#define ID_XFMI_OFS_TITLE_COLUMN        (WPMENUID_USER+68)
+#define ID_XFMI_OFS_CLASS_COLUMN        (WPMENUID_USER+69)
+#define ID_XFMI_OFS_NAME_COLUMN         (WPMENUID_USER+70)
+#define ID_XFMI_OFS_SIZE_COLUMN         (WPMENUID_USER+71)
+#define ID_XFMI_OFS_WDATE_COLUMN        (WPMENUID_USER+72)
+#define ID_XFMI_OFS_WTIME_COLUMN        (WPMENUID_USER+73)
+#define ID_XFMI_OFS_ADATE_COLUMN        (WPMENUID_USER+74)
+#define ID_XFMI_OFS_ATIME_COLUMN        (WPMENUID_USER+75)
+#define ID_XFMI_OFS_CDATE_COLUMN        (WPMENUID_USER+76)
+#define ID_XFMI_OFS_CTIME_COLUMN        (WPMENUID_USER+77)
+#define ID_XFMI_OFS_FLAGS_COLUMN        (WPMENUID_USER+78)
+
 // this is the value used for variable menu items, i.e.
 // those inserted according to the config folder and by
 // the "folder content" functions; XFolder will use this
 // value (i.e. WPMENUID_USER + "menu item id offset"
 // + FIRST_VARIABLE) and increment it until 0x8000 is reached
-#define FIRST_VARIABLE                  65      // raised V1.0.0 (2002-11-09) [umoeller]
+#define FIRST_VARIABLE                  85      // raised V1.0.11 (2016-08-12) [rwalsh]
 #define ID_XFMI_OFS_VARIABLE            (WPMENUID_USER+FIRST_VARIABLE)
 
 #endif

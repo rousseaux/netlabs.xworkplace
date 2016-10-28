@@ -164,6 +164,7 @@ BOOL fdrHasShowAllInTreeView(WPFolder *somSelf)
  *@@changed V1.0.0 (2002-08-24) [umoeller]: added OPEN=SPLITVIEW
  *@@changed V1.0.6 (2006-08-22) [pr]: fixed erroneous WOM_UPDATEALLSTATUSBARS post (from trunk)
  *@@changed V1.0.6 (2006-08-22) [pr]: added DEFAULTVIEW=SPLITVIEW capability @@fixes 827
+ *@@changed V1.0.11 (2016-08-12) [rwalsh]: changed SPLITVIEW view name to XVIEW
  */
 
 BOOL fdrSetup(WPFolder *somSelf,
@@ -190,7 +191,7 @@ BOOL fdrSetup(WPFolder *somSelf,
                                szValue,
                                &cbValue))
         {
-            if (!stricmp(szValue, "SPLITVIEW"))
+            if (!stricmp(szValue, "XVIEW"))
                 krnPostThread1ObjectMsg(T1M_OPENOBJECTFROMPTR,
                                         (MPARAM)somSelf,
                                         (MPARAM)(*G_pulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW)
@@ -205,7 +206,7 @@ BOOL fdrSetup(WPFolder *somSelf,
                                szValue,
                                &cbValue))
         {
-            if (!stricmp(szValue, "SPLITVIEW"))
+            if (!stricmp(szValue, "XVIEW"))
             {
                 rc = _wpSetDefaultView(somSelf,
                                        *G_pulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW);

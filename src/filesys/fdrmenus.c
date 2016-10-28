@@ -1657,7 +1657,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
             winhInsertMenuItem(mi.hwndSubMenu,
                                MIT_END,
                                ulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW,
-                               cmnGetString(ID_XFSI_FDR_SPLITVIEW),
+                               cmnGetString(ID_XFSI_FDR_XVIEW),
                                MIS_TEXT, 0);
 
             // added V1.0.9 (2011-09-11) [rwalsh]: if SplitView is the

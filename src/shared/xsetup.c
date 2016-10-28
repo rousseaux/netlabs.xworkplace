@@ -202,7 +202,7 @@ static FEATURESITEM G_FeatureItemsList[] =
 #ifndef __NOTURBOFOLDERS__
             ID_XCSI_TURBOFOLDERS, ID_XCSI_FOLDERFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
 #endif
-            ID_XCSI_FDRSPLITVIEWS, ID_XCSI_FOLDERFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+            ID_XCSI_FDRXVIEWS, ID_XCSI_FOLDERFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
                     // V1.0.0 (2002-09-09) [umoeller]
 
             // mouse/keyboard features
@@ -1983,7 +1983,7 @@ VOID setFeaturesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                 // WPS startup setting
                 cmnQuerySetting(sfTurboFolders));
 #endif
-        ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_FDRSPLITVIEWS,
+        ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_FDRXVIEWS,
                 // return the current global setting;
                 // cmnQuerySetting would return the initial
                 // WPS startup setting
@@ -2321,7 +2321,7 @@ MRESULT setFeaturesItemChanged(PNOTEBOOKPAGE pnbp,
             break;
 #endif
 
-            case ID_XCSI_FDRSPLITVIEWS:
+            case ID_XCSI_FDRXVIEWS:
                 cmnSetSetting(sfFdrSplitViews, precc->usCheckState);
             break;
 

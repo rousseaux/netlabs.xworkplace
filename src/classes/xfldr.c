@@ -3764,6 +3764,9 @@ SOM_Scope ULONG  SOMLINK xfM_wpclsQueryDefaultView(M_XFolder *somSelf)
         // return that
         // _PmpfF(("returning %u", cmnQuerySetting(sulDefaultFolderView)));
 
+        if (ul == ID_XFMI_OFS_SPLITVIEW)
+            ul += *G_pulVarMenuOfs;
+
         return ul;
     }
 

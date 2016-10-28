@@ -124,7 +124,8 @@ static const CONTROLDEF
     FdrViewInheritCB = LOADDEF_FIRST_AUTORADIO(ID_XSDI_FDRVIEW_INHERIT),
     FdrViewIconCB = LOADDEF_NEXT_AUTORADIO(ID_XSDI_FDRVIEW_ICON),
     FdrViewTreeCB = LOADDEF_NEXT_AUTORADIO(ID_XSDI_FDRVIEW_TREE),
-    FdrViewDetailsCB = LOADDEF_NEXT_AUTORADIO(ID_XSDI_FDRVIEW_DETAILS);
+    FdrViewDetailsCB = LOADDEF_NEXT_AUTORADIO(ID_XSDI_FDRVIEW_DETAILS),
+    FdrViewXviewCB = LOADDEF_NEXT_AUTORADIO(ID_XSDI_FDRVIEW_XVIEW); // V1.0.11 (2016-09-29) [rwalsh]
 
 static const DLGHITEM dlgView[] =
     {
@@ -140,6 +141,8 @@ static const DLGHITEM dlgView[] =
                         CONTROL_DEF(&FdrViewTreeCB),
                     START_ROW(0),
                         CONTROL_DEF(&FdrViewDetailsCB),
+                    START_ROW(0),
+                        CONTROL_DEF(&FdrViewXviewCB),       // V1.0.11 (2016-09-29) [rwalsh]
                 END_TABLE,
             START_ROW(0),
                 // create group on top
@@ -206,6 +209,7 @@ static const XWPSETTING G_ViewBackup[] =
  *@@changed V0.9.12 (2001-04-30) [umoeller]: added default folder views
  *@@changed V0.9.16 (2001-10-11) [umoeller]: now using dialog formatter
  *@@changed V0.9.20 (2002-08-04) [umoeller]: added lazyload settings
+ *@@changed V1.0.11 (2016-09-29) [rwalsh]: added Xview to default folder views
  */
 
 VOID fdrViewInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
@@ -269,6 +273,11 @@ VOID fdrViewInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
             case OPEN_CONTENTS: ulid = ID_XSDI_FDRVIEW_ICON; break;
             case OPEN_TREE:     ulid = ID_XSDI_FDRVIEW_TREE; break;
             case OPEN_DETAILS:  ulid = ID_XSDI_FDRVIEW_DETAILS; break;
+            case ID_XFMI_OFS_SPLITVIEW:
+                ulid = cmnQuerySetting(sfFdrSplitViews)
+                                       ? ID_XSDI_FDRVIEW_XVIEW
+                                       : ID_XSDI_FDRVIEW_INHERIT;
+                break;
 
             default: /* 0 */ ulid = ID_XSDI_FDRVIEW_INHERIT; break;
         }
@@ -285,6 +294,9 @@ VOID fdrViewInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
 
         WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_FDRAUTOREFRESH,
                          pKernelGlobals->fAutoRefreshReplaced);
+
+        WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_FDRVIEW_XVIEW,
+                         cmnQuerySetting(sfFdrSplitViews));
     }
 }
 
@@ -301,6 +313,7 @@ VOID fdrViewInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
  *@@changed V0.9.12 (2001-04-30) [umoeller]: added default folder views
  *@@changed V0.9.20 (2002-08-04) [umoeller]: added lazyload settings
  *@@changed V1.0.5 (2006-06-09) [pr]: fixed Undo
+ *@@changed V1.0.11 (2016-09-29) [rwalsh]: added Xview to default folder views
  */
 
 MRESULT fdrViewItemChanged(PNOTEBOOKPAGE pnbp,
@@ -368,6 +381,14 @@ MRESULT fdrViewItemChanged(PNOTEBOOKPAGE pnbp,
 
         case ID_XSDI_FDRVIEW_DETAILS:
             cmnSetSetting(sulDefaultFolderView, OPEN_DETAILS);
+        break;
+
+        // V1.0.11 (2016-09-29) [rwalsh] - normally this value is offset
+        // by G_pulVarMenuOfs but we can't do that here because it would
+        // break everything if the user changes G_pulVarMenuOfs; instead,
+        // when wpclsQueryDefaultView() is called, it will add the offset
+        case ID_XSDI_FDRVIEW_XVIEW:
+            cmnSetSetting(sulDefaultFolderView, ID_XFMI_OFS_SPLITVIEW);
         break;
 
         case ID_XSDI_FDRVIEW_INHERIT:

@@ -884,6 +884,10 @@
         sfFdrSplitViews,            // new folder split views
                                     // V1.0.0 (2002-09-09) [umoeller]
 
+        sXviewDefaultState,         // v1.0.11 (2016-08-12) [rwalsh]
+        sXviewIconAttrib,           // v1.0.11 (2016-08-12) [rwalsh]
+        sXviewDetailsCols,          // v1.0.11 (2016-08-12) [rwalsh]
+
         // menu settings
         sulVarMenuOfs,
             // variable menu offset, "Paranoia" page

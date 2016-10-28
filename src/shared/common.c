@@ -3165,9 +3165,21 @@ static const SETTINGINFO G_aSettingInfos[] =
             "fFdrSplitViews",
 #else
         sfFdrSplitViews, -1, 0,            // V1.0.9 (2011-10-08) [rwalsh]
-            SP_SETUP_FEATURES, 1,          // enable SplitView by default for eWP
+            SP_SETUP_FEATURES, 1,          // enable Xview by default for eWP
             "fFdrSplitViews",
 #endif
+
+        sXviewDefaultState, -1, 0,          // v1.0.11 (2016-08-12) [rwalsh]
+            SP_SETUP_FEATURES, 0x0D,        // SVF_ICON|SVF_STATUSBAR|SVF_BACKGROUND
+            "XviewDefaultState",
+
+        sXviewIconAttrib, -1, 0,            // v1.0.11 (2016-08-12) [rwalsh]
+            SP_SETUP_FEATURES, 0x300032,    // (CV_NAME|CV_FLOW|CA_MIXEDTARGETEMPH|
+            "XviewIconAttrib",              //  CV_MINI|CA_OWNERPAINTBACKGROUND)
+
+        sXviewDetailsCols, -1, 0,           // v1.0.11 (2016-08-12) [rwalsh]
+            SP_SETUP_FEATURES, 0x800021F3,  // bitmap of the columns displayed
+            "XviewDetailsCols",             // see fdrsplit.c
 
         sulVarMenuOfs, FIELDOFFSET(OLDGLOBALSETTINGS, VarMenuOffset), 4,
             SP_SETUP_PARANOIA, 700,
