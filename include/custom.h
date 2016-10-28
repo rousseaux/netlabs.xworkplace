@@ -84,7 +84,7 @@
     #define CD_PLAY_ICO         "grafx\\cd_play.ico"
     #define CD_PREV_ICO         "grafx\\cd_prev.ico"
     #define CD_STOP_ICO         "grafx\\cd_stop.ico"
-    #define X-MINI_ICO          "grafx\\x-mini.ico"
+    #define X_MINI_ICO          "grafx\\x_mini.ico"
     #define XWPMINILOGO_BMP     "grafx\\xwpminilogo.bmp"
     #define XWPLOGO_BMP         "grafx\\xwplogo.bmp"
     #define TRAY_BMP            "grafx\\tray.bmp"

@@ -84,10 +84,11 @@ entries like this:
 
 This defines the path to the empty TrashCan icon. To replace this
 icon you'd change the entry to something like this:
-    #define XTRASH1_ICO         __GRAFX__"\\emptytrash.ico"
+    #define XTRASH1_ICO         __GRAFX__\\emptytrash.ico
 
 The macro '__GRAFX__' resolves to the path you set in 'custom.h'.
-Note that your graphics files can have any name you wish.
+Note that your graphics files can have any name you wish and that
+there are no quotes around the replacement string.
 
 == INCLUDE ==
 This is more nearly a "miscellaneous" directory containing files

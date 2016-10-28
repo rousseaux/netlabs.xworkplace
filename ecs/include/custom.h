@@ -39,10 +39,10 @@
 
 // this defines the pathnames for the graphics packaged by xwpres.rc;
 // to replace a default graphic with a customized version, replace the
-// default pathname with [__GRAFX__"\\newname"] and place the replacement
-// file in your 'grafx' directory
+// default pathname with [ __GRAFX__\\newname ] (no quotes) and place
+// the replacement file in your 'grafx' directory
 #ifdef RC_INVOKED
-    #define XFLDRDLG_ICO        __GRAFX__"\\ecs.ico"
+    #define XFLDRDLG_ICO        __GRAFX__\\ecs.ico
     #define XFLDSTART1_ICO      "grafx\\xfldstart1.ico"
     #define XFLDSTART2_ICO      "grafx\\xfldstart2.ico"
     #define XFLDSHUT1_ICO       "grafx\\xfldshut1.ico"
@@ -54,22 +54,22 @@
     #define XWPSOUND_ICO        "grafx\\xwpsound.ico"
     #define XWPSCREEN_ICO       "grafx\\xwpscreen.ico"
     #define MMVOLUME_ICO        "grafx\\mmvolume.ico"
-    #define XCENTER_ICO         __GRAFX__"\\xcenter.ico"
+    #define XCENTER_ICO         __GRAFX__\\xcenter.ico
     #define XTRASH1_ICO         "grafx\\xtrash1.ico"
     #define XTRASH2_ICO         "grafx\\xtrash2.ico"
     #define XWPSTRING_ICO       "grafx\\xwpstring.ico"
     #define VCARD_ICO           "grafx\\vcard.ico"
-    #define SHADOW_ICO          __GRAFX__"\\shadow.ico"
+    #define SHADOW_ICO          __GRAFX__\\shadow.ico
     #define HAND_PTR            "grafx\\hand.ptr"
     #define XFSHUT1_ICO         "grafx\\xfshut1.ico"
     #define XFSHUT2_ICO         "grafx\\xfshut2.ico"
     #define XFSHUT3_ICO         "grafx\\xfshut3.ico"
     #define XFSHUT4_ICO         "grafx\\xfshut4.ico"
     #define XFSHUT5_ICO         "grafx\\xfshut5.ico"
-    #define FONTFDR0_ICO        __GRAFX__"\\fontfdr0.ico"
-    #define FONTFDR1_ICO        __GRAFX__"\\fontfdr1.ico"
-    #define FONTOBJ_ICO         __GRAFX__"\\fontobj.ico"
-    #define FONTOBJ_ICO         __GRAFX__"\\fontobj.ico"
+    #define FONTFDR0_ICO        __GRAFX__\\fontfdr0.ico
+    #define FONTFDR1_ICO        __GRAFX__\\fontfdr1.ico
+    #define FONTOBJ_ICO         __GRAFX__\\fontobj.ico
+    #define FONTOBJ_ICO         __GRAFX__\\fontobj.ico
     #define DRIVE_ICO           "grafx\\drive.ico"
     #define DRV_CD_ICO          "grafx\\drv_cd.ico"
     #define DRV_LAN_ICO         "grafx\\drv_lan.ico"
@@ -85,9 +85,9 @@
     #define CD_PLAY_ICO         "grafx\\cd_play.ico"
     #define CD_PREV_ICO         "grafx\\cd_prev.ico"
     #define CD_STOP_ICO         "grafx\\cd_stop.ico"
-    #define X-MINI_ICO          "grafx\\x-mini.ico"
-    #define XWPMINILOGO_BMP     __GRAFX__"\\ecsminilogo.bmp"
-    #define XWPLOGO_BMP         __GRAFX__"\\ecslogo.bmp"
+    #define X_MINI_ICO          "grafx\\x_mini.ico"
+    #define XWPMINILOGO_BMP     __GRAFX__\\ecsminilogo.bmp
+    #define XWPLOGO_BMP         __GRAFX__\\ecslogo.bmp
     #define TRAY_BMP            "grafx\\tray.bmp"
 #endif
 
