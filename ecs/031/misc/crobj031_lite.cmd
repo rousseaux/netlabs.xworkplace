@@ -185,12 +185,10 @@ CreateObject:
         Say 'Fout in object "'title'": Instellingen reeks "'setup'" eindigt niet met een puntkomma.;
         exit;
     end
+
     call charout , 'Maken van "'title'" van class "'class'", instellingen "'setup'"...  '
-    rc = SysCreateObject(class, title, target, setup"TITLE="title";OBJECTID="id";", "U");
-    if (\rc) then do
-        rc = SysCreateObject(class, title, "<WP_DESKTOP>", setup"TITLE="title";OBJECTID="id";", "U");
-    end;
-    if (\rc) then do
+    rc = SysIni("USER", "PM_InstallObject", title||";"||class||";"||target||";RELOCATE", setup||"TITLE="||title||";OBJECTID="||id||";");
+    if (rc <> "") then do
         Say 'Waarschuwing: object "'title'" van class "'class'" kan niet worden gemaakt.'
     end
     else do

@@ -269,13 +269,11 @@ CreateObject:
         Say 'Fout bij object "'title'": Instellingen tekst "'setup'" wordt niet afgesloten met een punt-komma.';
         exit;
     end
+
     call charout , 'Aanmaken van "'title'" van class "'class'", instellingen "'setup'"... '
-    rc = SysCreateObject(class, title, target, setup"TITLE="title";OBJECTID="id";", "U");
-    if (\rc) then do
-        rc = SysCreateObject(class, title, "<WP_DESKTOP>", setup"TITLE="title";OBJECTID="id";", "U");
-    end;
-    if (\rc) then do
-        Say 'Waarschuwing: object "'title'" van class "'class'" kon niet aangemaakt worden.'
+    rc = SysIni("USER", "PM_InstallObject", title||";"||class||";"||target||";RELOCATE", setup||"TITLE="||title||";OBJECTID="||id||";");
+    if (rc <> "") then do
+        Say 'Waarschuwing: object "'title'" van class "'class'" kan niet worden gemaakt.'
     end
     else do
         Say "OK"

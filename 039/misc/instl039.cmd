@@ -269,12 +269,10 @@ CreateObject:
         Say 'Error with object "'title'": Setup string "'setup'" does not end in semicolon.';
         exit;
     end
+
     call charout , 'Creating "'title'" of class "'class'", setup "'setup'"... '
-    rc = SysCreateObject(class, title, target, setup"TITLE="title";OBJECTID="id";", "U");
-    if (\rc) then do
-        rc = SysCreateObject(class, title, "<WP_DESKTOP>", setup"TITLE="title";OBJECTID="id";", "U");
-    end;
-    if (\rc) then do
+    rc = SysIni("USER", "PM_InstallObject", title||";"||class||";"||target||";RELOCATE", setup||"TITLE="||title||";OBJECTID="||id||";");
+    if (rc <> "") then do
         Say 'Warning: object "'title'" of class "'class'" could not be created.'
     end
     else do
