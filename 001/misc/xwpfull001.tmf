@@ -339,8 +339,8 @@ See the &xwp; User Guide for details.
 ;
 ; FEATURES_6016 added with V1.0.0 (2002-09-09) [umoeller]
 ;
-<--FEATURES_6016-->: The "Split views" setting determines whether &xwp; adds a new standard folder view to the "Open" submenu of all context menus.
-A split view consists of two folder views, a Tree view on the left and a second view on the right which displays the objects in the folder that is currently selected in the Tree.
+<--FEATURES_6016-->: The "Xview" setting determines whether &xwp; adds a new standard folder view to the "Open" submenu of all context menus.
+Xview consists of two folder views, a Tree view on the left and a second view on the right which displays the objects in the folder that is currently selected in the Tree.
 You might be vaguely familiar with this feature from Windows.
 
 <--FEATURES_6051-->: The "&xwp; Hook" is a global PM hook which implements some of the features which were present in NPS WPS and WarpEnhancer.

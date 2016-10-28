@@ -324,8 +324,8 @@ Abilitando questa funzione, il popolamento delle cartelle risulter… perci• pi— v
 E' necessario che la classe sostitutiva XWPFileSystem sia installata. La modifica di questa impostazione richiede il riavvio della WPS.
 Si veda la "Guida ad &xwp;" per i dettagli.
 
-<--FEATURES_6016-->: Abilitando questa impostazione &xwp; aggiunge la nuova modalit… "visualizzazione ad elenco" al sottomenu "Aprire come", presente nel menu contestuale di tutte le cartelle.
-La modalit… visualizzazione ad elenco consiste di due finestre di visualizzazione unite ma distinte: la finestra a sinistra Š una visualizzazione ad albero della cartella che si Š aperta, mentre nella finestra di destra sono visualizzati gli oggetti presenti nella cartella selezionata a sinistra.
+<--FEATURES_6016-->: Abilitando questa impostazione &xwp; aggiunge la nuova modalit… "Xview" al sottomenu "Aprire come", presente nel menu contestuale di tutte le cartelle.
+La modalit… Xview consiste di due finestre di visualizzazione unite ma distinte: la finestra a sinistra Š una visualizzazione ad albero della cartella che si Š aperta, mentre nella finestra di destra sono visualizzati gli oggetti presenti nella cartella selezionata a sinistra.
 Una funzionalit… simile Š presente in Windows.
 
 <--FEATURES_6051-->: Lo Hook &xwp; Š uno "hook" PM globale, che permette di implementare alcune delle funzioni caratteristiche di NPS WPS e WarpEnhancer: primo piano automatico, scorrimento delle finestre con il terzo tasto del mouse, oggetti sugli angoli dello schermo ed altre funzioni simili.

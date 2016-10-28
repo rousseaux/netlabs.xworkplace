@@ -337,8 +337,8 @@ Details entnehmen Sie bitte dem &xwp;-Benutzerhandbuch.
 ;
 ; FEATURES_6016 added with V1.0.0 (2002-09-09) [umoeller]
 ;
-<--FEATURES_6016-->: Die Funktion "Geteilte Ordneransichten" fgt eine weitere Ordneransicht zum "™ffnen"-Men eines jeden Ordners hinzu.
-Eine geteilte Ordneransicht besteht aus zwei Ordneransichten, n„mlich einer Strukturanzeige links und einer weiteren Anzeige rechts, die den Inhalt des Ordners anzeigt, der gerade links ausgew„hlt ist.
+<--FEATURES_6016-->: Die Funktion "Xview" fgt eine weitere Ordneransicht zum "™ffnen"-Men eines jeden Ordners hinzu.
+Xview besteht aus zwei Ordneransichten, n„mlich einer Strukturanzeige links und einer weiteren Anzeige rechts, die den Inhalt des Ordners anzeigt, der gerade links ausgew„hlt ist.
 Vielleicht haben Sie diese Funktion schon einmal unter Windows gesehen.
 
 <--FEATURES_6051-->: Der "&xwp;-Hook" ist ein globaler PM-Hook, der einige der Funktionen der Programme NPS WPS und WarpEnhancer implementiert.

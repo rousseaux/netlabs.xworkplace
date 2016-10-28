@@ -344,8 +344,8 @@ Zie de &xwp; Gebruikershandleiding voor details.
 ; FEATURES_6016 added with V1.0.0 (2002-09-09) [umoeller]
 ;
 
-<--FEATURES_6016-->: De "Gedeelde weergave" instelling bepaalt of &xwp; een nieuwe standaard map weergave toevoegt aan het "Open" submenu van alle voorgrondmenu's.
-Een gedeelde weergave bestaat uit een dubbele map weergave, een 'Boom' weergave aan de linkerzijde en een tweede weergave aan de rechterzijde die de objecten in de map laat zien die momenteel in de 'Boom' is geselecteerd.
+<--FEATURES_6016-->: De "Xview" instelling bepaalt of &xwp; een nieuwe standaard map weergave toevoegt aan het "Open" submenu van alle voorgrondmenu's.
+Xview bestaat uit een dubbele map weergave, een 'Boom' weergave aan de linkerzijde en een tweede weergave aan de rechterzijde die de objecten in de map laat zien die momenteel in de 'Boom' is geselecteerd.
 U bent misschien bekend met deze eigenschap vanuit Windows.
 
 <--FEATURES_6051-->: De "&xwp; Hook" is een algemene PM Hook die enige kenmerken toevoegt die aanwezig zijn in NPS WPS en WarpEnhancer.

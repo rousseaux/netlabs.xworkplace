@@ -582,6 +582,16 @@ BEGIN
     ID_XFSI_NONFLOWED                   "1 列(~S)"
     ID_XFSI_NOGRID                      "配置どおり(~A)"
 
+    /* added V1.0.11 (2016-08-12) [rwalsh]: Xview Options submenu */
+    ID_XFSI_OPTIONS                     "~Options"
+    ID_XFSI_DETAILSHDR                  "Details view"
+    ID_XFSI_CNRSPLITBAR                 "- split bar -"
+    ID_XFSI_ICONHDR                     "Icon view"
+    ID_XFSI_THISFOLDER                  "This folder"
+    ID_XFSI_CNRBACKGROUNDS              "~Backgrounds"
+    ID_XFSI_ALLFOLDERS                  "All folders"
+    ID_XFSI_USETHESESETTINGS            "~Use these settings"
+
     /* the following added with V0.9.0 */
     ID_XFSI_WARP4MENUBAR                "メニュー・バー(~M)"
 
@@ -791,7 +801,7 @@ BEGIN
     /* the following item added with V0.9.16 (2001-10-25) [umoeller] */
     ID_XCSI_TURBOFOLDERS                "フォルダーの加速"
     /* the following item added with V1.0.0 (2002-09-09) [umoeller] */
-    ID_XCSI_FDRSPLITVIEWS               "フォルダー分割表示"
+    ID_XCSI_FDRXVIEWS                   "Xview file manager"
 
     ID_XCSI_MOUSEKEYBOARDFEATURES       "マウスおよびキーボードの機能"
 /*     ID_XCSI_ANIMOUSE                    "Animated Mouse Pointers" removed V0.9.19 (2002-06-02) [umoeller] */
@@ -1321,6 +1331,7 @@ BEGIN
     ID_XSDI_FDRVIEW_ICON                "アイコン(~I)"
     ID_XSDI_FDRVIEW_TREE                "ツリー(~R)"
     ID_XSDI_FDRVIEW_DETAILS             "詳細(~S)"
+    ID_XSDI_FDRVIEW_XVIEW               "~Xview"
     /* the following two added V0.9.20 (2002-07-31) [umoeller] */
     ID_XSDI_FDRVIEW_LAZYICONS           "データ・ファイル・アイコンの読み込みを遅延(~Z)"
     ID_XSDI_FDRVIEW_SHADOWOVERLAY       "シャドウ・アイコンに印を付ける(~W)"
@@ -1715,7 +1726,7 @@ BEGIN
             /* ID_XSDI_INFO_BUGREPORT is new with V1.0.0 V1.0.0 (2002-08-28) [umoeller] */
 
     /* new items for folder split views V1.0.0 (2002-08-21) [umoeller] */
-    ID_XFSI_FDR_SPLITVIEW               "分割表示(~S)"
+    ID_XFSI_FDR_XVIEW                   "分割表示(~S)"
 
     /* startup and shutdown folder were missing so far V1.0.0 (2002-08-31) [umoeller] */
     ID_XFSI_XWPSTARTUPFDR               "&xwp; 始動フォルダー"

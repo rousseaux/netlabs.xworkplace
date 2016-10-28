@@ -577,6 +577,16 @@ BEGIN
     ID_XFSI_NONFLOWED                   "Ein~spaltig"
     ID_XFSI_NOGRID                      "~Wie plaziert"
 
+    /* added V1.0.11 (2016-08-12) [rwalsh]: Xview Options submenu */
+    ID_XFSI_OPTIONS                     "~Options"
+    ID_XFSI_DETAILSHDR                  "Details view"
+    ID_XFSI_CNRSPLITBAR                 "- split bar -"
+    ID_XFSI_ICONHDR                     "Icon view"
+    ID_XFSI_THISFOLDER                  "This folder"
+    ID_XFSI_CNRBACKGROUNDS              "~Backgrounds"
+    ID_XFSI_ALLFOLDERS                  "All folders"
+    ID_XFSI_USETHESESETTINGS            "~Use these settings"
+
     /* the following added with V0.9.0 */
     ID_XFSI_WARP4MENUBAR                "~MenÅleiste"
 
@@ -785,7 +795,7 @@ BEGIN
     /* the following item added with V0.9.16 (2001-10-25) [umoeller] */
     ID_XCSI_TURBOFOLDERS                "Turbo-Ordner"
     /* the following item added with V1.0.0 (2002-09-09) [umoeller] */
-    ID_XCSI_FDRSPLITVIEWS               "Geteilte Ordneransichten"
+    ID_XCSI_FDRXVIEWS                   "Xview file manager"
 
     ID_XCSI_MOUSEKEYBOARDFEATURES       "Maus- und Tastaturfunktionen"
 /*     ID_XCSI_ANIMOUSE                    "Animierte Mauszeiger" removed V0.9.19 (2002-06-02) [umoeller] */
@@ -1314,6 +1324,7 @@ BEGIN
     ID_XSDI_FDRVIEW_ICON                "S~ymbol"
     ID_XSDI_FDRVIEW_TREE                "St~rukturanzeige"
     ID_XSDI_FDRVIEW_DETAILS             "Detailanzei~ge"
+    ID_XSDI_FDRVIEW_XVIEW               "~Xview"
     /* the following two added V0.9.20 (2002-07-31) [umoeller] */
     ID_XSDI_FDRVIEW_LAZYICONS           "Symbole fÅr Datendateien ver~zîgert laden"
     ID_XSDI_FDRVIEW_SHADOWOVERLAY       "Symbole der Referenzen kennzei~chnen"
@@ -1706,7 +1717,7 @@ BEGIN
             /* ID_XSDI_INFO_BUGREPORT is new with V1.0.0 (2002-08-28) [umoeller] */
 
     /* new items for folder split views V1.0.0 (2002-08-21) [umoeller] */
-    ID_XFSI_FDR_SPLITVIEW               "~Geteilte Anzeige"
+    ID_XFSI_FDR_XVIEW                   "~Xview"
 
     /* startup and shutdown folder were missing so far V1.0.0 (2002-08-31) [umoeller] */
     ID_XFSI_XWPSTARTUPFDR               "&xwp;-Systemstartordner"
