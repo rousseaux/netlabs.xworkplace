@@ -1,0 +1,98 @@
+
+*****************************************************************
+*                                                               *
+*   BUILDME.XWP                                                 *
+*                                                               *
+*   A Guide To New Build Features Introduced In v1.0.11         *
+*                                                               *
+*   Rich Walsh - October 27, 2016                               *
+*                                                               *
+*****************************************************************
+
+XWP v1.0.11 introduces some of the most significant build-system
+changes seen in many years. However, their impact on the typical
+builder is virtually nil. Still, you may want to review the info
+below to acquaint yourself with the changes and new features now
+available.
+
+The changes fall into three categories: NLS Packaging, Build Type,
+and Customization/Branding.
+
+
+NLS Packaging
+-------------
+
+Previously, users had to install a base package then a separate
+NLS support package. This made sense when XWP was being actively
+developed but no longer does and is an inconvenience for the user.
+
+Starting with v1.0.11, the build system now produces a complete
+standalone package for each supported language (DE/EN/IT/JA/NL).
+There is no longer any need to run nmake against any of the NLS
+targets (although it is still possible, if desired).
+
+Which language version gets built depends on the XWP_LANG_CODE
+specified in 'config.in' or on the nmake commandline. If you
+have already built a German version (XWP_LANG_CODE=049), you
+can produce a complete Italian WPI package in less than a minute
+by re-running 'nmake' and overriding the language code on the
+commandline. For example:
+    nmake XWP_LANG_CODE=039 wpi
+
+Note: XWP has long registered and replaced WPS classes by putting
+entries in 'os2.ini' that the WPS processes when it starts up.
+The WarpIn installer now uses this same method to create XWP's
+objects. Consequently, no XWP objects will be created until the
+WPS is restarted or the system is rebooted.
+
+
+Build Type
+----------
+
+Previously, you could build either a "full" version of XWP that
+used its own icons and logos and included all of its features,
+or you could build a "lite" version known as 'eWP' that had a
+reduced number of features and used eComStation's branding.
+
+Starting with v1.0.11, build type has been separated from branding.
+You can now build an XWP-branded "lite" version, or with a bit of
+work, a "full" or "lite" version with your own icons, logos, and
+branding (see below for details). To build an XWP-lite WPI, run:
+    nmake XWPLITE=1 wpi
+
+
+Customization/Branding
+----------------------
+
+To support customization that is independent of build type, v1.0.11
+introduces the concept of a "vendor" directory that contains all
+customizations: logo, icons, install scripts, even .DEF files that
+define which XWP classes should be linked in. NO changes to the
+body of the source tree are needed.
+
+Since the customizations for eComStation's eWP were already part
+of the source tree, they have been moved to a new 'ecs' directory
+that is a child of the top level 'xworkplace-1-0' directory. XWP-
+branded versions of most of these files have been left in the main
+body of the source tree to support building XWP-lite.
+
+To build an updated version of eWP or your own customized version
+of XWP, open 'config.in' in the main XWP directory. At the bottom
+of the file, you'll find CUSTOM_BUILD which enables/disables custom
+builds and CUSTBASE which holds the path to your vendor directory.
+Since CUSTBASE already points at the 'ecs' directory, building
+eWP requires nothing more than changing CUSTOM_BUILD from '0' to
+'1', then running:
+    nmake XWPLITE=1 wpi
+
+If you want to create your own customized version, you can use
+the 'ecs' directory as a template. Copy it to a location outside
+the tree, change CUSTBASE to point at the new directory, then make
+changes as needed. Note that eWP is a "lite" build and contains
+only "lite" versions of various files. To create a customized
+"full" build, copy the "full" versions of these files from the
+main body of the source tree into your vendor directory.
+
+More detailed information on creating a customized build can be
+found in 'BUILDME.ECS' in the 'ecs' directory.
+

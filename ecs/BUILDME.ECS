@@ -1,0 +1,125 @@
+
+*****************************************************************
+*                                                               *
+*   BUILDME.ECS                                                 *
+*                                                               *
+*   A Guide To Customization and Branding Features              *
+*                                                               *
+*   Rich Walsh - October 27, 2016                               *
+*                                                               *
+*****************************************************************
+
+Staring with XWP v1.0.11, the build system has been modified to
+separate build type (full vs lite) from branding (XWP, eWP, etc).
+It is now possible to build customized, branded versions of XWP
+without making _any_ changes to the body of the source tree.
+
+To support customization and branding, it introduces the concept
+of a "vendor" directory that holds these customizations separate
+from the main body of the tree. This 'ecs' directory is one such
+example. Beside being used to build eWP, it can serve as a tem-
+plate for others who wish to create customized versions of XWP.
+
+Since the changes needed to build an eComStation-branded build
+were already integrated into the source tree, this particular
+vendor directory remains within it. New vendor directories for
+other customized builds should be placed _outside_ the tree and
+should *not* be checked into the main XWP repository at NetLabs.
+
+See 'BuildMe.Xwp' in the root directory for a summary of other
+build system changes introduced in v1.0.11.
+
+
+Quick Start: Building eWP
+-------------------------
+
+The build system changes were designed to minimize disruptions to
+existing workflows. In the case of eWP, only one trivial change
+is required.
+
+In the root directory, open 'config.in' then scroll to the bottom
+where you'll find two new entries: CUSTOM_BUILD and CUSTBASE. The
+first turns custom builds on or off, while the latter contains
+the path to your vendor directory. Since the default path already
+points at this 'ecs' directory, the ONLY thing required to build
+eWP is to change CUSTOM_BUILD from '0' to '1'. Existing scripts
+to build eWP should work as they always did.
+
+Note: the 'nmake' commandline for eWP still needs to include
+"XWPLITE=1". Adding this definition to 'ecs\custom.in' (described
+below) would eliminate this requirement.
+
+
+Overview of a Vendor Directory
+------------------------------
+
+Files used to implement customization and branding were previously
+scattered throughout the XWP source tree. The vendor directory now
+gathers them all together in a single location and organizes them
+in a subdirectory structure that roughly mirrors the main tree.
+
+== CUSTOM.IN ==
+At the root of your vendor directory is a new file, 'custom.in',
+which defines 'nmake' variables the build system will use to locate
+your customizations. Most entries are paths that are relative to
+the CUSTBASE path set in 'config.in'. If your vendor tree retains
+the same structure as the 'ecs' tree, you shouldn't have to change
+anything. The file is fully documented should changes be needed.
+
+== NLS DIRECTORIES ==
+These contain language-specific files and scripts used to modify
+references in XWP's help files and to create XWP's Desktop objects.
+More than any other files in the tree, these control the look and
+feel that users will experience.
+
+== GRAFX ==
+This contains the icons and bitmaps that you want to use in place
+of the default versions. Only those graphics that are different
+from the defaults need be here.
+
+To replace a default icon or bitmap with a customized version, open
+'[vendor dir]\include\custom.h' and scroll down to the section with
+entries like this:
+    #define XTRASH1_ICO         "grafx\\xtrash1.ico"
+
+This defines the path to the empty TrashCan icon. To replace this
+icon you'd change the entry to something like this:
+    #define XTRASH1_ICO         __GRAFX__"\\emptytrash.ico"
+
+The macro '__GRAFX__' resolves to the path you set in 'custom.h'.
+Note that your graphics files can have any name you wish.
+
+== INCLUDE ==
+This is more nearly a "miscellaneous" directory containing files
+gathered from various places in the source tree. More than any
+others, these files determine the extent of your customization:
+which features will be included in your build and which classes
+will be registered during installation.
+
+* _features_lite.h - controls which features and classes will be
+  included or excluded from the build.
+
+* xwp_lite.def - if changes to '_features_lite.h' result in changes
+  to the list of WPS classes that will be included, you must update
+  this file and comment/uncomment the corresponding class entries
+  to avoid build-time or install-time errors.
+
+* freshini_lite.cmd - this registers XWP's WPS classes during
+  installation. As with 'xwp_lite.def', it must be updated if
+  '_features_lite.h' changes the list of classes to be included.
+
+* custom.h - supplies the paths to icons and bitmaps (as described
+  above) and provides a number of NLS-independent strings used by
+  various C source files.
+
+
+Building A Customized "Full" Version
+------------------------------------
+If you use the 'ecs' directory as a template for your own custom
+build, be aware that eWP was designed to be a "lite" build and
+only includes the lite versions of various files. Should you wish
+to create a customized "full" version, you will need to copy the
+corresponding full versions from the main tree then modify them
+accordingly. Note that there is no equivalent to '_features_lite.h'
+for full builds: the file is ignored if XWPLITE is not defined.
+
