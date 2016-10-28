@@ -35,6 +35,7 @@
 #define syssetup "Configuratie"
 #define cfgfdr "Uitgebreide menu opties map"
 #define popmenu "voorgrondmenu"
+#define styler "eStyler"
 
 // V0.9.20: added the following
 #define eexe "Tekst Editor"

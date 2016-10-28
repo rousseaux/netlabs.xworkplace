@@ -1,0 +1,57 @@
+#
+# custom.in for eComStation (eCS)
+#
+# @@added V1.0.11 (2016-09-29) [rwalsh]
+#
+# Note: since eWorkplace was designed to be a "lite" build,
+# the "!ifdef XWPLITE" tests below are unnecessary. They are
+# included so other builders can use this file as a template
+# for creating both "full" and "lite" customized builds.
+
+# a replacement for the name 'XWorkplace'
+XWPNAME = eWorkplace
+
+# path to the file containing substitutions
+# for terms like 'XWP' or 'OS/2'
+ENTITYDEFS = $(CUSTBASE)\$(XWP_LANG_CODE)\entities.h
+
+# path to the NLS 'misc' directory
+NLS_MISC_PATH = $(CUSTBASE)\$(XWP_LANG_CODE)\misc
+
+# path to the directory containing custom icons & bitmaps
+GRAFXDIR = $(CUSTBASE)\grafx
+
+# path to 'custom.h' and your version of '_features_lite.h'
+CUSTOM_INCLUDES = $(CUSTBASE)\include
+
+# path to 'freshini.cmd' which registers and replaces WPS classes
+REL_INST_PATH = $(CUSTOM_INCLUDES)
+
+# script to run after all files have been copied to the release directory;
+# $(CUSTBASE) and $(XWPRELEASE)\$(BLD_TYP) are supplied as arguments;
+# can be used to add/delete files from the package - NOT used by eWP
+# example: CUSTOM_SCRIPT = $(CUSTOM_INCLUDES)\copyfiles.cmd
+!undef CUSTOM_SCRIPT
+
+# definitions passed to rc.exe for use by 'xwpres.rc';
+!ifdef XWPLITE
+RCDEFS = -i $(CUSTOM_INCLUDES) -d __GRAFX__=$(GRAFXDIR) -d __XWPLITE__
+!else
+RCDEFS = -i $(CUSTOM_INCLUDES) -d __GRAFX__=$(GRAFXDIR)
+!endif
+
+# path to the '.def' files used to link 'xfldr.dll
+# note: if you change the classes that are included/excluded
+# in '_features_lite.h', you must also update 'xwp_lite.def'
+!ifdef XWPLITE
+MODDEFFILE = $(CUSTOM_INCLUDES)\xwp_lite.def
+!else
+MODDEFFILE = $(CUSTOM_INCLUDES)\xwp.def
+!endif
+
+# path to your customized version of '_features_lite.h';
+# if XWPLITE is undefined, this should also be undefined
+!ifdef XWPLITE
+FEATURES_STRING = -i$(CUSTOM_INCLUDES)\_features_lite.h
+!endif
+

@@ -26,6 +26,7 @@
 #define syssetup "System Setup"
 #define cfgfdr "\"Extended Menu Options\" folder"
 #define popmenu "pop-up menu"
+#define styler "eStyler"
 
 // V0.9.20: added the following
 #define eexe "Text Editor"

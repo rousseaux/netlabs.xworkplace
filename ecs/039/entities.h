@@ -26,6 +26,7 @@
 #define syssetup "Impostazione del sistema"
 #define cfgfdr "Cartella \"Opzioni menu estesi\""
 #define popmenu "menu contestual"
+#define styler "eStyler"
 
 // V0.9.20: added the following
 #define eexe "Editor di testo"

@@ -38,6 +38,7 @@
 #define syssetup "Systemkonfiguration"
 #define cfgfdr "Ordner \"Erweiterte Menoptionen\""
 #define popmenu "Kontextmen"
+#define styler "eStyler"
  
 // V0.9.20: added the following
 #define eexe "Texteditor"
