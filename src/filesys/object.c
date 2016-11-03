@@ -1184,7 +1184,23 @@ VOID objRefreshUseItems(WPObject *somSelf,
                    MPFROM2SHORT(1,
                                 flInvalidate));     // set above V0.9.20 (2002-07-31) [umoeller]
 
-        // @@todo resort the folder
+        // re-sort the cnr using the existing sort proc
+        // note: this assumes the folder is currently sorted by title
+        // or real name which is almost always the case - if it isn't,
+        // an unneeded sort may cost less than confirming it isn't needed
+        // added V1.0.11 (2016-10-29) [rwalsh]
+        if (pszNewTitleCopy) {
+            CNRINFO ci;
+            if (WinSendMsg(pRecordItem->hwndCnr,
+                           CM_QUERYCNRINFO,
+                           (MPARAM)&ci,
+                           (MPARAM)sizeof(ci))
+                && ci.pSortRecord)
+                WinSendMsg(pRecordItem->hwndCnr,
+                           CM_SORTRECORD,
+                           (MPARAM)ci.pSortRecord,
+                           0);
+        }
     }
 
     // refresh open views of this object
