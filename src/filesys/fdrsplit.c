@@ -1398,6 +1398,11 @@ MRESULT EXPENTRY fnwpSplitController(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
                             (psv->pobjUseList = OBJECT_FROM_PREC(prec))
                            )
                         {
+                            WPFolder *pFolder;
+                            CNRINFO  CnrInfo;
+                            LONG     lAlwaysSort;
+                            LONG     lDefaultSort;
+
                             psv->uiDisplaying.type = USAGE_OPENVIEW;
                             memset(&psv->viDisplaying, 0, sizeof(VIEWITEM));
                             psv->viDisplaying.view =
@@ -1413,13 +1418,21 @@ MRESULT EXPENTRY fnwpSplitController(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
                             _wpAddToObjUseList(psv->pobjUseList,
                                                &psv->uiDisplaying);
 
+                            // for sorting & setting the background, we need
+                            // the folder, not a drive if that's what's selected
+                            pFolder = fdrvGetFSFromRecord(prec, TRUE); // folders only
+
+                            // set sort criterion to the selected folder's default
+                            // changed V1.0.11 (2016-10-29) [rwalsh]
+                            _xwpQueryFldrSort(pFolder, &lDefaultSort, 0, &lAlwaysSort);
+                            CnrInfo.pSortRecord = lAlwaysSort
+                                                  ? (void*)fdrQuerySortFunc(pFolder, lDefaultSort)
+                                                  : NULL;
+                            WinSendMsg(psv->hwndFilesCnr, CM_SETCNRINFO,
+                                       (MPARAM)&CnrInfo, (MPARAM)CMA_PSORTRECORD);
+
                             if ((ULONG)mp2 & FFL_SETBACKGROUND)
                             {
-                                // changed V1.0.11 (2016-09-29) [rwalsh] -
-                                // don't resolve prec until it's actually needed
-                                WPFolder *pFolder =
-                                    fdrvGetFSFromRecord(prec, TRUE); // folders only
-
                                 // change files container background NOW
                                 // to give user immediate feedback
                                 // V1.0.0 (2002-09-24) [umoeller]: use

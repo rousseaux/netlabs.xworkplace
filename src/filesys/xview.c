@@ -1795,6 +1795,9 @@ BOOL xvwSetupDetailsView(PFDRSPLITVIEW psv);
 void xvwInitXview(void* pv)
 {
     PFDRSPLITVIEW psv = (PFDRSPLITVIEW)pv;
+    CNRINFO CnrInfo;
+    LONG    lAlwaysSort;
+    LONG    lDefaultSort;
 
     // set up icon view attributes
     if (!psv->flIconAttr)
@@ -1841,11 +1844,12 @@ void xvwInitXview(void* pv)
         xvwToggleCnrBackground(psv);
     }
 
-    // set the default sort criterion
-    BEGIN_CNRINFO()
-    {
-        cnrhSetSortFunc(fnCompareNameFoldersFirst);
-    } END_CNRINFO(psv->hwndFilesCnr);
+    // set sort criterion to the root folder's default
+    _xwpQueryFldrSort(psv->pRootsFolder, &lDefaultSort, 0, &lAlwaysSort);
+    CnrInfo.pSortRecord = lAlwaysSort
+                          ? (void*)fdrQuerySortFunc(psv->pRootsFolder, lDefaultSort)
+                          : NULL;
+    WinSendMsg(psv->hwndFilesCnr, CM_SETCNRINFO, (MPARAM)&CnrInfo, (MPARAM)CMA_PSORTRECORD);
 
     // finally, set the selected view and we're done
     xvwSetFilesCnrView(psv, (psv->flState & XVF_OPEN_MASK));
