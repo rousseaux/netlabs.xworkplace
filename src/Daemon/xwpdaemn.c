@@ -1167,19 +1167,25 @@ STATIC VOID ProcessSlidingFocus(HWND hwndFrameInBetween, // in: != NULLHANDLE if
     if (G_ulMovingPtrTimer)
         return;
 
-    // V0.9.7 (2000-12-08) [umoeller]:
-    // rule out XCenter, if "ignore XCenter" is on
-    // now always ignoring XCenter V0.9.19 (2002-05-07) [umoeller]
+    // get the client to see if it's a window class
+    // that requires special handling
     hwndClient = WinWindowFromID(hwnd2Activate, FID_CLIENT);
-            // also needed below for seamless
-    // Is-XCenter check: the window must have an FID_CLIENT
-    // whose class name is WC_XCENTER_CLIENT
+
+    // exclude various window classes that shouldn't be brought
+    // to the top or which don't react well when we try
+    // changed v1.0.11 (2016-10-29) [abuchinger]: additional excluded wnd classes
     if (hwndClient)
     {
         CHAR szClass[100];
         WinQueryClassName(hwndClient, sizeof(szClass), szClass);
-        if (   (!strcmp(szClass, WC_XCENTER_CLIENT))  // target is XCenter
-            || (!strcmp(szClass, "SALSUBFRAME")) // V1.0.8 target is Open Office non-frame window
+        if (   !strcmp(szClass, WC_XCENTER_CLIENT)      // XCenter
+            || !strcmp(szClass, "SALSUBFRAME")          // Open Office non-frame window
+            || !strcmp(szClass, "MozillaWindowClass")   // Firefox et al.
+            || !strcmp(szClass, "Visual SlickEdit")     // Visual SlickEdit
+            || strstr(szClass, "Win32")                 // Innotek Virtual PC
+            || strstr(szClass, "MRED_")                 // MED
+            || strstr(szClass, "vsapi")                 // Visual SlickEdit windows
+            || strstr(szClass, "vs_")                   // Visual SlickEdit drop downs
            )
             return;
     }
