@@ -64,6 +64,7 @@
 #define INCL_DOSDEVICES
 #define INCL_DOSDEVIOCTL
 #define INCL_DOSERRORS
+#define INCL_DOSMISC
 
 #define INCL_WINWINDOWMGR
 #define INCL_WINMESSAGEMGR
@@ -2186,6 +2187,22 @@ STATIC void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
                                (PSZ)WPOBJID_DESKTOP); // "<WP_DESKTOP>",
 
                 _wpSaveImmediate(pShutdownData->SDConsts.pActiveDesktop);
+
+                // if restarting the Desktop, prevent apps whose icons are
+                // on the Desktop from being closed (i.e. normal workarea
+                // behavior); skip this if "SET RESTARTOBJECTS=YES" is set
+                // in config.sys since all open apps will be restarted
+                // regardless of whether they're already running
+                // added v1.0.11 (2016-10-29) [rwalsh]
+                if (pShutdownData->sdParams.ulCloseMode == SHUT_RESTARTWPS) {
+                    PSZ pszValue;
+
+                    if (   !DosScanEnv("RESTARTOBJECTS", &pszValue)
+                        && stricmp(pszValue, "YES"))
+                        _wpModifyFldrFlags(pShutdownData->SDConsts.pActiveDesktop,
+                                           FOI_WORKAREA, 0);
+                }
+
                 _wpClose(pShutdownData->SDConsts.pActiveDesktop);
                 _wpWaitForClose(pShutdownData->SDConsts.pActiveDesktop,
                                 NULLHANDLE,     // all views
