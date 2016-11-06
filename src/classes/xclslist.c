@@ -139,6 +139,10 @@
 // generic headers
 #include "setup.h"                      // code generation and debugging options
 
+// don't generate any code if XWPClassList
+// has been excluded from an XWPLITE build
+#ifndef __NOWPSCLASSLIST__
+
 // headers in /helpers
 #include "helpers\except.h"             // exception handling
 #include "helpers\winh.h"               // PM helper routines
@@ -594,4 +598,5 @@ SOM_Scope ULONG  SOMLINK xwlistM_wpclsQueryIconData(M_XWPClassList *somSelf,
     return (sizeof(ICONINFO));
 }
 
+#endif  // #ifndef __NOWPSCLASSLIST__
 

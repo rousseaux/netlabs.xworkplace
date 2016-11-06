@@ -70,6 +70,10 @@
 // generic headers
 #include "setup.h"                      // code generation and debugging options
 
+// don't generate any code if XFldShutdown
+// has been excluded from an XWPLITE build
+#ifndef __NOXSHUTDOWN__
+
 // headers in /helpers
 
 // SOM headers which don't crash with prec. header files
@@ -247,4 +251,6 @@ SOM_Scope ULONG  SOMLINK xfshutM_wpclsQueryIconDataN(M_XFldShutdown *somSelf,
 
     return (sizeof(ICONINFO));
 }
+
+#endif  // #ifndef __NOXSHUTDOWN__
 

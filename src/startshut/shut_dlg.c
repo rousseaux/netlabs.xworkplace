@@ -854,8 +854,12 @@ ULONG xsdConfirmRestartWPS(PSHUTDOWNPARAMS psdParms)
                                            ID_SDDI_MESSAGEAGAIN)))
                     fl |= XSD_NOCONFIRM;
     #endif
-                // changed V1.0.9 (2011-10-15) [rwalsh]: moved out of #ifndef block above
+
+    #ifndef __NOXSHUTDOWN__
+		// save settings if XSHUTDOWN is enabled
+                // changed V1.0.11 (2016-10-29) [rwalsh]:
                 cmnSetSetting(sflXShutdown, fl);
+    #endif
 
                 // V0.9.19 (2002-04-17) [umoeller]
                 if (winhIsDlgItemChecked(hwndConfirm,

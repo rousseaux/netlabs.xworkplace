@@ -74,6 +74,10 @@
 // generic headers
 #include "setup.h"                      // code generation and debugging options
 
+// don't generate any code if XFldSystem
+// has been excluded from an XWPLITE build
+#ifndef __NOOS2KERNEL__
+
 // headers in /helpers
 #include "helpers\dosh.h"               // Control Program helper routines
 
@@ -470,4 +474,5 @@ SOM_Scope ULONG  SOMLINK xfsysM_wpclsQueryIconData(M_XFldSystem *somSelf,
     return (sizeof(ICONINFO));
 }
 
+#endif  // #ifndef __NOOS2KERNEL__
 

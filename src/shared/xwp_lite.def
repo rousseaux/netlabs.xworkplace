@@ -240,12 +240,12 @@ EXPORTS
 ;    M_XWPSetupClassData
 ;    M_XWPSetupNewClass
 
-    XWPClassListCClassData
-    XWPClassListClassData
-    XWPClassListNewClass
-    M_XWPClassListCClassData
-    M_XWPClassListClassData
-    M_XWPClassListNewClass
+;    XWPClassListCClassData
+;    XWPClassListClassData
+;    XWPClassListNewClass
+;    M_XWPClassListCClassData
+;    M_XWPClassListClassData
+;    M_XWPClassListNewClass
 
     XWPTrashCanCClassData
     XWPTrashCanClassData

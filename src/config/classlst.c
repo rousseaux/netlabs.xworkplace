@@ -82,6 +82,10 @@
 // generic headers
 #include "setup.h"                      // code generation and debugging options
 
+// don't generate any code if XWPClassList
+// has been excluded from an XWPLITE build
+#ifndef __NOWPSCLASSLIST__
+
 // headers in /helpers
 #include "helpers\comctl.h"             // common controls (window procs)
 #include "helpers\cnrh.h"               // container helper routines
@@ -3314,3 +3318,4 @@ HWND cllCreateClassListView(WPObject *somSelf,
     return (hwndFrame);
 }
 
+#endif  // #ifndef __NOWPSCLASSLIST__

@@ -24,9 +24,7 @@ $(OUTPUTDIR)\xfobj.obj \
 $(OUTPUTDIR)\xwppgmf.obj \
 $(OUTPUTDIR)\xfsys.obj \
 $(OUTPUTDIR)\xfwps.obj \
-!ifndef XWPLITE
 $(OUTPUTDIR)\xfstart.obj \
-!endif
 $(OUTPUTDIR)\xfshut.obj \
 !ifndef XWPLITE
 $(OUTPUTDIR)\xmmcdplay.obj \

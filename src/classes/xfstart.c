@@ -70,6 +70,10 @@
 // generic headers
 #include "setup.h"                      // code generation and debugging options
 
+// don't generate any code if XFldStartup
+// has been excluded from an XWPLITE build
+#ifndef __NOXWPSTARTUP__
+
 // headers in /helpers
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\winh.h"               // PM helper routines
@@ -684,4 +688,6 @@ SOM_Scope ULONG  SOMLINK xfstupM_wpclsQueryIconDataN(M_XFldStartup *somSelf,
 
     return (sizeof(ICONINFO));
 }
+
+#endif  // #ifndef __NOXWPSTARTUP__
 

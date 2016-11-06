@@ -202,6 +202,12 @@
 
     #ifdef __XWPLITE__
         #include "_features_lite.h"
+
+        // this disables selected code in shared\setup.c;
+        // it was removed from _features_lite.h because the
+        // XWPSetup class itself is never included in XWPLITE
+        // added v1.0.11 (2016-10-29) [rwalsh]
+        #define __NOXWPSETUP__  1
     #endif
 
     /*************************************************************
