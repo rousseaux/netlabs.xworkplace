@@ -1189,17 +1189,46 @@ VOID objRefreshUseItems(WPObject *somSelf,
         // or real name which is almost always the case - if it isn't,
         // an unneeded sort may cost less than confirming it isn't needed
         // added V1.0.11 (2016-10-29) [rwalsh]
-        if (pszNewTitleCopy) {
+        if (pszNewTitleCopy)
+        {
             CNRINFO ci;
             if (WinSendMsg(pRecordItem->hwndCnr,
                            CM_QUERYCNRINFO,
                            (MPARAM)&ci,
                            (MPARAM)sizeof(ci))
                 && ci.pSortRecord)
+            {
+                RECTL   rclBefore;
+                RECTL   rclAfter;
+                QUERYRECORDRECT qrr;
+
+                qrr.cb = sizeof(qrr);
+                qrr.pRecord = (PRECORDCORE)pRecordItem->pRecord;
+                qrr.fRightSplitWindow = FALSE;
+                qrr.fsExtent = CMA_ICON;
+
+                WinSendMsg(pRecordItem->hwndCnr,
+                           CM_QUERYRECORDRECT,
+                           (MPARAM)&rclBefore,
+                           (MPARAM)&qrr);
+
                 WinSendMsg(pRecordItem->hwndCnr,
                            CM_SORTRECORD,
                            (MPARAM)ci.pSortRecord,
                            0);
+
+                WinSendMsg(pRecordItem->hwndCnr,
+                           CM_QUERYRECORDRECT,
+                           (MPARAM)&rclAfter,
+                           (MPARAM)&qrr);
+
+                // scroll the window so the icon remains in the same
+                // position it was previously (to the extent possible)
+                WinSendMsg(pRecordItem->hwndCnr,
+                           CM_SCROLLWINDOW,
+                           (MPARAM)CMA_VERTICAL,
+                           (MPARAM)(rclBefore.yBottom - rclAfter.yBottom));
+            }
         }
     }
 
