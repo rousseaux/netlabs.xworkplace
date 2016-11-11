@@ -100,6 +100,7 @@
 // other SOM headers
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
 #include <wprootf.h>
+#include <wphwmgr.h>
 
 /* ******************************************************************
  *
@@ -2860,6 +2861,52 @@ STATIC MRESULT EXPENTRY fnwpFilesFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MP
 }
 
 /*
+ *@@ InsertIfWPHwManager:
+ *
+ *      This works around a special situation that only
+ *      occurs with the WPHwManager object. If it is inserted
+ *      as the root folder of a container in Tree view, its
+ *      _wpCnrInsertObject() override also inserts the first
+ *      few nodes of its device tree. These Transient objects
+ *      will cause a trap when selected in the Tree window.
+ *
+ *      Changing the Tree window to Icon view before the method
+ *      is invoked, then restoring Tree view afterwards prevents
+ *      the extra objects from being inserted.
+ *
+ *@@added V1.0.11 (2016-10-29) [rwalsh]
+ */
+
+PMINIRECORDCORE InsertIfWPHwManager(PFDRSPLITVIEW psv)
+{
+    PMINIRECORDCORE pRootRec;
+    POINTL          ptlIcon = {0, 0};
+    CNRINFO         ci;
+
+    if (!_somIsA(psv->pRootObject, _WPHwManager))
+        return NULL;
+
+    WinSendMsg(psv->hwndTreeCnr, CM_QUERYCNRINFO,
+               (MPARAM)&ci, (MPARAM)sizeof(ci));
+
+    ci.flWindowAttr &= ~CV_TREE;
+    WinSendMsg(psv->hwndTreeCnr, CM_SETCNRINFO,
+               (MPARAM)&ci, (MPARAM)CMA_FLWINDOWATTR);
+
+    pRootRec = _wpCnrInsertObject(psv->pRootObject,
+                                  psv->hwndTreeCnr,
+                                  &ptlIcon,
+                                  NULL,       // parent record
+                                  NULL);      // RECORDINSERT
+
+    ci.flWindowAttr |= CV_TREE;
+    WinSendMsg(psv->hwndTreeCnr, CM_SETCNRINFO,
+               (MPARAM)&ci, (MPARAM)CMA_FLWINDOWATTR);
+
+    return pRootRec;
+}
+
+/*
  *@@ fdrSplitCreateFrame:
  *      creates a WC_FRAME with the split view controller
  *      (fnwpSplitController) as its FID_CLIENT.
@@ -2975,13 +3022,14 @@ BOOL fdrSplitCreateFrame(WPObject *pRootObject,
                                               psv->hwndMainFrame,
                                               psv->hwndTreeCnr);
 
-
         // insert somSelf as the root of the tree
-        pRootRec = _wpCnrInsertObject(pRootObject,
-                                      psv->hwndTreeCnr,
-                                      &ptlIcon,
-                                      NULL,       // parent record
-                                      NULL);      // RECORDINSERT
+        // with special handling if it's WPHwManager
+        if (!(pRootRec = InsertIfWPHwManager(psv)))
+            pRootRec = _wpCnrInsertObject(pRootObject,
+                                          psv->hwndTreeCnr,
+                                          &ptlIcon,
+                                          NULL,       // parent record
+                                          NULL);      // RECORDINSERT
 
         // _wpCnrInsertObject subclasses the container owner,
         // so subclass this with the XFolder subclass
