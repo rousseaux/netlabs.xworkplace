@@ -1420,28 +1420,30 @@ MRESULT EXPENTRY fnwpSplitController(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
 
                             // for sorting & setting the background, we need
                             // the folder, not a drive if that's what's selected
-                            pFolder = fdrvGetFSFromRecord(prec, TRUE); // folders only
-
-                            // set sort criterion to the selected folder's default
-                            // changed V1.0.11 (2016-10-29) [rwalsh]
-                            _xwpQueryFldrSort(pFolder, &lDefaultSort, 0, &lAlwaysSort);
-                            CnrInfo.pSortRecord = lAlwaysSort
-                                                  ? (void*)fdrQuerySortFunc(pFolder, lDefaultSort)
-                                                  : NULL;
-                            WinSendMsg(psv->hwndFilesCnr, CM_SETCNRINFO,
-                                       (MPARAM)&CnrInfo, (MPARAM)CMA_PSORTRECORD);
-
-                            if ((ULONG)mp2 & FFL_SETBACKGROUND)
+                            // (pFolder will be null if the drive isn't mounted)
+                            if ((pFolder = fdrvGetFSFromRecord(prec, TRUE)))
                             {
-                                // change files container background NOW
-                                // to give user immediate feedback
-                                // V1.0.0 (2002-09-24) [umoeller]: use
-                                // msg because we need this code from XFolder
-                                // method code now too
-                                WinPostMsg(psv->hwndFilesFrame,
-                                           FM_SETCNRLAYOUT,
-                                           pFolder,
-                                           0);
+                                // set sort criterion to the selected folder's default
+                                // changed V1.0.11 (2016-10-29) [rwalsh]
+                                _xwpQueryFldrSort(pFolder, &lDefaultSort, 0, &lAlwaysSort);
+                                CnrInfo.pSortRecord = lAlwaysSort
+                                                      ? (void*)fdrQuerySortFunc(pFolder, lDefaultSort)
+                                                      : NULL;
+                                WinSendMsg(psv->hwndFilesCnr, CM_SETCNRINFO,
+                                           (MPARAM)&CnrInfo, (MPARAM)CMA_PSORTRECORD);
+
+                                if ((ULONG)mp2 & FFL_SETBACKGROUND)
+                                {
+                                    // change files container background NOW
+                                    // to give user immediate feedback
+                                    // V1.0.0 (2002-09-24) [umoeller]: use
+                                    // msg because we need this code from XFolder
+                                    // method code now too
+                                    WinPostMsg(psv->hwndFilesFrame,
+                                               FM_SETCNRLAYOUT,
+                                               pFolder,
+                                               0);
+                                }
                             }
                         }
                     }
