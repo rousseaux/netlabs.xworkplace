@@ -583,14 +583,14 @@ BEGIN
     ID_XFSI_NOGRID                      "Sen~za ordine"
 
     /* added V1.0.11 (2016-08-12) [rwalsh]: Xview Options submenu */
-    ID_XFSI_OPTIONS                     "~Options"
-    ID_XFSI_DETAILSHDR                  "Details view"
-    ID_XFSI_CNRSPLITBAR                 "- split bar -"
-    ID_XFSI_ICONHDR                     "Icon view"
-    ID_XFSI_THISFOLDER                  "This folder"
-    ID_XFSI_CNRBACKGROUNDS              "~Backgrounds"
-    ID_XFSI_ALLFOLDERS                  "All folders"
-    ID_XFSI_USETHESESETTINGS            "~Use these settings"
+    ID_XFSI_OPTIONS                     "~Opzioni"
+    ID_XFSI_DETAILSHDR                  "Visualizzazione Dettagli"
+    ID_XFSI_CNRSPLITBAR                 "- barre laterali -"
+    ID_XFSI_ICONHDR                     "Visualizzazione Icone"
+    ID_XFSI_THISFOLDER                  "Questa cartella"
+    ID_XFSI_CNRBACKGROUNDS              "~Sfondi"
+    ID_XFSI_ALLFOLDERS                  "Tutte le cartelle"
+    ID_XFSI_USETHESESETTINGS            "~Usa queste impostazioni"
 
     /* the following added with V0.9.0 */
     ID_XFSI_WARP4MENUBAR                "Barra ~menu"

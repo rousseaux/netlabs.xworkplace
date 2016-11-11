@@ -583,14 +583,14 @@ BEGIN
     ID_XFSI_NOGRID                      "Zo~als geplaatst"
 
     /* added V1.0.11 (2016-08-12) [rwalsh]: Xview Options submenu */
-    ID_XFSI_OPTIONS                     "~Options"
-    ID_XFSI_DETAILSHDR                  "Details view"
-    ID_XFSI_CNRSPLITBAR                 "- split bar -"
-    ID_XFSI_ICONHDR                     "Icon view"
-    ID_XFSI_THISFOLDER                  "This folder"
-    ID_XFSI_CNRBACKGROUNDS              "~Backgrounds"
-    ID_XFSI_ALLFOLDERS                  "All folders"
-    ID_XFSI_USETHESESETTINGS            "~Use these settings"
+    ID_XFSI_OPTIONS                     "~Opties"
+    ID_XFSI_DETAILSHDR                  "Details weergave"
+    ID_XFSI_CNRSPLITBAR                 "- scheidingsbalk -"
+    ID_XFSI_ICONHDR                     "Pictogram weergave"
+    ID_XFSI_THISFOLDER                  "Deze map"
+    ID_XFSI_CNRBACKGROUNDS              "~Achtergronden"
+    ID_XFSI_ALLFOLDERS                  "Alle mappen"
+    ID_XFSI_USETHESESETTINGS            "~Deze instellingen gebruiken"
 
     /* the following added with V0.9.0 */
     ID_XFSI_WARP4MENUBAR                "~Menubalk"
@@ -801,7 +801,7 @@ BEGIN
     /* the following item added with V0.9.16 (2001-10-25) [umoeller] */
     ID_XCSI_TURBOFOLDERS                "Turbo mappen"
     /* the following item added with V1.0.0 (2002-09-09) [umoeller] */
-    ID_XCSI_FDRXVIEWS                   "Xview file manager"
+    ID_XCSI_FDRXVIEWS                   "Xview bestands beheer"
 
     ID_XCSI_MOUSEKEYBOARDFEATURES       "Muis en toetsenbord kenmerken"
 /*     ID_XCSI_ANIMOUSE                    "Animated Mouse Pointers" removed V0.9.19 (2002-06-02) [umoeller] */
