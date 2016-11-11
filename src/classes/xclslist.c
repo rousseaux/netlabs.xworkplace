@@ -227,7 +227,7 @@ SOM_Scope void  SOMLINK xwlist_wpInitData(XWPClassList *somSelf)
     // initialize instance data;
     // these values can be overwritten in wpRestoreState
     _fShowSOMObject = FALSE;
-    _fShowMethods = TRUE;
+    _fShowMethods = FALSE;
     _ulSortID = ID_XLMI_METHOD_SORT_INDEX;
     _ulMethodsRadioB = ID_XLDI_RADIO_INSTANCEMETHODS;
     _hwndOpenView = NULLHANDLE;
