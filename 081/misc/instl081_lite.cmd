@@ -51,6 +51,9 @@ dir = pdir||"bin\";
 
 HelpLibrary = "HELPLIBRARY="pdir||"\help\xfldr"LanguageCode".hlp;"
 
+/* uninstall XWPSetup and XWPMedia if present */
+call RemoveUnsupportedFeatures
+
 /* "Fonts" folder  */
 class = "XWPFontFolder";
 title = FontFolder;
@@ -120,7 +123,7 @@ id = "<XWP_SHUTDOWNSTR>";
 target = "<WP_NOWHERE>";
 call CreateObject;
 
-/* create eCenter in eCS "Utilities" folder */
+/* create XCenter in the "Utilities" folder */
 class = "XCenter";
 title = XCenter;
 setup = "";
@@ -169,15 +172,43 @@ CreateObject:
 
     return;
 
-CreateObjectWithShadow:
-    idOld = id;
-    call CreateObject;
+/*
+ * RemoveUnsupportedFeatures:
+ *      This removes features that are explicitly unsupported by
+ *      XWP-Lite from systems that previously had XWP-Full installed.
+ */
 
-    class = "WPShadow";
-    setup = "SHADOWID="idOld";"
-    id = idOfShadow;
-    target = "<XWP_MAINFLDR>";
+RemoveUnsupportedFeatures:
 
-    call CreateObject;
+rc = Destroy("<XWORKPLACE_SETUPCFGSHADOW>");
+rc = Destroy("<XWP_SETUPMAINSHADOW>");
+rc = Destroy("<XWORKPLACE_SETUP>");
 
-    return;
+rc = Destroy("<XWP_MEDIAMAINSHADOW>");
+rc = Destroy("<XWP_MEDIA>");
+
+rc = SysDeregisterObjectClass("XWPSetup");
+rc = SysDeregisterObjectClass("XWPMedia");
+
+/*
+ * Destroy:
+ *      sneaky little subproc which first sets the NODELETE=NO style
+ *      to make sure we can really delete the object and then does a
+ *      SysDestroyObject() on it.
+ */
+
+Destroy:
+parse arg objid
+
+call charout , 'Killing object ID "'objid'"...'
+
+rc = SysSetObjectData(objid, "NODELETE=NO;");
+if (rc \= 0) then do
+    /* got that: */
+    rc = SysDestroyObject(objid);
+end
+
+if (rc \= 0) then say " OK"; else say " failed.";
+
+return rc;
+

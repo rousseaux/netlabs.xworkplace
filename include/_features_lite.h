@@ -7,8 +7,8 @@
 
 // classes
 // #define __NOOS2KERNEL__                         1
-#define __NOWPSCLASSLIST__                      1
-#define __NOXWPSTARTUP__                        1
+// #define __NOWPSCLASSLIST__                      1
+// #define __NOXWPSTARTUP__                        1
 // #define __NOXSHUTDOWN__                         1
 
 // general features
